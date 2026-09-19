@@ -3902,6 +3902,42 @@ export const FR = {
     copiedYear: 'Sommaire copié !',
     yearHint: 'Du texte ordinaire : ça se colle dans un courriel, une note, ou un message à l’autre personne.',
   },
+
+  // « Les remarques » (0136) — ce que la maisonnée remarque de l'app elle-même.
+  // Trois genres, un seul chemin : déposé → expédié → réglé, et c'est TOI qui tranches.
+  remarks: {
+    title: 'Les remarques',
+    lead: 'Ce qui cloche, ce qui manque, ce qui gagnerait à être plus simple.',
+    empty: 'Rien à signaler. Quand ça accroche, dis-le ici — même à moitié formulé.',
+    // Les trois genres.
+    kindBug: 'Bogue',
+    kindWish: 'Souhait',
+    kindPolish: 'Amélioration',
+    titlePlaceholder: 'Qu’est-ce qui se passe ? La première ligne sert de titre.',
+    send: 'Envoyer',
+    // Les trois états. « Expédiée » veut dire « le correctif est en production » —
+    // jamais « quelqu'un pense l'avoir corrigé ».
+    statusOpen: 'Ouverte',
+    statusShipped: 'Expédiée',
+    statusConfirmed: 'Réglée',
+    shippedIn: (sha: string) => `Parti en production dans ${sha}`,
+    confirmFix: 'C’est réglé',
+    reopen: 'Pas réglé',
+    confirmed: 'Merci — c’est fermé.',
+    deleteLabel: 'Supprimer',
+    deleteConfirm: 'Supprimer cette remarque ? Le journal et les pièces jointes partent avec elle, et personne ne la reverra.',
+    removed: 'Remarque supprimée.',
+    // Le contexte ramassé tout seul.
+    seenOn: 'Vu dans',
+    seenBuild: 'Version',
+    contextNote: 'Page, version, thème et dernières erreurs partent avec. Ça reste dans ta maisonnée.',
+    attachHint: 'Une capture d’écran aide beaucoup.',
+    signalHere: 'Signaler',
+    // Le journal. « Expédiée » et « Réglée » réutilisent les libellés d'état.
+    journalFiled: 'Déposée',
+    journalReopened: 'Rouverte',
+    journalMachine: 'Le déploiement',
+  },
 }
 
 export const LangContext = createContext<{ lang: Lang; setLang: (l: Lang) => void }>({

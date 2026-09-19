@@ -74,6 +74,11 @@ export const CHILD_TABLES: ReadonlyArray<readonly [table: string, fk: string, pa
   ['habit_marks', 'habit_id', 'habits'],
   ['habit_days', 'habit_id', 'habits'],
   ['contact_group_members', 'group_id', 'contact_groups'],
+  // « Les remarques » (0136) : le journal en ajout-seul pend à remarks.id et n'a pas de
+  // household_id à lui. ON DELETE CASCADE le couvrirait, mais la sweep supprime les
+  // enfants explicitement avant les parents, et demoHousehold.test.ts exige que toute
+  // table vivante soit nommée dans exactement un des trois ensembles.
+  ['remark_events', 'remark_id', 'remarks'],
 ]
 
 // Tables WITH household_id, in FK-safe DELETE order (children before parents —
@@ -132,6 +137,11 @@ export const HOUSEHOLD_TABLES: readonly string[] = [
   'photos',
   'captures',
   'ai_errors',
+  // « Les remarques » (0136), voisines du journal d'erreurs IA — l'autre chose que la
+  // maisonnée note à propos de l'app elle-même. Ses événements partent avant, par
+  // CHILD_TABLES. Un visiteur du bac à sable PEUT en déposer une, et elle doit
+  // disparaître avec lui.
+  'remarks',
   'family_notes',
   'habits',
   // « Les virements » (0126). transfers references transfer_plans only by id in its
@@ -230,6 +240,23 @@ async function collectMediaKeys(env: Env, householdId: string): Promise<string[]
       .bind(householdId)
       .all<Record<string, string | null>>()
     for (const row of results) for (const c of columns) if (row[c]) keys.add(row[c] as string)
+  }
+  // « Les remarques » (0136): the media trio lives on the EVENTS, which have no
+  // household_id — so this cannot ride MEDIA_SCALAR_COLUMNS above, whose query is
+  // `WHERE ${scopeColumn(table)} = ?` and would ask remark_events for a column it does
+  // not have. Scoped through the parent instead, the same shape the shared_trip_*
+  // tables use in deleteDemoHousehold. Miss this and a swept sandbox leaves its
+  // screenshots in R2 forever, silently — deleteR2Blob swallows everything by design.
+  {
+    const { results } = await env.DB.prepare(
+      'SELECT media_key, scene_key FROM remark_events WHERE remark_id IN (SELECT id FROM remarks WHERE household_id = ?)',
+    )
+      .bind(householdId)
+      .all<{ media_key: string | null; scene_key: string | null }>()
+    for (const row of results) {
+      if (row.media_key) keys.add(row.media_key)
+      if (row.scene_key) keys.add(row.scene_key)
+    }
   }
   // Keys ON JSON objects: routine cards carry clipKey / photoKey (Wave D) — the two
   // cards_*_json side columns above still cover a deck saved before the fold.

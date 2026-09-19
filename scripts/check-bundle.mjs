@@ -50,7 +50,13 @@ const EAGER_CHUNKS = [
   // The rule is unchanged — reach for `lazy()` before you reach for a bigger number.
   { re: /^index-/, cap: 365 * KB, label: 'eager entry' }, // today ~340 KB
   { re: /^react-vendor-/, cap: 280 * KB, label: 'eager react-vendor' }, // today ~227 KB
-  { re: /^i18n-/, cap: 130 * KB, label: 'eager i18n (FR only — EN lazy-loads as i18n.en-*.js)' }, // today ~101 KB
+  // today ~130 KB — i.e. AT the cap, not under it. That comment said « ~101 KB » for
+  // long enough that the headroom quietly went to zero, and « Les remarques » (0136) is
+  // what found out: forty-odd strings of French copy pushed it 112 bytes over and went
+  // red. The next feature that adds copy will hit this too, and the honest fix then is
+  // to lazy-load part of the FR dictionary the way i18n.en already is — NOT to nudge
+  // this number up, which is how a budget stops being one.
+  { re: /^i18n-/, cap: 130 * KB, label: 'eager i18n (FR only — EN lazy-loads as i18n.en-*.js)' },
 ]
 // Ratcheted 700 → 620 by the door-closure pass (STATE §4-L L4, 2026-09-16): making
 // HubLayout + Board lazy took the entry chunk 227 KB → the combined three to ~582 KB.

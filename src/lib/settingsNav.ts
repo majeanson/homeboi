@@ -105,6 +105,10 @@ export const SETTINGS_TREE = {
       s('micTest', 'household'),
       s('kbDebug', 'household'),
       s('aiLog', 'household'),
+      // « Les remarques » (0136) — l'autre chose que l'app a à dire sur elle-même,
+      // empilée à côté du journal d'erreurs IA plutôt qu'en quinzième pilule (C-15).
+      // 'household' et non 'operator' : un kiosque apparié doit pouvoir signaler.
+      s('remarks', 'household'),
     ],
     // Affichage & veille: everything about how THIS device looks and rests —
     // plus the household's photo frame source, which a guest doesn't get.

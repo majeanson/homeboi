@@ -230,6 +230,15 @@ export const OPERATOR_HELP = {
       en: `The maintenance log: what broke and when. Clear it once read — not a counter, just a maintenance log.`,
     },
   },
+  remarks: {
+    // Same card as pairing / cast / guest links: « set-devices » is the appareils &
+    // diagnostics card, and DISCOVERY.md's rule at the 32-card ceiling is to merge.
+    card: 'set-devices',
+    body: {
+      fr: `Ce que tu remarques de l'app : un bogue, un souhait, une amélioration. Ça part avec la page et la version que tu faisais tourner, alors le « ça marche chez moi » est déjà répondu. Quand un correctif est déployé, la remarque passe à « expédiée » — et c'est TOI qui dis si c'est vraiment réglé.`,
+      en: `What you notice about the app: a bug, a wish, a polish. It travels with the page and the build you were running, so « works on my machine » is already answered. When a fix ships, the remark turns « shipped » — and YOU are the one who says whether it is really fixed.`,
+    },
+  },
   coop: {
     // Same guide card as the guest links below — both answer "who else can see or
     // touch this household", and DISCOVERY.md's rule is to merge into an existing

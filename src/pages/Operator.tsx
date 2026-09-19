@@ -32,6 +32,7 @@ import { TodoTemplatesSection } from '../components/operator/todos'
 import { CercleGroupsSection } from '../components/operator/cercle'
 import { HouseDiarySection } from '../components/operator/HouseDiary'
 import { AiErrorLogSection } from '../components/operator/aiErrors'
+import { RemarksSection } from '../components/operator/remarks'
 import { AiSection } from '../components/operator/ai'
 import { BuildInfoSection } from '../components/operator/buildInfo'
 import { HealthSection } from '../components/operator/healthCard'
@@ -291,6 +292,7 @@ export function Operator() {
       kbDebug: t.operator.kbDebugTitle,
       aiTest: t.operator.aiTestTitle,
       aiLog: t.operator.aiLogTitle,
+      remarks: t.remarks.title,
       ai: t.operator.aiTitle,
       guest: t.guest.title,
       choreLedger: t.operator.ledgerTitle,
@@ -374,6 +376,9 @@ export function Operator() {
     // The error log only exists while AI is on; the tree still lists it (the anchor
     // must stay stable), the node just renders nothing when there's nothing to log.
     aiLog: aiEnabled ? <AiErrorLogSection help={operatorHelp} /> : null,
+    // Unlike the AI log, this one is NOT gated on a binding: a household must always be
+    // able to say something is wrong, especially when a binding is what is wrong.
+    remarks: <RemarksSection help={operatorHelp} />,
     display: <DisplaySection help={operatorHelp} />,
     ambient: <AmbientSettingsSection help={operatorHelp} />,
     habits: <HabitCheckinSection help={operatorHelp} />,

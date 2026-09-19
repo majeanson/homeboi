@@ -138,6 +138,8 @@ describe('the wire', () => {
         'household_snapshot',
         'meal_plan',
         'people_directory',
+        'remark_get',
+        'remarks_open',
         'recipe_get',
         'recipes_search',
         'shopping_list',

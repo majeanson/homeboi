@@ -24,6 +24,7 @@ import {
   RPC_METHOD_NOT_FOUND,
   RPC_PARSE_ERROR,
   type RpcMessage,
+  type ToolContent,
 } from '../_lib/mcp'
 
 import { checkInvariants, summarize as summarizeInvariants } from '../_lib/invariants'
@@ -36,6 +37,7 @@ import * as recipes from './recipes'
 import * as cercle from './cercle'
 import * as health from './health'
 import * as aiErrors from './ai-errors'
+import * as remarks from './remarks'
 
 // « La maison, adressable » — an MCP server over the household's OWN data, so an
 // agent (Claude on a phone, Claude Code, anything that speaks MCP) can ask what is
@@ -44,9 +46,9 @@ import * as aiErrors from './ai-errors'
 // ─────────────────────────────────────────────────────────────────────────────────
 // IT IS READ-ONLY, ON PURPOSE, AND THAT IS ENFORCED BY CONSTRUCTION.
 //
-// Not by a flag: there is no write path in this file. Every tool below maps to a GET
-// handler, the registry has no POST/PATCH/DELETE entry, and `tools/call` can only
-// reach a name in that registry. An agent connected here cannot change the household
+// Not by a flag: there is no write path in this file. Every tool either proxies a GET
+// handler or runs its own SELECT, the registry has no POST/PATCH/DELETE entry, and
+// `tools/call` can only reach a name in that registry. An agent connected here cannot change the household
 // even if it decides it should. Writes are a separate, later decision — the capture
 // spine, the undo toast and the outbox all live in the UI, and an agent writing past
 // them would be writing past every calm guarantee this app makes.
@@ -78,10 +80,10 @@ const SERVER_INFO = { name: 'babillard', title: 'Babillard — la maisonnée', v
 const DAY = 86400
 
 // ── Tool registry ────────────────────────────────────────────────────────────────
-// 10 tools, hand-picked. The temptation was a generic "name a path, get JSON"
+// 12 tools, hand-picked. The temptation was a generic "name a path, get JSON"
 // bridge over all 96 endpoints; it was rejected because a tool list is PROMPT — a
 // model reads every description on every call, and ninety-six of them would crowd out
-// the conversation while making each one less legible. 10 tools that say what they
+// the conversation while making each one less legible. 12 tools that say what they
 // are beat ninety-six that do not.
 //
 // THE NUMBER IS DERIVED, NOT TYPED. It appears here, in STATE.md and in
@@ -91,12 +93,11 @@ const DAY = 86400
 // story of « 74 » surviving long after the real answer was 40. It is a numeral now
 // and docCounts owns it.
 //
-// Eight of the ten proxy the handler that already owns the data, through callRead()
-// below. Two do not, and say why where they are defined: `data_invariants` reads D1
-// directly (no endpoint answers that question), and `app_health` composes two reads.
-// For the other eight: the caps, the household time zone, the recurrence expansion
-// and the meal-slot ordering are decided in exactly one place,
-// and this server inherits them for free — including the ones added after it shipped.
+// MOST proxy the handler that already owns the data, through callRead() below, and
+// inherit its caps, the household time zone, the recurrence expansion and the meal-slot
+// ordering for free — including the ones added after this server shipped. Three do not,
+// and say why where they are defined: `household_snapshot` and `data_invariants` query
+// directly because no endpoint answers their question, and `app_health` composes two.
 
 interface Tool {
   name: string
@@ -107,7 +108,9 @@ interface Tool {
     ctx: Ctx,
     args: Record<string, unknown>,
     actor: Actor,
-  ) => Promise<{ text: string; structured: unknown } | { error: string }>
+    // `media` rides after the text, for the one tool that has pictures to show
+    // (remark_get). Optional everywhere else — the other tools never set it.
+  ) => Promise<{ text: string; structured: unknown; media?: ToolContent[] } | { error: string }>
 }
 
 const NO_ARGS = { type: 'object', additionalProperties: false } as const
@@ -318,6 +321,85 @@ const TOOLS: Tool[] = [
       return { text: summarizeInvariants(report), structured: report }
     },
   },
+  {
+    name: 'remarks_open',
+    title: 'Ce que la maisonnée remarque de l’app',
+    description:
+      "The household's open queue of remarks about this app — bugs, wishes and polish, newest first, with the help-registry key of the section it happened in, the route, and THE COMMIT the reporter was running. Read this before fixing anything: the build stamp tells you which code they actually saw. A remark already confirmed fixed is not listed. Call remark_get for one remark's full journal and its attachments.",
+    inputSchema: NO_ARGS,
+    run: async (ctx) => {
+      const data = await callRead(ctx, remarks.onRequestGet, 'remarks')
+      if ('error' in data) return data
+      const rows = asArray((data.json as { remarks?: unknown }).remarks).filter(
+        (r) => (r as { status?: unknown }).status !== 'confirmed',
+      )
+      const lines = rows.map((r) => {
+        const x = r as Record<string, unknown>
+        const where = [x.seen_path, x.help_key].filter(Boolean).join(' · ')
+        return `· [${String(x.kind)}/${String(x.status)}] ${String(x.title)}${where ? ` — ${where}` : ''}${x.seen_build ? ` — build ${String(x.seen_build)}` : ''}\n  ${String(x.body ?? '').slice(0, 300)}\n  id: ${String(x.id)}`
+      })
+      return {
+        text: rows.length === 0 ? 'Rien d’ouvert.' : `${rows.length} remarque(s) ouverte(s) :\n${lines.join('\n')}`,
+        structured: { remarks: rows },
+      }
+    },
+  },
+  {
+    name: 'remark_get',
+    title: 'Une remarque, au complet',
+    description:
+      'One remark in full: what was reported, the auto-captured context (route, build, theme, lens, recent console errors), and the whole journal — every explanation a deploy attached and every note the household wrote back when a fix did not take. ITS ATTACHED SCREENSHOTS AND DRAWINGS COME BACK AS IMAGES you can actually look at. A voice note comes back as its text, not as audio.',
+    inputSchema: {
+      type: 'object',
+      properties: { id: { type: 'string', description: 'The remark id, from remarks_open.' } },
+      required: ['id'],
+      additionalProperties: false,
+    },
+    run: async (ctx, args) => {
+      const id = typeof args.id === 'string' ? args.id : ''
+      if (!id) return { error: 'Give the remark `id` from remarks_open.' }
+      const data = await callRead(ctx, remarks.onRequestGet, 'remarks')
+      if ('error' in data) return data
+      const hit = asArray((data.json as { remarks?: unknown }).remarks).find(
+        (r) => (r as { id?: unknown }).id === id,
+      ) as Record<string, unknown> | undefined
+      if (!hit) return { error: `No remark with id ${id}.` }
+
+      // The pictures. Bounded on THREE axes on purpose — how many, how big each one is,
+      // and how big the answer gets in total — because a base64 image is ~4/3 of a blob
+      // and an unbounded answer is a worse failure than a missing picture. Over any
+      // bound, the text says the attachment exists and is not shown; it never silently
+      // vanishes and it never blows up the response.
+      const media: ToolContent[] = []
+      const notes: string[] = []
+      let budget = MEDIA_TOTAL_CAP
+      for (const e of asArray(hit.events)) {
+        const ev = e as { media_kind?: unknown; media_key?: unknown }
+        if (ev.media_kind !== 'image' && ev.media_kind !== 'drawing') {
+          if (ev.media_kind === 'audio') notes.push('(un mot vocal est joint — il n’est pas lisible ici)')
+          continue
+        }
+        const key = typeof ev.media_key === 'string' ? ev.media_key : ''
+        if (!key || !ctx.env.PHOTOS) continue
+        if (media.length >= MEDIA_MAX_ITEMS) {
+          notes.push('(d’autres pièces jointes ne sont pas montrées)')
+          break
+        }
+        const obj = await ctx.env.PHOTOS.get(key).catch(() => null)
+        if (!obj) continue
+        const bytes = await obj.arrayBuffer()
+        if (bytes.byteLength > MEDIA_ITEM_CAP || bytes.byteLength > budget) {
+          notes.push(`(une pièce jointe de ${Math.round(bytes.byteLength / 1024)} ko est trop grande pour être montrée)`)
+          continue
+        }
+        budget -= bytes.byteLength
+        media.push({ type: 'image', data: base64(bytes), mimeType: obj.httpMetadata?.contentType || 'image/png' })
+      }
+
+      const text = [digest(hit), ...notes].join('\n')
+      return { text, structured: hit, media }
+    },
+  },
 ]
 
 const BY_NAME = new Map(TOOLS.map((t) => [t.name, t]))
@@ -427,6 +509,24 @@ function dayStringToSec(v: unknown): number | null {
  * cannot read `structuredContent` still gets the answer; this keeps that honest while
  * capping what an enormous household could put in a single model context.
  */
+// Attachment bounds for remark_get. A base64 image is ~4/3 of the blob, and these are
+// already resized by uploadMedia on the way in — so these caps are a backstop against a
+// pathological row, not the primary size control.
+const MEDIA_MAX_ITEMS = 4
+const MEDIA_ITEM_CAP = 1_200_000
+const MEDIA_TOTAL_CAP = 3_000_000
+
+/** ArrayBuffer → base64, in chunks: String.fromCharCode(...bytes) on a megabyte blows
+ *  the argument limit, which is a crash that only shows up on a big screenshot. */
+function base64(buf: ArrayBuffer): string {
+  const bytes = new Uint8Array(buf)
+  let binary = ''
+  for (let i = 0; i < bytes.length; i += 8192) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + 8192))
+  }
+  return btoa(binary)
+}
+
 const TEXT_CAP = 12_000
 function digest(json: unknown): string {
   const text = JSON.stringify(json, null, 1)
@@ -529,7 +629,7 @@ export const onRequestPost = authed(
           : {}
       const out = await tool.run(ctx, args, actor)
       if ('error' in out) return httpRpc(200, rpcResult(msg.id, toolError(out.error, version)))
-      return httpRpc(200, rpcResult(msg.id, toolResult(out.text, out.structured, version)))
+      return httpRpc(200, rpcResult(msg.id, toolResult(out.text, out.structured, version, out.media)))
     }
   }
 

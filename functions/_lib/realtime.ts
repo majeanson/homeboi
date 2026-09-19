@@ -61,6 +61,7 @@ const SILENT_PATHS = new Set<string>([
   'health',
   'mcp', // the MCP server: a JSON-RPC POST that only ever READS — nothing to invalidate
   'note-media', // fridge-note blob (audio/drawing/photo); the notes write carries the path
+  'remark-media', // a remark's screenshot/drawing/clip; the /api/remarks write carries the key
   'pair/start',
   'pair/poll',
   'pair/claim',
@@ -223,6 +224,13 @@ const PATH_KEYS: Record<string, string[][]> = {
   // Adding a recipe's ingredients to the shared list only touches the board glance
   // (the list lives under ['board'] — there is no separate ['list'] cache).
   'recipe-to-list': [['board']],
+  // « Les remarques » (0136). A REAL entry, not SILENT_PATHS: the list is polled, and
+  // the whole point of the loop is that « expédiée » appears on an open tab without a
+  // reload. Both the household writes here and the deploy callback map to the same key
+  // — the callback is not wrapped in `authed()` so it gets no broadcast hook and calls
+  // keysForPath itself, which is exactly why the two cannot drift apart.
+  remarks: [['remarks']],
+  'remarks/shipped': [['remarks']],
   // Family « favorites » hearts (#21): a heart toggle re-renders every surface that
   // shows hearts (recipe list/view + planned meals), all under ['recipe-loves'].
   'recipe-loves': [['recipe-loves']],

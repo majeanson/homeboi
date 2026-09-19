@@ -221,7 +221,7 @@ describe('the docs quote the real counts', () => {
     // the one that goes stale is always the one nobody re-read.
     { file: 'functions/api/mcp.ts', what: 'tool registry size (header)', re: /^\/\/ (\d+) tools, hand-picked/m, actual: mcpTools },
     { file: 'functions/api/mcp.ts', what: 'tool registry size (the argument)', re: /less legible\. (\d+) tools that say what they/, actual: mcpTools },
-    { file: 'STATE.md', what: 'MCP tool registry size', re: /of the (\d+) tools, eight proxy a/, actual: mcpTools },
+    { file: 'STATE.md', what: 'MCP tool registry size', re: /of the (\d+) tools, most proxy a/, actual: mcpTools },
   ]
 
   for (const c of claims) {

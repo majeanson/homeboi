@@ -6,6 +6,7 @@ import { BrowserRouter } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { AppRoutes } from './router'
 import { ErrorBoundary } from './components/ErrorBoundary'
+import { installErrorTrail } from './lib/errorTrail'
 import { AuthProvider, useAuth } from './lib/auth'
 import { queryClient } from './lib/query'
 import { LangContext, type Lang } from './i18n'
@@ -471,6 +472,10 @@ onAuthLost(() => {
 })
 
 function mount() {
+  // Start remembering what goes wrong BEFORE the first render, so a crash during boot
+  // is still in the trail when someone files a remark about it. Two listeners and a
+  // six-slot ring; it sends nothing anywhere (src/lib/errorTrail.ts).
+  installErrorTrail()
   createRoot(document.getElementById('root')!).render(
     <StrictMode>
       <Root />

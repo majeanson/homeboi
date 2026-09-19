@@ -1,6 +1,25 @@
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
+import { execFileSync } from 'node:child_process'
 import { headersFileSource } from './functions/_lib/securityHeaders'
+
+/**
+ * The commit this bundle was built from, short form. CI sets GITHUB_SHA; locally we
+ * ask git; anything else answers 'dev'.
+ *
+ * FAILS SOFT, ALWAYS. A build from an exported tarball has no .git, and git may not be
+ * on PATH at all. A missing build stamp is a small loss — a build that refuses to run
+ * because it could not find one is a large one, so every failure lands on 'dev'.
+ */
+function buildSha(): string {
+  const fromCi = process.env.GITHUB_SHA
+  if (fromCi && /^[0-9a-f]{7,64}$/i.test(fromCi)) return fromCi.slice(0, 12)
+  try {
+    return execFileSync('git', ['rev-parse', '--short=12', 'HEAD'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim() || 'dev'
+  } catch {
+    return 'dev'
+  }
+}
 
 // SPA build. The app is a Cloudflare Worker with static assets: worker/index.ts
 // serves dist/ and routes /api/* to the handlers in functions/. Local full-stack
@@ -438,6 +457,13 @@ export default defineConfig({
   // main). Evaluated once when the build starts; in dev it's the dev-server start.
   define: {
     __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+    // …and WHICH COMMIT, because a timestamp is not one. « Les remarques » (0136)
+    // stamps every report with the build it was seen on, so the fix starts from that
+    // code rather than from whatever HEAD happens to be — and a timestamp makes that a
+    // guess (`git log --before=…`, and two deploys on one day look alike).
+    // CI hands us GITHUB_SHA; locally we ask git; a build from a tarball with no .git
+    // gets 'dev'. Never throws — a missing stamp must not be able to fail a build.
+    __BUILD_SHA__: JSON.stringify(buildSha()),
   },
   plugins: [react(), serviceWorker(), securityHeadersFile()],
   build: {

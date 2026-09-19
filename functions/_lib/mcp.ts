@@ -211,15 +211,32 @@ export function originAllowed(origin: string | null, selfOrigin: string): boolea
   return origin === selfOrigin
 }
 
-export interface ToolContent {
-  type: 'text'
-  text: string
-}
+/**
+ * One block of a tool's answer.
+ *
+ * TEXT WAS NOT ENOUGH ONCE « Les remarques » SHIPPED. A remark carries the screenshot
+ * that says what went wrong, and a screenshot described in a sentence is not a
+ * screenshot — the model reading the queue would get « il y a une image jointe », which
+ * is worth roughly nothing. The protocol defines an image block; this is it. `data` is
+ * base64, and the SIZE DISCIPLINE lives at the call site, because a tool that answers
+ * with four megabytes of base64 has replaced one problem with a worse one.
+ */
+export type ToolContent = { type: 'text'; text: string } | { type: 'image'; data: string; mimeType: string }
 
-/** A successful `tools/call` result. */
-export function toolResult(text: string, structured: unknown, version: string): Record<string, unknown> {
+/**
+ * A successful `tools/call` result.
+ *
+ * `extra` blocks ride AFTER the text, so a client that renders only the first block
+ * still shows the words — the images are the enrichment, never the whole answer.
+ */
+export function toolResult(
+  text: string,
+  structured: unknown,
+  version: string,
+  extra: ToolContent[] = [],
+): Record<string, unknown> {
   const result: Record<string, unknown> = {
-    content: [{ type: 'text', text } satisfies ToolContent],
+    content: [{ type: 'text', text } satisfies ToolContent, ...extra],
     isError: false,
   }
   if (structured !== undefined) result.structuredContent = structured

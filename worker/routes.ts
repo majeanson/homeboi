@@ -90,6 +90,8 @@ import * as recipeVision from '../functions/api/recipe-vision'
 import * as recipes from '../functions/api/recipes'
 import * as recipeTags from '../functions/api/recipe-tags'
 import * as recipeToList from '../functions/api/recipe-to-list'
+import * as remarkMedia from '../functions/api/remark-media'
+import * as remarks from '../functions/api/remarks'
 import * as reserve from '../functions/api/reserve'
 import * as routineAudio from '../functions/api/routine-audio'
 import * as routineCardPhoto from '../functions/api/routine-card-photo'
@@ -248,6 +250,11 @@ const TABLE: Record<string, RouteMod> = {
   recipes,
   'recipe-tags': recipeTags,
   'recipe-to-list': recipeToList,
+  // « Les remarques » (0136) — the household's own side of the loop: file one, confirm
+  // a fix, re-open one that did not take. The DEPLOY pipeline's « expédiée » callback is
+  // a separate endpoint; an agent reading the queue over MCP writes nothing at all.
+  remarks,
+  'remark-media': remarkMedia,
   reserve,
   'routine-audio': routineAudio,
   'routine-card-photo': routineCardPhoto,

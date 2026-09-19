@@ -43,6 +43,10 @@ const VIA_PARENT: Record<string, { parent: string; fk: string }> = {
   contact_group_members: { parent: 'contact_groups', fk: 'group_id' },
   task_participants: { parent: 'tasks', fk: 'task_id' },
   routine_runs: { parent: 'routines', fk: 'routine_id' },
+  // « Les remarques » (0136). Without this line the journal — every explanation, every
+  // « pas réglé » note, every attachment key — is absent from each takeout AND from the
+  // nightly R2 backup: it lands in `skipped`, which is visible but is not a backup.
+  remark_events: { parent: 'remarks', fk: 'remark_id' },
 }
 
 // Cross-household voyage rooms (mig 0101) scope by owner_household_id, and a

@@ -34,6 +34,10 @@ export const LOVES_KEY = ['recipe-loves']
 // invalidating TODOS_KEY refreshes both. Templates feed Réglages + the picker.
 export const TODOS_KEY = ['todos']
 export const TODO_TEMPLATES_KEY = ['todo-templates']
+// « Les remarques » (0136) — what the household notices about the app. Shared, because
+// three surfaces read it: the Réglages section, the board card, and the composer that
+// invalidates after filing one from anywhere (the « ? » chip, a crash screen).
+export const REMARKS_KEY = ['remarks']
 // « À régler » — the cross-domain heads-up scan (functions/api/a-regler). Read by
 // the board card AND the « Cette semaine » block, so the key is shared.
 export const A_REGLER_KEY = ['a-regler']
