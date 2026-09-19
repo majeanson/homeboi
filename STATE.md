@@ -119,7 +119,8 @@ anything that speaks MCP) can now read the board, the meal plan, the list, the c
 the recipe book and the directory.
 
 **READ-ONLY, by construction rather than by flag.** There is no write path in
-`functions/api/mcp.ts`: the eight tools each proxy a **GET** handler that already exists,
+`functions/api/mcp.ts`: of the 10 tools, eight proxy a **GET** handler that already
+exists and the other two (`app_health`, `data_invariants`) run their own SELECTs,
 the registry holds no POST entry, and `tools/call` can only reach a registry name. An
 agent connected here cannot change the household even if it decides it should. Writes
 stay a separate decision — the capture spine, the undo toast and the outbox all live in

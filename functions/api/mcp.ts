@@ -26,12 +26,16 @@ import {
   type RpcMessage,
 } from '../_lib/mcp'
 
+import { checkInvariants, summarize as summarizeInvariants } from '../_lib/invariants'
+
 import * as board from './board'
 import * as list from './list'
 import * as meals from './meals'
 import * as month from './month'
 import * as recipes from './recipes'
 import * as cercle from './cercle'
+import * as health from './health'
+import * as aiErrors from './ai-errors'
 
 // « La maison, adressable » — an MCP server over the household's OWN data, so an
 // agent (Claude on a phone, Claude Code, anything that speaks MCP) can ask what is
@@ -74,15 +78,24 @@ const SERVER_INFO = { name: 'babillard', title: 'Babillard — la maisonnée', v
 const DAY = 86400
 
 // ── Tool registry ────────────────────────────────────────────────────────────────
-// Eight tools, hand-picked. The temptation was a generic "name a path, get JSON"
+// 10 tools, hand-picked. The temptation was a generic "name a path, get JSON"
 // bridge over all 96 endpoints; it was rejected because a tool list is PROMPT — a
 // model reads every description on every call, and ninety-six of them would crowd out
-// the conversation while making each one less legible. Eight tools that say what they
+// the conversation while making each one less legible. 10 tools that say what they
 // are beat ninety-six that do not.
 //
-// Each tool's data comes from the handler that already owns it, invoked through
-// callRead() below. No tool re-queries D1: the caps, the household time zone, the
-// recurrence expansion and the meal-slot ordering are decided in exactly one place,
+// THE NUMBER IS DERIVED, NOT TYPED. It appears here, in STATE.md and in
+// worker/mcp.d1.test.ts, and it used to be spelled « eight » in all three — which
+// docCounts.test.ts could not see, because its whole job is checking numerals. A
+// count written in letters is a count nobody re-derives; CLAUDE.md already tells the
+// story of « 74 » surviving long after the real answer was 40. It is a numeral now
+// and docCounts owns it.
+//
+// Eight of the ten proxy the handler that already owns the data, through callRead()
+// below. Two do not, and say why where they are defined: `data_invariants` reads D1
+// directly (no endpoint answers that question), and `app_health` composes two reads.
+// For the other eight: the caps, the household time zone, the recurrence expansion
+// and the meal-slot ordering are decided in exactly one place,
 // and this server inherits them for free — including the ones added after it shipped.
 
 interface Tool {
@@ -257,6 +270,52 @@ const TOOLS: Tool[] = [
       const snapshot = await gatherAskSnapshot(ctx.env, actor.householdId, localDayStart(new Date(Date.now())))
       const lines = buildAskPromptLines(snapshot, lang)
       return { text: lines.join('\n'), structured: snapshot }
+    },
+  },
+  {
+    name: 'app_health',
+    title: 'Comment l’app se porte',
+    description:
+      "How the DEPLOYMENT itself is doing, as opposed to the household: which optional bindings are wired (AI, R2 photos, mail, rate limiting, nightly alerts, realtime, cloud OCR), and the household's AI error journal — every AI failure a human actually saw on screen and acknowledged, newest first. Use this when asked why a feature is missing, why something degraded, or what has been going wrong lately.",
+    inputSchema: NO_ARGS,
+    run: async (ctx) => {
+      const [status, errors] = await Promise.all([
+        callRead(ctx, health.onRequestGet, 'health'),
+        callRead(ctx, aiErrors.onRequestGet, 'ai-errors'),
+      ])
+      if ('error' in status) return status
+      // The AI journal is household-scoped and may legitimately refuse (it is authed);
+      // a health answer without it still beats no answer at all.
+      const log = 'error' in errors ? { errors: [] } : (errors.json as { errors?: unknown[] })
+      const rows = asArray(log?.errors)
+      const bindings = status.json as Record<string, unknown>
+      const off = Object.entries(bindings)
+        .filter(([k, v]) => v === false && k !== 'ok')
+        .map(([k]) => k)
+      const lines = [
+        `Bindings absents ou éteints : ${off.length === 0 ? 'aucun' : off.join(', ')}`,
+        `Journal d'erreurs IA : ${rows.length} entrée(s)`,
+        // NOT the nightly report. runNightly() only ever console.logs, and its real
+        // deps WRITE (an R2 backup, the sandbox sweep) — calling it to read it would
+        // make a diagnostic tool mutate the account. Say so rather than fake it.
+        "Le rapport du cron de nuit n'est pas conservé (nightly.ts journalise seulement) — il n'est pas lisible ici.",
+        ...rows.slice(0, 20).map((r) => {
+          const e = r as { feature?: unknown; message?: unknown; created_at?: unknown }
+          return `· ${String(e.feature ?? '?')} — ${String(e.message ?? '')}`
+        }),
+      ]
+      return { text: lines.join('\n'), structured: { bindings, aiErrors: rows } }
+    },
+  },
+  {
+    name: 'data_invariants',
+    title: 'Les lois de la base, vérifiées pour vrai',
+    description:
+      "Check this household's rows against the schema laws this codebase writes down but never verifies at run time: the media_key/media_kind pair, scene_key only on drawings, JSON columns holding JSON of the promised shape, member references that resolve INSIDE this household, flyer deals that outlived their flyer, duplicate hand-placed list positions, updated_at before created_at, and tables with no household scope. READ-ONLY — it reports, it never repairs. An answer of « not checked » is not the same as « fine », and it says which.",
+    inputSchema: NO_ARGS,
+    run: async (ctx, _args, actor) => {
+      const report = await checkInvariants(ctx.env.DB, actor.householdId)
+      return { text: summarizeInvariants(report), structured: report }
     },
   },
 ]
@@ -447,7 +506,7 @@ export const onRequestPost = authed(
           capabilities: { tools: { listChanged: false } },
           serverInfo: SERVER_INFO,
           instructions:
-            'Babillard is one household’s own board: meals, the shared list, the calendar, recipes and the family directory. Every tool is READ-ONLY — nothing here can change the household. Answer in the household’s language (Québec French unless asked otherwise).',
+            'Babillard is one household’s own board: meals, the shared list, the calendar, recipes and the family directory — plus how the app itself is doing (app_health) and whether its own schema laws still hold (data_invariants). Every tool is READ-ONLY — nothing here can change the household. Answer in the household’s language (Québec French unless asked otherwise).',
         }),
       )
     }

@@ -121,7 +121,7 @@ describe('the agent credential is read-only EVERYWHERE, not just here', () => {
 })
 
 describe('the wire', () => {
-  it('lists the eight tools, all flagged read-only', async () => {
+  it('lists every registered tool, all flagged read-only', async () => {
     const res = await rpc(msg('tools/list'))
     expect(res.status).toBe(200)
     const out = (await res.json()) as {
@@ -131,8 +131,10 @@ describe('the wire', () => {
     const names = out.result.tools.map((t) => t.name).sort()
     expect(names).toEqual(
       [
+        'app_health',
         'board_today',
         'calendar_range',
+        'data_invariants',
         'household_snapshot',
         'meal_plan',
         'people_directory',

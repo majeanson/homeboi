@@ -32,6 +32,22 @@ const guideCards = () => {
 // that exists to stop exactly that stayed green, because it could not see the tenth.
 const tours = () => TOURS.length
 const registries = () => readdirSync(join(ROOT, 'src', 'lib')).filter((f) => f.endsWith('Help.ts')).length
+
+// The MCP tool registry (functions/api/mcp.ts). Sliced from `const TOOLS` so the
+// `name:` keys of the RPC dispatch below it cannot be counted as tools, and anchored
+// at four spaces so only a registry entry matches.
+//
+// This claim exists because of a near miss in the very commit that added it. The count
+// lived in FOUR places — twice in mcp.ts's own header, once in STATE.md, once in a
+// test's title — and all four said « eight », in LETTERS. docCounts is the guard
+// against exactly that drift and it could not see a word: every regex here reads a
+// numeral. Adding two tools would have left three of the four lying, silently, with
+// the guard green. They are numerals now.
+const mcpTools = () => {
+  const s = read('functions/api/mcp.ts')
+  const body = s.slice(s.indexOf('const TOOLS: Tool[]'))
+  return new Set([...body.matchAll(/^ {4}name: '([a-z_]+)',$/gm)].map((m) => m[1])).size
+}
 // The state matrix, parsed from its own table. Two traps, both hit while writing this,
 // and both of the kind that report a confident wrong number rather than throwing:
 // the array is declared `Entry[] = [`, so anchoring on `indexOf('[')` lands on the
@@ -201,6 +217,11 @@ describe('the docs quote the real counts', () => {
     // These two are the LIVE pair, one line above it.
     { file: 'COMPONENTS.md', what: 'primitive rows (live)', re: /holds (\d+) rows, of which \d+ have a live specimen/, actual: () => primitiveRows().rows },
     { file: 'COMPONENTS.md', what: 'rows with a live specimen', re: /holds \d+ rows, of which (\d+) have a live specimen/, actual: () => primitiveRows().specimens },
+    // The MCP server states its own size three times; all three are checked, because
+    // the one that goes stale is always the one nobody re-read.
+    { file: 'functions/api/mcp.ts', what: 'tool registry size (header)', re: /^\/\/ (\d+) tools, hand-picked/m, actual: mcpTools },
+    { file: 'functions/api/mcp.ts', what: 'tool registry size (the argument)', re: /less legible\. (\d+) tools that say what they/, actual: mcpTools },
+    { file: 'STATE.md', what: 'MCP tool registry size', re: /of the (\d+) tools, eight proxy a/, actual: mcpTools },
   ]
 
   for (const c of claims) {
@@ -219,6 +240,9 @@ describe('the docs quote the real counts', () => {
     expect(tours()).toBeGreaterThan(3)
     expect(registries()).toBeGreaterThan(3)
     expect(glossaryTerms()).toBeGreaterThan(15)
+    // A slice-then-regex parser that stops matching reads as a plausible small number,
+    // and a doc edited in the same commit would happily agree with it.
+    expect(mcpTools()).toBeGreaterThan(5)
     // Both parsers walk hand-written prose/JSX, so both can fall silently to a
     // plausible zero — floors, not just equality against a doc that would then agree.
     expect(kitFiles().size).toBeGreaterThan(100)
