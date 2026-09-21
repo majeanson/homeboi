@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { useT } from '../../i18n'
+import { useOperatorT } from '../../i18n.operator'
 import { api } from '../../lib/api'
 import { HEALTH_KEY } from '../../lib/queryKeys'
 import { OperatorSection } from './OperatorSection'
@@ -24,55 +24,55 @@ interface Health {
 }
 
 export function HealthSection() {
-  const t = useT()
+  const o18n = useOperatorT()
   const q = useQuery({ queryKey: HEALTH_KEY, queryFn: () => api<Health>('health'), staleTime: 5 * 60_000 })
   const h = q.data
   if (!h) return null
   const rows = [
     {
-      name: t.operator.healthAi,
+      name: o18n.healthAi,
       on: h.ai,
       // Three states for AI only: wired+on, wired-but-household-off, not wired.
-      state: !h.aiAvailable ? t.operator.healthOff : h.ai ? t.operator.healthOn : t.operator.healthDisabled,
-      when: t.operator.healthAiWhen,
+      state: !h.aiAvailable ? o18n.healthOff : h.ai ? o18n.healthOn : o18n.healthDisabled,
+      when: o18n.healthAiWhen,
     },
     {
-      name: t.operator.healthPhotos,
+      name: o18n.healthPhotos,
       on: h.photos,
-      state: h.photos ? t.operator.healthOn : t.operator.healthOff,
-      when: t.operator.healthPhotosWhen,
+      state: h.photos ? o18n.healthOn : o18n.healthOff,
+      when: o18n.healthPhotosWhen,
     },
     {
-      name: t.operator.healthRealtime,
+      name: o18n.healthRealtime,
       on: h.realtime,
-      state: h.realtime ? t.operator.healthOn : t.operator.healthOff,
-      when: t.operator.healthRealtimeWhen,
+      state: h.realtime ? o18n.healthOn : o18n.healthOff,
+      when: o18n.healthRealtimeWhen,
     },
     {
-      name: t.operator.healthCloudOcr,
+      name: o18n.healthCloudOcr,
       on: h.cloudOcr,
-      state: h.cloudOcr ? t.operator.healthOn : t.operator.healthOff,
-      when: t.operator.healthCloudOcrWhen,
+      state: h.cloudOcr ? o18n.healthOn : o18n.healthOff,
+      when: o18n.healthCloudOcrWhen,
     },
     {
       // The brute-force bound on the sign-in doors (functions/_lib/rateLimit.ts). Off
       // means the two bindings are not wired on this deployment — a hole, not a mood.
-      name: t.operator.healthRateLimit,
+      name: o18n.healthRateLimit,
       on: h.rateLimit,
-      state: h.rateLimit ? t.operator.healthOn : t.operator.healthOff,
-      when: t.operator.healthRateLimitWhen,
+      state: h.rateLimit ? o18n.healthOn : o18n.healthOff,
+      when: o18n.healthRateLimitWhen,
     },
     {
       // The nightly cron's alert channel (functions/_lib/nightly.ts): off means a failed
       // backup or a broken sandbox sweep only reaches a log nobody opens.
-      name: t.operator.healthAlerts,
+      name: o18n.healthAlerts,
       on: h.alerts,
-      state: h.alerts ? t.operator.healthOn : t.operator.healthOff,
-      when: t.operator.healthAlertsWhen,
+      state: h.alerts ? o18n.healthOn : o18n.healthOff,
+      when: o18n.healthAlertsWhen,
     },
   ]
   return (
-    <OperatorSection title={t.operator.healthTitle} hint={t.operator.healthHint} helpKey="health">
+    <OperatorSection title={o18n.healthTitle} hint={o18n.healthHint} helpKey="health">
       <ul className="health-list">
         {rows.map((r) => (
           <li key={r.name} className="health-list__row">

@@ -3,6 +3,7 @@ import { SoundToggle } from '../SoundToggle'
 import { useSoundOn } from '../../lib/sound'
 import { Link } from 'react-router-dom'
 import { useLang, useT, type Lang } from '../../i18n'
+import { useOperatorT } from '../../i18n.operator'
 import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
 import { InstallHint } from '../InstallHint'
@@ -59,6 +60,7 @@ import { Chip } from '../Chip'
 // to live in the top header. Moved here so the hub pages stay calm and headerless.
 export function DisplaySection({ help }: { help?: HelpMode }) {
   const t = useT()
+  const o18n = useOperatorT()
   const { lang, setLang } = useLang()
   const { audience, setAudience, guestPreview, setGuestPreview } = useAudience()
   const { tutorial, setTutorial } = useHelp()
@@ -123,10 +125,10 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
   }
 
   return (
-    <OperatorSection title={t.operator.display} help={help} helpKey="display">
+    <OperatorSection title={o18n.display} help={help} helpKey="display">
       <div className="operator__display">
         <div className="operator__seg">
-          <span className="operator__seg-label mono">{t.operator.themeLabel}</span>
+          <span className="operator__seg-label mono">{o18n.themeLabel}</span>
           {/* While ambient is on, day/night follows the time (auto day/night) —
               the manual toggle is governed by it, so show it disabled with a
               hint rather than letting a tap be silently re-asserted next tick. */}
@@ -142,85 +144,85 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
               size={16}
               color={theme === 'night' ? 'var(--berry-deep)' : 'var(--marigold-deep)'}
             />{' '}
-            {theme === 'night' ? t.operator.themeNight : t.operator.themeDay}
+            {theme === 'night' ? o18n.themeNight : o18n.themeDay}
           </button>
-          {ambient && <p className="operator__seg-hint mono">{t.operator.themeFollowsTime}</p>}
+          {ambient && <p className="operator__seg-hint mono">{o18n.themeFollowsTime}</p>}
         </div>
         <div className="operator__seg">
-          <span className="operator__seg-label mono">{t.operator.ambientLabel}</span>
+          <span className="operator__seg-label mono">{o18n.ambientLabel}</span>
           <Toggle
             on={ambient}
             icon={ambient ? 'sun-horizon-bold' : 'sun-bold'}
-            label={ambient ? t.operator.ambientOn : t.operator.ambientOff}
+            label={ambient ? o18n.ambientOn : o18n.ambientOff}
             onClick={toggleAmbient}
           />
         </div>
         <div className="operator__seg">
-          <span className="operator__seg-label mono">{t.operator.apodLabel}</span>
+          <span className="operator__seg-label mono">{o18n.apodLabel}</span>
           <Toggle
             on={apod}
             icon="moon-stars-bold"
-            label={apod ? t.operator.apodOn : t.operator.apodOff}
+            label={apod ? o18n.apodOn : o18n.apodOff}
             onClick={() => setApodEnabled(!apod)}
           />
-          <p className="operator__seg-hint mono">{t.operator.apodHint}</p>
+          <p className="operator__seg-hint mono">{o18n.apodHint}</p>
         </div>
         <div className="operator__seg">
-          <span className="operator__seg-label mono">{t.operator.canvasLabel}</span>
+          <span className="operator__seg-label mono">{o18n.canvasLabel}</span>
           <Toggle
             on={canvas}
             icon={canvas ? 'sun-horizon-bold' : 'sun-bold'}
-            label={canvas ? t.operator.canvasOn : t.operator.canvasOff}
+            label={canvas ? o18n.canvasOn : o18n.canvasOff}
             onClick={() => setCanvasEnabled(!canvas)}
           />
-          <p className="operator__seg-hint mono">{t.operator.canvasHint}</p>
+          <p className="operator__seg-hint mono">{o18n.canvasHint}</p>
         </div>
         {/* A-2 (bmad/09): the derived QC/CA fêtes announce lines on the board —
             all on by default (zero-impact), this device can opt out. */}
         <div className="operator__seg">
-          <span className="operator__seg-label mono">{t.operator.fetesLabel}</span>
+          <span className="operator__seg-label mono">{o18n.fetesLabel}</span>
           <Toggle
             on={fetes}
             icon="calendar-dots-bold"
-            label={fetes ? t.operator.ambientOnWord : t.operator.ambientOffWord}
+            label={fetes ? o18n.ambientOnWord : o18n.ambientOffWord}
             onClick={() => setHolidaysEnabled(!fetes)}
           />
-          <p className="operator__seg-hint mono">{t.operator.fetesHint}</p>
+          <p className="operator__seg-hint mono">{o18n.fetesHint}</p>
         </div>
         {/* D-21 (bmad/10) « Sortir le bac »: a flagged recurring chore's own
             "evening before" announce line — all on by default, this device can
             opt out (lib/choreAnnounce), same shape as the fêtes toggle above. */}
         <div className="operator__seg">
-          <span className="operator__seg-label mono">{t.operator.binAnnounceLabel}</span>
+          <span className="operator__seg-label mono">{o18n.binAnnounceLabel}</span>
           <Toggle
             on={binAnnounce}
             icon="hand-heart-bold"
-            label={binAnnounce ? t.operator.ambientOnWord : t.operator.ambientOffWord}
+            label={binAnnounce ? o18n.ambientOnWord : o18n.ambientOffWord}
             onClick={() => setChoreAnnounceEnabled(!binAnnounce)}
           />
-          <p className="operator__seg-hint mono">{t.operator.binAnnounceHint}</p>
+          <p className="operator__seg-hint mono">{o18n.binAnnounceHint}</p>
         </div>
         <div className="operator__seg">
-          <span className="operator__seg-label mono">{t.operator.keepAwakeLabel}</span>
+          <span className="operator__seg-label mono">{o18n.keepAwakeLabel}</span>
           <Toggle
             on={keepAwake}
             icon="device-tablet-bold"
-            label={keepAwake ? t.operator.keepAwakeOn : t.operator.keepAwakeOff}
+            label={keepAwake ? o18n.keepAwakeOn : o18n.keepAwakeOff}
             onClick={() => setKeepAwake(!keepAwake)}
           />
-          <p className="operator__seg-hint mono">{t.operator.keepAwakeHint}</p>
+          <p className="operator__seg-hint mono">{o18n.keepAwakeHint}</p>
         </div>
         {cloudOcrAvailable && (
           <div className="operator__seg">
-            <span className="operator__seg-label mono">{t.operator.ocrLabel}</span>
-            <div className="audience-switch mono" role="group" aria-label={t.operator.ocrLabel}>
+            <span className="operator__seg-label mono">{o18n.ocrLabel}</span>
+            <div className="audience-switch mono" role="group" aria-label={o18n.ocrLabel}>
               <button
                 type="button"
                 className={`audience-switch__opt${ocrEngine === 'device' ? ' is-active' : ''}`}
                 onClick={() => setOcrEngine('device')}
                 aria-pressed={ocrEngine === 'device'}
               >
-                <InlineIcon name="camera-bold" /> {t.operator.ocrDevice}
+                <InlineIcon name="camera-bold" /> {o18n.ocrDevice}
               </button>
               <button
                 type="button"
@@ -228,30 +230,30 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
                 onClick={() => setOcrEngine('cloud')}
                 aria-pressed={ocrEngine === 'cloud'}
               >
-                <InlineIcon name="sparkle-bold" /> {t.operator.ocrCloud}
+                <InlineIcon name="sparkle-bold" /> {o18n.ocrCloud}
               </button>
             </div>
             <p className="operator__seg-hint mono">
-              {ocrEngine === 'cloud' ? t.operator.ocrCloudHint : t.operator.ocrDeviceHint}
+              {ocrEngine === 'cloud' ? o18n.ocrCloudHint : o18n.ocrDeviceHint}
             </p>
           </div>
         )}
         <div className="operator__seg">
-          <span className="operator__seg-label mono">{t.operator.langLabel}</span>
+          <span className="operator__seg-label mono">{o18n.langLabel}</span>
           <button type="button" className="btn" onClick={() => setLang(lang === 'fr' ? 'en' : 'fr')}>
             {lang === 'fr' ? 'Français' : 'English'}
           </button>
         </div>
         <div className="operator__seg">
-          <span className="operator__seg-label mono">{t.operator.contrastLabel}</span>
-          <div className="audience-switch mono" role="group" aria-label={t.operator.contrastLabel}>
+          <span className="operator__seg-label mono">{o18n.contrastLabel}</span>
+          <div className="audience-switch mono" role="group" aria-label={o18n.contrastLabel}>
             <button
               type="button"
               className={`audience-switch__opt${contrast === 'normal' ? ' is-active' : ''}`}
               onClick={() => pickContrast('normal')}
               aria-pressed={contrast === 'normal'}
             >
-              <InlineIcon name="sparkle-bold" /> {t.operator.contrastNormal}
+              <InlineIcon name="sparkle-bold" /> {o18n.contrastNormal}
             </button>
             <button
               type="button"
@@ -259,16 +261,16 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
               onClick={() => pickContrast('high')}
               aria-pressed={contrast === 'high'}
             >
-              <InlineIcon name="sparkle-bold" /> {t.operator.contrastHigh}
+              <InlineIcon name="sparkle-bold" /> {o18n.contrastHigh}
             </button>
           </div>
         </div>
         <div className="operator__seg">
-          <span className="operator__seg-label mono">{t.operator.textScaleLabel}</span>
+          <span className="operator__seg-label mono">{o18n.textScaleLabel}</span>
           {/* Mapped rather than hand-written, now that there are three: the third
               copy of a nine-line button block is where one of them quietly stops
               matching its siblings. TEXT_SCALES is the order. */}
-          <div className="audience-switch mono" role="group" aria-label={t.operator.textScaleLabel}>
+          <div className="audience-switch mono" role="group" aria-label={o18n.textScaleLabel}>
             {TEXT_SCALES.map((s) => (
               <button
                 key={s}
@@ -277,13 +279,13 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
                 onClick={() => pickTextScale(s)}
                 aria-pressed={textScale === s}
               >
-                <InlineIcon name="magnifying-glass-bold" /> {t.operator.textScale[s]}
+                <InlineIcon name="magnifying-glass-bold" /> {o18n.textScale[s]}
               </button>
             ))}
           </div>
         </div>
         <div className="operator__seg">
-          <span className="operator__seg-label mono">{t.operator.viewLabel}</span>
+          <span className="operator__seg-label mono">{o18n.viewLabel}</span>
           <div
             className="audience-switch mono"
             role="group"
@@ -336,15 +338,15 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
           {audience === 'simple' && !guestPreview && <p className="operator__seg-hint mono">{t.audience.simpleHint}</p>}
         </div>
         <div className="operator__seg">
-          <span className="operator__seg-label mono">{t.operator.tutorialLabel}</span>
-          <div className="audience-switch mono" role="group" aria-label={t.operator.tutorialTitle}>
+          <span className="operator__seg-label mono">{o18n.tutorialLabel}</span>
+          <div className="audience-switch mono" role="group" aria-label={o18n.tutorialTitle}>
             <button
               type="button"
               className={`audience-switch__opt${tutorial ? ' is-active' : ''}`}
               onClick={() => setTutorial(true)}
               aria-pressed={tutorial}
             >
-              <InlineIcon name="graduation-cap-bold" /> {t.operator.tutorialOn}
+              <InlineIcon name="graduation-cap-bold" /> {o18n.tutorialOn}
             </button>
             <button
               type="button"
@@ -352,7 +354,7 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
               onClick={() => setTutorial(false)}
               aria-pressed={!tutorial}
             >
-              <InlineIcon name="lightning-bold" /> {t.operator.tutorialOff}
+              <InlineIcon name="lightning-bold" /> {o18n.tutorialOff}
             </button>
           </div>
         </div>
@@ -384,6 +386,7 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
 // per-language; the speed is shared. Hidden behavior when the OS has no voice
 // for the current language: we say so and point at the system settings.
 export function VoiceSection({ help }: { help?: HelpMode }) {
+  const o18n = useOperatorT()
   const t = useT()
   const { lang } = useLang()
   const speak = useSpeak()
@@ -414,7 +417,7 @@ export function VoiceSection({ help }: { help?: HelpMode }) {
   const available = hasVoiceFor('fr') || hasVoiceFor('en')
 
   return (
-    <OperatorSection title={t.operator.voiceTitle} help={help} helpKey="voice">
+    <OperatorSection title={o18n.voiceTitle} help={help} helpKey="voice">
       {/* « Le son » — the app's own silent switch, ABOVE the voice pickers and
           OUTSIDE the `available` guard, because it stays meaningful when no TTS voice
           is installed at all: it still mutes the timer chime and the vibration. It is
@@ -433,14 +436,14 @@ export function VoiceSection({ help }: { help?: HelpMode }) {
       </div>
       <p className="operator__hint mono">{t.sound.hint}</p>
       {!available ? (
-        <p className="operator__hint mono">{t.operator.voiceNone}</p>
+        <p className="operator__hint mono">{o18n.voiceNone}</p>
       ) : (
         <div className="operator__voice">
           {/* #TTS — the GLOBAL read-aloud language, used everywhere narration plays
               (cook mode, routines, toddler tiles…). Auto follows the app language; a
               recipe's own language still wins for that recipe. */}
           <div className="operator__seg">
-            <span className="operator__seg-label mono">{t.operator.readLangLabel}</span>
+            <span className="operator__seg-label mono">{o18n.readLangLabel}</span>
             <div className="picker-chips mono">
               <Chip selected={readLang === 'auto'} onClick={() => setReadLang('auto')}>{t.recipes.readLangAuto}</Chip>
               <Chip selected={readLang === 'fr'} onClick={() => setReadLang('fr')}>{t.recipes.readLangFr}</Chip>
@@ -451,25 +454,25 @@ export function VoiceSection({ help }: { help?: HelpMode }) {
           {/* Pick the voice for EACH language independently — a French app can still
               choose a good English voice for recipes read in English. */}
           <div className="operator__seg">
-            <span className="operator__seg-label mono">{t.operator.voiceLabel}</span>
+            <span className="operator__seg-label mono">{o18n.voiceLabel}</span>
             <div className="picker-chips mono">
               <Chip selected={voiceLang === 'fr'} onClick={() => setVoiceLang('fr')}>{t.recipes.readLangFr}</Chip>
               <Chip selected={voiceLang === 'en'} onClick={() => setVoiceLang('en')}>{t.recipes.readLangEn}</Chip>
             </div>
           </div>
           {voicesForLang.length === 0 ? (
-            <p className="operator__hint mono">{t.operator.voiceNoneLang}</p>
+            <p className="operator__hint mono">{o18n.voiceNoneLang}</p>
           ) : (
             <select
               className="input"
-              aria-label={t.operator.voiceLabel}
+              aria-label={o18n.voiceLabel}
               value={voice}
               onChange={(e) => {
                 setVoice(e.target.value)
                 setVoicePref(voiceLang, e.target.value)
               }}
             >
-              <option value="">{t.operator.voiceAuto}</option>
+              <option value="">{o18n.voiceAuto}</option>
               {voicesForLang.map((v) => (
                 <option key={v.voiceURI} value={v.voiceURI}>
                   {v.name} ({v.lang})
@@ -480,7 +483,7 @@ export function VoiceSection({ help }: { help?: HelpMode }) {
 
           <label className="operator__seg">
             <span className="operator__seg-label mono">
-              {t.operator.voiceSpeedLabel} · {rate.toFixed(1)}×
+              {o18n.voiceSpeedLabel} · {rate.toFixed(1)}×
             </span>
             <input
               type="range"
@@ -499,15 +502,15 @@ export function VoiceSection({ help }: { help?: HelpMode }) {
           {/* Tap-to-hear (A-2): in the Enfant / Simple lenses, holding a finger
               ~½ s on any row reads it aloud. Per-device, opt-out here. */}
           <div className="operator__seg">
-            <span className="operator__seg-label mono">{t.operator.tapToHearLabel}</span>
+            <span className="operator__seg-label mono">{o18n.tapToHearLabel}</span>
             <Toggle
               on={tapToHear}
               icon="speaker-high-bold"
-              label={tapToHear ? t.operator.ambientOnWord : t.operator.ambientOffWord}
+              label={tapToHear ? o18n.ambientOnWord : o18n.ambientOffWord}
               onClick={() => setTapToHear(!tapToHear)}
             />
           </div>
-          <p className="operator__hint mono">{t.operator.tapToHearHint}</p>
+          <p className="operator__hint mono">{o18n.tapToHearHint}</p>
 
           {/* Test in the SELECTED voice language, with a phrase in that language —
               so a French app testing the English voice hears English (the point). */}
@@ -516,7 +519,7 @@ export function VoiceSection({ help }: { help?: HelpMode }) {
             className="btn"
             onClick={() => speak(voiceLang === 'fr' ? 'Allô ! Voici la voix de lecture.' : 'Hello! This is the reading voice.', voiceLang)}
           >
-            <InlineIcon name="speaker-high-bold" /> {t.operator.voiceTest}
+            <InlineIcon name="speaker-high-bold" /> {o18n.voiceTest}
           </button>
         </div>
       )}
@@ -530,7 +533,7 @@ export function VoiceSection({ help }: { help?: HelpMode }) {
 // editor hook (lib/measurePrefs); the picker previews live while open and commits
 // one PATCH on close. A sample line below shows the change instantly.
 export function MeasureColorsSection({ help }: { help?: HelpMode }) {
-  const t = useT()
+  const o18n = useOperatorT()
   const { lang } = useLang()
   const confirm = useConfirm()
   const { overrides, preview, commit, reset } = useMeasureColorsEditor()
@@ -560,7 +563,7 @@ export function MeasureColorsSection({ help }: { help?: HelpMode }) {
       ? '2 c. à soupe de beurre · ½ tasse de farine · ¼ c. à thé de sel'
       : '2 tbsp butter · ½ cup flour · ¼ tsp salt'
   return (
-    <OperatorSection title={t.operator.measureColorsTitle} help={help} helpKey="measureColors">
+    <OperatorSection title={o18n.measureColorsTitle} help={help} helpKey="measureColors">
       <div className="measure-colors">
         {MEASURE_SWATCHES.map((s) => {
           const color = swatchColor(s, overrides)
@@ -591,7 +594,7 @@ export function MeasureColorsSection({ help }: { help?: HelpMode }) {
         })}
       </div>
       <div className="measure-colors__preview">
-        <span className="measure-colors__preview-label mono">{t.operator.measureColorsPreview}</span>
+        <span className="measure-colors__preview-label mono">{o18n.measureColorsPreview}</span>
         <span className="measure-colors__preview-line">
           <IngredientLine line={sample} size="lg" scoops />
         </span>
@@ -601,10 +604,10 @@ export function MeasureColorsSection({ help }: { help?: HelpMode }) {
           type="button"
           className="btn"
           onClick={async () => {
-            if (await confirm({ message: t.operator.resetConfirm, confirmLabel: t.operator.measureColorsReset, tone: 'default' })) reset()
+            if (await confirm({ message: o18n.resetConfirm, confirmLabel: o18n.measureColorsReset, tone: 'default' })) reset()
           }}
         >
-          <InlineIcon name="arrows-counter-clockwise-bold" /> {t.operator.measureColorsReset}
+          <InlineIcon name="arrows-counter-clockwise-bold" /> {o18n.measureColorsReset}
         </button>
       )}
     </OperatorSection>
@@ -616,17 +619,17 @@ export function MeasureColorsSection({ help }: { help?: HelpMode }) {
 // the routine simply ends, reward-free). The structural guarantees (no points, no
 // push, finite lists) aren't toggleable. Stored in localStorage for now (bmad/04, OD-1).
 export function CalmSection({ help }: { help?: HelpMode }) {
-  const t = useT()
+  const o18n = useOperatorT()
   const { calm, setCalm } = useCalm()
   return (
-    <OperatorSection title={t.operator.calmTitle} help={help} helpKey="calm">
+    <OperatorSection title={o18n.calmTitle} help={help} helpKey="calm">
       <button
         type="button"
         className={`btn${calm ? ' btn--primary' : ''}`}
         onClick={() => setCalm(!calm)}
         aria-pressed={calm}
       >
-        {t.operator.calmTitle} : {calm ? t.operator.calmOn : t.operator.calmOff}
+        {o18n.calmTitle} : {calm ? o18n.calmOn : o18n.calmOff}
       </button>
     </OperatorSection>
   )

@@ -165,10 +165,19 @@ Also shipped with it, and useful on their own:
 DEPLOY_NOTIFY_SECRET` + the same-named Actions secret). Unset fails CLOSED on both sides;
 `/api/health` reports `deployHook`.
 
-**⚠️ The eager FR dictionary is AT its cap** — 16 bytes under 130 KB. The next string
-added to `src/i18n.ts` fails `check:bundle`, whatever it is. The honest fix is written in
-`scripts/check-bundle.mjs`: lazy-load part of the FR dictionary the way `i18n.en` already
-is. Do that before the next feature that needs copy.
+**The eager FR dictionary had hit its cap** — 16 bytes under 130 KB, so the next string
+added to `src/i18n.ts` would have failed the build, whatever it was. **Cashed 2026-09-21**:
+the `operator` namespace (703 lines, 21 % of the dictionary, and never confined to
+Réglages) moved to `src/i18n.operator.ts` with a `useOperatorT()` that mirrors `useT()`'s
+FR-first contract. **130 → 99 KB, eager total 586 → 555 KB, the door's static closure
+731 → 699 KB.** And the cap came down with it, 130 → 110: a budget that keeps its old
+ceiling after a win hands the next thirty kilobytes back without anyone deciding to spend
+them.
+
+The guards earned their keep on the way through. `glossary.test.ts` and
+`confirmCopy.test.ts` walk `FR`/`EN` — with a fifth of the corpus gone they would have
+**passed, looser, in silence**, since a ratchet only counts down. They now walk
+`FR_OPERATOR`/`EN_OPERATOR` too, and that is the line a future split must not forget.
 
 ### « La maison, adressable » — an MCP server over the household — 2026-09-18
 

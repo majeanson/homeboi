@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useWrite } from '../../lib/write'
 import { useLang, useT } from '../../i18n'
+import { useOperatorT } from '../../i18n.operator'
 import { ColorPicker } from '../ColorPicker'
 import { Chip } from '../Chip'
 import { EditField } from '../EditField'
@@ -37,6 +38,7 @@ export function HomeProjectForm({
   onCancel?: () => void
 }) {
   const t = useT()
+  const o18n = useOperatorT()
   const { lang } = useLang()
   const presets = homeProjectTemplates(kind, lang)
   const [title, setTitle] = useState(value?.title ?? '')
@@ -101,7 +103,7 @@ export function HomeProjectForm({
     }
   }
 
-  const addLabel = kind === 'upkeep' ? t.operator.home.addEntretien : t.operator.home.addProjet
+  const addLabel = kind === 'upkeep' ? o18n.home.addEntretien : o18n.home.addProjet
   return (
     <form className="operator__inline-form operator__chore-form" onSubmit={submit}>
       {/* Title reuses EditField (clear ✕ + mic + Enter-commit), matching its sibling
@@ -122,7 +124,7 @@ export function HomeProjectForm({
           its name at ~16px. Same chips, same one tap; the form just says what it is
           first. */}
       <div className="picker-chips mono">
-        <span className="picker-chips__label">{t.operator.home.common}</span>
+        <span className="picker-chips__label">{o18n.home.common}</span>
         {presets.map((p) => (
           <Chip key={p.label} onClick={() => setTitle(p.icon ? `${p.icon} ${p.label}` : p.label)}>
             {p.icon} {p.label}
@@ -130,13 +132,13 @@ export function HomeProjectForm({
         ))}
       </div>
       <label className="recur__row mono">
-        <span>{t.operator.home.budgetLabel}</span>
+        <span>{o18n.home.budgetLabel}</span>
         <input
           className="input"
           inputMode="decimal"
           value={budget}
           onChange={(e) => setBudget(e.target.value)}
-          placeholder={t.operator.home.budgetPlaceholder}
+          placeholder={o18n.home.budgetPlaceholder}
         />
       </label>
       <textarea
@@ -144,28 +146,28 @@ export function HomeProjectForm({
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
         rows={2}
-        placeholder={t.operator.home.notesPlaceholder}
-        aria-label={t.operator.home.notesLabel}
+        placeholder={o18n.home.notesPlaceholder}
+        aria-label={o18n.home.notesLabel}
       />
-      <ColorPicker value={color} onChange={setColor} label={t.operator.colorLabel} />
+      <ColorPicker value={color} onChange={setColor} label={o18n.colorLabel} />
       <label className="recur__row mono">
-        <span>{t.operator.home.dateLabel}</span>
+        <span>{o18n.home.dateLabel}</span>
         <input className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
       </label>
       {/* Seasonal cadence presets (Entretien only) — one tap fills date + recurrence;
           no new wire format, just sugar over the shared RecurPicker value. */}
       {kind === 'upkeep' && (
         <div className="picker-chips mono">
-          <span className="picker-chips__label">{t.operator.home.seasonLabel}</span>
+          <span className="picker-chips__label">{o18n.home.seasonLabel}</span>
           <Chip onClick={() => { setDate(everySeasonAnchorDate()); setRecur({ freq: 'monthly', interval: 3, weekdays: [] }) }}>
-            {t.operator.home.everySeason}
+            {o18n.home.everySeason}
           </Chip>
           {(
             [
-              ['spring', t.operator.home.everySpring],
-              ['summer', t.operator.home.everySummer],
-              ['autumn', t.operator.home.everyAutumn],
-              ['winter', t.operator.home.everyWinter],
+              ['spring', o18n.home.everySpring],
+              ['summer', o18n.home.everySummer],
+              ['autumn', o18n.home.everyAutumn],
+              ['winter', o18n.home.everyWinter],
             ] as [Season, string][]
           ).map(([s, label]) => (
             <Chip key={s} onClick={() => { setDate(nextSeasonAnchorDate(s)); setRecur({ freq: 'yearly', interval: 1, weekdays: [] }) }}>
@@ -181,9 +183,9 @@ export function HomeProjectForm({
               ChoreForm's « Annoncer la veille » (D-21). */}
           <label className="operator__check mono">
             <input type="checkbox" checked={fromDone} onChange={(e) => setFromDone(e.target.checked)} />
-            {t.operator.home.fromLastDone}
+            {o18n.home.fromLastDone}
           </label>
-          <p className="operator__seg-hint mono">{t.operator.home.fromLastDoneHint}</p>
+          <p className="operator__seg-hint mono">{o18n.home.fromLastDoneHint}</p>
         </>
       )}
       {(date || recur) && <LeadPicker value={lead} onChange={setLead} />}

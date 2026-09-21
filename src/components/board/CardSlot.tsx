@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 import { useT } from '../../i18n'
+import { useOperatorT } from '../../i18n.operator'
 import { CardEmptyContext, type EmptyReporter } from '../../lib/useReportEmpty'
 import {
   clampSize,
@@ -79,6 +80,7 @@ export function CardSlot({
   children: ReactNode
 }) {
   const t = useT()
+  const o18n = useOperatorT()
   const prefs = useBoardCards()
   const grid = useWidgetGrid()
   const slotRef = useRef<HTMLElement>(null)
@@ -342,8 +344,8 @@ export function CardSlot({
             className="wg-slot__ctl wg-slot__grip"
             data-dnd-grip=""
             role="button"
-            aria-label={t.operator.dragHint}
-            title={t.operator.dragHint}
+            aria-label={o18n.dragHint}
+            title={o18n.dragHint}
             onPointerDown={(e) => dnd?.start(id, label, e)}
           >
             ⠿

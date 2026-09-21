@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { useT, useLang } from '../../i18n'
+import { useOperatorT } from '../../i18n.operator'
 import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
 import { api } from '../../lib/api'
@@ -69,6 +70,7 @@ const cold = { staleTime: 5 * 60_000 }
 
 export function HouseDiarySection({ help }: { help?: HelpMode }) {
   const t = useT()
+  const o18n = useOperatorT()
   const { lang } = useLang()
   const loc = lang === 'fr' ? 'fr-CA' : 'en-CA'
   const nowSec = Math.floor(Date.now() / 1000)
@@ -139,7 +141,7 @@ export function HouseDiarySection({ help }: { help?: HelpMode }) {
       title: r.choreTitle,
       sub: '',
       faces: r.helpers.map((h) => ({
-        name: h.name ?? t.operator.ledgerHelperChild,
+        name: h.name ?? o18n.ledgerHelperChild,
         kind: h.avatarKind,
         photo: h.avatarRef,
         colour: h.colour,
@@ -170,7 +172,7 @@ export function HouseDiarySection({ help }: { help?: HelpMode }) {
       key: `draw-${d.id}`,
       at: d.created_at,
       spine: colourFor('note', author?.colour),
-      title: `🎨 ${t.operator.diaryDrawing}`,
+      title: `🎨 ${o18n.diaryDrawing}`,
       sub: '',
       faces: author ? [face(author, age != null ? ` · ${t.memo.ageN(age)}` : '')] : [],
     })
@@ -220,9 +222,9 @@ export function HouseDiarySection({ help }: { help?: HelpMode }) {
   )
 
   return (
-    <OperatorSection title={t.operator.diaryTitle} hint={t.operator.diaryHint} help={help} helpKey="houseDiary">
+    <OperatorSection title={o18n.diaryTitle} hint={o18n.diaryHint} help={help} helpKey="houseDiary">
       {loading ? null : months.length === 0 ? (
-        <EmptyState tone="calm">{t.operator.diaryEmpty}</EmptyState>
+        <EmptyState tone="calm">{o18n.diaryEmpty}</EmptyState>
       ) : (
         <div className="ledger">
           {months.map(([monthSec, rows], i) =>

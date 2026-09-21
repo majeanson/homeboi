@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
+import { useOperatorT } from '../../i18n.operator'
 import { type HelpMode } from '../../lib/helpMode'
 import { api } from '../../lib/api'
 import { RECIPES_KEY, RECIPE_TAGS_KEY, type RecipeTagsData, tagOptions, tagColor } from '../../lib/recipes'
@@ -37,6 +38,7 @@ const chipTint = (hex: string | undefined): React.CSSProperties | undefined =>
 // everywhere the tag renders (recipe view, search pills, the form).
 export function RecipeTagsSection({ help }: { help?: HelpMode }) {
   const t = useT()
+  const o18n = useOperatorT()
   const qc = useQueryClient()
   const write = useWrite()
   const confirm = useConfirm()
@@ -125,8 +127,8 @@ export function RecipeTagsSection({ help }: { help?: HelpMode }) {
   // one idea rather than two spellings of it.
   const slotEditor = (tag: string) => (
     <div className="tag-admin__slotedit">
-      <span className="tag-admin__slots-hint">{t.operator.tagSlotsHint}</span>
-      <div className="tag-admin__slotpick" role="group" aria-label={t.operator.tagSlotsPick(tag)}>
+      <span className="tag-admin__slots-hint">{o18n.tagSlotsHint}</span>
+      <div className="tag-admin__slotpick" role="group" aria-label={o18n.tagSlotsPick(tag)}>
         {MEAL_SLOTS.map((sl) => (
           <Chip
             key={sl}
@@ -146,10 +148,10 @@ export function RecipeTagsSection({ help }: { help?: HelpMode }) {
     const cur = tagColor(colors, tag)
     return (
       <div className="tag-admin__coloredit">
-        <ColorPicker value={cur ?? ''} onChange={(c) => setColor(tag, c)} label={t.operator.tagColorPick(tag)} />
+        <ColorPicker value={cur ?? ''} onChange={(c) => setColor(tag, c)} label={o18n.tagColorPick(tag)} />
         {cur && (
           <button type="button" className="btn btn--ghost mono tag-admin__color-clear" onClick={() => setColor(tag, null)}>
-            {t.operator.tagColorNone}
+            {o18n.tagColorNone}
           </button>
         )}
       </div>
@@ -157,10 +159,10 @@ export function RecipeTagsSection({ help }: { help?: HelpMode }) {
   }
 
   return (
-    <OperatorSection title={t.operator.tagsTitle} help={help} helpKey="recipeTags">
+    <OperatorSection title={o18n.tagsTitle} help={help} helpKey="recipeTags">
       {effective.length === 0 ? (
         // Guard the cold load: don't flash the empty state before the query settles.
-        tagsQ.isPending ? null : <EmptyState>{t.operator.tagNoneUsed}</EmptyState>
+        tagsQ.isPending ? null : <EmptyState>{o18n.tagNoneUsed}</EmptyState>
       ) : (
         <ul className="operator__list tag-admin__list">
           {effective.map((tg, i) => {
@@ -193,7 +195,7 @@ export function RecipeTagsSection({ help }: { help?: HelpMode }) {
                       maxLength={24}
                       autoFocus
                       submitIcon="check-bold"
-                      ariaLabel={`${t.operator.tagRename} — ${tg}`}
+                      ariaLabel={`${o18n.tagRename} — ${tg}`}
                       className="tag-admin__rename"
                     />
                   ) : (
@@ -204,13 +206,13 @@ export function RecipeTagsSection({ help }: { help?: HelpMode }) {
                       {/* A count if the tag is on recipes, else "Proposée" — it's a
                           spare preset offered in the form but not used yet. */}
                       <span className="tag-admin__count mono">
-                        {inUse ? t.operator.tagOnN(count) : t.operator.tagUnusedHint}
+                        {inUse ? o18n.tagOnN(count) : o18n.tagUnusedHint}
                         {/* Say it on the row, so the preference reads without opening
                             anything — a setting you have to go looking for is a setting
                             nobody remembers making. */}
                         {mySlots.length > 0 && (
                           <span className="tag-admin__slots-on">
-                            {t.operator.tagSlotsOn(mySlots.map((sl) => t.kitchen.slots[sl]).join(', '))}
+                            {o18n.tagSlotsOn(mySlots.map((sl) => t.kitchen.slots[sl]).join(', '))}
                           </span>
                         )}
                       </span>
@@ -225,7 +227,7 @@ export function RecipeTagsSection({ help }: { help?: HelpMode }) {
                             type="button"
                             className={`tag-admin__color-btn${openSlots ? ' is-on' : ''}`}
                             onClick={() => setOpenPane(openSlots ? null : { key, pane: 'slots' })}
-                            aria-label={t.operator.tagSlotsPick(tg)}
+                            aria-label={o18n.tagSlotsPick(tg)}
                             aria-expanded={openSlots}
                           >
                             <Icon name="fork-knife-bold" size={16} />
@@ -234,14 +236,14 @@ export function RecipeTagsSection({ help }: { help?: HelpMode }) {
                             type="button"
                             className={`tag-admin__color-btn${openColor ? ' is-on' : ''}`}
                             onClick={() => setOpenPane(openColor ? null : { key, pane: 'color' })}
-                            aria-label={t.operator.tagColorPick(tg)}
+                            aria-label={o18n.tagColorPick(tg)}
                             aria-expanded={openColor}
                           >
                             <Icon name="paint-brush-bold" size={16} />
                           </button>
                           <RowActions
-                            editLabel={t.operator.tagRename}
-                            deleteLabel={t.operator.tagRemove}
+                            editLabel={o18n.tagRename}
+                            deleteLabel={o18n.tagRemove}
                             onEdit={() => {
                               setRenaming(tg)
                               setRenameTo(tg)
@@ -251,7 +253,7 @@ export function RecipeTagsSection({ help }: { help?: HelpMode }) {
                               // deliberate confirm. A spare preset (not on any recipe) →
                               // just drop it from the offered list, no confirm needed.
                               if (inUse) {
-                                if (await confirm({ message: t.operator.tagRemoveConfirm(tg), confirmLabel: t.operator.tagRemove, tone: 'danger' }))
+                                if (await confirm({ message: o18n.tagRemoveConfirm(tg), confirmLabel: o18n.tagRemove, tone: 'danger' }))
                                   patch.mutate({ remove: tg })
                               } else {
                                 savePills(effective.filter((x) => x !== tg))
@@ -275,8 +277,8 @@ export function RecipeTagsSection({ help }: { help?: HelpMode }) {
           value={pillInput}
           onChange={setPillInput}
           onSubmit={(v) => addPill(v)}
-          placeholder={t.operator.tagAddPill}
-          ariaLabel={t.operator.tagAddPill}
+          placeholder={o18n.tagAddPill}
+          ariaLabel={o18n.tagAddPill}
           maxLength={24}
           submitIcon="plus-bold"
         />

@@ -1,4 +1,4 @@
-import { useT } from '../../i18n'
+import { useOperatorT } from '../../i18n.operator'
 import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
 
@@ -9,7 +9,7 @@ import { OperatorSection } from './OperatorSection'
 // Session-scoped on purpose: closing the app clears it, so a diagnostic never
 // sticks on a kiosk. Reload so the overlay mounts/unmounts (created once at boot).
 export function KbDebugSection({ help }: { help?: HelpMode }) {
-  const t = useT()
+  const o18n = useOperatorT()
   const on = typeof sessionStorage !== 'undefined' && sessionStorage.getItem('bbKbDebug') === '1'
   const toggle = () => {
     try {
@@ -21,10 +21,10 @@ export function KbDebugSection({ help }: { help?: HelpMode }) {
     location.reload()
   }
   return (
-    <OperatorSection title={t.operator.kbDebugTitle} help={help} helpKey="kbDebug">
-      <p className="lead">{t.operator.kbDebugHint}</p>
+    <OperatorSection title={o18n.kbDebugTitle} help={help} helpKey="kbDebug">
+      <p className="lead">{o18n.kbDebugHint}</p>
       <button type="button" className={on ? 'btn' : 'btn btn--primary'} onClick={toggle}>
-        {on ? t.operator.kbDebugOff : t.operator.kbDebugOn}
+        {on ? o18n.kbDebugOff : o18n.kbDebugOn}
       </button>
     </OperatorSection>
   )

@@ -1,4 +1,5 @@
 import { useT } from '../../i18n'
+import { useOperatorT } from '../../i18n.operator'
 import { type HelpMode } from '../../lib/helpMode'
 import { type ReserveLocation, seedReserveDefaults } from '../../lib/reservePrefs'
 import { HouseholdListSection } from './HouseholdListSection'
@@ -12,6 +13,7 @@ import { HouseholdListSection } from './HouseholdListSection'
 // <HouseholdListSection> (the « L'auto » twin); only the field key, seed, and copy differ.
 export function ReserveLocationsSection({ help }: { help?: HelpMode }) {
   const t = useT()
+  const o18n = useOperatorT()
   return (
     <HouseholdListSection<ReserveLocation>
       field="reserveLocations"
@@ -19,10 +21,10 @@ export function ReserveLocationsSection({ help }: { help?: HelpMode }) {
       help={help}
       helpKey="reserveLocations"
       labels={{
-        title: t.operator.reserveTitle,
-        name: t.operator.reserveLocationName,
-        add: t.operator.reserveAddLocation,
-        empty: t.operator.reserveEmpty,
+        title: o18n.reserveTitle,
+        name: o18n.reserveLocationName,
+        add: o18n.reserveAddLocation,
+        empty: o18n.reserveEmpty,
       }}
     />
   )

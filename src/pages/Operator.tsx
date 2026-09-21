@@ -2,6 +2,7 @@ import { Fragment, useCallback, useEffect, type CSSProperties, type ReactNode } 
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
+import { useOperatorT } from '../i18n.operator'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { useAi } from '../lib/ai'
@@ -98,6 +99,7 @@ const SECTIONS: { id: string; icon: IconName }[] = [
 // is a thin CRUD strip — no dashboards, nothing to optimize-against (NFR-CALM).
 export function Operator() {
   const t = useT()
+  const o18n = useOperatorT()
   const nav = useNavigate()
   const { loading, signedIn, household, signOut } = useAuth()
   const { setMemberId } = useProfile()
@@ -165,13 +167,13 @@ export function Operator() {
   // where one exists), so "the orange tab in the app" and "the orange tab in
   // Réglages" always read identically; Système is the sage machine-room.
   const sectionLabel: Record<string, string> = {
-    decouvrir: t.operator.secDiscover,
-    board: t.operator.secBoard,
-    kitchen: t.operator.secKitchen,
+    decouvrir: o18n.secDiscover,
+    board: o18n.secBoard,
+    kitchen: o18n.secKitchen,
     liste: t.nav.list,
     notes: t.nav.notes,
     maison: t.nav.maison,
-    settings: t.operator.secSystem,
+    settings: o18n.secSystem,
   }
   const [params, setParams] = useSearchParams()
   // The valid set also accepts every retired id, so an old deep link parses;
@@ -269,35 +271,35 @@ export function Operator() {
   }, [params, setParams, tab])
   const operatorHelp = useHelpMode(OPERATOR_HELP, (k: string) => {
     const labels: Record<string, string> = {
-      reserveLocations: t.operator.reserveTitle,
-      cars: t.operator.carsTitle,
-      schedule: t.operator.schedTitle,
-      ambient: t.operator.ambientTitle,
-      display: t.operator.display,
-      voice: t.operator.voiceTitle,
-      measureColors: t.operator.measureColorsTitle,
-      calm: t.operator.calmTitle,
-      mealSlots: t.operator.mealColors,
+      reserveLocations: o18n.reserveTitle,
+      cars: o18n.carsTitle,
+      schedule: o18n.schedTitle,
+      ambient: o18n.ambientTitle,
+      display: o18n.display,
+      voice: o18n.voiceTitle,
+      measureColors: o18n.measureColorsTitle,
+      calm: o18n.calmTitle,
+      mealSlots: o18n.mealColors,
       todoTemplates: t.todos.templatesTitle,
-      recipeTags: t.operator.tagsTitle,
-      shop: t.operator.shopping,
-      storeFilter: t.operator.storeFilter,
-      flipp: t.operator.flippTitle,
-      history: t.operator.history,
-      ghost: t.operator.ghost,
-      recipePills: t.operator.pillsTitle,
-      recap: t.operator.recapTitle,
-      photos: t.operator.photos,
-      micTest: t.operator.micTestTitle,
-      kbDebug: t.operator.kbDebugTitle,
-      aiTest: t.operator.aiTestTitle,
-      aiLog: t.operator.aiLogTitle,
+      recipeTags: o18n.tagsTitle,
+      shop: o18n.shopping,
+      storeFilter: o18n.storeFilter,
+      flipp: o18n.flippTitle,
+      history: o18n.history,
+      ghost: o18n.ghost,
+      recipePills: o18n.pillsTitle,
+      recap: o18n.recapTitle,
+      photos: o18n.photos,
+      micTest: o18n.micTestTitle,
+      kbDebug: o18n.kbDebugTitle,
+      aiTest: o18n.aiTestTitle,
+      aiLog: o18n.aiLogTitle,
       remarks: t.remarks.title,
-      ai: t.operator.aiTitle,
+      ai: o18n.aiTitle,
       guest: t.guest.title,
-      choreLedger: t.operator.ledgerTitle,
-      cercleGroups: t.operator.cercleGroupsTitle,
-      houseDiary: t.operator.diaryTitle,
+      choreLedger: o18n.ledgerTitle,
+      cercleGroups: o18n.cercleGroupsTitle,
+      houseDiary: o18n.diaryTitle,
       // FIFTEEN keys had no entry here and fell through to `labels[k] ?? k`, so an
       // armed « ? » on those cards opened a bubble titled `devices`, `members`,
       // `chores` — the raw registry key, in English, on a French surface. It had been
@@ -306,21 +308,21 @@ export function Operator() {
       // Each one reuses the string its own OperatorSection already renders as its title,
       // so the bubble is named the same as the card it explains — and no new i18n key is
       // added, which matters while the eager FR dictionary sits at its cap.
-      boardLayout: t.operator.boardLayout,
-      habits: t.operator.habitCheckinTitle,
-      mealWindow: t.operator.mealWindowTitle,
+      boardLayout: o18n.boardLayout,
+      habits: o18n.habitCheckinTitle,
+      mealWindow: o18n.mealWindowTitle,
       coop: t.coop.title,
       sessions: t.sessions.title,
-      thisWeek: t.operator.thisWeekTitle,
-      homeProjets: t.operator.home.projetsTitle,
-      homeEntretien: t.operator.home.entretienTitle,
-      schoolYear: t.operator.schoolYearTitle,
-      events: t.operator.events,
-      members: t.operator.members,
-      devices: t.operator.devices,
-      mcpAgent: t.operator.agentTitle,
-      chores: t.operator.chores,
-      routines: t.operator.routines,
+      thisWeek: o18n.thisWeekTitle,
+      homeProjets: o18n.home.projetsTitle,
+      homeEntretien: o18n.home.entretienTitle,
+      schoolYear: o18n.schoolYearTitle,
+      events: o18n.events,
+      members: o18n.members,
+      devices: o18n.devices,
+      mcpAgent: o18n.agentTitle,
+      chores: o18n.chores,
+      routines: o18n.routines,
     }
     return labels[k] ?? k
   }, tab)
@@ -413,7 +415,7 @@ export function Operator() {
   // Pill labels, from the taxonomy's i18n keys (SUB_LABEL_KEY) — typed against the
   // tree, so a pill can't lose its label in a reshuffle.
   const subLabel = (tab: SettingsTabId, subId: string): string =>
-    (t.operator as Record<string, unknown>)[(SUB_LABEL_KEY[tab] as Record<string, string>)[subId]] as string
+    (o18n as Record<string, unknown>)[(SUB_LABEL_KEY[tab] as Record<string, string>)[subId]] as string
 
   // Who is looking: the viewer decides which sections (and therefore which pills)
   // exist at all — lib/settingsNav's `access` per section, not a hand-kept
@@ -509,7 +511,7 @@ export function Operator() {
               thing you saw. */}
           {!signedIn && (
             <button type="button" className="btn btn--ghost mono" onClick={() => nav('/login')}>
-              {t.operator.kioskSignIn}
+              {o18n.kioskSignIn}
             </button>
           )}
         </div>
@@ -521,9 +523,9 @@ export function Operator() {
           IS theirs (the guide, and this device's own display) instead of dangling a
           door that doesn't open. */}
       {guest ? (
-        <p className="operator__kiosk-note mono">{t.operator.guestNotice}</p>
+        <p className="operator__kiosk-note mono">{o18n.guestNotice}</p>
       ) : (
-        !signedIn && <p className="operator__kiosk-note mono">{t.operator.kioskNotice}</p>
+        !signedIn && <p className="operator__kiosk-note mono">{o18n.kioskNotice}</p>
       )}
 
       {/* Settings navigation: a sticky vertical sidebar on a wide screen (kiosk/
@@ -537,7 +539,7 @@ export function Operator() {
           className="operator__tabs mono"
           data-tour="settings-tabs"
           role="tablist"
-          aria-label={t.operator.sections}
+          aria-label={o18n.sections}
           onKeyDown={(e) => {
             // Roving arrow-key navigation between tabs (ArrowLeft/Right on the phone
             // row, Up/Down on the wide sidebar) + Home/End, per the WAI-ARIA tablist.
@@ -600,12 +602,12 @@ export function Operator() {
                     className="operator__lens"
                     tour="settings-lens"
                     options={[
-                      { key: 'comprendre' as const, label: t.operator.lensLearn, icon: 'book-open-bold' as IconName },
-                      { key: 'regler' as const, label: t.operator.lensSet, icon: 'gear-six-bold' as IconName },
+                      { key: 'comprendre' as const, label: o18n.lensLearn, icon: 'book-open-bold' as IconName },
+                      { key: 'regler' as const, label: o18n.lensSet, icon: 'gear-six-bold' as IconName },
                     ]}
                     value={lens}
                     onSelect={setLens}
-                    ariaLabel={t.operator.lensAria}
+                    ariaLabel={o18n.lensAria}
                     tint={tab in SECTION_TINT ? SECTION_TINT[tab as SectionKey].ink : undefined}
                   />
                   {/* The « ? » and « Voir dans l'app » travel TOGETHER. They are two round
@@ -634,11 +636,11 @@ export function Operator() {
                     <Link
                       className="operator__goto mono"
                       to={SUB_GOTO[`${tab}/${activeSub.key}`]}
-                      aria-label={t.operator.gotoFeature}
-                      title={t.operator.gotoFeature}
+                      aria-label={o18n.gotoFeature}
+                      title={o18n.gotoFeature}
                     >
                       <InlineIcon name="arrow-up-right-bold" size={14} />
-                      <span>{t.operator.gotoFeature}</span>
+                      <span>{o18n.gotoFeature}</span>
                     </Link>
                   )}
                   </div>
@@ -655,7 +657,7 @@ export function Operator() {
                     options={subs.map((s) => ({ key: s.key, label: s.label }))}
                     value={activeSub?.key ?? subs[0].key}
                     onSelect={setSub}
-                    ariaLabel={t.operator.jumpAria}
+                    ariaLabel={o18n.jumpAria}
                     tint={tab in SECTION_TINT ? SECTION_TINT[tab as SectionKey].ink : undefined}
                   />
                   {activeSub?.node}

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
+import { useOperatorT } from '../../i18n.operator'
 import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
 import { api, isStatus } from '../../lib/api'
@@ -18,7 +19,7 @@ import { EmptyState } from '../EmptyState'
 // Weekly recap: an on-demand, calm reflection (NFR-CALM/COST — a button, never a
 // loop). Hides itself when AI is unavailable (503) so it never shows a dead button.
 export function RecapSection({ help }: { help?: HelpMode }) {
-  const t = useT()
+  const o18n = useOperatorT()
   // The recap is an AI feature — hide it eagerly when AI is off (binding absent or
   // household-disabled), not just after a 503 (`unavailable`).
   const { enabled: aiEnabled } = useAi()
@@ -40,10 +41,10 @@ export function RecapSection({ help }: { help?: HelpMode }) {
 
   if (unavailable || !aiEnabled) return null
   return (
-    <OperatorSection title={t.operator.recapTitle} help={help} helpKey="recap" hint={recap || undefined}>
+    <OperatorSection title={o18n.recapTitle} help={help} helpKey="recap" hint={recap || undefined}>
       {!isGuest() && (
         <button type="button" className="btn btn--primary" onClick={generate} disabled={busy}>
-          {busy ? t.operator.recapThinking : t.operator.recapGen}
+          {busy ? o18n.recapThinking : o18n.recapGen}
         </button>
       )}
     </OperatorSection>
@@ -54,6 +55,7 @@ export function RecapSection({ help }: { help?: HelpMode }) {
 // from a phone (camera or gallery); they're resized small before upload and the
 // set is capped server-side, so this stays free. Hides itself if R2 is unbound.
 export function PhotosSection({ help }: { help?: HelpMode }) {
+  const o18n = useOperatorT()
   const t = useT()
   const qc = useQueryClient()
   const { data, isPending } = usePhotos()
@@ -108,10 +110,10 @@ export function PhotosSection({ help }: { help?: HelpMode }) {
 
   if (unavailable) return null
   return (
-    <OperatorSection title={t.operator.photos} help={help} helpKey="photos">
+    <OperatorSection title={o18n.photos} help={help} helpKey="photos">
       {photos.length === 0 ? (
         // Guard the cold load: don't flash "no photos" before the query settles.
-        isPending ? null : <EmptyState>{t.operator.noPhotos}</EmptyState>
+        isPending ? null : <EmptyState>{o18n.noPhotos}</EmptyState>
       ) : (
         <div className="photo-grid">
           {photos.map((p) => (
@@ -135,9 +137,9 @@ export function PhotosSection({ help }: { help?: HelpMode }) {
         <label className="btn btn--primary">
           {busy
             ? progress
-              ? t.operator.photoUploadingN(progress.done, progress.total)
-              : t.operator.photoUploading
-            : t.operator.photoAdd}
+              ? o18n.photoUploadingN(progress.done, progress.total)
+              : o18n.photoUploading
+            : o18n.photoAdd}
           <input
             type="file"
             accept="image/*"

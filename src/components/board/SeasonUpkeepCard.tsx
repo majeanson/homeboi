@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLang, useT } from '../../i18n'
+import { useOperatorT } from '../../i18n.operator'
 import { api } from '../../lib/api'
 import { useWrite } from '../../lib/write'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
@@ -23,6 +24,7 @@ import { Act } from './Act'
 // so this default-on card never adds /api/home-projects to the board poll.
 export function SeasonUpkeepCard() {
   const t = useT()
+  const o18n = useOperatorT()
   const { lang } = useLang()
   const nav = useNavigate()
   const qc = useQueryClient()
@@ -76,7 +78,7 @@ export function SeasonUpkeepCard() {
             p.overdueSince != null
               ? t.board.lateSince(formatDayMaybeYear(p.overdueSince, lang))
               : p.snoozedUntil != null
-                ? t.operator.home.snoozedUntil(formatDayMaybeYear(p.snoozedUntil, lang))
+                ? o18n.home.snoozedUntil(formatDayMaybeYear(p.snoozedUntil, lang))
                 : undefined
           }
           onCheck={() => markDone(p)}

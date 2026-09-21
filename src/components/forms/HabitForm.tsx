@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useWrite } from '../../lib/write'
 import { useT } from '../../i18n'
+import { useOperatorT } from '../../i18n.operator'
 import { useConfirm } from '../../lib/confirm'
 import { useVoiceInput } from '../../lib/useVoiceInput'
 import { ColorPicker } from '../ColorPicker'
@@ -58,6 +59,7 @@ export function HabitForm({
   onDeleted?: () => void
 }) {
   const t = useT()
+  const o18n = useOperatorT()
   const fn = t.habits
   const write = useWrite()
   const confirm = useConfirm()
@@ -378,7 +380,7 @@ export function HabitForm({
       ) : (
         <ReminderTimesField value={reminders} onChange={setReminders} />
       )}
-      <ColorPicker value={colour} onChange={setColour} label={t.operator.colorLabel} />
+      <ColorPicker value={colour} onChange={setColour} label={o18n.colorLabel} />
 
       {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
       {/* Delete rides FormFooter's own left-cluster slot like its siblings

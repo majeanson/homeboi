@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties, type Ref } fr
 import { tintScope } from '../../lib/colors'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useLang, useT } from '../../i18n'
+import { useOperatorT } from '../../i18n.operator'
 import { GUIDE, GUIDE_CARD_ALIAS, type GuideEntry, CONCEPT_THEMES, SECTION_TINT, cardHomeTab, type SectionKey } from '../../lib/guideContent'
 import { renderRich, stripTokens, highlight as highlightText } from '../../lib/richText'
 import { fold } from '../../lib/normalize'
@@ -65,7 +66,7 @@ function GuideCard({
   // Re-show the Board first-run WelcomeCard checklist (the "Première fois" card).
   onResetOnboarding?: () => void
 }) {
-  const t = useT()
+  const o18n = useOperatorT()
   const { lang } = useLang()
   return (
     <details
@@ -113,7 +114,7 @@ function GuideCard({
                   it and doing it become one gesture. */}
               {p.route && (
                 <Link className="guide__goto guide__goto--point" to={p.route}>
-                  <span>{t.operator.guideTry}</span>
+                  <span>{o18n.guideTry}</span>
                   <Icon name="arrow-right-bold" size={16} />
                 </Link>
               )}
@@ -130,13 +131,13 @@ function GuideCard({
             {showGoTo && entry.route && (
               <Link className="guide__goto" to={entry.route}>
                 <Icon name="arrow-right-bold" size={18} />
-                <span>{t.operator.guideOpen}</span>
+                <span>{o18n.guideOpen}</span>
               </Link>
             )}
             {showGoTo && entry.settings && (
               <Link className="guide__goto" to={entry.settings}>
                 <Icon name="gear-six-bold" size={18} />
-                <span>{t.operator.lensSet}</span>
+                <span>{o18n.lensSet}</span>
               </Link>
             )}
             {/* Any card naming a tour hosts a replay button: it (re)starts that tour,
@@ -145,14 +146,14 @@ function GuideCard({
             {entry.tour && onReplayTour && (
               <button type="button" className="guide__goto" onClick={() => onReplayTour(entry.tour!)}>
                 <Icon name="repeat-bold" size={18} />
-                <span>{entry.tour === 'essentials' ? t.operator.replayTour : t.operator.replaySectionTour}</span>
+                <span>{entry.tour === 'essentials' ? o18n.replayTour : o18n.replaySectionTour}</span>
               </button>
             )}
             {/* Re-show the Board first-run welcome checklist (it's dismiss-once). */}
             {entry.resetOnboarding && onResetOnboarding && (
               <button type="button" className="guide__goto" onClick={onResetOnboarding}>
                 <Icon name="sparkle-bold" size={18} />
-                <span>{t.operator.resetOnboarding}</span>
+                <span>{o18n.resetOnboarding}</span>
               </button>
             )}
           </Cluster>
@@ -254,7 +255,7 @@ function useGuideCardTarget(pinTab?: string) {
 // untouched, so every HelpBubble/addHelp/operatorHelp deep-link keeps landing on
 // the exact card and sub-point (Operator homes ?card= onto this tab first).
 export function ComprendrePanel({ section }: { section: SectionKey }) {
-  const t = useT()
+  const o18n = useOperatorT()
   const { start } = useTour()
   const nav = useNavigate()
   const resetOnboarding = () => {
@@ -286,7 +287,7 @@ export function ComprendrePanel({ section }: { section: SectionKey }) {
     />
   )
   return (
-    <OperatorSection title={t.operator.lensLearn} className="guide">
+    <OperatorSection title={o18n.lensLearn} className="guide">
       <div className="guide__cards">
         {/* The section's own card leads, open — "what this section is" before any
             knob. The set-* card and the concepts stay collapsed (calm). */}
@@ -308,6 +309,7 @@ export function ComprendrePanel({ section }: { section: SectionKey }) {
 // (fold), ranked so a TITLE hit lands first, with every match <mark>ed.
 // Content lives in lib/guideContent.ts; this is the view.
 export function DiscoverSection() {
+  const o18n = useOperatorT()
   const t = useT()
   const { lang } = useLang()
   const { start } = useTour()
@@ -393,14 +395,14 @@ export function DiscoverSection() {
   )
 
   return (
-    <OperatorSection title={t.operator.guideTitle} className="guide">
+    <OperatorSection title={o18n.guideTitle} className="guide">
       <input
         type="search"
         className="guide__search"
-        placeholder={t.operator.guideSearch}
+        placeholder={o18n.guideSearch}
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        aria-label={t.operator.guideSearch}
+        aria-label={o18n.guideSearch}
       />
 
       {/* The two calm discovery cards (bmad/08 B-14 + B-11): one « Quoi de
@@ -420,8 +422,8 @@ export function DiscoverSection() {
           Board WelcomeCard + DevKit use. */}
       {!q && (
         <>
-          <h3 className="guide__group-title">{t.operator.guideMap}</h3>
-          <FeatureMap onSelect={openTheme} label={t.operator.guideMap} />
+          <h3 className="guide__group-title">{o18n.guideMap}</h3>
+          <FeatureMap onSelect={openTheme} label={o18n.guideMap} />
         </>
       )}
 
@@ -430,7 +432,7 @@ export function DiscoverSection() {
           manual below only renders at rest. */}
       {ranked &&
         (ranked.length === 0 ? (
-          <EmptyState>{t.operator.guideNone}</EmptyState>
+          <EmptyState>{o18n.guideNone}</EmptyState>
         ) : (
           <div className="guide__group">
             <h3 className="guide__group-title">{t.search.resultsCount(ranked.length)}</h3>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
+import { useOperatorT } from '../../i18n.operator'
 import { type HelpMode } from '../../lib/helpMode'
 import { api } from '../../lib/api'
 import { RECIPE_TAGS_KEY, type RecipeTagsData, tagOptions } from '../../lib/recipes'
@@ -84,6 +85,7 @@ function NumField({
 
 export function RecipePillsSection({ help }: { help?: HelpMode }) {
   const t = useT()
+  const o18n = useOperatorT()
   const qc = useQueryClient()
   const confirm = useConfirm()
   const write = useWrite()
@@ -172,12 +174,12 @@ export function RecipePillsSection({ help }: { help?: HelpMode }) {
       return { ...d, slots: cur.includes(s) ? cur.filter((x) => x !== s) : [...cur, s] }
     })
 
-  const fieldLabel = (f: string) => t.operator.pillFieldName(f)
+  const fieldLabel = (f: string) => o18n.pillFieldName(f)
   const ruleText = (c: Criterion): string => {
     if (c.field === 'tag') {
       const tags = critTags(c)
       // OR within the rule reads as "Végé ou Végan".
-      return `${fieldLabel('tag')}: ${tags.length ? tags.join(` ${t.operator.pillRuleOr} `) : '—'}`
+      return `${fieldLabel('tag')}: ${tags.length ? tags.join(` ${o18n.pillRuleOr} `) : '—'}`
     }
     if (c.field === 'favorite' || c.field === 'photo') return fieldLabel(c.field)
     const unit = MINUTE_FIELDS.has(c.field) ? ' min' : ''
@@ -185,7 +187,7 @@ export function RecipePillsSection({ help }: { help?: HelpMode }) {
   }
 
   return (
-    <OperatorSection title={t.operator.pillsTitle} help={help} helpKey="recipePills">
+    <OperatorSection title={o18n.pillsTitle} help={help} helpKey="recipePills">
       <ul className="operator__list pill-admin__list">
         {list.map((p, i) => {
           const custom = !isBuiltinPill(p)
@@ -212,7 +214,7 @@ export function RecipePillsSection({ help }: { help?: HelpMode }) {
                 <span className="pill-admin__rules mono">
                   {[
                     p.rules.map(ruleText).join(' · '),
-                    p.slots?.length ? `${t.operator.pillSlotsLabel}: ${p.slots.map((s) => t.kitchen.slots[s]).join(', ')}` : null,
+                    p.slots?.length ? `${o18n.pillSlotsLabel}: ${p.slots.map((s) => t.kitchen.slots[s]).join(', ')}` : null,
                   ]
                     .filter(Boolean)
                     .join(' · ')}
@@ -224,19 +226,19 @@ export function RecipePillsSection({ help }: { help?: HelpMode }) {
                   className={'pill-admin__eye' + (hidden ? '' : ' is-on')}
                   onClick={() => toggleHide(i)}
                   aria-pressed={!hidden}
-                  aria-label={hidden ? t.operator.pillShow : t.operator.pillHide}
-                  title={hidden ? t.operator.pillShow : t.operator.pillHide}
+                  aria-label={hidden ? o18n.pillShow : o18n.pillHide}
+                  title={hidden ? o18n.pillShow : o18n.pillHide}
                 >
                   <Icon name={hidden ? 'x-bold' : 'check-bold'} size={16} />
                 </button>
               )}
               {!ro && custom && (
                 <RowActions
-                  editLabel={t.operator.pillEdit}
-                  deleteLabel={t.operator.pillRemove}
+                  editLabel={o18n.pillEdit}
+                  deleteLabel={o18n.pillRemove}
                   onEdit={() => startEdit(p)}
                   onDelete={async () => {
-                    if (await confirm({ message: t.operator.pillRemoveConfirm(p.label), confirmLabel: t.operator.pillRemove, tone: 'danger' }))
+                    if (await confirm({ message: o18n.pillRemoveConfirm(p.label), confirmLabel: o18n.pillRemove, tone: 'danger' }))
                       removeCustom(i)
                   }}
                 />
@@ -248,7 +250,7 @@ export function RecipePillsSection({ help }: { help?: HelpMode }) {
 
       {!ro && !draft && (
         <button type="button" className="btn" onClick={startAdd}>
-          <InlineIcon name="plus-bold" size={14} /> {t.operator.pillAdd}
+          <InlineIcon name="plus-bold" size={14} /> {o18n.pillAdd}
         </button>
       )}
 
@@ -258,12 +260,12 @@ export function RecipePillsSection({ help }: { help?: HelpMode }) {
             className="input"
             value={draft.label}
             onChange={(e) => setDraft({ ...draft, label: e.target.value })}
-            placeholder={t.operator.pillNamePlaceholder}
-            aria-label={t.operator.pillNamePlaceholder}
+            placeholder={o18n.pillNamePlaceholder}
+            aria-label={o18n.pillNamePlaceholder}
             maxLength={24}
             autoFocus
           />
-          <ColorPicker value={draft.color ?? ''} onChange={(c) => setDraft({ ...draft, color: c })} label={t.operator.pillColor} />
+          <ColorPicker value={draft.color ?? ''} onChange={(c) => setDraft({ ...draft, color: c })} label={o18n.pillColor} />
 
           <div className="pill-admin__rules-edit">
             {draft.rules.map((c, i) => (
@@ -272,7 +274,7 @@ export function RecipePillsSection({ help }: { help?: HelpMode }) {
                   className="input"
                   value={c.field}
                   onChange={(e) => setRule(i, blankFor(e.target.value as CriterionField))}
-                  aria-label={t.operator.pillRuleField}
+                  aria-label={o18n.pillRuleField}
                 >
                   {CRITERION_FIELDS.map((f) => (
                     <option key={f} value={f}>
@@ -286,7 +288,7 @@ export function RecipePillsSection({ help }: { help?: HelpMode }) {
                       className="input pill-admin__op"
                       value={c.op}
                       onChange={(e) => setRule(i, { ...c, op: e.target.value === 'gte' ? 'gte' : 'lte' })}
-                      aria-label={t.operator.pillRuleOp}
+                      aria-label={o18n.pillRuleOp}
                     >
                       <option value="lte">≤</option>
                       <option value="gte">≥</option>
@@ -296,7 +298,7 @@ export function RecipePillsSection({ help }: { help?: HelpMode }) {
                       min={0}
                       value={c.n}
                       onChange={(n) => setRule(i, { ...c, n })}
-                      ariaLabel={t.operator.pillRuleValue}
+                      ariaLabel={o18n.pillRuleValue}
                     />
                     {MINUTE_FIELDS.has(c.field) && <span className="pill-admin__unit mono">min</span>}
                   </>
@@ -330,14 +332,14 @@ export function RecipePillsSection({ help }: { help?: HelpMode }) {
                   type="button"
                   className="pill-admin__rule-x"
                   onClick={() => removeRule(i)}
-                  aria-label={t.operator.pillRuleRemove}
+                  aria-label={o18n.pillRuleRemove}
                 >
                   <InlineIcon name="x-bold" size={12} />
                 </button>
               </div>
             ))}
             <button type="button" className="btn btn--ghost mono pill-admin__addrule" onClick={addRule}>
-              <InlineIcon name="plus-bold" size={12} /> {t.operator.pillRuleAdd}
+              <InlineIcon name="plus-bold" size={12} /> {o18n.pillRuleAdd}
             </button>
           </div>
 
@@ -345,9 +347,9 @@ export function RecipePillsSection({ help }: { help?: HelpMode }) {
               this pill's matching recipes lead that slot's picker in the day editor
               / week grid (still below Restants, which always lead there). */}
           <div className="pill-admin__slots">
-            <span className="pill-admin__slots-label mono">{t.operator.pillSlotsLabel}</span>
-            <span className="pill-admin__slots-hint">{t.operator.pillSlotsHint}</span>
-            <div className="pill-admin__tagpick" role="group" aria-label={t.operator.pillSlotsLabel}>
+            <span className="pill-admin__slots-label mono">{o18n.pillSlotsLabel}</span>
+            <span className="pill-admin__slots-hint">{o18n.pillSlotsHint}</span>
+            <div className="pill-admin__tagpick" role="group" aria-label={o18n.pillSlotsLabel}>
               {MEAL_SLOTS.map((s) => (
                 <Chip key={s} className="pill-admin__tagopt" selected={(draft.slots ?? []).includes(s)} onClick={() => toggleSlot(s)}>
                   {t.kitchen.slots[s]}
@@ -358,7 +360,7 @@ export function RecipePillsSection({ help }: { help?: HelpMode }) {
 
           <div className="pill-admin__editor-actions">
             <button type="button" className="btn" disabled={!draftValid} onClick={commitDraft}>
-              {t.operator.pillSave}
+              {o18n.pillSave}
             </button>
             <button type="button" className="btn btn--ghost mono" onClick={() => setDraft(null)}>
               {t.common.cancel}

@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { FR } from '../i18n'
 import { EN } from '../i18n.en'
+// Réglages' copy lives in its own module since the FR dictionary was split off the boot
+// path (i18n.operator.ts). Several …Confirm strings are in it — a scan that walked only
+// FR/EN would stop holding them, and would go quiet rather than red.
+import { FR_OPERATOR } from '../i18n.operator'
+import { EN_OPERATOR } from '../i18n.operator.en'
 
 // A DESTRUCTIVE DIALOG MUST SAY WHAT IS LOST.
 //
@@ -57,8 +62,8 @@ function confirms(dict: unknown): Found[] {
 }
 
 describe('a destructive dialog says what is lost', () => {
-  for (const [lang, dict] of [['fr', FR], ['en', EN]] as const) {
-    const found = confirms(dict)
+  for (const [lang, dict, opDict] of [['fr', FR, FR_OPERATOR], ['en', EN, EN_OPERATOR]] as const) {
+    const found = [...confirms(dict), ...confirms(opDict)]
 
     it(`${lang}: the scanner found the dialogs (canary)`, () => {
       // ~25 of them; if this collapses the walk broke and the rules below are empty.

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLang, useT } from '../../i18n'
+import { useOperatorT } from '../../i18n.operator'
 import { type HelpMode } from '../../lib/helpMode'
 import { useWrite } from '../../lib/write'
 import { useAddSheet } from '../../lib/addSheet'
@@ -40,6 +41,7 @@ export function EventsSection({
   help?: HelpMode
 }) {
   const t = useT()
+  const o18n = useOperatorT()
   const { lang } = useLang()
   const { open } = useAddSheet()
   const removal = useDeferredRemoval(EVENTS_KEY)
@@ -74,9 +76,9 @@ export function EventsSection({
   const memberColor = (id: string | null) => members.find((m) => m.id === id)?.colour
 
   return (
-    <OperatorSection title={t.operator.events} help={help} helpKey="events">
+    <OperatorSection title={o18n.events} help={help} helpKey="events">
       {events.length === 0 ? (
-        <EmptyState>{t.operator.noEvents}</EmptyState>
+        <EmptyState>{o18n.noEvents}</EmptyState>
       ) : (
         <ul className="operator__list">
           {removal.visible(events).map((ev) => (
@@ -113,8 +115,8 @@ export function EventsSection({
                   <RowActions
                     onEdit={() => setEditing(ev)}
                     onDelete={() => remove(ev)}
-                    editLabel={t.operator.editEvent}
-                    deleteLabel={t.operator.deleteEvent}
+                    editLabel={o18n.editEvent}
+                    deleteLabel={o18n.deleteEvent}
                   />
                 }
               />
@@ -137,7 +139,7 @@ export function EventsSection({
         />
       ) : (
         <button type="button" className="btn btn--primary operator__add" onClick={() => open('event', ['event'])}>
-          <InlineIcon name="plus-bold" /> {t.operator.addEvent}
+          <InlineIcon name="plus-bold" /> {o18n.addEvent}
         </button>
       )}
     </OperatorSection>
@@ -177,6 +179,7 @@ const newBreakKey = () => `sb${++breakSeq}`
 // still surfaces the shared error banner instead of storing something the board
 // would misread all year.
 export function SchoolYearSection({ help }: { help?: HelpMode }) {
+  const o18n = useOperatorT()
   const t = useT()
   const { lang } = useLang()
   const write = useWrite()
@@ -243,7 +246,7 @@ export function SchoolYearSection({ help }: { help?: HelpMode }) {
   // so (like household.tsx's member delete) it asks first via the in-app confirm
   // dialog rather than the forgiving undo toast the lighter rows use.
   async function clear() {
-    const okay = await confirm({ message: t.operator.schoolYearClearConfirm, confirmLabel: t.operator.schoolYearClear, tone: 'danger' })
+    const okay = await confirm({ message: o18n.schoolYearClearConfirm, confirmLabel: o18n.schoolYearClear, tone: 'danger' })
     if (!okay) return
     setFirstDay('')
     setLastDay('')
@@ -261,29 +264,29 @@ export function SchoolYearSection({ help }: { help?: HelpMode }) {
     // Read-only guest: a plain summary, no form.
     const sy = data?.schoolYear
     return (
-      <OperatorSection title={t.operator.schoolYearTitle} help={help} helpKey="schoolYear">
+      <OperatorSection title={o18n.schoolYearTitle} help={help} helpKey="schoolYear">
         {sy ? (
           <p className="mono">
             {formatDay(sy.firstDay, lang)} → {formatDay(sy.lastDay, lang)}
           </p>
         ) : (
-          <EmptyState>{t.operator.schoolYearHint}</EmptyState>
+          <EmptyState>{o18n.schoolYearHint}</EmptyState>
         )}
       </OperatorSection>
     )
   }
 
   return (
-    <OperatorSection title={t.operator.schoolYearTitle} hint={t.operator.schoolYearHint} help={help} helpKey="schoolYear">
+    <OperatorSection title={o18n.schoolYearTitle} hint={o18n.schoolYearHint} help={help} helpKey="schoolYear">
       <label className="recur__row mono">
-        <span>{t.operator.schoolYearFirstDay}</span>
+        <span>{o18n.schoolYearFirstDay}</span>
         <input className="input" type="date" value={firstDay} onChange={(e) => setFirstDay(e.target.value)} />
       </label>
       <label className="recur__row mono">
-        <span>{t.operator.schoolYearLastDay}</span>
+        <span>{o18n.schoolYearLastDay}</span>
         <input className="input" type="date" value={lastDay} onChange={(e) => setLastDay(e.target.value)} />
       </label>
-      <h3 className="operator__field-label">{t.operator.schoolYearBreaksTitle}</h3>
+      <h3 className="operator__field-label">{o18n.schoolYearBreaksTitle}</h3>
       {/* One relâche = one ROW, not three open date fields. Four breaks in a school
           year used to put twelve controls on the panel at once, so reading "when are
           the holidays" meant parsing a form; the row says it in words (name + range)
@@ -292,31 +295,31 @@ export function SchoolYearSection({ help }: { help?: HelpMode }) {
       {breaks.map((b) => {
         const from = dateStrToSec(b.from)
         const to = dateStrToSec(b.to)
-        const name = b.label.trim() || t.operator.schoolYearBreakUnnamed
+        const name = b.label.trim() || o18n.schoolYearBreakUnnamed
         const when =
-          from != null && to != null ? `${formatDay(from, lang)} → ${formatDay(to, lang)}` : t.operator.schoolYearBreakBlank
+          from != null && to != null ? `${formatDay(from, lang)} → ${formatDay(to, lang)}` : o18n.schoolYearBreakBlank
         return openBreak(b.key) ? (
           <Cluster key={b.key} className="operator__schoolbreak">
             <label className="recur__row mono">
-              <span>{t.operator.schoolYearBreakFrom}</span>
+              <span>{o18n.schoolYearBreakFrom}</span>
               <input className="input" type="date" value={b.from} onChange={(e) => updateBreak(b.key, { from: e.target.value })} />
             </label>
             <label className="recur__row mono">
-              <span>{t.operator.schoolYearBreakTo}</span>
+              <span>{o18n.schoolYearBreakTo}</span>
               <input className="input" type="date" value={b.to} onChange={(e) => updateBreak(b.key, { to: e.target.value })} />
             </label>
             <input
               className="input"
               value={b.label}
               onChange={(e) => updateBreak(b.key, { label: e.target.value })}
-              placeholder={t.operator.schoolYearBreakLabel}
-              aria-label={t.operator.schoolYearBreakLabel}
+              placeholder={o18n.schoolYearBreakLabel}
+              aria-label={o18n.schoolYearBreakLabel}
             />
             <RowActions
               onEdit={() => toggleBreak(b.key)}
               editLabel={t.common.done}
               onDelete={() => removeBreak(b.key)}
-              deleteLabel={t.operator.schoolYearRemoveBreak}
+              deleteLabel={o18n.schoolYearRemoveBreak}
             />
           </Cluster>
         ) : (
@@ -329,7 +332,7 @@ export function SchoolYearSection({ help }: { help?: HelpMode }) {
                 onEdit={() => toggleBreak(b.key)}
                 editLabel={`${t.common.edit} — ${name}`}
                 onDelete={() => removeBreak(b.key)}
-                deleteLabel={t.operator.schoolYearRemoveBreak}
+                deleteLabel={o18n.schoolYearRemoveBreak}
               />
             }
           />
@@ -345,19 +348,19 @@ export function SchoolYearSection({ help }: { help?: HelpMode }) {
             openOnly(key)
           }}
         >
-          <InlineIcon name="plus-bold" /> {t.operator.schoolYearAddBreak}
+          <InlineIcon name="plus-bold" /> {o18n.schoolYearAddBreak}
         </button>
         <button type="button" className="btn btn--primary" onClick={save} disabled={!firstDay || !lastDay}>
           {t.common.save}
         </button>
         {(firstDay || lastDay || breaks.length > 0) && (
           <button type="button" className="btn btn--ghost" onClick={clear}>
-            {t.operator.schoolYearClear}
+            {o18n.schoolYearClear}
           </button>
         )}
       </Cluster>
-      {status === 'saved' && <StatusMessage tone="success">{t.operator.postalSaved}</StatusMessage>}
-      {status === 'bad' && <StatusMessage tone="error">{t.operator.schoolYearBad}</StatusMessage>}
+      {status === 'saved' && <StatusMessage tone="success">{o18n.postalSaved}</StatusMessage>}
+      {status === 'bad' && <StatusMessage tone="error">{o18n.schoolYearBad}</StatusMessage>}
     </OperatorSection>
   )
 }

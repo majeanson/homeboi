@@ -1,4 +1,4 @@
-import { useT } from '../../i18n'
+import { useOperatorT } from '../../i18n.operator'
 import { type HelpMode } from '../../lib/helpMode'
 import { type Car, seedCarDefaults } from '../../lib/carPrefs'
 import { HouseholdListSection } from './HouseholdListSection'
@@ -11,14 +11,14 @@ import { HouseholdListSection } from './HouseholdListSection'
 // via useCars. A thin wrapper over the shared <HouseholdListSection> (the « réserve »
 // twin); only the field key, the seed, and the copy differ.
 export function CarsSection({ help }: { help?: HelpMode }) {
-  const t = useT()
+  const o18n = useOperatorT()
   return (
     <HouseholdListSection<Car>
       field="cars"
-      seed={() => seedCarDefaults(t.operator.carDefaultName)}
+      seed={() => seedCarDefaults(o18n.carDefaultName)}
       help={help}
       helpKey="cars"
-      labels={{ title: t.operator.carsTitle, name: t.operator.carName, add: t.operator.carAdd, empty: t.operator.carsEmpty }}
+      labels={{ title: o18n.carsTitle, name: o18n.carName, add: o18n.carAdd, empty: o18n.carsEmpty }}
     />
   )
 }

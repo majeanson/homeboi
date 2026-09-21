@@ -2,7 +2,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { FormScene } from '../components/FormScene'
 import { HomeProjectForm } from '../components/forms/HomeProjectForm'
-import { useT } from '../i18n'
+import { useOperatorT } from '../i18n.operator'
 import { HOME_PROJECTS_KEY, MONTH_KEY, BOARD_KEY } from '../lib/queryKeys'
 
 // /home-project/new?kind=plan|upkeep — add a Projet (plan) or Entretien (upkeep) as a
@@ -11,14 +11,14 @@ import { HOME_PROJECTS_KEY, MONTH_KEY, BOARD_KEY } from '../lib/queryKeys'
 // place on the row it tapped). Mirrors ChoreFormPage; the home-project form needs no member
 // roster, so FormScene's members arg is unused.
 export function HomeProjectFormPage() {
-  const t = useT()
+  const o18n = useOperatorT()
   const qc = useQueryClient()
   const [params] = useSearchParams()
   const kind: 'plan' | 'upkeep' = params.get('kind') === 'upkeep' ? 'upkeep' : 'plan'
   // ?carnet=<id> — added from a carnet's « Entretien » section, so the row files itself
   // back onto that carnet (the section is a filtered view of the same home_projects).
   const carnetId = params.get('carnet')
-  const title = kind === 'upkeep' ? t.operator.home.addEntretien : t.operator.home.addProjet
+  const title = kind === 'upkeep' ? o18n.home.addEntretien : o18n.home.addProjet
   return (
     <FormScene card="set-chores" title={title} icon={kind === 'upkeep' ? 'gear-six-bold' : 'paint-brush-bold'} fallback="/board">
       {(_members, close) => (

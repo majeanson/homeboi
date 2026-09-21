@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { useT, useLang } from '../i18n'
+import { useLang } from '../i18n'
+import { useOperatorT } from '../i18n.operator'
 import { type HelpMode } from '../lib/helpMode'
 import { OperatorSection } from './operator/OperatorSection'
 import { api } from '../lib/api'
@@ -35,7 +36,7 @@ interface LedgerRow {
 const LEDGER_KEY = ['chores-ledger']
 
 export function ChoreLedger({ help }: { help?: HelpMode }) {
-  const t = useT()
+  const o18n = useOperatorT()
   const { lang } = useLang()
   const loc = lang === 'fr' ? 'fr-CA' : 'en-CA'
   const { data, isLoading } = useQuery({
@@ -57,9 +58,9 @@ export function ChoreLedger({ help }: { help?: HelpMode }) {
     new Date(sec * 1000).toLocaleDateString(loc, { weekday: 'long', month: 'long', day: 'numeric' })
 
   return (
-    <OperatorSection title={t.operator.ledgerTitle} help={help} helpKey="choreLedger">
+    <OperatorSection title={o18n.ledgerTitle} help={help} helpKey="choreLedger">
       {isLoading ? null : days.length === 0 ? (
-        <EmptyState tone="calm">{t.operator.ledgerEmpty}</EmptyState>
+        <EmptyState tone="calm">{o18n.ledgerEmpty}</EmptyState>
       ) : (
         <div className="ledger">
           {days.map((d) => (
@@ -81,7 +82,7 @@ export function ChoreLedger({ help }: { help?: HelpMode }) {
                         {row.helpers.map((h, i) => {
                           // A deleted member (null name) falls back to a calm,
                           // role-based label rather than a blank — never a score.
-                          const label = h.name ?? t.operator.ledgerHelperChild
+                          const label = h.name ?? o18n.ledgerHelperChild
                           return (
                             <span key={`${h.memberId ?? h.role}-${i}`} className="ledger__helper">
                               <Avatar

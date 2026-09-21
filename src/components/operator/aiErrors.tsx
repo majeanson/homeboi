@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
+import { useOperatorT } from '../../i18n.operator'
 import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
 import { EmptyState } from '../EmptyState'
@@ -35,7 +36,7 @@ interface AiCheck {
 // waiting for a feature to fail and reading the journal after the fact, the
 // operator presses Tester l'IA and gets a live pass/fail per model right now.
 function AiStatusTest({ help }: { help?: HelpMode }) {
-  const t = useT()
+  const o18n = useOperatorT()
   const [checks, setChecks] = useState<AiCheck[] | null>(null)
   const [running, setRunning] = useState(false)
   const [unavailable, setUnavailable] = useState(false)
@@ -62,23 +63,23 @@ function AiStatusTest({ help }: { help?: HelpMode }) {
   }
 
   // The two probes map to the two models, in the order the endpoint returns them.
-  const labelFor = (i: number) => (i === 0 ? t.operator.aiTestText : t.operator.aiTestVision)
+  const labelFor = (i: number) => (i === 0 ? o18n.aiTestText : o18n.aiTestVision)
 
   return (
-    <OperatorSection title={t.operator.aiTestTitle} help={help} helpKey="aiTest">
+    <OperatorSection title={o18n.aiTestTitle} help={help} helpKey="aiTest">
       {!isGuest() && (
         <button type="button" className="btn btn--primary" onClick={run} disabled={running} aria-busy={running}>
-          {running ? t.operator.aiTestRunning : t.operator.aiTestBtn}
+          {running ? o18n.aiTestRunning : o18n.aiTestBtn}
         </button>
       )}
 
-      {unavailable && <EmptyState>{t.operator.aiTestUnavailable}</EmptyState>}
+      {unavailable && <EmptyState>{o18n.aiTestUnavailable}</EmptyState>}
 
       {/* This probes the BINDING, not the household switch — so it stays here, and
           can pass green, while Réglages ▸ IA has AI turned off for everyone. Say
           so, otherwise a passing test reads as "AI is on" and the operator hunts
           a bug that is their own switch. */}
-      {aiAvailable && !aiEnabled && <p className="operator__hint mono">{t.operator.aiTestWhileOff}</p>}
+      {aiAvailable && !aiEnabled && <p className="operator__hint mono">{o18n.aiTestWhileOff}</p>}
 
       {checks && (
         <ul className="ai-test">
@@ -91,7 +92,7 @@ function AiStatusTest({ help }: { help?: HelpMode }) {
                 <span className="ai-test__label">
                   {labelFor(i)}
                   <span className="ai-test__verdict mono">
-                    {c.ok ? `${t.operator.aiTestOk} · ${c.ms} ms` : t.operator.aiTestFail}
+                    {c.ok ? `${o18n.aiTestOk} · ${c.ms} ms` : o18n.aiTestFail}
                   </span>
                 </span>
                 <span className="ai-test__detail mono">{c.detail}</span>
@@ -106,6 +107,7 @@ function AiStatusTest({ help }: { help?: HelpMode }) {
 }
 
 export function AiErrorLogSection({ help }: { help?: HelpMode }) {
+  const o18n = useOperatorT()
   const t = useT()
   const qc = useQueryClient()
   const { data } = useQuery({
@@ -130,9 +132,9 @@ export function AiErrorLogSection({ help }: { help?: HelpMode }) {
   return (
     <>
       <AiStatusTest help={help} />
-      <OperatorSection title={t.operator.aiLogTitle} help={help} helpKey="aiLog">
+      <OperatorSection title={o18n.aiLogTitle} help={help} helpKey="aiLog">
         {errors.length === 0 ? (
-          <EmptyState>{t.operator.aiLogEmpty}</EmptyState>
+          <EmptyState>{o18n.aiLogEmpty}</EmptyState>
         ) : (
           <>
             <ul className="ai-log">
@@ -155,7 +157,7 @@ export function AiErrorLogSection({ help }: { help?: HelpMode }) {
                 aria-disabled={!online}
                 title={online ? undefined : t.offline.unavailable}
               >
-                {t.operator.aiLogClear}
+                {o18n.aiLogClear}
               </button>
             )}
           </>

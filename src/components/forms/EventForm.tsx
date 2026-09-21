@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useWrite } from '../../lib/write'
 import { useT } from '../../i18n'
+import { useOperatorT } from '../../i18n.operator'
 import { api } from '../../lib/api'
 import { live } from '../../lib/query'
 import { CERCLE_KEY, BUSINESSES_KEY, MONTH_KEY, TODO_TEMPLATES_KEY, EVENTS_KEY, BOARD_KEY, CAR_KEY } from '../../lib/queryKeys'
@@ -90,6 +91,7 @@ export function EventForm({
   onCancel?: () => void
 }) {
   const t = useT()
+  const o18n = useOperatorT()
   const init = value ? new Date(value.start_at * 1000) : null
   // Pre-fill the date from the edited event, else a calendar-seeded day, else blank.
   const dateSeed = init ?? (initialDate ? new Date(initialDate * 1000) : null)
@@ -171,7 +173,7 @@ export function EventForm({
     try {
       const res = await api<{ id: string }>('todo-templates', {
         method: 'POST',
-        body: { title: title.trim() || t.operator.bringDefaultName, items },
+        body: { title: title.trim() || o18n.bringDefaultName, items },
       })
       setBringTemplateId(res.id)
       setBringDraft([])
@@ -273,31 +275,31 @@ export function EventForm({
         onChange={setTitle}
         onSubmit={() => submit()}
         submitIcon={null}
-        placeholder={t.operator.eventWhat}
-        ariaLabel={t.operator.eventWhat}
+        placeholder={o18n.eventWhat}
+        ariaLabel={o18n.eventWhat}
       />
       {/* Native date/time inputs can't take a `placeholder`, and iOS's own faint
           "jj/mm/aaaa" / "--:--" hint is invisible on light themes — an empty box
           reads as unlabelled. Give each a visible label via the same `.recur__row`
           pattern the Répéter / Afficher dès rows below already use (Marc, 2026-07-04). */}
       <label className="recur__row mono">
-        <span>{t.operator.eventDateLabel}</span>
+        <span>{o18n.eventDateLabel}</span>
         <input
           className="input"
           type="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
-          aria-label={t.operator.eventDateLabel}
+          aria-label={o18n.eventDateLabel}
         />
       </label>
       <label className="recur__row mono">
-        <span>{t.operator.eventTimeLabel}</span>
+        <span>{o18n.eventTimeLabel}</span>
         <input
           className="input"
           type="time"
           value={time}
           onChange={(e) => setStartTime(e.target.value)}
-          aria-label={t.operator.eventTimeLabel}
+          aria-label={o18n.eventTimeLabel}
         />
       </label>
       {/* Optional « Jusqu'à ». Only offered once a start time exists: an all-day
@@ -305,24 +307,24 @@ export function EventForm({
           exactly as before — so nothing about an existing rendez-vous changes. */}
       {time && (
         <label className="recur__row mono">
-          <span>{t.operator.eventUntilLabel}</span>
+          <span>{o18n.eventUntilLabel}</span>
           <input
             className="input"
             type="time"
             value={endTime}
             onChange={(e) => setEndTime(e.target.value)}
-            aria-label={t.operator.eventUntilLabel}
+            aria-label={o18n.eventUntilLabel}
           />
         </label>
       )}
       {members.length > 0 && (
         <>
-          <p className="mono event-transport__label">{t.operator.eventPeople}</p>
+          <p className="mono event-transport__label">{o18n.eventPeople}</p>
           <MemberPicker
             faces={members.map(toFace)}
             values={people}
             onToggle={togglePerson}
-            ariaLabel={t.operator.eventPeople}
+            ariaLabel={o18n.eventPeople}
           />
         </>
       )}
@@ -354,7 +356,7 @@ export function EventForm({
             }
             setPickText(opt.label)
           }}
-          placeholder={t.operator.eventWith}
+          placeholder={o18n.eventWith}
           submitIcon={null}
           typeaheadOnly
         />
@@ -365,15 +367,15 @@ export function EventForm({
           never bury it. `maxLength` is the server's own cap (EVENT_NOTES_MAX), so the
           box refuses the 2001st character rather than letting the tail be sliced off
           quietly on save. */}
-      <Disclosure label={t.operator.eventNote} defaultOpen={!!notes.trim()} className="event-note">
+      <Disclosure label={o18n.eventNote} defaultOpen={!!notes.trim()} className="event-note">
         <textarea
           className="input"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           rows={3}
           maxLength={2000}
-          placeholder={t.operator.eventNotePlaceholder}
-          aria-label={t.operator.eventNote}
+          placeholder={o18n.eventNotePlaceholder}
+          aria-label={o18n.eventNote}
         />
       </Disclosure>
       {/* « Répéter » and « Afficher dès » sat here as two permanently-open select
@@ -389,7 +391,7 @@ export function EventForm({
           recurrence. Here it was two rows of optional detail on a form whose subject
           is a single moment. */}
       <Disclosure
-        label={t.operator.eventWhenMore}
+        label={o18n.eventWhenMore}
         defaultOpen={recur != null || lead != null}
         className="event-when"
       >
@@ -410,13 +412,13 @@ export function EventForm({
           Hidden when the household explicitly has no car — nothing to take. */}
       {hasCar && (
         <Disclosure
-          label={t.operator.eventTakesCar}
+          label={o18n.eventTakesCar}
           defaultOpen={carId != null || !!defaultRide}
           className="event-transport"
         >
           {/* With a single household car the chip IS the yes/no, so the extra
               « Quelle auto ? » prompt would just repeat the Disclosure's own label. */}
-          {cars.length > 1 && <p className="mono event-transport__label">{t.operator.eventCarWho}</p>}
+          {cars.length > 1 && <p className="mono event-transport__label">{o18n.eventCarWho}</p>}
           <Cluster>
             {cars.map((c) => (
               <button
@@ -438,7 +440,7 @@ export function EventForm({
           todo_templates list, the same lists « Avant de partir » uses). Always
           available, so a first list can be made right here, not only in Réglages. */}
       <Disclosure
-        label={t.operator.eventBring}
+        label={o18n.eventBring}
         defaultOpen={bringTemplateId != null || !!defaultActivity}
         className="event-bring"
       >
@@ -473,14 +475,14 @@ export function EventForm({
                     pushBringItem(bringInput)
                   }
                 }}
-                placeholder={t.operator.bringAddItem}
-                aria-label={t.operator.bringAddItem}
+                placeholder={o18n.bringAddItem}
+                aria-label={o18n.bringAddItem}
               />
               <button
                 type="button"
                 className="btn btn--ghost"
                 onClick={() => pushBringItem(bringInput)}
-                aria-label={t.operator.bringAddItem}
+                aria-label={o18n.bringAddItem}
               >
                 <InlineIcon name="plus-bold" size={16} />
               </button>
@@ -501,7 +503,7 @@ export function EventForm({
                   ))}
                 </div>
                 <button type="button" className="btn" disabled={bringBusy || !online} onClick={createBringList}>
-                  <InlineIcon name="check-bold" size={15} /> {t.operator.bringCreate}
+                  <InlineIcon name="check-bold" size={15} /> {o18n.bringCreate}
                 </button>
                 {/* Online-only (needs the new id synchronously to attach it). Say so
                     when offline, and surface a real failure instead of silently
@@ -515,7 +517,7 @@ export function EventForm({
       </Disclosure>
       {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
       <FormFooter
-        saveLabel={value ? t.common.save : t.operator.addEvent}
+        saveLabel={value ? t.common.save : o18n.addEvent}
         saveDisabled={!title.trim() || !date}
         busy={busy}
         onCancel={onCancel}

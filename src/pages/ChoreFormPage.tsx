@@ -2,7 +2,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { FormScene } from '../components/FormScene'
 import { ChoreForm } from '../components/forms/ChoreForm'
-import { useT } from '../i18n'
+import { useOperatorT } from '../i18n.operator'
 import { MONTH_KEY, BOARD_KEY, CHORES_KEY } from '../lib/queryKeys'
 
 // /chore/new — add a corvée as a full-screen scene (was a sheet form; tall forms
@@ -10,12 +10,12 @@ import { MONTH_KEY, BOARD_KEY, CHORES_KEY } from '../lib/queryKeys'
 // in Réglages ▸ Corvées; this is the create path the ＋ uses. `?start=<sec>`
 // (local-midnight) pre-fills the recurrence anchor when opened from the calendar.
 export function ChoreFormPage() {
-  const t = useT()
+  const o18n = useOperatorT()
   const qc = useQueryClient()
   const [params] = useSearchParams()
   const startSeed = Number(params.get('start'))
   return (
-    <FormScene card="set-chores" title={t.operator.addChore} icon="hand-heart-bold" fallback="/board">
+    <FormScene card="set-chores" title={o18n.addChore} icon="hand-heart-bold" fallback="/board">
       {(members, close) => (
         <ChoreForm
           members={members}

@@ -4,6 +4,7 @@ import { useWrite } from '../../lib/write'
 import { ROUTINES_KEY } from '../../lib/queryKeys'
 import { settingsHref } from '../../lib/settingsNav'
 import { useLang, useT } from '../../i18n'
+import { useOperatorT } from '../../i18n.operator'
 import { CardDeckEditor } from '../CardDeckEditor'
 import { routineTemplates, type DeckCard } from '../../lib/routineTemplates'
 import { ROUTINE_TODS, TOD_ICON, TOD_TINT, isRoutineTod, type RoutineTod } from '../../lib/routineTod'
@@ -68,6 +69,7 @@ export function RoutineForm({
   onShare?: () => void
 }) {
   const t = useT()
+  const o18n = useOperatorT()
   const { lang } = useLang()
   const editing = !!value
   const children = members.filter((m) => m.is_child)
@@ -177,7 +179,7 @@ export function RoutineForm({
   if (!editing && children.length === 0)
     return (
       <EmptyState>
-        {t.operator.needChild} <Link to={settingsHref({ tab: 'maison', focus: 'members' })}>{t.board.welcomeCta}</Link>
+        {o18n.needChild} <Link to={settingsHref({ tab: 'maison', focus: 'members' })}>{t.board.welcomeCta}</Link>
       </EmptyState>
     )
 
@@ -185,12 +187,12 @@ export function RoutineForm({
     <form className="operator__inline-form operator__routine-form" onSubmit={submit}>
       {!editing && (
         <div className="picker-chips mono">
-          <span className="picker-chips__label">{t.operator.forWho}</span>
+          <span className="picker-chips__label">{o18n.forWho}</span>
           <MemberPicker
             faces={children.map(toFace)}
             values={memberIds}
             onToggle={toggleMember}
-            ariaLabel={t.operator.forWho}
+            ariaLabel={o18n.forWho}
           />
         </div>
       )}
@@ -201,8 +203,8 @@ export function RoutineForm({
         onChange={setName}
         onSubmit={() => submit()}
         submitIcon={null}
-        placeholder={t.operator.routineName}
-        ariaLabel={t.operator.routineName}
+        placeholder={o18n.routineName}
+        ariaLabel={o18n.routineName}
       />
 
       {/* The moment of day: orders the kid view (morning shows Matin first). */}
@@ -220,7 +222,7 @@ export function RoutineForm({
 
       {!editing && (
         <div className="picker-chips mono">
-          <span className="picker-chips__label">{t.operator.tplStart}</span>
+          <span className="picker-chips__label">{o18n.tplStart}</span>
           {templates.map((tpl) => (
             <Chip key={tpl.id} onClick={() => applyTemplate(tpl)}>
               {tpl.cards[0]?.icon} {tpl.name}
@@ -237,7 +239,7 @@ export function RoutineForm({
       {/* Delete (edit mode only) recedes quietly to the footer's separated slot — the
           weight lives in the confirm dialog the owner shows. */}
       <FormFooter
-        saveLabel={editing ? t.common.save : t.operator.addRoutine}
+        saveLabel={editing ? t.common.save : o18n.addRoutine}
         saveDisabled={(!editing && !memberIds.length) || !name.trim()}
         busy={busy}
         onCancel={onCancel}

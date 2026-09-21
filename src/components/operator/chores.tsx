@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
+import { useOperatorT } from '../../i18n.operator'
 import { useWrite } from '../../lib/write'
 import { useAddSheet } from '../../lib/addSheet'
 import { useRecordUndo } from '../../lib/toast'
@@ -23,6 +24,7 @@ import { type Chore, type Routine } from './types'
 
 export function ChoresSection({ chores, onChange, help }: { chores: Chore[]; onChange: () => void; help?: HelpMode }) {
   const t = useT()
+  const o18n = useOperatorT()
   const { open } = useAddSheet()
   const removal = useDeferredRemoval(CHORES_KEY)
   const write = useWrite()
@@ -39,7 +41,7 @@ export function ChoresSection({ chores, onChange, help }: { chores: Chore[]; onC
   }
 
   return (
-    <OperatorSection title={t.operator.chores} help={help} helpKey="chores">
+    <OperatorSection title={o18n.chores} help={help} helpKey="chores">
       <ul className="operator__list">
         {removal.visible(chores).map((c) => (
           <ChoreRow key={c.id} chore={c} onChange={onChange} onRemove={() => remove(c)} />
@@ -49,7 +51,7 @@ export function ChoresSection({ chores, onChange, help }: { chores: Chore[]; onC
           ones that exist (the rows above). Hidden for a read-only guest. */}
       {!isGuest() && (
         <button type="button" className="btn btn--primary operator__add" onClick={() => open('chore', ['chore'])}>
-          <InlineIcon name="plus-bold" /> {t.operator.addChore}
+          <InlineIcon name="plus-bold" /> {o18n.addChore}
         </button>
       )}
     </OperatorSection>
@@ -60,6 +62,7 @@ export function ChoresSection({ chores, onChange, help }: { chores: Chore[]; onC
 // title, rotation, colour and schedule (the old "Céduler"-only expander is now
 // just part of full edit). 🗑️ removes it (deferred undo).
 function ChoreRow({ chore, onChange, onRemove }: { chore: Chore; onChange: () => void; onRemove: () => void }) {
+  const o18n = useOperatorT()
   const t = useT()
   const qc = useQueryClient()
   const [editing, setEditing] = useState(false)
@@ -94,8 +97,8 @@ function ChoreRow({ chore, onChange, onRemove }: { chore: Chore; onChange: () =>
           <RowActions
             onEdit={() => setEditing(true)}
             onDelete={onRemove}
-            editLabel={t.operator.editChore}
-            deleteLabel={t.operator.deleteChore}
+            editLabel={o18n.editChore}
+            deleteLabel={o18n.deleteChore}
           />
         }
       />
@@ -104,6 +107,7 @@ function ChoreRow({ chore, onChange, onRemove }: { chore: Chore; onChange: () =>
 }
 
 export function RoutinesSection({ routines, onChange, help }: { routines: Routine[]; onChange: () => void; help?: HelpMode }) {
+  const o18n = useOperatorT()
   const t = useT()
   const { open } = useAddSheet()
   const removal = useDeferredRemoval(ROUTINES_KEY)
@@ -151,8 +155,8 @@ export function RoutinesSection({ routines, onChange, help }: { routines: Routin
   }
 
   return (
-    <OperatorSection title={t.operator.routines} help={help} helpKey="routines">
-      {routines.length === 0 && <EmptyState>{t.operator.noRoutines}</EmptyState>}
+    <OperatorSection title={o18n.routines} help={help} helpKey="routines">
+      {routines.length === 0 && <EmptyState>{o18n.noRoutines}</EmptyState>}
       <ul className="operator__list">
         {removal.visible(routines).map((r) => {
           // The moment-of-day cue's inner label — one definition, rendered either as
@@ -195,8 +199,8 @@ export function RoutinesSection({ routines, onChange, help }: { routines: Routin
               <RowActions
                 onEdit={() => navigate(`/routine/${r.id}`)}
                 onDelete={() => remove(r)}
-                editLabel={t.operator.editRoutine}
-                deleteLabel={t.operator.deleteRoutine}
+                editLabel={o18n.editRoutine}
+                deleteLabel={o18n.deleteRoutine}
               />
             </li>
           )
@@ -206,7 +210,7 @@ export function RoutinesSection({ routines, onChange, help }: { routines: Routin
           the ones that exist (the rows above). Hidden for a read-only guest. */}
       {!ro && (
         <button type="button" className="btn btn--primary operator__add" onClick={() => open('routine', ['routine'])}>
-          <InlineIcon name="plus-bold" /> {t.operator.addRoutine}
+          <InlineIcon name="plus-bold" /> {o18n.addRoutine}
         </button>
       )}
     </OperatorSection>

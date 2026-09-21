@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useT } from '../../i18n'
+import { useOperatorT } from '../../i18n.operator'
 import { type HelpMode } from '../../lib/helpMode'
 import { wash } from '../../lib/colors'
 import { isGuest } from '../../lib/device'
@@ -41,6 +42,7 @@ export function HouseholdListSection<T extends HouseholdListItem>({
   helpKey?: string
 }) {
   const t = useT()
+  const o18n = useOperatorT()
   const { items, status, setItems, rename, recolor, remove, add } = useHouseholdListSetting<T>(
     field,
     seed,
@@ -100,8 +102,8 @@ export function HouseholdListSection<T extends HouseholdListItem>({
           ariaLabel={labels.add}
         />
       )}
-      {status === 'saved' && <StatusMessage tone="success">{t.operator.postalSaved}</StatusMessage>}
-      {status === 'bad' && <StatusMessage tone="error">{t.operator.postalBad}</StatusMessage>}
+      {status === 'saved' && <StatusMessage tone="success">{o18n.postalSaved}</StatusMessage>}
+      {status === 'bad' && <StatusMessage tone="error">{o18n.postalBad}</StatusMessage>}
     </OperatorSection>
   )
 }

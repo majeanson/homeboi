@@ -414,6 +414,17 @@ photo / routine-voice-clip / recipe-step-photo features hide. DO-unset → `/api
 - **i18n** (`src/i18n.ts`): `typeof FR` is the compile-time parity contract — EN must
   have every key FR has or `tsc` fails. Register is **Québécois** (souper, céduler,
   courriel), not France French.
+  - **The `operator` namespace lives in its own module** (`src/i18n.operator.ts`,
+    `useOperatorT()`), with the same FR-first-then-EN contract one level down: it always
+    returns a dictionary, never a loading state. It left `i18n.ts` on 2026-09-21 because
+    it was 21 % of the French dictionary being parsed before first paint, and the eager
+    chunk had hit its cap. **Réglages copy goes there, everything else stays in `i18n.ts`**
+    — and both are walked by `glossary.test.ts` / `confirmCopy.test.ts`, which is the part
+    a future split must not forget: a ratchet that quietly loses a fifth of its corpus
+    passes, looser, in silence.
+  - **Adding copy is not free.** `scripts/check-bundle.mjs` caps the eager FR chunk, and
+    that cap comes DOWN after a win, never back up. If it goes red, take something out —
+    the last one to hit it moved a whole namespace rather than nudge the number.
 - **Calm** (`lib/calm.ts`): a toggle that softens only _interaction_ friction (kid
   routine redo). The **structural** calm guarantees (no points, no push, finite lists)
   are **not** toggleable.

@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { mockApi, seedState } from './mocks'
+import { boxOf } from './measure'
 
 // Contextual help: the section identity disc (SectionAvatar, class `.avatar--help`
 // with a corner "?" pip — HelpDot folded into the icon) deep-links into the Guide
@@ -134,15 +135,14 @@ test('an armed bubble lands clear of the bottom nav, doors and all', async ({ pa
 
   const doors = bubble.locator('.help-bubble__guide, .help-bubble__report')
   await expect(doors).toHaveCount(2)
-  const nav = await page.locator('.hub__nav, nav').first().boundingBox()
+  const nav = await boxOf(page.locator('.hub__nav, nav').first())
   for (let i = 0; i < 2; i++) {
-    const box = await doors.nth(i).boundingBox()
-    expect(box, 'a door has no box — it is not laid out').not.toBeNull()
-    expect(box!.y + box!.height, 'a bubble door is under the bottom nav').toBeLessThan(nav!.y)
+    const box = await boxOf(doors.nth(i))
+    expect(box.y + box.height, 'a bubble door is under the bottom nav').toBeLessThan(nav.y)
   }
   // …and they do not touch: two inline-flex siblings with no gap rendered as
   // « Voir le guide →Signaler ». They live in a Cluster now, which owns the gap.
-  const a = (await doors.nth(0).boundingBox())!
-  const b = (await doors.nth(1).boundingBox())!
+  const a = await boxOf(doors.nth(0))
+  const b = await boxOf(doors.nth(1))
   expect(b.x - (a.x + a.width), 'the two doors are touching').toBeGreaterThan(3)
 })

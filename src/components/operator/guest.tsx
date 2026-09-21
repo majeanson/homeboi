@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT, useLang } from '../../i18n'
+import { useOperatorT } from '../../i18n.operator'
 import { type HelpMode } from '../../lib/helpMode'
 import { settingsHref } from '../../lib/settingsNav'
 import { OperatorSection } from './OperatorSection'
@@ -851,6 +852,7 @@ const CAST_SCENES: Record<
 }
 
 function CastTvSection({ help }: { help?: HelpMode }) {
+  const o18n = useOperatorT()
   const t = useT()
   // Minting a link is operator-only — a read-only guest can't hand out access.
   const ro = isGuest()
@@ -881,7 +883,7 @@ function CastTvSection({ help }: { help?: HelpMode }) {
   // link/QR for the TV to stash.
   async function mint(): Promise<{ token: string; hh: string }> {
     if (cfg.cred === 'display') {
-      const label = `${t.operator.castDisplayLabel} — ${scene === 'ambient' ? t.operator.castSceneAmbient : t.operator.castSceneBoard}`
+      const label = `${o18n.castDisplayLabel} — ${scene === 'ambient' ? o18n.castSceneAmbient : o18n.castSceneBoard}`
       const res = await api<{ token: string; householdId: string; shortCode?: string }>('pair/devices', {
         method: 'POST',
         body: { mintDisplay: true, label, scene },
@@ -935,7 +937,7 @@ function CastTvSection({ help }: { help?: HelpMode }) {
       const minted = token ? { token, hh } : await mint()
       await castToSalon(minted.token, scene, cfg.cred === 'display', minted.hh)
     } catch {
-      setErr(t.operator.castFailed)
+      setErr(o18n.castFailed)
     } finally {
       setCasting(false)
     }
@@ -952,41 +954,41 @@ function CastTvSection({ help }: { help?: HelpMode }) {
   }
 
   return (
-    <OperatorSection title={t.operator.castTitle} help={help} helpKey="guest">
-      <p className="operator__hint mono">{t.operator.castIntro}</p>
+    <OperatorSection title={o18n.castTitle} help={help} helpKey="guest">
+      <p className="operator__hint mono">{o18n.castIntro}</p>
       <label className="operator__seg">
-        <span className="operator__seg-label mono">{t.operator.castSceneLabel}</span>
+        <span className="operator__seg-label mono">{o18n.castSceneLabel}</span>
         <select className="input" value={scene} onChange={(e) => chooseScene(e.target.value as CastScene)} disabled={busy}>
-          <option value="board">{t.operator.castSceneBoard}</option>
-          <option value="ambient">{t.operator.castSceneAmbient}</option>
-          <option value="welcome">{t.operator.castSceneWelcome}</option>
+          <option value="board">{o18n.castSceneBoard}</option>
+          <option value="ambient">{o18n.castSceneAmbient}</option>
+          <option value="welcome">{o18n.castSceneWelcome}</option>
         </select>
       </label>
-      <p className="operator__hint mono">{t.operator.castSceneHint[scene]}</p>
+      <p className="operator__hint mono">{o18n.castSceneHint[scene]}</p>
       <div className="operator__inline-form">
         {canCast && (
           <button type="button" className="btn btn--primary" onClick={castNow} disabled={casting}>
-            <InlineIcon name="key-bold" /> {casting ? t.operator.castNowBusy : t.operator.castNow}
+            <InlineIcon name="key-bold" /> {casting ? o18n.castNowBusy : o18n.castNow}
           </button>
         )}
         <button type="button" className={`btn${canCast ? '' : ' btn--primary'}`} onClick={generate} disabled={busy}>
-          <InlineIcon name="link-bold" /> {busy ? t.guest.generating : t.operator.castGenerate}
+          <InlineIcon name="link-bold" /> {busy ? t.guest.generating : o18n.castGenerate}
         </button>
       </div>
-      {canCast && <p className="operator__seg-hint mono">{t.operator.castNowHint}</p>}
+      {canCast && <p className="operator__seg-hint mono">{o18n.castNowHint}</p>}
       {err && <StatusMessage tone="error">{err}</StatusMessage>}
       {link && (
         <div className="operator__guest-link">
           {/* Lead with the short /tv/<code> link — the only one typeable on a TV remote. */}
           {shortLink && (
             <>
-              <p className="operator__hint mono">{t.operator.castShortReady}</p>
+              <p className="operator__hint mono">{o18n.castShortReady}</p>
               <input
                 className="input mono"
                 readOnly
                 value={shortLink}
                 onFocus={(e) => e.target.select()}
-                aria-label={t.operator.castShortLink}
+                aria-label={o18n.castShortLink}
               />
               <div className="operator__inline-form">
                 <button type="button" className="btn btn--primary" onClick={() => void copy(shortLink)}>
@@ -995,16 +997,16 @@ function CastTvSection({ help }: { help?: HelpMode }) {
               </div>
               {/* Scan off the wall tablet, or just type the short link on the TV. */}
               <QrCode value={shortLink} />
-              <p className="operator__seg-hint mono">{t.operator.castShortHint}</p>
+              <p className="operator__seg-hint mono">{o18n.castShortHint}</p>
             </>
           )}
-          <p className="operator__hint mono">{shortLink ? t.operator.castFullLink : t.operator.castReady}</p>
+          <p className="operator__hint mono">{shortLink ? o18n.castFullLink : o18n.castReady}</p>
           <input
             className="input mono"
             readOnly
             value={link}
             onFocus={(e) => e.target.select()}
-            aria-label={t.operator.castTitle}
+            aria-label={o18n.castTitle}
           />
           <div className="operator__inline-form">
             <button type="button" className="btn" onClick={() => void copy(link)}>
@@ -1014,11 +1016,11 @@ function CastTvSection({ help }: { help?: HelpMode }) {
           {/* No short link (welcome scene): the long link is the one to scan/copy. */}
           {!shortLink && <QrCode value={link} />}
           <ol className="operator__hint mono">
-            <li>{t.operator.castStep1}</li>
-            <li>{t.operator.castStep2}</li>
-            <li>{t.operator.castStep3}</li>
+            <li>{o18n.castStep1}</li>
+            <li>{o18n.castStep2}</li>
+            <li>{o18n.castStep3}</li>
           </ol>
-          <p className="operator__seg-hint mono">{t.operator.castCaveat}</p>
+          <p className="operator__seg-hint mono">{o18n.castCaveat}</p>
         </div>
       )}
     </OperatorSection>

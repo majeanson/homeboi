@@ -50,13 +50,20 @@ const EAGER_CHUNKS = [
   // The rule is unchanged — reach for `lazy()` before you reach for a bigger number.
   { re: /^index-/, cap: 365 * KB, label: 'eager entry' }, // today ~340 KB
   { re: /^react-vendor-/, cap: 280 * KB, label: 'eager react-vendor' }, // today ~227 KB
-  // today ~130 KB — i.e. AT the cap, not under it. That comment said « ~101 KB » for
-  // long enough that the headroom quietly went to zero, and « Les remarques » (0136) is
-  // what found out: forty-odd strings of French copy pushed it 112 bytes over and went
-  // red. The next feature that adds copy will hit this too, and the honest fix then is
-  // to lazy-load part of the FR dictionary the way i18n.en already is — NOT to nudge
-  // this number up, which is how a budget stops being one.
-  { re: /^i18n-/, cap: 130 * KB, label: 'eager i18n (FR only — EN lazy-loads as i18n.en-*.js)' },
+  // today ~99 KB under a 110 KB cap. THE NOTE THAT USED TO SIT HERE HAS BEEN CASHED.
+  //
+  // It read: « today ~130 KB — i.e. AT the cap », after « Les remarques » (0136) pushed it
+  // 112 bytes over and went red, and it said the honest fix was to lazy-load part of the FR
+  // dictionary the way i18n.en already is — NOT to nudge the number up. That is what
+  // happened on 2026-09-21: the `operator` namespace (703 lines, 21% of the French
+  // dictionary) moved to src/i18n.operator.ts and out of the boot path. 130 → 99 KB, and
+  // the eager total 586 → 555 KB.
+  //
+  // AND THE CAP CAME DOWN WITH IT, 130 → 110. A budget that keeps its old ceiling after a
+  // win is not a budget, it is a memory of one: it hands the next thirty kilobytes back
+  // without anyone deciding to spend them. Same rule as every other ratchet here — it may
+  // fall, never rise. The 11 KB left is room to write copy in, not room to re-fill.
+  { re: /^i18n-/, cap: 110 * KB, label: 'eager i18n (FR only — EN + Réglages lazy-load as their own chunks)' },
 ]
 // Ratcheted 700 → 620 by the door-closure pass (STATE §4-L L4, 2026-09-16): making
 // HubLayout + Board lazy took the entry chunk 227 KB → the combined three to ~582 KB.

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../../i18n'
+import { useOperatorT } from '../../i18n.operator'
 import { type HelpMode } from '../../lib/helpMode'
 import { api } from '../../lib/api'
 import { live } from '../../lib/query'
@@ -47,6 +48,7 @@ const hhmmToMin = (s: string): number | null => {
 }
 
 export function ScheduleSection({ help }: { help?: HelpMode }) {
+  const o18n = useOperatorT()
   const t = useT()
   const write = useWrite()
   const removal = useDeferredRemoval(SCHEDULE_KEY)
@@ -72,8 +74,8 @@ export function ScheduleSection({ help }: { help?: HelpMode }) {
   const nameOf = (id: string) => members.find((m) => m.id === id)?.display_name ?? '—'
   const colorOf = (id: string) => members.find((m) => m.id === id)?.colour
   const daysLabel = (wd: number[]) =>
-    wd.length === 0 ? t.operator.schedEveryDay : [...wd].sort((a, b) => a - b).map((d) => t.recur.weekdayShort[d]).join(' ')
-  const everyLabel = (n: number | undefined) => (n && n > 1 ? ` · ${t.operator.schedEveryNWeeksShort(n)}` : '')
+    wd.length === 0 ? o18n.schedEveryDay : [...wd].sort((a, b) => a - b).map((d) => t.recur.weekdayShort[d]).join(' ')
+  const everyLabel = (n: number | undefined) => (n && n > 1 ? ` · ${o18n.schedEveryNWeeksShort(n)}` : '')
 
   async function save(b: Omit<ScheduleBlock, 'id'> & { id?: string }) {
     await write('schedule', {
@@ -91,9 +93,9 @@ export function ScheduleSection({ help }: { help?: HelpMode }) {
   }
 
   return (
-    <OperatorSection title={t.operator.schedTitle} help={help} helpKey="schedule">
+    <OperatorSection title={o18n.schedTitle} help={help} helpKey="schedule">
       {blocks.length === 0 ? (
-        <EmptyState>{t.operator.schedEmpty}</EmptyState>
+        <EmptyState>{o18n.schedEmpty}</EmptyState>
       ) : (
         <ul className="operator__list meal-slots">
           {blocks.map((b) =>
@@ -114,7 +116,7 @@ export function ScheduleSection({ help }: { help?: HelpMode }) {
                     {b.label ? ` · ${b.label}` : ''} · {daysLabel(b.weekdays)}
                     {everyLabel(b.weekInterval)} · {minToHHMM(b.startMin)}–
                     {minToHHMM(b.endMin)}
-                    {b.holdsCar ? ` · ${t.operator.schedHoldsCarShort}` : ''}
+                    {b.holdsCar ? ` · ${o18n.schedHoldsCarShort}` : ''}
                   </span>
                 </span>
                 {!ro && (
@@ -146,15 +148,15 @@ export function ScheduleSection({ help }: { help?: HelpMode }) {
           }}
           disabled={members.length === 0}
         >
-          ＋ {t.operator.schedAdd}
+          ＋ {o18n.schedAdd}
         </button>
       )}
       {/* A disabled button with no reason beside it is a dead end: a schedule block
           belongs to a MEMBER, so with none added there is nothing to schedule — say
           that, and point at where members are added, rather than greying out and
           leaving the operator to guess (REVIEW-PASS « smaller nits »). */}
-      {!ro && members.length === 0 && <p className="operator__hint mono">{t.operator.schedNoMembers}</p>}
-      <Modal open={adding} onClose={() => setAdding(false)} title={t.operator.schedAdd}>
+      {!ro && members.length === 0 && <p className="operator__hint mono">{o18n.schedNoMembers}</p>}
+      <Modal open={adding} onClose={() => setAdding(false)} title={o18n.schedAdd}>
         {adding && <BlockForm members={members} onSave={save} onCancel={() => setAdding(false)} />}
       </Modal>
     </OperatorSection>
@@ -174,6 +176,7 @@ function BlockForm({
   onSave: (b: Omit<ScheduleBlock, 'id'> & { id?: string }) => void
   onCancel: () => void
 }) {
+  const o18n = useOperatorT()
   const t = useT()
   const [memberId, setMemberId] = useState(value?.memberId ?? members[0]?.id ?? '')
   const [label, setLabel] = useState(value?.label ?? '')
@@ -223,14 +226,14 @@ function BlockForm({
           </button>
         ))}
       </div>
-      <EditField value={label} onChange={setLabel} placeholder={t.operator.schedLabel} ariaLabel={t.operator.schedLabel} />
+      <EditField value={label} onChange={setLabel} placeholder={o18n.schedLabel} ariaLabel={o18n.schedLabel} />
       <div className="operator__rotation mono">
         <label className="mono">
-          {t.operator.schedFrom}{' '}
+          {o18n.schedFrom}{' '}
           <input className="input" type="time" value={start} onChange={(e) => setStart(e.target.value)} />
         </label>
         <label className="mono">
-          {t.operator.schedTo}{' '}
+          {o18n.schedTo}{' '}
           <input className="input" type="time" value={end} onChange={(e) => setEnd(e.target.value)} />
         </label>
       </div>
@@ -242,7 +245,7 @@ function BlockForm({
         ))}
       </div>
       {/* Repeat every N weeks — every week (default) or an alternating-week rota. */}
-      <p className="mono event-transport__label">{t.operator.schedRepeat}</p>
+      <p className="mono event-transport__label">{o18n.schedRepeat}</p>
       <div className="operator__rotation mono">
         {[1, 2, 3, 4].map((n) => (
           <button
@@ -252,15 +255,15 @@ function BlockForm({
             aria-pressed={interval === n}
             onClick={() => setInterval(n)}
           >
-            {n === 1 ? t.operator.schedEveryWeek : t.operator.schedEveryNWeeks(n)}
+            {n === 1 ? o18n.schedEveryWeek : o18n.schedEveryNWeeks(n)}
           </button>
         ))}
       </div>
       <label className="operator__check mono">
         <input type="checkbox" checked={holdsCar} onChange={(e) => setHoldsCar(e.target.checked)} />
-        {t.operator.schedHoldsCar}
+        {o18n.schedHoldsCar}
       </label>
-      {err && <StatusMessage tone="error">{t.operator.schedBad}</StatusMessage>}
+      {err && <StatusMessage tone="error">{o18n.schedBad}</StatusMessage>}
       <div className="operator__rotation mono">
         <button type="button" className="btn" onClick={submit} disabled={busy}>
           {value ? t.common.save : t.common.add}

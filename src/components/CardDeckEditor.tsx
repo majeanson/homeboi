@@ -3,6 +3,7 @@ import { type DeckCard } from '../lib/routineTemplates'
 import { EmojiPicker } from './EmojiPicker'
 import { Modal } from './Modal'
 import { useT, useLang } from '../i18n'
+import { useOperatorT } from '../i18n.operator'
 import { suggestedTip } from '../lib/routineTips'
 import { usePointerDnd, DragGhost, dropCueOf, dropEdgeClass } from '../lib/dnd'
 import { useOnline } from '../lib/online'
@@ -41,6 +42,7 @@ export function CardDeckEditor({
   media?: boolean
 }) {
   const t = useT()
+  const o18n = useOperatorT()
   const { lang } = useLang()
   const [paletteFor, setPaletteFor] = useState<number | null>(null)
   // Which card's « truc » field is open. A card that already HAS one shows it without
@@ -107,18 +109,18 @@ export function CardDeckEditor({
             <EditField
               value={card.label}
               onChange={(v) => update(i, { label: v })}
-              placeholder={t.operator.cardWord}
-              ariaLabel={t.operator.cardWord}
+              placeholder={o18n.cardWord}
+              ariaLabel={o18n.cardWord}
               clearable={false}
               leading={
                 <>
                   <span
                     className="deck__handle dnd-grip mono"
                     data-dnd-grip=""
-                    onPointerDown={(e) => dnd.start(String(i), card.label || t.operator.cardWord, e)}
+                    onPointerDown={(e) => dnd.start(String(i), card.label || o18n.cardWord, e)}
                     role="button"
-                    aria-label={t.operator.dragHint}
-                    title={t.operator.dragHint}
+                    aria-label={o18n.dragHint}
+                    title={o18n.dragHint}
                   >
                     ⠿
                   </span>
@@ -126,7 +128,7 @@ export function CardDeckEditor({
                     type="button"
                     className={'deck__emoji' + (card.photoKey ? ' deck__emoji--photo' : '')}
                     onClick={() => setPaletteFor(paletteFor === i ? null : i)}
-                    aria-label={t.operator.emojiPick}
+                    aria-label={o18n.emojiPick}
                   >
                     {/* A set photo wins over the emoji here too, so the editor
                         shows exactly what the kid + parent surfaces will show
@@ -147,7 +149,7 @@ export function CardDeckEditor({
                 downDisabled: i === cards.length - 1,
               }}
               onDelete={() => remove(i)}
-              deleteLabel={t.operator.removeCard}
+              deleteLabel={o18n.removeCard}
             />
           </div>
           {/* Per-card aids — the tap-to-start timer (needs no R2), the parent-voice
@@ -243,14 +245,14 @@ export function CardDeckEditor({
         )
       })}
       <button type="button" className="btn btn--ghost mono deck__add" onClick={add}>
-        <InlineIcon name="plus-bold" /> {t.operator.addCard}
+        <InlineIcon name="plus-bold" /> {o18n.addCard}
       </button>
       <DragGhost ghost={dnd.ghost} />
       {/* Tapping a card's glyph opens the shared searchable picker on a roomy Modal
           (the same treatment as CarnetForm's EmojiField) rather than an inline strip
           cramped under the card row. `paletteFor` is the card index (0 is valid, so
           guard on !== null). */}
-      <Modal open={paletteFor !== null} onClose={() => setPaletteFor(null)} title={t.operator.emojiPick}>
+      <Modal open={paletteFor !== null} onClose={() => setPaletteFor(null)} title={o18n.emojiPick}>
         {paletteFor !== null && (
           <EmojiPicker
             value={cards[paletteFor]?.icon}
@@ -258,7 +260,7 @@ export function CardDeckEditor({
               update(paletteFor, { icon: e })
               setPaletteFor(null)
             }}
-            ariaLabel={t.operator.emojiPick}
+            ariaLabel={o18n.emojiPick}
             className="emoji-picker--tall"
           />
         )}

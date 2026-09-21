@@ -4,6 +4,7 @@
 import '../../styles/cercle.css'
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../../i18n'
+import { useOperatorT } from '../../i18n.operator'
 import { type HelpMode } from '../../lib/helpMode'
 import { api } from '../../lib/api'
 import { useWrite } from '../../lib/write'
@@ -33,6 +34,7 @@ import { OperatorSection } from './OperatorSection'
 // people — `contact_group_members` cascades from the FK, the contacts/members stay.
 export function CercleGroupsSection({ help }: { help?: HelpMode }) {
   const t = useT()
+  const o18n = useOperatorT()
   const write = useWrite()
   const confirm = useConfirm()
   const { data, isLoading } = useQuery({
@@ -56,9 +58,9 @@ export function CercleGroupsSection({ help }: { help?: HelpMode }) {
   if (isLoading && !data) return <p className="loading mono">{t.common.loading}</p>
 
   return (
-    <OperatorSection title={t.operator.cercleGroupsTitle} help={help} helpKey="cercleGroups">
+    <OperatorSection title={o18n.cercleGroupsTitle} help={help} helpKey="cercleGroups">
       {groups.length === 0 ? (
-        <EmptyState>{t.operator.cercleGroupsEmpty}</EmptyState>
+        <EmptyState>{o18n.cercleGroupsEmpty}</EmptyState>
       ) : (
         <ul className="operator__list">
           {groups.map((g) => (
@@ -68,8 +70,8 @@ export function CercleGroupsSection({ help }: { help?: HelpMode }) {
                   li > span:not([class])), pushing the meta + delete to the right. */}
               <span>{g.name}</span>
               <Chip>{t.cercle.groupKinds[g.kind]}</Chip>
-              <span className="mono">{t.operator.cercleGroupMembers(g.memberKeys.size)}</span>
-              {isHiddenFamily(g) && <span className="mono">· {t.operator.cercleGroupHidden}</span>}
+              <span className="mono">{o18n.cercleGroupMembers(g.memberKeys.size)}</span>
+              {isHiddenFamily(g) && <span className="mono">· {o18n.cercleGroupHidden}</span>}
               <RowActions onDelete={() => remove(g)} deleteLabel={`${t.cercle.deleteGroup} — ${g.name}`} />
             </li>
           ))}

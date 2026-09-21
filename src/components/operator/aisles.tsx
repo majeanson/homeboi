@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useT, useLang } from '../../i18n'
+import { useOperatorT } from '../../i18n.operator'
 import { api } from '../../lib/api'
 import { useWrite } from '../../lib/write'
 import { HOUSEHOLD_KEY } from '../../lib/queryKeys'
@@ -33,6 +34,7 @@ function normalize(saved: AisleId[] | null | undefined): AisleId[] {
 
 export function AisleOrderSection() {
   const t = useT()
+  const o18n = useOperatorT()
   const { lang } = useLang()
   const write = useWrite()
   const confirm = useConfirm()
@@ -76,18 +78,18 @@ export function AisleOrderSection() {
   return (
     <OperatorSection
       helpKey="aisleOrder"
-      title={t.operator.aisleOrder}
-      hint={t.operator.aisleOrderHint}
+      title={o18n.aisleOrder}
+      hint={o18n.aisleOrderHint}
       action={
         !ro ? (
           <button
             type="button"
             className="btn btn--ghost btn--sm"
             onClick={async () => {
-              if (await confirm({ message: t.operator.resetConfirm, confirmLabel: t.operator.aisleReset, tone: 'default' })) save([...ORDERABLE])
+              if (await confirm({ message: o18n.resetConfirm, confirmLabel: o18n.aisleReset, tone: 'default' })) save([...ORDERABLE])
             }}
           >
-            <InlineIcon name="arrows-counter-clockwise-bold" /> {t.operator.aisleReset}
+            <InlineIcon name="arrows-counter-clockwise-bold" /> {o18n.aisleReset}
           </button>
         ) : undefined
       }
@@ -124,8 +126,8 @@ export function AisleOrderSection() {
           <span className="aisle-order__name">{AISLE_BY_ID.autres.label[lang]}</span>
         </li>
       </ul>
-      {status === 'saved' && <StatusMessage tone="success">{t.operator.postalSaved}</StatusMessage>}
-      {status === 'bad' && <StatusMessage tone="error">{t.operator.postalBad}</StatusMessage>}
+      {status === 'saved' && <StatusMessage tone="success">{o18n.postalSaved}</StatusMessage>}
+      {status === 'bad' && <StatusMessage tone="error">{o18n.postalBad}</StatusMessage>}
       <DragGhost ghost={dnd.ghost} />
     </OperatorSection>
   )

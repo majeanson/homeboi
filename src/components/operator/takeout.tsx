@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT, useLang } from '../../i18n'
+import { useOperatorT } from '../../i18n.operator'
 import { OperatorSection } from './OperatorSection'
 import { InlineIcon } from '../Icon'
 import { isGuest, isPaired } from '../../lib/device'
@@ -55,7 +56,7 @@ export function TakeoutSection({ help }: { help?: HelpMode }) {
     staleTime: 5 * 60_000,
   })
   if (hidden) return null
-  const o = t.operator
+  const o = useOperatorT()
   // Defensive: a payload without `backups` (an older Worker, a stubbed harness) must
   // render an empty list, not throw `reading 'length'` into the ErrorBoundary and take
   // the whole settings tab with it — which is what it did, caught by e2e the same

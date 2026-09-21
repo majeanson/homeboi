@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useT } from '../../i18n'
+import { useOperatorT } from '../../i18n.operator'
 import { api } from '../../lib/api'
 import { useWrite } from '../../lib/write'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
@@ -82,6 +83,7 @@ export function ClaimTablet({ onClaimed }: { onClaimed: () => void }) {
 }
 
 export function DevicesSection({ devices, onChange, help }: { devices: Device[]; onChange: () => void; help?: HelpMode }) {
+  const o18n = useOperatorT()
   const t = useT()
   const removal = useDeferredRemoval(DEVICES_KEY)
   // `visible` is the half that makes the deferred hook work: it drops the rows whose
@@ -100,9 +102,9 @@ export function DevicesSection({ devices, onChange, help }: { devices: Device[];
     })
   }
   return (
-    <OperatorSection title={t.operator.devices} help={help} helpKey="devices">
+    <OperatorSection title={o18n.devices} help={help} helpKey="devices">
       {active.length === 0 ? (
-        <EmptyState>{t.operator.noDevices}</EmptyState>
+        <EmptyState>{o18n.noDevices}</EmptyState>
       ) : (
         <ul className="operator__list">
           {active.map((d) => (
@@ -118,6 +120,7 @@ export function DevicesSection({ devices, onChange, help }: { devices: Device[];
 // pair. Editing swaps the label for an inline input — the rename is the device's
 // only mutable field, so a full form would be overkill.
 function DeviceRow({ device, onChange, onRevoke }: { device: Device; onChange: () => void; onRevoke: () => void }) {
+  const o18n = useOperatorT()
   const t = useT()
   const write = useWrite()
   const [editing, setEditing] = useState(false)
@@ -180,8 +183,8 @@ function DeviceRow({ device, onChange, onRevoke }: { device: Device; onChange: (
           <RowActions
             onEdit={() => setEditing(true)}
             onDelete={onRevoke}
-            editLabel={t.operator.renameDevice}
-            deleteLabel={t.operator.revoke}
+            editLabel={o18n.renameDevice}
+            deleteLabel={o18n.revoke}
           />
         }
       />
@@ -197,7 +200,7 @@ function DeviceRow({ device, onChange, onRevoke }: { device: Device; onChange: (
 // still has to know the transport, the URL and the header name. The line below is the
 // whole answer, and it is the only place in the app that knows the client's syntax.
 export function AgentSection({ onChange, help }: { onChange: () => void; help?: HelpMode }) {
-  const t = useT()
+  const o18n = useOperatorT()
   const [token, setToken] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -217,7 +220,7 @@ export function AgentSection({ onChange, help }: { onChange: () => void; help?: 
     try {
       const res = await api<{ token: string }>('pair/devices', {
         method: 'POST',
-        body: { mintAgent: true, label: t.operator.agentLabel },
+        body: { mintAgent: true, label: o18n.agentLabel },
       })
       setToken(res.token)
       onChange()
@@ -241,20 +244,20 @@ export function AgentSection({ onChange, help }: { onChange: () => void; help?: 
   }
 
   return (
-    <OperatorSection title={t.operator.agentTitle} hint={t.operator.agentLead} helpKey="mcpAgent" help={help}>
+    <OperatorSection title={o18n.agentTitle} hint={o18n.agentLead} helpKey="mcpAgent" help={help}>
       {!token ? (
         <button type="button" className="btn btn--primary" onClick={mint} disabled={busy}>
-          {t.operator.agentMint}
+          {o18n.agentMint}
         </button>
       ) : (
         <>
           <pre className="operator__token">{command}</pre>
           <Cluster>
             <button type="button" className="btn" onClick={copy}>
-              {copied ? t.operator.agentCopied : t.operator.agentCopy}
+              {copied ? o18n.agentCopied : o18n.agentCopy}
             </button>
           </Cluster>
-          <StatusMessage tone="info">{t.operator.agentOnce}</StatusMessage>
+          <StatusMessage tone="info">{o18n.agentOnce}</StatusMessage>
         </>
       )}
       {err && <StatusMessage tone="error">{err}</StatusMessage>}

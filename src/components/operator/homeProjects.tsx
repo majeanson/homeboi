@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useLang, useT } from '../../i18n'
+import { useOperatorT } from '../../i18n.operator'
 import { api } from '../../lib/api'
 import { useWrite } from '../../lib/write'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
@@ -35,18 +36,18 @@ import type { Chore, HomeProject } from './types'
 // row, "one job at a time".
 type ChoresTab = 'corvees' | 'projets' | 'entretien'
 export function ChoresTabPanel({ chores, onChange, help }: { chores: Chore[]; onChange: () => void; help?: HelpMode }) {
-  const t = useT()
+  const o18n = useOperatorT()
   const [sub, setSub] = useState<ChoresTab>('corvees')
   return (
     <>
       <SubTabs<ChoresTab>
-        ariaLabel={t.operator.chores}
+        ariaLabel={o18n.chores}
         value={sub}
         onSelect={setSub}
         options={[
-          { key: 'corvees', label: t.operator.home.subCorvees },
-          { key: 'projets', label: t.operator.home.subProjets },
-          { key: 'entretien', label: t.operator.home.subEntretien },
+          { key: 'corvees', label: o18n.home.subCorvees },
+          { key: 'projets', label: o18n.home.subProjets },
+          { key: 'entretien', label: o18n.home.subEntretien },
         ]}
       />
       {sub === 'corvees' && (
@@ -68,6 +69,7 @@ export function ChoresTabPanel({ chores, onChange, help }: { chores: Chore[]; on
 // ChoresSection: in-section add (not the ＋ FAB), edit in place, deferred-undo
 // delete; hidden writes for a read-only guest.
 function HomeProjectsSection({ kind, help }: { kind: 'plan' | 'upkeep'; help?: HelpMode }) {
+  const o18n = useOperatorT()
   const t = useT()
   const { lang } = useLang()
   const ro = isGuest()
@@ -120,10 +122,10 @@ function HomeProjectsSection({ kind, help }: { kind: 'plan' | 'upkeep'; help?: H
   const seasonItems = kind === 'upkeep' ? seasonUpkeepItems(rows) : []
   const s = currentSeason()
 
-  const c = kind === 'upkeep' ? t.operator.home.entretienTitle : t.operator.home.projetsTitle
+  const c = kind === 'upkeep' ? o18n.home.entretienTitle : o18n.home.projetsTitle
   const helpKey = kind === 'upkeep' ? 'homeEntretien' : 'homeProjets'
-  const addLabel = kind === 'upkeep' ? t.operator.home.addEntretien : t.operator.home.addProjet
-  const emptyLabel = kind === 'upkeep' ? t.operator.home.emptyEntretien : t.operator.home.emptyProjets
+  const addLabel = kind === 'upkeep' ? o18n.home.addEntretien : o18n.home.addProjet
+  const emptyLabel = kind === 'upkeep' ? o18n.home.emptyEntretien : o18n.home.emptyProjets
 
   function remove(p: HomeProject) {
     // No .catch: a rejected delete must un-hide the row rather than leave the list
@@ -159,8 +161,8 @@ function HomeProjectsSection({ kind, help }: { kind: 'plan' | 'upkeep'; help?: H
       )}
       {seeds.length > 0 && (
         <div className="season-seeds">
-          <p className="operator__seg-label mono">{t.operator.home.seedsTitle}</p>
-          <p className="operator__hint mono">{t.operator.home.seedsHint}</p>
+          <p className="operator__seg-label mono">{o18n.home.seedsTitle}</p>
+          <p className="operator__hint mono">{o18n.home.seedsHint}</p>
           {seeds.map((seed) => (
             <Cluster key={seed.id}>
               <button type="button" className="btn btn--sm" onClick={() => addSeed(seed)}>
@@ -171,8 +173,8 @@ function HomeProjectsSection({ kind, help }: { kind: 'plan' | 'upkeep'; help?: H
                 type="button"
                 className="btn btn--ghost btn--sm"
                 onClick={() => hideSeed(seed.id)}
-                aria-label={t.operator.home.seedDismiss}
-                title={t.operator.home.seedDismiss}
+                aria-label={o18n.home.seedDismiss}
+                title={o18n.home.seedDismiss}
               >
                 <InlineIcon name="x-bold" size={14} />
               </button>
@@ -215,6 +217,7 @@ function HomeProjectsSection({ kind, help }: { kind: 'plan' | 'upkeep'; help?: H
 // One row. ✏️ expands the SAME form prefilled (one editor for create + edit); 🗑️
 // removes it (deferred undo). The subtitle reads the cadence/date + target budget.
 function HomeProjectRow({ project, kind, onRemove }: { project: HomeProject; kind: 'plan' | 'upkeep'; onRemove: () => void }) {
+  const o18n = useOperatorT()
   const t = useT()
   const { lang } = useLang()
   const [editing, setEditing] = useState(false)
@@ -231,11 +234,11 @@ function HomeProjectRow({ project, kind, onRemove }: { project: HomeProject; kin
     parts.push(recurLabel(project.recur_json, t))
     // « à partir de la dernière fois » (recur_from='done') — name the re-anchor mode
     // so two same-cadence rows don't read identical when they schedule differently.
-    if (project.recur_from === 'done') parts.push(t.operator.home.fromLastDoneShort)
+    if (project.recur_from === 'done') parts.push(o18n.home.fromLastDoneShort)
   } else if (project.at) parts.push(formatDayMaybeYear(project.at, lang))
   // « Reporté au … » — an active postpone is worth naming here, or a quiet row
   // reads as mysteriously absent from the board.
-  if (project.snoozedUntil != null) parts.push(t.operator.home.snoozedUntil(formatDayMaybeYear(project.snoozedUntil, lang)))
+  if (project.snoozedUntil != null) parts.push(o18n.home.snoozedUntil(formatDayMaybeYear(project.snoozedUntil, lang)))
   const money = formatMoney(project.budget_cents, lang)
   if (money) parts.push(money)
   const subtitle = parts.filter(Boolean).join(' · ')
@@ -250,8 +253,8 @@ function HomeProjectRow({ project, kind, onRemove }: { project: HomeProject; kin
           <RowActions
             onEdit={() => setEditing(true)}
             onDelete={onRemove}
-            editLabel={kind === 'upkeep' ? t.operator.home.editEntretien : t.operator.home.editProjet}
-            deleteLabel={kind === 'upkeep' ? t.operator.home.deleteEntretien : t.operator.home.deleteProjet}
+            editLabel={kind === 'upkeep' ? o18n.home.editEntretien : o18n.home.editProjet}
+            deleteLabel={kind === 'upkeep' ? o18n.home.deleteEntretien : o18n.home.deleteProjet}
           />
         }
       />

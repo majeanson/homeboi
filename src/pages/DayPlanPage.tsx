@@ -7,6 +7,7 @@ import { api, isUnauthorized } from '../lib/api'
 import { useWrite } from '../lib/write'
 import { isGuest } from '../lib/device'
 import { useLang, useT } from '../i18n'
+import { useOperatorT } from '../i18n.operator'
 import { live } from '../lib/query'
 import { useProfile } from '../lib/profile'
 import { useRecordUndo } from '../lib/toast'
@@ -119,6 +120,7 @@ export function DayPlanPage() {
 
 function DayPlanScene() {
   const t = useT()
+  const o18n = useOperatorT()
   const { lang } = useLang()
   // The day's hero meal (Réglages ▸ Repas) — it owns the grocery-staples step.
   const heroSlot = useMealPrefs().hero
@@ -727,7 +729,7 @@ function DayPlanScene() {
                 <SectionAdd
                   open={!!eventForm}
                   onToggle={() => setEventForm(eventForm ? null : {})}
-                  label={t.operator.addEvent}
+                  label={o18n.addEvent}
                   readOnly={ro}
                 />
               }
@@ -795,7 +797,7 @@ function DayPlanScene() {
                 <SectionAdd
                   open={!!choreForm}
                   onToggle={() => setChoreForm(choreForm ? null : {})}
-                  label={t.operator.addChore}
+                  label={o18n.addChore}
                   readOnly={ro}
                 />
               }
@@ -848,7 +850,7 @@ function DayPlanScene() {
               a mirror, not a home. */}
           {dayHome.length > 0 && (
             <section className="day-plan__sec" style={{ '--sec-tint': CATS.chore.color } as React.CSSProperties}>
-              <SecLabel label={t.operator.home.subEntretien} icon="gear-six-bold" count={dayHome.length} />
+              <SecLabel label={o18n.home.subEntretien} icon="gear-six-bold" count={dayHome.length} />
               {dayHome.map((h) => (
                 <Act
                   key={h.id}

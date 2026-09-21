@@ -1,4 +1,4 @@
-import { useT } from '../../i18n'
+import { useOperatorT } from '../../i18n.operator'
 import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
 import { Icon } from '../Icon'
@@ -15,19 +15,19 @@ const IDLE_OPTS = [1, 2, 3, 5, 10, 15, 30]
 const HOME_OPTS = [1, 2, 3, 5, 10]
 
 export function AmbientSettingsSection({ help }: { help?: HelpMode }) {
-  const t = useT()
+  const o18n = useOperatorT()
   const a = useAmbient()
   const set = (patch: Partial<AmbientSettings>) => setAmbient(patch)
 
   return (
-    <OperatorSection title={t.operator.ambientTitle} help={help} helpKey="ambient">
+    <OperatorSection title={o18n.ambientTitle} help={help} helpKey="ambient">
       {/* — The screensaver — */}
       <div className="operator__seg">
-        <span className="operator__seg-label mono">{t.operator.ambientScreensaver}</span>
+        <span className="operator__seg-label mono">{o18n.ambientScreensaver}</span>
         <Toggle
           on={a.screensaver}
           icon="image-square-bold"
-          label={a.screensaver ? t.operator.ambientOnWord : t.operator.ambientOffWord}
+          label={a.screensaver ? o18n.ambientOnWord : o18n.ambientOffWord}
           onClick={() => set({ screensaver: !a.screensaver })}
         />
       </div>
@@ -35,79 +35,79 @@ export function AmbientSettingsSection({ help }: { help?: HelpMode }) {
       {a.screensaver && (
         <>
           <div className="operator__seg">
-            <span className="operator__seg-label mono">{t.operator.ambientIdleBefore}</span>
+            <span className="operator__seg-label mono">{o18n.ambientIdleBefore}</span>
             <select
               className="input"
               value={a.idleMin}
               onChange={(e) => set({ idleMin: Number(e.target.value) })}
-              aria-label={t.operator.ambientIdleBefore}
+              aria-label={o18n.ambientIdleBefore}
             >
               {IDLE_OPTS.map((m) => (
                 <option key={m} value={m}>
-                  {t.operator.ambientMinutes(m)}
+                  {o18n.ambientMinutes(m)}
                 </option>
               ))}
             </select>
           </div>
 
-          <p className="operator__seg-label mono">{t.operator.ambientShows}</p>
+          <p className="operator__seg-label mono">{o18n.ambientShows}</p>
           <div className="ambient-set__shows">
-            <Toggle on={a.showClock} icon="clock-bold" label={t.operator.ambientClock} onClick={() => set({ showClock: !a.showClock })} />
-            <Toggle on={a.showDate} icon="calendar-blank-bold" label={t.operator.ambientDate} onClick={() => set({ showDate: !a.showDate })} />
-            <Toggle on={a.showPhotos} icon="image-square-bold" label={t.operator.ambientPhotos} onClick={() => set({ showPhotos: !a.showPhotos })} />
-            <Toggle on={a.showDrawings} icon="paint-brush-bold" label={t.operator.ambientDrawings} onClick={() => set({ showDrawings: !a.showDrawings })} />
-            <Toggle on={a.showNext} icon="calendar-dots-bold" label={t.operator.ambientNext} onClick={() => set({ showNext: !a.showNext })} />
+            <Toggle on={a.showClock} icon="clock-bold" label={o18n.ambientClock} onClick={() => set({ showClock: !a.showClock })} />
+            <Toggle on={a.showDate} icon="calendar-blank-bold" label={o18n.ambientDate} onClick={() => set({ showDate: !a.showDate })} />
+            <Toggle on={a.showPhotos} icon="image-square-bold" label={o18n.ambientPhotos} onClick={() => set({ showPhotos: !a.showPhotos })} />
+            <Toggle on={a.showDrawings} icon="paint-brush-bold" label={o18n.ambientDrawings} onClick={() => set({ showDrawings: !a.showDrawings })} />
+            <Toggle on={a.showNext} icon="calendar-dots-bold" label={o18n.ambientNext} onClick={() => set({ showNext: !a.showNext })} />
           </div>
 
           {/* F-47 (bmad/08): the hourly breath — at the top of the hour the idle
               clock breathes once (a slow 2 s scale). No sound, no badge — the
               house's heartbeat. Every surface; reduced-motion drops it. */}
           <div className="operator__seg">
-            <span className="operator__seg-label mono">{t.operator.ambientBreath}</span>
+            <span className="operator__seg-label mono">{o18n.ambientBreath}</span>
             <Toggle
               on={a.hourlyBreath}
               icon="heart-bold"
-              label={a.hourlyBreath ? t.operator.ambientOnWord : t.operator.ambientOffWord}
+              label={a.hourlyBreath ? o18n.ambientOnWord : o18n.ambientOffWord}
               onClick={() => set({ hourlyBreath: !a.hourlyBreath })}
             />
           </div>
-          <p className="operator__hint mono">{t.operator.ambientBreathHint}</p>
+          <p className="operator__hint mono">{o18n.ambientBreathHint}</p>
 
           {/* Says WHERE it applies (this device, whatever its surface) and that
               waking it costs nothing. The copy existed but was never rendered,
               and claimed "kiosk only" — HubLayout arms the idle cycle on every
               surface, so a phone operator met a full-screen clock the settings
               swore couldn't happen. */}
-          <p className="operator__hint mono">{t.operator.ambientNote}</p>
+          <p className="operator__hint mono">{o18n.ambientNote}</p>
 
           <button type="button" className="btn btn--ghost" onClick={() => forceIdle('screensaver')}>
-            <Icon name="play-bold" size={16} /> {t.operator.ambientPreview}
+            <Icon name="play-bold" size={16} /> {o18n.ambientPreview}
           </button>
         </>
       )}
 
       {/* — Return to Maisonnée (the profile drift) — */}
       <div className="operator__seg">
-        <span className="operator__seg-label mono">{t.operator.ambientReturnHome}</span>
+        <span className="operator__seg-label mono">{o18n.ambientReturnHome}</span>
         <Toggle
           on={a.returnHome}
           icon="users-three-bold"
-          label={a.returnHome ? t.operator.ambientOnWord : t.operator.ambientOffWord}
+          label={a.returnHome ? o18n.ambientOnWord : o18n.ambientOffWord}
           onClick={() => set({ returnHome: !a.returnHome })}
         />
       </div>
       {a.returnHome && (
         <div className="operator__seg">
-          <span className="operator__seg-label mono">{t.operator.ambientReturnAfter}</span>
+          <span className="operator__seg-label mono">{o18n.ambientReturnAfter}</span>
           <select
             className="input"
             value={a.returnHomeMin}
             onChange={(e) => set({ returnHomeMin: Number(e.target.value) })}
-            aria-label={t.operator.ambientReturnAfter}
+            aria-label={o18n.ambientReturnAfter}
           >
             {HOME_OPTS.map((m) => (
               <option key={m} value={m}>
-                {t.operator.ambientMinutes(m)}
+                {o18n.ambientMinutes(m)}
               </option>
             ))}
           </select>
@@ -126,8 +126,7 @@ export function AmbientSettingsSection({ help }: { help?: HelpMode }) {
 // Neither is a notification: there is no push and no cron in this app. An open
 // screen simply notices the moment has come — a phone in a pocket stays quiet.
 export function HabitCheckinSection({ help }: { help?: HelpMode }) {
-  const t = useT()
-  const fn = t.operator
+  const fn = useOperatorT()
   const c = useHabitCheckin()
 
   return (

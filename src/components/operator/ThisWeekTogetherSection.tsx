@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { useT, useLang } from '../../i18n'
+import { useOperatorT } from '../../i18n.operator'
 import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
 import { api } from '../../lib/api'
@@ -46,6 +47,7 @@ const THIS_WEEK_KEY = ['this-week']
 
 export function ThisWeekTogetherSection({ help }: { help?: HelpMode }) {
   const t = useT()
+  const o18n = useOperatorT()
   const { lang } = useLang()
   const loc = lang === 'fr' ? 'fr-CA' : 'en-CA'
   const { data, isLoading, isError, refetch } = useQuery({ queryKey: THIS_WEEK_KEY, queryFn: () => api<WeekData>('this-week') })
@@ -81,7 +83,7 @@ export function ThisWeekTogetherSection({ help }: { help?: HelpMode }) {
 
   // A face chip (reuses the chore-ledger Avatar+name idiom). null name → calm fallback.
   const faceChip = (f: Face, i: number) => {
-    const label = f.name ?? t.operator.ledgerHelperChild
+    const label = f.name ?? o18n.ledgerHelperChild
     return (
       <span key={`${f.memberId ?? 'x'}-${i}`} className="ledger__helper">
         <Avatar kind={f.avatarKind} photo={f.avatarRef} colour={f.colour} name={label} size={28} />
@@ -98,8 +100,8 @@ export function ThisWeekTogetherSection({ help }: { help?: HelpMode }) {
     !!behind && (behind.chores.length || behind.routines.length || behind.projects.length)
 
   return (
-    <OperatorSection title={t.operator.thisWeekTitle} help={help} helpKey="thisWeek">
-      <p className="operator__hint mono">{t.operator.thisWeekHint}</p>
+    <OperatorSection title={o18n.thisWeekTitle} help={help} helpKey="thisWeek">
+      <p className="operator__hint mono">{o18n.thisWeekHint}</p>
 
       {/* « À régler » — the few cross-domain frictions to resolve first, each a one-tap
           fix link. Calm: empties to « Tout est sous contrôle », never a backlog. */}
@@ -144,20 +146,20 @@ export function ThisWeekTogetherSection({ help }: { help?: HelpMode }) {
         <div className="tweek">
           {/* ---- Week ahead ---- */}
           <div className="tweek__col">
-            <h3 className="tweek__col-h">{t.operator.thisWeekAhead}</h3>
+            <h3 className="tweek__col-h">{o18n.thisWeekAhead}</h3>
             {!hasAhead ? (
-              <EmptyState tone="calm">{t.operator.thisWeekAheadEmpty}</EmptyState>
+              <EmptyState tone="calm">{o18n.thisWeekAheadEmpty}</EmptyState>
             ) : (
               <>
                 {!!ahead!.birthdays.length && (
                   <div className="tweek__group">
-                    <h4 className="tweek__h mono"><Icon name="cake-bold" size={14} /> {t.operator.thisWeekBirthdays}</h4>
+                    <h4 className="tweek__h mono"><Icon name="cake-bold" size={14} /> {o18n.thisWeekBirthdays}</h4>
                     {ahead!.birthdays.map((b, i) => (
                       <div key={i} className="tweek__row">
                         <span className="tweek__when mono">{dayName(b.at)}</span>
                         <span className="tweek__what">
                           {b.name}
-                          {b.age != null && <span className="tweek__sub mono"> · {t.operator.thisWeekYears(b.age)}</span>}
+                          {b.age != null && <span className="tweek__sub mono"> · {o18n.thisWeekYears(b.age)}</span>}
                         </span>
                       </div>
                     ))}
@@ -165,7 +167,7 @@ export function ThisWeekTogetherSection({ help }: { help?: HelpMode }) {
                 )}
                 {!!ahead!.meals.length && (
                   <div className="tweek__group">
-                    <h4 className="tweek__h mono"><Icon name="fork-knife-bold" size={14} /> {t.operator.thisWeekMeals}</h4>
+                    <h4 className="tweek__h mono"><Icon name="fork-knife-bold" size={14} /> {o18n.thisWeekMeals}</h4>
                     {ahead!.meals.map((m, i) => (
                       <div key={i} className="tweek__row">
                         <span className="tweek__when mono">{dayName(m.date)}</span>
@@ -176,7 +178,7 @@ export function ThisWeekTogetherSection({ help }: { help?: HelpMode }) {
                 )}
                 {!!ahead!.work.length && (
                   <div className="tweek__group">
-                    <h4 className="tweek__h mono"><Icon name="clock-bold" size={14} /> {t.operator.thisWeekWork}</h4>
+                    <h4 className="tweek__h mono"><Icon name="clock-bold" size={14} /> {o18n.thisWeekWork}</h4>
                     {ahead!.work.map((w, i) => (
                       <div key={i} className="tweek__row">
                         <span className="tweek__when mono">{dayName(w.at)}</span>
@@ -190,7 +192,7 @@ export function ThisWeekTogetherSection({ help }: { help?: HelpMode }) {
                 )}
                 {!!ahead!.events.length && (
                   <div className="tweek__group">
-                    <h4 className="tweek__h mono"><Icon name="calendar-dots-bold" size={14} /> {t.operator.thisWeekEvents}</h4>
+                    <h4 className="tweek__h mono"><Icon name="calendar-dots-bold" size={14} /> {o18n.thisWeekEvents}</h4>
                     {ahead!.events.map((e, i) => (
                       <div key={i} className="tweek__row">
                         <span className="tweek__when mono">{dayName(e.at)}</span>
@@ -204,7 +206,7 @@ export function ThisWeekTogetherSection({ help }: { help?: HelpMode }) {
                 )}
                 {!!ahead!.projects.length && (
                   <div className="tweek__group">
-                    <h4 className="tweek__h mono"><Icon name="paint-brush-bold" size={14} /> {t.operator.thisWeekProjects}</h4>
+                    <h4 className="tweek__h mono"><Icon name="paint-brush-bold" size={14} /> {o18n.thisWeekProjects}</h4>
                     {ahead!.projects.map((p, i) => (
                       <div key={i} className="tweek__row">
                         <span className="tweek__when mono">{dayName(p.at)}</span>
@@ -219,14 +221,14 @@ export function ThisWeekTogetherSection({ help }: { help?: HelpMode }) {
 
           {/* ---- Week behind ---- */}
           <div className="tweek__col">
-            <h3 className="tweek__col-h">{t.operator.thisWeekBehind}</h3>
+            <h3 className="tweek__col-h">{o18n.thisWeekBehind}</h3>
             {!hasBehind ? (
-              <EmptyState tone="calm">{t.operator.thisWeekBehindEmpty}</EmptyState>
+              <EmptyState tone="calm">{o18n.thisWeekBehindEmpty}</EmptyState>
             ) : (
               <>
                 {!!behind!.chores.length && (
                   <div className="tweek__group">
-                    <h4 className="tweek__h mono"><Icon name="broom-bold" size={14} /> {t.operator.thisWeekChores}</h4>
+                    <h4 className="tweek__h mono"><Icon name="broom-bold" size={14} /> {o18n.thisWeekChores}</h4>
                     {behind!.chores.map((c, i) => (
                       <div key={i} className="tweek__row tweek__row--faces">
                         <span className="tweek__spine" style={{ background: colourFor('chore', c.choreColor) }} aria-hidden="true" />
@@ -238,7 +240,7 @@ export function ThisWeekTogetherSection({ help }: { help?: HelpMode }) {
                 )}
                 {!!behind!.routines.length && (
                   <div className="tweek__group">
-                    <h4 className="tweek__h mono"><Icon name="sun-bold" size={14} /> {t.operator.thisWeekRoutines}</h4>
+                    <h4 className="tweek__h mono"><Icon name="sun-bold" size={14} /> {o18n.thisWeekRoutines}</h4>
                     {behind!.routines.map((r, i) => (
                       <div key={i} className="tweek__row tweek__row--faces">
                         <span className="tweek__chore">{r.name}</span>
@@ -249,7 +251,7 @@ export function ThisWeekTogetherSection({ help }: { help?: HelpMode }) {
                 )}
                 {!!behind!.projects.length && (
                   <div className="tweek__group">
-                    <h4 className="tweek__h mono"><Icon name="paint-brush-bold" size={14} /> {t.operator.thisWeekProjects}</h4>
+                    <h4 className="tweek__h mono"><Icon name="paint-brush-bold" size={14} /> {o18n.thisWeekProjects}</h4>
                     {behind!.projects.map((p, i) => (
                       <div key={i} className="tweek__row">
                         <span className="tweek__spine" style={{ background: colourFor('project', p.color) }} aria-hidden="true" />

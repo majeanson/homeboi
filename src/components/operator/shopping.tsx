@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useLang, useT } from '../../i18n'
+import { useOperatorT } from '../../i18n.operator'
 import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
 import { api, isStatus } from '../../lib/api'
@@ -26,6 +27,7 @@ import { Disclosure } from '../Disclosure'
 // price-match proof on the list knows where to search. Set once, used every trip.
 export function ShopSection({ help }: { help?: HelpMode }) {
   const t = useT()
+  const o18n = useOperatorT()
   const { lang: uiLang } = useLang()
   const write = useWrite()
   const qc = useQueryClient()
@@ -62,7 +64,7 @@ export function ShopSection({ help }: { help?: HelpMode }) {
       const staged = (board.list ?? []).filter((r) => r.deal_json && !r.checked_at)
       const { found, dropped } = staged.length ? await refreshEndedDeals(qc, staged) : { found: 0, dropped: 0 }
       await qc.invalidateQueries({ queryKey: BOARD_KEY })
-      notice(t.operator.flippLangSaved(found, dropped))
+      notice(o18n.flippLangSaved(found, dropped))
     } catch {
       setStatus('bad')
     } finally {
@@ -88,7 +90,7 @@ export function ShopSection({ help }: { help?: HelpMode }) {
   }
 
   return (
-    <OperatorSection title={t.operator.shopping} help={help} helpKey="shop">
+    <OperatorSection title={o18n.shopping} help={help} helpKey="shop">
       {!isGuest() && (
         <EditField
           value={postal}
@@ -99,25 +101,25 @@ export function ShopSection({ help }: { help?: HelpMode }) {
           onSubmit={() => save()}
           submitLabel={t.common.save}
           submitVariant="primary"
-          placeholder={t.operator.postalPlaceholder}
-          ariaLabel={t.operator.postalLabel}
+          placeholder={o18n.postalPlaceholder}
+          ariaLabel={o18n.postalLabel}
           maxLength={7}
         />
       )}
-      {status === 'saved' && <StatusMessage tone="success">{t.operator.postalSaved}</StatusMessage>}
-      {status === 'bad' && <StatusMessage tone="error">{t.operator.postalBad}</StatusMessage>}
+      {status === 'saved' && <StatusMessage tone="success">{o18n.postalSaved}</StatusMessage>}
+      {status === 'bad' && <StatusMessage tone="error">{o18n.postalBad}</StatusMessage>}
       {!isGuest() && (
         <>
-          <p className="operator__hint">{t.operator.flippLangHint}</p>
-          <ChipGroup label={t.operator.flippLangLabel}>
+          <p className="operator__hint">{o18n.flippLangHint}</p>
+          <ChipGroup label={o18n.flippLangLabel}>
             <Chip selected={(flippLang ?? uiLang) === 'fr'} onClick={() => chooseFlippLang('fr')}>
-              {t.operator.flippLangFr}
+              {o18n.flippLangFr}
             </Chip>
             <Chip selected={(flippLang ?? uiLang) === 'en'} onClick={() => chooseFlippLang('en')}>
-              {t.operator.flippLangEn}
+              {o18n.flippLangEn}
             </Chip>
           </ChipGroup>
-          {restaging && <StatusMessage tone="info">{t.operator.flippLangRestaging}</StatusMessage>}
+          {restaging && <StatusMessage tone="info">{o18n.flippLangRestaging}</StatusMessage>}
         </>
       )}
     </OperatorSection>
@@ -136,6 +138,7 @@ export function ShopSection({ help }: { help?: HelpMode }) {
 type ManageStore = { key: string; merchant: string; logo: string | null; included: boolean; tillHidden: boolean }
 
 export function StoreFilterSection({ help }: { help?: HelpMode }) {
+  const o18n = useOperatorT()
   const t = useT()
   const write = useWrite()
   const [stores, setStores] = useState<ManageStore[] | null>(null)
@@ -239,11 +242,11 @@ export function StoreFilterSection({ help }: { help?: HelpMode }) {
   }
 
   return (
-    <OperatorSection title={t.operator.storeFilter} help={help} helpKey="storeFilter">
+    <OperatorSection title={o18n.storeFilter} help={help} helpKey="storeFilter">
       {state === 'loading' && <EmptyState>{t.shop.searching}</EmptyState>}
-      {state === 'noPostal' && <EmptyState>{t.operator.storeFilterNoPostal}</EmptyState>}
-      {state === 'error' && <EmptyState>{t.operator.storeFilterError}</EmptyState>}
-      {state === 'empty' && <EmptyState>{t.operator.storeFilterEmpty}</EmptyState>}
+      {state === 'noPostal' && <EmptyState>{o18n.storeFilterNoPostal}</EmptyState>}
+      {state === 'error' && <EmptyState>{o18n.storeFilterError}</EmptyState>}
+      {state === 'empty' && <EmptyState>{o18n.storeFilterEmpty}</EmptyState>}
       {state === 'ok' && stores && (
         <ul className="operator__list store-filter">
           {stores.map((s) => (
@@ -258,7 +261,7 @@ export function StoreFilterSection({ help }: { help?: HelpMode }) {
               <span className="store-filter__name">{s.merchant}</span>
               {isGuest() ? (
                 <span className="mono store-filter__toggle">
-                  {s.included ? t.operator.storeIncluded : t.operator.storeExcluded}
+                  {s.included ? o18n.storeIncluded : o18n.storeExcluded}
                 </span>
               ) : (
                 <button
@@ -268,7 +271,7 @@ export function StoreFilterSection({ help }: { help?: HelpMode }) {
                   disabled={pending.has(s.key)}
                   aria-pressed={s.included}
                 >
-                  {s.included ? t.operator.storeIncluded : t.operator.storeExcluded}
+                  {s.included ? o18n.storeIncluded : o18n.storeExcluded}
                 </button>
               )}
               {/* "À la caisse: Oui/Non" — only meaningful for an included store (an
@@ -276,8 +279,8 @@ export function StoreFilterSection({ help }: { help?: HelpMode }) {
                   cashier; Non = hidden there (e.g. the store you shop at). */}
               {s.included &&
                 (isGuest() ? (
-                  <span className="mono store-filter__till" title={t.operator.storeCashierHint}>
-                    {t.operator.storeCashier}: {s.tillHidden ? t.operator.storeCashierOff : t.operator.storeCashierOn}
+                  <span className="mono store-filter__till" title={o18n.storeCashierHint}>
+                    {o18n.storeCashier}: {s.tillHidden ? o18n.storeCashierOff : o18n.storeCashierOn}
                   </span>
                 ) : (
                   <button
@@ -286,9 +289,9 @@ export function StoreFilterSection({ help }: { help?: HelpMode }) {
                     onClick={() => toggleTill(s)}
                     disabled={pending.has(s.key)}
                     aria-pressed={!s.tillHidden}
-                    title={t.operator.storeCashierHint}
+                    title={o18n.storeCashierHint}
                   >
-                    {t.operator.storeCashier}: {s.tillHidden ? t.operator.storeCashierOff : t.operator.storeCashierOn}
+                    {o18n.storeCashier}: {s.tillHidden ? o18n.storeCashierOff : o18n.storeCashierOn}
                   </button>
                 ))}
             </li>
@@ -313,6 +316,7 @@ interface HistRow {
 }
 
 export function HistorySection({ help }: { help?: HelpMode }) {
+  const o18n = useOperatorT()
   const t = useT()
   const qc = useQueryClient()
   const write = useWrite()
@@ -379,11 +383,11 @@ export function HistorySection({ help }: { help?: HelpMode }) {
   }
 
   return (
-    <OperatorSection title={t.operator.history} help={help} helpKey="history">
+    <OperatorSection title={o18n.history} help={help} helpKey="history">
       {items === null ? (
         <EmptyState>{t.shop.searching}</EmptyState>
       ) : items.length === 0 ? (
-        <EmptyState>{t.operator.historyEmpty}</EmptyState>
+        <EmptyState>{o18n.historyEmpty}</EmptyState>
       ) : (
         <ul className="operator__list ghost-admin">
           {items.map((it) =>
@@ -397,7 +401,7 @@ export function HistorySection({ help }: { help?: HelpMode }) {
                   submitLabel={t.common.save}
                   submitVariant="primary"
                   autoFocus
-                  ariaLabel={t.operator.historyRename}
+                  ariaLabel={o18n.historyRename}
                 />
               </li>
             ) : (
@@ -415,7 +419,7 @@ export function HistorySection({ help }: { help?: HelpMode }) {
                         setDraft(it.text)
                       }}
                     >
-                      {t.operator.historyRename}
+                      {o18n.historyRename}
                     </button>
                     <button
                       type="button"
@@ -423,7 +427,7 @@ export function HistorySection({ help }: { help?: HelpMode }) {
                       disabled={busy.has(it.key)}
                       onClick={() => remove(it)}
                     >
-                      {t.operator.historyRemove}
+                      {o18n.historyRemove}
                     </button>
                   </>
                 )}
@@ -442,6 +446,7 @@ export function HistorySection({ help }: { help?: HelpMode }) {
 // days, hides one, or adds a custom staple. Frequent untracked buys appear as
 // one-tap "track it?" suggestions — the deliberate opt-in.
 export function GhostSection({ help }: { help?: HelpMode }) {
+  const o18n = useOperatorT()
   const t = useT()
   const write = useWrite()
   const confirm = useConfirm()
@@ -497,7 +502,7 @@ export function GhostSection({ help }: { help?: HelpMode }) {
   }
   async function remove(item: GhostManageItem) {
     // Removing a tracked staple is permanent (no undo here) — confirm first.
-    if (!(await confirm({ message: t.operator.ghostStopConfirm, tone: 'danger' }))) return
+    if (!(await confirm({ message: o18n.ghostStopConfirm, tone: 'danger' }))) return
     await write('ghost', { method: 'DELETE', body: { key: item.key }, affectedKeys: [GHOSTS_KEY] }).catch(() => {})
     load()
   }
@@ -513,7 +518,7 @@ export function GhostSection({ help }: { help?: HelpMode }) {
   }
 
   return (
-    <OperatorSection title={t.operator.ghost} help={help} helpKey="ghost">
+    <OperatorSection title={o18n.ghost} help={help} helpKey="ghost">
       {items.length === 0 ? (
         <EmptyState>{t.ghost.emptyManage}</EmptyState>
       ) : (
@@ -683,7 +688,7 @@ function readFlippSetupDone(): boolean {
 }
 
 export function FlippSection({ help }: { help?: HelpMode }) {
-  const t = useT()
+  const o18n = useOperatorT()
   const [copied, setCopied] = useState(false)
   // Read ONCE at mount: <Disclosure defaultOpen> is an initial-state prop, and a
   // fold that snapped shut under the tap that just copied would be hostile.
@@ -706,8 +711,8 @@ export function FlippSection({ help }: { help?: HelpMode }) {
     }
   }
   return (
-    <OperatorSection title={t.operator.flippTitle} help={help} helpKey="flipp">
-      <p className="operator__hint">{t.operator.flippIntro}</p>
+    <OperatorSection title={o18n.flippTitle} help={help} helpKey="flipp">
+      <p className="operator__hint">{o18n.flippIntro}</p>
       {/* Two phases, in the order a household lives them: the one-time setup (the
           copy button sits right at its first step), then every trip. Marc walked
           exactly this on an iPhone on 2026-09-10 and the list landed in the Flipp app. */}
@@ -715,16 +720,16 @@ export function FlippSection({ help }: { help?: HelpMode }) {
           A first-timer still lands on it open, which is the whole point of the flag
           being about THIS device rather than about the household. */}
       <Disclosure
-        label={setupDone ? t.operator.flippRedoTitle : t.operator.flippOnceTitle}
+        label={setupDone ? o18n.flippRedoTitle : o18n.flippOnceTitle}
         defaultOpen={!setupDone}
       >
         <ol className="operator__steps">
-          <li>{t.operator.flippOnce0}</li>
+          <li>{o18n.flippOnce0}</li>
           <li>
-            {t.operator.flippOnce1}
+            {o18n.flippOnce1}
             <Cluster>
               <button type="button" className="btn btn--primary flipp__copy" onClick={copy}>
-                {copied ? <InlineIcon name="check-bold" /> : null} {copied ? t.operator.flippBookmarkletCopied : t.operator.flippCopyBookmarklet}
+                {copied ? <InlineIcon name="check-bold" /> : null} {copied ? o18n.flippBookmarkletCopied : o18n.flippCopyBookmarklet}
               </button>
             </Cluster>
             <input
@@ -732,42 +737,42 @@ export function FlippSection({ help }: { help?: HelpMode }) {
               readOnly
               value={bookmarklet}
               onFocus={(e) => e.target.select()}
-              aria-label={t.operator.flippBookmarkletLabel}
+              aria-label={o18n.flippBookmarkletLabel}
             />
           </li>
-          <li>{t.operator.flippOnce2}</li>
-          <li>{t.operator.flippOnce3}</li>
-          <li>{t.operator.flippOnce4}</li>
+          <li>{o18n.flippOnce2}</li>
+          <li>{o18n.flippOnce3}</li>
+          <li>{o18n.flippOnce4}</li>
         </ol>
       </Disclosure>
-      <h4 className="flipp__phase">{t.operator.flippEachTitle}</h4>
+      <h4 className="flipp__phase">{o18n.flippEachTitle}</h4>
       {/* One GESTURE per step (2026-09-12). Step 2 used to carry two — open the till,
           then tap the sync — which is how a numbered list stops being followable. */}
       <ol className="operator__steps">
-        <li>{t.operator.flippEach1}</li>
-        <li>{t.operator.flippEach2}</li>
-        <li>{t.operator.flippEach3}</li>
-        <li>{t.operator.flippEach4}</li>
+        <li>{o18n.flippEach1}</li>
+        <li>{o18n.flippEach2}</li>
+        <li>{o18n.flippEach3}</li>
+        <li>{o18n.flippEach4}</li>
       </ol>
-      <p className="operator__hint">{t.operator.flippWhat}</p>
-      <p className="operator__hint">{t.operator.flippDealsOnly}</p>
-      <p className="operator__hint">{t.operator.flippWords}</p>
-      <h4 className="flipp__phase">{t.operator.flippBackTitle}</h4>
-      <p className="operator__hint">{t.operator.flippBack1}</p>
+      <p className="operator__hint">{o18n.flippWhat}</p>
+      <p className="operator__hint">{o18n.flippDealsOnly}</p>
+      <p className="operator__hint">{o18n.flippWords}</p>
+      <h4 className="flipp__phase">{o18n.flippBackTitle}</h4>
+      <p className="operator__hint">{o18n.flippBack1}</p>
       {/* Folded: read once, then muscle memory (Marc, 2026-09-11: « clear up all we
           can do for convenience »). */}
-      <Disclosure label={t.operator.flippTipsTitle}>
+      <Disclosure label={o18n.flippTipsTitle}>
         <ul className="operator__steps">
-          <li>{t.operator.flippTip1}</li>
-          <li>{t.operator.flippTip2}</li>
-          <li>{t.operator.flippTip3}</li>
-          <li>{t.operator.flippTip4}</li>
+          <li>{o18n.flippTip1}</li>
+          <li>{o18n.flippTip2}</li>
+          <li>{o18n.flippTip3}</li>
+          <li>{o18n.flippTip4}</li>
         </ul>
       </Disclosure>
       {/* Folded: most households have one phone, and it is the one above. */}
-      <Disclosure label={t.operator.flippOtherTitle}>
-        <p className="operator__hint">{t.operator.flippAndroid}</p>
-        <p className="operator__hint">{t.operator.flippShortcut}</p>
+      <Disclosure label={o18n.flippOtherTitle}>
+        <p className="operator__hint">{o18n.flippAndroid}</p>
+        <p className="operator__hint">{o18n.flippShortcut}</p>
       </Disclosure>
     </OperatorSection>
   )

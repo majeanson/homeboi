@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { FormScene } from '../components/FormScene'
 import { EventForm } from '../components/forms/EventForm'
 import { useT } from '../i18n'
+import { useOperatorT } from '../i18n.operator'
 import { MONTH_KEY, BOARD_KEY, EVENTS_KEY, CAR_KEY } from '../lib/queryKeys'
 
 // /event/new — add a rendez-vous as a full-screen scene (was a sheet form; tall
@@ -11,6 +12,7 @@ import { MONTH_KEY, BOARD_KEY, EVENTS_KEY, CAR_KEY } from '../lib/queryKeys'
 // (local-midnight) pre-fills the date when opened from the calendar's day page.
 export function EventFormPage() {
   const t = useT()
+  const o18n = useOperatorT()
   const qc = useQueryClient()
   const [params] = useSearchParams()
   const dateSeed = Number(params.get('date'))
@@ -24,7 +26,7 @@ export function EventFormPage() {
   return (
     <FormScene
       card={ride ? 'auto' : 'set-agenda'}
-      title={activity ? t.operator.addActivity : ride ? t.auto.addRide : t.operator.addEvent}
+      title={activity ? o18n.addActivity : ride ? t.auto.addRide : o18n.addEvent}
       icon="calendar-blank-bold"
       fallback="/board"
     >

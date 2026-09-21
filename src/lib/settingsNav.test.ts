@@ -18,6 +18,8 @@ import {
   type SettingsTabId,
 } from './settingsNav'
 import { FR } from '../i18n'
+import { FR_OPERATOR } from '../i18n.operator'
+import { EN_OPERATOR } from '../i18n.operator.en'
 import { EN } from '../i18n.en'
 
 // THE RÉGLAGES TAXONOMY, held by a test (sibling of guideLinks.test.ts, which
@@ -67,8 +69,8 @@ describe('SETTINGS_TREE is well-formed', () => {
       for (const sub of SETTINGS_SUBS[tab]) {
         const key = (SUB_LABEL_KEY[tab] as Record<string, string>)[sub]
         expect(key, `${tab}/${sub} has no SUB_LABEL_KEY`).toBeTruthy()
-        expect((FR.operator as Record<string, unknown>)[key], `t.operator.${key} (fr) for ${tab}/${sub}`).toBeTypeOf('string')
-        expect((EN.operator as Record<string, unknown>)[key], `t.operator.${key} (en) for ${tab}/${sub}`).toBeTypeOf('string')
+        expect((FR_OPERATOR as Record<string, unknown>)[key], `o18n.${key} (fr) for ${tab}/${sub}`).toBeTypeOf('string')
+        expect((EN_OPERATOR as Record<string, unknown>)[key], `o18n.${key} (en) for ${tab}/${sub}`).toBeTypeOf('string')
       }
     }
   })
@@ -219,8 +221,8 @@ describe('prose breadcrumbs name live Réglages destinations', () => {
   const tabLabels = new Map<string, string>() // label → tab id (both languages)
   const navKey: Record<string, string> = { liste: 'list', notes: 'notes', maison: 'maison' }
   const opKey: Record<string, string> = { decouvrir: 'secDiscover', board: 'secBoard', kitchen: 'secKitchen', settings: 'secSystem' }
-  for (const L of [FR, EN]) {
-    for (const [tab, k] of Object.entries(opKey)) tabLabels.set((L.operator as unknown as Record<string, string>)[k], tab)
+  for (const [L, O] of [[FR, FR_OPERATOR], [EN, EN_OPERATOR]] as const) {
+    for (const [tab, k] of Object.entries(opKey)) tabLabels.set((O as unknown as Record<string, string>)[k], tab)
     for (const [tab, k] of Object.entries(navKey)) tabLabels.set((L.nav as unknown as Record<string, string>)[k], tab)
   }
   const pillLabels = new Map<string, Set<string>>() // tab → its pill labels (both languages)
@@ -229,8 +231,8 @@ describe('prose breadcrumbs name live Réglages destinations', () => {
     const set = new Set<string>()
     for (const sub of SETTINGS_SUBS[tab]) {
       const k = (SUB_LABEL_KEY[tab] as Record<string, string>)[sub]
-      for (const L of [FR, EN]) {
-        const label = (L.operator as unknown as Record<string, string>)[k]
+      for (const O of [FR_OPERATOR, EN_OPERATOR]) {
+        const label = (O as unknown as Record<string, string>)[k]
         set.add(label)
         if (!pillOwners.has(label)) pillOwners.set(label, new Set())
         pillOwners.get(label)!.add(tab)
@@ -282,7 +284,7 @@ describe('prose breadcrumbs name live Réglages destinations', () => {
   })
 
   it('i18n (fr + en), the guide and the help registries only name live destinations', () => {
-    const files = ['src/i18n.ts', 'src/i18n.en.ts', 'src/lib/guideContent.ts', 'src/lib/operatorHelp.ts', ...sourceFiles(srcDir).filter((f) => /[a-zA-Z]Help\.ts$/.test(f)).map((f) => rel(f))]
+    const files = ['src/i18n.ts', 'src/i18n.en.ts', 'src/i18n.operator.ts', 'src/i18n.operator.en.ts', 'src/lib/guideContent.ts', 'src/lib/operatorHelp.ts', ...sourceFiles(srcDir).filter((f) => /[a-zA-Z]Help\.ts$/.test(f)).map((f) => rel(f))]
     const problems: string[] = []
     for (const f of new Set(files)) {
       // Strings only: readScanned blanks comments, and a comment's crumb is not a hint.

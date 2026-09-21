@@ -162,7 +162,7 @@ export function VoiturePage() {
         card="auto"
         title={t.auto.weekTitle}
         // The car's NAME — but only when it SAYS something the title has not. An
-        // unrenamed car is seeded « L'auto » (t.operator.carDefaultName), so under the
+        // unrenamed car is seeded « L'auto » (o18n.carDefaultName), so under the
         // title « L'auto cette semaine » the subtitle was the same word twice. A
         // household that named theirs « La Civic » still gets it.
         subtitle={carSub}

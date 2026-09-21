@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from './api'
 import { HOUSEHOLD_KEY } from './queryKeys'
-import { useT } from '../i18n'
+import { useOperatorT } from '../i18n.operator'
 
 // The household's vehicle(s) for « L'auto », resolved from the household settings.
 // Custom & editable (Réglages ▸ L'auto, stored as a JSON column, migration 0067).
@@ -36,8 +36,8 @@ export interface CarPrefs {
 }
 
 export function useCars(): CarPrefs {
-  const t = useT()
-  const defaults = seedCarDefaults(t.operator.carDefaultName)
+  const o18n = useOperatorT()
+  const defaults = seedCarDefaults(o18n.carDefaultName)
   const { data } = useQuery({
     queryKey: HOUSEHOLD_KEY,
     queryFn: () => api<{ cars?: Car[] | null }>('household'),

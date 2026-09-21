@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLang, useT } from '../i18n'
+import { useOperatorT } from '../i18n.operator'
 import { api, ApiError } from '../lib/api'
 import { useAi } from '../lib/ai'
 import { useWrite } from '../lib/write'
@@ -169,7 +170,7 @@ const navigatesAway = (m: AddSheetMode) => !!NAV_TARGET[m] || m === 'plan-today'
 
 // The board ＋ « Corvées » sub-choice (rendered for mode === 'chores-pick'): a
 // chore vs the two home-project kinds. Each navigates to its full-screen form
-// scene. Labels resolve from t.operator.home at render (locale-aware).
+// scene. Labels resolve from o18n.home at render (locale-aware).
 const CHORE_KINDS: { key: 'chore' | 'upkeep' | 'plan'; icon: IconName; to: string }[] = [
   { key: 'chore', icon: 'hand-heart-bold', to: '/chore/new' },
   { key: 'upkeep', icon: 'gear-six-bold', to: '/home-project/new?kind=upkeep' },
@@ -234,6 +235,7 @@ export function AddSheet({
   onClose: () => void
 }) {
   const t = useT()
+  const o18n = useOperatorT()
   const { lang } = useLang()
   const qc = useQueryClient()
   const write = useWrite()
@@ -775,9 +777,9 @@ export function AddSheet({
       note: t.capture.quick,
       event: t.capture.types.event,
       ride: t.auto.addRide,
-      activity: t.operator.addActivity,
-      chore: t.operator.chores,
-      'chores-pick': t.operator.chores,
+      activity: o18n.addActivity,
+      chore: o18n.chores,
+      'chores-pick': o18n.chores,
       todo: t.todos.title,
       'routine-pick': t.nav.routines,
       'plan-today': t.board.planToday,
@@ -1211,7 +1213,7 @@ export function AddSheet({
             form pre-set to its kind). One ＋ tile, three destinations. */}
         {mode === 'chores-pick' && (
           <div className="addsheet__chorepick">
-            <p className="sheet__group-label mono">{t.operator.home.pickKind}</p>
+            <p className="sheet__group-label mono">{o18n.home.pickKind}</p>
             <div className="cat-grid cat-grid--3">
               {CHORE_KINDS.map((c) => (
                 <button
@@ -1228,10 +1230,10 @@ export function AddSheet({
                   </span>
                   <span>
                     {c.key === 'chore'
-                      ? t.operator.home.subCorvees
+                      ? o18n.home.subCorvees
                       : c.key === 'upkeep'
-                        ? t.operator.home.subEntretien
-                        : t.operator.home.subProjets}
+                        ? o18n.home.subEntretien
+                        : o18n.home.subProjets}
                   </span>
                 </button>
               ))}

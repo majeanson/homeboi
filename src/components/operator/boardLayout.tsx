@@ -1,4 +1,5 @@
 import { useT } from '../../i18n'
+import { useOperatorT } from '../../i18n.operator'
 import { type HelpMode } from '../../lib/helpMode'
 import { useConfirm } from '../../lib/confirm'
 import { OperatorSection } from './OperatorSection'
@@ -50,6 +51,7 @@ const MODE_ICON = { always: 'check-bold', auto: 'approximate-equals-bold', never
 
 export function BoardLayoutSection({ help }: { help?: HelpMode }) {
   const t = useT()
+  const o18n = useOperatorT()
   const confirm = useConfirm()
   const prefs = useBoardCards()
 
@@ -96,16 +98,16 @@ export function BoardLayoutSection({ help }: { help?: HelpMode }) {
     const mode = cardMode(prefs, id)
     const label =
       mode === 'always'
-        ? t.operator.boardLayoutModeAlways
+        ? o18n.boardLayoutModeAlways
         : mode === 'auto'
-          ? t.operator.boardLayoutModeAuto
-          : t.operator.boardLayoutModeNever
+          ? o18n.boardLayoutModeAuto
+          : o18n.boardLayoutModeNever
     return (
       <button
         type="button"
         className={`btn btn--sm${mode !== 'never' ? ' btn--primary' : ''} board-layout__toggle`}
         onClick={() => setMode(id, MODE_CYCLE[(MODE_CYCLE.indexOf(mode) + 1) % MODE_CYCLE.length]!)}
-        aria-label={`${t.operator.boardLayoutMode(t.boardCard[id])} — ${label}`}
+        aria-label={`${o18n.boardLayoutMode(t.boardCard[id])} — ${label}`}
       >
         <InlineIcon name={MODE_ICON[mode]} size={15} /> {label}
       </button>
@@ -114,13 +116,13 @@ export function BoardLayoutSection({ help }: { help?: HelpMode }) {
 
   const sizeBtn = (id: BoardCardId) => {
     const size = cardSize(prefs, id)
-    const label = size === 'full' ? t.operator.boardLayoutSizeFull : t.operator.boardLayoutSizeN(size)
+    const label = size === 'full' ? o18n.boardLayoutSizeFull : o18n.boardLayoutSizeN(size)
     return (
       <button
         type="button"
         className="btn btn--ghost btn--sm board-layout__size"
         onClick={() => bumpSize(id)}
-        aria-label={`${t.operator.boardLayoutSize(t.boardCard[id])} — ${label}`}
+        aria-label={`${o18n.boardLayoutSize(t.boardCard[id])} — ${label}`}
       >
         <InlineIcon name="square-bold" size={15} /> {size === 'full' ? t.board.editSizeFull : size}
       </button>
@@ -162,7 +164,7 @@ export function BoardLayoutSection({ help }: { help?: HelpMode }) {
           data-dnd-zone={zoneKey(zone, 'end')}
           className={'board-layout__end mono' + (dnd.over === zoneKey(zone, 'end') ? ' dnd-over' : '')}
         >
-          {t.operator.boardLayoutDropHere}
+          {o18n.boardLayoutDropHere}
         </li>
       </ul>
     </>
@@ -170,8 +172,8 @@ export function BoardLayoutSection({ help }: { help?: HelpMode }) {
 
   return (
     <OperatorSection
-      title={t.operator.boardLayout}
-      hint={t.operator.boardLayoutHint}
+      title={o18n.boardLayout}
+      hint={o18n.boardLayoutHint}
       help={help}
       helpKey="boardLayout"
       action={
@@ -182,15 +184,15 @@ export function BoardLayoutSection({ help }: { help?: HelpMode }) {
           type="button"
           className="btn btn--ghost btn--sm mono"
           onClick={async () => {
-            if (await confirm({ message: t.operator.resetConfirm, confirmLabel: t.operator.boardLayoutReset, tone: 'default' })) resetCardPrefs()
+            if (await confirm({ message: o18n.resetConfirm, confirmLabel: o18n.boardLayoutReset, tone: 'default' })) resetCardPrefs()
           }}
         >
-          <InlineIcon name="arrows-counter-clockwise-bold" /> {t.operator.boardLayoutReset}
+          <InlineIcon name="arrows-counter-clockwise-bold" /> {o18n.boardLayoutReset}
         </button>
       }
     >
-      {list('band', t.operator.boardLayoutBand)}
-      {list('grid', t.operator.boardLayoutGrid)}
+      {list('band', o18n.boardLayoutBand)}
+      {list('grid', o18n.boardLayoutGrid)}
       <DragGhost ghost={dnd.ghost} />
     </OperatorSection>
   )

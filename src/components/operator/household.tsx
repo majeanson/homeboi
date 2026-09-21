@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
+import { useOperatorT } from '../../i18n.operator'
 import { settingsHref } from '../../lib/settingsNav'
 import { api } from '../../lib/api'
 import { useWrite } from '../../lib/write'
@@ -27,6 +28,7 @@ import { OperatorSection } from './OperatorSection'
 import { type Member } from './types'
 
 export function MembersSection({ members, onChange, help }: { members: Member[]; onChange: () => void; help?: HelpMode }) {
+  const o18n = useOperatorT()
   const t = useT()
   const confirm = useConfirm()
   const [name, setName] = useState('')
@@ -82,8 +84,8 @@ export function MembersSection({ members, onChange, help }: { members: Member[];
   // forgiving undo toast the lighter rows use.
   async function remove(m: Member) {
     const okay = await confirm({
-      message: t.operator.deleteMemberConfirm(m.display_name),
-      confirmLabel: t.operator.deleteMember,
+      message: o18n.deleteMemberConfirm(m.display_name),
+      confirmLabel: o18n.deleteMember,
       tone: 'danger',
     })
     if (!okay) return
@@ -96,7 +98,7 @@ export function MembersSection({ members, onChange, help }: { members: Member[];
   }
 
   return (
-    <OperatorSection title={t.operator.members} help={help} helpKey="members">
+    <OperatorSection title={o18n.members} help={help} helpKey="members">
       {/* The household's own name (set at signup) — renamable here. Operator-only. */}
       {!isGuest() && <HouseholdNameField />}
       {!isGuest() && <HouseholdTzField />}
@@ -106,19 +108,19 @@ export function MembersSection({ members, onChange, help }: { members: Member[];
           first member; never comes back. */}
       {members.length === 0 && (
         <div className="welcome-steps">
-          <p className="welcome-steps__title">{t.operator.welcomeTitle}</p>
+          <p className="welcome-steps__title">{o18n.welcomeTitle}</p>
           <ol className="welcome-steps__list">
-            <li>{t.operator.welcomeStep1}</li>
+            <li>{o18n.welcomeStep1}</li>
             <li>
-              {t.operator.welcomeStep2}{' '}
+              {o18n.welcomeStep2}{' '}
               <Link to={settingsHref({ tab: 'settings', focus: 'claimTablet' })} className="mono">
-                {t.operator.devices}
+                {o18n.devices}
               </Link>
             </li>
             <li>
-              {t.operator.welcomeStep3}{' '}
+              {o18n.welcomeStep3}{' '}
               <Link to="/board" className="mono">
-                {t.operator.welcomeBoard}
+                {o18n.welcomeBoard}
               </Link>
             </li>
           </ol>
@@ -140,22 +142,22 @@ export function MembersSection({ members, onChange, help }: { members: Member[];
         value={name}
         onChange={setName}
         onSubmit={() => add()}
-        submitLabel={t.operator.addMember}
+        submitLabel={o18n.addMember}
         busy={busy}
-        placeholder={t.operator.name}
-        ariaLabel={t.operator.name}
+        placeholder={o18n.name}
+        ariaLabel={o18n.name}
         secondaryActions={
           <>
             <label className="operator__check mono">
               <input type="checkbox" checked={isChild} onChange={(e) => setIsChild(e.target.checked)} />
-              {t.operator.isChild}
+              {o18n.isChild}
             </label>
             <ColorPicker
               value={color}
               onChange={setPick}
-              label={t.operator.colorLabel}
+              label={o18n.colorLabel}
               taken={members.map((m) => m.colour)}
-              takenLabel={t.operator.colourTaken}
+              takenLabel={o18n.colourTaken}
             />
           </>
         }
@@ -234,7 +236,7 @@ function HouseholdPets() {
 // the household's day. A short list of the Canadian zones first (this app's households),
 // then whatever else Intl knows, so nobody has to type « America/Argentina/Ushuaia ».
 function HouseholdTzField() {
-  const t = useT()
+  const o18n = useOperatorT()
   const qc = useQueryClient()
   const write = useWrite()
   const { data } = useQuery({ queryKey: HOUSEHOLD_KEY, queryFn: () => api<{ tz?: string }>('household') })
@@ -264,15 +266,15 @@ function HouseholdTzField() {
 
   return (
     <label className="operator__field">
-      <span className="operator__field-label">{t.operator.householdTz}</span>
-      <select className="input" value={current} onChange={(e) => void save(e.target.value)} aria-label={t.operator.householdTz}>
+      <span className="operator__field-label">{o18n.householdTz}</span>
+      <select className="input" value={current} onChange={(e) => void save(e.target.value)} aria-label={o18n.householdTz}>
         {options.map((z) => (
           <option key={z} value={z}>
             {z.replace(/_/g, ' ')}
           </option>
         ))}
       </select>
-      <span className="operator__field-hint mono">{t.operator.householdTzHint}</span>
+      <span className="operator__field-hint mono">{o18n.householdTzHint}</span>
     </label>
   )
 }
@@ -281,7 +283,7 @@ function HouseholdTzField() {
 // signup, editable here and persisted on /api/household. Saves on blur / Enter when
 // it actually changed; a blank is ignored server-side (the column is NOT NULL).
 function HouseholdNameField() {
-  const t = useT()
+  const o18n = useOperatorT()
   const qc = useQueryClient()
   const write = useWrite()
   const { data } = useQuery({ queryKey: HOUSEHOLD_KEY, queryFn: () => api<{ name: string }>('household') })
@@ -305,7 +307,7 @@ function HouseholdNameField() {
 
   return (
     <label className="operator__field operator__household-name">
-      <span className="operator__field-label">{t.operator.householdName}</span>
+      <span className="operator__field-label">{o18n.householdName}</span>
       <input
         className="input"
         value={name}
@@ -318,10 +320,10 @@ function HouseholdNameField() {
           }
         }}
         maxLength={60}
-        placeholder={t.operator.householdName}
-        aria-label={t.operator.householdName}
+        placeholder={o18n.householdName}
+        aria-label={o18n.householdName}
       />
-      <span className="operator__field-hint mono">{t.operator.householdNameHint}</span>
+      <span className="operator__field-hint mono">{o18n.householdNameHint}</span>
     </label>
   )
 }
@@ -344,6 +346,7 @@ function MemberCard({
   onChange: () => void
   onRemove: () => void
 }) {
+  const o18n = useOperatorT()
   const t = useT()
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState(member.display_name)
@@ -399,7 +402,7 @@ function MemberCard({
           onSubmit={() => save()}
           submitLabel={t.common.save}
           busy={busy}
-          ariaLabel={t.operator.name}
+          ariaLabel={o18n.name}
           autoFocus
           onCancel={() => {
             setName(member.display_name)
@@ -413,13 +416,13 @@ function MemberCard({
                remove here, so the card itself keeps just the uniform ✏️/🗑️ pair. */
             <div className="member-edit__photo">
               <Avatar kind={member.avatar_kind} photo={member.avatar_ref} colour={color} name={name || member.display_name} size={48} />
-              <label className="row-actions__btn operator__photo" title={t.operator.photo}>
+              <label className="row-actions__btn operator__photo" title={o18n.photo}>
                 <Icon name="camera-bold" size={18} />
                 <input
                   type="file"
                   accept="image/*"
                   hidden
-                  aria-label={t.operator.photo}
+                  aria-label={o18n.photo}
                   onChange={(e) => {
                     const f = e.target.files?.[0]
                     if (f) setPhoto(f)
@@ -428,7 +431,7 @@ function MemberCard({
                 />
               </label>
               {member.avatar_kind === 'photo' && (
-                <button type="button" className="row-actions__btn" onClick={clearPhoto} aria-label={t.operator.removePhoto}>
+                <button type="button" className="row-actions__btn" onClick={clearPhoto} aria-label={o18n.removePhoto}>
                   <Icon name="x-bold" size={18} />
                 </button>
               )}
@@ -438,14 +441,14 @@ function MemberCard({
             <>
               <label className="operator__check mono">
                 <input type="checkbox" checked={isChild} onChange={(e) => setIsChild(e.target.checked)} />
-                {t.operator.isChild}
+                {o18n.isChild}
               </label>
               <ColorPicker
                 value={color}
                 onChange={setColor}
-                label={t.operator.colorLabel}
+                label={o18n.colorLabel}
                 taken={takenColours}
-                takenLabel={t.operator.colourTaken}
+                takenLabel={o18n.colourTaken}
               />
             </>
           }
@@ -454,7 +457,7 @@ function MemberCard({
             company in the routine player. Tap the chosen one again to clear it. Its
             pose follows the time of day, never their progress. */}
         <div className="member-edit__companion">
-          <ChipGroup label={t.operator.companion}>
+          <ChipGroup label={o18n.companion}>
             {COMPANIONS.map((c) => (
               <Chip
                 key={c}
@@ -472,9 +475,9 @@ function MemberCard({
             notes, liens familiaux — lives in « Le cercle ». One tap finds (or, the
             first time, creates) their linked contact sheet and opens it. */}
         <button type="button" className="btn btn--ghost member-card__detail" onClick={() => openSheet({ id: member.id, name: member.display_name })}>
-          <Icon name="users-three-bold" size={16} /> {t.operator.detailInCercle}
+          <Icon name="users-three-bold" size={16} /> {o18n.detailInCercle}
         </button>
-        <p className="member-card__detail-hint mono">{t.operator.detailInCercleHint}</p>
+        <p className="member-card__detail-hint mono">{o18n.detailInCercleHint}</p>
       </li>
     )
 
@@ -482,7 +485,7 @@ function MemberCard({
     <li className="member-card surface">
       <Avatar kind={member.avatar_kind} photo={member.avatar_ref} colour={member.colour} name={member.display_name} size={64} />
       <span className="member-card__name">{member.display_name}</span>
-      {member.is_child ? <span className="tag mono">{t.operator.isChild}</span> : null}
+      {member.is_child ? <span className="tag mono">{o18n.isChild}</span> : null}
       {/* Just the uniform ✏️/🗑️ pair, like every other row — edit opens the inline
           editor (name, child, colour, AND the photo). Two square buttons fit one
           row, so the cards stay even/square on a phone. */}
@@ -490,8 +493,8 @@ function MemberCard({
         <RowActions
           onEdit={() => setEditing(true)}
           onDelete={onRemove}
-          editLabel={t.operator.editMember}
-          deleteLabel={t.operator.deleteMember}
+          editLabel={o18n.editMember}
+          deleteLabel={o18n.deleteMember}
         />
       </div>
     </li>

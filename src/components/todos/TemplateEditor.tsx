@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useT } from '../../i18n'
+import { useOperatorT } from '../../i18n.operator'
 import { useWrite } from '../../lib/write'
 import { TODO_TEMPLATES_KEY } from '../../lib/queryKeys'
 import {
@@ -30,6 +31,7 @@ import { Modal } from '../Modal'
 // Each edit PATCHes the whole items array (small, operator-driven).
 export function TemplateEditor({ templates, tpl }: { templates: TodoTemplate[]; tpl: TodoTemplate }) {
   const t = useT()
+  const o18n = useOperatorT()
   const write = useWrite()
   // Inline item edit: which index is open + its draft text.
   const [editIdx, setEditIdx] = useState<number | null>(null)
@@ -104,8 +106,8 @@ export function TemplateEditor({ templates, tpl }: { templates: TodoTemplate[]; 
                 onDown={() => moveItem(idx, 'down')}
                 upDisabled={idx === 0}
                 downDisabled={idx === tpl.items.length - 1}
-                upLabel={t.operator.moveUp}
-                downLabel={t.operator.moveDown}
+                upLabel={o18n.moveUp}
+                downLabel={o18n.moveDown}
               />
             )
             // A reference to another list — a chip with its name + expanded count.

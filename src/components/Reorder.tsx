@@ -1,4 +1,4 @@
-import { useT } from '../i18n'
+import { useOperatorT } from '../i18n.operator'
 import { Icon } from './Icon'
 
 /**
@@ -6,7 +6,7 @@ import { Icon } from './Icon'
  *
  * It existed twice, identically: inside `EditField` (its `reorder` prop) and as a
  * private `ItemReorder` in `operator/todos.tsx`, same markup, same classes, same
- * icons, same disabled logic. The todo-template copy even passed `t.operator.moveUp`
+ * icons, same disabled logic. The todo-template copy even passed `o18n.moveUp`
  * / `moveDown` by hand — the exact strings the other one hardcoded.
  *
  * Keyboard/AT note: these are the NON-touch mirror of drag-to-reorder (`usePointerDnd`),
@@ -28,7 +28,7 @@ export type ReorderProps = {
 }
 
 export function Reorder({ onUp, onDown, upDisabled, downDisabled, upLabel, downLabel }: ReorderProps) {
-  const t = useT()
+  const o18n = useOperatorT()
   return (
     <div className="edit-field__reorder">
       <button
@@ -36,7 +36,7 @@ export function Reorder({ onUp, onDown, upDisabled, downDisabled, upLabel, downL
         className="edit-field__mini"
         onClick={onUp}
         disabled={upDisabled}
-        aria-label={upLabel ?? t.operator.moveUp}
+        aria-label={upLabel ?? o18n.moveUp}
       >
         <Icon name="caret-up-bold" size={16} />
       </button>
@@ -45,7 +45,7 @@ export function Reorder({ onUp, onDown, upDisabled, downDisabled, upLabel, downL
         className="edit-field__mini"
         onClick={onDown}
         disabled={downDisabled}
-        aria-label={downLabel ?? t.operator.moveDown}
+        aria-label={downLabel ?? o18n.moveDown}
       >
         <Icon name="caret-down-bold" size={16} />
       </button>

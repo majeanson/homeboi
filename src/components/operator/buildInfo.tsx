@@ -1,4 +1,5 @@
-import { useLang, useT } from '../../i18n'
+import { useLang } from '../../i18n'
+import { useOperatorT } from '../../i18n.operator'
 import { OperatorSection } from './OperatorSection'
 
 // Réglages ▸ Debug ▸ Version — when this build was made. `__BUILD_TIME__` is an ISO
@@ -7,18 +8,18 @@ import { OperatorSection } from './OperatorSection'
 // the dev loop it's the dev-server start instead. The date itself IS the content, so
 // it renders as the section body (not a removable hint).
 export function BuildInfoSection() {
-  const t = useT()
+  const o18n = useOperatorT()
   const { lang } = useLang()
   const iso = typeof __BUILD_TIME__ === 'string' ? __BUILD_TIME__ : ''
   const when = iso ? new Date(iso) : null
   const formatted =
     when && !Number.isNaN(when.getTime())
       ? when.toLocaleString(lang === 'fr' ? 'fr-CA' : 'en-CA', { dateStyle: 'long', timeStyle: 'short' })
-      : t.operator.buildNever
+      : o18n.buildNever
   return (
-    <OperatorSection title={t.operator.buildTitle} helpKey="buildInfo">
+    <OperatorSection title={o18n.buildTitle} helpKey="buildInfo">
       <p className="lead">
-        {t.operator.buildBuilt} : {formatted}
+        {o18n.buildBuilt} : {formatted}
       </p>
     </OperatorSection>
   )

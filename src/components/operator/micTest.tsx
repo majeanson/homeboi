@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { useLang, useT } from '../../i18n'
+import { useLang } from '../../i18n'
+import { useOperatorT } from '../../i18n.operator'
 import { type HelpMode } from '../../lib/helpMode'
 import { isIos } from '../../lib/useVoiceInput'
 import { Icon } from '../Icon'
@@ -97,7 +98,7 @@ function iosVersion(ua: string): string | null {
 type Phase = 'idle' | 'running' | 'done'
 
 export function MicSelfTest({ help }: { help?: HelpMode }) {
-  const t = useT()
+  const o18n = useOperatorT()
   const { lang } = useLang()
   const [phase, setPhase] = useState<Phase>('idle')
   const [report, setReport] = useState('')
@@ -405,27 +406,27 @@ export function MicSelfTest({ help }: { help?: HelpMode }) {
   }
 
   return (
-    <OperatorSection title={t.operator.micTestTitle} help={help} helpKey="micTest">
+    <OperatorSection title={o18n.micTestTitle} help={help} helpKey="micTest">
       {phase !== 'running' ? (
         <button type="button" className="btn btn--primary" onClick={run}>
-          {t.operator.micTestBtn}
+          {o18n.micTestBtn}
         </button>
       ) : (
         <button type="button" className="btn" onClick={stop}>
-          {t.operator.micTestStop}
+          {o18n.micTestStop}
         </button>
       )}
 
       {phase === 'running' && (
         <StatusMessage tone="info">
-          {t.operator.micTestListening}
+          {o18n.micTestListening}
           {interim ? ` — « ${interim} »` : ''}
         </StatusMessage>
       )}
 
       {phase === 'done' && report && (
         <div className="mic-test__out">
-          <p className="mono">{t.operator.micTestSend}</p>
+          <p className="mono">{o18n.micTestSend}</p>
           <textarea
             ref={taRef}
             className="input mono"
@@ -436,7 +437,7 @@ export function MicSelfTest({ help }: { help?: HelpMode }) {
             style={{ width: '100%', minHeight: '14rem', whiteSpace: 'pre', overflowWrap: 'normal' }}
           />
           <button type="button" className="btn btn--primary" onClick={copy} style={{ marginTop: '0.5rem' }}>
-            <Icon name={copied ? 'check-bold' : 'file-text-bold'} size={18} /> {copied ? t.operator.micTestCopied : t.operator.micTestCopy}
+            <Icon name={copied ? 'check-bold' : 'file-text-bold'} size={18} /> {copied ? o18n.micTestCopied : o18n.micTestCopy}
           </button>
         </div>
       )}

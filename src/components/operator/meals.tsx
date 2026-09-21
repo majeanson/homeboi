@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useT, useLang } from '../../i18n'
+import { useOperatorT } from '../../i18n.operator'
 import { type HelpMode } from '../../lib/helpMode'
 import { api } from '../../lib/api'
 import { useWrite } from '../../lib/write'
@@ -63,6 +64,7 @@ const clampMin = (m: number) => Math.max(0, Math.min(24 * 60 - STEP_MIN, m))
 
 export function MealSlotsSection({ help }: { help?: HelpMode }) {
   const t = useT()
+  const o18n = useOperatorT()
   const { lang } = useLang()
   const write = useWrite()
   const confirm = useConfirm()
@@ -153,7 +155,7 @@ export function MealSlotsSection({ help }: { help?: HelpMode }) {
   // Resets the LAYOUT (order · hero · hours) only. Colours and hidden slots keep their
   // own per-row reset affordances, so this button never silently undoes them.
   async function resetLayout() {
-    if (!(await confirm({ message: t.operator.resetConfirm, confirmLabel: t.operator.mealReset, tone: 'default' }))) return
+    if (!(await confirm({ message: o18n.resetConfirm, confirmLabel: o18n.mealReset, tone: 'default' }))) return
     setOrder([...DEFAULT_SLOT_ORDER])
     setHero(DEFAULT_HERO)
     setHours({ ...DEFAULT_SLOT_HOURS })
@@ -183,14 +185,14 @@ export function MealSlotsSection({ help }: { help?: HelpMode }) {
 
   return (
     <OperatorSection
-      title={t.operator.mealColors}
-      hint={t.operator.mealOrderHint}
+      title={o18n.mealColors}
+      hint={o18n.mealOrderHint}
       help={help}
       helpKey="mealSlots"
       action={
         !ro ? (
           <button type="button" className="btn btn--ghost btn--sm" onClick={resetLayout}>
-            <InlineIcon name="arrows-counter-clockwise-bold" /> {t.operator.mealReset}
+            <InlineIcon name="arrows-counter-clockwise-bold" /> {o18n.mealReset}
           </button>
         ) : undefined
       }
@@ -230,7 +232,7 @@ export function MealSlotsSection({ help }: { help?: HelpMode }) {
                     type="button"
                     className="btn btn--ghost btn--sm"
                     onClick={() => nudgeHour(slot, -STEP_MIN)}
-                    aria-label={`${t.operator.mealHourEarlier} · ${t.kitchen.slots[slot]}`}
+                    aria-label={`${o18n.mealHourEarlier} · ${t.kitchen.slots[slot]}`}
                   >
                     <InlineIcon name="minus-bold" />
                   </button>
@@ -241,7 +243,7 @@ export function MealSlotsSection({ help }: { help?: HelpMode }) {
                     type="button"
                     className="btn btn--ghost btn--sm"
                     onClick={() => nudgeHour(slot, STEP_MIN)}
-                    aria-label={`${t.operator.mealHourLater} · ${t.kitchen.slots[slot]}`}
+                    aria-label={`${o18n.mealHourLater} · ${t.kitchen.slots[slot]}`}
                   >
                     <InlineIcon name="plus-bold" />
                   </button>
@@ -250,10 +252,10 @@ export function MealSlotsSection({ help }: { help?: HelpMode }) {
 
               {!ro && (
                 <div className="meal-slots__pick">
-                  <ColorPicker value={resolved} onChange={(c) => pickColor(slot, c)} label={t.operator.mealColors} />
+                  <ColorPicker value={resolved} onChange={(c) => pickColor(slot, c)} label={o18n.mealColors} />
                   {overridden && (
                     <button type="button" className="btn btn--ghost mono meal-slots__reset" onClick={() => resetColor(slot)}>
-                      {t.operator.mealColorReset}
+                      {o18n.mealColorReset}
                     </button>
                   )}
                 </div>
@@ -261,22 +263,22 @@ export function MealSlotsSection({ help }: { help?: HelpMode }) {
 
               {/* The day's headline meal. A radio, not a toggle — exactly one wins. */}
               {ro ? (
-                isHero ? <span className="mono meal-slots__hero-tag">{t.operator.mealHero}</span> : null
+                isHero ? <span className="mono meal-slots__hero-tag">{o18n.mealHero}</span> : null
               ) : (
                 <button
                   type="button"
                   className={'btn mono meal-slots__hero' + (isHero ? ' btn--primary' : ' btn--ghost')}
                   onClick={() => pickHero(slot)}
                   aria-pressed={isHero}
-                  title={t.operator.mealHeroHint}
+                  title={o18n.mealHeroHint}
                 >
-                  <InlineIcon name="star-fill" /> {t.operator.mealHero}
+                  <InlineIcon name="star-fill" /> {o18n.mealHero}
                 </button>
               )}
 
               {ro ? (
                 <span className="mono meal-slots__toggle">
-                  {shown ? t.operator.mealVisible : t.operator.mealHidden}
+                  {shown ? o18n.mealVisible : o18n.mealHidden}
                 </span>
               ) : (
                 <button
@@ -285,7 +287,7 @@ export function MealSlotsSection({ help }: { help?: HelpMode }) {
                   onClick={() => toggleVisible(slot)}
                   aria-pressed={shown}
                 >
-                  {shown ? t.operator.mealVisible : t.operator.mealHidden}
+                  {shown ? o18n.mealVisible : o18n.mealHidden}
                 </button>
               )}
             </DragPill>
@@ -294,9 +296,9 @@ export function MealSlotsSection({ help }: { help?: HelpMode }) {
       </ul>
       {/* A hidden hero means no headline anywhere — say so rather than letting the
           board quietly lose its « Ce soir ». */}
-      {hidden.has(hero) && <StatusMessage tone="info">{t.operator.mealHeroHidden}</StatusMessage>}
-      {status === 'saved' && <StatusMessage tone="success">{t.operator.postalSaved}</StatusMessage>}
-      {status === 'bad' && <StatusMessage tone="error">{t.operator.postalBad}</StatusMessage>}
+      {hidden.has(hero) && <StatusMessage tone="info">{o18n.mealHeroHidden}</StatusMessage>}
+      {status === 'saved' && <StatusMessage tone="success">{o18n.postalSaved}</StatusMessage>}
+      {status === 'bad' && <StatusMessage tone="error">{o18n.postalBad}</StatusMessage>}
       <DragGhost ghost={dnd.ghost} />
     </OperatorSection>
   )
@@ -316,7 +318,7 @@ export function MealSlotsSection({ help }: { help?: HelpMode }) {
 // not reach the coming Fri/Sat — the weekend it was for (bmad/11 tier-1 seam #1).
 // It is a rolling window from today now, and its length is the household's call.
 export function MealWindowSection({ help }: { help?: HelpMode }) {
-  const t = useT()
+  const o18n = useOperatorT()
   const write = useWrite()
   const ro = isGuest()
   const [days, setDays] = useState<number | null>(null)
@@ -347,29 +349,29 @@ export function MealWindowSection({ help }: { help?: HelpMode }) {
   }
 
   return (
-    <OperatorSection title={t.operator.mealWindowTitle} help={help} helpKey="mealWindow">
+    <OperatorSection title={o18n.mealWindowTitle} help={help} helpKey="mealWindow">
       <div className="operator__seg">
-        <span className="operator__seg-label mono">{t.operator.mealWindowLabel}</span>
+        <span className="operator__seg-label mono">{o18n.mealWindowLabel}</span>
         {ro ? (
-          <span className="mono">{t.operator.mealWindowDays(days ?? WINDOW_DAYS_DEFAULT)}</span>
+          <span className="mono">{o18n.mealWindowDays(days ?? WINDOW_DAYS_DEFAULT)}</span>
         ) : (
           <select
             className="input"
             value={days ?? WINDOW_DAYS_DEFAULT}
             onChange={(e) => pick(Number(e.target.value))}
-            aria-label={t.operator.mealWindowLabel}
+            aria-label={o18n.mealWindowLabel}
           >
             {WINDOW_DAYS_OPTIONS.map((n) => (
               <option key={n} value={n}>
-                {t.operator.mealWindowDays(n)}
+                {o18n.mealWindowDays(n)}
               </option>
             ))}
           </select>
         )}
       </div>
-      <p className="operator__hint mono">{t.operator.mealWindowHint}</p>
-      {status === 'saved' && <StatusMessage tone="success">{t.operator.postalSaved}</StatusMessage>}
-      {status === 'bad' && <StatusMessage tone="error">{t.operator.postalBad}</StatusMessage>}
+      <p className="operator__hint mono">{o18n.mealWindowHint}</p>
+      {status === 'saved' && <StatusMessage tone="success">{o18n.postalSaved}</StatusMessage>}
+      {status === 'bad' && <StatusMessage tone="error">{o18n.postalBad}</StatusMessage>}
     </OperatorSection>
   )
 }

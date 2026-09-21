@@ -6,6 +6,8 @@ import { GUIDE } from './guideContent'
 import { sourceFiles } from './buildGuardScan'
 import { FR } from '../i18n'
 import { EN } from '../i18n.en'
+import { FR_OPERATOR } from '../i18n.operator'
+import { EN_OPERATOR } from '../i18n.operator.en'
 
 // ONE WORD PER IDEA — held by a ratchet, not by good intentions.
 //
@@ -69,8 +71,14 @@ function dictValues(dict: unknown): string[] {
   return out
 }
 
-const frValues = dictValues(FR)
-const enValues = dictValues(EN)
+// RÉGLAGES' COPY IS A SECOND MODULE NOW, AND IT MUST BE WALKED TOO.
+// `operator` (703 lines, 21% of the dictionary) moved to i18n.operator.ts to get it off
+// the boot path. This ratchet only ever counts DOWN, so a dictionary that quietly lost a
+// fifth of itself would have PASSED — looser, and silently. It did not, only because the
+// e2e-label check below noticed ten asserted labels vanish. That was luck; this line is
+// the fix. Any future split belongs here on the same day it happens.
+const frValues = [...dictValues(FR), ...dictValues(FR_OPERATOR)]
+const enValues = [...dictValues(EN), ...dictValues(EN_OPERATOR)]
 
 // e2e specs assert user-visible text; a rival asserted there is a rename waiting to break.
 const e2eText = sourceFiles(E2E)

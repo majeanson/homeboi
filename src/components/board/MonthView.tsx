@@ -19,6 +19,7 @@ import { SLOT_ICON_NAME, slotLabel as slotLabelFor, type MealSlot } from '../../
 import { useMealPrefs, type MealPrefs } from '../../lib/mealPrefs'
 import { useRecipeForMeal } from '../kitchen/mealLookup'
 import { type Lang } from '../../i18n'
+import { useOperatorT } from '../../i18n.operator'
 import { Icon } from '../Icon'
 import { Cluster } from '../Layout'
 import { ActionMenu, type ActionMenuItem } from '../ActionMenu'
@@ -129,6 +130,7 @@ export function MonthView({
   t: Dict
   todayDay: number
 }) {
+  const o18n = useOperatorT()
   const nav = useNavigate()
   // The picked face — the calendar applies the same private-ish habit filter the
   // check-in scene does (see the day buckets below).
@@ -373,10 +375,10 @@ export function MonthView({
           ? ([
               {
                 icon: 'calendar-blank-bold',
-                label: t.operator.addEvent,
+                label: o18n.addEvent,
                 onSelect: () => nav(`/event/new?date=${selected}`),
               },
-              { icon: 'hand-heart-bold', label: t.operator.addChore, onSelect: () => nav(`/chore/new?start=${selected}`) },
+              { icon: 'hand-heart-bold', label: o18n.addChore, onSelect: () => nav(`/chore/new?start=${selected}`) },
             ] as ActionMenuItem[])
           : []),
         // Both land ON their target, not merely on the page that contains it: the day

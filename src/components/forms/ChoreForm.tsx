@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useWrite } from '../../lib/write'
 import { useLang, useT } from '../../i18n'
+import { useOperatorT } from '../../i18n.operator'
 import { ColorPicker } from '../ColorPicker'
 import { Chip } from '../Chip'
 import { EditField } from '../EditField'
@@ -59,6 +60,7 @@ export function ChoreForm({
   onCancel?: () => void
 }) {
   const t = useT()
+  const o18n = useOperatorT()
   const { lang } = useLang()
   const presets = choreTemplates(lang)
   const [title, setTitle] = useState(value?.title ?? '')
@@ -140,11 +142,11 @@ export function ChoreForm({
         onChange={setTitle}
         onSubmit={() => submit()}
         submitIcon={null}
-        placeholder={t.operator.addChore}
-        ariaLabel={t.operator.addChore}
+        placeholder={o18n.addChore}
+        ariaLabel={o18n.addChore}
       />
       <div className="picker-chips mono">
-        <span className="picker-chips__label">{t.operator.choreCommon}</span>
+        <span className="picker-chips__label">{o18n.choreCommon}</span>
         {presets.map((p) => (
           <Chip key={p.label} onClick={() => setTitle(p.icon ? `${p.icon} ${p.label}` : p.label)}>
             {p.icon} {p.label}
@@ -157,15 +159,15 @@ export function ChoreForm({
         faces={members.map(toFace)}
         values={rotation}
         onToggle={toggleRot}
-        ariaLabel={t.operator.forWho}
+        ariaLabel={o18n.forWho}
         ordinals
       />
-      <ColorPicker value={color} onChange={setColor} label={t.operator.colorLabel} />
+      <ColorPicker value={color} onChange={setColor} label={o18n.colorLabel} />
       <RecurPicker value={recur} onChange={setRecur} />
       {recur && (
         <>
           <label className="recur__row mono">
-            <span>{t.operator.choreStart}</span>
+            <span>{o18n.choreStart}</span>
             <input className="input" type="date" value={start} onChange={(e) => setStart(e.target.value)} />
           </label>
           <LeadPicker value={lead} onChange={setLead} />
@@ -178,14 +180,14 @@ export function ChoreForm({
               checked={announceEvening}
               onChange={(e) => setAnnounceEvening(e.target.checked)}
             />
-            {t.operator.announceEveningLabel}
+            {o18n.announceEveningLabel}
           </label>
-          <p className="operator__seg-hint mono">{t.operator.announceEveningHint}</p>
+          <p className="operator__seg-hint mono">{o18n.announceEveningHint}</p>
         </>
       )}
       {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
       <FormFooter
-        saveLabel={value ? t.common.save : t.operator.addChore}
+        saveLabel={value ? t.common.save : o18n.addChore}
         saveDisabled={!title.trim()}
         busy={busy}
         onCancel={onCancel}

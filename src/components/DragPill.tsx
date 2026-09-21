@@ -1,5 +1,5 @@
 import { type CSSProperties, type ElementType, type ReactNode, type Ref } from 'react'
-import { useT } from '../i18n'
+import { useOperatorT } from '../i18n.operator'
 import { dropEdgeClass, type DropCue, type usePointerDnd } from '../lib/dnd'
 
 // The shared "draggable pill/row" shell over usePointerDnd (lib/dnd). The tag-pill
@@ -78,7 +78,7 @@ export function DragPill({
   axis = 'y',
   children,
 }: DragPillProps) {
-  const t = useT()
+  const o18n = useOperatorT()
   const Tag = (as ?? 'li') as ElementType
   const id = zone ?? String(index)
   const edged = edge !== undefined
@@ -107,8 +107,8 @@ export function DragPill({
           // Focusable only when a keyboard door is actually wired — an unwired grip
           // stays drag-only exactly as before, rather than a dead Tab stop.
           tabIndex={onMove ? 0 : undefined}
-          aria-label={`${t.operator.dragHint} — ${label}`}
-          title={t.operator.dragHint}
+          aria-label={`${o18n.dragHint} — ${label}`}
+          title={o18n.dragHint}
           onPointerDown={(e) => dnd.start(id, label, e)}
           onKeyDown={
             onMove
