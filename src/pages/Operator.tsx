@@ -298,6 +298,29 @@ export function Operator() {
       choreLedger: t.operator.ledgerTitle,
       cercleGroups: t.operator.cercleGroupsTitle,
       houseDiary: t.operator.diaryTitle,
+      // FIFTEEN keys had no entry here and fell through to `labels[k] ?? k`, so an
+      // armed « ? » on those cards opened a bubble titled `devices`, `members`,
+      // `chores` — the raw registry key, in English, on a French surface. It had been
+      // invisible since the « ? » first became reachable (2026-09-09), because nothing
+      // compared this map against the registry. `operatorHelpCoverage.test.ts` does now.
+      // Each one reuses the string its own OperatorSection already renders as its title,
+      // so the bubble is named the same as the card it explains — and no new i18n key is
+      // added, which matters while the eager FR dictionary sits at its cap.
+      boardLayout: t.operator.boardLayout,
+      habits: t.operator.habitCheckinTitle,
+      mealWindow: t.operator.mealWindowTitle,
+      coop: t.coop.title,
+      sessions: t.sessions.title,
+      thisWeek: t.operator.thisWeekTitle,
+      homeProjets: t.operator.home.projetsTitle,
+      homeEntretien: t.operator.home.entretienTitle,
+      schoolYear: t.operator.schoolYearTitle,
+      events: t.operator.events,
+      members: t.operator.members,
+      devices: t.operator.devices,
+      mcpAgent: t.operator.agentTitle,
+      chores: t.operator.chores,
+      routines: t.operator.routines,
     }
     return labels[k] ?? k
   }, tab)

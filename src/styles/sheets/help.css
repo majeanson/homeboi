@@ -222,6 +222,11 @@
   color: var(--ink-soft, #6b6b6b);
   font-weight: 600;
 }
+/* The doors row. Cluster owns the gap and the wrap; this only pulls it away from the
+   body text, which .help-bubble__body's own bottom margin used to do for one link. */
+.help-bubble__doors {
+  margin-top: 2px;
+}
 /* While help mode is ARMED, gently ring the controls a tap will EXPLAIN (not run),
    so the "tap a button to learn what it does" hint is visually grounded. Targets the
    pickable controls of each surface that adopts help mode (the ＋ sheet tiles, the

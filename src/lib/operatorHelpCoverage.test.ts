@@ -102,3 +102,42 @@ describe('Réglages help coverage', () => {
     ).toEqual([])
   })
 })
+
+// …AND THE BUBBLE IT OPENS IS NAMED IN FRENCH.
+//
+// The other half of the same defect, found on 2026-09-21 by screenshotting an armed
+// bubble in Réglages instead of reasoning about it. `Operator.tsx` maps a registry key
+// to the heading it explains, and ends `return labels[k] ?? k` — so a key with no entry
+// falls through to ITSELF. Fifteen of the forty-four did: an armed « ? » on « Tablettes
+// jumelées » opened a bubble titled `devices`, on « La maisonnée » one titled `members`,
+// on « Corvées » one titled `chores`. Raw registry keys, in English, on a French surface,
+// reachable since the day the « ? » first worked.
+//
+// Nothing could see it because nothing compared the two lists. The fallback is what made
+// it silent — and it has to stay, because it is also what keeps a bubble rendering at all
+// while someone is mid-edit. So the comparison lives here instead.
+describe('every Réglages help bubble is named in French', () => {
+  const LABELS = (() => {
+    const src = readFileSync(join(import.meta.dirname, '..', 'pages', 'Operator.tsx'), 'utf8')
+    const open = src.indexOf('const labels: Record<string, string> = {')
+    expect(open, 'the labels map in Operator.tsx is no longer written as `const labels: Record<string, string> = {` — update this guard, do not delete it').toBeGreaterThan(-1)
+    const body = src.slice(open, src.indexOf('\n    }', open))
+    return new Set([...body.matchAll(/^ {6}([a-zA-Z]+):/gm)].map((m) => m[1]))
+  })()
+
+  it('the extractor actually found the map', () => {
+    // Without this the assertion below passes vacuously against an empty set, which is
+    // exactly how the original defect stayed invisible.
+    expect(LABELS.size).toBeGreaterThan(20)
+    expect(LABELS.has('devices')).toBe(true)
+  })
+
+  it('no registry key falls through to its own raw key', () => {
+    const unnamed = Object.keys(OPERATOR_HELP).filter((k) => !LABELS.has(k))
+    expect(
+      unnamed,
+      `these OPERATOR_HELP keys have no entry in Operator.tsx's \`labels\` map, so an armed ` +
+        `« ? » on them opens a bubble titled with the raw English key: ${unnamed.join(', ')}`,
+    ).toEqual([])
+  })
+})

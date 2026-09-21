@@ -105,3 +105,44 @@ test('tutorial vs expert mode shows / hides the ? dots', async ({ page }) => {
   await page.locator('.hub').first().waitFor({ state: 'visible' })
   await expect(page.locator('.avatar--help')).toHaveCount(0)
 })
+
+// The bubble opens IN PLACE, at whatever heading you tapped — and on a phone the bottom
+// nav is a fixed overlay. A heading in the lower third therefore opened a bubble whose
+// FOOT was behind it: measured 2026-09-21 in Réglages ▸ Système at 390×844, the nav
+// starts at y≈772 and the bubble ran 587→844, so « Voir le guide » and « Signaler » were
+// rendered but covered. Nothing scrolled, because the element WAS in view by the
+// browser's definition — it intersects the viewport, it is merely obscured.
+//
+// This is the assertion that would have caught it: not "is the bubble visible" (it was)
+// but "is its LAST door above the nav".
+test('an armed bubble lands clear of the bottom nav, doors and all', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await mockApi(page)
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+  await page.goto('/settings?tab=settings&lens=regler&sub=tablets')
+  await page.locator('.operator__tabs').waitFor({ state: 'visible', timeout: 15_000 })
+  await page.locator('.operator__lensrow .help-toggle').click()
+  await page.locator('.help-title').first().click()
+
+  const bubble = page.locator('.help-bubble').first()
+  await expect(bubble).toBeVisible()
+  // The title is the section's FRENCH heading, never the raw registry key. Fifteen keys
+  // had no label and fell through to themselves (`devices`, `members`, `chores`…);
+  // src/lib/operatorHelpCoverage.test.ts holds the list, this holds the screen.
+  await expect(bubble.locator('.help-bubble__title')).not.toHaveText(/^[a-z]+$/)
+
+  const doors = bubble.locator('.help-bubble__guide, .help-bubble__report')
+  await expect(doors).toHaveCount(2)
+  const nav = await page.locator('.hub__nav, nav').first().boundingBox()
+  for (let i = 0; i < 2; i++) {
+    const box = await doors.nth(i).boundingBox()
+    expect(box, 'a door has no box — it is not laid out').not.toBeNull()
+    expect(box!.y + box!.height, 'a bubble door is under the bottom nav').toBeLessThan(nav!.y)
+  }
+  // …and they do not touch: two inline-flex siblings with no gap rendered as
+  // « Voir le guide →Signaler ». They live in a Cluster now, which owns the gap.
+  const a = (await doors.nth(0).boundingBox())!
+  const b = (await doors.nth(1).boundingBox())!
+  expect(b.x - (a.x + a.width), 'the two doors are touching').toBeGreaterThan(3)
+})

@@ -1,6 +1,9 @@
+import { useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useT } from '../i18n'
 import { Icon } from './Icon'
+import { Cluster } from './Layout'
+import { scrollBehavior } from '../lib/motion'
 
 // A small in-place help box: a title, one calm line, and two ways out. « Voir le guide »
 // opens the full Guide card (/settings?tab=guide&card=<id>, the same deep link HelpDot
@@ -37,11 +40,30 @@ export function HelpBubble({
   onClose: () => void
 }) {
   const t = useT()
+  const ref = useRef<HTMLDivElement>(null)
+
+  // BRING IT FULLY INTO VIEW, CENTRED.
+  //
+  // A bubble renders in place, at whatever heading you tapped — and on a phone the
+  // bottom nav is a fixed overlay, so a heading in the lower third opens a bubble whose
+  // FOOT is behind it. Measured in Réglages ▸ Système ▸ Appareils & accès at 390×844:
+  // the nav starts at y=772, the bubble ran 587→844, and both of its links sat under it.
+  // Nothing scrolled, because the element WAS "in view" by the browser's definition —
+  // it intersects the viewport; it is merely covered.
+  //
+  // `block: 'center'` clears any fixed chrome at either end without this file having to
+  // know how tall the nav is (it differs by surface, and the keyboard changes it again).
+  // Pre-existing — one link was already under the nav — but the second link is what made
+  // it visible, so it is fixed here rather than noted.
+  useEffect(() => {
+    ref.current?.scrollIntoView({ behavior: scrollBehavior(), block: 'center' })
+  }, [title])
+
   const to = card
     ? `/settings?tab=guide&card=${card}${point != null ? `&point=${point}` : ''}`
     : null
   return (
-    <div className="help-bubble" role="status">
+    <div className="help-bubble" role="status" ref={ref}>
       <div className="help-bubble__head">
         <strong className="help-bubble__title">{title}</strong>
         <button type="button" className="help-bubble__x" onClick={onClose} aria-label={t.common.close}>
@@ -49,19 +71,28 @@ export function HelpBubble({
         </button>
       </div>
       <p className="help-bubble__body">{body}</p>
-      {to && (
-        <Link to={to} className="help-bubble__guide" onClick={onClose}>
-          {t.help.goToGuide} <Icon name="arrow-right-bold" size={13} />
-        </Link>
-      )}
-      {reportKey && (
-        <Link
-          to={`/settings?tab=settings&sub=tablets&focus=remarks&report=1&hk=${encodeURIComponent(reportKey)}`}
-          className="help-bubble__report"
-          onClick={onClose}
-        >
-          {t.remarks.signalHere} <Icon name="arrow-right-bold" size={13} />
-        </Link>
+      {/* Cluster, not two bare inline-flex siblings: it wraps on a narrow phone and it
+          owns the gap. The first version had neither, and the two links rendered
+          TOUCHING — « Voir le guide →Signaler → » with the report link starting at the
+          guide link's exact right edge (measured: 153.890625 to 153.890625). CLAUDE.md's
+          standing rule says a row of controls is a Cluster; this is why. */}
+      {(to || reportKey) && (
+        <Cluster className="help-bubble__doors">
+          {to && (
+            <Link to={to} className="help-bubble__guide" onClick={onClose}>
+              {t.help.goToGuide} <Icon name="arrow-right-bold" size={13} />
+            </Link>
+          )}
+          {reportKey && (
+            <Link
+              to={`/settings?tab=settings&sub=tablets&focus=remarks&report=1&hk=${encodeURIComponent(reportKey)}`}
+              className="help-bubble__report"
+              onClick={onClose}
+            >
+              {t.remarks.signalHere}
+            </Link>
+          )}
+        </Cluster>
       )}
     </div>
   )
