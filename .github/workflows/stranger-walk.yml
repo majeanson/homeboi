@@ -43,10 +43,27 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      # BOTH engines. The iPhone profile is WebKit, and this step installed chromium
+      # only — so the phone half of the walk has never once run in CI: every scheduled
+      # run reported « Executable doesn't exist at …/webkit-2287/pw_run.sh » among its
+      # failures, which read as part of the red rather than as the guard being absent.
+      - run: npx playwright install --with-deps chromium webkit
       - run: npm run e2e:stranger
         env:
-          BABILLARD_URL: ${{ inputs.url }}
+          # THE *.workers.dev HOST, for the same reason the remark callback uses it
+          # (2026-09-22): this zone's bot protection challenges datacenter traffic, and
+          # a challenge is not something a scripted visitor can solve. The walk’s demo
+          # mint came back « La démo n’est pas disponible » from the runner while the
+          # identical walk passed that step from a laptop — so the weekly run was
+          # failing on Cloudflare, not on the app, which is the worst kind of red: one
+          # that looks like a finding.
+          #
+          # WHAT THIS COSTS, said plainly: the zone’s WAF and its edge caching are no
+          # longer exercised. The security HEADERS still are (emitted by the Worker and
+          # by dist/_headers, both hostname-independent), and so is every byte of the
+          # app. A dispatch can still aim at the public hostname with the `url` input —
+          # worth doing by hand from a laptop when the door itself is the question.
+          BABILLARD_URL: ${{ inputs.url || 'https://babillard.marc-jeanson.workers.dev' }}
       - name: Upload what the stranger saw
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7

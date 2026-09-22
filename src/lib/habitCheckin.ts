@@ -7,7 +7,7 @@ import { useAuth } from './auth'
 import { isGuest, isPaired } from './device'
 import { useProfile } from './profile'
 import { useHabits, dueToday, reminderDue, habitToday, nowMinute } from './habits'
-import { hasTourSeen } from './tour'
+import { hasTourSeen, isFirstDay } from './tour'
 
 // « Le point du jour » — when the check-in scene opens by itself.
 //
@@ -103,7 +103,19 @@ export function useHabitCheckinTrigger(saverShowing: boolean): void {
     // parent who skips the welcome in the 300 ms before the payload lands would have
     // met the tour by the time this ran, and the scene popped right behind it — which
     // is exactly what the first version of this rule did in the spec.
-    if (!hasTourSeen('essentials')) {
+    //
+    // ASKED TWO WAYS, and the second one is the fix (2026-09-22). « Has this device met
+    // the tour? » is a question whose ANSWER CHANGES while the page is loading: this hook
+    // lives in HubLayout, a lazy chunk since the door-weight pass, so a visitor who skips
+    // the welcome while the board still reads « Chargement… » flips it to true before
+    // this code exists — and the stand-down is then never taken. Reproduced against
+    // production three times; it is how the 2026-09-16 defect came back.
+    //
+    // `isFirstDay()` cannot race a mount order: the shell stamps the device's first day
+    // (lib/tour) before any route chunk resolves. The tour question stays as the second
+    // half — a device that still has not met the welcome on day two is also not ready to
+    // be handed someone's habit list.
+    if (isFirstDay() || !hasTourSeen('essentials')) {
       if (settings.lastShownDay < today) setHabitCheckin({ lastShownDay: today })
       return
     }

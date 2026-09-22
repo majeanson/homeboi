@@ -53,9 +53,95 @@ test('a brand-new device lands on the board under the welcome — never on the h
   await expect(page).toHaveURL(/\/board(\?|$)/)
 })
 
-test('control: once the welcome has been seen, the morning open still opens the scene', async ({ page }) => {
+test('control: on a device that is no longer new, the morning open still opens the scene', async ({ page }) => {
+  // The half that proves the feature is not simply switched off. It needs a device that
+  // is NOT on its first day — which is a change from the first version of this control,
+  // and worth saying why: the quiet rule used to be « has this device met the tour? »,
+  // so a fresh browser with the tour marked seen got the morning open on its very first
+  // paint. That question could be answered differently depending on when a lazy chunk
+  // arrived (see the last test), so the rule is now the device's FIRST DAY. The cost is
+  // exactly this: day one is quiet even for someone who skipped the welcome — which is
+  // what « the first day belongs to the welcome » said all along; the old mechanism just
+  // never delivered it. From day two everything is as before, and that is what this pins.
   await fresh(page, { tourSeen: true })
+  await page.addInitScript(() => {
+    // Yesterday, in the same local-midnight unit lib/tour stamps.
+    const d = new Date()
+    d.setHours(0, 0, 0, 0)
+    localStorage.setItem('babillard-first-day', String(Math.floor(d.getTime() / 1000) - 86_400))
+  })
   await page.goto('/board')
   await expect(page).toHaveURL(/\/board\/habitudes/, { timeout: 15_000 })
   await expect(page.locator('.habitudes')).toBeVisible()
+})
+
+test('…and the same holds when the SESSION is what arrives late — the sandbox shape', async ({ page }) => {
+  // THE CASE THE FIRST FIX MISSED, found by the live stranger walk on 2026-09-22 and
+  // reproduced here.
+  //
+  // The stand-down was placed « BEFORE the data gate » — but three guards still sat
+  // above it, and one of them is `!signedIn && !isPaired()`. A demo sandbox is signed in
+  // by the mint's own response, so on the first paints of the board `signedIn` is still
+  // false and the effect returns BEFORE stamping the day. By the time the session lands,
+  // a quick visitor has already skipped the welcome — so `hasTourSeen` is now true, the
+  // stand-down branch is never taken, the day was never stamped, and the morning open
+  // fires onto the stranger's first screen. Exactly the 2026-09-16 defect, through a
+  // door the fix for it left open.
+  //
+  // The delay is what makes this a test rather than a decoration: with an instant
+  // auth/me the old code passes.
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.clock.setFixedTime(new Date(BASE * 1000))
+  await mockApi(page)
+  await page.route('**/api/auth/me**', async (route) => {
+    await new Promise((r) => setTimeout(r, 900))
+    await route.fallback()
+  })
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', habitCheckin: true, tour: true })
+
+  await page.goto('/board')
+  await expect(page.locator('.tour')).toBeVisible({ timeout: 15_000 })
+  // Skip the welcome immediately — before the session has confirmed.
+  await page.locator('.tour').getByRole('button', { name: 'Passer' }).click()
+  await expect(page.locator('.tour')).toHaveCount(0)
+
+  // Now let the session land. The board must still be under us.
+  await page.waitForTimeout(1500)
+  await expect(page).toHaveURL(/\/board(\?|$)/)
+  await expect(page.locator('.habitudes')).toHaveCount(0)
+})
+
+test('…and when the BOARD CHUNK is what arrives late — the shape production actually has', async ({ page }) => {
+  // THE CASE THE FIRST FIX MISSED, found by the live stranger walk on 2026-09-22 and
+  // reproduced against production three times before being written down here.
+  //
+  // The stand-down asked « has this device met the tour? » from inside
+  // `useHabitCheckinTrigger`, which lives in HubLayout — a LAZY chunk since the
+  // door-weight pass. On a real connection the shell paints and the welcome starts while
+  // the board is still « Chargement… ». A visitor who skips the welcome inside that
+  // window flips the answer to true before the hook exists, so the stand-down is never
+  // taken and the morning open throws them into « Le point du jour ».
+  //
+  // Delaying the hub module is what makes this a test: without the delay the hook is
+  // always mounted first and the old code passes, which is exactly why it did.
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.clock.setFixedTime(new Date(BASE * 1000))
+  await mockApi(page)
+  await page.route('**/HubLayout*', async (route) => {
+    await new Promise((r) => setTimeout(r, 2500))
+    await route.fallback()
+  })
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', habitCheckin: true, tour: true })
+
+  await page.goto('/board')
+  // The welcome is up while the board is still loading — the real first screen.
+  await expect(page.locator('.tour')).toBeVisible({ timeout: 15_000 })
+  await page.locator('.tour').getByRole('button', { name: 'Passer' }).click()
+  await expect(page.locator('.tour')).toHaveCount(0)
+
+  // Now let the hub arrive. The board must be what lands, not the habits scene.
+  await expect(page.locator('.wg-slot').first()).toBeVisible({ timeout: 15_000 })
+  await page.waitForTimeout(600)
+  await expect(page).toHaveURL(/\/board(\?|$)/)
+  await expect(page.locator('.habitudes')).toHaveCount(0)
 })

@@ -31,6 +31,53 @@ function readSeen(): string[] {
 export function hasTourSeen(id: string): boolean {
   return readSeen().includes(id)
 }
+
+// THE DAY THIS DEVICE FIRST OPENED THE APP — stamped here, in the module the SHELL
+// already loads, and that placement is the whole point.
+//
+// « The first day belongs to the welcome » was written as « has this device met the
+// essentials tour? », asked from inside `useHabitCheckinTrigger` — which lives in
+// HubLayout, which has been a LAZY chunk since the door-weight pass. So on a real
+// connection the order is: shell paints → tour starts → *board chunk still arriving* →
+// visitor skips the welcome → HubLayout finally mounts → the tour is now SEEN, the
+// stand-down branch is never taken, and the morning open throws the stranger into
+// « Le point du jour ». Reproduced against production on 2026-09-22, three times: the
+// board read « Chargement… » with the welcome drawn over it, and skipping inside that
+// window was enough. The 2026-09-16 fix was correct and simply lived somewhere that did
+// not exist yet.
+//
+// A first-boot date cannot race a mount order: it is a fact recorded once, by the shell,
+// before any route chunk resolves. Stamped from `TourProvider` (mounted in main.tsx) and
+// lazily on first read, so a device that somehow never mounts the provider still answers
+// honestly rather than throwing.
+const FIRST_DAY_KEY = 'babillard-first-day'
+
+/** Local-midnight day number (the `habitToday()` unit), or 0 if storage is unavailable. */
+function todayLocal(): number {
+  const d = new Date()
+  d.setHours(0, 0, 0, 0)
+  return Math.floor(d.getTime() / 1000)
+}
+
+/** The day this device first booted the app. Stamps today on first call. */
+export function firstRunDay(): number {
+  try {
+    const raw = Number(localStorage.getItem(FIRST_DAY_KEY))
+    if (Number.isFinite(raw) && raw > 0) return raw
+    const today = todayLocal()
+    localStorage.setItem(FIRST_DAY_KEY, String(today))
+    return today
+  } catch {
+    // Blocked storage: answer « today » rather than 0, so the quiet rule errs toward
+    // quiet. A first screen that is too calm is not a defect.
+    return todayLocal()
+  }
+}
+
+/** True while this is still the device's very first day with the app. */
+export function isFirstDay(): boolean {
+  return firstRunDay() === todayLocal()
+}
 function markTourSeen(id: string): void {
   try {
     const seen = readSeen()
@@ -80,6 +127,11 @@ export function TourProvider({ children }: { children: ReactNode }) {
   const { surface } = useSurface()
   const [activeTour, setActiveTour] = useState<Tour | null>(null)
   const [stepIndex, setStepIndex] = useState(0)
+
+  // Stamp the device's first day from the SHELL, before any route chunk resolves — see
+  // `firstRunDay`. Deliberately not in an effect body that could be skipped: reading it
+  // is what writes it, and this is the earliest honest moment.
+  firstRunDay()
 
   const end = useCallback((_reason: EndReason) => {
     // Both finishing and skipping mark the tour seen so it never nags again.
