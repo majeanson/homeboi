@@ -78,6 +78,25 @@ const OWNED: Record<string, Owned> = {
     // The voyage list AND /api/month (each trip is a calendar band).
     requiredKeys: ['TRIPS_KEY', 'MONTH_KEY'],
   },
+  // « Les remarques » (0136) — added 2026-09-22 with the board card's verdict chips,
+  // i.e. in the commit that gave the flow its SECOND door, which is the moment this map
+  // is supposed to grow. Réglages and the board now offer the same « C'est réglé » /
+  // « Pas réglé », and that is exactly the shape the leftover flow drifted from four
+  // times. The PATCH therefore has one home (`useRemarkVerdict`) and the POST and the
+  // DELETE have theirs; a new surface reuses the hook rather than spelling it again.
+  remarks: {
+    owners: new Map([
+      ['lib/remarks.ts', 'THE verdict: useRemarkVerdict — the PATCH both doors call'],
+      ['components/RemarkComposer.tsx', 'THE filing POST — one composer, mounted by every door (Réglages, the « ? » bubble, the board card, the crash screen)'],
+      [
+        'components/operator/remarks.tsx',
+        'the DELETE, and only here: it is a heavy confirm + deferred removal over a polled list, which is a journal-side act — the board card lists what is waiting, it does not curate',
+      ],
+    ]),
+    // One surface, one key: both the Réglages section and the board card read
+    // REMARKS_KEY directly (the card has its own query, it does not ride /api/board).
+    requiredKeys: ['REMARKS_KEY'],
+  },
 }
 
 interface Site {

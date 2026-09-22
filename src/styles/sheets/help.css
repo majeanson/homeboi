@@ -202,6 +202,16 @@
    moment the second link shipped. */
 .help-bubble__guide,
 .help-bubble__report {
+  /* Worn by a <button> since the door started opening the composer in place (it was an
+     anchor into Réglages before). Without this reset the UA dresses it — border, grey
+     fill, its own font — which is the `.section-intro__more` defect link-button-rule.ts
+     exists for, sitting beside a bare text link and shouting. */
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  font-family: inherit;
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 4px;

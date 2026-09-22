@@ -32,6 +32,7 @@
 | **Schema** | 136 forward-only migrations (0136 = « Les remarques ») |
 | **Tests** | 2 392 unit tests in 189 files · 85 real-runtime cases in 12 files (`npm run test:d1`, the Worker in workerd against a real D1) · 157 Playwright spec files |
 | **Deploy** | Push to `main` → CI (typecheck · test · build · bundle budget · **test:d1** · knip) gates `db:migrate:prod` + `wrangler deploy`. E2E is decoupled (`workflow_run`), runs after a green CI, never blocks the ship. |
+| **Second interface** | `/api/mcp` — read-only over the household — of the 12 tools, most proxy a GET handler that already exists, so the caps, the recurrence expansion and the time zone are decided once and inherited. (This row lives HERE, not in §3: docCounts derives that number from the registry, and the claim died the first time §3 rotated.) |
 | **Households in production** | One (Marc's), plus per-visitor demo sandboxes |
 
 *(Numbers re-measured 2026-09-17. They are the kind that rot: re-run the commands before
@@ -120,128 +121,66 @@ now, so the repo-wide count is honest for the first time.
 
 ## 3. What just shipped
 
-### « Les remarques » — the household reports, the pipeline answers — 2026-09-19
+### The board card acts — a remark, answered by the loop it asked about — 2026-09-22
 
-The MCP server made the app readable. This makes it **fixable from the inside**, and the
-shape of the loop is the whole point:
+The first remark the household filed through « Les remarques » was about « Les remarques »:
 
-```
-Toi        →  une remarque (bogue · souhait · amélioration)
-Claude     →  remarks_open() / remark_get()      LECTURE SEULE
-Claude     →  git commit …  Regle-remarque: <id>
-CI         →  typecheck · test · build · d1 · knip → deploy ✓
-CI         →  POST /api/remarks/shipped          (secret CI, pas l'agent)
-Toi        →  « C'est réglé » … ou « Pas réglé »
-```
+> « Widget on board for remarques (add and resolve) » — filed at build `11fcf248`.
 
-**The agent never writes to the household** — `functions/api/mcp.ts` still has no write
-path, and the twelve tools are all reads. « Expédiée » is written by the DEPLOY, so it
-means *the fix is in production*, never *an agent claims it is*. And only a human writes
-« réglée »: the callback 409s on a remark somebody already confirmed.
+It was filed the build BEFORE the board card shipped, and the card that answered it was
+read-only: every row a link into Réglages, the whole thing one big `<Link>`. That reads
+well and costs a navigation for the only two things anyone does with a remark. Both are
+in place now, and the card never leaves the board to do either:
 
-Three doors, one composer, one hand-off (`?report=1` + a seed): the Réglages section, the
-**« ? » bubble on any surface** (all eight help registries at once, carrying the semantic
-help key), and the **crash screen** — which stashes the error and navigates rather than
-mounting the composer, because `ErrorBoundary` is deliberately hook-free and the composer
-needs exactly the machinery that may have just broken. Every report carries the route and
-**the commit the reporter was running**, so « ça marche chez moi » is answered before it
-is asked.
+- **the header ＋** (`SectionAdd popup`) opens the ONE shared composer — a fourth door,
+  not a second form;
+- **a `shipped` row carries the two verdict chips**, the same words and the same rule as
+  Réglages: offered only once a deploy has claimed it.
 
-Also shipped with it, and useful on their own:
+**The « ? » bubble stopped navigating.** It was a link into Réglages for a stated reason
+— mounting a modal in a component that renders on every surface pulls Query, the write
+hook and the toast with it — and the reason was real but the shape was wrong: you tap
+« ? » because something is wrong HERE, and the answer walked you off the page you were
+describing. `lazy()` settles it: the composer arrives on the tap, so a surface that never
+reports still pays nothing. `?report=1` stays for the crash screen, which cannot do this
+(`ErrorBoundary` is deliberately hook-free).
 
-- **`data_invariants`** — the laws `CLAUDE.md` states (`media_key` iff `media_kind`, JSON
-  columns, member refs resolving *inside* this household) checked against real ROWS. The
-  twenty-odd build guards all read source; not one read a row. It DISCOVERS the schema
-  rather than restating it, and says « non vérifié » instead of folding that into « ok ».
-- **`app_health`** — and on its first real run it found that **`mail` and `alerts` are
-  off in production**: the nightly cron's « the sweep is broken again » signal has nowhere
-  to go, and the forgot-password flow (0133) cannot send.
-- **`csrfExempt.test.ts`** — a ratchet on the shortest list with the largest blast radius.
-  It found `pair/poll` sitting there while answering GET only; removed.
-- **`ci-untrusted.test.mjs`** — no `${{ github.event… }}` may reach a `run:` block. It
-  found an existing one in `sw-repro.yml`; fixed.
+Three things worth keeping from the way it was built:
 
-**⚠️ The loop is inert until two secrets exist** (`wrangler secret put
-DEPLOY_NOTIFY_SECRET` + the same-named Actions secret). Unset fails CLOSED on both sides;
-`/api/health` reports `deployHook`.
+- **The PATCH got an owner the moment it had two callers.** `useRemarkVerdict`
+  (`lib/remarks.ts`), and a `remarks` entry in `write-owners.test.ts` naming all three
+  write sites — the hook, the composer's POST, the section's DELETE. This is the
+  leftover-flow shape exactly (one flow, two surfaces, four drifts by 2026-09-03), caught
+  on the way in rather than three months later. **Both halves of the new guard were
+  proven red**: a hand-rolled PATCH planted in the card (`RemarksCard.tsx:77 → remarks`)
+  and an emptied `affectedKeys` in the hook (`lib/remarks.ts:87 → remarks is missing
+  REMARKS_KEY`), then restored.
+- **A card that acts cannot be a `<Link>`.** A button inside an anchor is invalid HTML
+  and its clicks navigate anyway; `CercleNotesCard` had already answered this — the card
+  is a `<div>` and its door survives as an explicit link per row.
+- **`.help-bubble__report` now dresses a `<button>`**, so it got the UA-chrome reset that
+  `link-button-rule.test.ts` exists for. That guard only fires when a class is worn by
+  BOTH kinds, and this one moved wholesale from `<Link>` to `<button>` — which is the gap
+  in it, and the reason the reset was written by hand here.
 
-**The eager FR dictionary had hit its cap** — 16 bytes under 130 KB, so the next string
-added to `src/i18n.ts` would have failed the build, whatever it was. **Cashed 2026-09-21**:
-the `operator` namespace (703 lines, 21 % of the dictionary, and never confined to
-Réglages) moved to `src/i18n.operator.ts` with a `useOperatorT()` that mirrors `useT()`'s
-FR-first contract. **130 → 99 KB, eager total 586 → 555 KB, the door's static closure
-731 → 699 KB.** And the cap came down with it, 130 → 110: a budget that keeps its old
-ceiling after a win hands the next thirty kilobytes back without anyone deciding to spend
-them.
+The card stays `mode: 'auto'`. A board with nothing waiting shows no remarks furniture at
+all: « file a bug » is not a standing invitation on a kitchen wall, and the door from a
+calm board is the « ? », which needs no card to exist.
 
-The guards earned their keep on the way through. `glossary.test.ts` and
-`confirmCopy.test.ts` walk `FR`/`EN` — with a fifth of the corpus gone they would have
-**passed, looser, in silence**, since a ratchet only counts down. They now walk
-`FR_OPERATOR`/`EN_OPERATOR` too, and that is the line a future split must not forget.
+**Gates:** typecheck · 2 394 unit · build · bundle (door 7 chunks / 700 KB, eager 555 KB
+— the composer is lazy from the bubble and rides the board chunk from the card) ·
+`e2e/remarks.spec.ts` 8 green, three of them new, each asserting the write left AND the
+board is still under it. The full `e2e:ci` suite was run locally for the shared-machinery
+rule (`HelpBubble` renders on every surface).
 
-### « La maison, adressable » — an MCP server over the household — 2026-09-18
-
-Asked how to take the app to the next level, and the answer that survived the filters was
-not a feature: **the app knows more about this household than any other software, and it
-has exactly one interface — its own UI.** `/api/mcp` is the second one. Claude (or
-anything that speaks MCP) can now read the board, the meal plan, the list, the calendar,
-the recipe book and the directory.
-
-**READ-ONLY, by construction rather than by flag.** There is no write path in
-`functions/api/mcp.ts`: of the 12 tools, most proxy a **GET** handler that already
-exists and the rest (`household_snapshot`, `app_health`, `data_invariants`) run their own SELECTs,
-the registry holds no POST entry, and `tools/call` can only reach a registry name. An
-agent connected here cannot change the household even if it decides it should. Writes
-stay a separate decision — the capture spine, the undo toast and the outbox all live in
-the UI, and an agent writing past them writes past every calm guarantee.
-
-**No Durable Object, no `agents` package, no SSE.** Spec revision **2026-07-28** removed
-transport sessions *and* the `initialize` handshake: each request is self-contained, so
-the whole server is one POST handler returning one JSON object — the shape every other
-endpoint here already has. The `initialize` era (2025-03-26 … 2025-11-25) is answered too,
-because that is what shipped clients still speak. `_lib/mcp.ts` is the wire (pure, 30 unit
-cases); `functions/api/mcp.ts` is the household.
-
-**Reuse, not a second read of the household.** Every tool calls the handler that owns its
-data, so the caps, the recurrence expansion, the meal-slot order and the household time
-zone are decided in one place and inherited here — including changes made after this
-shipped. The one exception, `household_snapshot`, drove the extraction of
-`_lib/askSnapshot.ts` out of `api/ask.ts`: two callers of "what the household is right
-now" would have drifted inside a month. `ask.ts` is 139 → 43 lines.
-
-**The credential is a device, and the security work was the real work.** A `devices` row
-with `kind='agent'` (no migration — `kind` has been free TEXT since 0083's `'display'`),
-minted from Réglages ▸ Système ▸ Appareils & accès, listed and revoked beside the wall
-tablets. Three things the tests caught rather than the design:
-
-- an `agent` row resolved as a plain **kiosk**, so the token was a full write credential
-  everywhere else — `/api/list` POST would have worked. `resolveActor` now maps the kind
-  through, `route.ts` gates `'agent'` read-only like `'display'`, and the MCP endpoint
-  itself is the single declared exception (`authed(…, { readOnlyPost: true })`);
-- `/api/mcp` is **CSRF-exempt** (an MCP client cannot double-submit, and per
-  anthropics/claude-code#29562 may not get custom headers sent at all, so `?t=` has to
-  work — the concession `/api/live` already makes). A CSRF-exempt POST that accepted the
-  operator **cookie** would be a real cross-site hole, so it refuses one: scope must be
-  `'kiosk'` + kind `'agent'`, which only a token produces. Plus the `Origin` check the
-  transport mandates. A d1 case asserts the cookie gets 403;
-- `?t=` never reached `resolveActor` at all (it only reads the header) — found by the
-  real-runtime test, fixed the way `/api/live` does it, scoped to this one route.
-
-`'mcp'` joined `SILENT_PATHS`: unmapped POSTs default to invalidating the board, so every
-read-only tool call would have nudged every open device in the house.
-
-**Gates:** typecheck · 2 365 unit (30 new, **both key guards proven red** by planting the
-latin1 decode and the `id: null` notification) · **48 real-runtime, 21 new**
-(`worker/mcp.d1.test.ts` — minting, revocation, the cookie refusal, the kiosk refusal,
-cross-household isolation, the legacy handshake, `-32020`, 405, Origin, and the tools
-actually returning this household's list) · build · bundle budget unchanged (door still
-7 chunks / 728 KB — the server is Worker-side, the SPA gained one settings section).
-knip does not run on this machine (the documented oxc-parser crash) — **read the CI run.**
-
-Guide: `set-devices` point 9 (append-only) + an `OPERATOR_HELP` entry, so the « ? » works.
+**And what production said while picking the work** (`app_health`, 2026-09-22):
+`deployHook: true` — the CI half of the loop is armed. `mail: false` and `alerts: false`
+— **Wave 3's whole password-reset flow is built and dark**, and the nightly cron's alarm
+still has nowhere to ring. Both wait on the Resend steps in §4-K Wave 3, which are
+Marc's and outside the repo.
 
 > **Older entries are in git, not here.** This section holds the CURRENT session's work
-> and nothing else: when the next session's first entry lands, these are cut. That rule
+> and nothing else: when the next session's first entry lands, this one is cut. That rule
 > is what keeps this file a front door instead of a chronicle — it had reached 4 289
 > lines, with the only open work at line 3 490.
 
@@ -430,21 +369,22 @@ against a SEEDED household on wifi.
       modulepreloads the entry's whole static graph, 69 chunks, and the door pays for the
       board, the write/outbox layer, both i18n halves' shell, the QR code… A stranger at a
       school gate on a bad signal waits eleven seconds for a headline.
-- [ ] **The door's eager graph — the structural fix, sized, not started (Marc, 2026-09-16:
-      « good » — do it in its own session, as sized below).** The cheap
-      lever was tried and reverted the same hour: making `DrawPad` lazy changed nothing,
-      because the chunk NAMED `drawpad` (49 KB gz, in the door's preload list) is
-      Rolldown's shared-commons chunk wearing the group's name — 100+ exports,
-      `useSyncExternalStore`, `createContext`, statically imported by nearly every other
-      chunk. The bundle gate's « eager » total (index + react-vendor + i18n = 654 KB)
-      therefore UNDERCOUNTS what the door actually loads. The real fix is structural:
-      `HubLayout` + `Board` are static imports in `router.tsx` (the kiosk's offline boot
-      is the reason), so `/` carries the whole hub. Making them lazy would leave the door
-      with shell + Home (~200 KB gz, ~4 s on Slow 4G, ~1 s on Fast 4G); the SW precache
-      already covers every lazy chunk, so the kiosk's offline reboot survives it, at the
-      cost of one more round trip on a wall tablet's warm boot. Needs its own session:
-      the gate's eager set re-based, the `drawpad` group renamed to what it is, and the
-      cold-start table above re-run after.
+- [ ] **The door's eager graph — HALF DONE, and this entry was stale (re-checked
+      2026-09-22).** What it said: `HubLayout` + `Board` are static imports in
+      `router.tsx`, so `/` carries the whole hub; make them lazy. **They have been lazy
+      since L4** (`src/router.tsx:26-27`, 2026-09-17) — that is the work the re-measured
+      table above is measuring, 78 requests → 17. Read the code before picking this up;
+      the ledger was a verdict from a moment (§5).
+      What is genuinely left is the gap `scripts/check-bundle.mjs` documents on itself
+      (its « KNOWN GAP worth closing separately » comment): **`EAGER_CHUNKS` matches on
+      FILENAME**, so only `index`/`react-vendor`/`i18n` are counted as eager, while
+      `write-*.js` (142 KB), `drawpad`, `Modal`, `Layout`, `Avatar` ride the entry's
+      static closure and escape the budget entirely. The gate therefore reports 555 KB
+      eager against a door that pulls 700 KB in 7 chunks — it prints the true number and
+      budgets the smaller one. The fix: budget the STATIC CLOSURE the gate already walks
+      for that line, re-base the caps against it, rename the `drawpad` group to what it
+      is (Rolldown's shared commons wearing a feature's name), and re-run the cold-start
+      table. Do NOT "fix" it by lifting the filename caps — that changes no bytes.
 - [x] **Install prompt — built, two doors, Marc's shape** (« maybe after account creation
       too »). `lib/install` keeps Chromium's `beforeinstallprompt` (preventDefault, so the
       browser's own mini-bar does not double the offer) and knows iOS Safari has none;

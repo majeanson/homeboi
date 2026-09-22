@@ -189,9 +189,13 @@ export const BOARD_CARDS: readonly BoardCardMeta[] = [
   { id: 'photos', icon: 'image-square-bold', tint: 'var(--sky)', zone: 'grid', size: 'full', mode: 'auto' },
   // « Les remarques » (0136) — LAST on purpose, and 'auto'. It is the only card about the
   // APP rather than the household, so it sits at the foot of the masonry and disappears
-  // the moment nothing is waiting. No : an empty remarks card is the good state,
-  // and inviting a tap into « file a bug » from a calm board would be the opposite of the
-  // rule that an empty card OFFERS the add — here there is nothing to offer.
+  // the moment nothing is waiting.
+  //
+  // STILL 'auto' now that the card carries a ＋ and the verdict chips (2026-09-22). The
+  // two are not in tension: a card that HAS rows offers to add another, and a board with
+  // nothing waiting shows no remarks furniture at all — « file a bug » is not a standing
+  // invitation on a kitchen wall. The door from a CALM board is the « ? » bubble, which
+  // opens the same composer in place on every surface and needs no card to exist.
   { id: 'remarks', icon: 'warning-bold', tint: 'var(--marigold-deep)', zone: 'grid', size: 1, mode: 'auto' },
 ]
 

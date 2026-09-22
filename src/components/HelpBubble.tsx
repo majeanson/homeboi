@@ -1,9 +1,13 @@
-import { useEffect, useRef } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useT } from '../i18n'
 import { Icon } from './Icon'
 import { Cluster } from './Layout'
 import { scrollBehavior } from '../lib/motion'
+
+// Lazy on purpose — see the header. The bubble renders on every surface; the composer
+// (the modal, the write hook, the attach panel) arrives only when someone reports.
+const RemarkComposer = lazy(() => import('./RemarkComposer').then((m) => ({ default: m.RemarkComposer })))
 
 // A small in-place help box: a title, one calm line, and two ways out. « Voir le guide »
 // opens the full Guide card (/settings?tab=guide&card=<id>, the same deep link HelpDot
@@ -16,11 +20,17 @@ import { scrollBehavior } from '../lib/motion'
 // know it exists. It also carries the best context in the app: a help KEY is semantic
 // (`kitchen.recipes`), where a URL path is only where you happened to be standing.
 //
-// It is a LINK, not a composer. Mounting a modal inside every bubble would pull Query,
-// the write hook and the toast into a presentational component rendered on every surface
-// — and the hand-off through `?report=1` already exists for the crash screen, which
-// needs it for a harder reason (ErrorBoundary cannot use hooks at all). One mechanism,
-// two callers.
+// IT OPENS THE COMPOSER WHERE YOU STAND. It was a LINK into Réglages first, for a real
+// reason — mounting a modal inside every bubble would pull Query, the write hook and the
+// toast into a presentational component rendered on every surface. What that traded away
+// was the point of the door: you tap « ? » because something is wrong HERE, and the
+// answer walked you off the page you were describing (and, on the board, off the very
+// card you were pointing at). `lazy()` settles it — the bubble imports nothing until
+// someone taps, so a surface that never reports never pays.
+//
+// `?report=1` STAYS, for the caller that cannot do this: the crash screen, where
+// ErrorBoundary is deliberately hook-free and must not be able to throw while rendering
+// the fallback. One composer, two ways in.
 export function HelpBubble({
   title,
   body,
@@ -41,6 +51,7 @@ export function HelpBubble({
 }) {
   const t = useT()
   const ref = useRef<HTMLDivElement>(null)
+  const [reporting, setReporting] = useState(false)
 
   // BRING IT FULLY INTO VIEW, CENTRED.
   //
@@ -84,15 +95,26 @@ export function HelpBubble({
             </Link>
           )}
           {reportKey && (
-            <Link
-              to={`/settings?tab=settings&sub=tablets&focus=remarks&report=1&hk=${encodeURIComponent(reportKey)}`}
-              className="help-bubble__report"
-              onClick={onClose}
-            >
+            <button type="button" className="help-bubble__report" onClick={() => setReporting(true)}>
               {t.remarks.signalHere}
-            </Link>
+            </button>
           )}
         </Cluster>
+      )}
+      {/* The bubble stays mounted under the dialog on purpose: it is what holds the
+          composer, so closing it first would take the form with it. Both go together
+          once the report is sent or dismissed. */}
+      {reporting && (
+        <Suspense fallback={null}>
+          <RemarkComposer
+            open
+            seed={{ kind: 'bug', helpKey: reportKey }}
+            onClose={() => {
+              setReporting(false)
+              onClose()
+            }}
+          />
+        </Suspense>
       )}
     </div>
   )

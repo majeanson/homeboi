@@ -236,9 +236,9 @@ and because the scoring pass that added them found a gap in the first one.
 | Account · **sign out everywhere else** | — | — | — | — | ✅ settings▸tablets « Mes connexions » | confirm + password²⁵ | ✅ |
 | Household data · export | — | — | — | — | ✅ settings▸tablets « Emporter mes données » | — | ✅ |
 | Household data · **restore a copy** | ✅ a row per nightly copy (`ListRow` + « Restaurer ») | — | — | — | ✅ settings▸tablets, folded under the export²⁶ | confirm + password²⁵ | ✅ |
-| Remarque · **file one** | — | — | — | ✅ three doors, ONE composer²⁷: « Signaler » in the section head · the **« ? » bubble on any surface** (all eight registries, carrying the help key) · the **crash screen's** « Signaler » | ✅ settings▸tablets « Les remarques » | — (a create) | ✅ |
+| Remarque · **file one** | ✅ the board card's ＋ (`SectionAdd popup`)³¹ | — | — | ✅ four doors, ONE composer²⁷: « Signaler » in the section head · the **« ? » bubble on any surface** (all eight registries, carrying the help key) · the **board card's ＋** · the **crash screen's** « Signaler » | ✅ settings▸tablets « Les remarques » | — (a create) | ✅ |
 | Remarque · open its journal | ✅ `Disclosure` expands in place | — | ➖ no peek, by design (PARITY ¹⁰³) | — | ✅ settings▸tablets, **and a board card** (`remarks`, zone `grid`, mode `auto`)³⁰ | — | ✅ |
-| Remarque · **confirm / re-open** | — | — | — | — | ✅ two `Chip`s, offered only once a deploy has claimed it²⁸ | — (each append reverses the other) | ✅ |
+| Remarque · **confirm / re-open** | ✅ two `Chip`s on a shipped row of the **board card**³¹ | — | — | — | ✅ the same two `Chip`s, offered only once a deploy has claimed it²⁸ | — (each append reverses the other) | ✅ |
 | Remarque · delete | ✅ `RowActions` 🗑 | — | — | — | — | confirm **+** deferred²⁹ | ✅ |
 
 19. Confirm, and it names what is lost: the link texted last night stops working.
@@ -267,6 +267,21 @@ and because the scoring pass that added them found a gap in the first one.
     `auto` is what keeps it out of the way); and it hides from a guest — the MotsCard /
     home-pins privacy hide, since an operator can mint a showcase link to their own
     household.
+31. **The board card ACTS — added 2026-09-22, from a remark** (« widget on board for
+    remarques (add and resolve) », filed at build `11fcf248`, the build before the card
+    itself shipped). The card had gone out as a pure glance: every row a link into
+    Réglages, the whole card one big `<Link>`. That reads well and costs a navigation for
+    the only two things anyone does with a remark. Both are in place now — the header ＋
+    opens the ONE shared composer, and a `shipped` row carries the same two verdict chips
+    Réglages offers, the same words, under the same « only once a deploy claimed it » rule
+    (²⁸). Consequences worth knowing: the card is a `<div>` now, not a `<Link>` (a button
+    inside an anchor is invalid HTML and navigates anyway — the `CercleNotesCard`
+    precedent, where the door survives as an explicit link per row); the PATCH moved to
+    ONE owner hook, `useRemarkVerdict`, the moment it had two callers, and
+    `write-owners.test.ts` holds the third one to it; and the card stays `mode: 'auto'`,
+    so a board with nothing waiting still shows no remarks furniture at all. Guards:
+    three cases in `e2e/remarks.spec.ts`, each asserting the write left AND the board is
+    still under it.
 29. **Two tiers on one delete**, which is the rule at door 14: the tier follows the
     SURFACE. `useConfirm` because it is heavy — the journal and every attachment go —
     and `useDeferredRemoval` because the list is polled, where optimistic-then-defer
@@ -275,12 +290,18 @@ and because the scoring pass that added them found a gap in the first one.
     remark: there is nothing to confirm before something was shipped, and offering it
     anyway invites closing a remark nobody has acted on. Held by `e2e/remarks.spec.ts`,
     which asserts the button is absent on an open row and present on a shipped one.
-27. **Three doors, one composer, one hand-off.** `?report=1` means « open it », and what
-    rides along says where from — so a new door adds a SEED, never a second form.
-    · **The « ? » bubble** carries `&hk=<help key>`. It lives in `HelpBubble` itself
-    rather than in each surface, so all eight help registries got the door at once and
-    none of them knows it exists. A help key is *semantic* (`kitchen.recipes`) where a
-    URL path is only where someone happened to be standing.
+27. **Four doors, one composer, one hand-off.** A new door adds a SEED, never a second
+    form. Two of them mount the composer where they stand (the board card's ＋ and the
+    « ? » bubble); one hands off through `?report=1`, which means « open it » and carries
+    what rides along.
+    · **The « ? » bubble** lives in `HelpBubble` itself rather than in each surface, so
+    all eight help registries got the door at once and none of them knows it exists. It
+    passes the help key as the composer's seed — *semantic* (`kitchen.recipes`) where a
+    URL path is only where someone happened to be standing. **It navigated into Réglages
+    until 2026-09-22**, which was the wrong shape for its own reason: you tap « ? »
+    because something is wrong HERE, and the answer walked you off the page you were
+    describing. It `lazy()`-loads the composer, so a surface that never reports still
+    pays nothing — which was the original argument for the link.
     · **The crash screen** stashes the error in `sessionStorage` and navigates. It
     cannot open the composer itself: `ErrorBoundary.tsx` is deliberately hook-free,
     i18n-free and router-free so it cannot throw while rendering the fallback, and the

@@ -143,3 +143,115 @@ test('landing WITHOUT ?report does not ambush anyone with a composer', async ({ 
   await page.goto(REMARKS_URL)
   await expect(page.getByRole('dialog')).toHaveCount(0)
 })
+
+// ── The board card: add and resolve WITHOUT leaving the board ────────────────────
+//
+// The second half of the loop, and the half a remark asked for (« widget on board for
+// remarques (add and resolve) »). The card shipped first as a pure glance — every row a
+// link into Réglages — which reads well and costs a navigation for the only two things
+// anyone does with a remark. So what these two tests pin is not the rendering: it is that
+// the write leaves AND the board is still under it. `toHaveURL(/\/board/)` after the
+// request is the whole assertion — a door that quietly navigates is the regression.
+
+const SHIPPED_ROW = {
+  id: 'rmBoard0001',
+  kind: 'bug',
+  title: 'Le clavier saute sur la liste',
+  body: '',
+  help_key: null,
+  seen_path: '/liste',
+  seen_build: 'a3f21c9',
+  context_json: '{}',
+  status: 'shipped',
+  reported_by: null,
+  created_at: 1,
+  updated_at: 2,
+  events: [
+    { id: 'be1', remark_id: 'rmBoard0001', kind: 'filed', text: '', sha: null, media_kind: null, media_key: null, scene_key: null, author_member_id: null, created_at: 1 },
+    { id: 'be2', remark_id: 'rmBoard0001', kind: 'shipped', text: 'la fenêtre ne se re-mesurait pas', sha: 'cafe12345678', media_kind: null, media_key: null, scene_key: null, author_member_id: null, created_at: 2 },
+  ],
+}
+
+async function boardWith(page: import('@playwright/test').Page, rows: unknown[]) {
+  await mockApi(page, { overrides: { remarks: { remarks: rows } } })
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+  // The first-login tour navigates on its own and would yank the board out from under
+  // the card (the help.spec.ts precedent).
+  await page.addInitScript(() => {
+    try {
+      localStorage.setItem('babillard-tours-seen', JSON.stringify(['essentials']))
+    } catch {
+      /* noop */
+    }
+  })
+  await page.goto('/board')
+  return page.locator('.bento', { hasText: 'Les remarques' })
+}
+
+test('the board card files a remark in place — the composer opens ON the board', async ({ page }) => {
+  const card = await boardWith(page, [SHIPPED_ROW])
+  await expect(card).toBeVisible()
+
+  // The header ＋ (SectionAdd, `popup`: it opens a dialog, so it announces
+  // aria-haspopup rather than promising a region below it).
+  await card.getByRole('button', { name: 'Signaler' }).click()
+  const dialog = page.getByRole('dialog')
+  await expect(dialog).toBeVisible()
+  await expect(page).toHaveURL(/\/board/)
+
+  const post = page.waitForRequest(isApi('POST', 'remarks'))
+  await dialog.getByRole('textbox').fill('La carte des remarques devrait se replier')
+  await dialog.getByRole('button', { name: 'Envoyer' }).click()
+  const body = (await (await post).postDataJSON()) as Record<string, unknown>
+  expect(body.title).toBe('La carte des remarques devrait se replier')
+  // Filed FROM the board, and the report says so — the path is the one fact the
+  // reporter never types and the one that dates every screenshot.
+  expect(String(body.seen_path)).toContain('/board')
+  // And we never left.
+  await expect(page).toHaveURL(/\/board/)
+})
+
+test('the board card takes the verdict in place — and only once a deploy claimed it', async ({ page }) => {
+  const openOnly = { ...SHIPPED_ROW, id: 'rmBoardOpen1', title: 'Encore ouverte', status: 'open', events: [SHIPPED_ROW.events[0]] }
+  const card = await boardWith(page, [openOnly, SHIPPED_ROW])
+  await expect(card).toBeVisible()
+
+  // An `open` remark carries no verdict: there is nothing to confirm before something
+  // shipped, and offering it invites closing a remark nobody acted on. One row is
+  // shipped, so exactly ONE pair of chips exists on the card.
+  await expect(card.getByRole('button', { name: 'C’est réglé' })).toHaveCount(1)
+  await expect(card.getByText('Encore ouverte')).toBeVisible()
+
+  const patch = page.waitForRequest(isApi('PATCH', 'remarks'))
+  await card.getByRole('button', { name: 'C’est réglé' }).click()
+  const body = (await (await patch).postDataJSON()) as { id: string; action: string }
+  expect(body).toMatchObject({ id: 'rmBoard0001', action: 'confirm' })
+  await expect(page).toHaveURL(/\/board/)
+})
+
+test('the « ? » door opens the composer where you stand, carrying the section', async ({ page }) => {
+  // It used to be a LINK into Réglages: you tapped « ? » because something was wrong
+  // HERE, and the answer walked you off the page you were describing. Now the bubble
+  // mounts the same composer in place (lazily) — and the help KEY still rides into the
+  // POST, which is what makes a report point at code rather than at a URL.
+  await mockApi(page)
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+  await page.goto('/kitchen')
+  await page.locator('.help-toggle').first().click()
+  await page.locator('.help-title').first().click()
+  const bubble = page.locator('.help-bubble').first()
+  await expect(bubble).toBeVisible()
+
+  await bubble.locator('.help-bubble__report').click()
+  const dialog = page.getByRole('dialog')
+  await expect(dialog).toBeVisible()
+  // Still on the kitchen — the whole point of the change.
+  await expect(page).toHaveURL(/\/kitchen/)
+
+  const post = page.waitForRequest(isApi('POST', 'remarks'))
+  await dialog.getByRole('textbox').fill('Les collections se mélangent')
+  await dialog.getByRole('button', { name: 'Envoyer' }).click()
+  const body = (await (await post).postDataJSON()) as Record<string, unknown>
+  expect(String(body.help_key)).not.toBe('')
+  expect(String(body.seen_path)).toContain('/kitchen')
+})

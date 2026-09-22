@@ -22,6 +22,7 @@ export function SectionAdd({
   onToggle,
   label,
   readOnly,
+  popup,
   className,
 }: {
   open: boolean
@@ -30,6 +31,13 @@ export function SectionAdd({
   label: string
   /** Defaults to the read-only guest session; pass false to force-show. */
   readOnly?: boolean
+  /** The composer this ＋ opens is a DIALOG, not an in-place box (the board's remarks
+   *  card opens the one shared `RemarkComposer`, a Modal used by three doors — see its
+   *  header for why there is only ever one of it). Swaps `aria-expanded`, which promises
+   *  a region right below, for `aria-haspopup="dialog"`, which is what actually happens.
+   *  Everything else — the ＋↔✕ flip, the guest self-hide, the CSS — is unchanged, which
+   *  is the whole reason this is a prop and not a second button. */
+  popup?: boolean
   className?: string
 }) {
   if (readOnly ?? isGuest()) return null
@@ -38,7 +46,8 @@ export function SectionAdd({
       type="button"
       className={'sec-label__actbtn' + (open ? ' is-on' : '') + (className ? ' ' + className : '')}
       onClick={onToggle}
-      aria-expanded={open}
+      aria-expanded={popup ? undefined : open}
+      aria-haspopup={popup ? 'dialog' : undefined}
       aria-label={label}
       title={label}
     >

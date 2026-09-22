@@ -16,7 +16,7 @@ import { Disclosure } from '../Disclosure'
 import { RowActions } from '../RowActions'
 import { OperatorSection } from './OperatorSection'
 import { RemarkComposer, type RemarkSeed } from '../RemarkComposer'
-import { type Remark, KIND_LABEL, STATUS_LABEL, remarkSubtitle } from '../../lib/remarks'
+import { type Remark, KIND_LABEL, STATUS_LABEL, remarkSubtitle, useRemarkVerdict } from '../../lib/remarks'
 
 // Réglages ▸ Système ▸ Appareils & accès ▸ « Les remarques ».
 //
@@ -70,6 +70,7 @@ function takeSeed(): RemarkSeed | null {
 export function RemarksSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const write = useWrite()
+  const verdict = useRemarkVerdict()
   const confirm = useConfirm()
   const ro = isGuest()
   const [seed] = useState<RemarkSeed | null>(takeSeed)
@@ -93,10 +94,13 @@ export function RemarksSection({ help }: { help?: HelpMode }) {
   const all = state.data?.remarks ?? []
   const rows = visible(all)
 
+  // The verdict itself lives in `useRemarkVerdict` (lib/remarks) — the board card offers
+  // the same two chips, and one PATCH spelled in two files is how the leftover flow grew
+  // four drifts. What stays here is the BUSY state, which is this list's own concern.
   async function act(r: Remark, action: 'confirm' | 'reopen', note?: string) {
     setBusy(r.id)
     try {
-      await write('remarks', { method: 'PATCH', body: { id: r.id, action, note }, affectedKeys: [REMARKS_KEY] })
+      await verdict(r.id, action, note)
     } finally {
       setBusy(null)
     }

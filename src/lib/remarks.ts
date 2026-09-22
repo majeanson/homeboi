@@ -1,3 +1,6 @@
+import { useCallback } from 'react'
+import { useWrite } from './write'
+import { REMARKS_KEY } from './queryKeys'
 import type { FR } from '../i18n'
 
 // The shape « Les remarques » (0136) travels in, and the three label lookups every
@@ -60,4 +63,28 @@ export function remarkSubtitle(t: T, r: Remark): string {
   if (r.seen_path) bits.push(`${t.remarks.seenOn} ${r.seen_path}`)
   if (r.seen_build) bits.push(`${t.remarks.seenBuild} ${r.seen_build}`)
   return bits.join(' · ')
+}
+
+/**
+ * THE remark verdict — and it is a hook here, not an inline `write()`, because it now
+ * has TWO doors.
+ *
+ * Réglages owns the journal; the board card owns the glance. Both offer « C'est réglé »
+ * / « Pas réglé », and the moment the same PATCH is spelled in two files it starts
+ * drifting: a missing `affectedKeys` on one of them leaves the OTHER surface showing a
+ * remark that is already closed, until its next poll. That is the documented 2026-09-03
+ * leftover drift, which re-grew four times from exactly this shape — so the second door
+ * arrives WITH the hook instead of beside it. `write-owners.test.ts` holds the line.
+ *
+ * `note` is accepted but unused by both doors today: the endpoint records it on the
+ * journal event, and a « pas réglé, voici ce qui reste » field is the obvious next
+ * thing. Passing it through costs nothing and keeps the shape honest.
+ */
+export function useRemarkVerdict() {
+  const write = useWrite()
+  return useCallback(
+    (id: string, action: 'confirm' | 'reopen', note?: string) =>
+      write('remarks', { method: 'PATCH', body: { id, action, note }, affectedKeys: [REMARKS_KEY] }),
+    [write],
+  )
 }
