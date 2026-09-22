@@ -117,6 +117,12 @@ const ALLOWED = new Set<string>([
   // outbox hours later it would overwrite whatever was added since, and it is gated on
   // a password typed in the moment. Online-only by construction.
   'components/operator/takeout.tsx → takeout/restore',
+  // …and the door beside it: DELETE /api/household (Wave 4). An outbox replaying
+  // « delete my household » hours later — after the person changed their mind and
+  // signed back in — is the worst write there is to retry, and there is nothing to
+  // queue against anyway: the delete takes the `operators` row, so the session and the
+  // device's whole reason to hold a queue die with it. Password-gated in the moment.
+  'components/operator/takeout.tsx → household',
   'components/operator/SessionsSection.tsx → auth/password',
   'components/operator/SessionsSection.tsx → auth/sessions/revoke',
   'pages/JoinHouseholdPage.tsx → operator-join',

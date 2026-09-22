@@ -17,6 +17,8 @@ import {
 import { householdAiEnabled } from '../_lib/aiPref'
 import { householdShareInfo, cleanShareField } from '../_lib/shareModes'
 import { nowSec } from '../_lib/ids'
+import { requirePassword } from '../_lib/sudo'
+import { deleteHousehold } from '../_lib/demoHousehold'
 import { isValidTz } from '../_lib/tz'
 import { householdSchoolYear, setHouseholdSchoolYear, clearHouseholdSchoolYear, cleanSchoolYear } from '../_lib/schoolYear'
 
@@ -354,3 +356,54 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     ...shareInfo,
   })
 })
+
+// DELETE /api/household — the household leaves, and takes everything with it
+// (STATE.md §4-K Wave 4). An app a family cannot leave is not one you can ask a
+// stranger to try, and until this shipped the only way out was to ask Marc.
+//
+// THREE LOCKS, and each answers a different way to get here by accident:
+//   · `authed(…, 'operator')` — a kiosk on the kitchen wall cannot do this at all;
+//   · `requirePassword` — a session cookie proves « someone in this house », which is
+//     the whole point of _lib/sudo.ts, and this is the most irreversible door there is;
+//   · the household's NAME, retyped. The password is something the owner knows; the
+//     name is something the owner has to look at. Between them there is no plausible
+//     slip. Compared with the accents and case folded away (`localeCompare`-free: the
+//     name is displayed right above the field, and « Chez Nous » vs « chez nous » is a
+//     typing accident, not a different household).
+//
+// It REUSES `deleteHousehold` — the same whole-schema, R2-freeing delete the demo
+// sweep runs, which `demoHousehold.test.ts` holds to every table in the schema. That
+// reuse is the reason this is ~20 lines: a second delete written here would be the
+// one that forgets a table added next month.
+//
+// NOT in the outbox (`write-rule` ALLOWED with the reason): replaying « delete my
+// household » from a queue hours later, after the person changed their mind and signed
+// back in, is the worst possible write to retry. And nothing to invalidate afterwards —
+// the session dies with the `operators` row it deleted, so the client signs out.
+export const onRequestDelete = authed(async (ctx, actor) => {
+  const body = await readJson<{ password?: string; name?: string }>(ctx.request)
+  if (!body) return badRequest('Corps invalide.')
+  const denied = await requirePassword(ctx.env, actor, body.password)
+  if (denied) return denied
+
+  const name = await householdName(ctx.env, actor.householdId)
+  const typed = typeof body.name === 'string' ? body.name : ''
+  const same = (s: string) =>
+    s
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toLowerCase()
+  if (!typed || same(typed) !== same(name)) return badRequest('Le nom de la maisonnée ne correspond pas.')
+
+  await deleteHousehold(ctx.env, actor.householdId)
+  // The cookie now names an operator row that no longer exists, so every later request
+  // is anonymous anyway — but say so, rather than leaving a dead cookie on the device
+  // to be puzzled over.
+  return new Response(JSON.stringify({ ok: true }), {
+    headers: {
+      'content-type': 'application/json; charset=utf-8',
+      'set-cookie': 'bb_session=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax',
+    },
+  })
+}, 'operator')

@@ -666,6 +666,17 @@ export const FR_OPERATOR = {
   restoreConfirm: (when: string) =>
     `Remplacer tout le contenu de la maisonnée par la copie du ${when} ? Ce qui a été ajouté depuis disparaît. Les appareils jumelés et les comptes restent.`,
   restoreDone: (n: number) => `C’est remis : ${n} lignes restaurées.`,
+  // Wave 4 — « Partir ». Une app qu'une famille ne peut pas quitter, on ne peut pas
+  // demander à un inconnu de l'essayer. Volontairement sous l'export : la première
+  // chose à offrir à quelqu'un qui s'en va, c'est ses affaires.
+  leaveTitle: 'Supprimer la maisonnée',
+  leaveHint: 'Tout part : les repas, la liste, les recettes, les personnes, les photos, les appareils jumelés et le compte. Rien ne se récupère. Emporte tes données d’abord — le bouton est juste au-dessus.',
+  leaveNameLabel: (name: string) => `Écris le nom de la maisonnée pour confirmer : ${name}`,
+  leaveNamePlaceholder: 'Le nom de la maisonnée',
+  leaveGo: 'Supprimer pour de bon',
+  leaveConfirm: 'Supprimer la maisonnée au complet ? Tout le contenu, les photos, les appareils et le compte disparaissent, et rien ne se récupère.',
+  leaveDone: 'C’est supprimé. Merci d’avoir essayé Babillard.',
+  leaveNameWrong: 'Le nom ne correspond pas encore.',
   ambientPreview: 'Aperçu maintenant',
   // F-47 — le souffle de l'heure (l'anti-notification).
   ambientBreath: 'Le souffle de l’heure',

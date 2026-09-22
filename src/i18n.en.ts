@@ -296,6 +296,8 @@ export const EN: typeof FR = {
     promise3: 'Made so a three-year-old can use it alone.',
     promise4: 'Nothing to maintain — it helps you leave, not linger.',
     privacyLine: 'What your family plans stays yours. No ads, no resale.',
+    privacyDoc: 'Privacy',
+    termsDoc: 'Terms',
   },
   // The Board first-run WelcomeCard: a short setup checklist + the feature map.
   welcome: {

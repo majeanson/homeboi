@@ -356,6 +356,8 @@ export const FR = {
     promise3: 'Fait pour qu’un enfant de trois ans l’utilise tout seul.',
     promise4: 'Rien à entretenir — ça t’aide à sortir, pas à rester collé.',
     privacyLine: 'Ce que ta famille planifie reste chez vous. Pas de pub, pas de revente.',
+    privacyDoc: 'Confidentialité',
+    termsDoc: 'Conditions',
   },
   // The Board first-run WelcomeCard: a short setup checklist + the feature map.
   welcome: {

@@ -141,6 +141,13 @@ export function Home() {
             ))}
           </ul>
           <p className="home__privacy">{t.home.privacyLine}</p>
+          {/* …and the two documents that make that line checkable (Wave 4). A promise
+              about privacy with nothing behind it is marketing; the link is what turns
+              it into a claim someone can hold us to. Plain links, at the foot of the
+              block that makes the promise — not a new section. */}
+          <p className="home__privacy mono">
+            <Link to="/confidentialite">{t.home.privacyDoc}</Link> · <Link to="/conditions">{t.home.termsDoc}</Link>
+          </p>
         </section>
       </main>
     </div>

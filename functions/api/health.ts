@@ -57,5 +57,11 @@ export const onRequestGet: PagesFunction<Env> = async (ctx) => {
     // invisible" argument rateLimit and alerts make, and this one fails CLOSED.
     deployHook: deployHookEnabled(ctx.env),
     realtime: !!(ctx.env as { REALTIME_HUB?: unknown }).REALTIME_HUB,
+    // …and the one VALUE on this endpoint, not a presence flag (Wave 4). The legal
+    // pages must render for someone who has never signed in — no session, no household,
+    // nothing else to ask — and a contact door whose address lives in the bundle cannot
+    // be changed without a deploy. It is a public address by definition; `ALERT_EMAIL`
+    // stays a secret and never appears here.
+    contact: ctx.env.CONTACT_EMAIL ?? null,
   })
 }

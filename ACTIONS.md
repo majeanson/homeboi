@@ -240,6 +240,8 @@ and because the scoring pass that added them found a gap in the first one.
 | Remarque · open its journal | ✅ `Disclosure` expands in place | — | ➖ no peek, by design (PARITY ¹⁰³) | — | ✅ settings▸tablets, **and a board card** (`remarks`, zone `grid`, mode `auto`)³⁰ | — | ✅ |
 | Remarque · **confirm / re-open** | ✅ two `Chip`s on a shipped row of the **board card**³¹ | — | — | — | ✅ the same two `Chip`s, offered only once a deploy has claimed it²⁸ | — (each append reverses the other) | ✅ |
 | Remarque · delete | ✅ `RowActions` 🗑 | — | — | — | — | confirm **+** deferred²⁹ | ✅ |
+| Maisonnée · **partir (tout supprimer)** | — | — | — | — | ✅ settings▸tablets, replié sous l'export³² | confirm **+** mot de passe²⁵ **+** le nom retapé³² | ✅ |
+| Confidentialité · **lire la politique / les conditions** | — | — | — | — | ✅ settings▸tablets (deux liens) **et** le pied de la porte marketing³³ | — (lecture) | ✅ |
 
 19. Confirm, and it names what is lost: the link texted last night stops working.
     Access already granted is NOT affected — which is a different row, on purpose.
@@ -267,6 +269,31 @@ and because the scoring pass that added them found a gap in the first one.
     `auto` is what keeps it out of the way); and it hides from a guest — the MotsCard /
     home-pins privacy hide, since an operator can mint a showcase link to their own
     household.
+32. **« Supprimer la maisonnée » (Wave 4)** — the door an app has to have before you can
+    ask a stranger to try it, and the last one anyone should fire by accident. THREE
+    deliberate acts, in this order: open the fold (it is `Disclosure`d under the export,
+    on purpose — the first thing to offer someone leaving is their own things), retype
+    the household's NAME, then the password dialog. The name is the half a password
+    cannot be: a password is typed while thinking about something else, a name has to be
+    read off the screen. Case and accents fold on both sides, because a capital is a
+    typing accident and not a different household. No undo tier and that is a recorded
+    ➖ (PARITY ¹¹¹): the rows go in one batch and the session dies with them, so there is
+    nothing left to hold a toast and nobody signed in to tap it — the three locks ARE the
+    undo, taken before the act. Endpoint: `DELETE /api/household`, operator-only,
+    `requirePassword`, reusing `deleteHousehold`. Guards: `e2e/leave-and-legal.spec.ts`
+    (the disabled button, the request shape) + `worker/leave.d1.test.ts` (the refusals,
+    the neighbour untouched).
+33. **The two public documents (Wave 4)** — `/confidentialite` and `/conditions`, FR + EN,
+    standalone routes reachable SIGNED OUT (that is their whole point: a stranger reads
+    them before deciding). Two doors each, and they answer different people: the
+    marketing page's footer, under the privacy promise it makes checkable, and Réglages ▸
+    Système ▸ Appareils & accès, because a household that signed up months ago never sees
+    the marketing page again and « what does it keep about us » is a question you ask
+    from inside. The copy lives in `pages/LegalPage.tsx`, NOT in `i18n.ts` — two legal
+    texts in two languages would have eaten the eager dictionary's remaining 11 KB to
+    ship words read once. The contact address is the only live fact on the page
+    (`/api/health` → `contact`, the `CONTACT_EMAIL` var); unset → the block says the app
+    is run privately rather than printing an empty mailto.
 31. **The board card ACTS — added 2026-09-22, from a remark** (« widget on board for
     remarques (add and resolve) », filed at build `11fcf248`, the build before the card
     itself shipped). The card had gone out as a pure glance: every row a link into

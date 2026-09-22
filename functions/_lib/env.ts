@@ -38,6 +38,15 @@ export interface Env {
   // Needs mail wired too. Set in the dashboard / `wrangler secret put ALERT_EMAIL`,
   // never in the repo. Unset → log only, and /api/health says `alerts: false`.
   ALERT_EMAIL?: string
+  // OPTIONAL: the address a STRANGER can write to — printed on /confidentialite and
+  // /conditions and in Réglages ▸ Système (Wave 4). Deliberately NOT `ALERT_EMAIL`:
+  // that one is where the machine complains to the operator at 3 a.m., this one is
+  // where a person who has not signed up asks a question, and conflating them puts a
+  // private address on a public page. Unset → the contact block hides and the policy
+  // says the app is run privately, which is honest; **Québec's Law 25 wants a reachable
+  // human before signup opens to the public (Wave 5), so setting this is a gate on
+  // that, not on this.** A plain var, not a secret — it is meant to be read.
+  CONTACT_EMAIL?: string
 
   // OPTIONAL deploy-callback secret for POST /api/remarks/shipped (_lib/deployHook.ts):
   // the shared secret GitHub Actions presents after a successful deploy of main, to mark

@@ -245,7 +245,7 @@ async function collectMediaKeys(env: Env, householdId: string): Promise<string[]
   // household_id — so this cannot ride MEDIA_SCALAR_COLUMNS above, whose query is
   // `WHERE ${scopeColumn(table)} = ?` and would ask remark_events for a column it does
   // not have. Scoped through the parent instead, the same shape the shared_trip_*
-  // tables use in deleteDemoHousehold. Miss this and a swept sandbox leaves its
+  // tables use in deleteHousehold. Miss this and a swept sandbox leaves its
   // screenshots in R2 forever, silently — deleteR2Blob swallows everything by design.
   {
     const { results } = await env.DB.prepare(
@@ -308,9 +308,22 @@ async function collectMediaKeys(env: Env, householdId: string): Promise<string[]
 
 // ---- The delete + the sweep -------------------------------------------------
 
-/** Hard-delete one sandbox household: free its R2 blobs (best-effort), then every
- * row it owns across the whole schema, in one FK-safe batch. */
-export async function deleteDemoHousehold(env: Env, householdId: string): Promise<void> {
+/**
+ * Hard-delete ONE household: free its R2 blobs (best-effort), then every row it owns
+ * across the whole schema, in one FK-safe batch. Deleting the `operators` row is what
+ * kills the session, so the device that asked signs out by consequence.
+ *
+ * IT WAS `deleteDemoHousehold` UNTIL 2026-09-22, and the rename came with its second
+ * caller: Wave 4's `DELETE /api/household`, where a real family leaves. Nothing about
+ * the function was demo-specific — it is, and always was, THE whole-schema delete, held
+ * to every table by `demoHousehold.test.ts`. Keeping « Demo » in the name of the
+ * function that erases a real household would have been the kind of misnaming that
+ * makes the next person write a second one rather than trust this.
+ *
+ * It still lives in this file because the table inventory and its build guard do. That
+ * is a filename worth revisiting, not a reason to fork the delete.
+ */
+export async function deleteHousehold(env: Env, householdId: string): Promise<void> {
   const blobKeys = await collectMediaKeys(env, householdId).catch(() => [] as string[])
   for (const key of blobKeys) await deleteR2Blob(env.PHOTOS, key)
 
@@ -355,7 +368,7 @@ export async function sweepExpiredDemoSandboxes(env: Env, now: number, limit = 2
   let swept = 0
   for (const row of results) {
     try {
-      await deleteDemoHousehold(env, row.id)
+      await deleteHousehold(env, row.id)
       swept++
     } catch (err) {
       // Left for the next sweep — but SAID, this time. A delete that failed silently on

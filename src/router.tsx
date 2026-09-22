@@ -29,6 +29,8 @@ const Board = lazy(() => import('./pages/Board').then((m) => ({ default: m.Board
 const Login = lazy(() => import('./pages/Login').then((m) => ({ default: m.Login })))
 const Signup = lazy(() => import('./pages/Signup').then((m) => ({ default: m.Signup })))
 const ForgotPage = lazy(() => import('./pages/ForgotPage').then((m) => ({ default: m.ForgotPage })))
+const PrivacyPage = lazy(() => import('./pages/LegalPage').then((m) => ({ default: m.PrivacyPage })))
+const TermsPage = lazy(() => import('./pages/LegalPage').then((m) => ({ default: m.TermsPage })))
 const ResetPage = lazy(() => import('./pages/ResetPage').then((m) => ({ default: m.ResetPage })))
 // « Garder ma maisonnée » — a demo-sandbox session converts itself into a real
 // account (the board claim banner links here). Sandbox-only; others bounce home.
@@ -293,6 +295,11 @@ export function AppRoutes() {
         <Route path="/signup" element={<Signup />} />
         {/* « Mot de passe oublié » — the link in the email lands on /reinitialiser?t= */}
         <Route path="/oubli" element={<ForgotPage />} />
+        {/* Wave 4 — the two public documents. Standalone like /login: reachable signed
+            out, from the marketing footer and from Réglages, and lazy so two legal
+            texts in two languages never touch the boot path. */}
+        <Route path="/confidentialite" element={<PrivacyPage />} />
+        <Route path="/conditions" element={<TermsPage />} />
         <Route path="/reinitialiser" element={<ResetPage />} />
         {/* « Garder ma maisonnée » — claim the demo sandbox into a real account. */}
         <Route path="/garder" element={<ClaimPage />} />

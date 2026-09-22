@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT, useLang } from '../../i18n'
 import { useOperatorT } from '../../i18n.operator'
@@ -10,6 +11,8 @@ import { useSandbox } from '../../lib/demo'
 import { useConfirm } from '../../lib/confirm'
 import { api, isStatus } from '../../lib/api'
 import { formatDayMaybeYear } from '../../lib/format'
+import { HOUSEHOLD_KEY } from '../../lib/queryKeys'
+import { EditField } from '../EditField'
 import { Cluster } from '../Layout'
 import { Disclosure } from '../Disclosure'
 import { ListRow } from '../ListRow'
@@ -48,11 +51,21 @@ export function TakeoutSection({ help }: { help?: HelpMode }) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<{ tone: 'success' | 'error'; text: string } | null>(null)
+  // The retyped household name. Compared with accents and case folded away, exactly as
+  // the endpoint folds them — « Chez Nous » vs « chez nous » is a typing accident, not a
+  // different household, and a confirmation that fails on a capital teaches nothing.
+  const [typed, setTyped] = useState('')
   const hidden = isGuest() || isPaired() || sandbox
   const backups = useQuery({
     queryKey: BACKUPS_KEY,
     queryFn: () => api<{ backups: Backup[] }>('takeout/backups'),
     enabled: !hidden && online,
+    staleTime: 5 * 60_000,
+  })
+  const household = useQuery({
+    queryKey: HOUSEHOLD_KEY,
+    queryFn: () => api<{ name: string }>('household'),
+    enabled: !hidden,
     staleTime: 5 * 60_000,
   })
   if (hidden) return null
@@ -62,6 +75,14 @@ export function TakeoutSection({ help }: { help?: HelpMode }) {
   // the whole settings tab with it — which is what it did, caught by e2e the same
   // evening (2026-09-16).
   const copies = Array.isArray(backups.data?.backups) ? backups.data.backups : []
+  const fold = (s: string) =>
+    s
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toLowerCase()
+  const houseName = household.data?.name ?? ''
+  const nameMatches = !!houseName && fold(typed) === fold(houseName)
 
   // The one restore call. `label` is what the confirm names; `body` is the source.
   async function restore(label: string, body: Record<string, unknown>) {
@@ -86,6 +107,38 @@ export function TakeoutSection({ help }: { help?: HelpMode }) {
         text: isStatus(e, 403) ? t.sessions.wrong : isStatus(e, 429) ? t.common.tooMany : isStatus(e, 400) ? o.restoreBadFile : (e as Error).message,
       })
     } finally {
+      setBusy(false)
+    }
+  }
+
+  // The leave door. Same password dialog as the restore — the endpoint checks it
+  // through `_lib/sudo.ts` either way — with the retyped name already in hand.
+  // `api()`, not `useWrite()`: an outbox replaying « delete my household » hours later,
+  // after the person changed their mind and signed back in, is the worst write there is
+  // to retry (`write-rule.test.ts` ALLOWED carries that reason).
+  async function leave() {
+    if (busy || !nameMatches) return
+    const password = await confirm({
+      message: o.leaveConfirm,
+      confirmLabel: o.leaveGo,
+      tone: 'danger',
+      input: { kind: 'password', label: t.sessions.passwordLabel },
+    })
+    if (password === null) return
+    setBusy(true)
+    setMsg(null)
+    try {
+      await api('household', { method: 'DELETE', body: { password, name: typed } })
+      // The household is gone and the session died with its `operators` row. Drop the
+      // cache before leaving, or the next paint renders a board from memory that no
+      // longer exists anywhere.
+      qc.clear()
+      location.assign('/')
+    } catch (e) {
+      setMsg({
+        tone: 'error',
+        text: isStatus(e, 403) ? t.sessions.wrong : isStatus(e, 429) ? t.common.tooMany : isStatus(e, 400) ? o.leaveNameWrong : (e as Error).message,
+      })
       setBusy(false)
     }
   }
@@ -165,6 +218,43 @@ export function TakeoutSection({ help }: { help?: HelpMode }) {
           {msg && <StatusMessage tone={msg.tone}>{msg.text}</StatusMessage>}
         </Disclosure>
       )}
+
+      {/* « Supprimer la maisonnée » (Wave 4) — folded, and folded UNDER the export on
+          purpose: the first thing to offer someone who is leaving is their own things.
+          Two deliberate acts guard it before the endpoint's two do (operator scope +
+          password): the fold, then the household's NAME retyped. The name is the half a
+          password cannot be — something you have to look at rather than something you
+          know by heart — and it is why this is an inline field rather than a second
+          `useConfirm` input: `confirm` takes one input, of kind 'password', and
+          extending a dialog every surface uses, to serve one door, is the fork this
+          codebase keeps paying for. */}
+      {online && (
+        <Disclosure label={o.leaveTitle}>
+          <p className="operator__hint">{o.leaveHint}</p>
+          <p className="operator__hint">{o.leaveNameLabel(houseName)}</p>
+          <EditField
+            value={typed}
+            onChange={setTyped}
+            ariaLabel={o.leaveNameLabel(houseName)}
+            placeholder={o.leaveNamePlaceholder}
+            onSubmit={() => void leave()}
+          />
+          <Cluster>
+            <button type="button" className="btn btn--danger" disabled={busy || !nameMatches} onClick={() => void leave()}>
+              <InlineIcon name="trash-bold" /> {o.leaveGo}
+            </button>
+          </Cluster>
+          {typed && !nameMatches && <p className="operator__hint mono">{o.leaveNameWrong}</p>}
+        </Disclosure>
+      )}
+
+      {/* The two public documents, mirrored here (Wave 4). They live at the foot of the
+          marketing page for a stranger; a household that already signed up never sees
+          that page again, and « what does it keep about us » is a question you ask from
+          inside. Plain links, no fold: two words. */}
+      <p className="operator__hint mono">
+        <Link to="/confidentialite">{t.home.privacyDoc}</Link> · <Link to="/conditions">{t.home.termsDoc}</Link>
+      </p>
     </OperatorSection>
   )
 }

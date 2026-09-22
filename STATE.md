@@ -86,7 +86,7 @@ interchangeable. Read this table before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md` is now
-> a number you can trust. It reads **9** — eight in the public-readiness plan §4-K, and
+> a number you can trust. It reads **5** — four in the public-readiness plan §4-K, and
 > one left from the closed hardening pass (enforce the CSP, waiting on a week of reports,
 > not on work). **That number is asserted from the boxes themselves** by
 > `src/lib/docCounts.test.ts`, so this sentence cannot drift the way `REVIEW-PASS.md`'s
@@ -196,6 +196,39 @@ an unfired delivery path is a fix nobody has seen work.
 still has nowhere to ring. Both wait on the Resend steps in §4-K Wave 3, which are
 Marc's and outside the repo.
 
+### The door loses 55 KB, and the household can leave — 2026-09-22 (same session)
+
+**The `drawpad` chunk was never the draw pad.** A named `advancedChunks` group is a chunk
+that exists on every build, which makes it a home for shared modules: `drawpad-*.js` had
+grown to **141 KB imported by ~180 chunks including the entry**, so the marketing door
+fetched perfect-freehand to render a headline — under a filename that read like the draw
+pad's own weight. (A previous session lost an hour lazy-loading `DrawPad` and measured
+nothing: the file it chased was 3 KB of the 141.) The group was pinned in 2026 because the
+EAGER board reached DrawPad; L4 made the hub lazy in September and the pin outlived its
+reason. Deleting it: **door 700 → 645 KB, 7 → 9 chunks**, DrawPad back to its own 51 KB
+lazy chunk. `e2e:sw` green — the kiosk's offline reboot is what a chunking change actually
+risks.
+
+**And the guard could not see any of it**, because `EAGER_CHUNKS` matched three FILENAMES:
+141 KB in the boot path was measured against the LAZY budget. The three-name total is
+**retired** (not raised) in favour of the closure the gate already walked; every closure
+member now has a 32 KB cap; `DrawPad` is named as never-in-the-door. Both new checks
+proven red by re-planting the group. Its last act as a budget was to go RED at a change
+that took 55 KB off the thing it claimed to protect.
+
+**Wave 4 shipped** — deletion, the two public documents, the contact door (details in
+§4-K). Two things worth carrying forward: `deleteDemoHousehold` became `deleteHousehold`,
+because « Demo » in the name of the function that erases a real family is how the next
+person writes a second one; and the legal copy lives in its page, not in `i18n.ts`, since
+two legal texts in two languages would have spent the eager dictionary's last 11 KB on
+words read once.
+
+**Two stale facts corrected on the way through.** STATE said the door was « 7 chunks /
+727 KB » and that production held **one** household. It holds **six** — Marc's, four other
+real accounts from the invite gate, and the legacy demo singleton, counted in D1. Other
+families are already in there, which is the whole reason Wave 4 was worth doing before
+Wave 5.
+
 > **Older entries are in git, not here.** This section holds the CURRENT session's work
 > and nothing else: when the next session's first entry lands, this one is cut. That rule
 > is what keeps this file a front door instead of a chronicle — it had reached 4 289
@@ -258,139 +291,31 @@ the board's « Faire » pill at **2.03:1** on a marigold member, which `tintInk(
 over the fourth column; Maison's empty lower third, which is the fixture's size). The
 five boxes and their measurements are in git.
 
-**Wave 1 — the stranger's demo walk.** The demo is the product for months. Mint a sandbox
-on production the way a stranger would — phone AND laptop, private window, no account —
-and time the path from landing to the first useful thing. Log every hesitation as a box.
+**Wave 1 — the stranger's demo walk. ✅ CLOSED.** Walked twice on production by
+Playwright, as a stranger, on a laptop and an iPhone. **The clock was never the problem**
+(landing 0.4–0.8 s, mint → board 0.8–1.2 s, the first write settled in 70 ms); the first
+screen was. The first walk could not get past it: a brand-new device landed on
+« Le point du jour » with the welcome dialog over it and the tour pulling the router back,
+because two shell automations both fire on a fresh device — fixed `b2bc7ee6`, the first
+day belongs to the welcome, and `first-run-quiet.spec.ts` replays production's timing
+(an instant stub let the OLD code pass). The second walk found three more: the marketing
+page opened the household realtime socket with NO credential (a 401 handshake forever in
+a visitor's console — the socket follows the SESSION now), Découvrir greeted a fresh
+sandbox with « Quoi de neuf » about a rename it had never seen, and the first-ever undo
+toast covering the row you just added — **accepted by Marc, « they can close the toast »:
+declined, not deferred.** The 24 h sandbox sweep was confirmed in production D1 on
+2026-09-22: zero aged sandboxes, zero orphaned households.
 
-- [x] **Walked, twice, on production — by Playwright, as a stranger** (a scripted walk in
-      the session scratchpad: landing → « Essayer pour vrai » → the six tabs → one list
-      write → the ＋ sheet → `/garder`, on a 1440 laptop and an iPhone 13 profile, with a
-      frame, a timer, the console and every failed request per step). The clock is not
-      the problem: landing 0.4–0.8 s, mint → board 0.8–1.2 s, every tab under a second,
-      the first write settled in 70 ms, on both profiles.
-- [x] **The first walk could not get past the first screen.** After the mint, the stranger
-      landed on `/board/habitudes` — « Le point du jour » — with the welcome dialog drawn
-      over it, on both profiles, and no tab could be reached (the tour re-launched on
-      every load and pulled the router back). Two shell automations both fire on a
-      brand-new device: the tour auto-launch and the habit check-in's morning open (the
-      seed puts habits on today; the habits payload lands after the tour has started, so
-      its navigation wins). **Fixed `b2bc7ee6`**: the first day belongs to the welcome —
-      a device that has not met the tour stamps the day and stands down, BEFORE the data
-      gate. `first-run-quiet.spec.ts` replays production's shape (habits delayed 700 ms;
-      an instant stub let the OLD code pass) plus a control that the morning open still
-      opens once the tour is seen. In production for a month; nobody had minted a demo.
-- [x] **Second walk, three more findings, two fixed the same day:**
-      · the marketing page opened the household realtime socket with NO credential — a
-        401 handshake every 2→30 s forever, the error in the visitor's console. The
-        socket now follows the SESSION: `AuthProvider` connects on a confirmed sign-in
-        (a sandbox included) and tears down on a confirmed sign-out; `main.tsx` connects
-        at boot only for a paired tablet. `stranger-quiet.spec.ts` counts `/api/live`
-        sockets on the signed-out door (0) with a signed-in control (≥1), proven red on
-        the old unconditional boot line;
-      · Réglages ▸ Découvrir greeted the fresh sandbox with « Quoi de neuf » about the
-        Business → Commerces RENAME — news only to someone who knew the old name. A
-        device with no history now starts with every current line marked seen (the next
-        one shipped is the first it meets); same spec, with a control for a device that
-        dismissed an older line;
-      · the ❓ below.
-- [~] **The first-ever undo toast hides the row you just added — ACCEPTED by Marc,
-      2026-09-16: « they can close the toast ».** Once per device, the ✕ is right there,
-      and the hint is worth its three lines the one time it shows. Declined, not deferred.
-      Original note: on the phone, the first
-      write's toast carries the once-per-device hint (« Tout se défait ici — tes derniers
-      gestes restent dans « Récents » ») — three lines plus « Annuler », sitting over the
-      top of the list, which is where the new row went. Once per device, by design, and
-      the hint is worth having; the question is its PLACE, not its existence: fold the
-      hint under the toast's expander, or shorten it to one line, or accept it. Marc's
-      call — a design question, not a defect a test could hold.
-- [ ] **Close the sweep loop the guard cannot**: the walks minted sandboxes on 2026-09-16
-      (13:30–14:00 ET). On or after 2026-09-17 14:00 ET, mint once more and confirm in D1
-      that the day-old ones are gone (`demoHousehold` sweep — unable to delete ANY
-      sandbox since 0102 until 2026-09-16, and nobody noticed because nobody minted one).
-- [~] **What the walk did NOT find, for the record:** the ＋ sheet, the claim form and
-      Réglages all render and read well on the phone; the tab bar, the day-one tour and
-      the sample banner's five « try this » doors all worked once the first screen was
-      the board. No 4xx from the API on either profile.
-
-**Wave 2 — a fresh household, a small phone, a slow connection.** Everything was tuned
-against a SEEDED household on wifi.
-
-- [x] **The fresh household was already photographed** — `board-fresh` and the five
-      `first-*` states existed; what had not happened was LOOKING at them with the
-      question. Looked (2026-09-16): the board's three-step welcome, the list's one line +
-      « Voir le guide », the notes' dashed instruction, Maison's two doors and Découvrir
-      all teach. The kitchen's fresh week is a column of empty day cards with no words —
-      but its `SectionIntro` (pre-dismissed by the matrix, shown to a real first visit)
-      carries the explanation, and the + on each day IS the affordance. Noted, not fixed.
-- [x] **320px — fixed, and it was never the greeting's font.** The first 320px frames the
-      matrix ever shot (`tiny-board/liste/kitchen/settings`, four new states) showed
-      EVERY tab's title cut: « Bon apr », « La li… », « La c… ». The four-disc header
-      cluster is a fixed 197px, leaving ~83px for the title. One rule in `today.css`:
-      below 340px the section avatar — the last disc, decorative on every tab (the bar
-      underneath names the section) and, in help mode, a door the « ? » bar's « Le guide »
-      mirrors — is hidden. Mic, loupe and « ? » stay. « Bon après-midi » and « La liste »
-      read whole at 320; at 360 nothing moves (the disc stays, the greeting takes two
-      lines, which was already its rule).
-- [x] **Cold start measured — and it hurts on a slow link.** Production, iPhone profile,
-      cache cleared, CDP throttling:
-
-      | link | door `/` first paint | door content | board first paint |
-      | --- | --- | --- | --- |
-      | Fast 4G (150 ms / 4 Mb/s) | 1.4 s | 1.7 s | 1.4 s |
-      | Slow 4G (400 ms / 400 kb/s) | **11.2 s** | 13.2 s | 11.1 s |
-
-      **Re-measured 2026-09-17, after §4-L L4 made the hub lazy** (same profile, same
-      throttling, production):
-
-      | link | door `/` first paint | door content | door requests |
-      | --- | --- | --- | --- |
-      | Fast 4G | 1.0 s | 1.3 s | 16 |
-      | Slow 4G | **7.1 s** | 8.6 s | 17 |
-
-      Seventy-eight requests became seventeen and the slow-link headline came four
-      seconds sooner. The BOARD pays for it — 16.2 s to content on Slow 4G, because it
-      now fetches the hub after the shell — and that is the trade taken with eyes open:
-      the board sits behind a sign-in or a demo mint, and a kiosk has every chunk
-      precached before it ever reboots. The door is the surface a stranger meets cold.
-
-      The marketing door downloads **487 KB gzipped in 78 requests** — index.html
-      modulepreloads the entry's whole static graph, 69 chunks, and the door pays for the
-      board, the write/outbox layer, both i18n halves' shell, the QR code… A stranger at a
-      school gate on a bad signal waits eleven seconds for a headline.
-- [x] **The door's eager graph — CLOSED 2026-09-22, and the box itself had been half
-      stale.** It asked to make `HubLayout` + `Board` lazy; they have been lazy since L4
-      (2026-09-17), which is what the re-measured table above measures. What was genuinely
-      left turned out to be one bad chunk and one blind guard, and they were the same
-      thing: **the `drawpad` group had become Rolldown's shared-commons home — 141 KB,
-      imported by ~180 chunks INCLUDING the entry**, so the door fetched perfect-freehand
-      to render a headline, under a filename that read like the draw pad's own weight. (A
-      previous session lost an hour lazy-loading `DrawPad` and measured nothing: the file
-      it chased was 3 KB of the 141.) Deleting the group: **door 700 → 645 KB, 7 → 9
-      chunks**, DrawPad back to its own 51 KB lazy chunk. And the guard could not see any
-      of it, because `EAGER_CHUNKS` matched three FILENAMES: the three-name total is
-      retired in favour of the closure the gate already walked, every closure member now
-      has a cap (32 KB — a bigger eager chunk than that has leaked), and `DrawPad` is
-      named as never-in-the-door now the group is not keeping it out as a side effect.
-      Both new checks proven red by re-planting the group. **The production cold-start
-      table is NOT re-measured**: this is −55 KB of the door's 700, bytes not a stopwatch.
-- [x] **Install prompt — built, two doors, Marc's shape** (« maybe after account creation
-      too »). `lib/install` keeps Chromium's `beforeinstallprompt` (preventDefault, so the
-      browser's own mini-bar does not double the offer) and knows iOS Safari has none;
-      `InstallHint` is ONE quiet line in two faces: the standing door stacked into
-      Réglages ▸ Affichage & veille (words + « Installer » where a prompt exists, the
-      share-sheet words on iOS, « déjà installé » once standalone, nothing where there is
-      nothing to offer), and a one-time `.section-intro` card on the board that signup
-      and `/garder` flag on THAT device — « Plus tard » is forever, an accepted install
-      spends it too. Five e2e cases (`install-hint.spec.ts`: the button calls the
-      browser's prompt, dismissal survives a reload, no flag → no card, the settings door,
-      the iPhone face) and a matrix state (`board-install`). Original finding: none
-      anywhere — no `beforeinstallprompt` handling, no
-      iOS « Ajouter à l'écran d'accueil » hint (grep: zero hits in `src/`). Android shows
-      its own mini-bar for a PWA that meets the criteria; iOS never does — a household on
-      an iPhone will use the app in Safari with the address bar forever unless told. The
-      calm answer is ONE quiet line, once, on the device that could install — in Réglages ▸
-      Affichage & veille beside the screensaver (the sub that owns "what this device
-      does"), not a banner on the board. Marc's call on whether it is worth a card.
+**Wave 2 — a fresh household, a small phone, a slow connection. ✅ CLOSED.** The fresh
+household was already photographed; what had not happened was LOOKING at those frames
+with the question. **320px** was the find — the first frames ever shot there had EVERY
+tab's title cut (« Bon apr », « La li… »), and it was never the font: a fixed 197px
+four-disc header cluster left ~83px for the title, so below 340px the decorative section
+avatar hides. Cold start was measured on production under CDP throttling, then re-measured
+after the hub went lazy: **78 requests → 17, and the slow-link headline 11.2 s → 7.1 s.**
+The door's last 55 KB came off on 2026-09-22 (the `drawpad` commons chunk, §3). The
+install prompt shipped in two faces, Marc's shape. The one thing NOT re-measured is the
+production cold-start table after that last 55 KB — bytes, not a stopwatch.
 
 **Wave 3 — password reset (the longest pole; start it the day Wave 0's fixes land).**
 There is NO forgot-password flow and the app has never sent an email. The first stranger
@@ -446,20 +371,33 @@ who forgets their password is locked out forever.
       pins hash-only storage, expiry, single use and the constant 200. PARITY row (F40,
       «Compte : mot de passe oublié»), ACTIONS doors (two, non-touch ✅).
 
-**Wave 4 — a household can leave, and knows the terms.**
+**Wave 4 — a household can leave, and knows the terms. ✅ SHIPPED 2026-09-22.**
 
-- [ ] **Self-serve deletion**: `DELETE /api/household` (operator-only, confirm by retyping
-      the household name, `useConfirm` copy naming what is lost — everything, including
-      the photos). It REUSES `deleteDemoHousehold` (`_lib/demoHousehold.ts`) — that
-      function IS the whole-schema, R2-freeing delete, and it is correct again as of
-      2026-09-16. Offer « Exporter d'abord » (takeout exists) on the same card.
-- [ ] **Privacy policy + terms** — two real pages (`/confidentialite`, `/conditions`), FR
-      and EN, linked from Home's footer and from Réglages ▸ Système. Say what is stored
-      (D1 in Cloudflare's network, R2 photos, no third-party analytics), what the AI
-      endpoints send to Workers AI, retention (sandbox 24 h; a deleted household is gone),
-      and the deletion + export doors above. Québec Law 25 is the bar to write to.
-- [ ] **Contact door** — one address (support@ on the sending domain) on both pages and
-      in Réglages, so a stranger can reach a human.
+- [x] **Self-serve deletion** — `DELETE /api/household`, operator-only, `requirePassword`,
+      AND the household's name retyped (the half a password cannot be: a password is typed
+      while thinking about something else, a name has to be read off the screen; case and
+      accents fold on both sides). Folded under the export, because the first thing to
+      offer someone leaving is their own things. It reuses the whole-schema delete —
+      **renamed `deleteDemoHousehold` → `deleteHousehold` in the same commit**, since
+      « Demo » in the name of the function that erases a real family is how the next
+      person writes a second one. No undo tier, recorded as a ➖ with the argument
+      (PARITY ¹¹¹). `worker/leave.d1.test.ts` (5, real runtime: the refusals, the
+      accent/case fold, the session kill switch, **the neighbouring household untouched**)
+      + `e2e/leave-and-legal.spec.ts` (6). The name lock was proven red.
+- [x] **Privacy policy + terms** — `/confidentialite` + `/conditions`, FR and EN, from
+      Home's footer and from Réglages. Written to be TRUE rather than reassuring: every
+      claim was checked against code on the day (the two AI destinations — Workers AI and
+      Mistral OCR — the 14-night backup window, the 24 h sandbox TTL, and the two doors
+      that make Law 25's access + deletion rights real instead of promised). The copy
+      lives in `pages/LegalPage.tsx`, NOT `i18n.ts`: two legal texts in two languages
+      would have eaten the eager dictionary's last 11 KB to ship words read once, on a
+      lazy route.
+- [x] **Contact door** — `CONTACT_EMAIL`, an optional var surfaced as the only VALUE on
+      `/api/health` (the legal pages must render with no session, so there is nothing else
+      to ask). Unset → the block says the app is run privately rather than printing an
+      empty mailto. **⚠️ It is unset in production today**, and that is a gate on Wave 5
+      opening signup, not on these pages: Law 25 wants a reachable human before strangers
+      arrive.
 
 **Wave 5 — bounds, then the gate opens.**
 

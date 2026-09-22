@@ -94,7 +94,7 @@ verdicts inline; (5) commit `PARITY.md` with whatever shipped (push to `main`).
 
 ## Part 1 — Feature roster (the rows)
 
-**41** user-facing features — the row count of this table, not an estimate.
+**42** user-facing features — the row count of this table, not an estimate.
 Anchors are the feature’s _reach_: tables (migration
 numbers), endpoints (`worker/routes.ts` names), pages/components, shared query
 keys (`src/lib/queryKeys.ts`). A feature missing an anchor kind isn't a gap per
@@ -171,6 +171,7 @@ se (Recherche has no table) — the anchors just tell the auditor where to look.
 | F40 | Mot de passe oublié (compte)                                              | password_resets (0133)                                                                        | auth/forgot, auth/reset                                          | ForgotPage, ResetPage, Login (la porte), \_lib/mail                                                     | —                                   |
 | F41 | Agent IA (serveur MCP, lecture seule)                                     | devices.kind='agent' (0083, aucune migration)                                                  | mcp, pair/devices (mintAgent)                                    | operator/devices `AgentSection`, \_lib/mcp (le fil), \_lib/askSnapshot                                   | DEVICES                             |
 | F42 | Les remarques (bogue/souhait/amélioration + la boucle de déploiement)     | remarks, remark_events (0136)                                                                  | remarks, remark-media, remarks/shipped (rappel CI)               | operator/remarks, RemarkComposer, board/RemarksCard (＋ et verdict sur place), lib/remarks (useRemarkVerdict — LE verdict, deux portes), HelpBubble (la porte « ? », composer sur place), ErrorBoundary (la porte « Signaler »), \_lib/deployHook, \_lib/invariants | REMARKS                             |
+| F43 | Partir : supprimer la maisonnée + les deux documents publics (Loi 25)        | aucune table (efface les ~90 existantes)                                                        | household (DELETE), takeout, health (contact)                    | operator/takeout (la porte « Supprimer »), pages/LegalPage (PrivacyPage + TermsPage), pages/Home (le pied), _lib/sudo, _lib/demoHousehold (deleteHousehold) | —                                   |
 
 > Roster rule: if a future audit day finds a surface not covered by a row (a new
 > feature shipped since), **add a row first**, then score it.
@@ -351,6 +352,7 @@ scored by the ACTIONS.md row being gap-free, same pattern as D7 → `DISCOVERY.m
 | F40 Mot de passe oublié  | ✅⁸⁷    | ➖⁸⁸    | ➖⁸⁹    | ➖⁹⁰       | ➖⁹¹  | ➖⁸⁸      | ✅⁹²     | ➖⁴⁸       | ✅           | ➖⁴⁷      | ➖⁸⁸      | ➖⁸⁸    | ✅⁹²       | ➖¹       | ✅       | ✅      |
 | F41 Agent IA (MCP)       | ✅⁹³    | ➖⁹⁴    | ✅⁹⁵    | ➖⁹⁶       | ➖⁹⁷  | ➖⁹⁴      | ✅⁹⁸     | ➖⁴⁸       | ✅⁹⁹         | ➖⁴⁷      | ✅¹⁰⁰     | ➖⁹⁴    | ✅¹⁰¹      | ➖¹       | ✅       | ✅¹⁰²   |
 | F42 Les remarques        | ✅      | ➖¹⁰³   | ✅¹⁰⁴   | ✅         | ✅¹⁰⁵ | ➖¹⁰⁶     | ✅¹⁰⁷    | ➖⁴⁸       | ✅           | ✅        | ✅        | ✅¹⁰⁸   | ✅         | ✅       | ✅       | ✅      |
+| F43 Partir (Loi 25)      | ✅¹⁰⁹   | ➖¹¹⁰   | ➖¹¹¹   | ➖¹¹²      | ➖¹¹³ | ➖¹¹⁴     | ➖¹¹⁵    | ➖⁴⁸       | ✅           | ➖¹¹⁶     | ➖¹¹⁷     | ➖¹¹⁸   | ✅¹¹⁹      | ➖¹²⁰     | ✅       | ✅¹²¹   |
 
 Footnotes (verdicts recorded so far):
 
@@ -844,6 +846,46 @@ Footnotes (verdicts recorded so far):
      other one: `author_member_id` is **always NULL on a 'shipped' event**, by schema and
      by endpoint. A deploy is not a person, and a journal that let a machine borrow a
      face would be lying in the calmest possible way.
+
+109. **CRUD (F43)** — one verb, `DELETE /api/household`, and it is the whole feature.
+     Three locks: `authed(…, 'operator')`, `requirePassword` (`_lib/sudo.ts`, the L5
+     pattern) and the household's NAME retyped — the half a password cannot be, since a
+     password is something you type while thinking about something else and the name has
+     to be read off the screen. It REUSES `deleteHousehold` (renamed from
+     `deleteDemoHousehold` in the same commit), so it inherits the whole-schema table
+     inventory `demoHousehold.test.ts` guards, R2 blob freeing included.
+110. **Peek (F43)** — nothing to peek into: the feature is a door and two documents, not
+     an entity that appears as a row anywhere.
+111. **Undo (F43)** — ➖ **by design, and this is the one cell worth arguing about.** An
+     undo toast over « the household is deleted » would be a lie: the rows are gone in
+     one batch and the session died with them, so there is nothing left to hold an undo
+     and nobody signed in to tap it. The three locks are the undo, taken BEFORE the act
+     instead of after — which is the `useConfirm`-not-toast rule at its limit.
+112. **Offline (F43)** — deliberately NOT in the outbox (`write-rule` ALLOWED with the
+     reason): a queued « delete my household » replayed hours later, after the person
+     changed their mind and signed back in, is the worst write there is to retry. The
+     door hides when offline.
+113. **Realtime (F43)** — no key to invalidate: every device that could be listening
+     belongs to the household that just stopped existing.
+114. **Search (F43)** — a door and two documents, not content.
+115. **Guide (F43)** — ➖ for now, and knowingly: the guide is AT its 32-card ceiling
+     (DISCOVERY.md), and the doors already sit under a « ? » that explains the takeout
+     section. A 33rd card would have to displace one.
+116. **Voice (F43)** — no. The one field is a household name being retyped as a
+     deliberate act; dictating it would defeat the lock's whole purpose.
+117. **Empty (F43)** — no list, no empty state.
+118. **Who (F43)** — no attribution: the actor is the account, and after the act there is
+     no household left to attribute anything to.
+119. **Schema (F43)** — no new table. `CONTACT_EMAIL` is an OPTIONAL var
+     (`_lib/env.ts`), surfaced as the only VALUE on `/api/health`; unset → the contact
+     block hides and the policy says the app is run privately.
+120. **Media (F43)** — no media of its own; the delete FREES the household's R2 blobs
+     through the inventory `collectMediaKeys` walks.
+121. **e2e (F43)** — `e2e/leave-and-legal.spec.ts` (6) for the lock, the request shape
+     and both documents signed-out, plus `worker/leave.d1.test.ts` (5) in the REAL
+     runtime: the refusals, the accent/case fold, the session kill switch, and the
+     neighbouring household left untouched — the property that matters most and the one
+     a stubbed e2e can never see.
 
 ### Gold standard (Day 4 — filled 2026-07-10 from the completed matrix)
 

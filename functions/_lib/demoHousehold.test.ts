@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 import { CHILD_TABLES, EXEMPT_TABLES, HOUSEHOLD_TABLES, isSandboxEmail, sandboxEmail } from './demoHousehold'
 
-// The sandbox sweep (deleteDemoHousehold) must cover EVERY table, or a demo
+// The sandbox sweep (deleteHousehold) must cover EVERY table, or a demo
 // visitor's rows leak forever in a table nobody listed. Same structural-guard
 // pattern as calm-tenets.test.ts: scan the migrations, fail the build the moment
 // a new CREATE TABLE isn't in exactly one of the sweep's three sets.
@@ -14,7 +14,7 @@ import { CHILD_TABLES, EXEMPT_TABLES, HOUSEHOLD_TABLES, isSandboxEmail, sandboxE
 // every name that was ever created. The first version only collected CREATEs, and it
 // was green for months over three tables that 0091 and 0102 had DROPPED
 // (intake_media, postbox_media, family_shares) but the sweep still listed. D1 runs
-// deleteDemoHousehold's batch as ONE transaction, so `DELETE FROM` a missing table
+// deleteHousehold's batch as ONE transaction, so `DELETE FROM` a missing table
 // does not skip a statement — it rolls back the whole sweep, and every expired sandbox
 // stays. A guard that walks the wrong shape reports the wrong thing with total
 // confidence (CLAUDE.md, the standing lesson); this one went red on the very first

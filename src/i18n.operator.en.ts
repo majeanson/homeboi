@@ -589,6 +589,14 @@ export const EN_OPERATOR: typeof FR_OPERATOR = {
   restoreConfirm: (when: string) =>
     `Replace the household’s whole content with the copy from ${when}? Anything added since is gone. Paired devices and accounts stay.`,
   restoreDone: (n: number) => `Put back: ${n} rows restored.`,
+  leaveTitle: 'Delete this household',
+  leaveHint: 'Everything goes: meals, the list, recipes, people, photos, paired devices and the account. Nothing can be recovered. Take your data first — the button is right above.',
+  leaveNameLabel: (name) => `Type the household's name to confirm: ${name}`,
+  leaveNamePlaceholder: 'The household name',
+  leaveGo: 'Delete for good',
+  leaveConfirm: 'Delete this entire household? All the content, the photos, the devices and the account disappear, and nothing can be recovered.',
+  leaveDone: 'It is deleted. Thank you for trying Babillard.',
+  leaveNameWrong: 'The name does not match yet.',
   ambientPreview: 'Preview now',
   // F-47 — the hourly breath (the anti-notification).
   ambientBreath: 'The hourly breath',
