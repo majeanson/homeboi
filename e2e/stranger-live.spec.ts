@@ -48,6 +48,16 @@ function watch(page: Page): Trouble {
     // this filter caught two real CSP mistakes on its first live night, and widening it
     // past "not ours" is how a walk stops finding things.
     if (/favicon|fonts\.(googleapis|gstatic)|interactive-widget/.test(text)) return
+    // …and the same rule applied to the RESOURCE, not just the wording — which is what
+    // the line above could not do. « Failed to load resource: the server responded with a
+    // status of 504 () » names no URL in its TEXT: the address is in the message's
+    // location. So on 2026-09-22, while fonts.googleapis.com was answering 504, every tab
+    // of the walk reported a console error and the run went red with a list of OUR pages
+    // in it — a third party's bad afternoon dressed up as a finding about the app. That
+    // is the same failure mode as a walk failing on Cloudflare's bot challenge, and it
+    // costs the same thing: a weekly guard nobody can read.
+    const from = m.location()?.url ?? ''
+    if (from && !ours(from)) return
     // A report-only violation is the POLICY talking, not the page failing.
     if (text.includes('[Report Only]')) {
       t.cspReports.push(text.slice(0, 200))
