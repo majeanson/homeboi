@@ -497,18 +497,32 @@ export default defineConfig({
           groups: [
             { name: 'react-vendor', test: /node_modules[\\/](react|react-dom|react-router|react-router-dom)[\\/]/ },
             { name: 'i18n', test: /[\\/]src[\\/]i18n\.ts$/ },
-            // The family draw pad (#14, ~50 KB incl. perfect-freehand) is reachable
-            // from BOTH the eager board (Notes/MemoControls' "Note rapide" composer)
-            // and several lazy-only pages (CardDeckEditor, RoutineFormPage,
-            // NoteEditor, DrawEditChoice, DrawingGalleryPage). Automatic chunking is
-            // supposed to factor a module shared across entry chunks into its own
-            // shared chunk, but that heuristic is graph-sensitive and quietly flipped
-            // once before (C-13, bmad/10), landing DrawPad inside index-*.js and
-            // pushing eager JS 15 KB over budget (run 28991809068). Pin it.
-            {
-              name: 'drawpad',
-              test: /(node_modules[\\/]perfect-freehand[\\/]|[\\/]src[\\/](components[\\/]DrawPad\.tsx|lib[\\/](drawViewport|traceFont)\.ts)$)/,
-            },
+            // THE `drawpad` GROUP USED TO BE HERE. It was removed on 2026-09-22, and
+            // the reason is worth the paragraph, because the pin had turned into the
+            // thing it was written to prevent.
+            //
+            // It pinned DrawPad + perfect-freehand into their own group because the
+            // draw pad was reachable from the EAGER board (Notes/MemoControls) as well
+            // as from five lazy pages, and Rolldown's automatic shared-chunk heuristic
+            // is graph-sensitive: it had flipped once before (C-13) and landed DrawPad
+            // inside `index-*.js`.
+            //
+            // Then §4-L L4 made HubLayout + Board lazy (2026-09-17), so nothing eager
+            // reaches the draw pad any more — and the pin outlived its reason in the
+            // worst way. A NAMED group is a chunk that exists on every build, which
+            // makes it a home for shared modules: `drawpad-*.js` grew to **141 KB**
+            // and was imported by ~180 chunks INCLUDING the entry. The door was
+            // downloading perfect-freehand to render a marketing headline, under a
+            // filename that made it look like the draw pad's own weight. A previous
+            // session lost an hour lazy-loading `DrawPad` to fix it and measured no
+            // change — of course: the file it chased was 3 KB of the 141.
+            //
+            // Removing the group: **door 700 KB → 645 KB in 7 → 9 chunks**, DrawPad
+            // back to its own 51 KB lazy chunk, and the shared code where it belongs
+            // (the entry grew 230 → 309 KB, which is the same bytes accounted
+            // honestly). `check-bundle.mjs` now asserts by NAME that DrawPad stays out
+            // of the door's closure, which is what the pin was really protecting —
+            // said as an assertion instead of as a side effect of chunk naming.
           ],
         },
       },

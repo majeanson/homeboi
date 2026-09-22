@@ -21,8 +21,9 @@
 // i18n.ts (the FR dict) out of index-*.js into their own named chunks so they cache
 // across deploys instead of re-downloading inside a renamed entry file. All three
 // (index-, react-vendor-, i18n-) still load EAGERLY (main.tsx's static import
-// chain), so they're budgeted individually AND as a combined eager total — the
-// real boot cost a slow tablet pays before first paint. `i18n.en-*.js` (the EN
+// chain), so each is budgeted individually. **The boot cost itself is measured by the
+// door-closure check (2-bis), not by adding those three up** — that sum was retired on
+// 2026-09-22 for counting three filenames instead of a graph. `i18n.en-*.js` (the EN
 // dict) is a SEPARATE lazy chunk — src/i18n.ts dynamic-import()s it only when
 // lang==='en' — so it's checked as an ordinary lazy chunk below, not eager.
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
@@ -32,7 +33,7 @@ const DIST = 'dist'
 const ASSETS = join(DIST, 'assets')
 
 const KB = 1024
-const CHUNK_BUDGET = 320 * KB // any lazy chunk (largest today: drawpad ~134 KB)
+const CHUNK_BUDGET = 320 * KB // any lazy chunk (largest today: NoteEditorTiptap, which has its own cap)
 const EAGER_CHUNKS = [
   // name pattern → its own budget (all three load before first paint)
   // 2026-09-09, and the whole story is worth keeping because it happened in one hour.
@@ -65,11 +66,22 @@ const EAGER_CHUNKS = [
   // fall, never rise. The 11 KB left is room to write copy in, not room to re-fill.
   { re: /^i18n-/, cap: 110 * KB, label: 'eager i18n (FR only — EN + Réglages lazy-load as their own chunks)' },
 ]
-// Ratcheted 700 → 620 by the door-closure pass (STATE §4-L L4, 2026-09-16): making
-// HubLayout + Board lazy took the entry chunk 227 KB → the combined three to ~582 KB.
-// The rule is unchanged — reach for lazy() before you reach for a bigger number — and
-// the closure check below is now the one that actually measures the door.
-const EAGER_TOTAL_BUDGET = 620 * KB // combined index + react-vendor + i18n (today ~582 KB)
+// THE THREE-FILENAME "EAGER TOTAL" IS GONE (2026-09-22). It was retired, not raised,
+// and the difference matters: it is REPLACED by the door-closure budget in check 2-bis,
+// which measures the same thing and more — every chunk the entry statically imports,
+// walked from Vite's own manifest instead of guessed from three filename prefixes.
+//
+// Its last act was to be wrong in the expensive direction. Dropping the `drawpad` group
+// (see vite.config.ts) took the door **700 KB → 645 KB**, a real 55 KB off what a
+// stranger downloads for a headline — and this budget went RED, because the shared code
+// that had been hiding in a chunk it never counted moved into `index-*.js`, which it
+// did count. A budget that fails a change for making the thing it guards 55 KB lighter
+// is not measuring the thing it guards.
+//
+// What is kept: the PER-CHUNK caps above (a single named chunk can still not balloon)
+// and, new below, a cap on every OTHER member of the closure — which is the half that
+// was genuinely missing, and the reason `drawpad-*.js` could sit at 141 KB in the boot
+// path while being budgeted as an ordinary lazy chunk.
 // fix(ci): re-based a SECOND time, for the same reason as the first — the number
 // moved because the accounting boundary moved, not because boot got heavier.
 // Retiring « Moments » deleted three lazy routes (MomentScene/MomentsView/MomentPeek),
@@ -85,13 +97,21 @@ const EAGER_TOTAL_BUDGET = 620 * KB // combined index + react-vendor + i18n (tod
 // So a slow kitchen tablet pays the same as before; ~59 KB simply moved from chunks
 // this guard never counted into the one it does.
 //
-// KNOWN GAP worth closing separately: `EAGER_CHUNKS` matches on FILENAME
-// (index-/react-vendor-/i18n-), so every OTHER chunk the entry statically imports —
-// write-*.js at 142 KB, drawpad, Modal, Layout, Avatar… — escapes the eager budget
-// entirely. That is why the honest boot figure (1065 KB) is far above the 718 KB
-// this file reports. Pinning a chunk out of the entry therefore "fixes" this guard
-// without making anything faster; don't. The real fix is to budget the static
-// closure instead of three filename patterns.
+// THE GAP THIS NOTE NAMED IS CLOSED (2026-09-22), and the note is kept because half of
+// it was already stale when it was read. It said `EAGER_CHUNKS` matches on FILENAME, so
+// every OTHER chunk the entry statically imports escapes the eager budget — true — and
+// it cited « the honest boot figure (1065 KB) against the 718 KB this file reports »,
+// which had not been true since L4 made the hub lazy: the real door was 700 KB and
+// check 2-bis below was already measuring it. A stale number in a note about stale
+// numbers is how a fix that was 90 % done reads as not started.
+//
+// Closed by two changes, not one: the three-filename total is retired in favour of the
+// closure (see the retired-total note above), and every closure member now has a cap
+// (EAGER_MEMBER_CAP below) — which is what was actually missing. Its first catch was
+// `drawpad-*.js`: 141 KB, in the boot path, budgeted as an ordinary LAZY chunk.
+//
+// The warning in its last line still stands: pinning a chunk OUT of the entry can
+// "fix" a filename-based guard without making anything faster. Measure the door.
 // fix(ci): both numbers above were re-based on what the build ACTUALLY emits, after
 // two long-standing lies in this file cancelled each other out and then stopped:
 //   • the entry was never ~251 KB — it has been ~320.5 KiB for a while, i.e. sitting
@@ -140,7 +160,7 @@ const LAZY_CAPS = [
 const sw = readFileSync(join(DIST, 'sw.js'), 'utf8')
 const failures = []
 let total = 0
-let eagerTotal = 0
+let eagerTotal = 0 // reported, not budgeted (see the retired-total note) — the door closure is the budget
 
 for (const f of readdirSync(ASSETS).filter((f) => f.endsWith('.js'))) {
   const size = statSync(join(ASSETS, f)).size
@@ -171,26 +191,48 @@ for (const f of readdirSync(ASSETS).filter((f) => f.endsWith('.js'))) {
     failures.push(`${f} exceeds its budget: ${kb} KB > ${Math.round(CHUNK_BUDGET / KB)} KB (lazy chunk)`)
 }
 
-if (eagerTotal > EAGER_TOTAL_BUDGET)
-  failures.push(`combined eager JS (index + react-vendor + i18n) is ${Math.round(eagerTotal / KB)} KB > ${Math.round(EAGER_TOTAL_BUDGET / KB)} KB budget`)
 
 // 2-bis. THE DOOR'S STATIC CLOSURE — every chunk the browser must fetch before it can
-// run one line of the marketing page (STATE §4-L L4). The three-chunk "eager" total
-// above is an accounting convention and it UNDERCOUNTS: Rolldown's shared-commons chunk
-// (emitted under the `drawpad` group's name) rides the entry too, and until 2026-09-16
-// so did the whole hub — HubLayout and Board were static imports in router.tsx "for the
-// kiosk's offline boot", so a stranger downloaded a household planner to read one
-// headline: **70 chunks, 1131 KB raw**, which a 400 ms link turns into eleven seconds.
-// Making the two lazy took it to **7 chunks, 726 KB** — 63 round trips the door no
-// longer pays for. The SW precaches every lazy chunk (check 2 above is what makes that
-// true), so the kiosk's offline reboot is unaffected; `npm run e2e:sw` proves it.
+// run one line of the marketing page (STATE §4-L L4), and **the boot budget**: since
+// 2026-09-22 this is the number, not the sum of three filenames.
 //
-// Walked from Vite's own manifest, so it cannot drift from what ships. Both numbers are
+// Until 2026-09-16 the whole hub rode it — HubLayout and Board were static imports in
+// router.tsx "for the kiosk's offline boot", so a stranger downloaded a household
+// planner to read one headline: **70 chunks, 1131 KB raw**, eleven seconds on a 400 ms
+// link. Making the two lazy took it to 7 chunks / 726 KB. Dropping the `drawpad` group
+// (2026-09-22) took it again to **9 chunks / 645 KB**: that group had become Rolldown's
+// shared-commons home, 141 KB imported by ~180 chunks including the entry, so the door
+// was fetching perfect-freehand for a marketing page under a filename that read like
+// the draw pad's own weight. The SW precaches every lazy chunk (check 2 is what makes
+// that true), so the kiosk's offline reboot is unaffected; `npm run e2e:sw` proves it.
+//
+// Walked from Vite's own manifest, so it cannot drift from what ships. The numbers are
 // RATCHETS: they may fall, never rise. A new static import in router.tsx is the exact
 // mistake this catches, and it catches it as a number rather than a code review.
-const CLOSURE_CHUNK_CAP = 10 // today 7
-const CLOSURE_BUDGET = 800 * KB // today ~726 KB
+const CLOSURE_CHUNK_CAP = 12 // today 9
+const CLOSURE_BUDGET = 680 * KB // today ~645 KB
+// …and no single member of the closure may be large. THIS IS THE HALF THAT WAS MISSING,
+// and it is the one that would have caught `drawpad-*.js`: a 141 KB chunk sitting in the
+// boot path was measured against the 320 KB LAZY budget, because the eager caps matched
+// FILENAMES and it did not look like one. The three named chunks keep their own caps
+// above; everything else that rides the entry must be small, because an eager chunk that
+// is not react, the dictionary or the shell is, by construction, something that leaked.
+// Today the largest is 3 KB.
+const EAGER_MEMBER_CAP = 32 * KB
+// Chunks that must NEVER be reachable statically from the door, by their SOURCE path.
+// These are `lazy()` boundaries, which is why they have a source-path manifest key at
+// all: a dynamic import gets one, a static import is folded into its importer and has
+// none — so both halves of the check below mean something.
 const LAZY_BY_NAME = ['src/components/HubLayout.tsx', 'src/pages/Board.tsx']
+// …and the same intent for a chunk that is NOT a lazy boundary, which needs a different
+// question. `DrawPad` is imported statically by five lazy pages, so Rolldown gives it a
+// shared chunk (`_DrawPad-*.js`, no `src` key) rather than a dynamic entry — it can only
+// be recognised by FILE NAME. It is named here because the `drawpad` chunk group that
+// used to keep the draw pad out of the entry as a SIDE EFFECT is gone (vite.config.ts,
+// 2026-09-22), and an intent that lives in a bundler group name is an intent nobody can
+// read. If it is ever folded into `index-*.js` instead, no name appears anywhere — that
+// case is caught by CLOSURE_BUDGET, which ~50 KB of stroke library would blow.
+const NOT_IN_DOOR = [{ re: /^DrawPad-/, why: 'the draw pad (+ perfect-freehand) is reachable only from lazy pages; the door is a marketing headline' }]
 const manifestPath = join(DIST, '.vite', 'manifest.json')
 if (!existsSync(manifestPath)) {
   failures.push('dist/.vite/manifest.json is missing — set build.manifest in vite.config.ts (the door-closure check reads it)')
@@ -207,7 +249,21 @@ if (!existsSync(manifestPath)) {
   let closureBytes = 0
   for (const k of closure) {
     const f = manifest[k]?.file
-    if (f && existsSync(join(DIST, f))) closureBytes += statSync(join(DIST, f)).size
+    if (!f || !existsSync(join(DIST, f))) continue
+    const size = statSync(join(DIST, f)).size
+    closureBytes += size
+    // A member with its own named cap above was already checked by filename in check 1;
+    // every OTHER member is held to EAGER_MEMBER_CAP. `basename` because the manifest
+    // path is `assets/<file>` while EAGER_CHUNKS matches the bare filename.
+    const base = f.split('/').pop()
+    const banned = NOT_IN_DOOR.find((b) => b.re.test(base))
+    if (banned) failures.push(`${base} is in the door's static closure and must not be — ${banned.why}`)
+    if (!EAGER_CHUNKS.some((e) => e.re.test(base)) && size > EAGER_MEMBER_CAP)
+      failures.push(
+        `${base} is ${Math.round(size / KB)} KB and rides the door's static closure (cap ${Math.round(EAGER_MEMBER_CAP / KB)} KB) — ` +
+          'an eager chunk that is not react / the dictionary / the shell is something that leaked into boot. Find its importer and lazy() it, ' +
+          'or, if it is a shared-commons chunk wearing a feature group’s name, stop pinning that group (see vite.config.ts, 2026-09-22)',
+      )
   }
   if (closure.size > CLOSURE_CHUNK_CAP)
     failures.push(
@@ -215,9 +271,7 @@ if (!existsSync(manifestPath)) {
     )
   if (closureBytes > CLOSURE_BUDGET)
     failures.push(`the door's static closure is ${Math.round(closureBytes / KB)} KB > ${Math.round(CLOSURE_BUDGET / KB)} KB — see above`)
-  // …and the two that were the whole problem, by name: each must be its OWN chunk (a
-  // dynamic-import boundary gets a manifest key; a static import is folded into the
-  // entry and has none) and must not be reachable statically from the door.
+  // …and the three named ones, by name — see LAZY_BY_NAME for why each is on the list.
   for (const name of LAZY_BY_NAME) {
     if (!manifest[name]) failures.push(`${name} has no chunk of its own — it is a STATIC import again, and the door pays for it`)
     else if (closure.has(name)) failures.push(`${name} is in the door's static closure — it must be reached by lazy() only`)
@@ -262,7 +316,7 @@ for (const u of [...(sw.match(/"\/assets\/[^"]+"/g) ?? [])].map((s) => s.slice(1
     failures.push(`${u} is in the sw.js precache but no such file was built — an SPA fallback answers it with HTML`)
 }
 
-console.log(`bundle: ${Math.round(total / KB)} KB of JS across dist/assets (${Math.round(eagerTotal / KB)} KB eager); sw.js precache checked.`)
+console.log(`bundle: ${Math.round(total / KB)} KB of JS across dist/assets (${Math.round(eagerTotal / KB)} KB in the three named eager chunks — the door figure above is the boot cost); sw.js precache checked.`)
 if (failures.length) {
   for (const f of failures) console.error(`✗ ${f}`)
   process.exit(1)

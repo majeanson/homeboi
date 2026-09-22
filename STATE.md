@@ -33,7 +33,7 @@
 | **Tests** | 2 392 unit tests in 189 files · 85 real-runtime cases in 12 files (`npm run test:d1`, the Worker in workerd against a real D1) · 157 Playwright spec files |
 | **Deploy** | Push to `main` → CI (typecheck · test · build · bundle budget · **test:d1** · knip) gates `db:migrate:prod` + `wrangler deploy`. E2E is decoupled (`workflow_run`), runs after a green CI, never blocks the ship. |
 | **Second interface** | `/api/mcp` — read-only over the household — of the 12 tools, most proxy a GET handler that already exists, so the caps, the recurrence expansion and the time zone are decided once and inherited. (This row lives HERE, not in §3: docCounts derives that number from the registry, and the claim died the first time §3 rotated.) |
-| **Households in production** | One (Marc's), plus per-visitor demo sandboxes |
+| **Households in production** | **Six**, counted in D1 on 2026-09-22 — Marc's (4 members), four other real accounts from the invite gate, and the legacy read-only demo singleton. This row said « One (Marc's) » for months: other people's households are already in there, which is what Wave 4 (deletion, privacy, a contact door) is actually about |
 
 *(Numbers re-measured 2026-09-17. They are the kind that rot: re-run the commands before
 quoting them — `src/lib/docCounts.test.ts` holds the ones that CAN be derived from code.)*
@@ -46,7 +46,7 @@ quoting them — `src/lib/docCounts.test.ts` holds the ones that CAN be derived 
   E2E job is the standing whole-suite signal, and it chains off CI — so **a red CI means
   no E2E ran at all**, which hid three commits' worth of failures for a day.
 - `npm run e2e:sw` — 5 passed (the kiosk's offline reboot, against the real PROD bundle).
-- `npm run check:bundle` — the door's static closure is **7 chunks / 727 KB** (was 70 /
+- `npm run check:bundle` — the door's static closure is **9 chunks / 645 KB** (was 70 /
   1 131 before the hub went lazy); every chunk within budget; the SW precache covers all
   offline-needed chunks and skips build metadata.
 - **The build-gating invariants** are the codebase's best feature (§5), and the list is
@@ -86,7 +86,7 @@ interchangeable. Read this table before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md` is now
-> a number you can trust. It reads **10** — nine in the public-readiness plan §4-K, and
+> a number you can trust. It reads **9** — eight in the public-readiness plan §4-K, and
 > one left from the closed hardening pass (enforce the CSP, waiting on a week of reports,
 > not on work). **That number is asserted from the boxes themselves** by
 > `src/lib/docCounts.test.ts`, so this sentence cannot drift the way `REVIEW-PASS.md`'s
@@ -357,22 +357,22 @@ against a SEEDED household on wifi.
       modulepreloads the entry's whole static graph, 69 chunks, and the door pays for the
       board, the write/outbox layer, both i18n halves' shell, the QR code… A stranger at a
       school gate on a bad signal waits eleven seconds for a headline.
-- [ ] **The door's eager graph — HALF DONE, and this entry was stale (re-checked
-      2026-09-22).** What it said: `HubLayout` + `Board` are static imports in
-      `router.tsx`, so `/` carries the whole hub; make them lazy. **They have been lazy
-      since L4** (`src/router.tsx:26-27`, 2026-09-17) — that is the work the re-measured
-      table above is measuring, 78 requests → 17. Read the code before picking this up;
-      the ledger was a verdict from a moment (§5).
-      What is genuinely left is the gap `scripts/check-bundle.mjs` documents on itself
-      (its « KNOWN GAP worth closing separately » comment): **`EAGER_CHUNKS` matches on
-      FILENAME**, so only `index`/`react-vendor`/`i18n` are counted as eager, while
-      `write-*.js` (142 KB), `drawpad`, `Modal`, `Layout`, `Avatar` ride the entry's
-      static closure and escape the budget entirely. The gate therefore reports 555 KB
-      eager against a door that pulls 700 KB in 7 chunks — it prints the true number and
-      budgets the smaller one. The fix: budget the STATIC CLOSURE the gate already walks
-      for that line, re-base the caps against it, rename the `drawpad` group to what it
-      is (Rolldown's shared commons wearing a feature's name), and re-run the cold-start
-      table. Do NOT "fix" it by lifting the filename caps — that changes no bytes.
+- [x] **The door's eager graph — CLOSED 2026-09-22, and the box itself had been half
+      stale.** It asked to make `HubLayout` + `Board` lazy; they have been lazy since L4
+      (2026-09-17), which is what the re-measured table above measures. What was genuinely
+      left turned out to be one bad chunk and one blind guard, and they were the same
+      thing: **the `drawpad` group had become Rolldown's shared-commons home — 141 KB,
+      imported by ~180 chunks INCLUDING the entry**, so the door fetched perfect-freehand
+      to render a headline, under a filename that read like the draw pad's own weight. (A
+      previous session lost an hour lazy-loading `DrawPad` and measured nothing: the file
+      it chased was 3 KB of the 141.) Deleting the group: **door 700 → 645 KB, 7 → 9
+      chunks**, DrawPad back to its own 51 KB lazy chunk. And the guard could not see any
+      of it, because `EAGER_CHUNKS` matched three FILENAMES: the three-name total is
+      retired in favour of the closure the gate already walked, every closure member now
+      has a cap (32 KB — a bigger eager chunk than that has leaked), and `DrawPad` is
+      named as never-in-the-door now the group is not keeping it out as a side effect.
+      Both new checks proven red by re-planting the group. **The production cold-start
+      table is NOT re-measured**: this is −55 KB of the door's 700, bytes not a stopwatch.
 - [x] **Install prompt — built, two doors, Marc's shape** (« maybe after account creation
       too »). `lib/install` keeps Chromium's `beforeinstallprompt` (preventDefault, so the
       browser's own mini-bar does not double the offer) and knows iOS Safari has none;
