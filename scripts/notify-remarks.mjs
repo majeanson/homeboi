@@ -106,9 +106,21 @@ async function main() {
     warn(`${jobs.length} remarque(s) nommée(s), mais DEPLOY_NOTIFY_SECRET est absent ou trop court — rien envoyé.`)
     return
   }
+  // Parsed once, and never allowed to throw: this whole script's contract is that it
+  // cannot fail the deploy job.
+  let host = endpoint
+  try {
+    host = new URL(endpoint).host
+  } catch {
+    /* an unparseable endpoint still gets reported verbatim, which is the useful thing */
+  }
   for (const job of jobs) {
     const { status, body } = await post(endpoint, secret, { id: job.id, sha: job.sha, explanation: job.explanation })
-    const line = `${job.id} ← ${job.sha.slice(0, 7)} : HTTP ${status} ${String(body).slice(0, 200)}`
+    // The HOST is in the line, because the first real failure was about WHERE this
+    // went, not about what it said: an « HTTP 403 <!DOCTYPE html> » that turned out to
+    // be Cloudflare's own challenge page for the public hostname, and the message named
+    // everything except which host had refused. A body is truncated; a host is not.
+    const line = `${job.id} ← ${job.sha.slice(0, 7)} → ${host} : HTTP ${status} ${String(body).slice(0, 200)}`
     if (status === 200) note(line)
     else warn(line)
   }

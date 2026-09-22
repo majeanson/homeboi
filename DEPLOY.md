@@ -11,7 +11,23 @@ Babillard runs as **one Cloudflare Worker with static assets**:
   per-household **Durable Object** (`RealtimeHub`) fans out realtime invalidations.
 
 Deploy command is `npm run deploy` (build + `wrangler deploy`). Live URL ends up
-`https://babillard.<account>.workers.dev`.
+`https://babillard.<account>.workers.dev`, plus the custom domain in `wrangler.toml`
+(`babillard.marcportal.com`).
+
+> **Both hostnames matter, and not only as spare tyres.** The custom domain sits on a
+> Cloudflare **zone**, so the zone's WAF / bot protection runs in front of the Worker
+> there; `*.workers.dev` does not. A browser never notices the difference — it solves a
+> managed challenge and moves on. **A bare `fetch` from a datacenter IP cannot**, and
+> that is exactly what CI's « expédiée » callback is: on 2026-09-22 it came back
+> `HTTP 403` with a « Just a moment… » interstitial, from the edge, without the Worker
+> ever being asked. The same request answers `401` from a laptop, so the shared-secret
+> gate was never the problem.
+>
+> **Machine-to-machine calls into the app therefore use the `*.workers.dev` host**
+> (`.github/workflows/ci.yml`, which reads the URL out of the deploy's own output rather
+> than hard-coding a subdomain). They carry their own credential — `X-Deploy-Secret`,
+> fail-closed — which is the boundary for those routes by design. Everything a HUMAN
+> touches stays on the custom domain, behind the zone.
 
 | Binding          | Resource                     | Required?                 | If absent                                        |
 | ---------------- | ---------------------------- | ------------------------- | ------------------------------------------------ |

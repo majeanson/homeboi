@@ -123,55 +123,71 @@ now, so the repo-wide count is honest for the first time.
 
 ### The board card acts — a remark, answered by the loop it asked about — 2026-09-22
 
-The first remark the household filed through « Les remarques » was about « Les remarques »:
-
-> « Widget on board for remarques (add and resolve) » — filed at build `11fcf248`.
-
-It was filed the build BEFORE the board card shipped, and the card that answered it was
-read-only: every row a link into Réglages, the whole thing one big `<Link>`. That reads
-well and costs a navigation for the only two things anyone does with a remark. Both are
-in place now, and the card never leaves the board to do either:
+The first remark the household ever filed was about « Les remarques » itself — « Widget
+on board for remarques (add and resolve) », at build `11fcf248`, the build BEFORE the
+board card shipped. The card that answered it was read-only: every row a link into
+Réglages, the whole thing one big `<Link>`. That reads well, and costs a navigation for
+the only two things anyone does with a remark. Both are in place now, on the board:
 
 - **the header ＋** (`SectionAdd popup`) opens the ONE shared composer — a fourth door,
   not a second form;
 - **a `shipped` row carries the two verdict chips**, the same words and the same rule as
   Réglages: offered only once a deploy has claimed it.
 
-**The « ? » bubble stopped navigating.** It was a link into Réglages for a stated reason
-— mounting a modal in a component that renders on every surface pulls Query, the write
-hook and the toast with it — and the reason was real but the shape was wrong: you tap
-« ? » because something is wrong HERE, and the answer walked you off the page you were
-describing. `lazy()` settles it: the composer arrives on the tap, so a surface that never
-reports still pays nothing. `?report=1` stays for the crash screen, which cannot do this
-(`ErrorBoundary` is deliberately hook-free).
+**The « ? » bubble stopped navigating**, on every surface. It was a link for a real
+reason — mounting a modal in a component rendered everywhere pulls Query, the write hook
+and the toast with it — but the shape was wrong: you tap « ? » because something is wrong
+HERE, and the answer walked you off the page you were describing. `lazy()` settles it.
+`?report=1` stays for the crash screen, which cannot do this (`ErrorBoundary` is
+deliberately hook-free).
 
 Three things worth keeping from the way it was built:
 
-- **The PATCH got an owner the moment it had two callers.** `useRemarkVerdict`
-  (`lib/remarks.ts`), and a `remarks` entry in `write-owners.test.ts` naming all three
-  write sites — the hook, the composer's POST, the section's DELETE. This is the
-  leftover-flow shape exactly (one flow, two surfaces, four drifts by 2026-09-03), caught
-  on the way in rather than three months later. **Both halves of the new guard were
-  proven red**: a hand-rolled PATCH planted in the card (`RemarksCard.tsx:77 → remarks`)
-  and an emptied `affectedKeys` in the hook (`lib/remarks.ts:87 → remarks is missing
-  REMARKS_KEY`), then restored.
-- **A card that acts cannot be a `<Link>`.** A button inside an anchor is invalid HTML
-  and its clicks navigate anyway; `CercleNotesCard` had already answered this — the card
-  is a `<div>` and its door survives as an explicit link per row.
-- **`.help-bubble__report` now dresses a `<button>`**, so it got the UA-chrome reset that
-  `link-button-rule.test.ts` exists for. That guard only fires when a class is worn by
-  BOTH kinds, and this one moved wholesale from `<Link>` to `<button>` — which is the gap
-  in it, and the reason the reset was written by hand here.
+- **The PATCH got an owner the moment it had two callers** — `useRemarkVerdict`
+  (`lib/remarks.ts`), plus a `remarks` entry in `write-owners.test.ts` naming all three
+  write sites (the hook, the composer's POST, the section's DELETE). Exactly the
+  leftover-flow shape (one flow, two surfaces, four drifts by 2026-09-03), caught on the
+  way in. **Both halves proven red** — a hand-rolled PATCH planted in the card, then an
+  emptied `affectedKeys` in the hook — and restored.
+- **A card that acts cannot be a `<Link>`**: a button inside an anchor is invalid HTML
+  and navigates anyway. `CercleNotesCard` had answered this already — the card is a
+  `<div>`, its door survives as a link per row.
+- **`.help-bubble__report` dresses a `<button>` now**, so it got the UA-chrome reset
+  `link-button-rule.test.ts` exists for. That guard only fires on a class worn by BOTH
+  kinds, and this one moved wholesale — which is the gap in it.
 
-The card stays `mode: 'auto'`. A board with nothing waiting shows no remarks furniture at
-all: « file a bug » is not a standing invitation on a kitchen wall, and the door from a
-calm board is the « ? », which needs no card to exist.
+**Gates:** typecheck · 2 394 unit · build · bundle (door 7 chunks / 700 KB, eager 555 KB)
+· `e2e/remarks.spec.ts` 8 green, three of them new, each asserting the write left AND the
+board is still under it; the shared-machinery batch (`help` · `section-add` ·
+`board-compact` · `board-customize`) run twice. **The full local `e2e:ci` did NOT run** —
+it died of memory pressure twice, once a V8 heap OOM before the first test and once the
+Vite server itself refusing connections mid-run. CI's E2E job is the whole-suite signal
+for this commit, and [[ci-is-source-of-truth]] now records that this machine cannot
+finish the suite.
 
-**Gates:** typecheck · 2 394 unit · build · bundle (door 7 chunks / 700 KB, eager 555 KB
-— the composer is lazy from the bubble and rides the board chunk from the card) ·
-`e2e/remarks.spec.ts` 8 green, three of them new, each asserting the write left AND the
-board is still under it. The full `e2e:ci` suite was run locally for the shared-machinery
-rule (`HelpBubble` renders on every surface).
+**And then the loop did not close — the finding this session is really worth.** The
+commit above carried the first `Regle-remarque:` trailer ever written. CI ran it, the
+step went green (it is `continue-on-error`), and the remark stayed **« ouverte »**. The
+annotation said `HTTP 403 <!DOCTYPE html><title>Just a moment…`: **Cloudflare's own edge
+challenged the callback before the Worker ever saw it.** `babillard.marcportal.com` is on
+a zone whose bot protection challenges a bare `fetch` from a datacenter IP — and a
+challenge is not something a `fetch` can solve. The same POST answers `401` from a
+laptop, so the shared secret was never the problem, and nothing had caught it because
+every other CI job that touches production drives a real browser, which solves the
+challenge and moves on.
+
+Fixed by sending the machine-to-machine call to the **`*.workers.dev`** host — the same
+Worker without the zone in front — with the URL **read out of the deploy's own output**
+rather than hard-coded, so it cannot rot when an account subdomain changes, and the
+public host left as the fallback. `X-Deploy-Secret` is the boundary on that route by
+design (`remarks/shipped.ts` is deliberately not `authed()`), and that hostname already
+serves the app, so nothing new is exposed. The `tee` this needs made `shell: bash`
+load-bearing on the deploy step: GitHub's default `bash -e` has **no pipefail**, so
+`wrangler deploy | tee` would have reported `tee`'s exit code and a failed deploy would
+have read as green. The notify script now names the HOST in its annotation, because the
+one that failed named everything except which host had refused. Both shell branches were
+exercised by hand, and `ci-untrusted.test.mjs` was proven red against the new `run:`
+block before being trusted.
 
 **And what production said while picking the work** (`app_health`, 2026-09-22):
 `deployHook: true` — the CI half of the loop is armed. `mail: false` and `alerts: false`
@@ -229,46 +245,17 @@ the matrix run · a PARITY row or a footnoted ➖ · STATE.md updated in the sam
 The boxes below are OPEN WORK and count in §2's number; flip them with the commit that
 settles them. A wave's findings get their own boxes under it when the wave starts.
 
-**Wave 0 — the wide-screen pass (TODAY).** The matrix shoots 390 (phone), 360 (narrow)
-and 1280 (the WALL kiosk). Nothing has ever been photographed as a **laptop operator**
-(surface `mobile`, 1440 wide) or a **tablet held in portrait** (820). Expect the worst:
-the whole stylesheet has four `min-width` rules above 720px, and the shell caps no width
-— a laptop most likely gets the phone layout stretched across 1440px. That is the first
-thing a public visitor with a laptop will see after the marketing page.
-
-- [x] **`TABLET` (820×1180) and `DESKTOP` (1440×900) added** to `e2e/state-matrix.spec.ts`;
-      DESKTOP states run `surface: 'mobile'` — a laptop operator, not the wall.
-- [x] **17 states added** (`wide-*` ×11: Home signed-out, the six tabs, La semaine, day
-      plan, recipe view, search; `tablet-*` ×6: the six tabs), all `noBudgetWhy`, day theme.
-      Matrix 102 → 119 entries, 117 → 134 states (LEAN.md, asserted by docCounts).
-- [x] **Every frame opened — and the expectation was WRONG in the good direction.** Six
-      surfaces already sat in a centred column or a sidebar layout (liste, notes, search,
-      day plan, recipe, Réglages); the board grid already went four-up; Home already
-      centred at 56rem. Three tabs stretched edge to edge: the kitchen week (a date and
-      two doors per 1370px strip), Maison (one 260px card beside 1100px of nothing), La
-      semaine's rows (a chevron 1300px from its words). And the bottom tab bar spread six
-      thumb targets 240px apart. Plus one thing no frame at 390px could show: the board's
-      « Prochaine routine » « Faire » pill — white on a marigold member, **2.03:1** — only
-      reaches the first screen at four columns, and axe caught it on the first wide state.
-- [x] **Shape decided by Marc — HYBRID, and centre the tab bar** (not a sidebar): width
-      where the shape earns it, a reading column where it does not. Applied as four
-      `@media (min-width: 1100px)` rules, surface-agnostic so the wall benefits too:
-      kitchen week → `repeat(auto-fill, minmax(11.5rem, 1fr))` (seven columns on the
-      laptop, FIVE on the 1280px wall behind its sidebar — the first cut said `repeat(7)`
-      and the wall's doors drew over the dates, caught on the re-shoot); Restants/Idées
-      (the shared `.kitchen__ideas` pool) capped at 52rem; Maison's moments side by side
-      (`.routines-moments` auto-fit); `.weekv` in the 52rem column; the mobile
-      `.hubnav` gathers its six tabs in the same column via one `padding-inline` rule.
-      The contrast bug got the Maison card's own answer: `tintInk()` in `lib/routineTod`
-      (measured for a member hex, looked up for a moment var — the vars `readableInk`
-      could never measure, which was the latent half of the Maison fix too).
-- [x] **Home at 1440px** — already a 56rem column with a three-up feature grid; nothing
-      to fix. Shot from now on (`wide-home`).
-- [~] **Not fixed, seen, and parked with the why:** the ＋ FAB overlaps the fourth grid
-      column's card text on the wide board exactly as it overlaps the last card on a
-      phone — a pre-existing pattern, not a width defect; and Maison's moments at 1440
-      still leave the lower two-thirds empty with two routines, which is the FIXTURE's
-      size, not a layout hole.
+**Wave 0 — the wide-screen pass. ✅ CLOSED 2026-09-16**, and the expectation going in was
+wrong in the good direction: six surfaces already sat in a centred column or a sidebar
+layout, and only three tabs stretched edge to edge. Marc's call was **HYBRID — width
+where the shape earns it, a reading column where it does not, and centre the tab bar**,
+applied as four surface-agnostic `@media (min-width: 1100px)` rules. The matrix grew
+`TABLET` (820×1180) and `DESKTOP` (1440×900, surface `mobile` — a laptop operator, not
+the wall) plus 17 states. One thing no 390px frame could ever have shown came out of it:
+the board's « Faire » pill at **2.03:1** on a marigold member, which `tintInk()`
+(`lib/routineTod`) now answers. Two things were seen and PARKED with the why (the ＋ FAB
+over the fourth column; Maison's empty lower third, which is the fixture's size). The
+five boxes and their measurements are in git.
 
 **Wave 1 — the stranger's demo walk.** The demo is the product for months. Mint a sandbox
 on production the way a stranger would — phone AND laptop, private window, no account —

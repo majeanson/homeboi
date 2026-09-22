@@ -283,7 +283,7 @@ describe('the docs quote the real counts', () => {
 // it happens to be today (653 / 254). A session writes its §3 entry and moves the
 // previous one out (git keeps it), which is net-neutral; the headroom is for the
 // moment between those two edits, not a licence to accumulate.
-const STATE_MAX_LINES = 620 // today 610
+const STATE_MAX_LINES = 600 // today 598
 const STATE_FIRST_OPEN_BOX_BY = 300 // today 254
 
 describe('STATE.md stays a front door', () => {
