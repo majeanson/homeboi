@@ -44,6 +44,34 @@ export const CSP_REPORT_ONLY = [
   'report-uri /api/csp-report',
 ].join('; ')
 
+// THE ENFORCED POLICY (2026-09-22) — everything the report-only one says, except that
+// `script-src` also allows INLINE.
+//
+// The week of facts the report-only header was shipped to collect came back with one
+// finding, and it is not ours: the edge injects inline scripts into the marketing page
+// (two on one run, none on the next — Cloudflare's RUM beacon and its challenge
+// machinery). A strict `script-src 'self'` would therefore break the door
+// INTERMITTENTLY, in production, while passing every local test — the worst shape a
+// security header can have, and the reason this was never enforced blind.
+//
+// So the split is deliberate: enforce every directive that had zero violations all week
+// (that is eleven of them, including `default-src 'self'`, `object-src 'none'`,
+// `base-uri` and `form-action` — the ones that actually stop an injected page from
+// phoning home or rewriting its own base), and keep scripts permissive enough for the
+// edge. `'unsafe-inline'` is a real concession and it is worth naming what survives it:
+// a remote script from an origin nobody allowed still cannot load, which is the vector
+// that matters for a stolen-CDN or a compromised-dependency attack.
+//
+// The REPORT-ONLY header stays, with the STRICT `script-src` — so the evidence keeps
+// coming and a future session can tighten it the day the edge stops injecting, with the
+// same kind of data this decision was made from rather than a guess.
+const ENFORCED_CSP = [
+  ...CSP_REPORT_ONLY.split('; ').map((d) =>
+    d.startsWith('script-src ') ? `${d} 'unsafe-inline'` : d,
+  ),
+  "frame-ancestors 'self'",
+].join('; ')
+
 export const ENFORCED: ReadonlyArray<readonly [name: string, value: string]> = [
   ['Strict-Transport-Security', 'max-age=31536000; includeSubDomains'],
   ['X-Content-Type-Options', 'nosniff'],
@@ -51,7 +79,7 @@ export const ENFORCED: ReadonlyArray<readonly [name: string, value: string]> = [
   // The app uses the camera (photos, recipe OCR) and the microphone (voice) ITSELF;
   // nothing it frames needs either, and it never asks where the device is.
   ['Permissions-Policy', 'camera=(self), microphone=(self), geolocation=()'],
-  ['Content-Security-Policy', "frame-ancestors 'self'"],
+  ['Content-Security-Policy', ENFORCED_CSP],
   ['Content-Security-Policy-Report-Only', CSP_REPORT_ONLY],
 ]
 

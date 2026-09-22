@@ -86,7 +86,7 @@ interchangeable. Read this table before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md` is now
-> a number you can trust. It reads **5** — four in the public-readiness plan §4-K, and
+> a number you can trust. It reads **4** — all four in the public-readiness plan §4-K, and
 > one left from the closed hardening pass (enforce the CSP, waiting on a week of reports,
 > not on work). **That number is asserted from the boxes themselves** by
 > `src/lib/docCounts.test.ts`, so this sentence cannot drift the way `REVIEW-PASS.md`'s
@@ -121,118 +121,55 @@ now, so the repo-wide count is honest for the first time.
 
 ## 3. What just shipped
 
-### The board card acts — a remark, answered by the loop it asked about — 2026-09-22
+### One session, 2026-09-22 — the loop closes, the door slims, a household can leave
 
-The first remark the household ever filed was about « Les remarques » itself — « Widget
-on board for remarques (add and resolve) », at build `11fcf248`, the build BEFORE the
-board card shipped. The card that answered it was read-only: every row a link into
-Réglages, the whole thing one big `<Link>`. That reads well, and costs a navigation for
-the only two things anyone does with a remark. Both are in place now, on the board:
+**« Les remarques » answered its own first remark.** « Widget on board for remarques (add
+and resolve) », filed the build before the board card shipped — and that card was
+read-only. Now the header ＋ opens the ONE shared composer and a `shipped` row carries the
+two verdict chips, both in place; the « ? » bubble stopped navigating too (`lazy()`, so a
+surface that never reports still pays nothing). The PATCH got an owner hook the moment it
+had two callers, with both halves of the new `write-owners` entry proven red.
 
-- **the header ＋** (`SectionAdd popup`) opens the ONE shared composer — a fourth door,
-  not a second form;
-- **a `shipped` row carries the two verdict chips**, the same words and the same rule as
-  Réglages: offered only once a deploy has claimed it.
+**Then the loop didn't close, and that was the finding.** CI's « expédiée » callback came
+back `HTTP 403 <!DOCTYPE html><title>Just a moment…` — **Cloudflare's edge challenging a
+bare `fetch` from a datacenter IP**, before the Worker ever saw it. The same POST answers
+401 from a laptop. Machine-to-machine calls go to `*.workers.dev` now, with the URL read
+out of the deploy's own output; `shell: bash` on that step is load-bearing (`bash -e` has
+no pipefail, so `wrangler deploy | tee` would have made a failed deploy read as green).
+**The same cause had been failing the weekly stranger walk for weeks**, where it looked
+like a finding about the app.
 
-**The « ? » bubble stopped navigating**, on every surface. It was a link for a real
-reason — mounting a modal in a component rendered everywhere pulls Query, the write hook
-and the toast with it — but the shape was wrong: you tap « ? » because something is wrong
-HERE, and the answer walked you off the page you were describing. `lazy()` settles it.
-`?report=1` stays for the crash screen, which cannot do this (`ErrorBoundary` is
-deliberately hook-free).
+**The door lost 55 KB.** The `drawpad` chunk was never the draw pad: a named group is a
+chunk that exists every build, so it had become Rolldown's commons home — 141 KB imported
+by ~180 chunks *including the entry*, i.e. the marketing page fetched perfect-freehand to
+render a headline. Deleting the group: **700 → 645 KB, 7 → 9 chunks.** And the guard could
+not see it, because `EAGER_CHUNKS` matched three FILENAMES; the three-name total is
+retired in favour of the closure the gate already walked, every closure member now has a
+32 KB cap, and both new checks were proven red by re-planting the group.
 
-Three things worth keeping from the way it was built:
+**Wave 4 shipped** — `DELETE /api/household` behind three locks (operator, password, the
+household's name retyped), the two public documents at `/confidentialite` and
+`/conditions` written to be TRUE rather than reassuring, and a contact door. The legal
+copy lives in its own lazy page, not in `i18n.ts`. `deleteDemoHousehold` became
+`deleteHousehold`, because « Demo » in the name of the function that erases a real family
+is how the next person writes a second one.
 
-- **The PATCH got an owner the moment it had two callers** — `useRemarkVerdict`
-  (`lib/remarks.ts`), plus a `remarks` entry in `write-owners.test.ts` naming all three
-  write sites (the hook, the composer's POST, the section's DELETE). Exactly the
-  leftover-flow shape (one flow, two surfaces, four drifts by 2026-09-03), caught on the
-  way in. **Both halves proven red** — a hand-rolled PATCH planted in the card, then an
-  emptied `affectedKeys` in the hook — and restored.
-- **A card that acts cannot be a `<Link>`**: a button inside an anchor is invalid HTML
-  and navigates anyway. `CercleNotesCard` had answered this already — the card is a
-  `<div>`, its door survives as a link per row.
-- **`.help-bubble__report` dresses a `<button>` now**, so it got the UA-chrome reset
-  `link-button-rule.test.ts` exists for. That guard only fires on a class worn by BOTH
-  kinds, and this one moved wholesale — which is the gap in it.
+**And the stranger's first screen was broken again.** The live walk was red for weeks;
+reproduced three times against production. The board is a lazy chunk since the door-weight
+pass, so a visitor who skips the welcome while it still reads « Chargement… » flips
+`hasTourSeen` to true *before* the hook that reads it exists — and lands on « Le point du
+jour ». The 2026-09-16 fix was right and simply lived somewhere that did not exist yet: a
+first-boot DATE, stamped by the shell, cannot race a mount order. Day one is now quiet
+even for someone who skipped the welcome, which is what the rule always claimed. The walk
+passes against production in 8.3 s.
 
-**Gates:** typecheck · 2 394 unit · build · bundle (door 7 chunks / 700 KB, eager 555 KB)
-· `e2e/remarks.spec.ts` 8 green, three of them new, each asserting the write left AND the
-board is still under it; the shared-machinery batch (`help` · `section-add` ·
-`board-compact` · `board-customize`) run twice. **The full local `e2e:ci` did NOT run** —
-it died of memory pressure twice, once a V8 heap OOM before the first test and once the
-Vite server itself refusing connections mid-run. CI's E2E job is the whole-suite signal
-for this commit, and [[ci-is-source-of-truth]] now records that this machine cannot
-finish the suite.
+**The CSP is enforced** (§4-L's last thread), everything but `script-src` — the week of
+report-only found only the edge's own injected inline scripts.
 
-**And then the loop did not close — the finding this session is really worth.** The
-commit above carried the first `Regle-remarque:` trailer ever written. CI ran it, the
-step went green (it is `continue-on-error`), and the remark stayed **« ouverte »**. The
-annotation said `HTTP 403 <!DOCTYPE html><title>Just a moment…`: **Cloudflare's own edge
-challenged the callback before the Worker ever saw it.** `babillard.marcportal.com` is on
-a zone whose bot protection challenges a bare `fetch` from a datacenter IP — and a
-challenge is not something a `fetch` can solve. The same POST answers `401` from a
-laptop, so the shared secret was never the problem, and nothing had caught it because
-every other CI job that touches production drives a real browser, which solves the
-challenge and moves on.
-
-Fixed by sending the machine-to-machine call to the **`*.workers.dev`** host — the same
-Worker without the zone in front — with the URL **read out of the deploy's own output**
-rather than hard-coded, so it cannot rot when an account subdomain changes, and the
-public host left as the fallback. `X-Deploy-Secret` is the boundary on that route by
-design (`remarks/shipped.ts` is deliberately not `authed()`), and that hostname already
-serves the app, so nothing new is exposed. The `tee` this needs made `shell: bash`
-load-bearing on the deploy step: GitHub's default `bash -e` has **no pipefail**, so
-`wrangler deploy | tee` would have reported `tee`'s exit code and a failed deploy would
-have read as green. The notify script now names the HOST in its annotation, because the
-one that failed named everything except which host had refused. Both shell branches were
-exercised by hand, and `ci-untrusted.test.mjs` was proven red against the new `run:`
-block before being trusted — then proven end to end by naming the same remark twice, because
-an unfired delivery path is a fix nobody has seen work.
-
-**And what production said while picking the work** (`app_health`, 2026-09-22):
-`deployHook: true` — the CI half of the loop is armed. `mail: false` and `alerts: false`
-— **Wave 3's whole password-reset flow is built and dark**, and the nightly cron's alarm
-still has nowhere to ring. Both wait on the Resend steps in §4-K Wave 3, which are
-Marc's and outside the repo.
-
-### The door loses 55 KB, and the household can leave — 2026-09-22 (same session)
-
-**The `drawpad` chunk was never the draw pad.** A named `advancedChunks` group is a chunk
-that exists on every build, which makes it a home for shared modules: `drawpad-*.js` had
-grown to **141 KB imported by ~180 chunks including the entry**, so the marketing door
-fetched perfect-freehand to render a headline — under a filename that read like the draw
-pad's own weight. (A previous session lost an hour lazy-loading `DrawPad` and measured
-nothing: the file it chased was 3 KB of the 141.) The group was pinned in 2026 because the
-EAGER board reached DrawPad; L4 made the hub lazy in September and the pin outlived its
-reason. Deleting it: **door 700 → 645 KB, 7 → 9 chunks**, DrawPad back to its own 51 KB
-lazy chunk. `e2e:sw` green — the kiosk's offline reboot is what a chunking change actually
-risks.
-
-**And the guard could not see any of it**, because `EAGER_CHUNKS` matched three FILENAMES:
-141 KB in the boot path was measured against the LAZY budget. The three-name total is
-**retired** (not raised) in favour of the closure the gate already walked; every closure
-member now has a 32 KB cap; `DrawPad` is named as never-in-the-door. Both new checks
-proven red by re-planting the group. Its last act as a budget was to go RED at a change
-that took 55 KB off the thing it claimed to protect.
-
-**Wave 4 shipped** — deletion, the two public documents, the contact door (details in
-§4-K). Two things worth carrying forward: `deleteDemoHousehold` became `deleteHousehold`,
-because « Demo » in the name of the function that erases a real family is how the next
-person writes a second one; and the legal copy lives in its page, not in `i18n.ts`, since
-two legal texts in two languages would have spent the eager dictionary's last 11 KB on
-words read once.
-
-**Two stale facts corrected on the way through.** STATE said the door was « 7 chunks /
-727 KB » and that production held **one** household. It holds **six** — Marc's, four other
-real accounts from the invite gate, and the legacy demo singleton, counted in D1. Other
-families are already in there, which is the whole reason Wave 4 was worth doing before
-Wave 5.
-
-> **Older entries are in git, not here.** This section holds the CURRENT session's work
-> and nothing else: when the next session's first entry lands, this one is cut. That rule
-> is what keeps this file a front door instead of a chronicle — it had reached 4 289
-> lines, with the only open work at line 3 490.
+**Two stale facts corrected on the way through:** the door was not « 7 chunks / 727 KB »,
+and production holds **six** households, not one — Marc's, four real accounts from the
+invite gate, and the legacy demo singleton. Other families are already in there, which is
+why Wave 4 mattered before Wave 5.
 
 ## 4. What still needs improvement — consolidated and ranked
 
@@ -257,13 +194,17 @@ Wave 5.
 
 **One thread from §L is still waiting on time rather than on work:**
 
-- [ ] **Enforce the Content-Security-Policy** (it ships report-only today). The door
-      reported two blocked INLINE scripts on one run and none on the next — neither is
-      ours, the edge injects them — so enforcing `script-src` now would break the
-      marketing page intermittently while passing every local test. Read a week of
-      `/api/csp-report` logs and the stranger walk's `csp-report-only.txt`
-      attachments first, then decide: tighten the policy, or keep `script-src`
-      permissive and enforce the rest.
+- [x] **Enforce the Content-Security-Policy — DONE 2026-09-22, the second of the two
+      options it named.** The week of report-only came back with exactly one finding, and
+      it is not ours: the edge injects inline scripts into the marketing door (two on one
+      run, none on the next — the RUM beacon and the challenge machinery). So `script-src`
+      keeps `'unsafe-inline'` and **every other directive is now ENFORCED** — `default-src
+      'self'`, `object-src 'none'`, `base-uri`, `form-action`, the allow-lists and
+      `frame-ancestors`. What survives the concession is worth naming: a remote script
+      from an origin nobody allowed still cannot load. The report-only twin keeps the
+      STRICT `script-src`, so the evidence for tightening keeps arriving and the day the
+      edge stops injecting is a data question, not a guess. Verified on production after
+      the deploy (the live stranger walk reads the visitor's console: zero CSP errors).
 
 ### K. Towards a public app — the plan, written 2026-09-16 (start here)
 

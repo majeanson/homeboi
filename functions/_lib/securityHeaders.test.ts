@@ -44,7 +44,24 @@ describe('security headers', () => {
     // ENFORCED header only, where it is the whole enforced policy for now (the rest
     // stays report-only until a week of reports says it matches the app).
     expect(CSP_REPORT_ONLY).not.toContain('frame-ancestors')
-    expect(ENFORCED.find(([n]) => n === 'Content-Security-Policy')?.[1]).toBe("frame-ancestors 'self'")
+    // ENFORCED IS THE WHOLE POLICY NOW (2026-09-22), after the week of report-only the
+    // comment above was waiting for. Three properties, not a string compare: it carries
+    // every directive the report-only twin does, it adds `frame-ancestors` (which is
+    // meaningless in a report-only header), and its `script-src` is the ONE directive
+    // deliberately looser — the edge injects inline scripts into the marketing door, so
+    // a strict script-src would break it intermittently in production while passing
+    // every test here.
+    const enforced = ENFORCED.find(([n]) => n === 'Content-Security-Policy')?.[1] ?? ''
+    for (const directive of CSP_REPORT_ONLY.split('; ')) {
+      if (directive.startsWith('script-src ')) continue
+      expect(enforced, `enforced policy dropped: ${directive}`).toContain(directive)
+    }
+    expect(enforced).toContain("frame-ancestors 'self'")
+    expect(enforced).toContain("'unsafe-inline'")
+    // …and the report-only twin keeps the strict one, so tightening later is a decision
+    // made from evidence rather than from hope.
+    expect(CSP_REPORT_ONLY).toContain("script-src 'self' https://cdn.jsdelivr.net https://static.cloudflareinsights.com")
+    expect(CSP_REPORT_ONLY.split('; ').find((d) => d.startsWith('script-src'))).not.toContain("'unsafe-inline'")
     // The edge injects Cloudflare's RUM beacon into our HTML; a policy written from our
     // own source alone would have blocked it the day it was enforced.
     expect(CSP_REPORT_ONLY).toContain('https://static.cloudflareinsights.com')

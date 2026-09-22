@@ -18,8 +18,23 @@ describe('security headers', () => {
       expect(res.status, path).toBe(200)
       expect(res.headers.get('content-type'), path).toContain('text/html')
       expect(res.headers.get('strict-transport-security'), path).toContain('max-age=')
-      expect(res.headers.get('content-security-policy'), path).toBe("frame-ancestors 'self'")
-      expect(res.headers.get('content-security-policy-report-only'), path).toContain('report-uri /api/csp-report')
+      // The ENFORCED policy is the whole thing now (2026-09-22), not just
+      // `frame-ancestors`. Asserted by the directives that MATTER rather than by the
+      // literal string: a byte-for-byte compare here would fail on every future
+      // allow-list edit and teach nothing, while these four are the properties the
+      // enforcement was for — and `script-src` carrying `'unsafe-inline'` is pinned
+      // deliberately, because dropping it is a decision (the edge injects inline
+      // scripts into the door), not a tidy-up.
+      const csp = res.headers.get('content-security-policy') ?? ''
+      expect(csp, path).toContain("default-src 'self'")
+      expect(csp, path).toContain("object-src 'none'")
+      expect(csp, path).toContain("frame-ancestors 'self'")
+      expect(csp, path).toContain("script-src 'self' https://cdn.jsdelivr.net https://static.cloudflareinsights.com 'unsafe-inline'")
+      // …and the report-only twin keeps the STRICT script-src, so the evidence for
+      // tightening later keeps arriving.
+      const ro = res.headers.get('content-security-policy-report-only') ?? ''
+      expect(ro, path).toContain('report-uri /api/csp-report')
+      expect(ro, path).not.toContain("'unsafe-inline' https://cdn.jsdelivr.net")
     }
   })
 
