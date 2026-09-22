@@ -187,12 +187,8 @@ load-bearing on the deploy step: GitHub's default `bash -e` has **no pipefail**,
 have read as green. The notify script now names the HOST in its annotation, because the
 one that failed named everything except which host had refused. Both shell branches were
 exercised by hand, and `ci-untrusted.test.mjs` was proven red against the new `run:`
-block before being trusted.
-
-**Proven end to end on THIS commit**, which names the same remark a second time — a
-re-send is what the trailer is for, and `/api/remarks/shipped` only ever refuses one a
-human has already CONFIRMED. A fix to a delivery path that is never fired again is a
-fix nobody has seen work.
+block before being trusted — then proven end to end by naming the same remark twice, because
+an unfired delivery path is a fix nobody has seen work.
 
 **And what production said while picking the work** (`app_health`, 2026-09-22):
 `deployHook: true` — the CI half of the loop is armed. `mail: false` and `alerts: false`
