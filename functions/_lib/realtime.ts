@@ -101,7 +101,7 @@ const SILENT_PATHS = new Set<string>([
 const PATH_KEYS: Record<string, string[][]> = {
   // A restore replaces the whole household: every open surface must refetch. The
   // client invalidates everything itself too — this is for the OTHER devices.
-  'takeout/restore': [['board'], ['month'], ['members'], ['cercle'], ['chores'], ['todos'], ['meals'], ['recipes'], ['list-history'], ['ghosts'], ['household'], ['trips'], ['habits'], ['transfers'], ['notes'], ['family-notes'], ['home-projects'], ['carnets'], ['day-notes']],
+  'takeout/restore': [['board'], ['month'], ['members'], ['cercle'], ['chores'], ['todos'], ['meals'], ['recipes'], ['list-history'], ['ghosts'], ['household'], ['trips'], ['habits'], ['transfers'], ['family-notes'], ['home-projects'], ['carnets'], ['day-notes']],
   // The shared list — drives the board glance, ghost strip, and list history.
   list: [['board'], ['ghosts'], ['list-history']],
   // Chores + the rotation ledger feed the board, the chores tab, and the month.
@@ -226,7 +226,12 @@ const PATH_KEYS: Record<string, string[][]> = {
   share: [['shares']],
   // Recipe book; a recipe's ingredients feed the « À régler » meal-low scan.
   recipes: [['recipes'], ['a-regler']],
-  'recipe-tags': [['recipes'], ['recipe-tags']],
+  // ['recipeTags'], camelCase — the CLIENT's spelling (lib/recipes.ts). It read
+  // ['recipe-tags'] here until 2026-09-23, which is a key NO query listens on: every
+  // tag rename broadcast into the void and other devices waited for their poll. Two
+  // spellings of one key is the exact drift queryKeys.ts exists to prevent, and it hid
+  // here because this map is a literal copy on the other side of the wire.
+  'recipe-tags': [['recipes'], ['recipeTags']],
   // Adding a recipe's ingredients to the shared list only touches the board glance
   // (the list lives under ['board'] — there is no separate ['list'] cache).
   'recipe-to-list': [['board']],

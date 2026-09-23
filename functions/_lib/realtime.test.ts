@@ -90,7 +90,10 @@ describe('keysForPath', () => {
 
   it('maps recipe endpoints to the recipe keys', () => {
     expect(keysForPath('recipes')).toEqual([['recipes'], ['a-regler']])
-    expect(keysForPath('recipe-tags')).toEqual([['recipes'], ['recipe-tags']])
+    // ['recipeTags'] — the CLIENT's spelling. This read ['recipe-tags'] until
+    // 2026-09-23, a key no query listens on, so every tag rename broadcast into the
+    // void. keysMirror.test.ts found it by checking the reverse direction.
+    expect(keysForPath('recipe-tags')).toEqual([['recipes'], ['recipeTags']])
     // The shared list lives under ['board']; there is no separate ['list'] cache.
     expect(keysForPath('recipe-to-list')).toEqual([['board']])
     expect(keysForPath('recipe-loves')).toEqual([['recipe-loves']])

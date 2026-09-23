@@ -32,13 +32,6 @@ import { keysForPath } from './realtime'
 const ROOT = join(import.meta.dirname, '..', '..')
 const read = (p: string) => readFileSync(join(ROOT, p), 'utf8')
 
-/** `BOARD_KEY` → `'board'`, from the one file that defines the shared keys. */
-function keyNames(): Record<string, string> {
-  const out: Record<string, string> = {}
-  for (const m of read('src/lib/queryKeys.ts').matchAll(/export const (\w+)\s*=\s*\[\s*'([^']+)'/g)) out[m[1]] = m[2]
-  return out
-}
-
 function sourceFiles(dir: string): string[] {
   return readdirSync(join(ROOT, dir)).flatMap((name) => {
     const p = `${dir}/${name}`
@@ -48,6 +41,34 @@ function sourceFiles(dir: string): string[] {
         ? [p]
         : []
   })
+}
+
+/**
+ * `BOARD_KEY` → `'board'`, from EVERY file that defines one — not just
+ * `src/lib/queryKeys.ts`.
+ *
+ * That distinction is the whole correctness of this guard, and the first version got it
+ * wrong: the cross-page keys live in queryKeys.ts, but the kitchen's nine
+ * (`MEALS_KEY`, `PANTRY_KEY`, `LEFTOVERS_KEY`…) live in `components/kitchen/types.ts`
+ * and the recipe keys in `lib/recipes.ts`, beside the code that reads them — which is
+ * the repo's own convention ("page-local keys sit beside their code"). Reading one file
+ * silently dropped those identifiers from every client key set, so an endpoint whose
+ * call sites use ONLY page-local keys looked like it invalidated nothing and passed
+ * vacuously. A guard that walks the wrong shape reports the wrong thing with total
+ * confidence.
+ */
+function keyNames(): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const f of sourceFiles('src')) {
+    // Exported OR not — POSTBOX_KEY and GUEST_LINKS_KEY are plain module consts beside
+    // the only section that reads them, which is the same "keys live with their code"
+    // convention one step further in. Plus inline queryKey literals, for the queries
+    // that never named a constant at all. Anything the server broadcasts that matches
+    // none of these is genuinely heard by nobody.
+    for (const m of read(f).matchAll(/const ([A-Z][A-Z0-9_]*KEY)\s*=\s*\[\s*'([^']+)'/g)) out[m[1]] = m[2]
+    for (const m of read(f).matchAll(/queryKey:\s*\[\s*'([^']+)'/g)) out['inline:' + m[1]] = m[1]
+  }
+  return out
 }
 
 /** endpoint → the union of every key the SPA invalidates after writing to it. */
@@ -88,6 +109,14 @@ const ALLOWED: Record<string, string> = {
 
 describe('the client and the server invalidate the same things', () => {
   const client = clientKeys()
+  // Every endpoint either side knows about: the client's write sites, plus the map's own
+  // explicit entries (so a mapped path with no client writer is still checked).
+  const PATHS_TO_CHECK = [
+    ...new Set([
+      ...client.keys(),
+      ...[...read('functions/_lib/realtime.ts').matchAll(/^\s*'?([A-Za-z0-9/_-]+)'?:\s*\[\[/gm)].map((m) => m[1]),
+    ]),
+  ]
 
   it('found the write sites at all (an empty scan would pass vacuously)', () => {
     // The lesson this file exists downstream of: a guard that parses nothing is green
@@ -109,6 +138,30 @@ describe('the client and the server invalidate the same things', () => {
     expect(
       offenders,
       'add the key to PATH_KEYS in _lib/realtime.ts (the server mirror of affectedKeys) — or, if the other devices genuinely do not care, to ALLOWED here WITH the reason',
+    ).toEqual([])
+  })
+
+  it('every key the server broadcasts is one some query actually listens on', () => {
+    // THE OTHER DIRECTION, and the one that found `recipe-tags`. The map is a literal
+    // copy of the client's key strings on the far side of the wire — the Worker cannot
+    // import them — so a rename on one side leaves the other shouting a word nobody
+    // knows. It broadcast ['recipe-tags'] while every query reads ['recipeTags']: the
+    // push was well-formed, delivered, and landed on nothing, which is the most
+    // expensive kind of wrong because everything looks healthy.
+    const known = new Set(Object.values(keyNames()))
+    // Keys the SERVER legitimately knows about that no exported *_KEY constant spells:
+    // literals used inline by a query (a scoped sub-key), each named here rather than
+    // loosened away.
+    const INLINE = new Set<string>([])
+    const unheard: string[] = []
+    for (const path of PATHS_TO_CHECK) {
+      for (const [key] of keysForPath(path)) {
+        if (!known.has(key) && !INLINE.has(key)) unheard.push(`${path} → broadcasts '${key}', which no query reads`)
+      }
+    }
+    expect(
+      [...new Set(unheard)],
+      'the server is pushing a key nothing listens on — match the client spelling (src/lib/queryKeys.ts or the page-local file), or add a genuine inline key to INLINE here',
     ).toEqual([])
   })
 
