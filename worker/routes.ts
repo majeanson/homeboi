@@ -8,6 +8,7 @@
 import * as authForgot from '../functions/api/auth/forgot'
 import * as authLogin from '../functions/api/auth/login'
 import * as authReset from '../functions/api/auth/reset'
+import * as authVerify from '../functions/api/auth/verify'
 import * as authLogout from '../functions/api/auth/logout'
 import * as authMe from '../functions/api/auth/me'
 import * as authSignup from '../functions/api/auth/signup'
@@ -156,6 +157,7 @@ const TABLE: Record<string, RouteMod> = {
   'auth/forgot': authForgot,
   'auth/login': authLogin,
   'auth/reset': authReset,
+  'auth/verify': authVerify,
   'auth/logout': authLogout,
   'auth/me': authMe,
   'auth/signup': authSignup,

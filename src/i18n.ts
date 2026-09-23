@@ -2221,6 +2221,21 @@ export const FR = {
     gotoSignup: 'Créer ma maisonnée',
   },
   // « Mot de passe oublié » (/oubli) et « Nouveau mot de passe » (/reinitialiser).
+  // « Confirme ton courriel » (0138). Court par choix : la page ne fait que rapporter —
+  // le geste a été posé au moment du clic.
+  verify: {
+    title: 'Ton courriel',
+    working: 'Un instant…',
+    done: 'C’est confirmé. Tu peux inviter quelqu’un et partager un lien d’invité.',
+    spent: 'Ce lien a déjà servi, ou il est expiré. Réglages peut en renvoyer un.',
+    toBoard: 'Aller au babillard',
+    resendThere: 'Ouvrir Réglages',
+    // Réglages ▸ Système ▸ Appareils & accès.
+    pending: 'Ton courriel n’est pas encore confirmé. Tout fonctionne — sauf inviter quelqu’un et partager un lien d’invité.',
+    resend: 'Renvoyer le lien',
+    resent: 'C’est parti. Regarde ta boîte (et les indésirables).',
+    confirmed: 'Courriel confirmé.',
+  },
   forgot: {
     link: 'Mot de passe oublié ?',
     title: 'Mot de passe oublié',

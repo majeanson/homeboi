@@ -1965,6 +1965,18 @@ export const EN: typeof FR = {
     noAccount: 'First time here?',
     gotoSignup: 'Create my household',
   },
+  verify: {
+    title: 'Your email',
+    working: 'One moment…',
+    done: 'Confirmed. You can invite someone and share a guest link.',
+    spent: 'This link has already been used, or it expired. Settings can send another.',
+    toBoard: 'Go to the board',
+    resendThere: 'Open Settings',
+    pending: 'Your email is not confirmed yet. Everything works — except inviting someone and sharing a guest link.',
+    resend: 'Send the link again',
+    resent: 'On its way. Check your inbox (and the junk folder).',
+    confirmed: 'Email confirmed.',
+  },
   forgot: {
     link: 'Forgot your password?',
     title: 'Forgot your password',

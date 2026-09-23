@@ -29,7 +29,7 @@
 | --- | --- |
 | **What it is** | A calm household command-center for a cheap always-on wall tablet. Single-page React app + one Cloudflare Worker (static assets + `/api/*`) + D1 + Workers AI + R2. FR-CA first. |
 | **Code** | ~157k lines across 955 `.ts`/`.tsx` files (`src/`, `functions/`, `worker/`) |
-| **Schema** | 137 forward-only migrations (0137 = le budget quotidien) |
+| **Schema** | 138 forward-only migrations (0138 = la vérification du courriel) |
 | **Tests** | 2 392 unit tests in 189 files · 85 real-runtime cases in 12 files (`npm run test:d1`, the Worker in workerd against a real D1) · 157 Playwright spec files |
 | **Deploy** | Push to `main` → CI (typecheck · test · build · bundle budget · **test:d1** · knip) gates `db:migrate:prod` + `wrangler deploy`. E2E is decoupled (`workflow_run`), runs after a green CI, never blocks the ship. |
 | **Second interface** | `/api/mcp` — read-only over the household — of the 12 tools, most proxy a GET handler that already exists, so the caps, the recurrence expansion and the time zone are decided once and inherited. (This row lives HERE, not in §3: docCounts derives that number from the registry, and the claim died the first time §3 rotated.) |
@@ -82,8 +82,8 @@ interchangeable. Read this table before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md` is now
-> a number you can trust. It reads **2** — both in §4-K's Wave 5, both unblocked, and
-> both about the same thing: letting a stranger sign up without an invite. **Asserted from the boxes themselves** by
+> a number you can trust. It reads **1** — the last one in §4-K, and it is the gate
+> itself: dropping the invite code. Everything it was waiting for is now green. **Asserted from the boxes themselves** by
 > `src/lib/docCounts.test.ts`, so this sentence cannot drift the way `REVIEW-PASS.md`'s
 > banner once did — it claimed 15 for twelve days against a single box.
 >
@@ -269,30 +269,24 @@ every claim checked against code that day — and living in their own lazy page,
 25 prerequisite before signup opens. Guards: `worker/leave.d1.test.ts` (5, including the
 neighbouring household left untouched) + `e2e/leave-and-legal.spec.ts` (6).
 
-**Wave 5 — bounds, then the gate opens.**
+**Wave 5 — bounds, then the gate opens.** Both bounds shipped 2026-09-23.
 
-- [x] **Daily spend limits — SHIPPED 2026-09-23, and for EVERY household, not only the
-      sandboxes.** Two resources cost money per use and nothing bounded either: a demo
-      sandbox is a real operator session, so one unauthenticated POST bought a credential
-      that `/api/transcribe` (16 MB of audio per call, whisper-large-v3-turbo) and
-      `/api/ask` (a 70B model) accepted without limit. Not one AI endpoint called the rate
-      limiter. The asymmetry that made it worth doing first: **R2 is rented and the 24 h
-      sweep reclaims it; neurons are burned and nothing gives them back.**
-      Capping every household was the deliberate widening — a runaway loop in a real
-      household had no ceiling either, and the family ceiling is set where nobody meets
-      it (1 000 AI calls / 2 GB a day, against 60 / 50 MB for a sandbox).
-      **The sizing note here was half wrong and the correction is the lesson:** R2 already
-      HAD its seam (`uploadR2Media`, which all 18 upload sites call); only AI lacked one,
-      with 13 raw `env.AI.run(` sites. So the work was one new seam (`_lib/runModel.ts`),
-      one option added to the old one, migration 0137, and `usageRule.test.ts` to keep
-      both unavoidable. The counter is a single atomic UPSERT — `worker/usage.d1.test.ts`
-      proves it by firing 20 concurrent charges, and the naive read-then-write it replaced
-      was planted to watch that test fail (it counted **1 of 20**). The cap refusal was
-      proven red too. A spent budget needs no new UI: every caller already treats a throw
-      as « the model did not answer » and takes its AI-unwired path.
-- [ ] **Email verification on signup** through the same `sendMail` seam (a verified flag
-      on `operators`; unverified accounts can use the app but cannot mint guest links or
-      invite a co-operator — the two doors that reach OUTSIDE the household).
+**Daily spend limits (0137)** — two resources cost money per use and nothing counted
+them: not one AI endpoint called the rate limiter, and a demo sandbox is a real operator
+session, so one unauthenticated POST bought a credential `/api/transcribe` (16 MB of
+audio per call) accepted without limit. R2 is rented and the sweep reclaims it; neurons
+are burned. **Every** household is capped now, not only sandboxes — a runaway loop in a
+real household had no ceiling either (1 000 calls / 2 GB a day against 60 / 50 MB). R2
+already had its seam (`uploadR2Media`); AI got one (`_lib/runModel.ts`, 13 raw call sites
+converted), and `usageRule.test.ts` keeps both unavoidable. The counter is a single
+atomic UPSERT — the naive read-then-write it replaced was planted and counted **1 of 20**
+concurrent charges.
+
+**Email verification (0138)** — gates the two doors that reach outside the household
+(invite a co-operator, issue a guest link) and nothing else. Fails open where it must:
+no mail wired → stamped verified at signup, and the gate no-ops. Existing accounts were
+backfilled. Single use proven red; the redeem page survives StrictMode's double mount.
+
 - [ ] **Open signup**: drop the invite code (`LOGIN_PASSWORD` doubling as invite in
       `auth/signup.ts`) — LAST, once Waves 3 and 4 are green in production. Announce
       nowhere yet; let the marketing page carry it.

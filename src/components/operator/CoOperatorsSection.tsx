@@ -206,8 +206,14 @@ export function CoOperatorsSection({ help }: { help?: HelpMode }) {
 
       {err && <StatusMessage tone="error">{err}</StatusMessage>}
 
+      {/* « Confirme ton courriel » (0138). Inviting a co-operator is one of the two doors
+          that reach OUTSIDE the household, so it waits on a confirmed address — and the
+          person is told that HERE rather than by a 403 from a button that looked ready.
+          `verified` defaults true, so an unknown answer never hides it. */}
+      {!auth.verified && <StatusMessage tone="info">{t.verify.pending}</StatusMessage>}
+
       <Cluster>
-        <button type="button" className="btn btn--primary" onClick={mint} disabled={busy || !online}>
+        <button type="button" className="btn btn--primary" onClick={mint} disabled={busy || !online || !auth.verified}>
           <InlineIcon name="link-bold" /> {link ? t.coop.mintAgain : t.coop.mint}
         </button>
         <button type="button" className="btn" onClick={rotate} disabled={busy || !online}>

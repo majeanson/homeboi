@@ -85,7 +85,7 @@ const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 // been doing nothing at all. Harmless, but dead weight in the one list that has to stay
 // readable, and an entry that looks like a live hole is worse than no entry. If it ever
 // grows a POST it starts out gated, which is the right default.
-const CSRF_EXEMPT = new Set(['auth/login', 'auth/signup', 'auth/forgot', 'auth/reset', 'pair/start', 'demo', 'operator-join', 'csp-report', 'mcp', 'remarks/shipped'])
+const CSRF_EXEMPT = new Set(['auth/login', 'auth/signup', 'auth/forgot', 'auth/reset', 'auth/verify', 'pair/start', 'demo', 'operator-join', 'csp-report', 'mcp', 'remarks/shipped'])
 
 const METHOD_EXPORT: Record<string, string> = {
   GET: 'onRequestGet',

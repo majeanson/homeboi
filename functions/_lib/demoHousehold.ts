@@ -200,6 +200,8 @@ export const scopeColumn = (table: string): string => SCOPE_COLUMN[table] ?? 'ho
 export const EXEMPT_TABLES: Readonly<Record<string, string>> = {
   households: 'deleted explicitly by id as the final statement',
   password_resets: 'keyed by operator EMAIL, no household_id (0133): a reset row lives 30 minutes and the sweep never meets it',
+  email_verifications:
+    'the same shape one migration later (0138) and for the same reason: keyed by operator EMAIL, no household_id. A sandbox operator is never sent one — its address is invented — so the sweep never meets a row it owns',
 }
 
 // ---- R2 blob inventory ------------------------------------------------------

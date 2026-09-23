@@ -124,6 +124,13 @@ const ALLOWED = new Set<string>([
   // device's whole reason to hold a queue die with it. Password-gated in the moment.
   'components/operator/takeout.tsx → household',
   'components/operator/SessionsSection.tsx → auth/password',
+  // « Renvoie-moi le lien » (0138): the same online-only argument as the reset — a queued
+  // « send me a confirmation » replayed hours later answers a question nobody is still
+  // asking, and the person is looking at the button now.
+  'components/operator/SessionsSection.tsx → auth/verify?resend',
+  // The redeem, from the page the emailed link lands on. No session, no household, and
+  // single-use: an outbox replay would spend a token the person already spent.
+  'pages/VerifyPage.tsx → auth/verify',
   'components/operator/SessionsSection.tsx → auth/sessions/revoke',
   'pages/JoinHouseholdPage.tsx → operator-join',
   // The two guest forms have no outbox by construction (a guest session is not

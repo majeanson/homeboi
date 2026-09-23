@@ -50,6 +50,25 @@ export function SessionsSection({ help }: { help?: HelpMode }) {
   const fail = (e: unknown) =>
     setMsg({ tone: 'error', text: isStatus(e, 403) ? s.wrong : isStatus(e, 429) ? t.common.tooMany : t.common.saveFailed })
 
+  // « Renvoie-moi le lien » (0138). The endpoint sends to the address on the ACCOUNT and
+  // takes no parameter — a resend that named an address would be a way to make this app
+  // mail a stranger. It answers 200 whether or not anything went out (mail unwired, or
+  // three links already in flight), so the message here is the same either way rather
+  // than inventing a distinction the person cannot act on.
+  async function resendVerification() {
+    if (busy) return
+    setBusy(true)
+    setMsg(null)
+    try {
+      await api('auth/verify?resend', { method: 'POST', body: {} })
+      setMsg({ tone: 'success', text: t.verify.resent })
+    } catch (err) {
+      fail(err)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   async function changePassword(e: React.FormEvent) {
     e.preventDefault()
     if (busy) return
@@ -91,6 +110,14 @@ export function SessionsSection({ help }: { help?: HelpMode }) {
 
   return (
     <OperatorSection title={s.title} hint={s.hint} help={help} helpKey="sessions">
+      {online && !auth.verified && (
+        <StatusMessage tone="info">
+          {t.verify.pending}{' '}
+          <button type="button" className="btn btn--sm" disabled={busy} onClick={() => void resendVerification()}>
+            {t.verify.resend}
+          </button>
+        </StatusMessage>
+      )}
       {!online ? (
         <p className="operator__hint mono">{t.offline.unavailable}</p>
       ) : (

@@ -3,6 +3,7 @@ import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { issueOperatorInvite, OPERATOR_INVITE_TTL } from '../_lib/auth'
 import { requirePassword } from '../_lib/sudo'
+import { requireVerified } from '../_lib/verify'
 
 // « Inviter l'autre parent » — the link that makes a second person a full operator
 // of THIS household (migration 0128 for why the household had only ever had one).
@@ -58,7 +59,12 @@ export const onRequestGet = authed(async (ctx, actor) => {
   })
 }, 'operator')
 
+// GATED ON A CONFIRMED COURRIEL (0138). This is one of the two doors that reach OUTSIDE
+// the household — an unverified address that can hand out operator access is a relay,
+// not an account. No-ops when mail is unwired (_lib/verify).
 export const onRequestPost = authed(async (ctx, actor) => {
+  const unverified = await requireVerified(ctx.env, actor)
+  if (unverified) return unverified
   const nonce = await currentNonce(ctx.env, actor.householdId)
   const token = await issueOperatorInvite(ctx.env, actor.householdId, nonce)
   const origin = new URL(ctx.request.url).origin

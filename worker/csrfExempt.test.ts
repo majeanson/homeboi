@@ -33,6 +33,13 @@ describe('the CSRF-exempt list', () => {
         'auth/login',
         'auth/reset',
         'auth/signup',
+        // « Confirme ton courriel » (0138). The click may land in a browser that has
+        // never met this app — a mail opened on another device — so there is no cookie
+        // pair to double-submit. What makes it safe to exempt is what the token can do:
+        // it is single-use, it expires in seven days, and redeeming it grants exactly
+        // one thing — a `verified_at` stamp. Nothing else is reachable with it, and the
+        // resend half refuses anything but the address on the signed-in ACCOUNT.
+        'auth/verify',
         'csp-report',
         'demo',
         'mcp',

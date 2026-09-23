@@ -4,6 +4,8 @@ import { overAuthLimit } from '../../_lib/rateLimit'
 import { signInAs, sessionCookies } from '../../_lib/auth'
 import { hashPassword, safeEqual } from '../../_lib/password'
 import { newId, nowSec } from '../../_lib/ids'
+import { sendVerification } from '../../_lib/verify'
+import { mailEnabled } from '../../_lib/mail'
 import { seedSampleData } from '../../_lib/sampleData'
 
 // Self-serve signup: a new family creates its household + operator account in
@@ -45,12 +47,26 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
       ctx.env.DB.prepare(
         'INSERT INTO households (id, name, tier, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
       ).bind(householdId, name, 'free', 'active', ts, ts),
+      // `verified_at` (0138): stamped NOW when this deployment cannot send mail at all,
+      // NULL when it can. Not a shortcut — it is the same judgement the migration made
+      // when it backfilled the existing accounts: an address that CANNOT be checked is
+      // as confirmed as it will ever be, and leaving it NULL would mean every account
+      // created before mail was wired silently loses two doors the day it is.
       ctx.env.DB.prepare(
-        'INSERT INTO operators (email, household_id, created_at, password_hash) VALUES (?, ?, ?, ?)',
-      ).bind(email, householdId, ts, await hashPassword(password)),
+        'INSERT INTO operators (email, household_id, created_at, password_hash, verified_at) VALUES (?, ?, ?, ?, ?)',
+      ).bind(email, householdId, ts, await hashPassword(password), mailEnabled(ctx.env) ? null : ts),
     ])
   } catch {
     return conflict('Un compte existe déjà pour ce courriel — connecte-toi.')
+  }
+
+  // « Confirme ton courriel » (0138). Best-effort by contract — an account whose letter
+  // was lost is recoverable from Réglages; a signup that 500s because mail hiccuped is
+  // not. When mail is unwired nothing is sent and nothing gates (see _lib/verify).
+  try {
+    await sendVerification(ctx.env, email, new URL(ctx.request.url).origin)
+  } catch (err) {
+    console.error('[mail] verify signup', err)
   }
 
   // Seed the demo family so the board is alive on first login (onboarding Phase 1).

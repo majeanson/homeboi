@@ -90,6 +90,7 @@ const SILENT_PATHS = new Set<string>([
   // « Mot de passe oublié »: no session, no household, nothing cached anywhere changes.
   'auth/forgot',
   'auth/reset',
+  'auth/verify',
   'routine-audio',
   'weather',
   'photos',

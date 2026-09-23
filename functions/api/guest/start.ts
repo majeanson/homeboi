@@ -1,3 +1,4 @@
+import { requireVerified } from '../../_lib/verify'
 import { ok, badRequest, readJson, serverError } from '../../_lib/json'
 import { authed } from '../../_lib/route'
 import { issueGuestToken, normalizeGuestKind, STANDING_TTL, type GuestKind } from '../../_lib/auth'
@@ -22,7 +23,13 @@ import { newId, nowSec } from '../../_lib/ids'
 // DB-REQUIRES that row for a standing token (guestRowAcceptable) — a mint that can't
 // record its row must not hand out a token nobody can ever revoke.
 
+// GATED ON A CONFIRMED COURRIEL (0138): the other door that reaches OUTSIDE the
+// household. A guest link is a readable copy of a family's life handed to whoever holds
+// it, and an invented address should not be able to hand one out. No-ops when mail is
+// unwired (_lib/verify).
 export const onRequestPost = authed(async (ctx, actor) => {
+  const unverified = await requireVerified(ctx.env, actor)
+  if (unverified) return unverified
   const body = await readJson<{
     ttlSeconds?: number
     kind?: string

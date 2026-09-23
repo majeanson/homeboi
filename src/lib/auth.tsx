@@ -31,6 +31,10 @@ interface AuthState {
    *  Attribution stays the DEVICE’s pick (lib/profile); this only seeds it on a
    *  device that has not chosen yet — see the ProfileProvider in main.tsx. */
   memberId: string | null
+  /** Has this account's courriel been confirmed (0138)? False hides the two doors that
+   *  reach OUTSIDE the household — inviting a co-operator, issuing a guest link — and
+   *  nothing else. True on a deployment that cannot send mail at all. */
+  verified: boolean
   refresh: () => Promise<void>
   signOut: () => Promise<void>
 }
@@ -64,6 +68,10 @@ const AuthContext = createContext<AuthState>({
   email: null,
   household: null,
   memberId: null,
+  // « Confirme ton courriel » (0138). Defaults TRUE, and that direction is the point:
+  // the flag only ever hides two doors, so an unknown answer (loading, offline, an
+  // older Worker) must not hide them. The server is the real gate; this is the nudge.
+  verified: true,
   refresh: async () => {},
   signOut: async () => {},
 })
@@ -75,6 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [email, setEmail] = useState<string | null>(null)
   const [household, setHousehold] = useState<Household | null>(null)
   const [memberId, setMemberId] = useState<string | null>(null)
+  const [verified, setVerified] = useState(true)
   // Two calls can overlap (the mount effect's refresh AND an onAuthLost-triggered
   // one, if a 401 fires while the first is still in flight on a slow connection —
   // now up to api.ts's own timeout). Without a sequence guard the SLOWER one could
@@ -85,12 +94,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function refresh() {
     const seq = ++seqRef.current
     try {
-      const me = await api<{ signedIn: boolean; email?: string; household?: Household | null; memberId?: string | null }>('auth/me')
+      const me = await api<{ signedIn: boolean; email?: string; household?: Household | null; memberId?: string | null; verified?: boolean }>('auth/me')
       if (seq !== seqRef.current) return // a newer refresh already superseded this one
       setSignedIn(me.signedIn)
       setEmail(me.email ?? null)
       setHousehold(me.household ?? null)
       setMemberId(me.memberId ?? null)
+      setVerified(me.verified !== false)
       // A real, server-confirmed answer — trustworthy either way. Never persisted
       // for a demo sandbox visitor (see the store's own comment above).
       wasSignedInStore.set(me.signedIn && !isSandboxEmail(me.email))
@@ -140,7 +150,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <AuthContext.Provider value={{ loading, signedIn, email, household, memberId, refresh, signOut }}>
+    <AuthContext.Provider value={{ loading, signedIn, email, household, memberId, verified, refresh, signOut }}>
       {children}
     </AuthContext.Provider>
   )
