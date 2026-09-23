@@ -30,7 +30,7 @@
 | **What it is** | A calm household command-center for a cheap always-on wall tablet. Single-page React app + one Cloudflare Worker (static assets + `/api/*`) + D1 + Workers AI + R2. FR-CA first. |
 | **Code** | ~157k lines across 955 `.ts`/`.tsx` files (`src/`, `functions/`, `worker/`) |
 | **Schema** | 138 forward-only migrations (0138 = la vérification du courriel) |
-| **Tests** | 2 392 unit tests in 189 files · 85 real-runtime cases in 12 files (`npm run test:d1`, the Worker in workerd against a real D1) · 157 Playwright spec files |
+| **Tests** | 2 405 unit tests in 191 files · 116 real-runtime cases in 18 files (`npm run test:d1`, the Worker in workerd against a real D1) · 157 Playwright spec files |
 | **Deploy** | Push to `main` → CI (typecheck · test · build · bundle budget · **test:d1** · knip) gates `db:migrate:prod` + `wrangler deploy`. E2E is decoupled (`workflow_run`), runs after a green CI, never blocks the ship. |
 | **Second interface** | `/api/mcp` — read-only over the household — of the 12 tools, most proxy a GET handler that already exists, so the caps, the recurrence expansion and the time zone are decided once and inherited. (This row lives HERE, not in §3: docCounts derives that number from the registry, and the claim died the first time §3 rotated.) |
 | **Households in production** | **Six**, counted in D1 on 2026-09-22 — Marc's (4 members), four other real accounts from the invite gate, and the legacy read-only demo singleton. This row said « One (Marc's) » for months: other people's households are already in there, which is what Wave 4 (deletion, privacy, a contact door) is actually about |
@@ -113,32 +113,26 @@ now, so the repo-wide count is honest for the first time.
 
 ## 3. What just shipped
 
-### The app can send mail — and Wave 3 is green in production — 2026-09-23
+### The examples have one home, and a household can start over — 2026-09-23
 
-The forgot-password flow had been **built and dark since 2026-09-16**: every endpoint,
-scene and guard shipped, and not one of them had ever met a real inbox, because the
-secrets were unset. `app_health` is the reason that was a known fact rather than a
-surprise — it said `mail: false` every time anyone asked.
+Four mechanisms had grown apart: the 24 h sandbox, a Tremblay seed dropped into EVERY
+real signup, « Vider les exemples » at the foot of Découvrir, and « Garder ma
+maisonnée ». A family that came to set up its own began by shovelling out somebody
+else's, and signup promised « une courte liste pour bien partir » that stayed hidden
+until it did. **Marc's call: the sandbox owns the examples.** Signup (and the legacy
+first-login path, a signup in disguise) starts EMPTY on the three-step WelcomeCard; the
+examples are one opt-in tap there (« Charger des exemples ») or in Découvrir.
 
-Turned on today, and **walked end to end against production**, which is the half no test
-can reach. An unknown address answers `200 {"ok":true}` in 0.14 s and writes no row — the
-enumeration guarantee seen from where an attacker stands. A real one answers the SAME 200
-in 0.53 s (the extra ~400 ms is the Resend call), the mail lands, the link opens, a
-password is set: the row is marked `used_at` **15 seconds after it was minted**, while the
-token abandoned beside it stays `UNUSED` and expires on its own. Single use, hash-only
-storage, the 30-minute window — all of it holds against real rows rather than fixtures.
-
-`marcportal.com` had been verified in Resend for four months (the portal project). What
-was missing was a key of Babillard's own — « Sending access », not the portal's
-full-access one — plus `RESEND_API_KEY`, `MAIL_FROM` and `ALERT_EMAIL`. **The nightly cron
-can reach a human for the first time**: `alerts` was false for as long as mail was, so a
-failed backup or an unsweepable sandbox had nowhere to go but the log.
-
-> **The previous session's entry is in git**, per this section's rule — the day the board
-> card learned to act, the door lost 55 KB, Wave 4 shipped and the stranger's first screen
-> was fixed. Its durable half lives where it is enforced: `DEPLOY.md` (why machine
-> traffic uses `*.workers.dev`), `ACTIONS.md` 31–33, `PARITY.md` F43, and the guards
-> themselves.
+Three commits, each proven red first. **Claim** (`cd8b3cae`): a kept sandbox was never
+verified — the operator is born `verified_at NULL` and the claim never touched it, so
+0138's two doors stayed shut forever. **Empty signup** (`7897bc02`): `smoke.d1` flipped
+(it got 4 members); the d1 harness loads the examples through `/api/seed` like an
+operator would. **« Repartir à neuf »** (`d12dedad`, Marc's mid-session ask): wipe all
+the content, keep the account, the session, the tablets, the links and the settings —
+the restore's own wipe (`wipeStatements`, now shared) minus `household_preferences` and
+`usage_daily`, behind the leave door's locks (`requireHouseholdName` moved to `_lib/sudo`).
+New suites: `claim`, `seed`, `reset` (.d1) — the claim and `/api/seed` had no runtime
+coverage at all. ACTIONS ³⁴, PARITY F43.
 
 ## 4. What still needs improvement — consolidated and ranked
 
@@ -286,6 +280,9 @@ concurrent charges.
 (invite a co-operator, issue a guest link) and nothing else. Fails open where it must:
 no mail wired → stamped verified at signup, and the gate no-ops. Existing accounts were
 backfilled. Single use proven red; the redeem page survives StrictMode's double mount.
+
+**The examples story is settled (2026-09-23, §3)** — which this box partly waited on: a
+stranger now meets ONE story (try → keep, or sign up → an empty household).
 
 - [ ] **Open signup**: drop the invite code (`LOGIN_PASSWORD` doubling as invite in
       `auth/signup.ts`) — LAST, once Waves 3 and 4 are green in production. Announce

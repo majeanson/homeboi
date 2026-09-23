@@ -62,6 +62,37 @@ test('the leave door sends the password AND the name, and only after the confirm
   expect(body).toMatchObject({ password: 'correct horse battery', name: 'Maison Tremblay' })
 })
 
+// « Repartir à neuf » (2026-09-23) — the little sibling: the same two deliberate acts
+// (the name, then the password), a POST instead of the DELETE, and the session SURVIVES,
+// so the page stays and says it is done instead of leaving for the marketing door.
+test('the start-over door locks like leaving, POSTs the reset, and stays signed in', async ({ page }) => {
+  await mockApi(page)
+  await page.route('**/api/household/reset', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' }),
+  )
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+  await page.goto(TAKEOUT)
+  const panel = page.locator('#operator-panel')
+
+  await panel.getByRole('button', { name: 'Repartir à neuf' }).click()
+  const go = panel.getByRole('button', { name: 'Tout vider' })
+  await expect(go).toBeDisabled()
+  await panel.getByPlaceholder('Le nom de la maisonnée').fill('maison tremblay')
+  await expect(go).toBeEnabled()
+  await go.click()
+
+  const dialog = page.locator('.confirm')
+  await expect(dialog).toContainText('le compte, les appareils et les réglages restent')
+  const post = page.waitForRequest(isApi('POST', 'household/reset'))
+  await dialog.getByRole('textbox').fill('correct horse battery')
+  await dialog.getByRole('button', { name: 'Tout vider' }).click()
+  const body = (await (await post).postDataJSON()) as { password: string; name: string }
+  expect(body).toMatchObject({ password: 'correct horse battery', name: 'maison tremblay' })
+
+  await expect(panel).toContainText('C’est vidé')
+  await expect(page).toHaveURL(/\/settings/)
+})
+
 test('the two documents render for someone who is not signed in', async ({ page }) => {
   // signedIn: false is the case that matters — a stranger reads these BEFORE deciding,
   // and a page that needs a session would 401 its way into an empty shell.

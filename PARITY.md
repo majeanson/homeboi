@@ -171,7 +171,7 @@ se (Recherche has no table) — the anchors just tell the auditor where to look.
 | F40 | Mot de passe oublié (compte)                                              | password_resets (0133)                                                                        | auth/forgot, auth/reset                                          | ForgotPage, ResetPage, Login (la porte), \_lib/mail                                                     | —                                   |
 | F41 | Agent IA (serveur MCP, lecture seule)                                     | devices.kind='agent' (0083, aucune migration)                                                  | mcp, pair/devices (mintAgent)                                    | operator/devices `AgentSection`, \_lib/mcp (le fil), \_lib/askSnapshot                                   | DEVICES                             |
 | F42 | Les remarques (bogue/souhait/amélioration + la boucle de déploiement)     | remarks, remark_events (0136)                                                                  | remarks, remark-media, remarks/shipped (rappel CI)               | operator/remarks, RemarkComposer, board/RemarksCard (＋ et verdict sur place), lib/remarks (useRemarkVerdict — LE verdict, deux portes), HelpBubble (la porte « ? », composer sur place), ErrorBoundary (la porte « Signaler »), \_lib/deployHook, \_lib/invariants | REMARKS                             |
-| F43 | Partir : supprimer la maisonnée + les deux documents publics (Loi 25)        | aucune table (efface les ~90 existantes)                                                        | household (DELETE), takeout, health (contact)                    | operator/takeout (la porte « Supprimer »), pages/LegalPage (PrivacyPage + TermsPage), pages/Home (le pied), _lib/sudo, _lib/demoHousehold (deleteHousehold) | —                                   |
+| F43 | Partir : supprimer la maisonnée, ou repartir à neuf + les deux documents publics (Loi 25) | aucune table (efface les ~90 existantes)                                                        | household (DELETE), household/reset (POST), takeout, health (contact) | operator/takeout (la porte « Supprimer »), pages/LegalPage (PrivacyPage + TermsPage), pages/Home (le pied), _lib/sudo (requirePassword + requireHouseholdName), _lib/demoHousehold (deleteHousehold), _lib/restore (resetHouseholdContent) | —                                   |
 
 > Roster rule: if a future audit day finds a surface not covered by a row (a new
 > feature shipped since), **add a row first**, then score it.
@@ -853,7 +853,13 @@ Footnotes (verdicts recorded so far):
      password is something you type while thinking about something else and the name has
      to be read off the screen. It REUSES `deleteHousehold` (renamed from
      `deleteDemoHousehold` in the same commit), so it inherits the whole-schema table
-     inventory `demoHousehold.test.ts` guards, R2 blob freeing included.
+     inventory `demoHousehold.test.ts` guards, R2 blob freeing included. **A second verb since
+     2026-09-23:** `POST /api/household/reset` (« Repartir à neuf »), the delete's little
+     sibling — same three locks (the name check moved into `_lib/sudo` as
+     `requireHouseholdName` so both doors share it), but it keeps who may OPEN the household
+     (the account, the session, the tablets, the links) and the settings, and wipes the rest
+     with the restore's own statements (`wipeStatements`). Undo stays ➖¹¹¹ by the same
+     argument.
 110. **Peek (F43)** — nothing to peek into: the feature is a door and two documents, not
      an entity that appears as a row anywhere.
 111. **Undo (F43)** — ➖ **by design, and this is the one cell worth arguing about.** An
@@ -881,7 +887,7 @@ Footnotes (verdicts recorded so far):
      block hides and the policy says the app is run privately.
 120. **Media (F43)** — no media of its own; the delete FREES the household's R2 blobs
      through the inventory `collectMediaKeys` walks.
-121. **e2e (F43)** — `e2e/leave-and-legal.spec.ts` (6) for the lock, the request shape
+121. **e2e (F43)** — `e2e/leave-and-legal.spec.ts` (7, the start-over door included) + `worker/reset.d1.test.ts` (4, proven red twice) for the lock, the request shape
      and both documents signed-out, plus `worker/leave.d1.test.ts` (5) in the REAL
      runtime: the refusals, the accent/case fold, the session kill switch, and the
      neighbouring household left untouched — the property that matters most and the one

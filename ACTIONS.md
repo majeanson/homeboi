@@ -241,6 +241,8 @@ and because the scoring pass that added them found a gap in the first one.
 | Remarque · **confirm / re-open** | ✅ two `Chip`s on a shipped row of the **board card**³¹ | — | — | — | ✅ the same two `Chip`s, offered only once a deploy has claimed it²⁸ | — (each append reverses the other) | ✅ |
 | Remarque · delete | ✅ `RowActions` 🗑 | — | — | — | — | confirm **+** deferred²⁹ | ✅ |
 | Maisonnée · **partir (tout supprimer)** | — | — | — | — | ✅ settings▸tablets, replié sous l'export³² | confirm **+** mot de passe²⁵ **+** le nom retapé³² | ✅ |
+| Maisonnée · **repartir à neuf (tout le contenu)** | — | — | — | — | ✅ settings▸tablets, replié entre la restauration et « Supprimer »³⁴ | confirm **+** mot de passe²⁵ **+** le nom retapé³⁴ | ✅ |
+| Exemples · **charger / vider** | — | — | — | ✅ « Charger des exemples » sur la WelcomeCard du babillard vide³⁴ | ✅ Réglages ▸ Découvrir (`SampleDataControls`) · « Vider et commencer » sur le `SampleBanner` | vider : confirm (ton danger, les deux portes) | ✅ |
 | Confidentialité · **lire la politique / les conditions** | — | — | — | — | ✅ settings▸tablets (deux liens) **et** le pied de la porte marketing³³ | — (lecture) | ✅ |
 
 19. Confirm, and it names what is lost: the link texted last night stops working.
@@ -294,6 +296,21 @@ and because the scoring pass that added them found a gap in the first one.
     ship words read once. The contact address is the only live fact on the page
     (`/api/health` → `contact`, the `CONTACT_EMAIL` var); unset → the block says the app
     is run privately rather than printing an empty mailto.
+34. **The examples story, and « Repartir à neuf » (2026-09-23).** A real signup starts
+    EMPTY; the Tremblay family lives in the demo sandbox (« Essayer pour vrai », keepable
+    with « Garder ma maisonnée »). For an account the examples are an opt-in: the fresh
+    board's WelcomeCard offers « Charger des exemples » beside « Revoir la visite
+    guidée » (a low-key link, not a step — it never ticks), and Réglages ▸ Découvrir keeps
+    load/reset/clear. Both clear doors confirm in the DANGER tone now; the banner used to
+    ask the same question positively. « Repartir à neuf » is `POST /api/household/reset`,
+    the leave door's little sibling with the same three deliberate acts (the fold, the
+    name, the password) and its own name field so the two doors never arm together. It
+    takes all the content and the R2 blobs; the account, this session, the paired tablets,
+    the guest links and the settings stay (`_lib/restore.ts` `RESET_KEEP`). No undo tier,
+    the same ➖ as leaving (PARITY ¹¹¹) — but the session survives, so the page stays and
+    says so. Guards: `worker/reset.d1.test.ts` (proven red twice) + the start-over case in
+    `e2e/leave-and-legal.spec.ts`; `worker/seed.d1.test.ts` + `e2e/onboarding.spec.ts`
+    for the examples.
 31. **The board card ACTS — added 2026-09-22, from a remark** (« widget on board for
     remarques (add and resolve) », filed at build `11fcf248`, the build before the card
     itself shipped). The card had gone out as a pure glance: every row a link into
