@@ -496,6 +496,17 @@ test.describe('the check-in opens by itself', () => {
     await mockApi(page)
     await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, habitCheckin: true })
     await page.addInitScript((c) => localStorage.setItem('babillard-habitudes-checkin', JSON.stringify(c)), checkin)
+    // THIS DEVICE IS NOT NEW (2026-09-23). « Le point du jour » stands down for the
+    // whole of a device's FIRST day — the first day belongs to the welcome — and a fresh
+    // Playwright context is a brand-new device, so without this every test in this
+    // describe would be about that rule instead of the one it names. The two that expect
+    // the scene to OPEN would fail; worse, the two that expect it to stay shut would pass
+    // for the wrong reason, which is the shape that hides a real regression later.
+    await page.addInitScript(() => {
+      const d = new Date()
+      d.setHours(0, 0, 0, 0)
+      localStorage.setItem('babillard-first-day', String(Math.floor(d.getTime() / 1000) - 7 * 86_400))
+    })
     await page.goto('/board')
   }
 
