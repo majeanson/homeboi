@@ -82,8 +82,9 @@ interchangeable. Read this table before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md` is now
-> a number you can trust. It reads **4** — all four in §4-K, and **three of them wait on
-> Marc's Resend steps, not on work**. **Asserted from the boxes themselves** by
+> a number you can trust. It reads **3** — all three in §4-K's Wave 5, and for the first
+> time since the plan was written, **none of them is blocked on anything but choosing to
+> do it**. **Asserted from the boxes themselves** by
 > `src/lib/docCounts.test.ts`, so this sentence cannot drift the way `REVIEW-PASS.md`'s
 > banner once did — it claimed 15 for twelve days against a single box.
 >
@@ -113,60 +114,32 @@ now, so the repo-wide count is honest for the first time.
 
 ## 3. What just shipped
 
-### One session, 2026-09-22 — the loop closes, the door slims, a household can leave
+### The app can send mail — and Wave 3 is green in production — 2026-09-23
 
-**« Les remarques » answered its own first remark.** « Widget on board for remarques (add
-and resolve) », filed the build before the board card shipped — and that card was
-read-only. Now the header ＋ opens the ONE shared composer and a `shipped` row carries the
-two verdict chips, both in place; the « ? » bubble stopped navigating too (`lazy()`, so a
-surface that never reports still pays nothing). The PATCH got an owner hook the moment it
-had two callers, with both halves of the new `write-owners` entry proven red.
+The forgot-password flow had been **built and dark since 2026-09-16**: every endpoint,
+scene and guard shipped, and not one of them had ever met a real inbox, because the
+secrets were unset. `app_health` is the reason that was a known fact rather than a
+surprise — it said `mail: false` every time anyone asked.
 
-**Then the loop didn't close, and that was the finding.** CI's « expédiée » callback came
-back `HTTP 403 <!DOCTYPE html><title>Just a moment…` — **Cloudflare's edge challenging a
-bare `fetch` from a datacenter IP**, before the Worker ever saw it. The same POST answers
-401 from a laptop. Machine-to-machine calls go to `*.workers.dev` now, with the URL read
-out of the deploy's own output; `shell: bash` on that step is load-bearing (`bash -e` has
-no pipefail, so `wrangler deploy | tee` would have made a failed deploy read as green).
-**The same cause had been failing the weekly stranger walk for weeks**, where it looked
-like a finding about the app.
+Turned on today, and **walked end to end against production**, which is the half no test
+can reach. An unknown address answers `200 {"ok":true}` in 0.14 s and writes no row — the
+enumeration guarantee seen from where an attacker stands. A real one answers the SAME 200
+in 0.53 s (the extra ~400 ms is the Resend call), the mail lands, the link opens, a
+password is set: the row is marked `used_at` **15 seconds after it was minted**, while the
+token abandoned beside it stays `UNUSED` and expires on its own. Single use, hash-only
+storage, the 30-minute window — all of it holds against real rows rather than fixtures.
 
-**The door lost 55 KB.** The `drawpad` chunk was never the draw pad: a named group is a
-chunk that exists every build, so it had become Rolldown's commons home — 141 KB imported
-by ~180 chunks *including the entry*, i.e. the marketing page fetched perfect-freehand to
-render a headline. Deleting the group: **700 → 645 KB, 7 → 9 chunks.** And the guard could
-not see it, because `EAGER_CHUNKS` matched three FILENAMES; the three-name total is
-retired in favour of the closure the gate already walked, every closure member now has a
-32 KB cap, and both new checks were proven red by re-planting the group.
+`marcportal.com` had been verified in Resend for four months (the portal project). What
+was missing was a key of Babillard's own — « Sending access », not the portal's
+full-access one — plus `RESEND_API_KEY`, `MAIL_FROM` and `ALERT_EMAIL`. **The nightly cron
+can reach a human for the first time**: `alerts` was false for as long as mail was, so a
+failed backup or an unsweepable sandbox had nowhere to go but the log.
 
-**Wave 4 shipped** — `DELETE /api/household` behind three locks (operator, password, the
-household's name retyped), the two public documents at `/confidentialite` and
-`/conditions` written to be TRUE rather than reassuring, and a contact door. The legal
-copy lives in its own lazy page, not in `i18n.ts`. `deleteDemoHousehold` became
-`deleteHousehold`, because « Demo » in the name of the function that erases a real family
-is how the next person writes a second one.
-
-**And the stranger's first screen was broken again.** The live walk was red for weeks;
-reproduced three times against production. The board is a lazy chunk since the door-weight
-pass, so a visitor who skips the welcome while it still reads « Chargement… » flips
-`hasTourSeen` to true *before* the hook that reads it exists — and lands on « Le point du
-jour ». The 2026-09-16 fix was right and simply lived somewhere that did not exist yet: a
-first-boot DATE, stamped by the shell, cannot race a mount order. Day one is now quiet
-even for someone who skipped the welcome, which is what the rule always claimed. The walk
-passes against production in 8.3 s.
-
-**The CSP is enforced** (§4-L's last thread), everything but `script-src` — the week of
-report-only found only the edge's own injected inline scripts. Verified live, and the
-verification found one more thing: while `fonts.googleapis.com` was answering 504, the
-walk reported « la console du visiteur portait des erreurs » listing OUR pages. Its
-« not ours » filter reads the message TEXT, and « Failed to load resource: … 504 » names
-no URL there — it is in the message's location. A third party's bad afternoon dressed up
-as a finding about the app, which is how a weekly guard stops being read.
-
-**Two stale facts corrected on the way through:** the door was not « 7 chunks / 727 KB »,
-and production holds **six** households, not one — Marc's, four real accounts from the
-invite gate, and the legacy demo singleton. Other families are already in there, which is
-why Wave 4 mattered before Wave 5.
+> **The previous session's entry is in git**, per this section's rule — the day the board
+> card learned to act, the door lost 55 KB, Wave 4 shipped and the stranger's first screen
+> was fixed. Its durable half lives where it is enforced: `DEPLOY.md` (why machine
+> traffic uses `*.workers.dev`), `ACTIONS.md` 31–33, `PARITY.md` F43, and the guards
+> themselves.
 
 ## 4. What still needs improvement — consolidated and ranked
 
@@ -255,59 +228,34 @@ The door's last 55 KB came off on 2026-09-22 (the `drawpad` commons chunk, §3).
 install prompt shipped in two faces, Marc's shape. The one thing NOT re-measured is the
 production cold-start table after that last 55 KB — bytes, not a stopwatch.
 
-**Wave 3 — password reset (the longest pole; start it the day Wave 0's fixes land).**
-There is NO forgot-password flow and the app has never sent an email. The first stranger
-who forgets their password is locked out forever.
+**Wave 3 — password reset. ✅ CLOSED 2026-09-23, verified against production.** It was
+called the longest pole and it was: there was no forgot-password flow at all and the app
+had never sent an email, so the first stranger to forget a password was locked out
+forever. Built 2026-09-16 (`_lib/mail.ts` over Resend as an OPTIONAL binding, migration
+0133 `password_resets` storing only a token HASH, `auth/forgot` answering the same 200
+whatever the address, `auth/reset` single-use + signup-grade validation, `/oubli` and
+`/reinitialiser?t=`, eight e2e cases) — then sat DARK for a week because the secrets were
+not set, which is why `app_health` exists to say so out loud.
 
-- [ ] **Resend prerequisites (Marc, outside the repo)**: verify a sending domain in the
-      Resend account (`babillard.marcportal.com` or `marcportal.com` — DKIM + SPF records
-      on the Cloudflare zone; the portal project's `docs/deployment/EMAIL_SETUP.md` walks
-      it). Free tier: 3 000/month, 100/day — plenty. Without a verified domain Resend only
-      delivers to the account owner's own address, which is enough for local proof and
-      nothing else. Then `wrangler secret put RESEND_API_KEY` + `MAIL_FROM` var.
-- [x] **`functions/_lib/mail.ts` — built (2026-09-16).** `mailEnabled` needs BOTH settings;
-      `sendMail` is one fetch to Resend, its failure named for the log. Four unit cases
-      (`mail.test.ts`: off → no fetch, the exact request shape, a 403 surfaces). Original
-      note: ONE `sendMail({to, subject, text, html})` seam over
-      Resend's REST API (`POST https://api.resend.com/emails`, bearer key). An OPTIONAL
-      binding like `AI`/`PHOTOS`/`REALTIME_HUB` (`_lib/env.ts`): key unset → the reset
-      door HIDES on `/login` and the endpoints 503 — never a half-flow. Log the provider
-      id on success, the body on failure (observability is on since §4-J).
-- [x] **Migration 0133 `password_resets` — built, applied locally, EXEMPT in the sweep with
-      its reason.** Original note: `token_hash` (SHA-256 of a random 32-byte
-      token — the plaintext exists only in the email), `operator_email`, `expires_at`
-      (30 min), `used_at`, `created_at`. A row, not a bare HMAC token, because
-      SINGLE-USE needs a mark. No `household_id` → `EXEMPT_TABLES` with the reason (it is
-      keyed by email; the sweep never meets it). Cap outstanding rows per email (3).
-- [x] **Endpoints — built and PROBED on the local Worker with a real D1** (health says
-      `mail:false`; forgot → 503 while mail is unset; reset with a bad token → the one 400
-      sentence, with NO CSRF header, while a plain write without CSRF still gets 403 — the
-      exemption is exact). `auth/forgot` and `auth/reset` in the TABLE, `CSRF_EXEMPT`,
-      `SILENT_PATHS`, `write-rule` ALLOWED with the reason. Original note: `POST
-      /api/auth/forgot` (CSRF-exempt like login; ALWAYS 200 whether
-      the email exists or not — enumeration; rate-limited per email + per IP the way
-      `demo.ts` bounds mints) and `POST /api/auth/reset` (token + new password,
-      signup-grade validation from `auth/signup.ts`, marks `used_at`, rotates the session
-      secret material for that operator if the scheme allows, signs the user in). Both
-      in `worker/routes.ts`' TABLE, `SILENT_PATHS` in `_lib/realtime.ts`, `write-rule`
-      ALLOWED with the reason (no outbox: replaying « send me a reset » offline is wrong).
-- [x] **UI — built.** `/login` shows the door only when `health.mail` says the deployment
-      can send (a door to a form that can only apologise is worse than none); `/oubli`
-      answers the SAME sentence whatever the address; `/reinitialiser?t=` is password +
-      confirm and lands on the board signed in; a missing, spent or expired link is one
-      sentence and the way back. Both scenes wear /login's shell. Original note: « Mot de
-      passe oublié ? » on `/login` → `/oubli` (an `EditField` for the
-      email, one line of copy, the SAME success screen for any input) → the email's link
-      lands on `/reinitialiser?t=` (password + confirm, then straight to `/board`). FR-CA
-      first, EN parity, `.scene`/`FormScene` like `/signup`. Expired or used token: one
-      calm sentence and the door back to `/oubli`.
-- [x] **Guards + e2e — eight cases green** (`password-reset.spec.ts`: the door shown/hidden
-      by `health.mail`, the constant sentence, the 503 face, no token, a spent link,
-      mismatched passwords never leave the page, a good link lands on the board signed in).
-      PARITY row F40 + footnotes 87–92, two ACTIONS doors + notes 23–24, roster 38 → 39.
-      Original note: `e2e/password-reset.spec.ts` stubs `/api/auth/*`; a unit test
-      pins hash-only storage, expiry, single use and the constant 200. PARITY row (F40,
-      «Compte : mot de passe oublié»), ACTIONS doors (two, non-touch ✅).
+Turned on 2026-09-23. `marcportal.com` had been verified in Resend for four months
+already (the portal project); what was missing was a key of Babillard's own — « Sending
+access », not the portal's full-access one, so revoking one cannot silence the other and
+the Emails log can tell the two apps apart — plus `RESEND_API_KEY`, `MAIL_FROM` and
+`ALERT_EMAIL`.
+
+**Walked end to end, which is the part no test could do.** An unknown address answered
+`200 {"ok":true}` in 0.14 s and wrote no row — the enumeration guarantee observed from
+the outside, where an attacker stands. A real one answered the SAME 200 in 0.53 s, the
+extra ~400 ms being the Resend call, and the mail arrived at Hotmail. The link was opened
+and a password set: the row was marked `used_at` **15 seconds after it was minted**, and
+the abandoned token beside it stayed `UNUSED` and expired on its own. Single use,
+hash-only storage and the 30-minute window all hold against real rows.
+
+Two things worth carrying: `reset.ts` bumps `session_version` in the same batch (0134), so
+completing a reset signs the operator out of every other device — correct, and surprising
+if you meet it on a phone. And **the nightly cron can finally reach a human**: `alerts`
+was false for as long as mail was, so a failed backup or an unsweepable sandbox had
+nowhere to go but the log.
 
 **Wave 4 — a household can leave, and knows the terms. ✅ SHIPPED 2026-09-22.**
 
