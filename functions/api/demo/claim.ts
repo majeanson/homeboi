@@ -5,6 +5,8 @@ import { signInAs, sessionCookies } from '../../_lib/auth'
 import { hashPassword, safeEqual } from '../../_lib/password'
 import { nowSec } from '../../_lib/ids'
 import { DEMO_SANDBOX_DOMAIN, isSandboxEmail } from '../../_lib/demoHousehold'
+import { mailEnabled } from '../../_lib/mail'
+import { sendVerification } from '../../_lib/verify'
 
 // « Garder ma maisonnée » — convert a demo SANDBOX into a real account (the claim
 // flow demo.ts always deferred). The visitor already IS an ordinary operator of a
@@ -18,7 +20,10 @@ import { DEMO_SANDBOX_DOMAIN, isSandboxEmail } from '../../_lib/demoHousehold'
 // Validation mirrors auth/signup exactly: same email regex, same 8-char password
 // floor, same PBKDF2 hashPassword, same LOGIN_PASSWORD invite gate (claiming is a
 // signup in disguise — it must not be a way around a gated deployment), same
-// one-household-per-email conflict answer.
+// one-household-per-email conflict answer — and the same `verified_at` judgement +
+// verification letter (0138). The sandbox operator is born with verified_at NULL, and
+// until 2026-09-23 the claim never touched it: every claimed account stayed unverified
+// forever, locked out of the two doors 0138 gates (worker/claim.d1.test.ts).
 //
 // The session cookie encodes the OLD email (signInAs), so after the UPDATE the
 // current cookie would resolve to nothing and 401 the very next request. The
@@ -61,28 +66,29 @@ export const onRequestPost = authed(async (ctx, actor) => {
       // operators.email is the PRIMARY KEY — updating it in place keeps the row
       // (and thus the household + all its content) while moving it outside the
       // sweep's LIKE pattern. A race with a same-email signup loses on the PK.
-      ctx.env.DB.prepare('UPDATE operators SET email = ?, password_hash = ? WHERE email = ? AND household_id = ?').bind(
-        email,
-        await hashPassword(password),
-        actor.email,
-        actor.householdId,
-      ),
+      ctx.env.DB.prepare(
+        'UPDATE operators SET email = ?, password_hash = ?, verified_at = ? WHERE email = ? AND household_id = ?',
+      ).bind(email, await hashPassword(password), mailEnabled(ctx.env) ? null : ts, actor.email, actor.householdId),
+      // Stamped whether or not it is renamed: a claimed household must never read as
+      // « untouched » to anything keying on updated_at.
+      name
+        ? ctx.env.DB.prepare('UPDATE households SET name = ?, updated_at = ? WHERE id = ?').bind(name, ts, actor.householdId)
+        : ctx.env.DB.prepare('UPDATE households SET updated_at = ? WHERE id = ?').bind(ts, actor.householdId),
     ]
-    if (name) {
-      statements.push(
-        ctx.env.DB.prepare('UPDATE households SET name = ?, updated_at = ? WHERE id = ?').bind(
-          name,
-          ts,
-          actor.householdId,
-        ),
-      )
-    }
     const [opUpdate] = await ctx.env.DB.batch(statements)
     // No row moved ⇒ the sweep deleted the sandbox between resolve and claim
     // (the TTL kill switch) — the session is already structurally dead.
     if ((opUpdate.meta?.changes ?? 0) === 0) return unauthorized()
   } catch {
     return conflict('Un compte existe déjà pour ce courriel — connecte-toi.')
+  }
+
+  // Best-effort, exactly as signup: a lost letter is recoverable from Réglages, a claim
+  // that 500s because mail hiccuped is not.
+  try {
+    await sendVerification(ctx.env, email, new URL(ctx.request.url).origin)
+  } catch (err) {
+    console.error('[mail] verify claim', err)
   }
 
   // Re-issue the session for the NEW email so the current device stays signed in.
