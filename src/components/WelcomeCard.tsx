@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
 import { useT } from '../i18n'
 import { settingsHref } from '../lib/settingsNav'
@@ -7,7 +7,7 @@ import { useAudience } from '../lib/audience'
 import { useAuth } from '../lib/auth'
 import { useTour } from '../lib/tour'
 import { useSandbox } from '../lib/demo'
-import { useSampleStatus } from '../lib/sample'
+import { useSampleStatus, useSampleWrite } from '../lib/sample'
 import { api } from '../lib/api'
 import { useOnline } from '../lib/online'
 import { useMeals } from '../lib/queryHooks'
@@ -103,10 +103,9 @@ export function WelcomeCard({ members }: { members: { id: string }[] }) {
   const { start } = useTour()
   const { hasSample, pending: samplePending } = useSampleStatus()
   const nav = useNavigate()
-  const qc = useQueryClient()
   const online = useOnline()
   const [state, setState] = useState(read)
-  const [loading, setLoading] = useState(false)
+  const { busy: loading, run } = useSampleWrite()
 
   // Real-progress sources (reuse the shared hook + key — no new endpoints):
   // • meals: the planned-meal week (≥1 planned meal ⇒ "choose the meals" is done).
@@ -161,19 +160,10 @@ export function WelcomeCard({ members }: { members: { id: string }[] }) {
   }
 
   // Opt-in examples for a family that wants to see the board alive before filling it.
-  // The invalidation flips the shared sample count, so this card steps aside and the
-  // SampleBanner (explain + « Vider ») takes over — the same handover a clear does in
-  // reverse. Online-only: see write-rule.test.ts.
-  const loadExamples = async () => {
-    if (loading) return
-    setLoading(true)
-    try {
-      await api('seed', { method: 'POST' })
-      await qc.invalidateQueries()
-    } finally {
-      setLoading(false)
-    }
-  }
+  // The refetch (useSampleWrite) flips the shared sample count, so this card steps aside
+  // and the SampleBanner (explain + « Vider ») takes over — the same handover a clear
+  // does in reverse. Online-only: see write-rule.test.ts.
+  const loadExamples = () => run(() => api('seed', { method: 'POST' }))
 
   return (
     <aside className="welcome-card" aria-label={t.welcome.title}>

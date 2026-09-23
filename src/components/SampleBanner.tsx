@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { useAudience } from '../lib/audience'
 import { useAuth } from '../lib/auth'
 import { useOnline } from '../lib/online'
 import { useConfirm } from '../lib/confirm'
 import { useSandbox } from '../lib/demo'
-import { useSampleStatus } from '../lib/sample'
+import { useSampleStatus, useSampleWrite } from '../lib/sample'
 import { welcomeDismissed } from './WelcomeCard'
 import { api } from '../lib/api'
 import { Icon } from './Icon'
@@ -55,10 +54,9 @@ export function SampleBanner() {
   const sandbox = useSandbox()
   const online = useOnline()
   const confirm = useConfirm()
-  const qc = useQueryClient()
   const [dismissed, setDismissed] = useState(() => isDismissed(KEY))
   const [claimDismissed, setClaimDismissed] = useState(() => isDismissed(CLAIM_KEY))
-  const [busy, setBusy] = useState(false)
+  const { busy, run } = useSampleWrite()
   // Whether the WelcomeCard (which hosts the claim offer in a sandbox) is gone — it's
   // a sibling, so it announces its dismissal rather than us polling localStorage.
   const [welcomeGone, setWelcomeGone] = useState(welcomeDismissed)
@@ -136,16 +134,10 @@ export function SampleBanner() {
       tone: 'danger',
     })
     if (!okay) return
-    setBusy(true)
-    try {
-      await api('seed', { method: 'DELETE' })
-      // A clear touches most tables — refetch everything so every card empties at
-      // once (and the shared sample count → 0, which unmounts this banner AND lets
-      // the WelcomeCard setup checklist take over).
-      await qc.invalidateQueries()
-    } finally {
-      setBusy(false)
-    }
+    // useSampleWrite refetches everything afterwards: a clear touches most tables, so
+    // every card empties at once, and the shared count → 0 unmounts this banner and
+    // lets the WelcomeCard checklist take over.
+    await run(() => api('seed', { method: 'DELETE' }))
   }
 
   return (

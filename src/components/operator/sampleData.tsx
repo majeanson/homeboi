@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { Cluster } from '../Layout'
 import { useT } from '../../i18n'
 import { useOnline } from '../../lib/online'
@@ -7,6 +6,7 @@ import { useConfirm } from '../../lib/confirm'
 import { api } from '../../lib/api'
 import { isGuest } from '../../lib/device'
 import { SAMPLE_KEY } from '../../lib/queryKeys'
+import { useSampleWrite } from '../../lib/sample'
 
 // The Réglages home for the demo/sample data (onboarding Phase 1). The board banner
 // is the primary keep/clear surface, but once it's dismissed (« Garder ») the
@@ -18,8 +18,7 @@ export function SampleDataControls() {
   const t = useT()
   const online = useOnline()
   const confirm = useConfirm()
-  const qc = useQueryClient()
-  const [busy, setBusy] = useState(false)
+  const { busy, run } = useSampleWrite()
 
   // Réglages ▸ Découvrir is reachable by a read-only guest now (the public demo lives
   // there), and seeding/clearing is operator-scoped — GET seed would answer, then hand
@@ -30,45 +29,24 @@ export function SampleDataControls() {
   if (q.isPending) return null // don't flash present/absent before the count settles
   const count = q.data?.count ?? 0
 
-  const load = async () => {
-    if (busy) return
-    setBusy(true)
-    try {
-      await api('seed', { method: 'POST' })
-      await qc.invalidateQueries()
-    } finally {
-      setBusy(false)
-    }
-  }
+  const load = () => run(() => api('seed', { method: 'POST' }))
 
   const clear = async () => {
     if (busy) return
     const okay = await confirm({ message: t.sample.clearConfirm, confirmLabel: t.sample.clear, tone: 'danger' })
     if (!okay) return
-    setBusy(true)
-    try {
-      await api('seed', { method: 'DELETE' })
-      await qc.invalidateQueries()
-    } finally {
-      setBusy(false)
-    }
+    await run(() => api('seed', { method: 'DELETE' }))
   }
 
   // « Essaie sans peur » one-tap reset (bmad/08 A-8): put the demo family back
   // to its pristine state — clear the is_sample rows, reseed with today's dates.
   // Touches ONLY demo rows (both calls are is_sample-scoped), so no confirm-with-
   // danger ceremony: it's the fear-free "start the sandbox over" button.
-  const reset = async () => {
-    if (busy) return
-    setBusy(true)
-    try {
+  const reset = () =>
+    run(async () => {
       await api('seed', { method: 'DELETE' })
       await api('seed', { method: 'POST' })
-      await qc.invalidateQueries()
-    } finally {
-      setBusy(false)
-    }
-  }
+    })
 
   return (
     <div className="guide__sample">

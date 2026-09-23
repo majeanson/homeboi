@@ -63,6 +63,32 @@ test('fresh empty household, no demo → the setup checklist shows directly, no 
   await expect(welcome).toContainText('étapes')
 })
 
+// A failed examples write SAYS so. All five examples handlers used to swallow the error:
+// the button re-enabled and nothing else happened (2026-09-23). useSampleWrite owns
+// the notice now; these two pin it on the two board doors.
+test('a failed « Charger des exemples » says so, and the checklist stays', async ({ page }) => {
+  await boot(page, { hasSample: false, fresh: true })
+  await page.route('**/api/seed', (route) =>
+    route.request().method() === 'POST' ? route.fulfill({ status: 500, contentType: 'application/json', body: '{}' }) : route.fallback(),
+  )
+  const welcome = page.locator('.welcome-card')
+  await welcome.getByRole('button', { name: /Charger des exemples/ }).click()
+  await expect(page.getByText('Pas enregistré — réessaie.')).toBeVisible()
+  await expect(welcome).toBeVisible()
+  await expect(welcome.getByRole('button', { name: /Charger des exemples/ })).toBeEnabled()
+})
+
+test('a failed « Vider et commencer » says so, and the banner stays', async ({ page }) => {
+  await boot(page, { hasSample: true })
+  await page.route('**/api/seed', (route) =>
+    route.request().method() === 'DELETE' ? route.fulfill({ status: 500, contentType: 'application/json', body: '{}' }) : route.fallback(),
+  )
+  await page.locator('.sample-banner').getByRole('button', { name: /Vider et commencer/ }).click()
+  await page.locator('.confirm').getByRole('button', { name: /Vider et commencer/ }).click()
+  await expect(page.getByText('Pas enregistré — réessaie.')).toBeVisible()
+  await expect(page.locator('.sample-banner')).toBeVisible()
+})
+
 test('the checklist offers the examples on request — and hands over to the banner', async ({ page }) => {
   await boot(page, { hasSample: false, fresh: true })
   const welcome = page.locator('.welcome-card')
