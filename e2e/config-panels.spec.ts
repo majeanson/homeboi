@@ -272,7 +272,12 @@ test('a list row opens its editor scene', async ({ page }) => {
   // The ✏ is the door (the name is its mouse-convenience twin) — same scene.
   await section.getByRole('button', { name: 'Modifier — Avant de partir' }).click()
   await expect(page).toHaveURL(/\/liste-modele\/tpl1/)
-  await expect(page.getByLabel('Ajouter un élément')).toBeVisible()
+  // The scene is a LAZY route, and this is the suite's first visit to it: on a cold CI
+  // Vite the chunk compiles on demand, and React Router keeps the Réglages page on
+  // screen meanwhile — the default 5 s ran out and read as « element not found »
+  // (2026-09-23, CI run 35915715686; reproduced with a 6 s delay on the chunk). The
+  // same first-visit budget the other scene specs give (meal-order, kitchen-meal-plan).
+  await expect(page.getByLabel('Ajouter un élément')).toBeVisible({ timeout: 15_000 })
 })
 
 test('renaming a todo template patches it by id', async ({ page }) => {
