@@ -37,3 +37,25 @@ export async function requirePassword(env: Env, actor: Actor, password: unknown)
   if (required && !safeEqual(password, required)) return forbidden('Mot de passe invalide.')
   return null
 }
+
+// The second lock on the doors that take EVERYTHING — leaving (DELETE /api/household)
+// and starting over (POST /api/household/reset): the household's NAME, retyped. The
+// password is something the owner knows by heart and can type while thinking about
+// something else; the name has to be read off the screen. Compared with accents and
+// case folded away — the name is displayed right above the field, and « Chez Nous » vs
+// « chez nous » is a typing accident, not a different household.
+//
+// Returns null when it matches, else the Response to send back.
+export async function requireHouseholdName(env: Env, householdId: string, typed: unknown): Promise<Response | null> {
+  const row = await env.DB.prepare('SELECT name FROM households WHERE id = ?').bind(householdId).first<{ name: string }>()
+  const fold = (s: string) =>
+    s
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .trim()
+      .toLowerCase()
+  if (typeof typed !== 'string' || !typed || fold(typed) !== fold(row?.name ?? '')) {
+    return badRequest('Le nom de la maisonnée ne correspond pas.')
+  }
+  return null
+}

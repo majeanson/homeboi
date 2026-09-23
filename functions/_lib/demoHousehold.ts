@@ -252,7 +252,8 @@ const MEDIA_JSON_COLUMNS: ReadonlyArray<readonly [table: string, column: string]
   ['care_log', 'media_json'],
 ]
 
-async function collectMediaKeys(env: Env, householdId: string): Promise<string[]> {
+// Exported for « Repartir à neuf » (restore.ts), which frees the same blobs.
+export async function collectMediaKeys(env: Env, householdId: string): Promise<string[]> {
   const keys = new Set<string>()
   for (const [table, columns] of MEDIA_SCALAR_COLUMNS) {
     const cols = columns.join(', ')

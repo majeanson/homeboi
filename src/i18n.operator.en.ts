@@ -589,6 +589,11 @@ export const EN_OPERATOR: typeof FR_OPERATOR = {
   restoreConfirm: (when: string) =>
     `Replace the household’s whole content with the copy from ${when}? Anything added since is gone. Paired devices and accounts stay.`,
   restoreDone: (n: number) => `Put back: ${n} rows restored.`,
+  startOverTitle: 'Start over',
+  startOverHint: 'All the content goes: the examples, what you tried, meals, the list, recipes, people, photos. The account, paired devices and settings stay. Take your data first — the button is right above.',
+  startOverGo: 'Empty everything',
+  startOverConfirm: 'Empty everything and start over? All the content and the photos disappear; the account, the devices and the settings stay.',
+  startOverDone: 'All clear. The board is yours, brand new.',
   leaveTitle: 'Delete this household',
   leaveHint: 'Everything goes: meals, the list, recipes, people, photos, paired devices and the account. Nothing can be recovered. Take your data first — the button is right above.',
   leaveNameLabel: (name) => `Type the household's name to confirm: ${name}`,

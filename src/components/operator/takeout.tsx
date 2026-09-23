@@ -55,6 +55,10 @@ export function TakeoutSection({ help }: { help?: HelpMode }) {
   // the endpoint folds them — « Chez Nous » vs « chez nous » is a typing accident, not a
   // different household, and a confirmation that fails on a capital teaches nothing.
   const [typed, setTyped] = useState('')
+  // « Repartir à neuf » has its own field and its own line: two doors sharing one
+  // retyped name would arm both at once.
+  const [resetTyped, setResetTyped] = useState('')
+  const [resetMsg, setResetMsg] = useState<{ tone: 'success' | 'error'; text: string } | null>(null)
   const hidden = isGuest() || isPaired() || sandbox
   const backups = useQuery({
     queryKey: BACKUPS_KEY,
@@ -83,6 +87,7 @@ export function TakeoutSection({ help }: { help?: HelpMode }) {
       .toLowerCase()
   const houseName = household.data?.name ?? ''
   const nameMatches = !!houseName && fold(typed) === fold(houseName)
+  const resetNameMatches = !!houseName && fold(resetTyped) === fold(houseName)
 
   // The one restore call. `label` is what the confirm names; `body` is the source.
   async function restore(label: string, body: Record<string, unknown>) {
@@ -139,6 +144,36 @@ export function TakeoutSection({ help }: { help?: HelpMode }) {
         tone: 'error',
         text: isStatus(e, 403) ? t.sessions.wrong : isStatus(e, 429) ? t.common.tooMany : isStatus(e, 400) ? o.leaveNameWrong : (e as Error).message,
       })
+      setBusy(false)
+    }
+  }
+
+  // « Repartir à neuf » — the leave door's shape, with the account kept: the session
+  // survives (the endpoint keeps the `operators` row), so the cache is invalidated and
+  // the board refills empty, rather than signing out. Not in the outbox, same reason as
+  // leaving (write-rule ALLOWED).
+  async function startOver() {
+    if (busy || !resetNameMatches) return
+    const password = await confirm({
+      message: o.startOverConfirm,
+      confirmLabel: o.startOverGo,
+      tone: 'danger',
+      input: { kind: 'password', label: t.sessions.passwordLabel },
+    })
+    if (password === null) return
+    setBusy(true)
+    setResetMsg(null)
+    try {
+      await api('household/reset', { method: 'POST', body: { password, name: resetTyped } })
+      await qc.invalidateQueries()
+      setResetTyped('')
+      setResetMsg({ tone: 'success', text: o.startOverDone })
+    } catch (e) {
+      setResetMsg({
+        tone: 'error',
+        text: isStatus(e, 403) ? t.sessions.wrong : isStatus(e, 429) ? t.common.tooMany : isStatus(e, 400) ? o.leaveNameWrong : (e as Error).message,
+      })
+    } finally {
       setBusy(false)
     }
   }
@@ -216,6 +251,31 @@ export function TakeoutSection({ help }: { help?: HelpMode }) {
             />
           </Cluster>
           {msg && <StatusMessage tone={msg.tone}>{msg.text}</StatusMessage>}
+        </Disclosure>
+      )}
+
+      {/* « Repartir à neuf » (2026-09-23) — the leave door's little sibling, ABOVE it
+          because it is the lesser door: everything the household holds goes, the
+          account, the paired tablets and the settings stay. Same two deliberate acts
+          (the fold, the name retyped) and the same two locks behind them. */}
+      {online && (
+        <Disclosure label={o.startOverTitle}>
+          <p className="operator__hint">{o.startOverHint}</p>
+          <p className="operator__hint">{o.leaveNameLabel(houseName)}</p>
+          <EditField
+            value={resetTyped}
+            onChange={setResetTyped}
+            ariaLabel={o.leaveNameLabel(houseName)}
+            placeholder={o.leaveNamePlaceholder}
+            onSubmit={() => void startOver()}
+          />
+          <Cluster>
+            <button type="button" className="btn btn--danger" disabled={busy || !resetNameMatches} onClick={() => void startOver()}>
+              <InlineIcon name="arrow-counter-clockwise-bold" /> {o.startOverGo}
+            </button>
+          </Cluster>
+          {resetTyped && !resetNameMatches && <p className="operator__hint mono">{o.leaveNameWrong}</p>}
+          {resetMsg && <StatusMessage tone={resetMsg.tone}>{resetMsg.text}</StatusMessage>}
         </Disclosure>
       )}
 

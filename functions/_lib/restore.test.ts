@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { CONTENT_TABLES, HOUSEHOLD_KEEP, chunk, fitRow, freshIdMap, idsIn, rewriteIds, validateTakeout } from './restore'
+import { CONTENT_TABLES, HOUSEHOLD_KEEP, RESET_KEEP, RESET_TABLES, chunk, fitRow, freshIdMap, idsIn, rewriteIds, validateTakeout } from './restore'
 import { TAKEOUT_EXCLUDE } from './takeout'
 import { HOUSEHOLD_TABLES } from './demoHousehold'
 
@@ -66,5 +66,23 @@ describe('the content set', () => {
   it('chunks', () => {
     expect(chunk([1, 2, 3, 4, 5], 2)).toEqual([[1, 2], [3, 4], [5]])
     expect(chunk([], 2)).toEqual([])
+  })
+})
+
+// « Repartir à neuf » (2026-09-23) wipes RESET_TABLES: the content set minus RESET_KEEP.
+// A keep entry that names nothing (a table renamed next year) would silently protect
+// nothing — the settings would start going with the content, and nobody would know.
+describe('the reset set', () => {
+  it('keeps the settings and the spend meter — and every name it keeps is a real content table', () => {
+    expect([...RESET_KEEP].sort()).toEqual(['household_preferences', 'usage_daily'])
+    for (const t of RESET_KEEP) {
+      expect(CONTENT_TABLES, `RESET_KEEP names ${t}, which the content set does not hold`).toContain(t)
+      expect(RESET_TABLES, t).not.toContain(t)
+    }
+    expect(RESET_TABLES.length).toBe(CONTENT_TABLES.length - RESET_KEEP.size)
+  })
+  it('never reaches who may open the household', () => {
+    for (const t of ['operators', 'devices', 'guests', 'shares', 'pairing_codes']) expect(RESET_TABLES, t).not.toContain(t)
+    for (const t of ['members', 'recipes', 'events', 'notes', 'list_items', 'photos']) expect(RESET_TABLES, t).toContain(t)
   })
 })

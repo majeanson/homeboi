@@ -127,6 +127,10 @@ const ALLOWED = new Set<string>([
   // queue against anyway: the delete takes the `operators` row, so the session and the
   // device's whole reason to hold a queue die with it. Password-gated in the moment.
   'components/operator/takeout.tsx → household',
+  // …and its little sibling, « Repartir à neuf » (POST household/reset, 2026-09-23):
+  // replaying « erase everything » from a queue hours later would erase what the family
+  // added since. Password-gated in the moment, like the two doors above.
+  'components/operator/takeout.tsx → household/reset',
   'components/operator/SessionsSection.tsx → auth/password',
   // « Renvoie-moi le lien » (0138): the same online-only argument as the reset — a queued
   // « send me a confirmation » replayed hours later answers a question nobody is still

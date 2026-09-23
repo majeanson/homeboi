@@ -17,7 +17,7 @@ import {
 import { householdAiEnabled } from '../_lib/aiPref'
 import { householdShareInfo, cleanShareField } from '../_lib/shareModes'
 import { nowSec } from '../_lib/ids'
-import { requirePassword } from '../_lib/sudo'
+import { requireHouseholdName, requirePassword } from '../_lib/sudo'
 import { deleteHousehold } from '../_lib/demoHousehold'
 import { isValidTz } from '../_lib/tz'
 import { householdSchoolYear, setHouseholdSchoolYear, clearHouseholdSchoolYear, cleanSchoolYear } from '../_lib/schoolYear'
@@ -365,11 +365,10 @@ export const onRequestPatch = authed(async (ctx, actor) => {
 //   · `authed(…, 'operator')` — a kiosk on the kitchen wall cannot do this at all;
 //   · `requirePassword` — a session cookie proves « someone in this house », which is
 //     the whole point of _lib/sudo.ts, and this is the most irreversible door there is;
-//   · the household's NAME, retyped. The password is something the owner knows; the
-//     name is something the owner has to look at. Between them there is no plausible
-//     slip. Compared with the accents and case folded away (`localeCompare`-free: the
-//     name is displayed right above the field, and « Chez Nous » vs « chez nous » is a
-//     typing accident, not a different household).
+//   · the household's NAME, retyped (`requireHouseholdName`, _lib/sudo.ts — shared with
+//     « Repartir à neuf », household/reset.ts). The password is something the owner
+//     knows; the name is something the owner has to look at. Between them there is no
+//     plausible slip.
 //
 // It REUSES `deleteHousehold` — the same whole-schema, R2-freeing delete the demo
 // sweep runs, which `demoHousehold.test.ts` holds to every table in the schema. That
@@ -383,18 +382,8 @@ export const onRequestPatch = authed(async (ctx, actor) => {
 export const onRequestDelete = authed(async (ctx, actor) => {
   const body = await readJson<{ password?: string; name?: string }>(ctx.request)
   if (!body) return badRequest('Corps invalide.')
-  const denied = await requirePassword(ctx.env, actor, body.password)
+  const denied = (await requirePassword(ctx.env, actor, body.password)) ?? (await requireHouseholdName(ctx.env, actor.householdId, body.name))
   if (denied) return denied
-
-  const name = await householdName(ctx.env, actor.householdId)
-  const typed = typeof body.name === 'string' ? body.name : ''
-  const same = (s: string) =>
-    s
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .trim()
-      .toLowerCase()
-  if (!typed || same(typed) !== same(name)) return badRequest('Le nom de la maisonnée ne correspond pas.')
 
   await deleteHousehold(ctx.env, actor.householdId)
   // The cookie now names an operator row that no longer exists, so every later request

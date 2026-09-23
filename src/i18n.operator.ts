@@ -666,6 +666,13 @@ export const FR_OPERATOR = {
   restoreConfirm: (when: string) =>
     `Remplacer tout le contenu de la maisonnée par la copie du ${when} ? Ce qui a été ajouté depuis disparaît. Les appareils jumelés et les comptes restent.`,
   restoreDone: (n: number) => `C’est remis : ${n} lignes restaurées.`,
+  // « Repartir à neuf » (2026-09-23) — le petit frère de « Supprimer » : tout le contenu
+  // part, le compte reste. Mêmes verrous (mot de passe + nom retapé, leaveName*).
+  startOverTitle: 'Repartir à neuf',
+  startOverHint: 'Tout le contenu part : les exemples, ce que tu as essayé, les repas, la liste, les recettes, les personnes, les photos. Le compte, les appareils jumelés et les réglages restent. Emporte tes données d’abord — le bouton est juste au-dessus.',
+  startOverGo: 'Tout vider',
+  startOverConfirm: 'Tout vider et repartir à neuf ? Le contenu au complet et les photos disparaissent ; le compte, les appareils et les réglages restent.',
+  startOverDone: 'C’est vidé. Le babillard est à toi, tout neuf.',
   // Wave 4 — « Partir ». Une app qu'une famille ne peut pas quitter, on ne peut pas
   // demander à un inconnu de l'essayer. Volontairement sous l'export : la première
   // chose à offrir à quelqu'un qui s'en va, c'est ses affaires.

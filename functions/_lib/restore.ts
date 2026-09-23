@@ -1,6 +1,8 @@
 import type { Env } from './env'
 import { newId } from './ids'
-import { CHILD_TABLES, HOUSEHOLD_TABLES, SELF_REFS, scopeColumn } from './demoHousehold'
+import { CHILD_TABLES, HOUSEHOLD_TABLES, SELF_REFS, collectMediaKeys, scopeColumn } from './demoHousehold'
+import { deleteR2Blob } from './r2'
+import { nowSec } from './ids'
 import { TAKEOUT_EXCLUDE, type Takeout } from './takeout'
 
 // Takeout IMPORT — the one restore door (STATE.md §4-L, item L8).
@@ -45,6 +47,50 @@ const HOUSEHOLD_COLUMNS = ['household_id', 'owner_household_id', 'author_househo
 
 // The content tables, in DELETE order (children → parents); INSERT runs it reversed.
 export const CONTENT_TABLES: readonly string[] = HOUSEHOLD_TABLES.filter((t) => !TAKEOUT_EXCLUDE.has(t))
+
+// The wipe of a set of content tables, with the sweep's statements (self-references
+// nulled first, children through their parent, rows other households left on a trip
+// this one owns) — ONE builder for the restore and « Repartir à neuf », so the two
+// wipes cannot drift. `tables` must be a subset of CONTENT_TABLES, in its order.
+export function wipeStatements(env: Env, householdId: string, tables: readonly string[]): D1PreparedStatement[] {
+  const P = env.DB.prepare.bind(env.DB)
+  const set = new Set(tables)
+  return [
+    ...SELF_REFS.filter(([t]) => set.has(t)).map(([t, c]) => P(`UPDATE ${t} SET ${c} = NULL WHERE ${scopeColumn(t)} = ? AND ${c} IS NOT NULL`).bind(householdId)),
+    ...CHILD_TABLES.filter(([, , parent]) => set.has(parent)).map(([t, fk, parent]) =>
+      P(`DELETE FROM ${t} WHERE ${fk} IN (SELECT id FROM ${parent} WHERE ${scopeColumn(parent)} = ?)`).bind(householdId),
+    ),
+    ...(set.has('shared_trips')
+      ? ['shared_trip_members', 'shared_trip_notes', 'shared_trip_packing'].map((t) =>
+          P(`DELETE FROM ${t} WHERE shared_trip_id IN (SELECT id FROM shared_trips WHERE owner_household_id = ?)`).bind(householdId),
+        )
+      : []),
+    ...tables.map((t) => P(`DELETE FROM ${t} WHERE ${scopeColumn(t)} = ?`).bind(householdId)),
+  ]
+}
+
+// « Repartir à neuf » (2026-09-23): everything the household HOLDS goes; who may OPEN
+// it stays — the restore's own line (TAKEOUT_EXCLUDE: the account, paired devices,
+// guest and share links, pairing codes), because a family starting over should not
+// have to re-pair the wall tablet. Two content tables survive on top of that, each for
+// a reason the restore does not have (it puts both back from the dump):
+//   · household_preferences — the settings. « Start over » is about the content, and
+//     the households row's own preference columns are never touched either;
+//   · usage_daily — the day's AI/R2 spend (0137). A reset must not refill the budget.
+export const RESET_KEEP: ReadonlySet<string> = new Set(['household_preferences', 'usage_daily'])
+export const RESET_TABLES: readonly string[] = CONTENT_TABLES.filter((t) => !RESET_KEEP.has(t))
+
+// Unlike the restore, the blobs are freed first: nothing will point at them again
+// (deleteHousehold's order — collect from the rows BEFORE the rows go). One batch, one
+// transaction, like deleteHousehold: a start-over is never left half done.
+export async function resetHouseholdContent(env: Env, householdId: string): Promise<void> {
+  const blobKeys = await collectMediaKeys(env, householdId).catch(() => [] as string[])
+  for (const key of blobKeys) await deleteR2Blob(env.PHOTOS, key)
+  await env.DB.batch([
+    ...wipeStatements(env, householdId, RESET_TABLES),
+    env.DB.prepare('UPDATE households SET updated_at = ? WHERE id = ?').bind(nowSec(), householdId),
+  ])
+}
 
 export type Row = Record<string, unknown>
 
@@ -134,16 +180,7 @@ export async function restoreHousehold(env: Env, householdId: string, takeout: T
   }
 
   // 2. Wipe the content (the sweep's statements, minus the identity tables).
-  await runBatches(env, [
-    ...SELF_REFS.filter(([t]) => contentSet.has(t)).map(([t, c]) => P(`UPDATE ${t} SET ${c} = NULL WHERE ${scopeColumn(t)} = ? AND ${c} IS NOT NULL`).bind(householdId)),
-    ...CHILD_TABLES.filter(([, , parent]) => contentSet.has(parent)).map(([t, fk, parent]) =>
-      P(`DELETE FROM ${t} WHERE ${fk} IN (SELECT id FROM ${parent} WHERE ${scopeColumn(parent)} = ?)`).bind(householdId),
-    ),
-    ...['shared_trip_members', 'shared_trip_notes', 'shared_trip_packing'].map((t) =>
-      P(`DELETE FROM ${t} WHERE shared_trip_id IN (SELECT id FROM shared_trips WHERE owner_household_id = ?)`).bind(householdId),
-    ),
-    ...CONTENT_TABLES.map((t) => P(`DELETE FROM ${t} WHERE ${scopeColumn(t)} = ?`).bind(householdId)),
-  ])
+  await runBatches(env, wipeStatements(env, householdId, CONTENT_TABLES))
 
   // 3. Ids: collide with anything still alive? Then everything gets a fresh id.
   const ids = idsIn(takeout)
