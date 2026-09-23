@@ -1,3 +1,4 @@
+import { runModel } from './runModel'
 // The one essential AI feature: classify a free-text capture into a structured
 // intent, then the handler routes it. Workers AI, in-network (Loi 25), free
 // Neuron tier. One inference per capture — never on a render loop.
@@ -205,7 +206,7 @@ export async function classifyCapture(
     return { type: 'note', payload: { text: trimmed }, degraded: true }
   }
   try {
-    const res = (await env.AI.run(MODEL, {
+    const res = (await runModel(env, MODEL, {
       messages: [
         { role: 'system', content: SYSTEM[lang] },
         { role: 'user', content: trimmed },
@@ -271,7 +272,7 @@ Ingrédients : lignes courtes avec quantités approximatives, 12 au maximum. Ét
 Exemple : {"ingredients":["400 g de pâtes","1 pot de sauce tomate","500 g de bœuf haché"],"steps":["Faire bouillir les pâtes.","Faire revenir le bœuf.","Ajouter la sauce et laisser mijoter."]}.`) +
     haveLine
   try {
-    const res = (await env.AI.run(MODEL, {
+    const res = (await runModel(env, MODEL, {
       messages: [{ role: 'user', content: prompt }],
       max_tokens: 500,
     })) as { response?: unknown }
@@ -320,7 +321,7 @@ Si la recette a des parties nommées (ex. « Glaçage », « Croûte »), insèr
 Texte :
 ${raw}`
   try {
-    const res = (await env.AI.run(MODEL, {
+    const res = (await runModel(env, MODEL, {
       messages: [{ role: 'user', content: prompt }],
       // 900 truncated long recipes mid-array → the JSON failed to parse → the read
       // silently fell to the weak heuristic ("it doesn't resolve"). 30 ingredient
@@ -439,7 +440,7 @@ Réponds avec UNIQUEMENT ce JSON, sans aucun texte autour :
 - Si la page est en COLONNES, lis chaque colonne séparément, de haut en bas, une colonne à la fois. Ne joins jamais le texte de deux colonnes différentes sur une même ligne.
 - Maximum 40 ingrédients, 30 étapes.`
   try {
-    const res = (await env.AI.run(VISION_MODEL, {
+    const res = (await runModel(env, VISION_MODEL, {
       // Workers AI vision wants the image as an array of 0-255 byte values.
       image: [...bytes],
       prompt,
@@ -536,7 +537,7 @@ export async function pingTextModel(env: Env): Promise<AiCheck> {
   const t0 = Date.now()
   if (!env.AI) return { ok: false, ms: 0, model: MODEL, detail: 'AI binding not configured' }
   try {
-    const res = (await env.AI.run(MODEL, {
+    const res = (await runModel(env, MODEL, {
       messages: [{ role: 'user', content: 'Reply with the single word: OK.' }],
       max_tokens: 5,
     })) as { response?: unknown }
@@ -555,7 +556,7 @@ export async function pingVisionModel(env: Env): Promise<AiCheck> {
   if (!env.AI) return { ok: false, ms: 0, model: VISION_MODEL, detail: 'AI binding not configured' }
   try {
     const bytes = Uint8Array.from(atob(PING_PNG), (c) => c.charCodeAt(0))
-    const res = (await env.AI.run(VISION_MODEL, {
+    const res = (await runModel(env, VISION_MODEL, {
       image: [...bytes],
       prompt: 'Reply with the single word: OK.',
       max_tokens: 5,
@@ -646,7 +647,7 @@ Articles :
 ${list}`
 
   try {
-    const res = (await env.AI.run(MODEL, {
+    const res = (await runModel(env, MODEL, {
       messages: [{ role: 'user', content: prompt }],
       max_tokens: Math.min(900, 40 + names.length * 18),
     })) as { response?: unknown }
@@ -716,7 +717,7 @@ Recettes de la famille (suggères-en quelques-unes au besoin) : ${favorites.join
 Recettes oubliées depuis un bon moment (privilégie doucement quelques-unes de celles-ci) : ${neglected.join(', ') || 'aucune'}.
 Réponds UNIQUEMENT avec un tableau JSON de 10 noms de plats courts. Exemple : ["spaghetti","chili","tacos"].`
   try {
-    const res = (await env.AI.run(MODEL, {
+    const res = (await runModel(env, MODEL, {
       messages: [{ role: 'user', content: prompt }],
       max_tokens: 300,
       temperature: 0.9,
@@ -761,7 +762,7 @@ Aussi sous la main (congélateur / fond du garde-manger) : ${reserve}.
 Plats à ÉVITER de répéter : ${dontRepeat}.
 Réponds UNIQUEMENT avec un tableau JSON de 10 noms de plats courts. Exemple : ["frittata aux légumes","soupe minestrone","gratin de restes"].`
   try {
-    const res = (await env.AI.run(MODEL, {
+    const res = (await runModel(env, MODEL, {
       messages: [{ role: 'user', content: prompt }],
       max_tokens: 300,
       temperature: 0.9,
@@ -797,7 +798,7 @@ Soupers : ${week.meals.join(', ') || 'aucun'}.
 Corvées faites : ${week.chores.join(', ') || 'aucune'}.
 Réponds seulement avec le texte du bilan.`
   try {
-    const res = (await env.AI.run(MODEL, {
+    const res = (await runModel(env, MODEL, {
       messages: [{ role: 'user', content: prompt }],
       max_tokens: 160,
     })) as { response?: unknown }
@@ -853,7 +854,7 @@ Réponds UNIQUEMENT avec du JSON valide : {"answer": <ta réponse, en français 
 DONNÉES :
 ${context}`
   try {
-    const res = (await env.AI.run(MODEL, {
+    const res = (await runModel(env, MODEL, {
       messages: [
         { role: 'system', content: system },
         { role: 'user', content: question.trim() },

@@ -26,7 +26,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
     return tooManyRequests('Trop d’envois depuis ce lien. Réessaie plus tard.')
   }
 
-  const up = await uploadR2Media(ctx.env.PHOTOS, ctx.request, {
+  const up = await uploadR2Media(ctx.env.PHOTOS!, ctx.request, { env: ctx.env,
     prefix: 'ik', // intake key — distinct so the cleanup sweep can recognise its own
     maxBytes: MAX_BYTES,
     accept: (t) => t.startsWith('image/'),

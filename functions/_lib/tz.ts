@@ -25,16 +25,42 @@ import { AsyncLocalStorage } from 'node:async_hooks'
 
 const DEFAULT_TZ = 'America/Toronto'
 
-const store = new AsyncLocalStorage<{ tz: string }>()
+// The store carries the zone AND who is asking, for the same reason and by the same
+// argument: `_lib/usage.ts` has to charge a day's AI call to a household from inside
+// `_lib/ai.ts`, whose eleven model calls sit behind pure functions that take `env` and
+// never an `Actor`. Threading one through them (and through their callers) is the same
+// 190-call-site edit this file exists to avoid — so the request says who it is, once,
+// where it already says what time it is.
+interface RequestContext {
+  tz?: string
+  /** Absent outside a request — the cron, a unit test, the module top level. */
+  householdId?: string
+  /** A throwaway demo household, which gets the tight daily caps (_lib/usage.ts). */
+  sandbox?: boolean
+}
 
-/** Run `fn` with `tz` as the ambient household zone (authed() does this per request). */
+const store = new AsyncLocalStorage<RequestContext>()
+
+/** Run `fn` with this request's household context (authed() does this per request). */
+export function runWithRequest<T>(ctx: RequestContext, fn: () => T): T {
+  return ctx.tz || ctx.householdId ? store.run(ctx, fn) : fn()
+}
+
+/** Run `fn` with `tz` as the ambient household zone. Kept for the tz-only callers. */
 export function runWithTz<T>(tz: string | undefined, fn: () => T): T {
-  return tz ? store.run({ tz }, fn) : fn()
+  return runWithRequest({ tz }, fn)
 }
 
 /** The zone for THIS request, or America/Toronto outside one. */
 export function currentTz(): string {
   return store.getStore()?.tz ?? DEFAULT_TZ
+}
+
+/** Who this request belongs to — `null` outside a request, which is a real case
+ *  (the nightly cron) and never an error: the caller decides what that means. */
+export function currentHousehold(): { householdId: string; sandbox: boolean } | null {
+  const s = store.getStore()
+  return s?.householdId ? { householdId: s.householdId, sandbox: !!s.sandbox } : null
 }
 
 // A zone is only usable if Intl knows it — an unknown one makes every date helper throw,

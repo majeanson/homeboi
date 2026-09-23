@@ -167,6 +167,10 @@ export const HOUSEHOLD_TABLES: readonly string[] = [
   'pairing_codes',
   'devices',
   'idempotency_keys',
+  // Le compteur de dépense quotidienne (0137) : il appartient à la maisonnée et part
+  // avec elle — sinon le bac à sable laisse derrière lui une ligne par jour, pour
+  // toujours, dans la seule table que personne ne regarde.
+  'usage_daily',
   'household_preferences',
   'household_domains',
   'operators',

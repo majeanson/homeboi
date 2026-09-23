@@ -1,4 +1,6 @@
-import { badRequest } from './json'
+import { badRequest, tooManyRequests } from './json'
+import type { Env } from './env'
+import { charge } from './usage'
 import { newId } from './ids'
 
 // Shared R2 helpers. `deleteR2Blob` is the one "free the blob, best-effort" path
@@ -29,6 +31,9 @@ export async function deleteR2Blob(bucket: R2Bucket | undefined, key: string | n
 // Returns the new `key` (+ the resolved `contentType`), or `{ error }` holding the
 // ready-to-return 400 Response so the handler can `if ('error' in r) return r.error`.
 export interface UploadR2Opts {
+  /** The Worker env — the daily upload budget lives in D1 (migration 0137), and this
+   *  is the only seam that can see a household's aggregate for the day. */
+  env: Env
   /** Key prefix/folder convention, e.g. `rc` (recipe), `av` (avatar), `nm` (note). */
   prefix: string
   /** Reject `byteLength === 0 || > maxBytes`. */
@@ -74,6 +79,13 @@ export async function uploadR2Media(
   const buf = await request.arrayBuffer()
   if (buf.byteLength === 0 || buf.byteLength > opts.maxBytes)
     return { error: badRequest(opts.sizeError ?? 'Image vide ou trop grande.') }
+  // THE DAILY AGGREGATE (Wave 5, migration 0137). Every call site already passes a
+  // per-REQUEST `maxBytes`, and no call site can see the one thing that matters for a
+  // bill: how much this household has uploaded today. This is the only place that can,
+  // which is why it is the only place that asks. Charged AFTER the per-request checks —
+  // a rejected type or an oversized body never reached R2, so it never cost anything.
+  const spend = await charge(opts.env, 'upload', buf.byteLength)
+  if (!spend.allowed) return { error: tooManyRequests('Assez de téléversements pour aujourd’hui. Réessaie demain.') }
   const ext = opts.extFromType ? extForContentType(contentType) : ''
   const key = await putR2Blob(bucket, buf, contentType, opts.prefix, ext)
   return { key, contentType }

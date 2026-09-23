@@ -26,7 +26,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
 
   // Flat, URL-safe key (single path segment so /api/img/[key] serves it). The type
   // was already validated above (fast-fail before the DB lookup), so accept any here.
-  const up = await uploadR2Media(ctx.env.PHOTOS, ctx.request, { prefix: 'av', maxBytes: MAX_BYTES, accept: () => true })
+  const up = await uploadR2Media(ctx.env.PHOTOS!, ctx.request, { env: ctx.env, prefix: 'av', maxBytes: MAX_BYTES, accept: () => true })
   if ('error' in up) return up.error
   const key = up.key
   if (member.avatar_kind === 'photo') await deleteR2Blob(ctx.env.PHOTOS, member.avatar_ref)

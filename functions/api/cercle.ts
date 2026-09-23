@@ -246,7 +246,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   if (type.startsWith('image/')) {
     if (!ctx.env.PHOTOS) return serviceUnavailable('Stockage photo indisponible ici.')
     // Already image-gated by the dispatch above → accept any here.
-    const up = await uploadR2Media(ctx.env.PHOTOS, ctx.request, {
+    const up = await uploadR2Media(ctx.env.PHOTOS!, ctx.request, { env: ctx.env,
       prefix: 'cn',
       maxBytes: MAX_PHOTO_BYTES,
       accept: () => true,

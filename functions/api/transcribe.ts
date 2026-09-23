@@ -1,3 +1,4 @@
+import { runModel } from '../_lib/runModel'
 import { badRequest, ok, withAiError } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { resolveLang } from '../_lib/ai'
@@ -73,7 +74,7 @@ export const onRequestPost = authed(
       // the domain-vocabulary primer (see PRIMER) so groceries spell right — a BARE word
       // list, not the framing sentence the old primer echoed. `condition_on_previous_
       // text: false` keeps a self-contained clip from drifting on imaginary prior text.
-      const res = (await ctx.env.AI!.run('@cf/openai/whisper-large-v3-turbo', {
+      const res = (await runModel(ctx.env, '@cf/openai/whisper-large-v3-turbo', {
         audio: toBase64(new Uint8Array(buf)),
         task: 'transcribe',
         language: lang,

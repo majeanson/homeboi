@@ -28,7 +28,7 @@ export const onRequestPost = authed(async (ctx) => {
   if (!kind) return badRequest('Audio, image ou scène requis.')
   // Type already validated to audio/image/json above → accept any here; the prefix
   // is dynamic (ns_ for the editable scene, nm_ otherwise).
-  const up = await uploadR2Media(ctx.env.PHOTOS, ctx.request, {
+  const up = await uploadR2Media(ctx.env.PHOTOS!, ctx.request, { env: ctx.env,
     prefix: kind === 'scene' ? 'ns' : 'nm',
     maxBytes: MAX_BYTES,
     accept: () => true,

@@ -28,7 +28,7 @@ export const onRequestPost = authed(async (ctx) => {
         ? 'scene'
         : null
   if (!kind) return badRequest('Audio, image ou scène requis.')
-  const up = await uploadR2Media(ctx.env.PHOTOS, ctx.request, {
+  const up = await uploadR2Media(ctx.env.PHOTOS!, ctx.request, { env: ctx.env,
     prefix: kind === 'scene' ? 'rs' : 'rm',
     maxBytes: MAX_BYTES,
     accept: () => true,

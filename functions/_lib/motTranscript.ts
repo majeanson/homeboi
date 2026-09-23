@@ -1,3 +1,4 @@
+import { runModel } from './runModel'
 import type { Env } from './env'
 import { cleanTranscript } from './transcript'
 import { resolveLang } from './ai'
@@ -40,7 +41,7 @@ export async function transcribeMot(env: Env, householdId: string, motId: string
     const buf = await obj.arrayBuffer()
     if (buf.byteLength === 0 || buf.byteLength > MAX_BYTES) return
 
-    const res = (await env.AI.run('@cf/openai/whisper-large-v3-turbo', {
+    const res = (await runModel(env, '@cf/openai/whisper-large-v3-turbo', {
       audio: toBase64(new Uint8Array(buf)),
       task: 'transcribe',
       language: resolveLang(env, request),

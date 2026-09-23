@@ -29,7 +29,7 @@
 | --- | --- |
 | **What it is** | A calm household command-center for a cheap always-on wall tablet. Single-page React app + one Cloudflare Worker (static assets + `/api/*`) + D1 + Workers AI + R2. FR-CA first. |
 | **Code** | ~157k lines across 955 `.ts`/`.tsx` files (`src/`, `functions/`, `worker/`) |
-| **Schema** | 136 forward-only migrations (0136 = « Les remarques ») |
+| **Schema** | 137 forward-only migrations (0137 = le budget quotidien) |
 | **Tests** | 2 392 unit tests in 189 files · 85 real-runtime cases in 12 files (`npm run test:d1`, the Worker in workerd against a real D1) · 157 Playwright spec files |
 | **Deploy** | Push to `main` → CI (typecheck · test · build · bundle budget · **test:d1** · knip) gates `db:migrate:prod` + `wrangler deploy`. E2E is decoupled (`workflow_run`), runs after a green CI, never blocks the ship. |
 | **Second interface** | `/api/mcp` — read-only over the household — of the 12 tools, most proxy a GET handler that already exists, so the caps, the recurrence expansion and the time zone are decided once and inherited. (This row lives HERE, not in §3: docCounts derives that number from the registry, and the claim died the first time §3 rotated.) |
@@ -82,9 +82,8 @@ interchangeable. Read this table before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md` is now
-> a number you can trust. It reads **3** — all three in §4-K's Wave 5, and for the first
-> time since the plan was written, **none of them is blocked on anything but choosing to
-> do it**. **Asserted from the boxes themselves** by
+> a number you can trust. It reads **2** — both in §4-K's Wave 5, both unblocked, and
+> both about the same thing: letting a stranger sign up without an invite. **Asserted from the boxes themselves** by
 > `src/lib/docCounts.test.ts`, so this sentence cannot drift the way `REVIEW-PASS.md`'s
 > banner once did — it claimed 15 for twelve days against a single box.
 >
@@ -258,46 +257,39 @@ was false for as long as mail was, so a failed backup or an unsweepable sandbox 
 nowhere to go but the log.
 
 **Wave 4 — a household can leave, and knows the terms. ✅ SHIPPED 2026-09-22.**
-
-- [x] **Self-serve deletion** — `DELETE /api/household`, operator-only, `requirePassword`,
-      AND the household's name retyped (the half a password cannot be: a password is typed
-      while thinking about something else, a name has to be read off the screen; case and
-      accents fold on both sides). Folded under the export, because the first thing to
-      offer someone leaving is their own things. It reuses the whole-schema delete —
-      **renamed `deleteDemoHousehold` → `deleteHousehold` in the same commit**, since
-      « Demo » in the name of the function that erases a real family is how the next
-      person writes a second one. No undo tier, recorded as a ➖ with the argument
-      (PARITY ¹¹¹). `worker/leave.d1.test.ts` (5, real runtime: the refusals, the
-      accent/case fold, the session kill switch, **the neighbouring household untouched**)
-      + `e2e/leave-and-legal.spec.ts` (6). The name lock was proven red.
-- [x] **Privacy policy + terms** — `/confidentialite` + `/conditions`, FR and EN, from
-      Home's footer and from Réglages. Written to be TRUE rather than reassuring: every
-      claim was checked against code on the day (the two AI destinations — Workers AI and
-      Mistral OCR — the 14-night backup window, the 24 h sandbox TTL, and the two doors
-      that make Law 25's access + deletion rights real instead of promised). The copy
-      lives in `pages/LegalPage.tsx`, NOT `i18n.ts`: two legal texts in two languages
-      would have eaten the eager dictionary's last 11 KB to ship words read once, on a
-      lazy route.
-- [x] **Contact door** — `CONTACT_EMAIL`, an optional var surfaced as the only VALUE on
-      `/api/health` (the legal pages must render with no session, so there is nothing else
-      to ask). Unset → the block says the app is run privately rather than printing an
-      empty mailto. **⚠️ It is unset in production today**, and that is a gate on Wave 5
-      opening signup, not on these pages: Law 25 wants a reachable human before strangers
-      arrive.
+`DELETE /api/household` behind three locks — operator scope, the password (`_lib/sudo`),
+and the household's NAME retyped, which is the half a password cannot be: a password is
+typed while thinking about something else, a name has to be read off the screen. Folded
+under the export, because the first thing to offer someone leaving is their own things.
+No undo tier, recorded as a ➖ with the argument (PARITY ¹¹¹). `deleteDemoHousehold` became
+`deleteHousehold` in the same commit. `/confidentialite` + `/conditions` ship FR and EN
+from the marketing footer and from Réglages, written to be TRUE rather than reassuring —
+every claim checked against code that day — and living in their own lazy page, not in
+`i18n.ts`. `CONTACT_EMAIL` is the contact door, still unset in production and the one Law
+25 prerequisite before signup opens. Guards: `worker/leave.d1.test.ts` (5, including the
+neighbouring household left untouched) + `e2e/leave-and-legal.spec.ts` (6).
 
 **Wave 5 — bounds, then the gate opens.**
 
-- [ ] **Per-sandbox limits**: a daily cap on Workers AI calls and on R2 upload bytes per
-      sandbox household (today only the TTL + the mint cap bound them — fine for one
-      household, not for a demo link posted anywhere). **Sized 2026-09-22, not started,
-      and the shape is the work:** there is no single choke point today. The AI surface is
-      several exported functions in `_lib/ai.ts`, and R2 `put`s live in ~15 endpoint files
-      (`cercle-photos`, `drawings`, `family-notes`, `carnets`, `care-log`, `businesses`…).
-      Wiring a counter at each call site is the fork shape this repo keeps paying for, so
-      the first move is ONE seam on each side — then the cap, then a `usage_daily` table
-      keyed by household + local day (the rate-limit BINDINGS cannot do daily: they are
-      fixed short windows). Not urgent on its own: it exists to precede Wave 5's open
-      signup, which is itself behind Wave 3, which is waiting on the Resend steps above.
+- [x] **Daily spend limits — SHIPPED 2026-09-23, and for EVERY household, not only the
+      sandboxes.** Two resources cost money per use and nothing bounded either: a demo
+      sandbox is a real operator session, so one unauthenticated POST bought a credential
+      that `/api/transcribe` (16 MB of audio per call, whisper-large-v3-turbo) and
+      `/api/ask` (a 70B model) accepted without limit. Not one AI endpoint called the rate
+      limiter. The asymmetry that made it worth doing first: **R2 is rented and the 24 h
+      sweep reclaims it; neurons are burned and nothing gives them back.**
+      Capping every household was the deliberate widening — a runaway loop in a real
+      household had no ceiling either, and the family ceiling is set where nobody meets
+      it (1 000 AI calls / 2 GB a day, against 60 / 50 MB for a sandbox).
+      **The sizing note here was half wrong and the correction is the lesson:** R2 already
+      HAD its seam (`uploadR2Media`, which all 18 upload sites call); only AI lacked one,
+      with 13 raw `env.AI.run(` sites. So the work was one new seam (`_lib/runModel.ts`),
+      one option added to the old one, migration 0137, and `usageRule.test.ts` to keep
+      both unavoidable. The counter is a single atomic UPSERT — `worker/usage.d1.test.ts`
+      proves it by firing 20 concurrent charges, and the naive read-then-write it replaced
+      was planted to watch that test fail (it counted **1 of 20**). The cap refusal was
+      proven red too. A spent budget needs no new UI: every caller already treats a throw
+      as « the model did not answer » and takes its AI-unwired path.
 - [ ] **Email verification on signup** through the same `sendMail` seam (a verified flag
       on `operators`; unverified accounts can use the app but cannot mint guest links or
       invite a co-operator — the two doors that reach OUTSIDE the household).

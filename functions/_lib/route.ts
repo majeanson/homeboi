@@ -16,7 +16,8 @@ import { type Actor, requireActor } from './household'
 import { aiUsable } from './aiPref'
 import { forbidden, serverError, serviceUnavailable } from './json'
 import { withIdempotency } from './idempotency'
-import { runWithTz } from './tz'
+import { runWithRequest } from './tz'
+import { isSandboxEmail } from './demoHousehold'
 import { broadcastInvalidate, keysForPath } from './realtime'
 
 // A handler that has already cleared auth: it receives the resolved actor
@@ -103,7 +104,7 @@ export function authed(
       // through ~190 call sites. AsyncLocalStorage, so two concurrent requests from two
       // households can never read each other's.
       const idemKey = ctx.request.headers.get('Idempotency-Key')
-      const res = await runWithTz(actor.tz, async () =>
+      const res = await runWithRequest({ tz: actor.tz, householdId: actor.householdId, sandbox: !!actor.email && isSandboxEmail(actor.email) }, async () =>
         idemKey && method !== 'GET' && method !== 'HEAD'
           ? await withIdempotency(ctx.env, actor.householdId, idemKey, () => handler(ctx, actor))
           : await handler(ctx, actor),

@@ -15,7 +15,7 @@ const MAX_BYTES = 3 * 1024 * 1024
 
 export const onRequestPost = authed(async (ctx) => {
   if (!ctx.env.PHOTOS) return serviceUnavailable('Stockage image indisponible ici.')
-  const up = await uploadR2Media(ctx.env.PHOTOS, ctx.request, { prefix: 'rc', maxBytes: MAX_BYTES })
+  const up = await uploadR2Media(ctx.env.PHOTOS!, ctx.request, { env: ctx.env, prefix: 'rc', maxBytes: MAX_BYTES })
   if ('error' in up) return up.error
   return ok({ key: up.key })
 })

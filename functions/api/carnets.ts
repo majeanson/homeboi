@@ -133,7 +133,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const type = ctx.request.headers.get('content-type') ?? ''
   if (type.startsWith('image/')) {
     if (!ctx.env.PHOTOS) return serviceUnavailable('Stockage photo indisponible ici.')
-    const up = await uploadR2Media(ctx.env.PHOTOS, ctx.request, { prefix: 'cn', maxBytes: MAX_PHOTO_BYTES, accept: () => true })
+    const up = await uploadR2Media(ctx.env.PHOTOS!, ctx.request, { env: ctx.env, prefix: 'cn', maxBytes: MAX_PHOTO_BYTES, accept: () => true })
     if ('error' in up) return up.error
     return ok({ key: up.key })
   }

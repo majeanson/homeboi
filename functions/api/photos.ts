@@ -25,7 +25,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   if (!ctx.env.PHOTOS) return serviceUnavailable('Stockage photo indisponible ici.')
   // Flat, URL-safe key (single path segment so /api/img/[key] serves it). The
   // random id is the unguessable capability; household scope lives in the row.
-  const up = await uploadR2Media(ctx.env.PHOTOS, ctx.request, { prefix: 'ph', maxBytes: MAX_BYTES })
+  const up = await uploadR2Media(ctx.env.PHOTOS!, ctx.request, { env: ctx.env, prefix: 'ph', maxBytes: MAX_BYTES })
   if ('error' in up) return up.error
   const key = up.key
   // The row id comes back with the key: keeping a snapped photo into the frame is
