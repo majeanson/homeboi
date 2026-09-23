@@ -52,7 +52,21 @@ export const DEMO_SANDBOX_TTL = 24 * 3600
 // Alive-sandbox ceiling: past it new visitors get the read-only singleton
 // instead. Sized against the free-tier polling budget (~15–30 households total):
 // sandboxes are transient, but each open board polls like a real one.
-export const DEMO_SANDBOX_CAP = 10
+export const DEMO_SANDBOX_CAP = 25
+
+// …AND THE SHORTER ONE, for a sandbox nobody touched (2026-09-23). The cap counts
+// sandboxes that EXIST, not sandboxes anyone is using — ten probes with no open board
+// filled it for a full day, which is how this was found rather than imagined. A visitor
+// who mints one and closes the tab costs nothing and should not hold a slot until
+// tomorrow; a visitor who WROTE something gets the full 24 h, because they may well come
+// back after lunch.
+//
+// « Touched » is exact, not guessed: route.ts stamps `households.updated_at` on every
+// successful write BY A SANDBOX, so an untouched household still reads
+// `updated_at <= created_at`. The heuristic this replaced — look for non-sample rows in
+// a list of tables — would have swept away a visitor who only drew a picture, because
+// the drawing lives in a table the list forgot.
+export const DEMO_SANDBOX_IDLE_TTL = 2 * 3600
 
 // ---- Schema inventory (guarded by demoHousehold.test.ts) --------------------
 
@@ -365,11 +379,18 @@ export async function countDemoSandboxes(env: Env): Promise<number> {
  * expired sandboxes per mint, so cleanup amortizes over traffic and one request
  * never pays for a backlog. Best-effort — a sweep failure never blocks the mint. */
 export async function sweepExpiredDemoSandboxes(env: Env, now: number, limit = 2): Promise<number> {
+  // TWO REASONS TO GO, in one query so the bounded limit still means what it says:
+  //   · older than the full TTL — the original rule, whatever happened in it;
+  //   · older than the IDLE TTL and never written to — the tab was closed minutes after
+  //     it opened, and the slot is worth more than the empty household.
+  // Oldest first either way, so a backlog drains in the order it arrived.
   const { results } = await env.DB.prepare(
     `SELECT h.id FROM households h JOIN operators o ON o.household_id = h.id
-     WHERE o.email LIKE ? AND h.created_at < ? ORDER BY h.created_at LIMIT ?`,
+     WHERE o.email LIKE ?
+       AND (h.created_at < ? OR (h.created_at < ? AND h.updated_at <= h.created_at))
+     ORDER BY h.created_at LIMIT ?`,
   )
-    .bind(SANDBOX_EMAIL_LIKE, now - DEMO_SANDBOX_TTL, limit)
+    .bind(SANDBOX_EMAIL_LIKE, now - DEMO_SANDBOX_TTL, now - DEMO_SANDBOX_IDLE_TTL, limit)
     .all<{ id: string }>()
   let swept = 0
   for (const row of results) {

@@ -63,8 +63,11 @@ describe('keysForPath', () => {
   // meals + month ride along because the meal ORDER/HERO are applied server-side, so
   // reordering on one device must re-sort another's kitchen grid + calendar, not just
   // re-tint them.
-  it('maps household settings to household + board + health + meals + month', () => {
-    expect(keysForPath('household')).toEqual([['household'], ['board'], ['health'], ['meals'], ['month']])
+  it('maps household settings to household + board + health + meals + month + flyers', () => {
+    // …+ ['flyers'] since 2026-09-23: the postal code and the store allowlist ARE the
+    // flyer query, so changing them on one device left another showing another town's
+    // circulars until its next poll. Found by keysMirror.test.ts.
+    expect(keysForPath('household')).toEqual([['household'], ['board'], ['health'], ['meals'], ['month'], ['flyers']])
   })
 
   // NOT + board, deliberately (2026-08-28). The board DOES show routines — the
@@ -157,7 +160,11 @@ describe('keysForPath', () => {
       'recipe-draft',
       'weather',
       'health',
-      'photos',
+      // 'photos' LEFT this list on 2026-09-23. It reads like a blob endpoint — it takes
+      // an image body — but its POST also inserts a `photos` row, and the board's
+      // PhotoFrame card polls that list: a photo added on a phone never reached the wall
+      // tablet. keysMirror.test.ts found it by comparing this map against every client
+      // affectedKeys, and that test re-plants it to stay honest.
       'members/avatar',
       // The PARITY entry-17 sweep: blob stages + AI scratch endpoints whose
       // result returns inline (the follow-up write carries its own path).

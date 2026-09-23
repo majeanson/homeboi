@@ -93,7 +93,6 @@ const SILENT_PATHS = new Set<string>([
   'auth/verify',
   'routine-audio',
   'weather',
-  'photos',
   'members/avatar',
 ])
 
@@ -110,7 +109,9 @@ const PATH_KEYS: Record<string, string[][]> = {
   'chores-ledger': [['chores'], ['board'], ['month']],
   // Projets & Entretien (home_projects): dated upkeep shows on the board + month,
   // and the Réglages sub-tabs read ['home-projects']. Mirrors the chores keys.
-  'home-projects': [['home-projects'], ['board'], ['month']],
+  // …and ['carnets']: « Projets & Entretien » rows render inside a carnet's own
+  // sections, so another device sitting on that carnet was stale until its next poll.
+  'home-projects': [['home-projects'], ['board'], ['month'], ['carnets']],
   // « Les carnets » (cared-for things): the tree feeds the cercle SubTab + the
   // board's « Les carnets » glance; a care-log entry refreshes the same surfaces.
   carnets: [['carnets'], ['board']],
@@ -195,11 +196,15 @@ const PATH_KEYS: Record<string, string[][]> = {
   // (Réglages ▸ Repas) are applied SERVER-side: /api/meals and /api/month sort by the
   // order, /api/board filters its headline by the hero. Reordering on the phone must
   // re-sort the wall tablet's kitchen grid + calendar, not just re-tint them.
-  household: [['household'], ['board'], ['health'], ['meals'], ['month']],
+  // ['flyers'] too: the postal code and the store allowlist ARE the flyer query, so
+  // changing them on one device left another showing the old town's circulars.
+  household: [['household'], ['board'], ['health'], ['meals'], ['month'], ['flyers']],
   // Members appear on the board (faces), in Réglages, and as people in Le cercle
   // (their relationship edits re-derive the circle's families).
   // (a birthday edit also feeds the « À régler » gift-idea heads-up).
-  members: [['members'], ['board'], ['cercle'], ['a-regler']],
+  // ['routines'] too: a member's name, colour and photo are drawn on their routine
+  // cards, so a rename left the kid's tablet showing the old face.
+  members: [['members'], ['board'], ['cercle'], ['a-regler'], ['routines']],
   // Kid routines render on the board (the `routineNext` card) AND the routines tab —
   // but BOTH read `['routines']`: `RoutineNextCard` runs its own ROUTINES_KEY query
   // (`board/RoutineNextCard.tsx:38`) and `/api/board` returns no routine data at all.
@@ -256,6 +261,12 @@ const PATH_KEYS: Record<string, string[][]> = {
   // Pets are people in the circle (folded into unifyCircle) — a pet edit re-derives
   // the directory, so mirror the client's [CERCLE_KEY].
   pets: [['cercle']],
+  // « Les photos » — NOT silent, though it sat in SILENT_PATHS with the blob endpoints
+  // until 2026-09-23. It looks like one (it takes an image body) but it also INSERTS a
+  // `photos` row, and the board's PhotoFrame card polls that list: a photo added on a
+  // phone never reached the wall tablet until its next poll. Found by cross-checking
+  // every client `affectedKeys` against this map (usageRule's sibling, keysMirror).
+  photos: [['photos'], ['board']],
   // Le cercle → Business: the services directory has its own cache (BUSINESSES_KEY).
   businesses: [['businesses']],
   // Le cercle → Notes: durable per-member / family-wide notes (FAMILY_NOTES_KEY).

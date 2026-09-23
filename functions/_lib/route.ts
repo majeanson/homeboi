@@ -18,6 +18,7 @@ import { forbidden, serverError, serviceUnavailable } from './json'
 import { withIdempotency } from './idempotency'
 import { runWithRequest } from './tz'
 import { isSandboxEmail } from './demoHousehold'
+import { nowSec } from './ids'
 import { broadcastInvalidate, keysForPath } from './realtime'
 
 // A handler that has already cleared auth: it receives the resolved actor
@@ -121,6 +122,26 @@ export function authed(
       // fine-grained — an unmapped board-affecting write still defaults to the
       // board key, and endpoints that change no shared cache broadcast nothing.
       if (!SAFE_METHODS.has(method) && res.status >= 200 && res.status < 300) {
+        // A SANDBOX THAT WAS ACTUALLY USED SAYS SO (Wave 5, 2026-09-23). The demo cap
+        // counts sandboxes that EXIST, not sandboxes anyone is using, so ten probes with
+        // no open board filled it for a full day — measured, not imagined. The early
+        // sweep needs to tell a visitor who tried the app from one who bounced, and the
+        // only exact signal is the household saying « someone wrote here ».
+        //
+        // Scoped to sandboxes on purpose: a real household would pay an extra UPDATE on
+        // every write for a number nothing reads. Fire-and-forget beside the broadcast,
+        // for the same reason — it must never delay or fail a write.
+        if (actor.email && isSandboxEmail(actor.email)) {
+          const touch = ctx.env.DB.prepare('UPDATE households SET updated_at = ? WHERE id = ?')
+            .bind(nowSec(), actor.householdId)
+            .run()
+            .catch(() => {
+              /* an un-stamped sandbox is swept early at worst; never fail the write */
+            })
+          if (typeof ctx.waitUntil === 'function') ctx.waitUntil(touch)
+          else void touch
+        }
+
         // ctx.request.url is the full request URL; keysForPath strips the origin
         // + /api/ prefix + query string itself, so a raw pathname is fine here.
         const apiPath = (() => {
