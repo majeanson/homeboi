@@ -191,8 +191,8 @@ export const WHATS_NEW: WhatsNewEntry[] = [
   {
     id: 'house-diary',
     text: {
-      fr: 'Nouveau : « La maison cette année » — le journal calme de l’année (soins, corvées, voyages, dessins), dans Réglages ▸ Le cercle.',
-      en: 'New: “The home this year” — the year’s calm journal (care, chores, trips, drawings), in Settings ▸ The circle.',
+      fr: 'Nouveau : « La maison cette année » — le journal calme de l’année (soins, corvées, voyages, dessins), dans Réglages ▸ Maison ▸ Cette année.',
+      en: 'New: “The home this year” — the year’s calm journal (care, chores, trips, drawings), in Settings ▸ Home ▸ This year.',
     },
     card: 'cercle',
   },

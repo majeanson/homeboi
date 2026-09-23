@@ -174,8 +174,8 @@ const BASE_TOURS: Tour[] = [
         icon: 'gear-six-bold',
         title: { fr: 'C’est tout !', en: 'That’s it!' },
         body: {
-          fr: 'Tu es prêt. Pour revoir ce tour plus tard, va dans [[icon:gear-six-bold]] Réglages ▸ Guide ▸ Première fois. Le reste du guide explique chaque concept en détail.',
-          en: 'You’re set. To see this tour again later, go to [[icon:gear-six-bold]] Settings ▸ Guide ▸ First time. The rest of the guide explains every concept in detail.',
+          fr: 'Tu es prêt. Pour revoir ce tour plus tard, va dans [[icon:gear-six-bold]] Réglages ▸ Découvrir, carte « Première fois ». Le reste du guide explique chaque concept en détail.',
+          en: 'You’re set. To see this tour again later, go to [[icon:gear-six-bold]] Settings ▸ Discover, “First time” card. The rest of the guide explains every concept in detail.',
         },
       },
     ],

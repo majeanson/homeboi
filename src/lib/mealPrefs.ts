@@ -21,13 +21,13 @@ export interface HouseholdSettings {
   includedStores?: string[]
   mealColors?: Record<string, string> // slot → "#rrggbb" override (only set slots)
   mealHidden?: string[] // slots hidden from glance/plan; empty = show all
-  mealOrder?: string[] // slot display order (Réglages ▸ Repas); server sends all five
+  mealOrder?: string[] // slot display order (Réglages ▸ La cuisine ▸ Couleurs des repas); server sends all five
   mealHero?: string // the day's headline slot
   mealHours?: Record<string, number> // slot → start, minutes from local midnight
   mealWindowDays?: number // « Jours affichés » — how far the meal grid reaches (7–14, default 10)
   measureColors?: Record<string, string> // measuring-tool swatchId → "#rrggbb" (only set tools)
   reserveLocations?: ReserveLocation[] | null // La réserve storage spots; null = seeded defaults
-  aiEnabled?: boolean // household AI on/off switch (Réglages ▸ IA); the SPA gates AI on /api/health instead
+  aiEnabled?: boolean // household AI on/off switch (Réglages ▸ Système ▸ Voix & IA); the SPA gates AI on /api/health instead
 }
 
 // The per-slot meal colour, visibility, ORDER, HERO and HOURS, resolved from the

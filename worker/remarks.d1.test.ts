@@ -70,17 +70,23 @@ describe('les remarques', () => {
     const a = await household('rm-journal')
     await file(a, { title: 'La liste saute' })
     const id = (await list(a))[0].id
-    // EVERY event in this test lands in the SAME SECOND — which is the point. Timestamps
-    // here are unix seconds, so a journal ordered on created_at alone comes back
-    // shuffled (it did: « shipped, shipped, filed, reopened, confirmed »). The handler
-    // tiebreaks on rowid, i.e. insertion order, and this is what holds that.
-    const now = Math.floor(Date.now() / 1000)
+    // The events usually land in the SAME SECOND — which is the point. Timestamps here
+    // are unix seconds, so a journal ordered on created_at alone comes back shuffled (it
+    // did: « shipped, shipped, filed, reopened, confirmed »). The handler tiebreaks on
+    // rowid, i.e. insertion order, and this is what holds that.
+    //
+    // Each machine event reads the clock WHEN IT IS WRITTEN, as the deploy callback does.
+    // This file used to read it once, up here, and stamp both « shipped » events with
+    // that: whenever the run crossed a second boundary, the handler-stamped « reopened »
+    // (now + 1) sorted AFTER the second « shipped » (still now) — a flake in CI that no
+    // household can produce (2026-09-23; reproduced every time with a 1.1 s pause).
+    const now = () => Math.floor(Date.now() / 1000)
 
     // Two deploys claim it, with different commits (only the pipeline writes these).
     await env.DB.prepare(
       "INSERT INTO remark_events (id, remark_id, kind, text, sha, author_member_id, created_at) VALUES ('ev_s1', ?1, 'shipped', 'première tentative', 'aaaaaaa', NULL, ?2)",
     )
-      .bind(id, now)
+      .bind(id, now())
       .run()
     await env.DB.prepare("UPDATE remarks SET status = 'shipped' WHERE id = ?1").bind(id).run()
 
@@ -95,7 +101,7 @@ describe('les remarques', () => {
     await env.DB.prepare(
       "INSERT INTO remark_events (id, remark_id, kind, text, sha, author_member_id, created_at) VALUES ('ev_s2', ?1, 'shipped', 'deuxième tentative', 'bbbbbbb', NULL, ?2)",
     )
-      .bind(id, now)
+      .bind(id, now())
       .run()
     await env.DB.prepare("UPDATE remarks SET status = 'shipped' WHERE id = ?1").bind(id).run()
 

@@ -502,7 +502,7 @@ export function Operator() {
               is gone (Marc, 2026-08-28): the IA tab already carries the same toggle
               WITH its explanation and its « En savoir plus » link, so this was a
               second spelling of one control on the line you read first — and it
-              spent that line on a setting almost nobody flips. Réglages ▸ IA is the
+              spent that line on a setting almost nobody flips. Réglages ▸ Système ▸ Voix & IA is the
               one door now. */}
           {/* Sign-IN stays up here: for a kiosk it is the ENABLING action — the
               door to the operator-only subs, and the kioskNotice right below

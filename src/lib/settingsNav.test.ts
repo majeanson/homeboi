@@ -283,8 +283,15 @@ describe('prose breadcrumbs name live Réglages destinations', () => {
     expect(scan('x Réglages ▸ Guide.').length).toBe(1)
   })
 
-  it('i18n (fr + en), the guide and the help registries only name live destinations', () => {
-    const files = ['src/i18n.ts', 'src/i18n.en.ts', 'src/i18n.operator.ts', 'src/i18n.operator.en.ts', 'src/lib/guideContent.ts', 'src/lib/operatorHelp.ts', ...sourceFiles(srcDir).filter((f) => /[a-zA-Z]Help\.ts$/.test(f)).map((f) => rel(f))]
+  // EVERY source string, not a list of files. The list this replaced (i18n, the guide,
+  // the help registries) left out the tour: its closing step told every new family
+  // « Réglages ▸ Guide ▸ Première fois » for months after « Guide » became « Découvrir »,
+  // under a guard whose own canary names that exact crumb (2026-09-23). A list of files
+  // that hold copy is a promise nobody keeps when copy moves into a new file.
+  it('every user-facing string in src/ only names live destinations', () => {
+    const files = sourceFiles(srcDir)
+      .filter((f) => !/\.test\.tsx?$/.test(f))
+      .map((f) => rel(f))
     const problems: string[] = []
     for (const f of new Set(files)) {
       // Strings only: readScanned blanks comments, and a comment's crumb is not a hint.

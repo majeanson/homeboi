@@ -2089,7 +2089,7 @@ export function DevKit() {
                 physiquement aucune place pour monter au-dessus du clavier.
               </li>
               <li>Le suivi du curseur (pin à l’ouverture + follow à la frappe) est global — lib/viewportVars, rien à câbler par champ.</li>
-              <li>Diagnostic sur appareil : Réglages ▸ Système ▸ Version — « Activer le diagnostic clavier » (ou ?kbdebug=1).</li>
+              <li>Diagnostic sur appareil : Réglages ▸ Système ▸ Appareils & accès — « Activer le diagnostic clavier » (ou ?kbdebug=1).</li>
             </ul>
           </Demo>
           <Demo label="Simuler le clavier (5 s) — pose .kb-open + --kb: 336px sur toute l’app">
@@ -2412,7 +2412,7 @@ export function DevKit() {
       // 04068e9, so the gallery was showing a variant the app no longer has (found
       // by the 2026-09-08 DevKit ↔ code audit).
       render: () => (
-        <Demo label="drag the ⠿ grip to reorder, or Tab to it + ↑/↓ (rows via as='li', as Réglages ▸ Recettes does)">
+        <Demo label="drag the ⠿ grip to reorder, or Tab to it + ↑/↓ (rows via as='li', as Réglages ▸ La cuisine ▸ Apparence does)">
           <ul className="operator__list tag-admin__list">
             {dragPills.map((p, i) => (
               <DragPill
@@ -3055,7 +3055,7 @@ export function DevKit() {
               ))}
             </span>
           </Demo>
-          <Demo label="mixed — whole circles + the fraction (1 ½ tasse) · colours from Réglages ▸ Affichage">
+          <Demo label="mixed — whole circles + the fraction (1 ½ tasse) · colours from Réglages ▸ La cuisine ▸ Apparence">
             <span style={{ fontSize: '1.3rem' }}>
               {findMeasures('1 1/2 tasse').map((m, i) => (
                 <MeasureScoops key={i} measure={m} size="lg" />
@@ -3690,7 +3690,7 @@ export function DevKit() {
       file: 'components/HelpDot.tsx',
       kw: 'aide help point interrogation guide tutoriel comprendre ?',
       render: () => (
-        <Demo label="Le « ? » posé après un titre de section : lien direct vers SA carte du guide. Deux conditions le cachent — le mode tutoriel éteint (Réglages ▸ Affichage) et la lentille bambin. Bascule l'axe Audience ci-dessus sur « toddler » : il disparaît, et c'est le comportement attendu, pas un bug de la galerie.">
+        <Demo label="Le « ? » posé après un titre de section : lien direct vers SA carte du guide. Deux conditions le cachent — le mode tutoriel éteint (Réglages ▸ Système ▸ Affichage & veille) et la lentille bambin. Bascule l'axe Audience ci-dessus sur « toddler » : il disparaît, et c'est le comportement attendu, pas un bug de la galerie.">
           <p className="devkit__inline-demo">
             Le babillard <HelpDot card="board" />
           </p>

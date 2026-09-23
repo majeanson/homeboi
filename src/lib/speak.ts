@@ -60,7 +60,7 @@ export function setRate(rate: number): void {
   }
 }
 
-// A GLOBAL read-aloud language (Réglages ▸ Affichage) — 'auto' follows the app
+// A GLOBAL read-aloud language (Réglages ▸ Système ▸ Affichage & veille) — 'auto' follows the app
 // language (the long-standing default), 'fr'/'en' makes EVERY narration use that
 // voice, app-wide. A per-call override (e.g. a recipe's own language) still wins;
 // this is the fallback below that. Read live at speak time + by a tiny store so the
@@ -325,7 +325,7 @@ export function useSpeak() {
       const text = spokenOnly(raw)
       if (!text) return
       // A per-call override wins (a recipe's own language); else the household's
-      // GLOBAL read-aloud language (Réglages ▸ Affichage); else the UI language.
+      // GLOBAL read-aloud language (Réglages ▸ Système ▸ Affichage & veille); else the UI language.
       const pref = getReadLang()
       const want = wantedTag(langOverride ?? (pref === 'auto' ? lang : pref))
 
@@ -338,7 +338,7 @@ export function useSpeak() {
           // falls back to the default mouth — so the voice's own tag wins.
           u.lang = v?.lang ?? want
           if (v) u.voice = v // matched voice -> reads in the toggled language
-          u.rate = getRate() // parent-set speaking speed (Réglages ▸ Affichage)
+          u.rate = getRate() // parent-set speaking speed (Réglages ▸ Système ▸ Affichage & veille)
           // Let a caller (e.g. the « Raconte-moi » tour) advance only once the voice
           // has actually finished this line, instead of guessing from text length.
           if (opts?.onEnd) u.onend = opts.onEnd
