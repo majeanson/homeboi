@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
 import { useT } from '../i18n'
 import { settingsHref } from '../lib/settingsNav'
@@ -9,9 +9,11 @@ import { useTour } from '../lib/tour'
 import { useSandbox } from '../lib/demo'
 import { useSampleStatus } from '../lib/sample'
 import { api } from '../lib/api'
+import { useOnline } from '../lib/online'
 import { useMeals } from '../lib/queryHooks'
 import { DEVICES_KEY } from '../lib/queryKeys'
 import { Icon, type IconName } from './Icon'
+import { Cluster } from './Layout'
 import { FeatureMap } from './FeatureMap'
 import { featureMapRoute } from '../lib/guideContent'
 
@@ -101,7 +103,10 @@ export function WelcomeCard({ members }: { members: { id: string }[] }) {
   const { start } = useTour()
   const { hasSample, pending: samplePending } = useSampleStatus()
   const nav = useNavigate()
+  const qc = useQueryClient()
+  const online = useOnline()
   const [state, setState] = useState(read)
+  const [loading, setLoading] = useState(false)
 
   // Real-progress sources (reuse the shared hook + key — no new endpoints):
   // • meals: the planned-meal week (≥1 planned meal ⇒ "choose the meals" is done).
@@ -121,11 +126,12 @@ export function WelcomeCard({ members }: { members: { id: string }[] }) {
   // can't act on it, and its "pair a tablet" step could never tick there — so it
   // simply doesn't show. The operator sees it on their own signed-in device.
   if (audience === 'toddler' || !signedIn || state.dismissed) return null
-  // Onboarding is SEQUENTIAL: while the seeded demo family is still present, the
-  // board shows only the explore banner (SampleBanner) — this setup checklist
-  // ("add your family") would be noise then, and its member/meal steps read as
-  // already-done off the demo rows. It appears once the demo is cleared, on a real
-  // empty household. `pending` guards the first paint so it never flashes then hides.
+  // A real signup starts EMPTY (2026-09-23), so this checklist is the first thing a new
+  // family sees. While examples are loaded (« Charger des exemples », below or in
+  // Réglages ▸ Découvrir), the board shows only the explore banner (SampleBanner) —
+  // this checklist would be noise then, and its member/meal steps read as already-done
+  // off the demo rows. It comes back once they are cleared. `pending` guards the first
+  // paint so it never flashes then hides.
   // EXCEPT in a sandbox: there the seed IS the point, and this card's try-this face
   // is the visitor's guidance (the claim strip above handles "keep it").
   if (!sandbox && (hasSample || samplePending)) return null
@@ -152,6 +158,21 @@ export function WelcomeCard({ members }: { members: { id: string }[] }) {
     // in a sibling component, so a plain state update would leave the board with no
     // claim CTA at all until the next navigation.
     window.dispatchEvent(new Event('bb:welcome-dismissed'))
+  }
+
+  // Opt-in examples for a family that wants to see the board alive before filling it.
+  // The invalidation flips the shared sample count, so this card steps aside and the
+  // SampleBanner (explain + « Vider ») takes over — the same handover a clear does in
+  // reverse. Online-only: see write-rule.test.ts.
+  const loadExamples = async () => {
+    if (loading) return
+    setLoading(true)
+    try {
+      await api('seed', { method: 'POST' })
+      await qc.invalidateQueries()
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -199,17 +220,24 @@ export function WelcomeCard({ members }: { members: { id: string }[] }) {
         </div>
       )}
       <h3 className="welcome-card__discover">{t.welcome.discover}</h3>
-      {/* Tiles open the LIVE section now (alive, since a fresh account is seeded),
-          not the Guide — discovery by doing. The Guide stays the explanation layer
-          (each section's "?" + Réglages ▸ Guide). */}
+      {/* Tiles open the LIVE section, not the Guide — discovery by doing. The Guide
+          stays the explanation layer (each section's "?" + Réglages ▸ Guide). */}
       <FeatureMap onSelect={(k) => nav(featureMapRoute(k))} label={t.welcome.discover} />
-      {/* A VISIBLE way back to the guided tour: skipping it is one tap, and the only
-          other recovery is buried in Réglages ▸ Guide. This keeps it a tap away while
-          the newcomer is still on the board. */}
-      <button type="button" className="welcome-card__replay" onClick={() => start('essentials')}>
-        <Icon name="play-bold" size={14} />
-        <span>{t.welcome.replayTour}</span>
-      </button>
+      <Cluster>
+        {/* A VISIBLE way back to the guided tour: skipping it is one tap, and the only
+            other recovery is buried in Réglages ▸ Guide. This keeps it a tap away while
+            the newcomer is still on the board. */}
+        <button type="button" className="welcome-card__replay" onClick={() => start('essentials')}>
+          <Icon name="play-bold" size={14} />
+          <span>{t.welcome.replayTour}</span>
+        </button>
+        {!sandbox && (
+          <button type="button" className="welcome-card__replay" onClick={loadExamples} disabled={!online || loading}>
+            <Icon name="sparkle-bold" size={14} />
+            <span>{t.sample.load}</span>
+          </button>
+        )}
+      </Cluster>
     </aside>
   )
 }

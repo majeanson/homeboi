@@ -122,17 +122,18 @@ export function SampleBanner() {
     setDismissed(true)
   }
 
-  // Clearing is the GRADUATION step, not a scary delete: it removes only the demo
-  // (is_sample rows), then the empty board reveals the real setup checklist. Frame
-  // the confirm positively + reassure it's reloadable.
+  // Clearing removes only the demo (is_sample rows), then the empty board reveals the
+  // real setup checklist. It used to confirm in a POSITIVE tone, as the mandated next
+  // step after every signup, while Réglages ▸ Découvrir asked the same question in the
+  // danger tone. Since 2026-09-23 the examples are opt-in (signup starts empty), so
+  // this is an ordinary bulk delete — and one message under two tones taught that the
+  // tone means nothing. Same tone as SampleDataControls now.
   const clear = async () => {
     if (busy) return
     const okay = await confirm({
       message: t.sample.clearConfirm,
       confirmLabel: t.sample.clearStart,
-      // Positive tone (not danger): clearing the demo is the guided next step, not a
-      // scary delete — it only removes is_sample rows and is reloadable from Réglages.
-      tone: 'default',
+      tone: 'danger',
     })
     if (!okay) return
     setBusy(true)

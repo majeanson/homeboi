@@ -1,7 +1,8 @@
-// Sample/demo data for a first-time household (onboarding Phase 1). A brand-new
-// account is otherwise two rows (household + operator) and an empty board, which
-// undercuts the welcome tour — it points at a ＋ and a nav bar with nothing behind
-// them. So we seed a small, calm, MEDIA-FREE demo family (no R2 blobs → clearing
+// Sample/demo data (onboarding Phase 1): the Tremblay family. Seeded automatically
+// only into a demo SANDBOX (demo.ts), where a board with nothing on it would show a
+// stranger nothing. A real account starts empty since 2026-09-23 — a family that
+// signed up came to set up ITS family — and loads these on request through
+// /api/seed. A small, calm, MEDIA-FREE demo family (no R2 blobs → clearing
 // is a pure DB delete, and no bucket dependency). Every row is tagged
 // `is_sample = 1` (migration 0096) so « Vider les exemples » removes only the demo,
 // never a row the operator added while exploring.
@@ -88,7 +89,7 @@ export async function clearSampleData(env: Env, householdId: string): Promise<vo
 }
 
 // Seed the demo family. Idempotent: no-ops if this household already has sample
-// rows (so calling it again from signup or « Charger des exemples » can't double it).
+// rows (so a double tap on « Charger des exemples » can't double it).
 // Returns the number of members seeded (0 = skipped because data already present).
 export async function seedSampleData(env: Env, householdId: string, ts = nowSec()): Promise<number> {
   if ((await countSampleData(env, householdId)) > 0) return 0

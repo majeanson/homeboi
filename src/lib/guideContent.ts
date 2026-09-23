@@ -340,12 +340,12 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Des exemples pour explorer', en: 'Sample data to explore' },
         detail: {
-          fr: 'Un tout nouveau compte arrive avec une famille de démo (membres, repas, listes, corvées, routines) pour que le babillard soit vivant tout de suite. « Vider les exemples » — sur le bandeau du babillard, ou ici même — n’efface jamais ce que tu ajoutes toi-même.',
-          en: 'A brand-new account comes with a demo family (members, meals, lists, chores, routines) so the board is alive from the start. “Clear the examples” — on the board’s banner, or right here — never removes anything you add yourself.',
+          fr: 'Un nouveau compte part vide, pour ta vraie famille — la famille de démo vit dans « Essayer pour vrai », une maisonnée d’essai que « Garder ma maisonnée » rend tienne. « Charger des exemples » (l’accueil du babillard, ou ici) la met chez toi quand même, et « Vider les exemples » n’efface jamais ce que tu ajoutes toi-même.',
+          en: 'A new account starts empty, for your real family — the demo family lives in “Try it for real”, a trial household that “Keep my household” makes yours. “Load sample data” (the board’s welcome card, or right here) brings it home anyway, and “Clear the examples” never removes anything you add yourself.',
         },
         why: {
-          fr: 'Voir l’app remplie vaut mille explications — et elle se vide d’un geste quand tu es prêt·e à mettre tes vraies affaires.',
-          en: 'Seeing the app full beats a thousand explanations — and it clears in one tap when you’re ready for your real stuff.',
+          fr: 'Les exemples, on les invite — on n’a pas à les pelleter dehors avant de commencer.',
+          en: 'Examples are something you invite in — not something you have to shovel out before you start.',
         },
       },
       {

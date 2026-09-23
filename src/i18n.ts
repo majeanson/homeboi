@@ -2275,6 +2275,9 @@ export const FR = {
     haveAccount: 'Déjà un compte ?',
     gotoLogin: 'Connexion',
     nextStep: 'Tu atterriras sur le babillard, avec une courte liste pour bien partir.',
+    // The examples live in the sandbox now — signup starts empty, so point there.
+    tryFirst: 'Pas encore sûr·e ?',
+    tryFirstLink: 'Essaie-le d’abord, sans inscription',
   },
   // « Rejoindre une maisonnée » — la deuxième porte d'entrée (migration 0128).
   // Le mot d'ordre : on ne CRÉE rien ici, on rejoint. Le titre nomme la maisonnée

@@ -2016,6 +2016,8 @@ export const EN: typeof FR = {
     haveAccount: 'Already have an account?',
     gotoLogin: 'Sign in',
     nextStep: 'You’ll land on the board, with a short checklist to get started.',
+    tryFirst: 'Not sure yet?',
+    tryFirstLink: 'Try it first, no sign-up',
   },
   join: {
     title: 'Join a household',

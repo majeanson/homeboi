@@ -85,8 +85,9 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
   } catch {
     return serverError('Démo indisponible pour le moment.')
   }
-  // Same seed a real signup gets — the board must read alive on first paint.
-  // Best-effort like signup: an empty sandbox is still a working sandbox.
+  // The sandbox is where the examples LIVE (a real signup starts empty since
+  // 2026-09-23) — the board must read alive on first paint.
+  // Best-effort: an empty sandbox is still a working sandbox.
   try {
     await seedSampleData(ctx.env, householdId, now)
   } catch {

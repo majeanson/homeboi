@@ -1,12 +1,12 @@
 import { test, expect, type Page } from '@playwright/test'
 import { mockApi, seedState } from './mocks'
 
-// The first-run onboarding SEQUENCE (not a pile-up): while the seeded demo family is
-// present, the board shows ONLY the explore banner (SampleBanner) and the setup
-// checklist (WelcomeCard) stays hidden — the checklist would mislead, its "add your
-// family" step reading as done off the demo rows. Tapping « Vider et commencer »
-// clears the demo (DELETE /api/seed) → on a real empty household the checklist takes
-// over.
+// The first-run onboarding SEQUENCE (not a pile-up). A real signup lands EMPTY on the
+// setup checklist (WelcomeCard) since 2026-09-23; its « Charger des exemples » loads
+// the demo family on request (POST /api/seed). While that family is present, the board
+// shows ONLY the explore banner (SampleBanner) and the checklist stays hidden — its
+// "add your family" step would read as done off the demo rows. « Vider et commencer »
+// clears the demo (DELETE /api/seed) → the checklist takes over again.
 //
 // Frontend-only against mocked /api/*. /api/seed is stubbed with a STATEFUL count
 // (GET returns it, DELETE clears it), registered AFTER mockApi so it wins for that
@@ -47,7 +47,7 @@ test('« Vider et commencer » fires the clear (DELETE /api/seed) and the banner
   await page.locator('.sample-banner').getByRole('button', { name: /Vider et commencer/ }).click()
   const [req] = await Promise.all([
     page.waitForRequest((r) => r.url().includes('/api/seed') && r.method() === 'DELETE'),
-    // Confirm the (positive) dialog.
+    // Confirm the dialog.
     page.locator('.confirm').getByRole('button', { name: /Vider et commencer/ }).click(),
   ])
   expect(req.method()).toBe('DELETE')
@@ -61,4 +61,17 @@ test('fresh empty household, no demo → the setup checklist shows directly, no 
   const welcome = page.locator('.welcome-card')
   await expect(welcome).toBeVisible()
   await expect(welcome).toContainText('étapes')
+})
+
+test('the checklist offers the examples on request — and hands over to the banner', async ({ page }) => {
+  await boot(page, { hasSample: false, fresh: true })
+  const welcome = page.locator('.welcome-card')
+  const [req] = await Promise.all([
+    page.waitForRequest((r) => r.url().includes('/api/seed') && r.method() === 'POST'),
+    welcome.getByRole('button', { name: /Charger des exemples/ }).click(),
+  ])
+  expect(req.method()).toBe('POST')
+  // count → 47 (stateful stub) → the banner explains them, the checklist steps aside.
+  await expect(page.locator('.sample-banner')).toBeVisible()
+  await expect(welcome).toHaveCount(0)
 })

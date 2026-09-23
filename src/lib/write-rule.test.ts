@@ -88,6 +88,10 @@ const ALLOWED = new Set<string>([
   'pages/ClaimPage.tsx → demo/claim',
   'components/operator/sampleData.tsx → seed',
   'components/SampleBanner.tsx → seed',
+  // « Charger des exemples » on the fresh board's WelcomeCard (signup starts empty
+  // since 2026-09-23): same argument — a queued seed replayed after the family has
+  // filled its board would drop the Tremblays into a household that moved on.
+  'components/WelcomeCard.tsx → seed',
 
   // 3. Links and inbound submissions. Each MINTS a token or posts into someone
   //    else's household; the caller needs the answer in hand (a URL, an ack), and a

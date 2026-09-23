@@ -6,10 +6,14 @@ import { hashPassword, safeEqual } from '../../_lib/password'
 import { newId, nowSec } from '../../_lib/ids'
 import { sendVerification } from '../../_lib/verify'
 import { mailEnabled } from '../../_lib/mail'
-import { seedSampleData } from '../../_lib/sampleData'
 
 // Self-serve signup: a new family creates its household + operator account in
-// one step (name the household, pick email + password) and lands signed in.
+// one step (name the household, pick email + password) and lands signed in —
+// on an EMPTY board and the WelcomeCard's three steps, because it came here to set
+// up its own family. The Tremblay examples used to be seeded here unconditionally,
+// so every real household began by shovelling out somebody else's; since 2026-09-23
+// they live in the demo sandbox (« Essayer pour vrai », keepable with « Garder ma
+// maisonnée ») and behind one opt-in tap (« Charger des exemples », /api/seed).
 //
 // When LOGIN_PASSWORD is set it doubles as the INVITE CODE here — exactly the
 // gate a new household needed before this endpoint existed (first login used to
@@ -67,15 +71,6 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
     await sendVerification(ctx.env, email, new URL(ctx.request.url).origin)
   } catch (err) {
     console.error('[mail] verify signup', err)
-  }
-
-  // Seed the demo family so the board is alive on first login (onboarding Phase 1).
-  // Best-effort: a seed failure must never fail the signup — the operator can load
-  // examples later from Réglages, or just start empty.
-  try {
-    await seedSampleData(ctx.env, householdId, ts)
-  } catch {
-    /* non-fatal — an empty household is a valid start */
   }
 
   try {

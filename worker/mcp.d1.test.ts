@@ -208,7 +208,8 @@ describe('the tools actually read the household', () => {
     }
     expect(out.result.isError).toBe(false)
     expect(out.result.content[0].type).toBe('text')
-    // The signup seed gives every household a living board, so this is real data.
+    // The harness loads the examples into every household (functions/test/d1.ts), so
+    // this is real data.
     expect(Object.keys(out.result.structuredContent).length).toBeGreaterThan(0)
   })
 

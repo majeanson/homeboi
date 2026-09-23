@@ -111,9 +111,9 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
     return conflict('Ce courriel a déjà accès à cette maisonnée — connecte-toi.', 'already-member')
   }
 
-  // NOTHING IS SEEDED. signup.ts plants the sample family so a new board is alive;
-  // this household already has a real one, and dropping fake kids into it would be
-  // the exact confusion this whole feature exists to remove.
+  // NOTHING IS SEEDED. This household already has a real family, and dropping fake
+  // kids into it would be the exact confusion this whole feature exists to remove.
+  // (Signup no longer seeds either, since 2026-09-23 — the examples are opt-in.)
   try {
     const { session, csrf } = await signInAs(ctx.env, email)
     const headers = new Headers({ 'content-type': 'application/json; charset=utf-8' })

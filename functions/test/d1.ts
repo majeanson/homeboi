@@ -58,9 +58,16 @@ function sessionFrom(email: string, householdId: string, c: { cookie: string; cs
 }
 
 // A brand-new household through the real signup endpoint (LOGIN_PASSWORD is unset in
-// the harness, so signup is open — the same shape as local dev). Seeds the sample
-// data like production does, so the household has rows in most tables.
-export async function household(label = 'test', password = 'correct horse battery'): Promise<Session & { password: string }> {
+// the harness, so signup is open — the same shape as local dev). Production signup
+// starts EMPTY since 2026-09-23 (the examples moved to the demo sandbox), so a test
+// that needs a lived-in household — rows in most tables, which the isolation sweep
+// depends on — gets the examples through the same door an operator uses
+// (POST /api/seed). `{ empty: true }` keeps what signup alone gives.
+export async function household(
+  label = 'test',
+  password = 'correct horse battery',
+  opts: { empty?: boolean } = {},
+): Promise<Session & { password: string }> {
   const email = `${label}-${Date.now()}-${++seq}@d1.test`
   const res = await anon('/api/auth/signup', { method: 'POST', body: { email, password, householdName: `Maisonnée ${label}` } })
   if (res.status !== 201) throw new Error(`signup ${res.status}: ${await res.text()}`)
@@ -68,7 +75,12 @@ export async function household(label = 'test', password = 'correct horse batter
   const me = await anon('/api/auth/me', { headers: { Cookie: c.cookie } })
   const who = (await me.json()) as { household?: { id: string } }
   if (!who.household) throw new Error('signup did not sign in')
-  return { ...sessionFrom(email, who.household.id, c), password }
+  const s = { ...sessionFrom(email, who.household.id, c), password }
+  if (!opts.empty) {
+    const seeded = await s.fetch('/api/seed', { method: 'POST' })
+    if (seeded.status !== 200) throw new Error(`seed ${seeded.status}: ${await seeded.text()}`)
+  }
+  return s
 }
 
 // Re-sign an existing account (a second device).

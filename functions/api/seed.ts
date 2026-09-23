@@ -2,10 +2,11 @@ import { ok } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { countSampleData, seedSampleData, clearSampleData } from '../_lib/sampleData'
 
-// Sample/demo data for a first-time household (onboarding Phase 1). Seeding runs
-// automatically at account creation (auth/signup + first-login), so this endpoint
-// is the MANAGE surface the operator reaches from the board banner (« Exemples pour
-// explorer ») and Réglages:
+// Sample/demo data (onboarding Phase 1). Seeded automatically ONLY in a demo sandbox
+// (demo.ts); a real account starts empty (auth/signup.ts) and opts in here — from the
+// WelcomeCard's « Charger des exemples », or Réglages ▸ Découvrir — so this endpoint
+// is the whole examples story for an account, and the board banner (« Exemples pour
+// explorer ») is its clear door:
 //   GET    — how many demo rows exist (drives the banner + the Réglages control).
 //            Any actor: a kiosk board reads it to decide whether to show the banner.
 //   POST   — (re)seed the demo family — operator only. No-ops if already present.

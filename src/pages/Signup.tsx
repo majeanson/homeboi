@@ -54,11 +54,11 @@ export function Signup() {
       // family started on the wall tablet (Pair's signup link), keep the kiosk
       // role they already chose instead of stamping the phone layout on a wall.
       if (!(chosen && surface === 'kiosk')) setSurface('mobile')
-      // Land on the board. Signup seeds a demo family, so the board is alive and the
-      // « Des exemples pour explorer » banner greets the newcomer first (explore →
-      // « Vider et commencer »); the setup checklist (WelcomeCard) takes over once the
-      // demo is cleared. The essentials tour also auto-runs here. Friendlier than
-      // dropping straight into a settings tab. And ONE quiet offer to put the app on
+      // Land on the board — EMPTY, with the WelcomeCard's three steps (family, meals,
+      // tablet), which is exactly what nextStep promises. Signup used to seed the
+      // Tremblay examples and hide that checklist until they were cleared; the
+      // examples live in the demo sandbox now, and one tap on the card loads them if
+      // wanted. The essentials tour also auto-runs here. And ONE quiet offer to put the app on
       // the home screen, on the board, once (lib/install) — an account was just made
       // on this device, which is the moment it becomes worth installing.
       requestInstallNudge()
@@ -154,6 +154,12 @@ export function Signup() {
         </form>
         <p className="auth__alt mono">
           {t.signup.haveAccount} <Link to="/login">{t.signup.gotoLogin}</Link>
+        </p>
+        {/* The filled-in demo family lives in the sandbox (the marketing page's
+            « Essayer pour vrai » owns the mint), not in a new account — so someone
+            who wants to see the app alive before committing is sent there. */}
+        <p className="auth__alt mono">
+          {t.signup.tryFirst} <Link to="/">{t.signup.tryFirstLink}</Link>
         </p>
       </main>
     </div>

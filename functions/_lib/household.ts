@@ -175,13 +175,8 @@ export async function ensureHouseholdForEmail(env: Env, email: string): Promise<
       ts,
     ),
   ])
-  // Seed the demo family so a first-login household lands on a living board
-  // (onboarding Phase 1). Best-effort — a seed failure must never block login.
-  try {
-    const { seedSampleData } = await import('./sampleData')
-    await seedSampleData(env, householdId, ts)
-  } catch {
-    /* non-fatal — an empty household is a valid start */
-  }
+  // No example seed here, on purpose: this first-login path creates a new household,
+  // which makes it a signup in disguise, and the two doors must tell one story —
+  // a real household starts empty (auth/signup.ts says why).
   return householdId
 }
