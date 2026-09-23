@@ -48,14 +48,26 @@ const HOUSEHOLD_COLUMNS = ['household_id', 'owner_household_id', 'author_househo
 // The content tables, in DELETE order (children → parents); INSERT runs it reversed.
 export const CONTENT_TABLES: readonly string[] = HOUSEHOLD_TABLES.filter((t) => !TAKEOUT_EXCLUDE.has(t))
 
-// The wipe of a set of content tables, with the sweep's statements (self-references
-// nulled first, children through their parent, rows other households left on a trip
-// this one owns) — ONE builder for the restore and « Repartir à neuf », so the two
-// wipes cannot drift. `tables` must be a subset of CONTENT_TABLES, in its order.
+// Foreign keys from a table the wipe KEEPS into one it DELETES. D1 enforces REFERENCES
+// and a batch is one transaction, so one such row rolls the WHOLE wipe back: a family
+// whose AI once failed while a face was picked could neither restore nor start over
+// (found 2026-09-23 by reviewing the reset; the restore had carried it since L8). Each
+// is nulled before its parent goes — the row stays, detached. worker/reset.d1.test.ts
+// reads every foreign key off the live schema and fails when one is missing here.
+export const KEPT_REFS: ReadonlyArray<readonly [table: string, column: string, parent: string]> = [
+  ['ai_errors', 'profile', 'members'],
+]
+
+// The wipe of a set of content tables, with the sweep's statements (kept rows detached
+// and self-references nulled first, children through their parent, rows other
+// households left on a trip this one owns) — ONE builder for the restore and
+// « Repartir à neuf », so the two wipes cannot drift. `tables` must be a subset of
+// CONTENT_TABLES, in its order.
 export function wipeStatements(env: Env, householdId: string, tables: readonly string[]): D1PreparedStatement[] {
   const P = env.DB.prepare.bind(env.DB)
   const set = new Set(tables)
   return [
+    ...KEPT_REFS.filter(([, , parent]) => set.has(parent)).map(([t, c]) => P(`UPDATE ${t} SET ${c} = NULL WHERE ${scopeColumn(t)} = ? AND ${c} IS NOT NULL`).bind(householdId)),
     ...SELF_REFS.filter(([t]) => set.has(t)).map(([t, c]) => P(`UPDATE ${t} SET ${c} = NULL WHERE ${scopeColumn(t)} = ? AND ${c} IS NOT NULL`).bind(householdId)),
     ...CHILD_TABLES.filter(([, , parent]) => set.has(parent)).map(([t, fk, parent]) =>
       P(`DELETE FROM ${t} WHERE ${fk} IN (SELECT id FROM ${parent} WHERE ${scopeColumn(parent)} = ?)`).bind(householdId),
@@ -80,16 +92,18 @@ export function wipeStatements(env: Env, householdId: string, tables: readonly s
 export const RESET_KEEP: ReadonlySet<string> = new Set(['household_preferences', 'usage_daily'])
 export const RESET_TABLES: readonly string[] = CONTENT_TABLES.filter((t) => !RESET_KEEP.has(t))
 
-// Unlike the restore, the blobs are freed first: nothing will point at them again
-// (deleteHousehold's order — collect from the rows BEFORE the rows go). One batch, one
-// transaction, like deleteHousehold: a start-over is never left half done.
+// Unlike the restore, the blobs are freed too: nothing will point at them again. The
+// keys are collected from the rows BEFORE the rows go, but the blobs are deleted only
+// AFTER the batch commits — the opposite of deleteHousehold, on purpose: that household
+// is gone either way, while this one lives on, and a failed wipe must leave its photos
+// where its rows still point. One batch, one transaction: never left half done.
 export async function resetHouseholdContent(env: Env, householdId: string): Promise<void> {
   const blobKeys = await collectMediaKeys(env, householdId).catch(() => [] as string[])
-  for (const key of blobKeys) await deleteR2Blob(env.PHOTOS, key)
   await env.DB.batch([
     ...wipeStatements(env, householdId, RESET_TABLES),
     env.DB.prepare('UPDATE households SET updated_at = ? WHERE id = ?').bind(nowSec(), householdId),
   ])
+  for (const key of blobKeys) await deleteR2Blob(env.PHOTOS, key)
 }
 
 export type Row = Record<string, unknown>

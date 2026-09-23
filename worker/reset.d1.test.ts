@@ -83,6 +83,41 @@ describe('repartir à neuf', () => {
     expect(await n("SELECT COUNT(*) AS n FROM list_items WHERE household_id = ? AND text = 'du lait'", b.householdId)).toBe(1)
   })
 
+  // A KEPT table that points INTO a wiped one would roll the whole batch back: D1
+  // enforces REFERENCES, and the batch is one transaction. ai_errors is kept (it is the
+  // takeout's diagnostic, not content), and its `profile` references members — so a
+  // household whose AI once failed while a face was picked could never start over. It
+  // 500'd, and it did so after its photos were already freed (2026-09-23 review).
+  it('starts over even when a kept row points at a member', async () => {
+    const a = await household('reset-fk')
+    const m = await env.DB.prepare('SELECT id FROM members WHERE household_id = ? LIMIT 1').bind(a.householdId).first<{ id: string }>()
+    await env.DB.prepare("INSERT INTO ai_errors (id, household_id, feature, message, profile, created_at) VALUES (?, ?, 'capture', 'model timeout', ?, 1)")
+      .bind(`ae${Date.now()}`.slice(0, 12), a.householdId, m!.id)
+      .run()
+
+    expect((await reset(a, { password: a.password, name: 'Maisonnée reset-fk' })).status).toBe(200)
+    expect(await n('SELECT COUNT(*) AS n FROM members WHERE household_id = ?', a.householdId)).toBe(0)
+    // The diagnostic stays, detached from the face that no longer exists.
+    expect(await n('SELECT COUNT(*) AS n FROM ai_errors WHERE household_id = ? AND profile IS NULL', a.householdId)).toBe(1)
+  })
+
+  // The guard that makes the case above a class, not an instance: every foreign key
+  // from a table the wipe KEEPS into a table it DELETES must be detached first
+  // (KEPT_REFS, _lib/restore.ts). Read from the live schema, so a migration adding one
+  // fails here rather than in a family's start-over.
+  it('every kept table’s foreign key into a wiped table is detached first', async () => {
+    const { CONTENT_TABLES, KEPT_REFS } = await import('../functions/_lib/restore')
+    const { HOUSEHOLD_TABLES } = await import('../functions/_lib/demoHousehold')
+    const wiped = new Set(CONTENT_TABLES)
+    const known = new Set(KEPT_REFS.map(([t, c]) => `${t}.${c}`))
+    const missing: string[] = []
+    for (const t of HOUSEHOLD_TABLES.filter((x) => !wiped.has(x))) {
+      const fks = await env.DB.prepare('SELECT "table" AS parent, "from" AS col FROM pragma_foreign_key_list(?)').bind(t).all<{ parent: string; col: string }>()
+      for (const fk of fks.results ?? []) if (wiped.has(fk.parent) && !known.has(`${t}.${fk.col}`)) missing.push(`${t}.${fk.col} → ${fk.parent}`)
+    }
+    expect(missing, 'add it to KEPT_REFS, or the wipe rolls back for any household holding such a row').toEqual([])
+  })
+
   it('cannot be done by a device token', async () => {
     const a = await household('reset-device')
     // Same honesty as leave.d1.test.ts: an `agent` is refused every non-GET centrally by

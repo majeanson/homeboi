@@ -109,6 +109,11 @@ test('the leaving checklist is its own section, not mixed into « À faire »', 
 
   // The fixture's departure instances (source_template_id set) group under their own
   // heading, separate from the to-dos.
+  // WAIT for the sections before reading them: `allInnerTexts()` does not wait, and on
+  // a loaded CI runner the to-dos had not answered yet — it read [] (2026-09-23;
+  // reproduced with a 1.5 s API delay).
+  await expect(page.locator('.today-kid__h', { hasText: 'Avant de partir' })).toBeVisible()
+  await expect(page.locator('.today-kid__h', { hasText: 'À faire' })).toBeVisible()
   const heads = await page.locator('.today-kid__h').allInnerTexts()
   expect(heads).toContain('Avant de partir')
   expect(heads).toContain('À faire')

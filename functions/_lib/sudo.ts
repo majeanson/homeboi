@@ -51,10 +51,10 @@ export async function requireHouseholdName(env: Env, householdId: string, typed:
   const fold = (s: string) =>
     s
       .normalize('NFD')
-      .replace(/[̀-ͯ]/g, '')
+      .replace(/[\u0300-\u036f]/g, '')
       .trim()
       .toLowerCase()
-  if (typeof typed !== 'string' || !typed || fold(typed) !== fold(row?.name ?? '')) {
+  if (!row?.name || typeof typed !== 'string' || fold(typed) !== fold(row.name)) {
     return badRequest('Le nom de la maisonnée ne correspond pas.')
   }
   return null

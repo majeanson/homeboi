@@ -362,6 +362,10 @@ test('…and never says it twice', async ({ page }) => {
   await page.locator('.hub').waitFor({ state: 'visible' })
   const card = page.locator('.wg-slot[data-card="today"]')
   const prep = card.locator('.act', { hasText: 'Préparer le repas' })
+  // WAIT for the row before counting: `allInnerTexts()` reads whatever is on screen at
+  // that instant, and on a loaded CI runner the meals had not answered yet — it read
+  // [] and failed « named once » with 0 (2026-09-23; reproduced with a 1.5 s API delay).
+  await expect(card.locator('.act .title', { hasText: 'Crêpes' }).first()).toBeVisible()
   const titles = await card.locator('.act .title').allInnerTexts()
   const crepes = titles.filter((x) => x.includes('Crêpes'))
   expect(crepes.length, 'the déjeuner is named once, by its own row').toBe(1)

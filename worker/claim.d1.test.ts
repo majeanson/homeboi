@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { env } from 'cloudflare:workers'
 import { anon, household } from '../functions/test/d1'
-import { countDemoSandboxes } from '../functions/_lib/demoHousehold'
+import { isSandboxEmail } from '../functions/_lib/demoHousehold'
 
 // « Garder ma maisonnée » (demo/claim.ts), against a real D1. Claiming is a signup in
 // disguise, and until 2026-09-23 nothing here exercised it: the claimed account stayed
@@ -42,7 +42,6 @@ describe('demo claim', () => {
     const s = await mint()
     const wrote = await anon('/api/list', { method: 'POST', body: { text: 'des œufs' }, headers: { Cookie: s.cookie, 'X-CSRF-Token': s.csrf } })
     expect(wrote.status).toBe(200)
-    const before = await countDemoSandboxes(env)
 
     const email = fresh('claim-keep')
     const res = await s.claim({ email, password: 'correct horse battery', householdName: 'Chez nous' })
@@ -58,7 +57,12 @@ describe('demo claim', () => {
     expect(hh?.name).toBe('Chez nous')
     const item = await env.DB.prepare("SELECT COUNT(*) AS n FROM list_items WHERE household_id = ? AND text = 'des œufs'").bind(s.householdId).first<{ n: number }>()
     expect(item?.n, 'what the visitor tried survives').toBe(1)
-    expect(await countDemoSandboxes(env), 'a claimed household leaves the sweep and frees its slot').toBe(before - 1)
+    // Out of the sweep and the cap: both key on the sandbox address (SANDBOX_EMAIL_LIKE),
+    // so ask THIS household's operator directly — a global count would race any other
+    // file minting a sandbox at the same moment.
+    const op = await env.DB.prepare('SELECT email FROM operators WHERE household_id = ?').bind(s.householdId).first<{ email: string }>()
+    expect(op?.email).toBe(email)
+    expect(isSandboxEmail(op!.email), 'a claimed household leaves the sweep and frees its slot').toBe(false)
   })
 
   it('409s an address that already has an account', async () => {
