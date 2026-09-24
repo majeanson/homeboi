@@ -29,6 +29,28 @@ describe('account', () => {
     expect(after!.n).toBe(before!.n)
   })
 
+  it('a LEGACY account (no password_hash) still opens its own household — and no other', async () => {
+    // The accounts the old first-login path created (removed 2026-09-24) have no hash of
+    // their own; they sign in with the shared LOGIN_PASSWORD, which the harness leaves
+    // unset (so any password passes here — production keeps it set). What must hold for
+    // them: the row they already have is the row they land on, and nothing new is made.
+    const a = await household('legacy', undefined, { empty: true })
+    await env.DB.prepare('UPDATE operators SET password_hash = NULL WHERE email = ?').bind(a.email).run()
+    const before = await env.DB.prepare('SELECT COUNT(*) AS n FROM households').first<{ n: number }>()
+    const res = await anon('/api/auth/login', {
+      method: 'POST',
+      // Typed the way people type it — the door lowercases, and every row is stored lowercased.
+      body: { email: `  ${a.email.toUpperCase()} `, password: 'the shared code' },
+      headers: { 'CF-Connecting-IP': '10.2.0.2' },
+    })
+    expect(res.status).toBe(200)
+    const cookie = (res.headers as unknown as { getSetCookie(): string[] }).getSetCookie().map((c: string) => c.split(';')[0]).join('; ')
+    const me = (await (await anon('/api/auth/me', { headers: { Cookie: cookie } })).json()) as { household?: { id: string } }
+    expect(me.household?.id).toBe(a.householdId)
+    const after = await env.DB.prepare('SELECT COUNT(*) AS n FROM households').first<{ n: number }>()
+    expect(after!.n).toBe(before!.n)
+  })
+
   it('« Se déconnecter partout ailleurs » ends the other device’s session and keeps this one', async () => {
     const phone = await household('revoke')
     const laptop = await login(phone.email, phone.password)
@@ -80,13 +102,16 @@ describe('account', () => {
 
   it('the rate limit refuses the seventh guess at one email inside a minute (LIMIT_KEY 6/60s)', async () => {
     const a = await household('limit')
+    // Its own caller address, so what this case measures is LIMIT_KEY (per email) alone —
+    // on the shared harness address, every earlier login in the file eats LIMIT_IP first.
+    const ip = { 'CF-Connecting-IP': '10.2.0.9' }
     const statuses: number[] = []
     for (let i = 0; i < 8; i++) {
-      statuses.push((await anon('/api/auth/login', { method: 'POST', body: { email: a.email, password: `guess ${i} guess` } })).status)
+      statuses.push((await anon('/api/auth/login', { method: 'POST', body: { email: a.email, password: `guess ${i} guess` }, headers: ip })).status)
     }
     expect(statuses.slice(0, 6)).toEqual([401, 401, 401, 401, 401, 401])
     expect(statuses[7], `statuses: ${statuses.join(',')}`).toBe(429)
     // …and the right password is refused too while the bucket is full: a bound, not a hint.
-    expect((await anon('/api/auth/login', { method: 'POST', body: { email: a.email, password: a.password } })).status).toBe(429)
+    expect((await anon('/api/auth/login', { method: 'POST', body: { email: a.email, password: a.password }, headers: ip })).status).toBe(429)
   })
 })
