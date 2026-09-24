@@ -68,6 +68,17 @@ export const draft = (d: Partial<DraftOut>): DraftOut => {
   return merged
 }
 
+// The no-model draft is good enough to ship when it has a title, a real ingredient
+// list, and a method of sentence-steps that all close — a transcript that lost its
+// punctuation (a weak OCR, a handwritten card) fails this and gets the model.
+export function heuristicIsGood(d: DraftOut): boolean {
+  const steps = d.steps.filter((s) => !s.startsWith('## '))
+  const ings = d.ingredients.filter((s) => !s.startsWith('## '))
+  if (!d.title || ings.length < 2 || steps.length < 2 || steps.length > 30) return false
+  const closed = steps.filter((s) => /[.!?]$/.test(s)).length
+  return closed * 10 >= steps.length * 8
+}
+
 // Free text (a paste, an OCR transcript, the vision model's transcription) → a draft.
 // `aiOn` = the binding is wired AND the household has not switched AI off; when false
 // the text model is never called. The result is `empty` only when nothing at all
@@ -90,6 +101,21 @@ export async function draftFromText(env: Env, raw: string, lang: Lang, aiOn: boo
       structuring: 'headings',
     })
   }
+  // A PARAGRAPH card the shape heuristic already read well needs no model: title, a
+  // lifted ingredient list and sentence-steps that all close on punctuation. Taking it
+  // as is saves the second model call (5–10 s on a phone) AND keeps the printed words
+  // — the model rephrased a step on the very card this was measured on. Garbled OCR
+  // (sentences that do not close) still goes to the model below.
+  const plain = draft({
+    title: heuristic.title,
+    ingredients: heuristic.ingredients,
+    steps: heuristic.steps,
+    servings: heuristic.servings,
+    servingsUnit: heuristic.servingsUnit,
+    times: heuristic.times,
+    structuring: 'heuristic',
+  })
+  if (heuristicIsGood(plain)) return plain
   // Free-form text → AI structuring; its steps still go through the shared refinement
   // (models love returning one packed paragraph). Every number the model emits is
   // cross-checked against the source text — a line carrying a number the text never

@@ -169,6 +169,43 @@
   flex-wrap: wrap;
   gap: 0.5rem;
 }
+/* The photo read's progress: a thin track above the helper buttons. Determinate while
+   the pages are transcribed (width = progress), a slow sweep while a model works (no
+   progress to measure, but the eye needs to see motion). Under reduced motion the sweep
+   becomes a still, half-filled bar — presence, not animation (NFR-CALM). */
+.recipe-read-bar {
+  height: 4px;
+  margin: 0.15rem 0 0.35rem;
+  border-radius: 999px;
+  background: var(--paper-deep);
+  overflow: hidden;
+}
+.recipe-read-bar__fill {
+  height: 100%;
+  width: 0;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 0.3s ease;
+}
+.recipe-read-bar--sweep .recipe-read-bar__fill {
+  width: 38%;
+  animation: recipe-read-sweep 1.6s ease-in-out infinite alternate;
+}
+@keyframes recipe-read-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(263%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .recipe-read-bar--sweep .recipe-read-bar__fill {
+    width: 50%;
+    animation: none;
+    transform: none;
+  }
+}
 .recipe-aioff {
   color: var(--ink-soft);
   margin: 0;

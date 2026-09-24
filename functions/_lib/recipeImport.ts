@@ -863,7 +863,8 @@ export function parsePastedRecipe(text: string): PastedRecipe {
   }
 
   // No headings at all — classify by line shape instead.
-  if (!sawIngHeading && !sawStepHeading && ings.length === 0 && stepLines.length === 0) {
+  const paragraphCard = !sawIngHeading && !sawStepHeading && ings.length === 0 && stepLines.length === 0
+  if (paragraphCard) {
     let skipped = 0
     for (const line of lines) {
       if (!line) continue
@@ -900,7 +901,17 @@ export function parsePastedRecipe(text: string): PastedRecipe {
     if (open && continues) merged[merged.length - 1] = `${prev} ${l}`
     else merged.push(l)
   }
-  const steps = dropDanglingHeadings(refineSteps(merged, 30))
+  // A PARAGRAPH recipe (no headings, no markers) reads one sentence per step — the
+  // same words, only the boundaries, which is what a cook wants and what the
+  // structuring model used to be called for. Deterministic, so nothing is rephrased
+  // (the model reordered « Dans un grand poêlon, chauffer… » into « Chauffer… dans un
+  // grand poêlon »). Same boundary rule as sentenceChunks: end punctuation, then an
+  // uppercase / « / digit start, so « env. 5 min » and « 1.5 L » never split. A
+  // formatted recipe keeps its own step lines.
+  const blobs = paragraphCard
+    ? merged.flatMap((l) => (isSectionHeading(l) ? [l] : l.split(/(?<=[.!?])\s+(?=[A-ZÀ-ÖŒ«"(\d])/).filter(Boolean)))
+    : merged
+  const steps = dropDanglingHeadings(refineSteps(blobs, 30))
   const notes = noteLines.join(' ').trim().slice(0, 2000) || null
 
   const ingredients = dropDanglingHeadings(ings.slice(0, 40))

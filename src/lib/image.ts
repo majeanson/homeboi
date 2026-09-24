@@ -10,6 +10,11 @@ export const PHOTO_MAX = 1600 // px — a family photo on the wall frame
 // "3/4" hinges on a few pixels of slash + digit, and the read text is never stored
 // (only the AI-fallback bytes + a PHOTO_MAX-resized source snapshot upload to R2).
 export const OCR_MAX = 2200
+// px — the bytes sent to the VISION model (recipe-vision). Llama 3.2 Vision tiles an
+// image at 560 px, four tiles at most (~1120 px on the long side): anything bigger is
+// downscaled server-side before the model sees a pixel, so sending PHOTO_MAX (1600)
+// only cost upload time on a phone — about half the bytes for the same read.
+export const VISION_MAX = 1120
 
 // Mirror of recipe-vision / recipe-image's server cap (6 MB). If resize had to
 // fall back to the original (a file no decoder could read) AND it's over this,

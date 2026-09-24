@@ -7,7 +7,7 @@ import { useConfirm } from '../lib/confirm'
 import { StatusMessage } from './StatusMessage'
 import { Disclosure } from './Disclosure'
 import { useAi } from '../lib/ai'
-import { resizeImage, imgUrl, PHOTO_MAX, OCR_MAX, MAX_UPLOAD_BYTES } from '../lib/image'
+import { resizeImage, imgUrl, OCR_MAX, VISION_MAX, MAX_UPLOAD_BYTES } from '../lib/image'
 import { ocrImage, mergeOcrPages, disposeOcr } from '../lib/ocr'
 import { repairImperialFromMetric } from '../lib/measure'
 import { useOcrEngine, useCloudOcrAvailable } from '../lib/ocrPref'
@@ -481,7 +481,9 @@ export function RecipeForm({
         // Fallback: the generative vision read of the FIRST page (resized to the
         // upload cap, like recipe-image). 503 = AI off → handled below as readFail.
         setReadStage('look')
-        const small = await resizeImage(files[0], PHOTO_MAX)
+        // VISION_MAX, not PHOTO_MAX: the model never sees more than ~1120 px, so the
+        // extra pixels were only upload time (lib/image.ts).
+        const small = await resizeImage(files[0], VISION_MAX)
         if (small.size <= MAX_UPLOAD_BYTES) {
           const v = await api<ReadDraft>('recipe-vision', { method: 'POST', body: small }).catch(
             (e) => {
@@ -984,6 +986,16 @@ export function RecipeForm({
               instead of before them. Opens itself when the link/paste panel is
               already showing, so a half-finished import is never folded away. */}
           <Disclosure label={t.recipes.fillFrom} defaultOpen={showImport} className="recipe-fill">
+          {/* Something is visibly HAPPENING while a photo is read: the transcription
+              fills the bar as pages are read; the two model stages after it (order,
+              closer look) have no measurable progress, so the bar sweeps instead. The
+              button below names the stage; « 100 % » sitting still for a minute read
+              as frozen (Marc, 2026-09-24). */}
+          {reading && (
+            <div className={'recipe-read-bar' + (readStage === 'read' && readProgress > 0 ? '' : ' recipe-read-bar--sweep')} aria-hidden="true">
+              <div className="recipe-read-bar__fill" style={readStage === 'read' && readProgress > 0 ? { width: `${Math.round(readProgress * 100)}%` } : undefined} />
+            </div>
+          )}
           <div className="recipe-helpers">
             {/* Read a photo is on-device OCR now — it works with AI OFF, so it's no
                 longer gated behind aiEnabled. `multiple`: a long recipe split over

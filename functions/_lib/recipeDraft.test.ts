@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { draftFromText } from './recipeDraft'
 import type { Env } from './env'
 
@@ -82,6 +82,41 @@ describe('draftFromText — the card as plain text, AI off', () => {
     expect(d.structuring).toBe('headings')
     expect(d.ingredients).toEqual(['250 ml de farine', '2 oeufs', '500 ml de lait'])
     expect(d.steps).toEqual(['Mélanger la farine et les oeufs.', 'Ajouter le lait.', 'Cuire 2 minutes.'])
+  })
+})
+
+describe('draftFromText — the model runs only when the plain read is not good enough', () => {
+  // A fake AI binding that records whether the structuring model was asked at all.
+  const aiEnv = () => {
+    const run = vi.fn(async () => ({ response: '{"title":null,"ingredients":[],"steps":[]}' }))
+    return { env: { DB: {}, AI: { run } } as unknown as Env, run }
+  }
+
+  it('the paragraph card, read well without a model, is returned as is — no second call', async () => {
+    const { env, run } = aiEnv()
+    const d = await draftFromText(env, CARD, 'fr', true)
+    expect(run).not.toHaveBeenCalled()
+    expect(d.structuring).toBe('heuristic')
+    // One sentence per step, the printed words, nothing reordered.
+    expect(d.steps).toEqual([
+      'Défaire 1 brocoli en fleurons.',
+      'Peler le pied du brocoli et couper en bâtonnets.',
+      "Dans un grand poêlon antiadhésif, chauffer 15 ml (1 c. à soupe) d'huile d'olive à feu moyen-vif.",
+      "Ajouter 2 gousses d'ail hachées finement, 15 ml (1 c. soupe) de graines de sésame et une pincée de flocons de piment fort.",
+      'Cuire 2 minutes.',
+      "Ajouter les fleurons et les bâtonnets de brocoli et cuire 5 minutes ou jusqu'à ce que le brocoli soit cuit, mais encore croquant.",
+      'Verser 15 ml (1 c. à soupe) de miel et 7,5 ml (1/2 c. à soupe) de sauce soya réduite en sodium.',
+      'Poursuivre la cuisson 30 secondes en mélangeant pour enrober le brocoli.',
+      'Servir.',
+    ])
+    expect(d.ingredients).toHaveLength(7)
+  })
+
+  it('a transcript that lost its punctuation (weak OCR, handwriting) still goes to the model', async () => {
+    const { env, run } = aiEnv()
+    const garbled = 'gateau aux carottes 2 tasses farine 1 c a the soda 3 oeufs 1 tasse huile 2 tasses carottes rapees on melange tout et on cuit 45 min a 350'
+    await draftFromText(env, garbled, 'fr', true)
+    expect(run).toHaveBeenCalledTimes(1)
   })
 })
 
