@@ -772,7 +772,12 @@ textarea,
 .kb-open .recipe-modal,
 .kb-open .cashier,
 .kb-open .note-editor,
-.kb-open .vv-fit {
+.kb-open .vv-fit,
+/* The centred Modal's backdrop is a fixed inset:0 shell too (kit.css) — it centres
+   its dialog with flex, so this padding centres the dialog in the VISIBLE band
+   instead of the full screen, where its buttons sat under the keyboard. The
+   dialog's own cap is beside it in kit.css (2026-09-24). */
+.kb-open .kit-modal__backdrop {
   padding-top: var(--vvt, 0px);
   /* --kb-fixed, not --kb: iOS can GLUE a full-screen fixed layer to the visual
      viewport during the keyboard pan (lib/viewportVars fixedShellShift) — the pan

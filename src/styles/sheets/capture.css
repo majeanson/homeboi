@@ -559,9 +559,14 @@ body.is-recording .add-fab {
     visibility 0s linear var(--dur-slow);
 }
 .sheet.show {
-  /* Lifted above the on-screen keyboard (--kb from viewportVars.ts) so the sheet's
-     inputs and buttons never sink behind it; 0 when no keyboard. */
-  bottom: var(--kb, 0px);
+  /* Lifted above the on-screen keyboard (viewportVars.ts) so the sheet's inputs and
+     buttons never sink behind it; 0 when no keyboard. --kb-fixed, not --kb: a sheet
+     is a fixed layer, and iOS can GLUE one to the visual viewport during the keyboard
+     pan (fixedShellShift) — --kb then under-lifts it by the pan and its foot sits
+     under the keyboard. --kb-fixed folds the glue in, equals --kb when nothing is
+     glued, and is unset when closed (the fallback then reads 0). Same rule as the
+     core.css « Keyboard fit » group (2026-09-24). */
+  bottom: var(--kb-fixed, var(--kb, 0px));
   transform: translateY(0);
   visibility: visible;
   transition:

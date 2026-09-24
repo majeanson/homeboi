@@ -473,11 +473,20 @@ a.ledger__chore--link {
   top: 50%;
   transform: translate(-50%, -50%);
   width: min(92vw, 360px);
+  overflow: auto;
   padding: 1.4rem;
   background: var(--paper);
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
+}
+/* A confirm with a field (the password door) under the keyboard: centred in the
+   VISIBLE band — its top offset (--vvt) plus half its height (--vvh) — and capped to
+   it, so the buttons never sit under the keyboard. The box, not a shell: its
+   backdrop keeps inset: 0 (keyboard-fit.test.ts). */
+.kb-open .confirm {
+  top: calc(var(--vvt, 0px) + var(--vvh, 100dvh) / 2);
+  max-height: calc(var(--vvh, 100dvh) - 2rem);
 }
 .confirm__msg {
   margin: 0 0 1.2rem;

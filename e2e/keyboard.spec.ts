@@ -137,6 +137,22 @@ for (const d of DEVICES) {
     })
   }
 
+  // --- A centred Modal with a field (the remark composer). It had NO keyboard rule at
+  // all: centred on the FULL screen, its « Envoyer » sat under the keyboard on a
+  // phone (Marc, 2026-09-24: « the keyboard covers the Save button »). The backdrop
+  // joined the core.css fit group and the box is capped to the visible band. ---
+  test(`kb ${d.name}: remark modal`, async ({ page }) => {
+    await open(page, '/settings?tab=settings&sub=tablets&focus=remarks')
+    await page.locator('#operator-panel').getByRole('button', { name: 'Signaler' }).click()
+    const dialog = page.getByRole('dialog')
+    const box = dialog.getByRole('textbox')
+    await box.focus()
+    await openKeyboard(page, d.kb)
+    await page.screenshot({ path: png('remark-modal'), fullPage: false })
+    await expectAbove(box, VISIBLE, 'remark textbox')
+    await expectAbove(dialog.getByRole('button', { name: 'Envoyer' }), VISIBLE, 'remark « Envoyer »')
+  })
+
   // --- Recipe modal: create form (title input summons the keyboard) ---
   test(`kb ${d.name}: recipe form`, async ({ page }) => {
     // The recipe builder is a standalone route now (RecipeForm → .recipe-modal).

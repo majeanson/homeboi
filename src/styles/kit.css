@@ -220,6 +220,13 @@
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
 }
+/* Under the keyboard the dialog fits the VISIBLE band (its backdrop joined the
+   core.css « Keyboard fit » group, which centres it there): a box taller than the
+   band scrolls inside itself, and the buttons at its foot stay reachable. Not the
+   banned shell-shrink — this is the dialog, the backdrop keeps inset: 0. */
+.kb-open .kit-modal {
+  max-height: calc(var(--vvh, 100dvh) - 2rem);
+}
 .kit-modal__title {
   margin: 0 0 0.8rem;
   padding-right: 2rem;

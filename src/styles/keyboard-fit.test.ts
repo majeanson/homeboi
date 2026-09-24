@@ -65,6 +65,30 @@ describe('keyboard fit conventions', () => {
     expect(declaring, 'a new surface joins the grouped selector in core.css, it does not fork a copy').toEqual(['core.css'])
   })
 
+  // 2026-09-24, from Marc's phone: « the keyboard covers the field or the Save button ».
+  // The centred dialogs had NO keyboard rule at all — centred on the full screen, their
+  // buttons landed under the keyboard — and the bottom sheet lifted by --kb, which under
+  // iOS's viewport glue under-lifts by the pan. Three facts, each held here.
+  it('a centred dialog fits the VISIBLE band under the keyboard (Modal + confirm)', () => {
+    const all = files.flatMap((f) => rules(readFileSync(f, 'utf8')))
+    for (const box of ['.kit-modal', '.confirm']) {
+      const r = all.find((r) => r.selector.includes('.kb-open') && r.selector.includes(box) && !r.selector.includes('backdrop'))
+      expect(r, `${box} has no .kb-open rule`).toBeDefined()
+      expect(r!.body, `${box} must cap its height to the visible band`).toMatch(/max-height\s*:\s*calc\(var\(--vvh/)
+    }
+    // The Modal centres its box with flex inside its backdrop: the backdrop must be in
+    // the core.css fit group, so the centring happens inside the visible band.
+    const core = readFileSync(join(stylesDir, 'core.css'), 'utf8')
+    const group = rules(core).find((r) => r.selector.includes('.kb-open') && /padding-top\s*:\s*var\(--vvt/.test(r.body))
+    expect(group?.selector).toContain('.kit-modal__backdrop')
+  })
+
+  it('the bottom sheet lifts by --kb-fixed (glue-corrected), never by --kb alone', () => {
+    const capture = readFileSync(join(stylesDir, 'sheets', 'capture.css'), 'utf8')
+    const shown = rules(capture).find((r) => r.selector.trim() === '.sheet.show')
+    expect(shown?.body).toMatch(/bottom\s*:\s*var\(--kb-fixed/)
+  })
+
   it('core.css publishes the .vv-fit / .vv-slack opt-in utilities', () => {
     const core = readFileSync(join(stylesDir, 'core.css'), 'utf8')
     const fit = rules(core).find((r) => r.selector.includes('.vv-fit'))
