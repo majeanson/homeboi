@@ -85,7 +85,18 @@ export async function uploadR2Media(
   // which is why it is the only place that asks. Charged AFTER the per-request checks —
   // a rejected type or an oversized body never reached R2, so it never cost anything.
   const spend = await charge(opts.env, 'upload', buf.byteLength)
-  if (!spend.allowed) return { error: tooManyRequests('Assez de téléversements pour aujourd’hui. Réessaie demain.') }
+  if (!spend.allowed) {
+    // An unconfirmed household hit a visitor's ceiling (0139): say what lifts it. The
+    // pool (every stranger at once) is not theirs to fix — the plain sentence is true there.
+    const confirm = spend.trust === 'unverified' && !spend.pool
+    return {
+      error: tooManyRequests(
+        confirm
+          ? 'Assez de téléversements pour aujourd’hui. Confirme ton courriel (Réglages) pour en faire davantage.'
+          : 'Assez de téléversements pour aujourd’hui. Réessaie demain.',
+      ),
+    }
+  }
   const ext = opts.extFromType ? extForContentType(contentType) : ''
   const key = await putR2Blob(bucket, buf, contentType, opts.prefix, ext)
   return { key, contentType }

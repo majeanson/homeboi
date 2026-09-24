@@ -1,0 +1,24 @@
+-- 0139 — À qui le budget : la confiance de la maisonnée, notée à chaque dépense.
+--
+-- 0137 bornait chaque maisonnée par jour, avec deux plafonds : un bac à sable (60 appels
+-- IA, 50 Mo) et une « vraie » maisonnée (1 000 appels, 2 Go) — un plafond d'emballement
+-- pensé pour des familles INVITÉES. Le 2026-09-24 l'inscription s'est ouverte : n'importe
+-- qui obtient une vraie maisonnée sans avoir confirmé son courriel, donc ce plafond de
+-- confiance tombait sur des inconnus, sans aucune borne commune au-dessus.
+--
+-- `trust` dit, au moment de la dépense, qui payait : 'sandbox' (un bac de démo),
+-- 'unverified' (aucun opérateur n'a confirmé son courriel) ou 'household' (au moins un
+-- l'a fait, ou le déploiement ne peut pas envoyer de courriel — 0138 les estampille).
+-- Résolu DANS l'UPSERT de _lib/usage.ts à partir de `operators`, jamais transporté par
+-- la requête : une tablette jumelée à un bac à sable n'a pas de courriel, et c'est la
+-- maisonnée, pas l'appareil, qui porte la confiance.
+--
+-- Pas `tier` : households.tier existe déjà et veut dire le FORFAIT ('free'). Même mot,
+-- autre idée — la convention veut un mot par idée.
+--
+-- Les inconnus ('sandbox' + 'unverified') puisent aussi dans UNE réserve commune par
+-- jour, toutes maisonnées confondues ; l'index sur `day` rend cette somme bon marché. Les
+-- familles confirmées n'y touchent jamais : des inconnus ne peuvent pas affamer une
+-- maison.
+ALTER TABLE usage_daily ADD COLUMN trust TEXT NOT NULL DEFAULT 'household';
+CREATE INDEX IF NOT EXISTS usage_daily_day ON usage_daily (day);

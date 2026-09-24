@@ -35,8 +35,9 @@ interface RequestContext {
   tz?: string
   /** Absent outside a request — the cron, a unit test, the module top level. */
   householdId?: string
-  /** A throwaway demo household, which gets the tight daily caps (_lib/usage.ts). */
-  sandbox?: boolean
+  // No « is this a sandbox » flag: it used to ride here, derived from the REQUESTER's
+  // email, so a tablet paired to a sandbox spent at a full household's ceiling. Whose
+  // ceiling applies is the household's trust, read from its rows (_lib/usage.ts, 0139).
 }
 
 const store = new AsyncLocalStorage<RequestContext>()
@@ -58,9 +59,9 @@ export function currentTz(): string {
 
 /** Who this request belongs to — `null` outside a request, which is a real case
  *  (the nightly cron) and never an error: the caller decides what that means. */
-export function currentHousehold(): { householdId: string; sandbox: boolean } | null {
+export function currentHousehold(): { householdId: string } | null {
   const s = store.getStore()
-  return s?.householdId ? { householdId: s.householdId, sandbox: !!s.sandbox } : null
+  return s?.householdId ? { householdId: s.householdId } : null
 }
 
 // A zone is only usable if Intl knows it — an unknown one makes every date helper throw,

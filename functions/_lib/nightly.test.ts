@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { alertFor, runNightly, type NightlyDeps, type NightlyReport } from './nightly'
 import type { Env } from './env'
+import { STRANGER_POOL_PER_DAY } from './usage'
 
 // The nightly cron as a function with a report (STATE.md §4-L L7): every side effect
 // behind a seam, so these cases hand in fakes and assert the REPORT and the DECISION.
@@ -12,6 +13,7 @@ function deps(over: Partial<NightlyDeps> = {}): NightlyDeps {
     sweep: async () => 0,
     countAlive: async () => 0,
     countStale: async () => 0,
+    strangerSpend: async () => ({ ai: 0, bytes: 0 }),
     ...over,
   }
 }
@@ -50,6 +52,11 @@ describe('runNightly', () => {
     expect(r.backed).toBe(2)
   })
 
+  it('reports what strangers spent together (the pool, 0139)', async () => {
+    const r = await runNightly(env, NOW, deps({ strangerSpend: async () => ({ ai: 42, bytes: 3 * 1024 * 1024 }) }))
+    expect(r).toMatchObject({ strangerAi: 42, strangerBytes: 3 * 1024 * 1024 })
+  })
+
   it('no R2 bucket is reported — backups silently not happening is the worst kind of quiet', async () => {
     const r = await runNightly({} as Env, NOW, deps())
     expect(r.noBucket).toBe(true)
@@ -57,7 +64,7 @@ describe('runNightly', () => {
 })
 
 describe('alertFor', () => {
-  const quiet: NightlyReport = { at: NOW, households: 1, backed: 1, failed: [], noBucket: false, sandboxesSwept: 0, sandboxesAlive: 0, sandboxesStale: 0 }
+  const quiet: NightlyReport = { at: NOW, households: 1, backed: 1, failed: [], noBucket: false, sandboxesSwept: 0, sandboxesAlive: 0, sandboxesStale: 0, strangerAi: 0, strangerBytes: 0 }
   it('a quiet weekday sends nothing', () => {
     expect(alertFor(quiet, 3)).toBeNull()
   })
@@ -75,6 +82,17 @@ describe('alertFor', () => {
     const m = alertFor({ ...quiet, sandboxesStale: 2 }, 3)
     expect(m?.subject).toContain('2 bac(s) périmé(s)')
     expect(m?.text).toContain('SCOPE_COLUMN')
+  })
+  it('a FULL strangers’ pool alerts on a quiet weekday — and says what to do about it', () => {
+    // Red against leaving poolFull out of the decision: the pool would fill in silence.
+    const m = alertFor({ ...quiet, strangerAi: STRANGER_POOL_PER_DAY.ai }, 3)
+    expect(m?.subject).toContain('réserve des inconnus')
+    expect(m?.text).toContain('STRANGER_POOL_PER_DAY')
+    expect(alertFor({ ...quiet, strangerBytes: STRANGER_POOL_PER_DAY.upload }, 3)?.subject).toContain('réserve')
+    // Below the pool, a weekday stays quiet…
+    expect(alertFor({ ...quiet, strangerAi: STRANGER_POOL_PER_DAY.ai - 1 }, 3)).toBeNull()
+    // …and the Monday digest carries the reading anyway.
+    expect(alertFor({ ...quiet, strangerAi: 7 }, 1)?.text).toContain('Inconnus (24 h) : 7 /')
   })
   it('no bucket alerts too', () => {
     expect(alertFor({ ...quiet, noBucket: true }, 3)?.text).toContain('AUCUNE sauvegarde')

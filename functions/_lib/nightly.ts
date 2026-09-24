@@ -3,6 +3,7 @@ import { dumpHousehold } from './takeout'
 import { countDemoSandboxes, countStaleDemoSandboxes, sweepExpiredDemoSandboxes } from './demoHousehold'
 import { mailEnabled, sendMail, type Mail } from './mail'
 import { localDayOfWeek } from './ids'
+import { STRANGER_POOL_PER_DAY, strangerSpend } from './usage'
 
 // The nightly cron, as one function with a REPORT (STATE.md §4-L, item L7).
 //
@@ -35,6 +36,12 @@ export interface NightlyReport {
   sandboxesSwept: number
   sandboxesAlive: number
   sandboxesStale: number
+  // What every sandbox and unconfirmed household spent together in the last 24 h — the
+  // strangers' pool (_lib/usage.ts, 0139). Reaching the pool ALERTS: either a busy day
+  // of real visitors (raise it, with this number as the evidence) or somebody farming
+  // signups, and both are worth a line the morning after.
+  strangerAi: number
+  strangerBytes: number
 }
 
 // Every side effect behind a seam, so the unit test can hand in fakes and the
@@ -45,6 +52,7 @@ export interface NightlyDeps {
   sweep: () => Promise<number>
   countAlive: () => Promise<number>
   countStale: () => Promise<number>
+  strangerSpend: () => Promise<{ ai: number; bytes: number }>
 }
 
 export function realDeps(env: Env, now: number): NightlyDeps {
@@ -63,6 +71,7 @@ export function realDeps(env: Env, now: number): NightlyDeps {
     sweep: () => sweepExpiredDemoSandboxes(env, now, SWEEP_LIMIT),
     countAlive: () => countDemoSandboxes(env),
     countStale: () => countStaleDemoSandboxes(env, now),
+    strangerSpend: () => strangerSpend(env, now),
   }
 }
 
@@ -76,6 +85,8 @@ export async function runNightly(env: Env, now: number, deps: NightlyDeps = real
     sandboxesSwept: 0,
     sandboxesAlive: 0,
     sandboxesStale: 0,
+    strangerAi: 0,
+    strangerBytes: 0,
   }
   // The sweep first: a sandbox older than its day is not worth a backup.
   try {
@@ -98,26 +109,40 @@ export async function runNightly(env: Env, now: number, deps: NightlyDeps = real
   try {
     report.sandboxesAlive = await deps.countAlive()
     report.sandboxesStale = await deps.countStale()
+    const spent = await deps.strangerSpend()
+    report.strangerAi = spent.ai
+    report.strangerBytes = spent.bytes
   } catch (err) {
     report.failed.push({ id: 'sandbox-count', error: String((err as Error)?.message ?? err) })
   }
   return report
 }
 
+const mb = (bytes: number) => Math.round(bytes / (1024 * 1024))
+
 // What, if anything, to send about a report. Pure: a failure or a surviving stale
-// sandbox is an ALERT any night; a quiet Monday is the DIGEST; a quiet other day is
-// nothing. `weekday` follows localDayOfWeek (0 = Sunday) in the household zone.
+// sandbox is an ALERT any night; a full strangers' pool is its own alert; a quiet Monday
+// is the DIGEST; a quiet other day is nothing. `weekday` follows localDayOfWeek
+// (0 = Sunday) in the household zone.
 export function alertFor(report: NightlyReport, weekday: number): Omit<Mail, 'to'> | null {
   const wrong = report.failed.length > 0 || report.sandboxesStale > 0 || report.noBucket
   const lines = [
     `Maisonnées : ${report.households} · sauvegardées : ${report.backed}${report.noBucket ? ' (R2 absent — AUCUNE sauvegarde)' : ''}`,
     `Bacs à sable : ${report.sandboxesAlive} vivants · ${report.sandboxesSwept} balayés cette nuit · ${report.sandboxesStale} périmés encore là`,
+    `Inconnus (24 h) : ${report.strangerAi} / ${STRANGER_POOL_PER_DAY.ai} appels IA · ${mb(report.strangerBytes)} / ${mb(STRANGER_POOL_PER_DAY.upload)} Mo téléversés`,
     ...report.failed.map((f) => `ÉCHEC ${f.id} : ${f.error}`),
   ]
+  const poolFull = report.strangerAi >= STRANGER_POOL_PER_DAY.ai || report.strangerBytes >= STRANGER_POOL_PER_DAY.upload
   if (wrong) {
     return {
       subject: `Babillard — la nuit a mal tourné (${report.failed.length} échec${report.failed.length > 1 ? 's' : ''}${report.sandboxesStale ? `, ${report.sandboxesStale} bac(s) périmé(s)` : ''})`,
       text: `Le cron de ${new Date(report.at * 1000).toISOString()} rapporte :\n\n${lines.join('\n')}\n\nUn bac périmé qui survit au balayage veut dire que le balayage échoue en silence — voir demoHousehold.ts (SCOPE_COLUMN) et worker/demo.d1.test.ts.`,
+    }
+  }
+  if (poolFull) {
+    return {
+      subject: 'Babillard — la réserve des inconnus s’est remplie',
+      text: `Les bacs à sable et les maisonnées non confirmées ont épuisé leur réserve commune des dernières 24 h — les nouveaux venus ont vu l’IA ou les téléversements refusés jusqu’à minuit. Les familles confirmées n’y touchent pas.\n\n${lines.join('\n')}\n\nUne journée chargée de vrais visiteurs ? Monte STRANGER_POOL_PER_DAY (_lib/usage.ts), avec ce chiffre comme preuve. Des inscriptions en rafale ? Regarde les courriels récents dans operators.`,
     }
   }
   if (weekday === 1) {
