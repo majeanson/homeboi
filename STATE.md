@@ -30,7 +30,7 @@
 | **What it is** | A calm household command-center for a cheap always-on wall tablet. Single-page React app + one Cloudflare Worker (static assets + `/api/*`) + D1 + Workers AI + R2. FR-CA first. |
 | **Code** | ~157k lines across 955 `.ts`/`.tsx` files (`src/`, `functions/`, `worker/`) |
 | **Schema** | 139 forward-only migrations (0139 = la confiance derrière chaque dépense) |
-| **Tests** | 2 420 unit tests in 192 files · 124 real-runtime cases in 19 files (`npm run test:d1`, the Worker in workerd against a real D1) · 157 Playwright spec files |
+| **Tests** | 2 452 unit tests in 195 files · 124 real-runtime cases in 19 files (`npm run test:d1`, the Worker in workerd against a real D1) · 157 Playwright spec files |
 | **Deploy** | Push to `main` → CI (typecheck · test · build · bundle budget · **test:d1** · knip) gates `db:migrate:prod` + `wrangler deploy`. E2E is decoupled (`workflow_run`), runs after a green CI, never blocks the ship. |
 | **Second interface** | `/api/mcp` — read-only over the household — of the 12 tools, most proxy a GET handler that already exists, so the caps, the recurrence expansion and the time zone are decided once and inherited. (This row lives HERE, not in §3: docCounts derives that number from the registry, and the claim died the first time §3 rotated.) |
 | **Households in production** | **Six**, counted in D1 on 2026-09-22 — Marc's (4 members), four other real accounts from the invite gate, and the legacy read-only demo singleton. This row said « One (Marc's) » for months: other people's households are already in there, which is what Wave 4 (deletion, privacy, a contact door) is actually about |
@@ -113,26 +113,26 @@ now, so the repo-wide count is honest for the first time.
 
 ## 3. What just shipped
 
-### The examples have one home, and a household can start over — 2026-09-23
+### Signup is open — and the day it took to make that true — 2026-09-24
 
-Four mechanisms had grown apart: the 24 h sandbox, a Tremblay seed dropped into EVERY
-real signup, « Vider les exemples » at the foot of Découvrir, and « Garder ma
-maisonnée ». A family that came to set up its own began by shovelling out somebody
-else's, and signup promised « une courte liste pour bien partir » that stayed hidden
-until it did. **Marc's call: the sandbox owns the examples.** Signup (and the legacy
-first-login path, a signup in disguise) starts EMPTY on the three-step WelcomeCard; the
-examples are one opt-in tap there (« Charger des exemples ») or in Découvrir.
+**The gate** (`f56bbb9e` → `5a8e1360`): deleting `LOGIN_PASSWORD` would have opened
+four doors, not one — it was also every legacy (no-hash) account's password and sudo
+lock, and login's « unknown email creates the household » path would have become a
+passwordless signup. The invite is its own switch (`SIGNUP_OPEN`, `_lib/signupGate.ts`),
+that login path is gone, the shared secret stays. **Strangers cost what a visitor
+costs** (`b185cb90`, 0139): the daily AI/R2 ceiling follows the household's TRUST
+(sandbox · unverified · confirmed) plus one pool all strangers share. **Other households
+reach Marc** (`beb38285`): their remarks and the door's COUNTS ride the nightly mail. The
+weekly stranger walk takes `/signup` in FR + EN (`e359eeff`).
 
-Three commits, each proven red first. **Claim** (`cd8b3cae`): a kept sandbox was never
-verified — the operator is born `verified_at NULL` and the claim never touched it, so
-0138's two doors stayed shut forever. **Empty signup** (`7897bc02`): `smoke.d1` flipped
-(it got 4 members); the d1 harness loads the examples through `/api/seed` like an
-operator would. **« Repartir à neuf »** (`d12dedad`, Marc's mid-session ask): wipe all
-the content, keep the account, the session, the tablets, the links and the settings —
-the restore's own wipe (`wipeStatements`, now shared) minus `household_preferences` and
-`usage_daily`, behind the leave door's locks (`requireHouseholdName` moved to `_lib/sudo`).
-New suites: `claim`, `seed`, `reset` (.d1) — the claim and `/api/seed` had no runtime
-coverage at all. ACTIONS ³⁴, PARITY F43.
+**Then Marc's phone, one morning** — each fixed the same day, each proven red: the
+keyboard opened on its own on a dozen screens (`727637db`, `autofocus.test`); an add had
+no « Annuler » (`a05c3da7`, `useCreateWithUndo` everywhere); a checked list item flipped
+back seconds later (`d7fc54c0`, `writeWith` cancels in-flight polls + `reapply`); and the
+photo import — quotes on every line, the method as ingredients, « Cuire 2 minutes » gone.
+Reproduced six ways against production: the vision model, asked for JSON, cut by
+max_tokens. **It only transcribes now**; the transcript takes the paste path
+(`_lib/recipeDraft`), and `_lib/recipeRepair` holds the six real reads (`8b059a2c`).
 
 ## 4. What still needs improvement — consolidated and ranked
 
