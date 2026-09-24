@@ -112,6 +112,18 @@ describe('draftFromText — the model runs only when the plain read is not good 
     expect(d.ingredients).toHaveLength(7)
   })
 
+  it('a label the model put before the text is not the title (seen live: « Transcription du texte de l’image »)', async () => {
+    const { env, run } = aiEnv()
+    const body = CARD.split('\n').slice(3).join('\n') // the card without its own title lines
+    for (const preamble of ['Transcription du texte de l’image\n\nTexte\n\n', 'Here is the transcription of the text in the image:\n\n']) {
+      const d = await draftFromText(env, `${preamble}Brocoli sauté au miel et au sésame\n\n${body}`, 'fr', true)
+      expect(d.title).toBe('Brocoli sauté au miel et au sésame')
+      expect(d.steps[0]).toBe('Défaire 1 brocoli en fleurons.')
+      expect(d.steps).not.toContain('Texte')
+      expect(run).not.toHaveBeenCalled()
+    }
+  })
+
   it('a transcript that lost its punctuation (weak OCR, handwriting) still goes to the model', async () => {
     const { env, run } = aiEnv()
     const garbled = 'gateau aux carottes 2 tasses farine 1 c a the soda 3 oeufs 1 tasse huile 2 tasses carottes rapees on melange tout et on cuit 45 min a 350'

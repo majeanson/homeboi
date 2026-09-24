@@ -754,6 +754,9 @@ export function parsePastedRecipe(text: string): PastedRecipe {
   // fallback below skips exactly those, so a wrapped title's second half never lands
   // in the steps as a bogus « et au sésame » instruction.
   let titleLines = 0
+  // True only for the line RIGHT AFTER the title — a wrapped title continues there and
+  // nowhere else (a later « et couper en bâtonnets… » is the method, not the title).
+  let afterTitle = false
   let servings: number | null = null
   let servingsUnit: string | null = null
   const times: RecipeTimes = { prep: null, cook: null, total: null }
@@ -765,6 +768,8 @@ export function parsePastedRecipe(text: string): PastedRecipe {
 
   for (const line of lines) {
     if (!line) continue
+    const justAfterTitle = afterTitle
+    afterTitle = false
 
     // Meta lines can appear anywhere; consume them when they stand alone. True when
     // the line was one and has been read.
@@ -833,7 +838,8 @@ export function parsePastedRecipe(text: string): PastedRecipe {
       if (!title && line.length <= 120) {
         title = line.slice(0, 200)
         titleLines = 1
-      } else if (title && titleLines === 1 && titleContinues(title, line)) {
+        afterTitle = true
+      } else if (title && justAfterTitle && titleContinues(title, line)) {
         // A title WRAPPED over two printed lines (« Brocoli sauté au miel » / « et au
         // sésame ») — a card's headline routinely is. The second line is joined when
         // it reads as a continuation: short, no digits, opening on a conjunction or

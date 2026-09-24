@@ -7,6 +7,7 @@ import {
   metaLine,
   repairRecipeRead,
   salvageFieldLines,
+  stripTranscriptPreamble,
   unquoteLine,
   unquoteTitle,
 } from './recipeRepair'
@@ -63,6 +64,19 @@ describe('0 · leaked JSON', () => {
   it('leaves an ordinary transcript alone', () => {
     const plain = 'Crêpes\n\nIngrédients\n2 oeufs\n\nPréparation\nMélanger.'
     expect(jsonFragmentsToText(plain)).toBe(plain)
+  })
+})
+
+describe('0b · a transcript’s preamble', () => {
+  it('drops the label lines a model puts before the copied text, and only those', () => {
+    expect(stripTranscriptPreamble('Transcription du texte de l’image\n\nTexte\n\nCrêpes\n2 oeufs')).toBe('Crêpes\n2 oeufs')
+    expect(stripTranscriptPreamble('Here is the transcription of the text in the image:\nCrêpes\n2 oeufs')).toBe('Crêpes\n2 oeufs')
+    expect(stripTranscriptPreamble('Texte :\nCrêpes')).toBe('Crêpes')
+  })
+  it('a real first line is never taken for a label', () => {
+    for (const first of ['Texte de grand-maman', 'Crêpes', 'Recette de crêpes de grand-maman', 'Défaire 1 brocoli en fleurons.']) {
+      expect(stripTranscriptPreamble(`${first}\n2 oeufs`)).toBe(`${first}\n2 oeufs`)
+    }
   })
 })
 

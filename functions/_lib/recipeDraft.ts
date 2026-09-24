@@ -2,7 +2,7 @@ import type { Env } from './env'
 import { TEXT_MODEL, structureRecipe, type Lang } from './ai'
 import { detectLang } from './langDetect'
 import { NO_TIMES, type RecipeTimes, linesWithForeignNumbers, parseRecipeText, refineSteps } from './recipeImport'
-import { jsonFragmentsToText, repairRecipeRead } from './recipeRepair'
+import { jsonFragmentsToText, repairRecipeRead, stripTranscriptPreamble } from './recipeRepair'
 
 // THE ONE text → draft path (2026-09-24). It lived inline in api/recipe-import's paste
 // branch, and api/recipe-vision had its own: the vision model was asked to read AND
@@ -84,8 +84,9 @@ export function heuristicIsGood(d: DraftOut): boolean {
 // the text model is never called. The result is `empty` only when nothing at all
 // could be made of the text.
 export async function draftFromText(env: Env, raw: string, lang: Lang, aiOn: boolean): Promise<DraftOut> {
-  // A reply that is JSON, or the broken remains of one, reads as text first.
-  const text = jsonFragmentsToText(raw.trim())
+  // A reply that is JSON, or the broken remains of one, reads as text first; a label a
+  // model put before the text it copied (« Transcription… », « Texte ») is not recipe.
+  const text = stripTranscriptPreamble(jsonFragmentsToText(raw.trim()))
   // Format first: a recipe with its real headings (Ingrédients / Préparation) parses
   // deterministically — no AI, nothing invented. Markdown-shaped text (the cloud OCR
   // reader answers in markdown) flattens first so its headings hit the same parser.

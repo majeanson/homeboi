@@ -46,6 +46,33 @@ export function unquoteTitle(title: string | null): string | null {
   return unquoteLine(m ? m[1] : title) || null
 }
 
+// A transcript's PREAMBLE: the lines a model puts before the text it was asked to copy
+// (« Transcription du texte de l'image », « Texte », « Here is the transcription: »).
+// Seen live the day the transcriber shipped: the label became the recipe's title and
+// the real title slid into the steps. Only the FIRST few lines are judged, and only a
+// line that is nothing but such a label goes — « Texte de grand-maman » stays.
+const PREAMBLE_LINE =
+  /^(?:(?:voici|here\s+is|here'?s|below\s+is)\b.*|.*\btranscri(?:ption|t|bed)\b.*|(?:texte|text|contenu|content|image|recette|recipe|ocr)(?:\s+(?:de|of)\s+(?:l['’])?image)?\s*:?)$/i
+export function stripTranscriptPreamble(text: string): string {
+  const lines = text.split(/\r?\n/)
+  let i = 0
+  let judged = 0
+  while (i < lines.length && judged < 4) {
+    const l = lines[i].trim()
+    if (!l) {
+      i++
+      continue
+    }
+    judged++
+    if (l.length <= 80 && PREAMBLE_LINE.test(l)) {
+      i++
+      continue
+    }
+    break
+  }
+  return lines.slice(i).join('\n')
+}
+
 const looksLikeJsonLines = (text: string) => /^\s*[{[]?\s*"[A-Za-z_]+"\s*:/m.test(text) || /^\s*"[^"\n]+",\s*$/m.test(text)
 
 // A transcript that is really JSON (or its broken remains) → plain text the paste
