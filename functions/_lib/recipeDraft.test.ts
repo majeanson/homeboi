@@ -61,6 +61,22 @@ describe('draftFromText — the card as plain text, AI off', () => {
     expect(d.lang).toBe('fr')
   })
 
+  it('a card’s meta strip on ONE line — times, yield and unit are read, whatever line it sits on', async () => {
+    // The vision transcript keeps « Préparation : 10 min • Cuisson : 20 min • Donne 12
+    // crêpes » on one line; unsplit, both times were lost and, when the model put that
+    // strip first, it became the title (seen live, 2026-09-24).
+    const body = `Ingrédients\n250 ml de farine\n2 oeufs\n\nPréparation\nMélanger.\nCuire 2 minutes de chaque côté.`
+    const strip = 'Préparation : 10 min • Cuisson : 20 min • Donne 12 crêpes'
+    for (const head of [`Crêpes de grand-maman\n${strip}`, `${strip}\nCrêpes de grand-maman`]) {
+      const d = await draftFromText(noAi, `${head}\n\n${body}`, 'fr', false)
+      expect(d.title).toBe('Crêpes de grand-maman')
+      expect(d.times).toEqual({ prep: 10, cook: 20, total: null })
+      expect(d.servings).toBe(12)
+      expect(d.servingsUnit).toBe('crêpes')
+      expect(d.steps).toEqual(['Mélanger.', 'Cuire 2 minutes de chaque côté.'])
+    }
+  })
+
   it('a recipe with real headings parses deterministically, with no repair needed', async () => {
     const d = await draftFromText(noAi, `Crêpes\n\nIngrédients\n250 ml de farine\n2 oeufs\n500 ml de lait\n\nPréparation\nMélanger la farine et les oeufs.\nAjouter le lait.\nCuire 2 minutes.`, 'fr', false)
     expect(d.structuring).toBe('headings')

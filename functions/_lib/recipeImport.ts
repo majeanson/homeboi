@@ -766,31 +766,46 @@ export function parsePastedRecipe(text: string): PastedRecipe {
   for (const line of lines) {
     if (!line) continue
 
-    // Meta lines can appear anywhere; consume them when they stand alone.
-    const tm = line.match(TIME_LINE)
-    if (tm) {
-      const mins = textToMinutes(tm[2])
-      if (mins) {
-        const kind = tm[1].toLowerCase()
-        if (/^cuisson|^cook/.test(kind)) times.cook ??= mins
-        else if (/total/.test(kind)) times.total ??= mins
-        else times.prep ??= mins
-        continue
+    // Meta lines can appear anywhere; consume them when they stand alone. True when
+    // the line was one and has been read.
+    const consumeMeta = (l: string): boolean => {
+      const tm = l.match(TIME_LINE)
+      if (tm) {
+        const mins = textToMinutes(tm[2])
+        if (mins) {
+          const kind = tm[1].toLowerCase()
+          if (/^cuisson|^cook/.test(kind)) times.cook ??= mins
+          else if (/total/.test(kind)) times.total ??= mins
+          else times.prep ??= mins
+          return true
+        }
       }
-    }
-    if (servings == null) {
-      const sv = line.match(SERVINGS_LINE)
-      if (sv) {
-        servings = clampServings(+(sv[1] ?? sv[2]))
-        // "Donne 24 biscuits" — keep the unit word ("biscuits") when it isn't
-        // a plain portion word; the UI then labels servings with it.
-        const unit = sv[3]?.trim()
-        if (servings && unit && !PORTION_WORDS.test(unit)) servingsUnit = unit.slice(0, 24)
-        // A short line around the meta block is the marker itself — consume it.
-        // Inside the method, "Diviser en 4 portions…" is a real step: keep it.
-        if (mode !== 'steps' && line.length <= 40) continue
+      if (servings == null) {
+        const sv = l.match(SERVINGS_LINE)
+        if (sv) {
+          servings = clampServings(+(sv[1] ?? sv[2]))
+          // "Donne 24 biscuits" — keep the unit word ("biscuits") when it isn't
+          // a plain portion word; the UI then labels servings with it.
+          const unit = sv[3]?.trim()
+          if (servings && unit && !PORTION_WORDS.test(unit)) servingsUnit = unit.slice(0, 24)
+          // A short line around the meta block is the marker itself — consume it.
+          // Inside the method, "Diviser en 4 portions…" is a real step: keep it.
+          if (mode !== 'steps' && l.length <= 40) return true
+        }
       }
+      return false
     }
+    // A card's META STRIP — « Préparation : 10 min • Cuisson : 20 min • Donne 12
+    // crêpes » — is several facts on ONE printed line, and a photo transcript keeps it
+    // that way. Read each fragment as its own meta line, but only when EVERY fragment
+    // is one: a step that merely contains a « • » is not a meta strip. Unsplit, the
+    // strip lost both times and, first on the page, became the title (2026-09-24).
+    const frags = line.split(/\s+[•·|]\s+/).map((s) => s.trim()).filter(Boolean)
+    if (frags.length > 1 && frags.every((f) => TIME_LINE.test(f) || SERVINGS_LINE.test(f))) {
+      for (const f of frags) consumeMeta(f)
+      continue
+    }
+    if (consumeMeta(line)) continue
 
     const ingH = line.match(ING_HEADING)
     if (ingH) {
@@ -857,6 +872,9 @@ export function parsePastedRecipe(text: string): PastedRecipe {
         continue // the title (one line, or two when wrapped) was already captured above
       }
       if (TIME_LINE.test(line) || (line.length <= 40 && SERVINGS_LINE.test(line))) continue // meta, already read
+      // …and the one-line meta strip (see the pass above), already read fragment by fragment.
+      const metaFrags = line.split(/\s+[•·|]\s+/).map((s) => s.trim()).filter(Boolean)
+      if (metaFrags.length > 1 && metaFrags.every((f) => TIME_LINE.test(f) || SERVINGS_LINE.test(f))) continue
       // A WRAPPED line of prose is a continuation, not an ingredient — even when the
       // wrap happens to fall right before a quantity (« Verser » / « 15 ml (1 c. à
       // soupe) de miel et 7,5 ml (1/2 c. à » / « soupe) de sauce soya… »). The tell is
