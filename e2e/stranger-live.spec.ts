@@ -4,7 +4,9 @@ import { BASE_URL } from './stranger.config'
 // THE STRANGER'S WALK, against the deployed app (`npm run e2e:stranger`, weekly).
 //
 // A first-time visitor: the marketing door, « Essayer pour vrai », the six tabs, one
-// real write, the ＋ sheet, the claim form. No stubs — this is the only harness that
+// real write, the ＋ sheet, the claim form — and, since signup opened (2026-09-24), the
+// OTHER door: /signup in FR and EN, which creates a real household and deletes it again
+// through the leave door (the signup tests below). No stubs — this is the only harness that
 // can see what a stranger sees. Every step is timed and every failed request and
 // console error is collected; the assertions are about the things a stubbed spec
 // cannot reach:
@@ -189,6 +191,82 @@ test('a stranger can open the door, try the demo, walk every tab, write once, an
   expect(trouble.badRequests, 'our own API answered 4xx/5xx during the walk').toEqual([])
   expect(trouble.consoleErrors, 'the visitor’s console carried errors').toEqual([])
 })
+
+// THE SIGNUP DOOR, opened 2026-09-24 (SIGNUP_OPEN in wrangler.toml). The walk above
+// only ever reached a sandbox; a stranger who came to set up their OWN family takes this
+// one, and until now nothing walked it: /signup with no invite field, an EMPTY board on
+// the welcome card, and the « confirme ton courriel » line that the budgets now key on
+// (an unconfirmed household spends at a visitor's ceiling, _lib/usage.ts 0139).
+//
+// Both languages — a stranger is not necessarily a Québécois, and the EN dictionary loads
+// on its own path (i18n.ts imports it only when asked).
+//
+// IT CREATES A REAL HOUSEHOLD, so it always deletes it, through the real leave door
+// (DELETE /api/household, password + name — Wave 4), in a `finally`. The address is one of
+// Resend's test inboxes (`delivered+label@resend.dev`): the confirmation letter is really
+// sent, is accepted as delivered, and costs the sending domain no reputation — a made-up
+// address would bounce, and a real one would be somebody's inbox.
+for (const lang of ['fr', 'en'] as const) {
+  test(`a stranger can sign up (${lang}) — no invite, an empty board, a letter to confirm — and leave`, async ({ page }, testInfo) => {
+    await page.addInitScript((l) => localStorage.setItem('babillard-lang', l), lang)
+    const trouble = watch(page)
+    const stamp = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`
+    const name = `Marche ${stamp}`
+    const password = `walk-${stamp}-${stamp}`
+    const email = `delivered+walk-${lang}-${stamp}@resend.dev`
+    let created = false
+
+    try {
+      await step(page, 'the marketing door', () => page.goto('/', { waitUntil: 'domcontentloaded' }), 'a[href="/signup"]')
+      await step(page, '/signup', () => page.locator('a[href="/signup"]').first().click(), 'form input[type="email"]')
+      // Signup is open: the invite field must not be there at all.
+      await expect(page.locator('form input[autocomplete="off"]'), 'the signup form still asks for an invite code').toHaveCount(0)
+
+      const form = page.locator('form').first()
+      await form.locator('input:not([type]), input[type="text"]').first().fill(name)
+      await form.locator('input[type="email"]').fill(email)
+      await form.locator('input[autocomplete="new-password"]').fill(password)
+      await form.locator('button[type="submit"]').click()
+      await page.waitForURL(/\/board/, { timeout: 60_000 })
+      created = true
+
+      // An EMPTY household, on the welcome card — not somebody else's examples.
+      await expect(page.locator('.welcome-card'), 'a fresh household did not land on the welcome card').toBeVisible({ timeout: SLOW_MS })
+      const skip = page.locator('.tour').getByRole('button', { name: /Passer|Skip/ })
+      if (await skip.count()) await skip.first().click()
+
+      // The letter went out, so the account says it is waiting on it.
+      await step(page, 'Réglages ▸ sessions', () => page.goto('/settings?tab=settings&focus=sessions', { waitUntil: 'domcontentloaded' }), '.operator__section, .operator__tabs')
+      await expect(
+        page.getByText(lang === 'fr' ? /pas encore confirmé/ : /not confirmed yet/).first(),
+        'no « confirm your email » line — was the letter sent?',
+      ).toBeVisible({ timeout: SLOW_MS })
+    } finally {
+      if (created) {
+        // The leave door, from inside the page so the session cookie and the CSRF echo
+        // are the app's own. A failure here is a finding: a stranger could not leave.
+        const status = await page.evaluate(
+          async ({ password, name }) => {
+            const csrf = /(?:^|;\s*)bb_csrf=([^;]+)/.exec(document.cookie)?.[1] ?? ''
+            const res = await fetch('/api/household', {
+              method: 'DELETE',
+              credentials: 'include',
+              headers: { 'content-type': 'application/json', 'X-CSRF-Token': decodeURIComponent(csrf) },
+              body: JSON.stringify({ password, name }),
+            })
+            return res.status
+          },
+          { password, name },
+        )
+        testInfo.annotations.push({ type: 'cleanup', description: `DELETE /api/household → ${status}` })
+        expect(status, 'the walk could not delete the household it created — a stranger could not leave').toBe(200)
+      }
+    }
+
+    expect(trouble.badRequests, 'our own API answered 4xx/5xx during the signup walk').toEqual([])
+    expect(trouble.consoleErrors, 'the visitor’s console carried errors').toEqual([])
+  })
+}
 
 test('the signed-out door opens no household socket and asks for no credential', async ({ page }) => {
   // The second walk's finding: the marketing page connected /api/live with nothing to

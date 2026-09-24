@@ -203,9 +203,11 @@ npm run e2e:matrix     # ON-DEMAND visual state sweep (e2e/state-matrix.spec.ts,
 npm run e2e:stranger   # ON-DEMAND walk of the DEPLOYED app as a first-time visitor
                        #   (e2e/stranger-live.spec.ts, own harness, NO Vite/stubs, laptop +
                        #   iPhone): the marketing door → « Essayer pour vrai » → every tab →
-                       #   one real write → the ＋ sheet → /garder, asserting our API never
-                       #   4xxs, the console stays clean, and each step arrives. Mints one
-                       #   24 h sandbox (the nightly cron sweeps it). CI twin = Actions ▸
+                       #   one real write → the ＋ sheet → /garder, AND /signup in FR + EN,
+                       #   asserting our API never 4xxs, the console stays clean, and each
+                       #   step arrives. Mints one 24 h sandbox (the nightly cron sweeps it)
+                       #   and one real household per language (deleted in-test by the
+                       #   leave door; the letter goes to Resend's test inbox). CI twin = Actions ▸
                        #   "Stranger walk" (dispatch + WEEKLY, Mondays 07:30). Never per-push.
 npm run e2e:flipp      # ON-DEMAND live contract with flipp.com (e2e/flipp-live.spec.ts, own
                        #   harness, NO Vite/stubs): pins the list-storage shape lib/flippList
