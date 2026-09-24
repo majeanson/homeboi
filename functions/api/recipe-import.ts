@@ -1,3 +1,4 @@
+import { repairRecipeRead } from '../_lib/recipeRepair'
 import { badRequest, ok, readJson, serviceUnavailable } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { TEXT_MODEL, resolveLang, structureRecipe } from '../_lib/ai'
@@ -59,7 +60,7 @@ interface DraftOut {
 }
 
 const draft = (d: Partial<DraftOut>): DraftOut => {
-  const merged: DraftOut = {
+  const merged: DraftOut = repairRecipeRead({
     title: null,
     ingredients: [],
     steps: [],
@@ -70,7 +71,10 @@ const draft = (d: Partial<DraftOut>): DraftOut => {
     source: null,
     lang: null,
     ...d,
-  }
+  })
+  // repairRecipeRead (_lib/recipeRepair): leaked field lines out, and a paragraph
+  // recipe gets its ingredients lifted word for word from the method. An honest read
+  // passes through untouched.
   // Detect the recipe's language from its own words (title + the lines), unless a
   // caller already supplied one. Runs on every path — incl. the no-AI JSON-LD /
   // paste ones — so the read-aloud voice matches the recipe wherever it came from.

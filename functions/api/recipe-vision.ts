@@ -3,6 +3,7 @@ import { authed } from '../_lib/route'
 import { VISION_MODEL_ID, recipeFromImage, resolveLang } from '../_lib/ai'
 import { refineSteps } from '../_lib/recipeImport'
 import { detectLang } from '../_lib/langDetect'
+import { repairRecipeRead } from '../_lib/recipeRepair'
 
 // Read a recipe out of a PHOTO. The client sends raw image bytes (resized, same
 // as recipe-image); the vision model OCRs + structures them into a DRAFT the
@@ -21,8 +22,11 @@ export const onRequestPost = authed(async (ctx) => {
   if (buf.byteLength === 0 || buf.byteLength > MAX_BYTES) return badRequest('Image vide ou trop grande.')
 
   const report = { error: null as string | null }
-  const r = await recipeFromImage(ctx.env, new Uint8Array(buf), resolveLang(ctx.env, ctx.request), report)
-  const steps = refineSteps(r.steps)
+  const read = await recipeFromImage(ctx.env, new Uint8Array(buf), resolveLang(ctx.env, ctx.request), report)
+  // Field names leaked as lines (« Servings », « 4 »…) and a paragraph card whose
+  // method got copied in as ingredients — both seen on one real card (recipeRepair.ts).
+  const r = repairRecipeRead({ ...read, steps: refineSteps(read.steps) })
+  const steps = r.steps
   // OCR'd steps go through the shared refinement: the model often returns the
   // page's numbering verbatim ("1. …") or one packed paragraph. Servings + times
   // ride along now — the printed card usually states them and the form has fields.
