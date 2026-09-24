@@ -1062,6 +1062,7 @@ function MaisonParent() {
                     >
                       {editingGroupId === g.id ? (
                         <GroupForm
+                          autoFocus
                           initial={{ name: g.name, kind: g.kind, colour: g.colour ?? '' }}
                           submitLabel={t.common.save}
                           onSubmit={(v) => saveGroupEdit(g.id, v)}

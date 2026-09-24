@@ -62,14 +62,12 @@ export const EMPTY_CONTACT_CORE: ContactCoreValue = {
 export function ContactFields({
   value,
   onChange,
-  autoFocus,
   showBirthday = true,
   showContact = true,
   showAddress = true,
 }: {
   value: ContactCoreValue
   onChange: (patch: Partial<ContactCoreValue>) => void
-  autoFocus?: boolean
   showBirthday?: boolean
   showContact?: boolean
   showAddress?: boolean
@@ -182,7 +180,6 @@ export function ContactFields({
             className="cf__input"
             value={value.firstName}
             onChange={(e) => onChange({ firstName: e.target.value })}
-            autoFocus={autoFocus}
           />
         </label>
         <label className="cf__field">

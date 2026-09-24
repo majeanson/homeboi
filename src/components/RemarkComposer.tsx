@@ -148,7 +148,6 @@ export function RemarkComposer({
         placeholder={t.remarks.titlePlaceholder}
         multiline
         rows={5}
-        autoFocus
         allowEmpty={!!memo.draft}
         busy={busy}
         voice={voice}

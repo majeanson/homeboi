@@ -278,7 +278,6 @@ export function IntakeForm() {
             <ContactFields
               value={self}
               onChange={(p) => setSelf((s) => ({ ...s, ...p }))}
-              autoFocus
               showBirthday={scope.bday}
               showContact={scope.contact}
               showAddress={scope.addr}

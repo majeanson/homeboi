@@ -33,15 +33,11 @@ import { Icon, type IconName } from '../Icon'
 export default function NoteEditorTiptap({
   initialMd,
   getMdRef,
-  autoFocus,
   ariaLabel,
 }: {
   initialMd: string
   /** NoteEditor's commit reads the body through this — set to a live serializer. */
   getMdRef: React.MutableRefObject<(() => string) | null>
-  /** A brand-new note (no title field above it any more) — the body IS the first
-   *  thing you type into, so it takes focus immediately. */
-  autoFocus?: boolean
   ariaLabel: string
 }) {
   const t = useT()
@@ -49,7 +45,10 @@ export default function NoteEditorTiptap({
   const toolbarScroll = useHScroll<HTMLDivElement>()
 
   const editor = useEditor({
-    autofocus: autoFocus ? 'end' : false,
+    // Never on open, even for a brand-new note: a full-screen editor opening is a
+    // SCREEN opening, and on a phone the keyboard would take half of it before the
+    // first word (autofocus.test.ts). One tap in the body starts typing.
+    autofocus: false,
     extensions: [
       StarterKit.configure({
         // The note grammar stores two heading depths ('# ' / '## ').

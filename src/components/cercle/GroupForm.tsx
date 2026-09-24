@@ -19,11 +19,16 @@ export function GroupForm({
   submitLabel,
   onSubmit,
   onCancel,
+  autoFocus = false,
 }: {
   initial?: Partial<GroupFormValue>
   submitLabel: string
   onSubmit: (v: GroupFormValue) => void
   onCancel: () => void
+  /** Only where the form is revealed IN PLACE by a tap (the inline edit, the chip in the
+   *  contact form). Never inside the ＋ chooser's dialog: a dialog opening does not summon
+   *  the keyboard (autofocus.test.ts). */
+  autoFocus?: boolean
 }) {
   const t = useT()
   const [name, setName] = useState(initial?.name ?? '')
@@ -42,7 +47,7 @@ export function GroupForm({
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder={t.cercle.groupName}
-        autoFocus
+        autoFocus={autoFocus}
         onKeyDown={(e) => e.key === 'Enter' && submit()}
       />
       <select className="cf__input" value={kind} onChange={(e) => setKind(e.target.value as GroupKind)}>

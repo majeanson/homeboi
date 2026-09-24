@@ -169,8 +169,8 @@ export function BusinessForm({
         </div>
       )}
 
-      {/* autoFocus: match the family (ContactForm/GroupForm) — the form opens ready to type. */}
-      <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder={bz.name} aria-label={bz.name} autoFocus />
+      {/* No autoFocus — house rule: a SCREEN, sheet or dialog opening never summons the keyboard (autofocus.test.ts): this form also opens to EDIT, and on a phone the keyboard would cover it before it is read. */}
+      <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder={bz.name} aria-label={bz.name} />
 
       {/* Category — free text, with a suggestion list (typeaheadOnly). */}
       <EntityCombobox<string>

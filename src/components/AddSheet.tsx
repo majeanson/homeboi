@@ -1135,7 +1135,6 @@ export function AddSheet({
             <NoteQuickAdd
               memberId={profileId}
               drawDraftId="sheet-cnote"
-              autoFocus
               autoVoice={autoVoice}
               onSubmitted={close}
             />

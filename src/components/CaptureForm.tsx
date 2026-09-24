@@ -78,7 +78,7 @@ const CAPTURE_UNDO_EP: Record<string, string> = {
  * `onRouted` fires after a successful (non-degraded) route, so a host scene can offer
  * its own way onward without this form having to know about navigation.
  */
-export function CaptureForm({ autoFocus, seed, onRouted }: { autoFocus?: boolean; seed?: string; onRouted?: () => void }) {
+export function CaptureForm({ seed, onRouted }: { seed?: string; onRouted?: () => void }) {
   const t = useT()
   const write = useWrite()
   const recordUndo = useRecordUndo()
@@ -196,7 +196,6 @@ export function CaptureForm({ autoFocus, seed, onRouted }: { autoFocus?: boolean
         voiceLabel={t.capture.voice}
         placeholder={voice.listening ? t.capture.listening : t.capture.placeholder}
         ariaLabel={t.common.add}
-        autoFocus={autoFocus}
         busy={busy}
       />
 

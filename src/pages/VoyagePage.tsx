@@ -294,7 +294,6 @@ function VoyageForm({ trip, faces, onClose }: { trip?: Trip; faces: MemberFace[]
           onChange={(e) => setTitle(e.target.value)}
           placeholder={t.voyage.tripNamePlaceholder}
           aria-label={t.voyage.tripName}
-          autoFocus={!editing}
         />
         <label className="voyage-form__label mono">{t.voyage.destination}</label>
         <input

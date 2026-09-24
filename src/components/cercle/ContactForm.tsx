@@ -480,7 +480,7 @@ export function ContactForm({
 
       {/* Identity + address — the shared ContactFields cluster (also used by the
           relative-facing intake form). Address drives the « Itinéraire » action. */}
-      <ContactFields value={core} onChange={setCore} autoFocus />
+      <ContactFields value={core} onChange={setCore} />
 
 
       {members.length > 0 && (
@@ -584,7 +584,7 @@ export function ContactForm({
               )}
             </div>
             {creatingGroup && (
-              <GroupForm submitLabel={t.cercle.addGroup} onSubmit={createGroupAndAdd} onCancel={() => setCreatingGroup(false)} />
+              <GroupForm autoFocus submitLabel={t.cercle.addGroup} onSubmit={createGroupAndAdd} onCancel={() => setCreatingGroup(false)} />
             )}
           </div>
         )}

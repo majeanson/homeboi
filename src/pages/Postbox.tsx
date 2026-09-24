@@ -172,7 +172,6 @@ export function Postbox() {
               value={senderName}
               onChange={(e) => setSenderName(e.target.value)}
               placeholder={t.postbox.namePlaceholder}
-              autoFocus
             />
           </label>
         </section>

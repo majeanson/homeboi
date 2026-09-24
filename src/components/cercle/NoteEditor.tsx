@@ -267,7 +267,6 @@ export function NoteEditor({
         <NoteEditorTiptap
           initialMd={seedMd(note)}
           getMdRef={bodyMdRef}
-          autoFocus={!note}
           ariaLabel={note ? fn.editorEdit : fn.editorNew}
         />
       </Suspense>

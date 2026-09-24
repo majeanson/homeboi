@@ -218,8 +218,8 @@ export function PetForm({ value, onSaved, onCancel }: { value?: Pet | null; onSa
 
   return (
     <form className="operator__inline-form" onSubmit={submit}>
-      {/* autoFocus: match the family (ContactForm/GroupForm) — the form opens ready to type. */}
-      <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder={p.name} aria-label={p.name} autoFocus />
+      {/* No autoFocus — house rule: a SCREEN, sheet or dialog opening never summons the keyboard (autofocus.test.ts): this form also opens to EDIT, and on a phone the keyboard would cover it before it is read. */}
+      <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder={p.name} aria-label={p.name} />
 
       {/* Species — free text, with a suggestion list (typeaheadOnly). */}
       <EntityCombobox<string>
