@@ -13,9 +13,9 @@ import { useSurface } from '../lib/surface'
 
 // Self-serve household creation — the front door for a brand-new family. One
 // short form (household name, email, password), then straight into Réglages ▸
-// La maisonnée to add the family members. When the deployment is gated
-// (LOGIN_PASSWORD set), /api/health says so and an invite-code field appears —
-// the same code the shared login uses, so the gate posture doesn't change.
+// La maisonnée to add the family members. When the deployment asks for an invite
+// code (functions/_lib/signupGate.ts), /api/health says so and the field appears;
+// once signup is open (SIGNUP_OPEN = "1") the field simply isn't there.
 export function Signup() {
   const t = useT()
   const nav = useNavigate()

@@ -82,8 +82,8 @@ interchangeable. Read this table before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md` is now
-> a number you can trust. It reads **1** — the last one in §4-K, and it is the gate
-> itself: dropping the invite code. Everything it was waiting for is now green. **Asserted from the boxes themselves** by
+> a number you can trust. It reads **1** — §4-K's last: retiring the shared
+> `LOGIN_PASSWORD` once no legacy account needs it. Signup itself opened 2026-09-24. **Asserted from the boxes themselves** by
 > `src/lib/docCounts.test.ts`, so this sentence cannot drift the way `REVIEW-PASS.md`'s
 > banner once did — it claimed 15 for twelve days against a single box.
 >
@@ -155,8 +155,7 @@ coverage at all. ACTIONS ³⁴, PARITY F43.
 | **G · H · I · J** | Four passes that LOOKED: the 100-screenshot review, what the sweep could not see, the frames re-read, and fresh eyes on the a11y census | ✅ all closed; `color-contrast` went 78 states → 0, and the sweep learned to prune, shoot below the fold, and rebase its fixtures |
 | **L** | The public-app hardening pass — thirteen items, 2026-09-16/17 | ✅ 31 boxes closed, 1 parked. Sessions, rate limits, a real-D1 harness, the door's eager graph, password-gated doors, security headers, nightly alerts, a restore door, the weekly stranger walk, the household timezone, Dependabot |
 
-**One thread from §L is still waiting on time rather than on work:**
-
+**§L's last thread, closed on time rather than on work:**
 - [x] **Enforce the Content-Security-Policy — DONE 2026-09-22, the second of the two
       options it named.** The week of report-only came back with exactly one finding, and
       it is not ours: the edge injects inline scripts into the marketing door (two on one
@@ -284,9 +283,10 @@ backfilled. Single use proven red; the redeem page survives StrictMode's double 
 **The examples story is settled (2026-09-23, §3)** — which this box partly waited on: a
 stranger now meets ONE story (try → keep, or sign up → an empty household).
 
-- [ ] **Open signup**: `SIGNUP_OPEN = "1"` in `wrangler.toml` — **never** by deleting
-      `LOGIN_PASSWORD`, which also locks legacy logins (`_lib/signupGate.ts`). Then
-      verify: `/api/health` `invite:false`, a throwaway signup + mail + exit, `e2e:stranger`.
+- [x] **Open signup — OPEN 2026-09-24**: `SIGNUP_OPEN = "1"` (`_lib/signupGate.ts`), after
+      the prep commit `f56bbb9e` split the invite from `LOGIN_PASSWORD`, which stays set.
+- [ ] **Retire the shared password**: count prod `operators` rows with `password_hash IS NULL`
+      (needs `wrangler login`); at zero, drop the legacy branch in `login.ts` + `_lib/sudo.ts`.
 
 **Parked, Marc's call, not code:** whether « L'autre parent » (F37) stays — it only
 earns its keep if a second phone actually wants full rights; a partner who only touches
