@@ -149,7 +149,7 @@ const TERMS: Record<Lang, { title: string; lead: string; updated: string; sectio
   fr: {
     title: 'Conditions d’utilisation',
     updated: 'Mise à jour : 24 septembre 2026',
-    lead: 'Babillard est un projet personnel, offert tel quel à quelques maisonnées. Voici ce que ça veut dire concrètement.',
+    lead: 'Babillard est un projet personnel, offert tel quel à toute maisonnée qui veut s’en servir. Voici ce que ça veut dire concrètement.',
     sections: [
       {
         h: 'Le service',
@@ -189,7 +189,7 @@ const TERMS: Record<Lang, { title: string; lead: string; updated: string; sectio
   en: {
     title: 'Terms of use',
     updated: 'Updated: 24 September 2026',
-    lead: 'Babillard is a personal project, offered as-is to a few households. Here is what that means in practice.',
+    lead: 'Babillard is a personal project, offered as-is to any household that wants to use it. Here is what that means in practice.',
     sections: [
       {
         h: 'The service',
