@@ -152,31 +152,3 @@ export async function requireActor(
   }
   return actor
 }
-
-// Ensure the operator's household row exists, creating it + the operator link
-// on first login. Prototype-simple: one household per operator email.
-export async function ensureHouseholdForEmail(env: Env, email: string): Promise<string> {
-  const existing = await env.DB.prepare('SELECT household_id FROM operators WHERE email = ?')
-    .bind(email)
-    .first<{ household_id: string }>()
-  if (existing) return existing.household_id
-
-  const { newId } = await import('./ids')
-  const householdId = newId()
-  const ts = nowSec()
-  const name = email.split('@')[0]
-  await env.DB.batch([
-    env.DB.prepare(
-      'INSERT INTO households (id, name, tier, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
-    ).bind(householdId, `Maisonnée de ${name}`, 'free', 'active', ts, ts),
-    env.DB.prepare('INSERT INTO operators (email, household_id, created_at) VALUES (?, ?, ?)').bind(
-      email,
-      householdId,
-      ts,
-    ),
-  ])
-  // No example seed here, on purpose: this first-login path creates a new household,
-  // which makes it a signup in disguise, and the two doors must tell one story —
-  // a real household starts empty (auth/signup.ts says why).
-  return householdId
-}

@@ -10,8 +10,8 @@ import { isSandboxEmail } from '../functions/_lib/demoHousehold'
 // 0138 gates the day mail was wired. The first case below is the one that was red.
 //
 // Not covered here: the invite-gate branch. LOGIN_PASSWORD is unset in the harness and
-// env is fixed per run, so the 403 is covered by code-reading only — it is the same
-// safeEqual line signup uses.
+// env is fixed per run, so it is held as a pure table instead — _lib/signupGate.test.ts,
+// the one module signup and the claim both ask.
 describe('demo claim', () => {
   async function mint(): Promise<{ householdId: string; cookie: string; csrf: string; claim: (body: unknown) => Promise<Response> }> {
     const res = await anon('/api/demo', { method: 'POST', headers: { 'CF-Connecting-IP': `10.1.0.${Math.floor(Math.random() * 250)}` } })

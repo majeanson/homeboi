@@ -30,7 +30,7 @@
 | **What it is** | A calm household command-center for a cheap always-on wall tablet. Single-page React app + one Cloudflare Worker (static assets + `/api/*`) + D1 + Workers AI + R2. FR-CA first. |
 | **Code** | ~157k lines across 955 `.ts`/`.tsx` files (`src/`, `functions/`, `worker/`) |
 | **Schema** | 138 forward-only migrations (0138 = la vérification du courriel) |
-| **Tests** | 2 405 unit tests in 191 files · 116 real-runtime cases in 18 files (`npm run test:d1`, the Worker in workerd against a real D1) · 157 Playwright spec files |
+| **Tests** | 2 409 unit tests in 192 files · 119 real-runtime cases in 18 files (`npm run test:d1`, the Worker in workerd against a real D1) · 157 Playwright spec files |
 | **Deploy** | Push to `main` → CI (typecheck · test · build · bundle budget · **test:d1** · knip) gates `db:migrate:prod` + `wrangler deploy`. E2E is decoupled (`workflow_run`), runs after a green CI, never blocks the ship. |
 | **Second interface** | `/api/mcp` — read-only over the household — of the 12 tools, most proxy a GET handler that already exists, so the caps, the recurrence expansion and the time zone are decided once and inherited. (This row lives HERE, not in §3: docCounts derives that number from the registry, and the claim died the first time §3 rotated.) |
 | **Households in production** | **Six**, counted in D1 on 2026-09-22 — Marc's (4 members), four other real accounts from the invite gate, and the legacy read-only demo singleton. This row said « One (Marc's) » for months: other people's households are already in there, which is what Wave 4 (deletion, privacy, a contact door) is actually about |
@@ -284,9 +284,9 @@ backfilled. Single use proven red; the redeem page survives StrictMode's double 
 **The examples story is settled (2026-09-23, §3)** — which this box partly waited on: a
 stranger now meets ONE story (try → keep, or sign up → an empty household).
 
-- [ ] **Open signup**: drop the invite code (`LOGIN_PASSWORD` doubling as invite in
-      `auth/signup.ts`) — LAST, once Waves 3 and 4 are green in production. Announce
-      nowhere yet; let the marketing page carry it.
+- [ ] **Open signup**: `SIGNUP_OPEN = "1"` in `wrangler.toml` — **never** by deleting
+      `LOGIN_PASSWORD`, which also locks legacy logins (`_lib/signupGate.ts`). Then
+      verify: `/api/health` `invite:false`, a throwaway signup + mail + exit, `e2e:stranger`.
 
 **Parked, Marc's call, not code:** whether « L'autre parent » (F37) stays — it only
 earns its keep if a second phone actually wants full rights; a partner who only touches

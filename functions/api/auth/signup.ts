@@ -2,7 +2,8 @@ import type { Env } from '../../_lib/env'
 import { badRequest, conflict, forbidden, readJson, serverError, tooManyRequests } from '../../_lib/json'
 import { overAuthLimit } from '../../_lib/rateLimit'
 import { signInAs, sessionCookies } from '../../_lib/auth'
-import { hashPassword, safeEqual } from '../../_lib/password'
+import { hashPassword } from '../../_lib/password'
+import { inviteAccepted } from '../../_lib/signupGate'
 import { newId, nowSec } from '../../_lib/ids'
 import { sendVerification } from '../../_lib/verify'
 import { mailEnabled } from '../../_lib/mail'
@@ -15,10 +16,9 @@ import { mailEnabled } from '../../_lib/mail'
 // they live in the demo sandbox (« Essayer pour vrai », keepable with « Garder ma
 // maisonnée ») and behind one opt-in tap (« Charger des exemples », /api/seed).
 //
-// When LOGIN_PASSWORD is set it doubles as the INVITE CODE here — exactly the
-// gate a new household needed before this endpoint existed (first login used to
-// require it), so adding signup changes nothing about who can get in. Unset =
-// open signup (local dev / LAN / a deliberately public deployment).
+// Who may sign up is _lib/signupGate.ts: SIGNUP_OPEN = "1" (wrangler.toml) opens it
+// to anyone; otherwise LOGIN_PASSWORD, when set, is the INVITE CODE; neither = open
+// (local dev / LAN). The demo claim asks the same question through the same module.
 export const onRequestPost: PagesFunction<Env> = async (ctx) => {
   // Per-address bound (_lib/rateLimit.ts): a signup seeds a whole household, and the
   // 409 below is the one answer that says an address exists — six a minute is a
@@ -34,10 +34,7 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
   const name = body?.householdName?.trim().slice(0, 60)
   if (!name) return badRequest('Nom de la maisonnée requis.')
 
-  const required = ctx.env.LOGIN_PASSWORD
-  if (required && !safeEqual(body?.invite ?? '', required)) {
-    return forbidden('Code d’invitation invalide.')
-  }
+  if (!inviteAccepted(ctx.env, body?.invite)) return forbidden('Code d’invitation invalide.')
 
   const existing = await ctx.env.DB.prepare('SELECT email FROM operators WHERE email = ?').bind(email).first()
   if (existing) return conflict('Un compte existe déjà pour ce courriel — connecte-toi.')

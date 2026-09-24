@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { env } from 'cloudflare:workers'
 import { anon, household, login } from '../functions/test/d1'
 
 // The account flows end to end, through the real Worker and a real D1 (STATE.md §4-L
@@ -9,6 +10,23 @@ describe('account', () => {
     expect((await anon('/api/auth/login', { method: 'POST', body: { email: a.email, password: 'wrong wrong wrong' } })).status).toBe(401)
     const again = await login(a.email, a.password)
     expect(again.householdId).toBe(a.householdId)
+  })
+
+  it('an unknown email is refused at login — login never creates a household', async () => {
+    // The harness runs with LOGIN_PASSWORD unset, which is exactly the shape that made
+    // the old « first login creates the household » path a passwordless signup door
+    // with no invite question. Red against restoring that path (it answered 200).
+    const before = await env.DB.prepare('SELECT COUNT(*) AS n FROM households').first<{ n: number }>()
+    // Its own caller address (the demo.d1 precedent): the whole file shares one LIMIT_IP
+    // bucket, and the rate-limit case below counts on the budget this request would take.
+    const res = await anon('/api/auth/login', {
+      method: 'POST',
+      body: { email: `stranger-${Date.now()}@d1.test`, password: 'anything at all' },
+      headers: { 'CF-Connecting-IP': '10.2.0.1' },
+    })
+    expect(res.status).toBe(401)
+    const after = await env.DB.prepare('SELECT COUNT(*) AS n FROM households').first<{ n: number }>()
+    expect(after!.n).toBe(before!.n)
   })
 
   it('« Se déconnecter partout ailleurs » ends the other device’s session and keeps this one', async () => {

@@ -37,7 +37,8 @@ Deploy command is `npm run deploy` (build + `wrangler deploy`). Live URL ends up
 | `AI`             | Workers AI                   | optional                  | capture → manual type-picker; recap hidden       |
 | `PHOTOS`         | R2 bucket `babillard-photos` | optional                  | photo/avatar/voice-clip/step-photo features hide |
 | `REALTIME_HUB`   | Durable Object `RealtimeHub` | optional                  | `/api/live` → 503; clients fall back to polling  |
-| `LOGIN_PASSWORD` | secret                       | optional                  | login is open (fine on a trusted LAN)            |
+| `LOGIN_PASSWORD` | secret                       | optional                  | legacy (no-hash) accounts log in with no password, and signup asks no invite (fine on a trusted LAN) |
+| `SIGNUP_OPEN`    | var in `wrangler.toml`       | optional                  | `"1"` = anyone may sign up; otherwise `LOGIN_PASSWORD` is the invite code (`_lib/signupGate.ts`) |
 | `MISTRAL_API_KEY`| secret (Mistral API key)     | optional                  | high-accuracy cloud recipe OCR hides; on-device read only |
 
 ## One-time setup
@@ -58,7 +59,7 @@ npx wrangler r2 bucket create babillard-photos
 
 # 4. Secrets
 npx wrangler secret put SESSION_SECRET     # paste ≥32 random chars
-npx wrangler secret put LOGIN_PASSWORD     # optional shared login password
+npx wrangler secret put LOGIN_PASSWORD     # optional: legacy-account password + signup invite code
 npx wrangler secret put MISTRAL_API_KEY    # optional: high-accuracy cloud recipe OCR
 npx wrangler secret put ALERT_EMAIL        # optional: where the nightly cron mails when a backup
                                            #   fails or a stale sandbox survives the sweep (+ a

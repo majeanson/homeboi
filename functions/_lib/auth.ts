@@ -134,9 +134,8 @@ export async function issueSession(env: Env, email: string, version = 1): Promis
 }
 
 // THE door for signing an operator in: reads the row's current session_version and
-// mints a cookie carrying it. A row that does not exist yet (login's legacy
-// first-login path calls ensureHouseholdForEmail first, so this is defensive)
-// mints at version 1, the column's default.
+// mints a cookie carrying it. A row that does not exist (every caller has just
+// found or written it, so this is defensive) mints at version 1, the column's default.
 export async function signInAs(env: Env, email: string): Promise<{ session: string; csrf: string }> {
   const row = await env.DB.prepare('SELECT session_version FROM operators WHERE email = ?')
     .bind(email)

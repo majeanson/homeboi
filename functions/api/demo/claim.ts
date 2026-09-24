@@ -2,7 +2,8 @@ import { authed } from '../../_lib/route'
 import { badRequest, conflict, forbidden, readJson, serverError, tooManyRequests, unauthorized } from '../../_lib/json'
 import { overAuthLimit } from '../../_lib/rateLimit'
 import { signInAs, sessionCookies } from '../../_lib/auth'
-import { hashPassword, safeEqual } from '../../_lib/password'
+import { hashPassword } from '../../_lib/password'
+import { inviteAccepted } from '../../_lib/signupGate'
 import { nowSec } from '../../_lib/ids'
 import { DEMO_SANDBOX_DOMAIN, isSandboxEmail } from '../../_lib/demoHousehold'
 import { mailEnabled } from '../../_lib/mail'
@@ -18,7 +19,7 @@ import { sendVerification } from '../../_lib/verify'
 // stops counting against DEMO_SANDBOX_CAP, freeing a demo slot).
 //
 // Validation mirrors auth/signup exactly: same email regex, same 8-char password
-// floor, same PBKDF2 hashPassword, same LOGIN_PASSWORD invite gate (claiming is a
+// floor, same PBKDF2 hashPassword, same invite gate, _lib/signupGate.ts (claiming is a
 // signup in disguise — it must not be a way around a gated deployment), same
 // one-household-per-email conflict answer — and the same `verified_at` judgement +
 // verification letter (0138). The sandbox operator is born with verified_at NULL, and
@@ -49,10 +50,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
 
   // Same gate posture as signup: when the deployment is invite-gated, claiming
   // a permanent account needs the code too (the demo mint itself stays open).
-  const required = ctx.env.LOGIN_PASSWORD
-  if (required && !safeEqual(body?.invite ?? '', required)) {
-    return forbidden('Code d’invitation invalide.')
-  }
+  if (!inviteAccepted(ctx.env, body?.invite)) return forbidden('Code d’invitation invalide.')
 
   const existing = await ctx.env.DB.prepare('SELECT email FROM operators WHERE email = ?').bind(email).first()
   if (existing) return conflict('Un compte existe déjà pour ce courriel — connecte-toi.')

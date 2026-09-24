@@ -71,6 +71,11 @@ bucket_name = "babillard-photos"
 # Public, build-time + runtime config. Nothing secret here.
 APP_NAME = "Babillard"
 DEFAULT_LANG = "fr"
+# Who may create an account (functions/_lib/signupGate.ts). "1" = anyone, no invite
+# code; anything else = the LOGIN_PASSWORD secret doubles as the invite code. Opening
+# signup is THIS line, in a commit — never `wrangler secret delete LOGIN_PASSWORD`,
+# which would also unlock every legacy (no-hash) account at login.
+SIGNUP_OPEN = "0"
 
 # --- Nightly backup (bmad/08 E-36) --------------------------------------------
 # 07:10 UTC ≈ 2-3 AM Eastern: the Worker's `scheduled` handler dumps every

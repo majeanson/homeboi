@@ -20,11 +20,17 @@ export interface Env {
   // or verify anything; validated to be >= 32 chars at use (see auth.ts).
   SESSION_SECRET?: string
 
-  // OPTIONAL personal-deployment login gate. When set, /api/auth/login requires
-  // this exact password (constant-time checked). Unset = open login, fine for
-  // local dev / a trusted LAN. There is no per-user password store — this is a
-  // single shared secret for a household-owned deployment, not a SaaS.
+  // OPTIONAL shared secret from before per-account passwords existed. Two jobs:
+  // (1) the password of a LEGACY operator row (no password_hash) at login and at the
+  // sudo doors — unset means those rows need no password, fine for local dev / a LAN,
+  // a hole on a public deployment that still has such rows; (2) the signup INVITE code
+  // while SIGNUP_OPEN is not "1" (_lib/signupGate.ts). Keep it set in production even
+  // after signup opens: job (1) does not end with job (2).
   LOGIN_PASSWORD?: string
+  // OPTIONAL plain var (wrangler.toml [vars]): exactly "1" opens signup and the demo
+  // claim to anyone — no invite code asked. Anything else keeps the LOGIN_PASSWORD
+  // invite gate. Separate from LOGIN_PASSWORD on purpose (_lib/signupGate.ts says why).
+  SIGNUP_OPEN?: string
 
   // OPTIONAL outbound email (functions/_lib/mail.ts — Resend's REST API). Both unset
   // → no email is ever sent: « Mot de passe oublié » hides its door on /login

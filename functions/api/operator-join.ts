@@ -11,9 +11,9 @@ import { nowSec } from '../_lib/ids'
 // `operators` against an existing household_id instead of creating a household.
 //
 // That one line is the whole feature, and getting it wrong is the bug it fixes: a
-// partner who signs up normally hits `ensureHouseholdForEmail`, which hands them a
-// brand-new household seeded with the sample family. So nothing on this path may call
-// it, and nothing here may seed.
+// partner who signs up the ordinary way gets a brand-new household of their own (it
+// used to be seeded with the sample family, too). So nothing on this path may create a
+// household, and nothing here may seed.
 //
 //   GET  /api/operator-join?j=<token>  -> { householdName }        (no auth — a preview)
 //   POST /api/operator-join { token, email, password }             (no auth — this IS the auth)

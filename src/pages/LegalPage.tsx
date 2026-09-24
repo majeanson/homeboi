@@ -148,14 +148,14 @@ const PRIVACY: Record<Lang, { title: string; lead: string; updated: string; sect
 const TERMS: Record<Lang, { title: string; lead: string; updated: string; sections: Section[] }> = {
   fr: {
     title: 'Conditions d’utilisation',
-    updated: 'Mise à jour : 22 septembre 2026',
+    updated: 'Mise à jour : 24 septembre 2026',
     lead: 'Babillard est un projet personnel, offert tel quel à quelques maisonnées. Voici ce que ça veut dire concrètement.',
     sections: [
       {
         h: 'Le service',
         p: [
           'Babillard est fourni « tel quel », sans garantie de disponibilité. C’est un tableau familial, pas un service essentiel : garde tes rendez-vous importants ailleurs aussi.',
-          'L’inscription se fait par invitation pour l’instant. Un compte peut être refusé ou fermé s’il sert à autre chose qu’une maisonnée.',
+          'Un compte peut être refusé ou fermé s’il sert à autre chose qu’une maisonnée.',
         ],
       },
       {
@@ -188,14 +188,14 @@ const TERMS: Record<Lang, { title: string; lead: string; updated: string; sectio
   },
   en: {
     title: 'Terms of use',
-    updated: 'Updated: 22 September 2026',
+    updated: 'Updated: 24 September 2026',
     lead: 'Babillard is a personal project, offered as-is to a few households. Here is what that means in practice.',
     sections: [
       {
         h: 'The service',
         p: [
           'Babillard is provided “as is”, with no guarantee of availability. It is a family board, not an essential service: keep your important appointments somewhere else too.',
-          'Signing up is invite-only for now. An account may be refused or closed if it is used for something other than a household.',
+          'An account may be refused or closed if it is used for something other than a household.',
         ],
       },
       {
@@ -232,12 +232,12 @@ const CONTACT: Record<Lang, { h: string; lead: string; none: string }> = {
   fr: {
     h: 'Nous joindre',
     lead: 'Une question sur tes données, ou un problème ? Écris ici :',
-    none: 'Ce Babillard est opéré en privé et n’affiche pas d’adresse publique. Passe par la personne qui t’a invité.',
+    none: 'Ce Babillard est opéré en privé et n’affiche pas d’adresse publique. Adresse-toi à la personne qui l’opère.',
   },
   en: {
     h: 'Contact',
     lead: 'A question about your data, or a problem? Write here:',
-    none: 'This Babillard is run privately and publishes no public address. Go through whoever invited you.',
+    none: 'This Babillard is run privately and publishes no public address. Ask whoever runs it.',
   },
 }
 

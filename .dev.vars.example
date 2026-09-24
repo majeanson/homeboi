@@ -11,10 +11,10 @@ ENVIRONMENT=development
 # Generate one: `openssl rand -hex 32`
 SESSION_SECRET=replace-with-at-least-32-random-characters-xx
 
-# OPTIONAL shared login password. When set, /api/auth/login requires it (on top
-# of the email). Leave unset for open login on a trusted LAN / local dev; SET it
-# for any public deployment so a stranger can't sign in as you (email-only login
-# has no other gate). Not a per-user password store — one shared household secret.
+# OPTIONAL shared secret from before per-account passwords. It is the password of a
+# LEGACY account (no password_hash) at login, and — while SIGNUP_OPEN (wrangler.toml)
+# is not "1" — the signup invite code. Leave unset on a trusted LAN / local dev; SET it
+# on any public deployment that has legacy accounts, even after signup opens.
 # LOGIN_PASSWORD=choose-a-strong-passphrase
 
 # OPTIONAL Mistral API key — enables the high-accuracy CLOUD recipe-photo reader
