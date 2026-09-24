@@ -1273,6 +1273,8 @@ export const EN: typeof FR = {
     fillFrom: 'Quick fill',
     readPhoto: 'Scan a card',
     reading: 'Reading the photo…',
+    readingOrder: 'Putting the recipe in order…',
+    readingLook: 'Taking a closer look at the photo…',
     readFail: "Couldn't read it — fill it in by hand.",
     readHint: 'Recipe online? A link copies it perfectly. Otherwise scan several photos at once — a wide shot + close-ups of the small numbers.',
     photoTooBig: 'Photo too heavy — try a screenshot or a smaller photo.',

@@ -1468,6 +1468,8 @@ export const FR = {
     fillFrom: 'Remplir vite',
     readPhoto: 'Scanner une fiche',
     reading: 'Je lis la photo…',
+    readingOrder: 'Je mets la recette en ordre…',
+    readingLook: 'Je regarde la photo de plus près…',
     readFail: 'Texte illisible — remplis à la main.',
     readHint: 'Recette en ligne ? Le lien donne une copie parfaite. Sinon, scanne plusieurs photos d’un coup — une vue d’ensemble + des gros plans des petits chiffres.',
     photoTooBig: 'Photo trop lourde — essaie une capture d’écran ou une photo plus petite.',

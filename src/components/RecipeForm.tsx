@@ -145,6 +145,12 @@ export function RecipeForm({
   const [reading, setReading] = useState(false)
   // OCR progress (0..1) for the "Lecture… 60 %" label while transcribing on-device.
   const [readProgress, setReadProgress] = useState(0)
+  // WHICH stage of the read is running. The % only measures the transcription; after
+  // it the text is structured server-side (up to 45 s) and, failing that, the vision
+  // read runs (up to 20 s more). The label sat on « 100 % » through both — a full
+  // minute that read as frozen (Marc, 2026-09-24: « nothing else happens », then it
+  // came up). Each stage now says what it is doing.
+  const [readStage, setReadStage] = useState<'read' | 'order' | 'look'>('read')
   // The read result awaiting the cook's verify-against-the-photo confirm (Pillar 3).
   // Null when no read is pending review. `confirming` flags the source-photo upload.
   const [readReview, setReadReview] = useState<{
@@ -372,6 +378,7 @@ export function RecipeForm({
     if (reading || !files.length) return
     setReading(true)
     setReadProgress(0)
+    setReadStage('read')
     setReadMsg(null)
     try {
       const texts: string[] = []
@@ -454,6 +461,7 @@ export function RecipeForm({
       // drops to the generative vision read as a safety net.
       let draft: ReadDraft | null = null
       if (stitched.length >= 25 && meanConf >= 40) {
+        setReadStage('order')
         // Longer than api()'s 20s default: structuring runs through an AI model and
         // can legitimately outrun that on a slow connection.
         draft = await api<ReadDraft>('recipe-import', { method: 'POST', body: { text: stitched }, timeoutMs: 45_000 }).catch(
@@ -468,6 +476,7 @@ export function RecipeForm({
       if ((!draft || draft.empty || !draftHasContent(draft)) && aiEnabled) {
         // Fallback: the generative vision read of the FIRST page (resized to the
         // upload cap, like recipe-image). 503 = AI off → handled below as readFail.
+        setReadStage('look')
         const small = await resizeImage(files[0], PHOTO_MAX)
         if (small.size <= MAX_UPLOAD_BYTES) {
           const v = await api<ReadDraft & { model?: string }>('recipe-vision', { method: 'POST', body: small }).catch(
@@ -975,11 +984,15 @@ export function RecipeForm({
                 pages is read in one go (ingredients page + steps page → one card). */}
             <label className={'btn btn--ghost mono' + (reading ? ' is-busy' : '')}>
               <InlineIcon name="camera-bold" />{' '}
-              {reading
-                ? readProgress > 0
-                  ? `${t.recipes.reading} ${Math.round(readProgress * 100)} %`
-                  : t.recipes.reading
-                : t.recipes.readPhoto}
+              {!reading
+                ? t.recipes.readPhoto
+                : readStage === 'order'
+                  ? t.recipes.readingOrder
+                  : readStage === 'look'
+                    ? t.recipes.readingLook
+                    : readProgress > 0
+                      ? `${t.recipes.reading} ${Math.round(readProgress * 100)} %`
+                      : t.recipes.reading}
               <input
                 type="file"
                 accept="image/*"
