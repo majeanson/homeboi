@@ -1,24 +1,87 @@
 // Repairs for a recipe READ (photo or pasted text) whose structure came back wrong,
 // even though the words were read right. Pure, so every rule is tested on the real
 // card that broke it (recipeRepair.test.ts — Marc's « Brocoli sauté au miel et au
-// sésame », 2026-09-24).
+// sésame », 2026-09-24, read six ways).
 //
-// Two failures, both seen on that one card:
+// What that one card produced, across the vision model's replies:
 //
-// 1. FIELD NAMES LEAKED AS LINES. The vision model half-followed the JSON it was asked
-//    for, and the reply came back with « Servings », « 4 », « PrepMin », « 5 »,
-//    « CookMin », « 10 » as six INGREDIENTS. A line that is only a field name or only
-//    a number is never an ingredient or a step; the number after a field name is that
-//    field's value, kept when the real field is empty.
-//
-// 2. A PARAGRAPH RECIPE. Plenty of cards (magazine inserts, grocery-store cards) have no
-//    ingredient list: the quantities live inside the method (« chauffer 15 ml (1 c. à
-//    soupe) d'huile d'olive… »). The reader then either copies the METHOD into the
-//    ingredients, or leaves them empty. Either way, the ingredients can be taken out of
-//    the method WORD FOR WORD — each measured phrase, exactly as printed — which keeps
-//    the faithful-first promise (nothing rephrased, nothing invented). A duration
-//    (« 2 minutes »), a yield (« 4 portions ») or a keeping time (« 3 mois ») is not an
-//    ingredient.
+// 0. LEAKED JSON. Asked for JSON and cut off by max_tokens, the reply had no closing
+//    brace, so the prose fallback read the raw JSON lines as text: the title became
+//    `{"title": "Brocoli…",` and every line kept its quotes and trailing comma.
+//    A line can be un-quoted without harm, and a `"key": [` line is a heading.
+// 1. FIELD NAMES LEAKED AS LINES. « Servings », « 4 », « PrepMin », « 5 », « CookMin »,
+//    « 10 » as six INGREDIENTS. A line that is only a field name or only a number is
+//    never an ingredient or a step; the number after a field name is that field's
+//    value, kept when the real field is empty.
+// 2. THE FOOTER AS STEPS. « Donne 4 portions. » and « Cette recette se conserve 4 jours
+//    au réfrigérateur ou 3 mois au congélateur. » are META: the yield goes to servings,
+//    the keeping note is not an instruction.
+// 3. THE METHOD AS INGREDIENTS. A paragraph card (magazine insert, grocery-store card)
+//    has no ingredient list: the quantities live inside the method. The reader then
+//    either copies the METHOD into the ingredients (steps empty, or the footer), or
+//    leaves them empty. Either way the ingredients can be taken out of the method
+//    WORD FOR WORD — each measured phrase, exactly as printed — which keeps the
+//    faithful-first promise (nothing rephrased, nothing invented). A duration
+//    (« 2 minutes »), a yield (« 4 portions ») or a keeping time (« 3 mois ») is not
+//    an ingredient.
+
+// ── 0. Leaked JSON ───────────────────────────────────────────────────────────────
+
+// One array item or scalar the model emitted as JSON: `"Cuire 2 minutes.",` → the
+// text. Conservative: only a quote at the very start AND/OR very end goes (a line that
+// merely CONTAINS quotes — 1 tasse de « sucre » — is untouched).
+export function unquoteLine(line: string): string {
+  let s = line.trim()
+  if (s.length >= 2 && s.startsWith('"') && /"(,)?$/.test(s)) s = s.slice(1).replace(/",?$/, '')
+  else if (/",$/.test(s)) s = s.replace(/",$/, '')
+  else if (/^"[^"]*$/.test(s)) s = s.slice(1)
+  else if (/^[^"]*"$/.test(s)) s = s.slice(0, -1)
+  return s.replace(/\\"/g, '"').trim()
+}
+
+// A title that is a whole JSON line: `{"title": "Brocoli sauté", ` → « Brocoli sauté ».
+export function unquoteTitle(title: string | null): string | null {
+  if (!title) return title
+  const m = title.trim().match(/^\{?\s*"(?:title|titre)"\s*:\s*"(.*?)"\s*,?\s*\}?$/i)
+  return unquoteLine(m ? m[1] : title) || null
+}
+
+const looksLikeJsonLines = (text: string) => /^\s*[{[]?\s*"[A-Za-z_]+"\s*:/m.test(text) || /^\s*"[^"\n]+",\s*$/m.test(text)
+
+// A transcript that is really JSON (or its broken remains) → plain text the paste
+// parser reads: a `"key": [` line becomes the heading that key stands for, a scalar
+// becomes its meta line, brackets and braces vanish, and every item is un-quoted.
+// A transcript with no JSON in it is returned untouched.
+export function jsonFragmentsToText(text: string): string {
+  if (!looksLikeJsonLines(text)) return text
+  const out: string[] = []
+  for (const raw of text.split(/\r?\n/)) {
+    const l = raw.trim()
+    if (!l || /^[{}[\],]+$/.test(l)) continue
+    const kv = l.match(/^\{?\s*"([A-Za-z_]+)"\s*:\s*(.*)$/)
+    if (kv) {
+      const key = kv[1].toLowerCase()
+      const val = kv[2].trim().replace(/,$/, '').trim()
+      if (val === '[' || val === '[]' || val === '{') {
+        if (/^ingr[ée]dients?$/.test(key)) out.push('Ingrédients')
+        else if (/^(steps?|instructions?|method|directions?|[ée]tapes?|pr[ée]paration)$/.test(key)) out.push('Préparation')
+        continue
+      }
+      const v = unquoteLine(val.replace(/[\]}]+$/, ''))
+      if (!v || v === 'null') continue
+      if (/^(title|titre|name|nom)$/.test(key)) out.push(v)
+      else if (/^(servings?|portions?|yield|rendement)$/.test(key) && /^\d+$/.test(v)) out.push(`${v} portions`)
+      else if (/^prep/.test(key) && /^\d+$/.test(v)) out.push(`Préparation : ${v} min`)
+      else if (/^cook|cuisson/.test(key) && /^\d+$/.test(v)) out.push(`Cuisson : ${v} min`)
+      else if (/^total/.test(key) && /^\d+$/.test(v)) out.push(`Total : ${v} min`)
+      continue
+    }
+    out.push(unquoteLine(l.replace(/^[\[{]+|[\]}]+,?$/g, '')))
+  }
+  return out.join('\n')
+}
+
+// ── 1. Field names as lines ──────────────────────────────────────────────────────
 
 const FIELD = /^(title|titre|servings?|portions?|yield|rendement|prep\s*-?\s*min(utes)?|cook\s*-?\s*min(utes)?|prep(aration)?\s*time|cook(ing)?\s*time|temps\s+de\s+(pr[ée]paration|cuisson)|ingredients?|ingr[ée]dients?|steps?|[ée]tapes?|pr[ée]paration|instructions?|method)\s*:?\s*$/i
 const NUMBER = /^\d+(?:[.,]\d+)?$/
@@ -54,6 +117,33 @@ export function salvageFieldLines(lines: string[]): FieldSalvage {
   return out
 }
 
+// ── 2. The footer: yield and keeping notes ───────────────────────────────────────
+
+const PORTION = String.raw`(?:portions?|personnes?|servings?|parts?|people|convives|pers\.?)`
+// A line that is ONLY a yield: « Donne 4 portions. », « Pour 4 personnes », « 4 portions »,
+// « Serves 4 », « Rendement : 6 portions ». Anchored at both ends, so « Diviser en 4
+// portions et servir » (a real step) never matches.
+const YIELD_LINE = new RegExp(
+  String.raw`^(?:(?:donne|rendement|yield|serves?|makes|pour)\s*:?\s*)?(\d{1,2})(?:\s*[àa-]\s*\d{1,2})?\s*${PORTION}?\s*\.?$|^(?:donne|rendement|yield|serves?|makes|pour)\s*:?\s*(\d{1,2})(?:\s*[àa-]\s*\d{1,2})?\s*${PORTION}?\s*\.?$`,
+  'i',
+)
+// A keeping note: how long it keeps, and where. Starts the way those sentences start.
+const KEEPING_LINE =
+  /^(?:(?:cette|ces|la|le|les)\s+\w+\s+)?(?:se\s+(?:conserve|garde)|peut\s+se\s+conserver|conserver|se\s+cong[èe]le|keeps?\b|will\s+keep|store\b|can\s+be\s+(?:stored|kept|frozen)|refrigerate\b|freeze\b)/i
+
+export function metaLine(line: string): { meta: boolean; servings: number | null } {
+  const s = line.trim()
+  if (!s || s.startsWith('## ')) return { meta: false, servings: null }
+  const y = s.match(YIELD_LINE)
+  if (y && /\d/.test(s) && new RegExp(PORTION, 'i').test(s)) return { meta: true, servings: parseInt(y[1] ?? y[2], 10) || null }
+  if (y && /^(?:donne|rendement|yield|serves?|makes)\b/i.test(s)) return { meta: true, servings: parseInt(y[1] ?? y[2], 10) || null }
+  if (KEEPING_LINE.test(s) && /\b(?:jours?|days?|semaines?|weeks?|mois|months?|heures?|hours?|r[ée]frig[ée]rateur|cong[ée]lateur|frigo|fridge|freezer|refrigerator)\b/i.test(s))
+    return { meta: true, servings: null }
+  return { meta: false, servings: null }
+}
+
+// ── 3. Method vs list ────────────────────────────────────────────────────────────
+
 const fold = (s: string) =>
   s
     .normalize('NFD')
@@ -77,12 +167,20 @@ export function ingredientsAreMethod(ingredients: string[], steps: string[]): bo
   return dup * 2 >= real.length
 }
 
-// ── Measured phrases, lifted word for word out of a method ───────────────────
+// An instruction, as opposed to an ingredient line: a sentence (ends on a period, five
+// words or more) or a long line. Judged on the SET, never one line at a time — « Cuire
+// 2 minutes. » is three words, and travels with its neighbours.
+export function looksLikeMethodLine(line: string): boolean {
+  const s = line.trim()
+  const words = s.split(/\s+/).length
+  return (/[.!?]$/.test(s) && words >= 5) || s.length > 90
+}
+
+// ── Measured phrases, lifted word for word out of a method ───────────────────────
 // A quantity: digits (« 7,5 », « 1/2 », « ½ ») or a spelled-out article/number.
 const QTY = String.raw`(?:\d+(?:[.,]\d+)?(?:\s*\/\s*\d+)?|[½¼¾⅓⅔]|une?|deux|trois|quatre|cinq|six|a|an|one|two|three|four|five|six)`
 // Units that make the next words an INGREDIENT (whole words only — `g` must not be
-// the first letter of « grand »), and the ones that make them a time,
-// a temperature or a yield — which are not.
+// the first letter of « grand »), as opposed to a time, a temperature or a yield.
 const UNIT = String.raw`(?:ml|cl|dl|l|g|kg|mg|oz|lb|lbs|c\.\s*(?:à\s*)?(?:soupe|th[ée]|caf[ée])|c\.?\s*s\.|c\.?\s*t\.|cuill[èe]res?\s+à\s+(?:soupe|th[ée]|caf[ée])|tasses?|cups?|tbsp|tsp|tablespoons?|teaspoons?|gousses?|cloves?|pinc[ée]es?|pinch(?:es)?|tranches?|slices?|bo[iî]tes?|cans?|paquets?|packages?|sachets?|bottes?|bunch(?:es)?|feuilles?|brins?|morceaux?|filets?|poign[ée]es?|handfuls?)(?![\p{L}])`
 const NOT_FOOD = /^(minutes?|min|mins|heures?|h|hours?|secondes?|sec|seconds?|jours?|days?|semaines?|weeks?|mois|months?|ans?|years?|portions?|personnes?|servings?|people|fois|times|degr[ée]s?|°|pouces?|inches?|cm|mm|fa[çc]ons?|ways?|[ée]tapes?|steps?|parts?|parties?|minute|fois)\b/i
 // Where an ingredient phrase ends. Punctuation (outside parentheses) always does;
@@ -155,16 +253,40 @@ export function ingredientsFromMethod(steps: string[]): string[] {
   return out
 }
 
-// The whole repair, for a read that has ingredients, steps, servings and times.
+// ── The whole repair ─────────────────────────────────────────────────────────────
+
 export function repairRecipeRead<
-  R extends { ingredients: string[]; steps: string[]; servings: number | null; times: { prep: number | null; cook: number | null; total: number | null } },
+  R extends {
+    title: string | null
+    ingredients: string[]
+    steps: string[]
+    servings: number | null
+    times: { prep: number | null; cook: number | null; total: number | null }
+  },
 >(r: R): R {
-  const ing = salvageFieldLines(r.ingredients)
-  const st = salvageFieldLines(r.steps)
-  const servings = r.servings ?? ing.servings ?? st.servings
+  const title = unquoteTitle(r.title)
+  // 0 + 1: un-quote every line, then drop field names and bare numbers.
+  const ing = salvageFieldLines(r.ingredients.map(unquoteLine).filter(Boolean))
+  const st = salvageFieldLines(r.steps.map(unquoteLine).filter(Boolean))
+  let servings = r.servings ?? ing.servings ?? st.servings
   const times = { ...r.times, prep: r.times.prep ?? ing.prep ?? st.prep, cook: r.times.cook ?? ing.cook ?? st.cook }
-  let ingredients = ing.lines
-  const steps = st.lines
+  // 2: the footer out of both lists; its yield is the servings when none was read.
+  const keep = (lines: string[]) =>
+    lines.filter((l) => {
+      const m = metaLine(l)
+      if (m.meta && m.servings != null) servings ??= m.servings
+      return !m.meta
+    })
+  let ingredients = keep(ing.lines)
+  let steps = keep(st.lines)
+  // 3a: no steps left, and the « ingredients » read like a method → they ARE the method.
+  const realIng = ingredients.filter((l) => !l.startsWith('## '))
+  if (!steps.length && realIng.length && realIng.filter(looksLikeMethodLine).length * 10 >= realIng.length * 6) {
+    steps = ingredients
+    ingredients = []
+  }
+  // 3b: a method with no list (or the list is the method) → lift the ingredients out
+  // of it, word for word.
   if (steps.length && (ingredients.length === 0 || ingredientsAreMethod(ingredients, steps))) {
     const lifted = ingredientsFromMethod(steps)
     // Only replace when the method actually yields a list; an honest empty beats the
@@ -172,5 +294,5 @@ export function repairRecipeRead<
     if (lifted.length) ingredients = lifted
     else if (ingredients.length) ingredients = []
   }
-  return { ...r, ingredients, steps, servings, times }
+  return { ...r, title, ingredients, steps, servings, times }
 }

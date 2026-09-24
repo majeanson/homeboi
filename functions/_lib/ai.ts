@@ -8,7 +8,7 @@ import { runModel } from './runModel'
 // never lost and the UI can offer a manual type-picker.
 
 import type { Env } from './env'
-import { parseMarkdownRecipe, parseYield, stripAiCommentary, NO_TIMES, type RecipeTimes } from './recipeImport'
+import { stripAiCommentary } from './recipeImport'
 import { dropDanglingHeadings } from './recipeSections'
 
 // AI output language. Mirrors the UI locale (src/i18n.ts `Lang`). The router and
@@ -374,129 +374,53 @@ const VISION_MODEL = '@cf/meta/llama-3.2-11b-vision-instruct'
 // Exported for the read report (the verify panel names the model that read the photo).
 export const VISION_MODEL_ID = VISION_MODEL
 
-// A photo read carries more than the paste path's RecipeStructured: the printed
-// servings and prep/cook times are usually right there on the card, and the form
-// already has fields for them (RecipeForm.applyDraft). So read + return them too.
-export interface RecipePhoto {
-  title: string | null
-  ingredients: string[]
-  steps: string[]
-  servings: number | null
-  servingsUnit: string | null
-  times: RecipeTimes
-}
-const EMPTY_PHOTO: RecipePhoto = { title: null, ingredients: [], steps: [], servings: null, servingsUnit: null, times: NO_TIMES }
-
-// A model field that should be whole minutes — accept a number or a numeric
-// string ("25"), clamp to a sane 1..2880 range, else null.
-function minutesField(v: unknown): number | null {
-  const n = typeof v === 'number' ? v : typeof v === 'string' ? parseInt(v, 10) : NaN
-  return Number.isFinite(n) && n > 0 && n <= 48 * 60 ? Math.round(n) : null
-}
-
-// Read a recipe from a PHOTO: transcribe what's ACTUALLY printed — title,
-// servings, prep/cook times, ingredient lines, steps — without inventing or
-// commenting. `bytes` is the raw image (already resized client-side). Returns
-// empties on no-AI or any failure so the form just opens for manual entry.
+// TRANSCRIBE a photo — plain text, exactly what is printed, nothing organised. The
+// structuring happens afterwards on the text, through the same path a paste takes
+// (_lib/recipeDraft.draftFromText). Until 2026-09-24 this asked the vision model to
+// read AND structure in one JSON reply; on a paragraph card it put the method in the
+// ingredients and the footer in the steps, invented prep/cook times from the
+// durations in the method, and when max_tokens cut the JSON the prose fallback read
+// raw JSON lines, quotes and all. A transcript has none of those failure modes, and
+// the text path cross-checks every number the structuring model emits against it.
 //
-// The prompt is deliberately a TRANSCRIPTION task, not an "organize" one, and
-// carries NO concrete example part-names: a small vision model echoes example
-// words ("Glaçage", "Croûte") straight back as fake sections (that exact bug),
-// and an "organize" framing invites it to add remarks. Faithful copy + no
-// examples + an explicit no-commentary rule + a post-filter is the fix.
-export async function recipeFromImage(
-  env: Env,
-  bytes: Uint8Array,
-  lang: Lang = 'fr',
-  report?: AiReport,
-): Promise<RecipePhoto> {
-  if (!env.AI || bytes.length === 0) return EMPTY_PHOTO
+// The prompt is a TRANSCRIPTION task and carries no example words: a small vision
+// model echoes example words straight back (that exact bug, with fake sections), and
+// an "organize" framing invites remarks. Returns '' on no-AI or any failure so the form
+// just opens for manual entry; `report` carries the reason to the AI error journal.
+export async function transcribeImage(env: Env, bytes: Uint8Array, lang: Lang = 'fr', report?: AiReport): Promise<string> {
+  if (!env.AI || bytes.length === 0) return ''
   const prompt =
     lang === 'en'
-      ? `You transcribe a recipe from an image (a cookbook page, a handwritten card, a screenshot). Copy EXACTLY what is written. Invent nothing. Add no commentary.
-Reply with ONLY this JSON, no text around it:
-{"title": string, "servings": number|null, "prepMin": number|null, "cookMin": number|null, "ingredients": string[], "steps": string[]}
-- title: the recipe's name, as written.
-- servings: the number of servings if stated ("4 servings" → 4), else null.
-- prepMin / cookMin: prep / cook time in MINUTES if stated, else null.
-- ingredients: each line as written, with its quantity.
-- steps: the method, as short ordered steps.
-- Keep the EXACT words from the image: do not rephrase, summarize, translate, or fix spelling. The only edits allowed are splitting the method into separate steps and copying a part name as a "## " line. Think of it as an intelligent copy-paste, not a rewrite.
-- If the recipe is split into named parts, copy each part's EXACT printed name on its own line, prefixed with "## ", in the relevant array. Never use a part name that does not appear in the image.
-- Add NO remark, note, or explanation. Do not point out what is missing or unreadable. If something isn't written, set the field to null or omit that line — never explain why.
-- If the page is set in COLUMNS, read each column separately, top to bottom, one column at a time. Never join text from two different columns onto one line.
-- At most 40 ingredients, 30 steps.`
-      : `Tu transcris une recette à partir d'une image (page de livre, fiche manuscrite ou capture d'écran). Recopie EXACTEMENT ce qui est écrit. N'invente rien. N'ajoute aucun commentaire.
-Réponds avec UNIQUEMENT ce JSON, sans aucun texte autour :
-{"title": string, "servings": number|null, "prepMin": number|null, "cookMin": number|null, "ingredients": string[], "steps": string[]}
-- title : le nom de la recette, tel qu'écrit.
-- servings : le nombre de portions s'il est indiqué (« 4 portions » → 4), sinon null.
-- prepMin / cookMin : le temps de préparation / cuisson EN MINUTES s'il est indiqué, sinon null.
-- ingredients : chaque ligne telle quelle, avec sa quantité.
-- steps : la préparation, en étapes courtes et dans l'ordre.
-- Garde les mots EXACTS de l'image : ne reformule pas, ne résume pas, ne traduis pas, ne corrige pas l'orthographe. Les seules modifications permises sont de découper la préparation en étapes et de recopier un nom de partie en ligne « ## ». C'est un copier-coller intelligent, pas une réécriture.
-- Si la recette est séparée en parties, recopie le nom EXACT de chaque partie (tel qu'écrit dans l'image) sur sa propre ligne, préfixé de « ## », dans le bon tableau. N'utilise jamais un nom de partie qui n'apparaît pas dans l'image.
-- N'ajoute AUCUNE remarque, note ni explication. Ne signale pas ce qui manque ou serait illisible. Si une information n'est pas écrite, mets le champ à null ou n'écris pas cette ligne — ne l'explique pas.
-- Si la page est en COLONNES, lis chaque colonne séparément, de haut en bas, une colonne à la fois. Ne joins jamais le texte de deux colonnes différentes sur une même ligne.
-- Maximum 40 ingrédients, 30 étapes.`
+      ? `Transcribe ALL the text in this image exactly as printed, as plain text.
+- One printed line per line, in reading order. Keep the line breaks, the headings and the list markers as they appear.
+- If the page is set in COLUMNS, transcribe each column separately, top to bottom, one column at a time. Never join text from two different columns onto one line.
+- Copy every number, fraction and unit exactly. Do not translate, rephrase, summarize, correct spelling, or convert units.
+- Output ONLY the transcription: no JSON, no markdown, no quotation marks around lines, no comments, nothing about what is missing or unreadable.`
+      : `Transcris TOUT le texte de cette image exactement comme il est imprimé, en texte brut.
+- Une ligne imprimée par ligne, dans l'ordre de lecture. Garde les sauts de ligne, les titres et les puces tels qu'ils apparaissent.
+- Si la page est en COLONNES, transcris chaque colonne séparément, de haut en bas, une colonne à la fois. Ne joins jamais le texte de deux colonnes différentes sur une même ligne.
+- Recopie chaque nombre, fraction et unité exactement. Ne traduis pas, ne reformule pas, ne résume pas, ne corrige pas l'orthographe, ne convertis pas les unités.
+- Réponds UNIQUEMENT avec la transcription : pas de JSON, pas de markdown, pas de guillemets autour des lignes, aucun commentaire, rien sur ce qui manque ou serait illisible.`
   try {
     const res = (await runModel(env, VISION_MODEL, {
       // Workers AI vision wants the image as an array of 0-255 byte values.
       image: [...bytes],
       prompt,
-      max_tokens: 1500,
+      // Plain text is shorter than the JSON this used to ask for; the headroom is for
+      // a two-page spread, not a safety net — a cut transcript is still a transcript.
+      max_tokens: 2000,
     })) as { response?: unknown }
-    const parsed = extractJson(res.response) as
-      | { title?: unknown; servings?: unknown; prepMin?: unknown; cookMin?: unknown; ingredients?: unknown; steps?: unknown }
-      | null
-    // The model very often OCRs the recipe correctly but answers in PROSE/MARKDOWN
-    // ("**Ingrédients**\n* 8 choux…") instead of the JSON we asked for — vision
-    // models follow structured-output instructions far less reliably than the text
-    // model. Don't throw that perfect read away on a "no JSON": fall back to the
-    // SAME heading-aware parser the paste-import path uses (it knows Ingrédients/
-    // Préparation, bullets, numbered steps, "## " sections, times, servings).
-    const result: RecipePhoto = parsed
-      ? {
-          title: typeof parsed.title === 'string' ? parsed.title.trim() || null : null,
-          ingredients: cleanLines(parsed.ingredients, 40),
-          steps: cleanLines(parsed.steps, 30),
-          servings: parseYield(parsed.servings),
-          servingsUnit: null,
-          times: { prep: minutesField(parsed.prepMin), cook: minutesField(parsed.cookMin), total: null },
-        }
-      : visionProseToRecipe(res.response)
-    // Net for a model that disobeys "no commentary": drop "Remarque" / "La recette
-    // n'indique pas…" lines it leaked as steps/ingredients, then any "## Section"
-    // left dangling once its only line was removed.
-    result.ingredients = dropDanglingHeadings(stripAiCommentary(result.ingredients))
-    result.steps = dropDanglingHeadings(stripAiCommentary(result.steps))
-    // Only a read that's empty BOTH ways is a real failure — log THAT, since the
-    // vision ping in Réglages only proves the model RUNS, not that it reads.
-    if (!result.title && !result.ingredients.length && !result.steps.length && report) {
-      report.error = logAi('recipeFromImage', new Error(`vision read nothing legible: ${visionSnippet(res.response)}`))
-    }
-    return result
+    const raw = typeof res.response === 'string' ? res.response : ''
+    // Fences a model adds out of habit go; a leaked remark (« La recette n'indique
+    // pas… ») is dropped line by line, the same net the structuring model gets.
+    const text = stripAiCommentary(raw.replace(/```[a-z]*/gi, '').split(/\r?\n/))
+      .join('\n')
+      .trim()
+    if (!text && report) report.error = logAi('transcribeImage', new Error(`vision read nothing legible: ${visionSnippet(res.response)}`))
+    return text
   } catch (err) {
-    if (report) report.error = logAi('recipeFromImage', err)
-    return EMPTY_PHOTO
-  }
-}
-
-// The vision model answered in prose/markdown rather than JSON. Reuse the
-// paste-import parser (markdown-flattened) so a non-JSON reply still becomes a
-// reviewable draft — and it recovers servings/times/sections too. Empty in →
-// empty out.
-function visionProseToRecipe(raw: unknown): RecipePhoto {
-  const text = typeof raw === 'string' ? raw : ''
-  if (!text.trim()) return EMPTY_PHOTO
-  const p = parseMarkdownRecipe(text)
-  return {
-    title: p.title,
-    ingredients: p.ingredients,
-    steps: p.steps,
-    servings: p.servings,
-    servingsUnit: p.servingsUnit,
-    times: p.times,
+    if (report) report.error = logAi('transcribeImage', err)
+    return ''
   }
 }
 

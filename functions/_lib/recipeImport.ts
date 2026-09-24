@@ -733,6 +733,15 @@ function inlineSectionTitle(line: string): string | null {
   return null
 }
 
+// Does `line` continue a title that wrapped onto a second printed line? Short, no
+// digits, and opening on a conjunction or preposition (« et au sésame », « aux
+// pommes », « with lemon »); a title already closed by punctuation never continues.
+const titleContinues = (title: string, line: string): boolean =>
+  !/[.!?:]$/.test(title) &&
+  line.length <= 60 &&
+  !/\d/.test(line) &&
+  /^(?:et|ou|au|aux|à|a|de|du|des|d['’]|en|pour|sans|avec|sur|and|or|with|in|for|of|to|on)\b/i.test(line)
+
 // Parse text the user pasted (from a site, a PDF, a message). Heading-aware
 // first; when the paste has no headings, fall back to shape detection
 // (quantity-leading lines = ingredients, prose after = steps). The result's
@@ -741,6 +750,10 @@ export function parsePastedRecipe(text: string): PastedRecipe {
   const lines = text.split(/\r?\n/).map((l) => l.replace(/\s+/g, ' ').trim())
   let mode: 'pre' | 'ing' | 'steps' | 'notes' = 'pre'
   let title: string | null = null
+  // How many printed lines the title took (1, or 2 when wrapped) — the no-headings
+  // fallback below skips exactly those, so a wrapped title's second half never lands
+  // in the steps as a bogus « et au sésame » instruction.
+  let titleLines = 0
   let servings: number | null = null
   let servingsUnit: string | null = null
   const times: RecipeTimes = { prep: null, cook: null, total: null }
@@ -802,7 +815,17 @@ export function parsePastedRecipe(text: string): PastedRecipe {
     }
 
     if (mode === 'pre') {
-      if (!title && line.length <= 120) title = line.slice(0, 200)
+      if (!title && line.length <= 120) {
+        title = line.slice(0, 200)
+        titleLines = 1
+      } else if (title && titleLines === 1 && titleContinues(title, line)) {
+        // A title WRAPPED over two printed lines (« Brocoli sauté au miel » / « et au
+        // sésame ») — a card's headline routinely is. The second line is joined when
+        // it reads as a continuation: short, no digits, opening on a conjunction or
+        // preposition. A description (« Une recette de grand-maman ») does not.
+        title = `${title} ${line}`.slice(0, 200)
+        titleLines = 2
+      }
       // Further preamble (description, byline) is dropped — it isn't the recipe.
       continue
     }
@@ -826,27 +849,37 @@ export function parsePastedRecipe(text: string): PastedRecipe {
 
   // No headings at all — classify by line shape instead.
   if (!sawIngHeading && !sawStepHeading && ings.length === 0 && stepLines.length === 0) {
-    let pastTitle = false
+    let skipped = 0
     for (const line of lines) {
       if (!line) continue
-      if (!pastTitle) {
-        pastTitle = true
-        continue // the title was already captured above
+      if (skipped < Math.max(1, titleLines)) {
+        skipped++
+        continue // the title (one line, or two when wrapped) was already captured above
       }
       if (TIME_LINE.test(line) || (line.length <= 40 && SERVINGS_LINE.test(line))) continue // meta, already read
-      if (ING_LIKE.test(line) && line.length <= 80) ings.push(stripBullet(line).slice(0, 200))
+      // A WRAPPED line of prose is a continuation, not an ingredient — even when the
+      // wrap happens to fall right before a quantity (« Verser » / « 15 ml (1 c. à
+      // soupe) de miel et 7,5 ml (1/2 c. à » / « soupe) de sauce soya… »). The tell is
+      // the line BEFORE it: long, and left open (no sentence-ending punctuation). A real
+      // ingredient list is made of short lines, so it never looks like that.
+      const prev = stepLines[stepLines.length - 1]
+      const continuation = !!prev && prev.length > 40 && !/[.!?:]$/.test(prev)
+      if (!continuation && ING_LIKE.test(line) && line.length <= 80) ings.push(stripBullet(line).slice(0, 200))
       else stepLines.push(line)
     }
   }
 
-  // Merge wrapped lines (a continuation starts lowercase while the previous
-  // line ended mid-sentence) before the shared refinement pass. A "## " section
-  // marker never merges in either direction — it isn't part of any sentence.
+  // Merge wrapped lines (a continuation starts lowercase — or on a digit, when the
+  // previous line is long prose left mid-sentence: « Verser » / « 15 ml (1 c. à soupe)
+  // de miel… ») before the shared refinement pass. A numbered marker (« 2. Ajouter »)
+  // is never a continuation, and a "## " section marker never merges in either
+  // direction — it isn't part of any sentence.
   const merged: string[] = []
   for (const l of stepLines) {
     const prev = merged[merged.length - 1]
-    if (prev && !isSectionHeading(prev) && !isSectionHeading(l) && !/[.!?:]$/.test(prev) && /^[a-zà-öœ]/.test(l))
-      merged[merged.length - 1] = `${prev} ${l}`
+    const open = !!prev && !isSectionHeading(prev) && !isSectionHeading(l) && !/[.!?:]$/.test(prev)
+    const continues = /^[a-zà-öœ]/.test(l) || (prev !== undefined && prev.length > 40 && /^\d/.test(l) && !/^\d{1,2}\s*[.)]\s/.test(l))
+    if (open && continues) merged[merged.length - 1] = `${prev} ${l}`
     else merged.push(l)
   }
   const steps = dropDanglingHeadings(refineSteps(merged, 30))

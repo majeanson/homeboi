@@ -1,17 +1,13 @@
-import { repairRecipeRead } from '../_lib/recipeRepair'
+import { draft, draftFromText } from '../_lib/recipeDraft'
 import { badRequest, ok, readJson, serviceUnavailable } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { TEXT_MODEL, resolveLang, structureRecipe } from '../_lib/ai'
 import { aiUsable } from '../_lib/aiPref'
-import { detectLang } from '../_lib/langDetect'
 import {
-  NO_TIMES,
-  type RecipeTimes,
   htmlToText,
   linesWithForeignNumbers,
   parseRecipeJsonLd,
   parseRecipeMicrodata,
-  parseRecipeText,
   recipeTextWindow,
   refineSteps,
   regroupIngredients,
@@ -28,59 +24,6 @@ import {
 // saved; the client prefills the recipe form so the cook can fix anything
 // before committing. Operator-only (it makes an outbound fetch and writes the
 // recipe book).
-
-interface DraftOut {
-  title: string | null
-  ingredients: string[]
-  steps: string[]
-  servings: number | null
-  servingsUnit: string | null
-  times: RecipeTimes
-  image: string | null
-  source: string | null
-  // Auto-detected reading language ('fr' | 'en' | null = couldn't tell → the form
-  // leaves its language on "Auto"). Set here so every import path fills it.
-  lang: 'fr' | 'en' | null
-  // HOW this draft was structured, for the photo-read report (RecipeReadReview's
-  // « Rapport » tab): 'headings' = the deterministic no-AI parser (real section
-  // headings found), 'ai' = the generative structuring model (named in `model`),
-  // 'heuristic' = the shape-based best effort (no AI available or AI empty-handed).
-  structuring?: 'headings' | 'ai' | 'heuristic'
-  model?: string | null
-  // Lines whose numbers do NOT appear in the source text — the structuring model
-  // changed or invented them (linesWithForeignNumbers). Only ever set with
-  // structuring 'ai'; the verify panel flags these lines "à confirmer".
-  suspect?: string[]
-  empty?: boolean
-  // Why we came back empty-handed, so the UI can say something true instead of one
-  // catch-all "rien trouvé":
-  //   'blocked'    — the page refused us (bot manager); pasting the text still works.
-  //   'no-recipe'  — we read the page fine, there was just no recipe on it.
-  reason?: 'blocked' | 'no-recipe'
-}
-
-const draft = (d: Partial<DraftOut>): DraftOut => {
-  const merged: DraftOut = repairRecipeRead({
-    title: null,
-    ingredients: [],
-    steps: [],
-    servings: null,
-    servingsUnit: null,
-    times: NO_TIMES,
-    image: null,
-    source: null,
-    lang: null,
-    ...d,
-  })
-  // repairRecipeRead (_lib/recipeRepair): leaked field lines out, and a paragraph
-  // recipe gets its ingredients lifted word for word from the method. An honest read
-  // passes through untouched.
-  // Detect the recipe's language from its own words (title + the lines), unless a
-  // caller already supplied one. Runs on every path — incl. the no-AI JSON-LD /
-  // paste ones — so the read-aloud voice matches the recipe wherever it came from.
-  merged.lang = merged.lang ?? detectLang([merged.title, ...merged.ingredients, ...merged.steps].join('\n'))
-  return merged
-}
 
 // Light SSRF guard: only public http(s), and block obvious internal targets. This
 // is a private family tool, but there's no reason to let it hit localhost/metadata.
@@ -162,66 +105,14 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const body = await readJson<{ url?: string; text?: string }>(ctx.request)
 
   // ---- Paste path -----------------------------------------------------------
+  // The ONE text → draft path (_lib/recipeDraft): the heading parser, then the text
+  // model for free-form text, then the shape heuristic — and the photo read's
+  // transcript takes exactly this road too.
   const text = body?.text?.trim()
   if (text) {
-    // Format first: a recipe pasted with its real headings (Ingrédients /
-    // Préparation) parses deterministically — no AI, nothing invented. Markdown-
-    // shaped text (the cloud OCR reader answers in markdown) flattens first so
-    // its "## Ingrédients" / table rows hit the same deterministic parser.
-    const heuristic = parseRecipeText(text)
-    if (heuristic.confident) {
-      return ok(
-        draft({
-          title: heuristic.title,
-          ingredients: heuristic.ingredients,
-          steps: heuristic.steps,
-          servings: heuristic.servings,
-          servingsUnit: heuristic.servingsUnit,
-          times: heuristic.times,
-          structuring: 'headings',
-        }),
-      )
-    }
-    // Free-form text → AI structuring; its steps still go through the shared
-    // refinement (models love returning one packed paragraph). Every number the
-    // model emits is cross-checked against the source text — a line carrying a
-    // number the page never printed is returned in `suspect` for the verify
-    // panel to flag (the model was told not to touch quantities; trust, verify).
-    if (aiOn) {
-      const r = await structureRecipe(ctx.env, text, lang)
-      if (r.ingredients.length || r.steps.length) {
-        const steps = refineSteps(r.steps)
-        return ok(
-          draft({
-            title: r.title ?? heuristic.title,
-            ingredients: r.ingredients,
-            steps,
-            servings: heuristic.servings,
-            servingsUnit: heuristic.servingsUnit,
-            times: heuristic.times,
-            structuring: 'ai',
-            model: TEXT_MODEL,
-            suspect: linesWithForeignNumbers(text, [...r.ingredients, ...steps]),
-          }),
-        )
-      }
-    }
-    // AI unbound or empty-handed — the heuristic's best effort still beats a 503.
-    if (heuristic.ingredients.length || heuristic.steps.length) {
-      return ok(
-        draft({
-          title: heuristic.title,
-          ingredients: heuristic.ingredients,
-          steps: heuristic.steps,
-          servings: heuristic.servings,
-          servingsUnit: heuristic.servingsUnit,
-          times: heuristic.times,
-          structuring: 'heuristic',
-        }),
-      )
-    }
-    if (!aiOn) return serviceUnavailable('Structuration IA indisponible ici.')
-    return ok(draft({ title: heuristic.title, empty: true }))
+    const d = await draftFromText(ctx.env, text, lang, aiOn)
+    if (d.empty && !aiOn) return serviceUnavailable('Structuration IA indisponible ici.')
+    return ok(d)
   }
 
   // ---- URL path -------------------------------------------------------------

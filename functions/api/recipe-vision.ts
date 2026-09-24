@@ -1,18 +1,24 @@
 import { badRequest, ok, withAiError } from '../_lib/json'
 import { authed } from '../_lib/route'
-import { VISION_MODEL_ID, recipeFromImage, resolveLang } from '../_lib/ai'
-import { refineSteps } from '../_lib/recipeImport'
-import { detectLang } from '../_lib/langDetect'
-import { repairRecipeRead } from '../_lib/recipeRepair'
+import { VISION_MODEL_ID, resolveLang, transcribeImage } from '../_lib/ai'
+import { draft, draftFromText } from '../_lib/recipeDraft'
 
-// Read a recipe out of a PHOTO. The client sends raw image bytes (resized, same
-// as recipe-image); the vision model OCRs + structures them into a DRAFT the
-// cook reviews before saving — nothing is stored here. Any actor — a parent-mode
-// kiosk builds recipes too (recipes CRUD was never operator-gated); only member
-// admin + device pairing stay operator-only. `requiresAi` 503s when AI is off
-// (binding unset OR household switched it off) so the UI says "fill it in by hand".
-// This is the "read a photo" fast-fill, distinct from recipe-image which STORES the
-// dish's display picture.
+// Read a recipe out of a PHOTO. The client sends raw image bytes (resized, same as
+// recipe-image); nothing is stored here. Any actor — a parent-mode kiosk builds
+// recipes too (recipes CRUD was never operator-gated); only member admin + device
+// pairing stay operator-only. `requiresAi` 503s when AI is off (binding unset OR
+// household switched it off) so the UI says "fill it in by hand". This is the
+// "read a photo" fast-fill, distinct from recipe-image which STORES the dish's
+// display picture.
+//
+// TWO PASSES, on purpose (2026-09-24). The vision model only TRANSCRIBES the photo,
+// as plain text; the transcript is then structured by the SAME path a pasted recipe
+// takes (_lib/recipeDraft). Asked to read and structure in one generative pass it
+// put a paragraph card's method in the ingredients and the footer in the steps,
+// invented prep/cook times from the durations in the method, and when max_tokens
+// cut its JSON the prose fallback read raw JSON lines — quotes and all. The same
+// card as TEXT came out perfect. A transcription cannot be truncated into
+// nonsense, and the text path already cross-checks every number against it.
 const MAX_BYTES = 6 * 1024 * 1024
 
 export const onRequestPost = authed(async (ctx) => {
@@ -22,28 +28,13 @@ export const onRequestPost = authed(async (ctx) => {
   if (buf.byteLength === 0 || buf.byteLength > MAX_BYTES) return badRequest('Image vide ou trop grande.')
 
   const report = { error: null as string | null }
-  const read = await recipeFromImage(ctx.env, new Uint8Array(buf), resolveLang(ctx.env, ctx.request), report)
-  // Field names leaked as lines (« Servings », « 4 »…) and a paragraph card whose
-  // method got copied in as ingredients — both seen on one real card (recipeRepair.ts).
-  const r = repairRecipeRead({ ...read, steps: refineSteps(read.steps) })
-  const steps = r.steps
-  // OCR'd steps go through the shared refinement: the model often returns the
-  // page's numbering verbatim ("1. …") or one packed paragraph. Servings + times
-  // ride along now — the printed card usually states them and the form has fields.
-  return withAiError(
-    ok({
-      title: r.title,
-      ingredients: r.ingredients,
-      steps,
-      servings: r.servings,
-      servingsUnit: r.servingsUnit,
-      times: r.times,
-      // Read-aloud language guessed from the photo's own text ('fr'|'en'|null);
-      // null leaves the form on "Auto" — exactly the "can't detect → leave" rule.
-      lang: detectLang([r.title, ...r.ingredients, ...steps].join('\n')),
-      // Which model read the photo — the verify panel's read report names it.
-      model: VISION_MODEL_ID,
-    }),
-    report,
-  )
+  const lang = resolveLang(ctx.env, ctx.request)
+  const transcript = await transcribeImage(ctx.env, new Uint8Array(buf), lang, report)
+  // Which model read the photo — the verify panel's read report names it, beside
+  // the structuring the draft carries (`structuring` / `model`).
+  const reader = { reader: 'vision' as const, readerModel: VISION_MODEL_ID }
+  if (!transcript) return withAiError(ok({ ...draft({ empty: true }), ...reader }), report)
+  // `requiresAi` guaranteed AI is usable for this household — the text model may run.
+  const d = await draftFromText(ctx.env, transcript, lang, true)
+  return withAiError(ok({ ...d, ...reader }), report)
 }, undefined, { requiresAi: true })

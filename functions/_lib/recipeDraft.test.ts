@@ -1,0 +1,98 @@
+import { describe, it, expect } from 'vitest'
+import { draftFromText } from './recipeDraft'
+import type { Env } from './env'
+
+// The one text → draft path, with AI OFF (env.AI unset), which is the strongest promise
+// it can make: what every import gets before any model has a say. Built from the real
+// card that broke the photo read (Marc, 2026-09-24): a paragraph recipe, no ingredient
+// list, the quantities inside the method, a yield and a keeping note as footer.
+
+const noAi = { DB: {} } as unknown as Env
+
+const CARD = `Brocoli sauté au miel
+et au sésame
+
+Défaire 1 brocoli en fleurons. Peler le pied du brocoli
+et couper en bâtonnets. Dans un grand poêlon
+antiadhésif, chauffer 15 ml (1 c. à soupe) d'huile
+d'olive à feu moyen-vif. Ajouter 2 gousses d'ail
+hachées finement, 15 ml (1 c. soupe) de graines
+de sésame et une pincée de flocons de piment fort.
+Cuire 2 minutes. Ajouter les fleurons et les bâtonnets
+de brocoli et cuire 5 minutes ou jusqu'à ce que
+le brocoli soit cuit, mais encore croquant. Verser
+15 ml (1 c. à soupe) de miel et 7,5 ml (1/2 c. à
+soupe) de sauce soya réduite en sodium. Poursuivre
+la cuisson 30 secondes en mélangeant pour enrober
+le brocoli. Servir.
+
+Donne 4 portions.
+Cette recette se conserve 4 jours au réfrigérateur
+ou 3 mois au congélateur.`
+
+const noQuotes = (lines: (string | null)[]) => lines.every((l) => !l || !/^"|"$|",$/.test(l))
+
+describe('draftFromText — the card as plain text, AI off', () => {
+  it('reads the paragraph card: title, lifted ingredients, every step, the yield', async () => {
+    const d = await draftFromText(noAi, CARD, 'fr', false)
+    expect(d.empty).toBeFalsy()
+    expect(d.title).toBe('Brocoli sauté au miel et au sésame')
+    expect(d.servings).toBe(4)
+    // The wrapped title's second line is the title's, never a first step.
+    expect(d.steps[0]).toMatch(/^Défaire 1 brocoli/)
+    expect(d.steps).not.toContain('et au sésame')
+    // The two short steps are the ones that used to vanish.
+    expect(d.steps.join('\n')).toContain('Cuire 2 minutes.')
+    expect(d.steps.join('\n')).toContain('Servir.')
+    // The footer is not an instruction, and « 4 portions » is not an ingredient.
+    expect(d.steps.join('\n')).not.toMatch(/Donne 4 portions|se conserve/)
+    expect(d.ingredients).toEqual([
+      '1 brocoli',
+      "15 ml (1 c. à soupe) d'huile d'olive",
+      "2 gousses d'ail hachées finement",
+      '15 ml (1 c. soupe) de graines de sésame',
+      'une pincée de flocons de piment fort',
+      '15 ml (1 c. à soupe) de miel',
+      '7,5 ml (1/2 c. à soupe) de sauce soya réduite en sodium',
+    ])
+    // Times come from explicit lines only — never from « cuire 5 minutes ».
+    expect(d.times).toEqual({ prep: null, cook: null, total: null })
+    expect(d.structuring).toBe('heuristic')
+    expect(d.lang).toBe('fr')
+  })
+
+  it('a recipe with real headings parses deterministically, with no repair needed', async () => {
+    const d = await draftFromText(noAi, `Crêpes\n\nIngrédients\n250 ml de farine\n2 oeufs\n500 ml de lait\n\nPréparation\nMélanger la farine et les oeufs.\nAjouter le lait.\nCuire 2 minutes.`, 'fr', false)
+    expect(d.structuring).toBe('headings')
+    expect(d.ingredients).toEqual(['250 ml de farine', '2 oeufs', '500 ml de lait'])
+    expect(d.steps).toEqual(['Mélanger la farine et les oeufs.', 'Ajouter le lait.', 'Cuire 2 minutes.'])
+  })
+})
+
+describe('draftFromText — a reply that is JSON, or its broken remains', () => {
+  // What the vision model handed back when max_tokens cut its JSON mid-array: no
+  // closing brace, so the old prose fallback read every line quotes and all.
+  const TRUNCATED = `{"title": "Brocoli sauté au miel et au sésame",
+"servings": 4,
+"prepMin": null,
+"cookMin": null,
+"ingredients": [
+"1 brocoli",
+"15 ml (1 c. à soupe) d'huile d'olive",
+"2 gousses d'ail hachées finement"
+],
+"steps": [
+"Défaire 1 brocoli en fleurons. Peler le pied du brocoli et couper en bâtonnets.",
+"Cuire 2 minutes.",
+"Ajouter les fleurons et les bâtonnets de brocoli et cuire 5 minu`
+
+  it('reads it as text: no quote survives, the title is clean, the short step is kept', async () => {
+    const d = await draftFromText(noAi, TRUNCATED, 'fr', false)
+    expect(d.title).toBe('Brocoli sauté au miel et au sésame')
+    expect(d.servings).toBe(4)
+    expect(noQuotes([d.title, ...d.ingredients, ...d.steps])).toBe(true)
+    expect(d.ingredients).toEqual(['1 brocoli', "15 ml (1 c. à soupe) d'huile d'olive", "2 gousses d'ail hachées finement"])
+    expect(d.steps).toContain('Cuire 2 minutes.')
+    expect(d.steps[0]).toBe('Défaire 1 brocoli en fleurons. Peler le pied du brocoli et couper en bâtonnets.')
+  })
+})

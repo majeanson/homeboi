@@ -360,6 +360,10 @@ export function RecipeForm({
     model?: string | null
     suspect?: string[]
     empty?: boolean
+    // recipe-vision only: which model transcribed the photo (the structuring above
+    // then names how that transcript was organised, like any paste).
+    reader?: 'vision'
+    readerModel?: string | null
   }
   const draftHasContent = (d: ReadDraft) => !!(d.title || d.ingredients.length || d.steps.length)
 
@@ -479,7 +483,7 @@ export function RecipeForm({
         setReadStage('look')
         const small = await resizeImage(files[0], PHOTO_MAX)
         if (small.size <= MAX_UPLOAD_BYTES) {
-          const v = await api<ReadDraft & { model?: string }>('recipe-vision', { method: 'POST', body: small }).catch(
+          const v = await api<ReadDraft>('recipe-vision', { method: 'POST', body: small }).catch(
             (e) => {
               if (isStatus(e, 503) || isStatus(e, 400)) return null
               throw e
@@ -487,13 +491,15 @@ export function RecipeForm({
           )
           draft = v
           if (v && draftHasContent(v)) {
-            // The vision model reads AND structures in one generative pass — say
-            // so plainly: this is the path that can invent, and the report names it.
+            // The vision model only TRANSCRIBES; its transcript is structured by the
+            // same text path as a paste (recipe-vision → draftFromText). So the report
+            // names both halves: the reader, and how the text was organised — with the
+            // numbers the structuring model changed cross-checked against the transcript.
             report.reader = 'vision'
-            report.readerModel = v.model ?? null
-            report.structuring = 'vision'
+            report.readerModel = v.readerModel ?? null
+            report.structuring = v.structuring ?? 'ai'
             report.structuringModel = v.model ?? null
-            report.suspect = []
+            report.suspect = v.suspect ?? []
           }
         }
       }
