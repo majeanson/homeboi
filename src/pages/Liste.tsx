@@ -551,6 +551,9 @@ export function Liste() {
         qc.setQueryData<BoardListData>(BOARD_KEY, (b) =>
           b ? { ...b, list: b.list.map((i) => (i.id === item.id ? { ...i, checked_at: ts } : i)) } : b,
         ),
+      // Setting checked_at is idempotent, so a poll that beats this PATCH to the server
+      // gets the check re-applied instead of flipping it back (lib/write.ts).
+      reapply: true,
     }).catch(() => {})
   }
 

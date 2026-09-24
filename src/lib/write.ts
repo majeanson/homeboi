@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useQueryClient, type QueryClient, type QueryKey } from '@tanstack/react-query'
+import { partialMatchKey, useQueryClient, type QueryClient, type QueryKey } from '@tanstack/react-query'
 import { api, ApiError } from './api'
 import { enqueue, onOutboxChange, outboxCount } from './outbox'
 import { isGuest } from './device'
@@ -49,6 +49,13 @@ export interface WriteSpec {
   // Optimistic cache mutation applied immediately. Offline creates should write a
   // temp row (e.g. id `tmp-${something}`); invalidate reconciles it after replay.
   optimistic?: (qc: QueryClient) => void
+  // Re-apply `optimistic` to any fresh frame that lands for an affected key WHILE the
+  // write is still travelling. Opt-in, and only for an IDEMPOTENT change (set a flag,
+  // not insert a row — spliceListLine run twice would add the line twice). The case
+  // it closes: a poll that reaches the server a moment BEFORE this write does answers
+  // with the old state and flips the change back on screen until the write's own
+  // refetch — Marc's « checked, and it comes back seconds later » (2026-09-24).
+  reapply?: boolean
   // The optimistic temp row's id, when this CREATE wrote one (E-41). If the write
   // ends up queued, the outbox uses it to rewrite later queued ops that target the
   // tmp id once the create replays and the real id is known — so "add offline,
@@ -93,7 +100,25 @@ export async function writeWith<T = unknown>(
   // heuristic only; never displayed, never sent anywhere (see lib/tourOffer).
   bumpWriteCount()
 
+  // Cancel what is ALREADY in flight for these keys before painting the change: a poll
+  // sent before the tap would otherwise land after it and repaint the old state — the
+  // standard TanStack rule (lib/optimistic.ts has always done it; this path never did).
+  // The write's own invalidate below refetches once the change is on the server.
+  if (spec.optimistic && affectedKeys.length)
+    await Promise.all(affectedKeys.map((k) => qc.cancelQueries({ queryKey: k })))
   spec.optimistic?.(qc)
+  // …and a poll sent AFTER the tap can still beat the write to the server. For an
+  // idempotent change, re-apply it to whatever lands until the write settles.
+  const stopReapply =
+    spec.reapply && spec.optimistic
+      ? qc.getQueryCache().subscribe((ev) => {
+          // A FETCHED frame only: setQueryData dispatches 'success' too (manual), and
+          // re-applying on our own write would recurse forever.
+          if (ev.type !== 'updated' || ev.action.type !== 'success' || ev.action.manual) return
+          if (!affectedKeys.some((k) => partialMatchKey(ev.query.queryKey, k))) return
+          spec.optimistic!(qc)
+        })
+      : () => {}
 
   // B-9 (bmad/10): ONE idempotency key per write attempt, hoisted above the online
   // try so it covers BOTH legs. Before this, only a REPLAY carried a key (a fresh
@@ -116,6 +141,7 @@ export async function writeWith<T = unknown>(
     try {
       return await queue()
     } finally {
+      stopReapply()
       affectedKeys.forEach((k) => qc.invalidateQueries({ queryKey: k }))
     }
   }
@@ -132,6 +158,7 @@ export async function writeWith<T = unknown>(
     if (err instanceof ApiError) throw err
     return await queue()
   } finally {
+    stopReapply()
     affectedKeys.forEach((k) => qc.invalidateQueries({ queryKey: k }))
   }
 }

@@ -96,3 +96,63 @@ describe('writeWith — B-9 idempotency', () => {
     expect(enqueueMock).not.toHaveBeenCalled()
   })
 })
+
+// « Checked, and it comes back seconds later » (Marc, 2026-09-24). An optimistic change
+// has two windows in which a poll can repaint the OLD state over it:
+//   1. a poll sent BEFORE the tap lands after it — writeWith now cancels in-flight
+//      queries on the affected keys before painting (the standard TanStack rule);
+//   2. a poll sent AFTER the tap reaches the server BEFORE the write does — for an
+//      idempotent change (`reapply`), the change is re-applied to what lands.
+describe('writeWith — an optimistic change survives the poll race', () => {
+  const KEY = ['board']
+  const later = <T>(ms: number, v: T) => new Promise<T>((r) => setTimeout(() => r(v), ms))
+  const set = (qc: QueryClient) => qc.setQueryData(KEY, { checked: true })
+
+  beforeEach(() => {
+    apiMock.mockReset()
+    localStorage.clear()
+  })
+
+  it('a poll already in flight when the tap lands cannot repaint the old state', async () => {
+    const qc = new QueryClient()
+    qc.setQueryData(KEY, { checked: false })
+    // The poll left before the tap and answers (stale) 20 ms later.
+    void qc.fetchQuery({ queryKey: KEY, queryFn: () => later(20, { checked: false }) }).catch(() => {})
+    apiMock.mockImplementation(() => later(60, { ok: true }))
+    const w = writeWith(qc, 'list', { method: 'PATCH', affectedKeys: [KEY], optimistic: set })
+    await later(40, null) // the stale poll would have landed by now
+    expect(qc.getQueryData(KEY)).toEqual({ checked: true })
+    await w
+  })
+
+  it('with `reapply`, a poll that beats the write to the server is corrected', async () => {
+    const qc = new QueryClient()
+    qc.setQueryData(KEY, { checked: false })
+    apiMock.mockImplementation(() => later(60, { ok: true }))
+    const w = writeWith(qc, 'list', { method: 'PATCH', affectedKeys: [KEY], optimistic: set, reapply: true })
+    await later(5, null)
+    // A poll sent AFTER the tap, answered by a server that has not seen the PATCH yet.
+    await qc.fetchQuery({ queryKey: KEY, queryFn: () => later(10, { checked: false }), staleTime: 0 })
+    expect(qc.getQueryData(KEY)).toEqual({ checked: true })
+    await w
+  })
+
+  it('without `reapply` nothing is re-applied — a non-idempotent change (a spliced row) must not run twice', async () => {
+    const qc = new QueryClient()
+    qc.setQueryData(KEY, { rows: 0 })
+    let runs = 0
+    apiMock.mockImplementation(() => later(40, { ok: true }))
+    const w = writeWith(qc, 'list', {
+      method: 'POST',
+      affectedKeys: [KEY],
+      optimistic: (c) => {
+        runs++
+        c.setQueryData(KEY, (d: { rows: number } | undefined) => ({ rows: (d?.rows ?? 0) + 1 }))
+      },
+    })
+    await later(5, null)
+    await qc.fetchQuery({ queryKey: KEY, queryFn: () => later(5, { rows: 0 }), staleTime: 0 })
+    await w
+    expect(runs).toBe(1)
+  })
+})
