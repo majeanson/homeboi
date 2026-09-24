@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { useWrite } from '../../lib/write'
+import { useCreateWithUndo } from '../../lib/undoCreate'
+import { useT } from '../../i18n'
 import { BOARD_KEY, MONTH_KEY } from '../../lib/queryKeys'
 import { MEALS_KEY, MEAL_IDEAS_KEY, MEAL_HISTORY_KEY } from './types'
 import { type Recipe } from '../../lib/recipes'
@@ -9,6 +11,8 @@ import { type Recipe } from '../../lib/recipes'
 
 export function useMealPlanning(profileId: string | null) {
   const write = useWrite()
+  const t = useT()
+  const createWithUndo = useCreateWithUndo()
   const [editDate, setEditDate] = useState<number | null>(null)
   const [mealText, setMealText] = useState('')
   const [mealErr, setMealErr] = useState(false)
@@ -22,10 +26,14 @@ export function useMealPlanning(profileId: string | null) {
       // Appends to the slot (a slot is a list now — see functions/api/meals.ts).
       // Offline this queues (resolves, no throw) and syncs on reconnect; a real
       // server rejection still throws → the error line shows, the title isn't lost.
-      await write('meals', {
-        method: 'POST',
+      // « Annuler » DELETEs exactly the meal just planned (the server returns its id).
+      // `rethrow` keeps this flow's failure path: an error line, the title kept.
+      await createWithUndo({
+        endpoint: 'meals',
         body: { date, slot, title, recipeId },
         affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY, MONTH_KEY],
+        message: t.undo.added(title),
+        rethrow: true,
       })
       setEditDate(null)
       setMealText('')

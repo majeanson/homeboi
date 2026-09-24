@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
 import { useWrite } from '../lib/write'
+import { useCreateWithUndo } from '../lib/undoCreate'
 import { useUndoToast, useNotice } from '../lib/toast'
 import { mintTmpId } from '../lib/tmpIds'
 import { spliceListLine } from '../lib/listAdd'
@@ -30,6 +31,7 @@ const fold = (s: string) => s.toLowerCase().normalize('NFD').replace(/\p{Diacrit
 export function QuickAddPage() {
   const t = useT()
   const write = useWrite()
+  const createWithUndo = useCreateWithUndo()
   const undo = useUndoToast()
   const notice = useNotice()
   const close = useSceneClose('/liste')
@@ -71,15 +73,28 @@ export function QuickAddPage() {
   // Returns whether the write landed or queued — a server rejection (4xx/5xx) was
   // 100 % invisible here (`.catch(() => {})`, the only write site with no error
   // path), which read as « the quick add doesn't add any item at all ».
-  async function postAdd(text: string, terms: string[]): Promise<boolean> {
+  //
+  // It offers « Annuler » now, the same compensating undo as La liste's own add (this
+  // scene is a plain `.scene`, z-index 1, so the pill at 40 is reachable over it):
+  // a mis-tapped chip used to be permanent until you went to La liste to delete it.
+  // Annuler also un-ticks the chip — the ✓ must not go on certifying a line that is gone.
+  async function postAdd(text: string, terms: string[], key: string): Promise<boolean> {
     const tmpId = mintTmpId()
-    const res = await write('list', {
-      method: 'POST',
+    const res = await createWithUndo({
+      endpoint: 'list',
       body: terms.length ? { text, search_terms: terms } : { text },
       affectedKeys: [BOARD_KEY, GHOSTS_KEY, HISTORY_KEY],
       optimistic: (qc) => spliceListLine(qc, tmpId, text),
       tmpId,
-    }).catch(() => null)
+      message: t.undo.added(text),
+      undoAffectedKeys: [BOARD_KEY, GHOSTS_KEY],
+      afterUndo: () =>
+        setAdded((s) => {
+          const n = new Set(s)
+          n.delete(key)
+          return n
+        }),
+    })
     return res != null
   }
 
@@ -98,7 +113,7 @@ export function QuickAddPage() {
   function add(item: QuickItem) {
     if (added.has(item.key)) return
     setAdded((s) => new Set(s).add(item.key))
-    void postAdd(item.label, item.searchTerms).then((ok) => {
+    void postAdd(item.label, item.searchTerms, item.key).then((ok) => {
       if (!ok) reportFailed(item.key)
     })
   }
@@ -108,7 +123,7 @@ export function QuickAddPage() {
     const key = `typed:${fold(text)}`
     setAdded((s) => new Set(s).add(key))
     setQ('')
-    void postAdd(text, []).then((ok) => {
+    void postAdd(text, [], key).then((ok) => {
       if (!ok) reportFailed(key)
     })
   }

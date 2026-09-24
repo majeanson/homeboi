@@ -73,7 +73,9 @@ export function usePlanLeftover() {
  * so such a caller can undo it in place.
  *
  * (The ＋ sheet keeps its own copy ON PURPOSE — it is a form with busy/error state
- * that closes on success, and it offers no undo because the sheet is already gone.)
+ * that closes on success. It offers the same « Annuler » since 2026-09-24: the sheet
+ * closing is exactly what puts the pill back in reach, so « the sheet is already gone »
+ * was the reason FOR an undo, not against one.)
  */
 export function useAnnounceLeftover() {
   const t = useT()

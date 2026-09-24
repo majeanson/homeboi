@@ -4,6 +4,7 @@ import type { QueryKey } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
+import { useCreateWithUndo } from '../../lib/undoCreate'
 import { isGuest } from '../../lib/device'
 import { type MealSlot } from '../../lib/mealSlots'
 import { useMealPrefs } from '../../lib/mealPrefs'
@@ -116,18 +117,24 @@ export function MealPool<T extends { id: string; title: string }, O>({
   // The add box, folded behind the section’s ＋ (see the head row below). The drawer
   // (hideHeading) never consults it — its field is always open.
   const composer = useSectionAdd()
+  // An add gets its « Annuler » too (Marc, 2026-09-24: « no pills for reverts on adds »,
+  // an idée de repas the example) — the compensating tier: the row appears at once and
+  // Annuler DELETEs exactly it. On the kitchen page the pill is right there; inside the
+  // IdeasDrawer (a sheet, z-index 156 over the pill's 40) it waits behind the drawer —
+  // the layer rule in ACTIONS.md, recorded rather than fought.
+  const createWithUndo = useCreateWithUndo()
 
   function add(rawTitle: string, picked: ComboOption<O> | null) {
     const v = rawTitle.trim()
     if (!v || busy) return
     setBusy(true)
-    write(endpoint, { method: 'POST', body: buildAddBody(v, picked), affectedKeys: [queryKey] })
-      .then(() => {
+    createWithUndo({ endpoint, body: buildAddBody(v, picked), affectedKeys: [queryKey], message: t.undo.added(v) })
+      .then((res) => {
+        // null = the write failed: keep the typed text so it can be retried. A queued
+        // (offline) write is a success — it will land, and the field clears.
+        if (!res) return
         setText('')
         composer.close()
-      })
-      .catch(() => {
-        /* keep the typed text so it can be retried */
       })
       .finally(() => setBusy(false))
   }

@@ -203,6 +203,9 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const date = localDayStart(new Date(body.date * 1000))
   const recipeId = body.recipeId?.trim() || null
   const ts = nowSec()
+  // Returned: a client that adds a meal offers « Annuler », which DELETEs exactly this
+  // row (lib/undoCreate). Without the id there was nothing to undo.
+  const id = newId()
 
   await ctx.env.DB.prepare(
     `INSERT INTO meals (id, household_id, date, slot, title, cook_member_id, suggested_by, recipe_id, created_at, position, is_leftover)
@@ -210,7 +213,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
      FROM meals WHERE household_id = ? AND date = ? AND slot = ?`,
   )
     .bind(
-      newId(),
+      id,
       actor.householdId,
       date,
       slot,
@@ -226,7 +229,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
     )
     .run()
 
-  if (body.suggest) return ok({ ok: true, suggested: true })
+  if (body.suggest) return ok({ ok: true, id, suggested: true })
 
   // meal -> grocery list: drop any staples the client flagged as missing.
   const staples = (body.staples ?? []).map((s) => ingredientName(s)).filter(Boolean).slice(0, 20)
@@ -240,7 +243,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
       ),
     )
   }
-  return ok({ ok: true, addedToList: staples.length })
+  return ok({ ok: true, id, addedToList: staples.length })
 })
 
 // Edit ONE meal in place — rename / relink a recipe / reassign the cook —

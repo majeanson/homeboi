@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
+import { useCreateWithUndo } from '../../lib/undoCreate'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { useUndoToast } from '../../lib/toast'
 import { wash } from '../../lib/colors'
@@ -28,6 +29,7 @@ import { type ReserveRow, type ReserveData, RESERVE_KEY } from './types'
 export function ReserveSection({ reserve, help }: { reserve: ReserveRow[]; help?: HelpMode }) {
   const t = useT()
   const write = useWrite()
+  const createWithUndo = useCreateWithUndo()
   // Bulletproof calm-delete for this LIVE-POLLED list (see useDeferredRemoval):
   // hide + filter the cleared row and await a refetch before un-hiding, so a poll
   // can't flash it back during the undo window.
@@ -56,7 +58,13 @@ export function ReserveSection({ reserve, help }: { reserve: ReserveRow[]; help?
     setNewItem('')
     const locationId = selectedLoc || null
     try {
-      await write('reserve', { method: 'POST', body: { item: v, location_id: locationId }, affectedKeys: [RESERVE_KEY] })
+      await createWithUndo({
+        endpoint: 'reserve',
+        body: { item: v, location_id: locationId },
+        affectedKeys: [RESERVE_KEY],
+        message: t.undo.added(v),
+        rethrow: true,
+      })
     } catch {
       setNewItem(v) // a failed write must not eat what was typed (offline queues)
     }

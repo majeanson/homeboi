@@ -5,6 +5,7 @@ import { EmptyState } from '../components/EmptyState'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, isUnauthorized } from '../lib/api'
 import { useWrite } from '../lib/write'
+import { useCreateWithUndo } from '../lib/undoCreate'
 import { isGuest } from '../lib/device'
 import { useLang, useT } from '../i18n'
 import { useOperatorT } from '../i18n.operator'
@@ -128,6 +129,7 @@ function DayPlanScene() {
   const { memberId: profileId } = useProfile()
   const recordUndo = useRecordUndo()
   const write = useWrite()
+  const createWithUndo = useCreateWithUndo()
   const close = useSceneClose('/kitchen')
   const nav = useNavigate()
   useEscapeKey(close)
@@ -316,7 +318,13 @@ function DayPlanScene() {
       return
     }
     try {
-      await write('meals', { method: 'POST', body: { date: d, slot, title: v, recipeId }, affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY, MONTH_KEY] })
+      await createWithUndo({
+        endpoint: 'meals',
+        body: { date: d, slot, title: v, recipeId },
+        affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY, MONTH_KEY],
+        message: t.undo.added(v),
+        rethrow: true,
+      })
       // Only close the editor once the write lands (offline: queued) — a real
       // failure keeps the typed title so it can be retried (like the grocery bar).
       setEditSlot(null)

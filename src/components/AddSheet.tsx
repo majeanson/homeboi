@@ -6,6 +6,7 @@ import { useOperatorT } from '../i18n.operator'
 import { api, ApiError } from '../lib/api'
 import { useAi } from '../lib/ai'
 import { useWrite } from '../lib/write'
+import { useCreateWithUndo } from '../lib/undoCreate'
 import { sectionCardFor } from '../lib/sectionCard'
 import { useAuth } from '../lib/auth'
 import { todayLocalDay, addLocalDays, localDayStart } from '../lib/localDay'
@@ -239,8 +240,12 @@ export function AddSheet({
   const { lang } = useLang()
   const qc = useQueryClient()
   const write = useWrite()
-  // Compensating undo (the row is already live server-side): records a "routed to
-  // X" entry in the shared Récents toast whose onUndo deletes what was created.
+  // Compensating undo (the row is already live server-side): every single add below
+  // records a Récents entry whose « Annuler » DELETEs exactly what it created. This
+  // comment promised that for months while nothing here called it (2026-09-24). The
+  // pill sits BELOW the sheet (z 40 vs 156), which is fine: every add closes the sheet
+  // on success, so the pill is in reach the moment it is raised.
+  const createWithUndo = useCreateWithUndo()
   const nav = useNavigate()
   const loc = useLocation()
   // The sheet is opened FROM a section but is handed only its modes, so its « ? »
@@ -593,7 +598,11 @@ export function AddSheet({
     setBusy(true)
     setErr(false)
     try {
-      await write('notes', { method: 'POST', body: { text: value, ...noteMemo.body }, affectedKeys: [BOARD_KEY] })
+      // A plain note gets « Annuler » once the sheet closes (the pill waits below it,
+      // then is right there). A note carrying a memo does NOT: its blob is freed on
+      // delete, and media rows confirm rather than undo (the media-undo-blob rule).
+      if (noteMemo.draft) await write('notes', { method: 'POST', body: { text: value, ...noteMemo.body }, affectedKeys: [BOARD_KEY] })
+      else await createWithUndo({ endpoint: 'notes', body: { text: value }, affectedKeys: [BOARD_KEY], message: t.undo.added(value), rethrow: true })
       setText('')
       noteMemo.reset()
       close()
@@ -621,12 +630,15 @@ export function AddSheet({
       // makes the queued case HONEST: without it an offline add closed the sheet
       // and painted nothing — « doesn't add any item at all » — until replay.
       const tmpId = mintTmpId()
-      await write('list', {
-        method: 'POST',
+      await createWithUndo({
+        endpoint: 'list',
         body: { text: value },
         affectedKeys: [BOARD_KEY, GHOSTS_KEY, HISTORY_KEY],
         optimistic: (qc) => spliceListLine(qc, tmpId, value),
         tmpId,
+        message: t.undo.added(value),
+        undoAffectedKeys: [BOARD_KEY, GHOSTS_KEY],
+        rethrow: true,
       })
       setListText('')
       close()
@@ -651,10 +663,12 @@ export function AddSheet({
     setBusy(true)
     setErr(false)
     try {
-      await write('todos', {
-        method: 'POST',
+      await createWithUndo({
+        endpoint: 'todos',
         body: { title: value, day: todoDaySec() },
         affectedKeys: [TODOS_KEY, MONTH_KEY],
+        message: t.undo.added(value),
+        rethrow: true,
       })
       setTodoText('')
       setTodoScope('global')
@@ -704,7 +718,7 @@ export function AddSheet({
     setBusy(true)
     setErr(false)
     try {
-      await write('pantry', { method: 'POST', body: { item: value }, affectedKeys: [PANTRY_KEY] })
+      await createWithUndo({ endpoint: 'pantry', body: { item: value }, affectedKeys: [PANTRY_KEY], message: t.undo.added(value), rethrow: true })
       setPantryText('')
       close()
     } catch (e) {
@@ -724,10 +738,12 @@ export function AddSheet({
     setBusy(true)
     setErr(false)
     try {
-      await write('reserve', {
-        method: 'POST',
+      await createWithUndo({
+        endpoint: 'reserve',
         body: { item: value, location_id: reserveSelLoc || null },
         affectedKeys: [RESERVE_KEY],
+        message: t.undo.added(value),
+        rethrow: true,
       })
       setReserveText('')
       close()
@@ -751,7 +767,13 @@ export function AddSheet({
       // BOTH keys, matching useAnnounceLeftover — the pool AND the board's
       // Restants card show this row; refreshing only one left the other stale
       // (the exact drift that hook's header recounts, re-grown here by 2026-09-03).
-      await write('meal-leftovers', { method: 'POST', body: { title: value, recipeId, sourceMealId }, affectedKeys: [LEFTOVERS_KEY, BOARD_KEY] })
+      await createWithUndo({
+        endpoint: 'meal-leftovers',
+        body: { title: value, recipeId, sourceMealId },
+        affectedKeys: [LEFTOVERS_KEY, BOARD_KEY],
+        message: t.undo.added(value),
+        rethrow: true,
+      })
       setLeftoverText('')
       close()
     } catch (e) {

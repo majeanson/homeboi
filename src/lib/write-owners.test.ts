@@ -132,6 +132,23 @@ function ownedWrites(): Site[] {
         keysText: keys ? keys[1] : null,
       })
     }
+    // The CREATE seam (lib/undoCreate): `createWithUndo({ endpoint: '…', affectedKeys })`
+    // is a POST like any other, spelled as an options object. Until 2026-09-24 this
+    // scanner only knew `write('…')`, so moving an add onto the undo seam made it
+    // INVISIBLE here — owner check and key check both — which is how the conversion
+    // surfaced this: the ＋ sheet's leftover announce vanished from the scan.
+    for (const m of src.matchAll(/\bcreateWithUndo\s*\(\s*\{/g)) {
+      const after = src.slice(m.index, m.index + 600)
+      const ep = after.match(/\bendpoint:\s*['"`]([^'"`]+)['"`]/)
+      if (!ep || !OWNED[ep[1]]) continue
+      const keys = after.match(/affectedKeys:\s*(\[[^\]]*\]|\w+)/)
+      out.push({
+        file: relative(srcDir, f).split(sep).join('/'),
+        line: src.slice(0, m.index).split('\n').length,
+        endpoint: ep[1],
+        keysText: keys ? keys[1] : null,
+      })
+    }
   }
   return out
 }

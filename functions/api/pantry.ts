@@ -20,10 +20,13 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const body = await readJson<{ item?: string }>(ctx.request)
   const item = body?.item?.trim()
   if (!item) return badRequest('Aliment requis.')
+  // The id is returned so the client's « Annuler » can DELETE exactly this row
+  // (lib/undoCreate — an add gets an undo like a delete does, 2026-09-24).
+  const id = newId()
   await ctx.env.DB.prepare('INSERT INTO pantry_low (id, household_id, item, marked_at) VALUES (?, ?, ?, ?)')
-    .bind(newId(), actor.householdId, item, nowSec())
+    .bind(id, actor.householdId, item, nowSec())
     .run()
-  return ok({ ok: true })
+  return ok({ ok: true, id })
 })
 
 // Rename a low item in place (the ✏️ affordance) — same uniform edit every list

@@ -38,6 +38,14 @@ export interface CreateWithUndoOpts {
   /** Show the undo toast even with no server id yet (offline) — the DELETE then
    *  no-ops. Matches the board's leftover adds, which always toast. Default false. */
   toastWhenQueued?: boolean
+  /** Re-throw a failed write instead of resolving null — for a caller whose failure
+   *  path is a THROW (an error line under the field, the typed text kept). Default
+   *  false: most callers read `null` as « failed, keep the text ». */
+  rethrow?: boolean
+  /** Runs after « Annuler » fires — for LOCAL state the add changed that the DELETE
+   *  cannot reach (⚡ quick add's ✓ chip, which must not go on certifying a line that
+   *  is gone). */
+  afterUndo?: () => void
 }
 
 export function useCreateWithUndo() {
@@ -51,7 +59,10 @@ export function useCreateWithUndo() {
         affectedKeys: opts.affectedKeys,
         optimistic: opts.optimistic,
         tmpId: opts.tmpId,
-      }).catch(() => null)
+      }).catch((err: unknown) => {
+        if (opts.rethrow) throw err
+        return null
+      })
       const id = createdId(res)
       // E-41's online half (lib/tmpIds): the optimistic tmp row now has a real id.
       // Anything that captured the tmp id and acts later (a deferred swipe-delete's
@@ -68,6 +79,7 @@ export function useCreateWithUndo() {
                 body: { id },
                 affectedKeys: opts.undoAffectedKeys ?? opts.affectedKeys,
               }).catch(() => {})
+            opts.afterUndo?.()
           },
         })
       return res

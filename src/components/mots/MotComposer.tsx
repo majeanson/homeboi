@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api, ApiError } from '../../lib/api'
 import { useWrite } from '../../lib/write'
+import { useCreateWithUndo } from '../../lib/undoCreate'
 import { useSurface } from '../../lib/surface'
 import { useProfile } from '../../lib/profile'
 import { useVoiceInput } from '../../lib/useVoiceInput'
@@ -34,6 +35,7 @@ export function MotComposer({ replyTo, onDone }: { replyTo?: Mot; onDone: () => 
   const t = useT()
   const fn = t.mots
   const write = useWrite()
+  const createWithUndo = useCreateWithUndo()
   const { surface } = useSurface()
   const { memberId: profileId } = useProfile()
   // A reply is addressed back to the original sender; otherwise default Maisonnée.
@@ -79,11 +81,23 @@ export function MotComposer({ replyTo, onDone }: { replyTo?: Mot; onDone: () => 
     if ((!value && !memo.draft) || busy) return
     setBusy(true)
     try {
-      await write('mots', {
-        method: 'POST',
-        body: { text: value, ...memo.body, ...extraBody },
-        affectedKeys: [MOTS_KEY],
-      })
+      // A text-only mot gets « Annuler » (compensating: DELETE the row just made); a
+      // mot carrying a drawing / photo / voice memo does not — its blob is freed on
+      // delete, and media rows confirm rather than undo (the media-undo-blob rule).
+      if (memo.draft)
+        await write('mots', {
+          method: 'POST',
+          body: { text: value, ...memo.body, ...extraBody },
+          affectedKeys: [MOTS_KEY],
+        })
+      else
+        await createWithUndo({
+          endpoint: 'mots',
+          body: { text: value, ...extraBody },
+          affectedKeys: [MOTS_KEY],
+          message: t.undo.added(value),
+          rethrow: true,
+        })
       setText('')
       memo.reset()
       onDone()

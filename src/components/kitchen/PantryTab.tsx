@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import { useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
+import { useCreateWithUndo } from '../../lib/undoCreate'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { useVoiceInput } from '../../lib/useVoiceInput'
 import { EditField } from '../EditField'
@@ -34,6 +35,7 @@ export function PantryTab({
 }) {
   const t = useT()
   const write = useWrite()
+  const createWithUndo = useCreateWithUndo()
   // Bulletproof calm-delete for these two LIVE-POLLED lists: hide the row in local
   // state + filter it out of the render, hold the real write behind the undo toast,
   // and await a refetch before un-hiding — so a background poll can't resurrect it
@@ -65,7 +67,7 @@ export function PantryTab({
     const v = item.trim()
     if (!v) return
     try {
-      await write('pantry', { method: 'POST', body: { item: v }, affectedKeys: [PANTRY_KEY] })
+      await createWithUndo({ endpoint: 'pantry', body: { item: v }, affectedKeys: [PANTRY_KEY], message: t.undo.added(v), rethrow: true })
     } catch {
       // A failed write must not eat what was typed — put it back to retry. (Offline
       // queues instead of throwing, so the field clears and the item syncs later.)

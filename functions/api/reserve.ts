@@ -22,12 +22,15 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const item = body?.item?.trim().slice(0, 200)
   if (!item) return badRequest('Aliment requis.')
   const locationId = typeof body?.location_id === 'string' ? body.location_id.trim().slice(0, 40) || null : null
+  // The id is returned so the client's « Annuler » can DELETE exactly this row
+  // (lib/undoCreate — an add gets an undo like a delete does, 2026-09-24).
+  const id = newId()
   await ctx.env.DB.prepare(
     'INSERT INTO pantry_reserve (id, household_id, item, location_id, marked_at) VALUES (?, ?, ?, ?, ?)',
   )
-    .bind(newId(), actor.householdId, item, locationId, nowSec())
+    .bind(id, actor.householdId, item, locationId, nowSec())
     .run()
-  return ok({ ok: true })
+  return ok({ ok: true, id })
 })
 
 // Rename a reserve item and/or move it to another location (the ✏️ affordance).
