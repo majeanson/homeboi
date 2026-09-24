@@ -2801,7 +2801,7 @@ export const EN: typeof FR = {
 
   remarks: {
     title: 'Remarks',
-    lead: 'What is broken, what is missing, what could be simpler.',
+    lead: 'What is broken, what is missing, what could be simpler. Read by whoever runs Babillard.',
     empty: 'Nothing to report. When it snags, say so here — even half-formed.',
     kindBug: 'Bug',
     kindWish: 'Wish',

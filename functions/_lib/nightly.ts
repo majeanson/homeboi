@@ -4,6 +4,7 @@ import { countDemoSandboxes, countStaleDemoSandboxes, sweepExpiredDemoSandboxes 
 import { mailEnabled, sendMail, type Mail } from './mail'
 import { localDayOfWeek } from './ids'
 import { STRANGER_POOL_PER_DAY, strangerSpend } from './usage'
+import { doorCounts, recentStrangerRemarks, type DoorCounts, type StrangerRemark } from './strangers'
 
 // The nightly cron, as one function with a REPORT (STATE.md §4-L, item L7).
 //
@@ -42,6 +43,11 @@ export interface NightlyReport {
   // signups, and both are worth a line the morning after.
   strangerAi: number
   strangerBytes: number
+  // Other households, now that anyone can be one (_lib/strangers.ts): the remarks they
+  // filed in the last 24 h — any remark sends a mail, since a stranger's bug report
+  // otherwise reaches nobody — and the door's COUNTS, which ride in every mail.
+  remarks: StrangerRemark[]
+  door: DoorCounts | null
 }
 
 // Every side effect behind a seam, so the unit test can hand in fakes and the
@@ -53,6 +59,8 @@ export interface NightlyDeps {
   countAlive: () => Promise<number>
   countStale: () => Promise<number>
   strangerSpend: () => Promise<{ ai: number; bytes: number }>
+  strangerRemarks: () => Promise<StrangerRemark[]>
+  doorCounts: () => Promise<DoorCounts>
 }
 
 export function realDeps(env: Env, now: number): NightlyDeps {
@@ -72,6 +80,8 @@ export function realDeps(env: Env, now: number): NightlyDeps {
     countAlive: () => countDemoSandboxes(env),
     countStale: () => countStaleDemoSandboxes(env, now),
     strangerSpend: () => strangerSpend(env, now),
+    strangerRemarks: () => recentStrangerRemarks(env, now),
+    doorCounts: () => doorCounts(env, now),
   }
 }
 
@@ -87,6 +97,15 @@ export async function runNightly(env: Env, now: number, deps: NightlyDeps = real
     sandboxesStale: 0,
     strangerAi: 0,
     strangerBytes: 0,
+    remarks: [],
+    door: null,
+  }
+  // Remarks BEFORE the sweep: a visitor's remark lives in their sandbox, and the sweep
+  // below deletes the sandbox with everything in it. This mail is its only copy.
+  try {
+    report.remarks = await deps.strangerRemarks()
+  } catch (err) {
+    report.failed.push({ id: 'remarks', error: String((err as Error)?.message ?? err) })
   }
   // The sweep first: a sandbox older than its day is not worth a backup.
   try {
@@ -115,34 +134,64 @@ export async function runNightly(env: Env, now: number, deps: NightlyDeps = real
   } catch (err) {
     report.failed.push({ id: 'sandbox-count', error: String((err as Error)?.message ?? err) })
   }
+  try {
+    report.door = await deps.doorCounts()
+  } catch (err) {
+    report.failed.push({ id: 'door', error: String((err as Error)?.message ?? err) })
+  }
   return report
 }
 
 const mb = (bytes: number) => Math.round(bytes / (1024 * 1024))
 
-// What, if anything, to send about a report. Pure: a failure or a surviving stale
-// sandbox is an ALERT any night; a full strangers' pool is its own alert; a quiet Monday
-// is the DIGEST; a quiet other day is nothing. `weekday` follows localDayOfWeek
-// (0 = Sunday) in the household zone.
+// One remark, as the operator reads it: what kind, what it says, where it happened, and
+// enough of an id to find the row — never the household's name. The body is capped so
+// one long remark cannot bury the rest of the mail.
+export function remarkLine(r: StrangerRemark): string {
+  const text = r.body.trim()
+  const body = text ? `\n${text.slice(0, 600)}${text.length > 600 ? '…' : ''}` : ''
+  return `[${r.kind}${r.sandbox ? ' · démo' : ''}] ${r.title}${body}\n(${r.seenPath ?? '—'} · maisonnée ${r.householdId})`
+}
+
+// What, if anything, to send about a report. Pure. In order of what the subject says:
+// a failure or a surviving stale sandbox (ALERT, any night) → a full strangers' pool →
+// remarks from other households (a stranger's bug report reaches nobody else) → a
+// quiet Monday (the DIGEST) → nothing. Whatever is sent carries every line AND every
+// remark, so a remark never waits behind a louder subject. `weekday` follows
+// localDayOfWeek (0 = Sunday) in the household zone.
 export function alertFor(report: NightlyReport, weekday: number): Omit<Mail, 'to'> | null {
   const wrong = report.failed.length > 0 || report.sandboxesStale > 0 || report.noBucket
+  const d = report.door
   const lines = [
     `Maisonnées : ${report.households} · sauvegardées : ${report.backed}${report.noBucket ? ' (R2 absent — AUCUNE sauvegarde)' : ''}`,
     `Bacs à sable : ${report.sandboxesAlive} vivants · ${report.sandboxesSwept} balayés cette nuit · ${report.sandboxesStale} périmés encore là`,
     `Inconnus (24 h) : ${report.strangerAi} / ${STRANGER_POOL_PER_DAY.ai} appels IA · ${mb(report.strangerBytes)} / ${mb(STRANGER_POOL_PER_DAY.upload)} Mo téléversés`,
+    ...(d
+      ? [
+          `La porte (7 j) : ${d.newHouseholds} nouvelle(s) maisonnée(s) · ${d.newConfirmed} confirmée(s) · ${d.active} active(s) · ${d.stuckEmpty} restée(s) vide(s) après 3 jours`,
+        ]
+      : []),
     ...report.failed.map((f) => `ÉCHEC ${f.id} : ${f.error}`),
   ]
   const poolFull = report.strangerAi >= STRANGER_POOL_PER_DAY.ai || report.strangerBytes >= STRANGER_POOL_PER_DAY.upload
+  const n = report.remarks.length
+  const remarks = n ? `\n\nRemarques d’ailleurs (24 h) :\n\n${report.remarks.map(remarkLine).join('\n\n')}` : ''
   if (wrong) {
     return {
       subject: `Babillard — la nuit a mal tourné (${report.failed.length} échec${report.failed.length > 1 ? 's' : ''}${report.sandboxesStale ? `, ${report.sandboxesStale} bac(s) périmé(s)` : ''})`,
-      text: `Le cron de ${new Date(report.at * 1000).toISOString()} rapporte :\n\n${lines.join('\n')}\n\nUn bac périmé qui survit au balayage veut dire que le balayage échoue en silence — voir demoHousehold.ts (SCOPE_COLUMN) et worker/demo.d1.test.ts.`,
+      text: `Le cron de ${new Date(report.at * 1000).toISOString()} rapporte :\n\n${lines.join('\n')}\n\nUn bac périmé qui survit au balayage veut dire que le balayage échoue en silence — voir demoHousehold.ts (SCOPE_COLUMN) et worker/demo.d1.test.ts.${remarks}`,
     }
   }
   if (poolFull) {
     return {
       subject: 'Babillard — la réserve des inconnus s’est remplie',
-      text: `Les bacs à sable et les maisonnées non confirmées ont épuisé leur réserve commune des dernières 24 h — les nouveaux venus ont vu l’IA ou les téléversements refusés jusqu’à minuit. Les familles confirmées n’y touchent pas.\n\n${lines.join('\n')}\n\nUne journée chargée de vrais visiteurs ? Monte STRANGER_POOL_PER_DAY (_lib/usage.ts), avec ce chiffre comme preuve. Des inscriptions en rafale ? Regarde les courriels récents dans operators.`,
+      text: `Les bacs à sable et les maisonnées non confirmées ont épuisé leur réserve commune des dernières 24 h — les nouveaux venus ont vu l’IA ou les téléversements refusés jusqu’à minuit. Les familles confirmées n’y touchent pas.\n\n${lines.join('\n')}\n\nUne journée chargée de vrais visiteurs ? Monte STRANGER_POOL_PER_DAY (_lib/usage.ts), avec ce chiffre comme preuve. Des inscriptions en rafale ? Regarde les courriels récents dans operators.${remarks}`,
+    }
+  }
+  if (n) {
+    return {
+      subject: `Babillard — ${n} remarque${n > 1 ? 's' : ''} d’ailleurs`,
+      text: `D’autres maisonnées ont écrit dans « Les remarques ». Personne d’autre ne les lit : c’est ici qu’elles arrivent.${remarks}\n\n${lines.join('\n')}`,
     }
   }
   if (weekday === 1) {

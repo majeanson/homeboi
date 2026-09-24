@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { alertFor, runNightly, type NightlyDeps, type NightlyReport } from './nightly'
+import { alertFor, remarkLine, runNightly, type NightlyDeps, type NightlyReport } from './nightly'
+import type { StrangerRemark } from './strangers'
 import type { Env } from './env'
 import { STRANGER_POOL_PER_DAY } from './usage'
 
@@ -14,6 +15,8 @@ function deps(over: Partial<NightlyDeps> = {}): NightlyDeps {
     countAlive: async () => 0,
     countStale: async () => 0,
     strangerSpend: async () => ({ ai: 0, bytes: 0 }),
+    strangerRemarks: async () => [],
+    doorCounts: async () => ({ newHouseholds: 0, newConfirmed: 0, active: 0, stuckEmpty: 0 }),
     ...over,
   }
 }
@@ -57,6 +60,26 @@ describe('runNightly', () => {
     expect(r).toMatchObject({ strangerAi: 42, strangerBytes: 3 * 1024 * 1024 })
   })
 
+  it('reads the remarks BEFORE the sweep — a visitor’s remark dies with their sandbox', async () => {
+    // Red against collecting them after the sweep (next to the other counts): the sweep
+    // deletes the sandbox, and the remark with it.
+    const order: string[] = []
+    await runNightly(env, NOW, deps({
+      strangerRemarks: async () => { order.push('remarks'); return [] },
+      sweep: async () => { order.push('sweep'); return 0 },
+    }))
+    expect(order).toEqual(['remarks', 'sweep'])
+  })
+
+  it('a remarks or door query that throws is a named failure, not a lost night', async () => {
+    const r = await runNightly(env, NOW, deps({
+      strangerRemarks: async () => { throw new Error('no such table: remarks') },
+      doorCounts: async () => { throw new Error('boom') },
+    }))
+    expect(r.failed.map((f) => f.id)).toEqual(['remarks', 'door'])
+    expect(r.backed).toBe(2)
+  })
+
   it('no R2 bucket is reported — backups silently not happening is the worst kind of quiet', async () => {
     const r = await runNightly({} as Env, NOW, deps())
     expect(r.noBucket).toBe(true)
@@ -64,7 +87,7 @@ describe('runNightly', () => {
 })
 
 describe('alertFor', () => {
-  const quiet: NightlyReport = { at: NOW, households: 1, backed: 1, failed: [], noBucket: false, sandboxesSwept: 0, sandboxesAlive: 0, sandboxesStale: 0, strangerAi: 0, strangerBytes: 0 }
+  const quiet: NightlyReport = { at: NOW, households: 1, backed: 1, failed: [], noBucket: false, sandboxesSwept: 0, sandboxesAlive: 0, sandboxesStale: 0, strangerAi: 0, strangerBytes: 0, remarks: [], door: null }
   it('a quiet weekday sends nothing', () => {
     expect(alertFor(quiet, 3)).toBeNull()
   })
@@ -93,6 +116,31 @@ describe('alertFor', () => {
     expect(alertFor({ ...quiet, strangerAi: STRANGER_POOL_PER_DAY.ai - 1 }, 3)).toBeNull()
     // …and the Monday digest carries the reading anyway.
     expect(alertFor({ ...quiet, strangerAi: 7 }, 1)?.text).toContain('Inconnus (24 h) : 7 /')
+  })
+  const remark: StrangerRemark = { kind: 'bug', title: 'La liste ne se vide pas', body: 'Je coche, rien ne part.', seenPath: '/liste', createdAt: NOW - 60, householdId: 'hhX', sandbox: false }
+  it('a remark from another household sends a mail on a quiet weekday — nobody else reads it', () => {
+    // Red against leaving remarks out of the decision: a stranger's bug report would sit
+    // in a household nobody on the maker's side ever opens.
+    const m = alertFor({ ...quiet, remarks: [remark, { ...remark, title: 'Autre', sandbox: true }] }, 3)
+    expect(m?.subject).toBe('Babillard — 2 remarques d’ailleurs')
+    expect(m?.text).toContain('[bug] La liste ne se vide pas')
+    expect(m?.text).toContain('[bug · démo] Autre')
+  })
+  it('a louder subject still carries the remarks — they never wait for a quiet night', () => {
+    const m = alertFor({ ...quiet, failed: [{ id: 'h9', error: 'boom' }], remarks: [remark] }, 3)
+    expect(m?.subject).toContain('mal tourné')
+    expect(m?.text).toContain('La liste ne se vide pas')
+  })
+  it('a remark line names the place and the row, never the household, and caps a long body', () => {
+    const line = remarkLine({ ...remark, body: 'x'.repeat(900) })
+    expect(line).toContain('(/liste · maisonnée hhX)')
+    expect(line).toContain('x'.repeat(600) + '…')
+    expect(line).not.toContain('x'.repeat(601))
+    expect(remarkLine({ ...remark, body: '  ', seenPath: null })).toBe('[bug] La liste ne se vide pas\n(— · maisonnée hhX)')
+  })
+  it('the door counts ride in the Monday digest', () => {
+    const m = alertFor({ ...quiet, door: { newHouseholds: 3, newConfirmed: 2, active: 5, stuckEmpty: 1 } }, 1)
+    expect(m?.text).toContain('La porte (7 j) : 3 nouvelle(s) maisonnée(s) · 2 confirmée(s) · 5 active(s) · 1 restée(s) vide(s) après 3 jours')
   })
   it('no bucket alerts too', () => {
     expect(alertFor({ ...quiet, noBucket: true }, 3)?.text).toContain('AUCUNE sauvegarde')

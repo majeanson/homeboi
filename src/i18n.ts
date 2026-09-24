@@ -3224,7 +3224,7 @@ export const FR = {
   // Trois genres, un seul chemin : déposé → expédié → réglé, et c'est TOI qui tranches.
   remarks: {
     title: 'Les remarques',
-    lead: 'Ce qui cloche, ce qui manque, ce qui gagnerait à être plus simple.',
+    lead: 'Ce qui cloche, ce qui manque, ce qui gagnerait à être plus simple. Lu par la personne qui opère Babillard.',
     empty: 'Rien à signaler. Quand ça accroche, dis-le ici — même à moitié formulé.',
     // Les trois genres.
     kindBug: 'Bogue',
