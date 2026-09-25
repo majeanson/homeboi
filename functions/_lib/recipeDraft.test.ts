@@ -183,6 +183,33 @@ Publicité
     expect(d.servings).toBe(4)
   })
 
+  it('a « Titre » label above the name is not the title; « Titre : X » is X', async () => {
+    const body = `\n\nIngrédients\n2 oeufs\n250 ml de lait\n\nPréparation\nMélanger.\nCuire 2 minutes.`
+    for (const head of ['Titre\n\nCrêpes', 'Title:\nCrêpes', 'Titre : Crêpes']) {
+      const d = await draftFromText(noAi, `${head}${body}`, 'fr', false)
+      expect(d.title).toBe('Crêpes')
+      expect(d.steps).toEqual(['Mélanger.', 'Cuire 2 minutes.'])
+    }
+    // …and on a paragraph card, where the fallback re-walks every line, the label is
+    // not a step either.
+    const p = await draftFromText(noAi, `Titre\nGarlic Butter Shrimp\n\nMelt 3 tbsp butter in a skillet. Add 1 lb shrimp and cook 2 minutes per side. Serve at once.\n\nServes 4.`, 'en', false)
+    expect(p.title).toBe('Garlic Butter Shrimp')
+    expect(p.steps[0]).toBe('Melt 3 tbsp butter in a skillet.')
+    expect(p.steps).not.toContain('Titre')
+  })
+
+  it('a meta line transcribed without separators is still a strip', async () => {
+    const d = await draftFromText(noAi, `Spaghetti\nPréparation : 10 min Cuisson : 15 min Portions : 4\n\nIngrédients\n340 g de spaghetti\n2 gousses d'ail\n\nPréparation\nCuire les pâtes.\nServir.`, 'fr', false)
+    expect(d.times).toEqual({ prep: 10, cook: 15, total: null })
+    expect(d.servings).toBe(4)
+    expect(d.title).toBe('Spaghetti')
+  })
+
+  it('the first part label right after « Ingrédients » heads a part even without a blank line', async () => {
+    const d = await draftFromText(noAi, `Tacos\n\nIngrédients\nPoisson\n450 g de tilapia\n15 ml de paprika\n\nSauce\n125 ml de yogourt\n\nPréparation\nCuire le poisson 3 minutes de chaque côté.\nServir.`, 'fr', false)
+    expect(d.ingredients).toEqual(['## Poisson', '450 g de tilapia', '15 ml de paprika', '## Sauce', '125 ml de yogourt'])
+  })
+
   it('« Sel » between two quantity lines stays an ingredient — never a section', async () => {
     const d = await draftFromText(noAi, `Omelette\n\nIngrédients\n3 oeufs\nSel\n15 ml de beurre\n\nPréparation\nBattre les oeufs avec le sel.\nCuire dans le beurre.`, 'fr', false)
     expect(d.ingredients).toEqual(['3 oeufs', 'Sel', '15 ml de beurre'])

@@ -36,5 +36,8 @@ export const onRequestPost = authed(async (ctx) => {
   if (!transcript) return withAiError(ok({ ...draft({ empty: true }), ...reader }), report)
   // `requiresAi` guaranteed AI is usable for this household — the text model may run.
   const d = await draftFromText(ctx.env, transcript, lang, true)
-  return withAiError(ok({ ...d, ...reader }), report)
+  // The transcript rides along: when a read is wrong, the source is the only thing
+  // that says whether the reader or the parser erred (a corpus run guessed at three
+  // of them before this existed). Capped; the review panel may show it one day.
+  return withAiError(ok({ ...d, ...reader, transcript: transcript.slice(0, 4000) }), report)
 }, undefined, { requiresAi: true })

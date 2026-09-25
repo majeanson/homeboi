@@ -695,8 +695,18 @@ const TIME_LINE =
 // A card's META STRIP is several facts on one printed line; the separators vary with the
 // typesetting (« · », « • », « | », a spaced dash, a breadcrumb « › »).
 const STRIP_SEP = /\s*[•·|]\s*|\s+[–—-]\s+|\s+[›»]\s+/
-const splitStrip = (l: string): string[] => l.split(STRIP_SEP).map((s) => s.trim()).filter(Boolean)
 const isMetaFrag = (f: string): boolean => TIME_LINE.test(f) || SERVINGS_LINE.test(f)
+// A transcriber may drop the separators altogether (« Préparation : 10 min Cuisson :
+// 15 min Portions : 4 »): then split right before each meta label — and keep that
+// split only when it yields two meta facts (« Cuire 10 min pour dorer » stays whole).
+const LABEL_SPLIT =
+  /\s+(?=(?:pr[ée]p(?:aration)?|cuisson|cook(?:ing)?|bak(?:e|ing)|temps\s+total|total|portions?|servings?|donne|serves?|rendement|yield|pour)\b)/i
+const splitStrip = (l: string): string[] => {
+  const f = l.split(STRIP_SEP).map((s) => s.trim()).filter(Boolean)
+  if (f.length > 1) return f
+  const g = l.split(LABEL_SPLIT).map((s) => s.trim()).filter(Boolean)
+  return g.length > 1 && g.filter(isMetaFrag).length >= 2 ? g : f
+}
 // A website's NAV BAR or breadcrumb transcribed as one line (« RECETTES.QC • Menu •
 // Recherche • Connexion », « Accueil › Plats › Pâtes »): three or more short wordy
 // fragments. Never a title, never a step.
@@ -785,6 +795,12 @@ export function parsePastedRecipe(text: string): PastedRecipe {
   // True only for the line RIGHT AFTER the title — a wrapped title continues there and
   // nowhere else (a later « et couper en bâtonnets… » is the method, not the title).
   let afterTitle = false
+  // True only for the line right after an « Ingrédients » heading: a bare label there
+  // (« Poisson ») heads the first named part, blank line or not.
+  let afterIngHeading = false
+  // Lines known NOT to be recipe (a nav bar, a star rating, a « Titre » label): the
+  // no-headings fallback below, which re-walks every line, must skip them too.
+  const junk = new Set<number>()
   let servings: number | null = null
   let servingsUnit: string | null = null
   const times: RecipeTimes = { prep: null, cook: null, total: null }
@@ -800,6 +816,8 @@ export function parsePastedRecipe(text: string): PastedRecipe {
     if (!line) continue
     const justAfterTitle = afterTitle
     afterTitle = false
+    const justAfterIng = afterIngHeading
+    afterIngHeading = false
     const prevBlank = li > 0 && lines[li - 1] === ''
 
     // Meta lines can appear anywhere; consume them when they stand alone. True when
@@ -845,12 +863,19 @@ export function parsePastedRecipe(text: string): PastedRecipe {
         for (const f of meta) consumeMeta(f)
         continue
       }
-      if (isNavStrip(frags)) continue
+      if (isNavStrip(frags)) {
+        junk.add(li)
+        continue
+      }
     }
-    if (isRating(line)) continue
+    if (isRating(line)) {
+      junk.add(li)
+      continue
+    }
     if (consumeMeta(line)) continue
     if (NOISE_START.test(line)) {
       if (mode !== 'pre') break // the recipe is over; what follows is the site
+      junk.add(li)
       continue
     }
 
@@ -858,6 +883,7 @@ export function parsePastedRecipe(text: string): PastedRecipe {
     if (ingH) {
       mode = 'ing'
       sawIngHeading = true
+      afterIngHeading = true
       // "Ingrédients pour le glaçage :" — the qualifier names this part.
       const sec = qualifierTitle(ingH[1])
       if (sec) ings.push(makeSectionHeading(sec))
@@ -877,8 +903,17 @@ export function parsePastedRecipe(text: string): PastedRecipe {
     }
 
     if (mode === 'pre') {
-      if (!title && line.length <= 120) {
-        title = line.slice(0, 200)
+      // A « Titre » / « Title » label a transcriber writes above the name is skipped;
+      // a « Titre : Crêpes » line IS the name (corpus, 2026-09-24: « Titre » became
+      // the title of three recipes).
+      if (/^(?:titre|title|nom|name)\s*:?\s*$/i.test(line)) {
+        junk.add(li)
+        continue
+      }
+      const labelled = line.match(/^(?:titre|title|nom|name)\s*:\s*(.{1,120})$/i)
+      const cand = labelled ? labelled[1].trim() : line
+      if (!title && cand.length <= 120) {
+        title = cand.slice(0, 200)
         titleLines = 1
         afterTitle = true
       } else if (title && justAfterTitle && titleContinues(title, line)) {
@@ -897,7 +932,8 @@ export function parsePastedRecipe(text: string): PastedRecipe {
     // trust — and an ingredient-looking line follows. Conservative on purpose: « Sel »
     // between two quantity lines is an ingredient, not a part.
     const bareLabel = stripBullet(line)
-    const partLabel = isBareLabel(bareLabel) && (prevBlank || PART_WORD.test(bareLabel)) ? bareLabel : null
+    const partLabel =
+      isBareLabel(bareLabel) && (prevBlank || PART_WORD.test(bareLabel) || (justAfterIng && bareLabel.split(/\s+/).length <= 2)) ? bareLabel : null
     if (mode === 'ing') {
       const sec = inlineSectionTitle(line) ?? (partLabel && ING_LIKE.test(nextNonEmpty(li)) ? partLabel : null)
       if (sec) {
@@ -920,8 +956,10 @@ export function parsePastedRecipe(text: string): PastedRecipe {
   const paragraphCard = !sawIngHeading && !sawStepHeading && ings.length === 0 && stepLines.length === 0
   if (paragraphCard) {
     let skipped = 0
-    for (const line of lines) {
+    for (let li = 0; li < lines.length; li++) {
+      const line = lines[li]
       if (!line) continue
+      if (junk.has(li)) continue // a nav bar, a rating, a « Titre » label — never recipe
       if (skipped < Math.max(1, titleLines)) {
         skipped++
         continue // the title (one line, or two when wrapped) was already captured above
