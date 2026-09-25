@@ -1268,8 +1268,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'La galerie de dessins', en: 'The drawings gallery' },
         detail: {
-          fr: 'Un dessin gardé va dans la galerie : rouvre-le pour continuer dessus (les enfants aussi), affiche-le au babillard ou en mode veille.',
-          en: 'A kept drawing goes to the gallery: reopen it to keep drawing (kids too), show it on the board or the screensaver.',
+          fr: 'Un dessin gardé va dans la galerie : rouvre-le pour continuer dessus (les enfants aussi), affiche-le au babillard ou en mode veille. Le cœur dans la main [[icon:hand-heart-bold]] le garde aussi sur l’étagère « Souvenirs » du babillard, avec les photos et les mots gardés.',
+          en: 'A kept drawing goes to the gallery: reopen it to keep drawing (kids too), show it on the board or the screensaver. The heart-in-hand [[icon:hand-heart-bold]] also keeps it on the board’s “Keepsakes” shelf, with the kept photos and messages.',
         },
         route: '/drawings',
       },

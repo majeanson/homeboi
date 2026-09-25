@@ -7,7 +7,7 @@ import { useAudience } from '../lib/audience'
 import { isGuest } from '../lib/device'
 import { imgUrl } from '../lib/image'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
-import { useGallery, useSaveToGallery, useUpdateInGallery, useDeleteFromGallery, usePinToFridge } from '../lib/drawingGallery'
+import { useGallery, useSaveToGallery, useUpdateInGallery, useDeleteFromGallery, usePinToFridge, useKeepDrawing } from '../lib/drawingGallery'
 import { useDrawingToRoutine } from '../lib/drawingToRoutine'
 import { useDrawEdit } from '../lib/drawEdit'
 import { useConfirm } from '../lib/confirm'
@@ -48,6 +48,7 @@ export function DrawingGalleryPage() {
   const save = useSaveToGallery()
   const update = useUpdateInGallery()
   const remove = useDeleteFromGallery()
+  const keep = useKeepDrawing()
   const toRoutine = useDrawingToRoutine()
   const pinToFridge = usePinToFridge()
   const confirm = useConfirm()
@@ -117,6 +118,21 @@ export function DrawingGalleryPage() {
                         aria-label={t.memo.editTitle}
                       >
                         <img src={imgUrl(d.media_key)} alt={t.notes.drawing} loading="lazy" />
+                      </button>
+                    )}
+                    {/* « Garder » (C1): keep it for the board's « Souvenirs » shelf — distinct
+                        from the fridge pin beside it (that one copies it onto today's board;
+                        this one says "this stays"). A toggle; pressed state = confirmation. */}
+                    {!ro && (
+                      <button
+                        type="button"
+                        className={'drawgallery__keep' + (d.saved_at ? ' is-done' : '')}
+                        onClick={() => void keep(d.id, !d.saved_at).catch(() => {})}
+                        aria-pressed={!!d.saved_at}
+                        aria-label={d.saved_at ? t.mots.kept : t.mots.keep}
+                        title={d.saved_at ? t.mots.kept : t.mots.keep}
+                      >
+                        <Icon name="hand-heart-bold" size={14} />
                       </button>
                     )}
                     {!ro && (

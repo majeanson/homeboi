@@ -14,11 +14,23 @@ const MAX_BYTES = 3 * 1024 * 1024 // safety net; the client already resizes to ~
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const { results } = await ctx.env.DB.prepare(
-    'SELECT id, media_key AS r2_key FROM photos WHERE household_id = ? ORDER BY created_at DESC',
+    'SELECT id, media_key AS r2_key, saved_at FROM photos WHERE household_id = ? ORDER BY created_at DESC',
   )
     .bind(actor.householdId)
-    .all<{ id: string; r2_key: string }>()
-  return ok({ photos: results.map((p) => ({ id: p.id, key: p.r2_key })) })
+    .all<{ id: string; r2_key: string; saved_at: number | null }>()
+  return ok({ photos: results.map((p) => ({ id: p.id, key: p.r2_key, saved_at: p.saved_at })) })
+})
+
+// « Garder » (0140, PLAN-mots C1): a photo kept for the « Souvenirs » shelf — the same
+// saved_at a mot carries, toggled. Any actor (the frame is the kiosk's); a guest is
+// refused by authed() like every write.
+export const onRequestPatch = authed(async (ctx, actor) => {
+  const body = await readJson<{ id?: string; saved?: boolean }>(ctx.request)
+  if (!body?.id || typeof body.saved !== 'boolean') return badRequest('id et saved requis.')
+  await ctx.env.DB.prepare('UPDATE photos SET saved_at = ? WHERE id = ? AND household_id = ?')
+    .bind(body.saved ? nowSec() : null, body.id, actor.householdId)
+    .run()
+  return ok({ ok: true })
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {

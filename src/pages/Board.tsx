@@ -21,6 +21,7 @@ import { SeasonUpkeepCard } from '../components/board/SeasonUpkeepCard'
 import { RoutineNextCard } from '../components/board/RoutineNextCard'
 import { ARegler } from '../components/board/ARegler'
 import { MotsCard } from '../components/mots/MotsCard'
+import { SouvenirsCard } from '../components/board/SouvenirsCard'
 import { DayHeroes } from '../components/board/DayHeroes'
 import { Icon, InlineIcon } from '../components/Icon'
 import { Chip } from '../components/Chip'
@@ -1097,6 +1098,9 @@ export function Board() {
   // « Laisse un mot » — the recipient's waiting mots (self-hides when there's
   // nothing for the picked face). Guests never see another face's mots.
   nodes.mots = ro ? null : <MotsCard help={help} />
+  // « Souvenirs » (C1) — the keepsake shelf. A guest sees the pictures, never another
+  // face's kept mots (the same line MotsCard draws).
+  nodes.souvenirs = <SouvenirsCard readOnly={ro} />
   nodes.aRegler = <ARegler enabled={audience === 'parent' && !ro} variant="card" />
   // « L'auto » glance — the car's status today + today's rides. #28
   nodes.autoCard = <AutoCard />

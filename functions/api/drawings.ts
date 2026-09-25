@@ -24,13 +24,14 @@ interface DrawingRow {
   media_key: string
   scene_key: string | null
   created_at: number
+  saved_at: number | null // « Gardé » for the Souvenirs shelf (0140); NULL = not kept
 }
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const rows = await ctx.env.DB.prepare(
     // Capped: kids keep drawing and nothing prunes the gallery. Newest first, so the
     // cap sheds the oldest.
-    `SELECT id, member_id, media_key, scene_key, created_at FROM drawings WHERE household_id = ? ORDER BY created_at DESC ${CAP_SQL}`,
+    `SELECT id, member_id, media_key, scene_key, created_at, saved_at FROM drawings WHERE household_id = ? ORDER BY created_at DESC ${CAP_SQL}`,
   )
     .bind(actor.householdId)
     .all<DrawingRow>()
@@ -55,8 +56,16 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   // Continue a kept drawing: swap to the freshly-uploaded blobs, free the old ones,
   // re-tint to whoever edited + resurface it (newest first). Same shape as the note
   // re-draw path; calm — no counts.
-  const body = await readJson<{ id?: string; media_key?: string; scene_key?: string }>(ctx.request)
+  const body = await readJson<{ id?: string; media_key?: string; scene_key?: string; saved?: boolean }>(ctx.request)
   const id = body?.id?.trim()
+  // « Garder » (0140, PLAN-mots C1): { id, saved } alone toggles the keepsake flag — no
+  // blobs move. The same saved_at a mot and a photo carry.
+  if (id && typeof body?.saved === 'boolean' && body.media_key === undefined) {
+    await ctx.env.DB.prepare('UPDATE drawings SET saved_at = ? WHERE id = ? AND household_id = ?')
+      .bind(body.saved ? nowSec() : null, id, actor.householdId)
+      .run()
+    return ok({ ok: true })
+  }
   if (!id || !isValidR2Key(body?.media_key?.trim())) return badRequest('id et media_key requis.')
   const mediaKey = body!.media_key!.trim()
   const sceneKey = isValidR2Key(body?.scene_key?.trim()) ? body!.scene_key!.trim() : null

@@ -18,6 +18,7 @@ export interface GalleryDrawing {
   media_key: string
   scene_key: string | null
   created_at: number
+  saved_at: number | null // « Gardé » — on the board's « Souvenirs » shelf (0140)
 }
 
 // Alias the shared key so the many call sites below read the same; the canonical
@@ -168,4 +169,11 @@ export function useKeepKeysInGalleryToast() {
       return null
     }
   }
+}
+
+// « Garder » (PLAN-mots C1): keep / un-keep a drawing for the « Souvenirs » shelf. A plain
+// toggle through the outbox (offline-safe); the gallery and the shelf share GALLERY_KEY.
+export function useKeepDrawing() {
+  const write = useWrite()
+  return (id: string, saved: boolean) => write('drawings', { method: 'PATCH', body: { id, saved }, affectedKeys: [GALLERY_KEY] })
 }

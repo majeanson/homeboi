@@ -23,7 +23,7 @@ const fresh = (): BoardCardPrefs => reconcile({})
 describe('reconcile — canonical shape', () => {
   it('an unset device gets every card, in canonical zones and order', () => {
     const p = fresh()
-    expect(p.band).toEqual(['notes', 'heroes', 'mots', 'aRegler'])
+    expect(p.band).toEqual(['notes', 'heroes', 'mots', 'souvenirs', 'aRegler'])
     expect(p.grid[0]).toBe('autoCard')
     expect([...p.band, ...p.grid].sort()).toEqual([...ALL].sort())
   })

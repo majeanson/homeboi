@@ -807,6 +807,7 @@ export const EN: typeof FR = {
     // 2026-09-09 sweep fixed the `mots.*` block and missed this one, because a board-card
     // NAME lives here rather than with the feature it names.
     mots: 'Messages',
+    souvenirs: 'Keepsakes',
     aRegler: 'To settle',
     autoCard: 'The car',
     today: 'Today',

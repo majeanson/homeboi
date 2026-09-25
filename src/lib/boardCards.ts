@@ -33,6 +33,7 @@ export type BoardCardId =
   | 'notes'
   | 'heroes'
   | 'mots'
+  | 'souvenirs'
   | 'aRegler'
   | 'autoCard'
   | 'today'
@@ -160,6 +161,9 @@ export const BOARD_CARDS: readonly BoardCardMeta[] = [
   // supper decision (friction audit, cook seam #1).
   { id: 'heroes', icon: 'sun-bold', tint: 'var(--marigold)', zone: 'band', size: 'full', mode: 'auto', emptyTo: '/kitchen/idees' },
   { id: 'mots', icon: 'envelope-bold', tint: 'var(--teal)', zone: 'band', size: 1, mode: 'auto' },
+  // « Souvenirs » (PLAN-mots C1): the keepsake shelf — kept mots, drawings, photos. 'auto':
+  // nothing kept, no card; the first keepsake makes it appear beside « Mots ».
+  { id: 'souvenirs', icon: 'hand-heart-bold', tint: 'var(--berry)', zone: 'band', size: 1, mode: 'auto' },
   { id: 'aRegler', icon: 'warning-bold', tint: 'var(--marigold-deep)', zone: 'band', size: 1, mode: 'auto' },
   // ── the masonry: car → the day → standing lists → upcoming → media ──
   // « Aujourd'hui » owns the whole day: its agenda AND — on a busy day (≥2 timed

@@ -4,6 +4,7 @@ import { imgUrl } from './image'
 import { live } from './query'
 import { uploadMediaRow } from './uploadMedia'
 import { PHOTOS_KEY } from './queryKeys'
+import { useWrite } from './write'
 import { useT } from '../i18n'
 import { useRecordUndo } from './toast'
 
@@ -23,6 +24,7 @@ import { useRecordUndo } from './toast'
 export interface HouseholdPhoto {
   id: string
   key: string
+  saved_at: number | null // « Gardé » — on the board's « Souvenirs » shelf (0140)
 }
 
 /** The frame's photos. `poll` = the board/screensaver's live cadence (lib/query). */
@@ -83,4 +85,11 @@ export function useKeepPhotoInGalleryToast() {
       return null
     }
   }
+}
+
+// « Garder » (PLAN-mots C1): keep / un-keep a photo for the « Souvenirs » shelf. A plain
+// toggle through the outbox (offline-safe); the frame and the shelf share PHOTOS_KEY.
+export function useKeepPhoto() {
+  const write = useWrite()
+  return (id: string, saved: boolean) => write('photos', { method: 'PATCH', body: { id, saved }, affectedKeys: [PHOTOS_KEY] })
 }

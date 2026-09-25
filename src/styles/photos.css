@@ -186,6 +186,26 @@
 
 /* Small "show another photo" shuffle button, tucked in the corner so it never
    competes with the photo (tap the photo itself to open the full ZoomableImg). */
+/* « Garder » (C1): the keepsake pin, bottom-right — same disc as the shuffle, filled in
+   the berry tint once kept (the pressed state IS the confirmation). */
+.photo-frame__keep {
+  position: absolute;
+  bottom: 0.5rem;
+  right: 0.5rem;
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-pill);
+  color: #fff;
+  background: rgb(0 0 0 / 0.42);
+  cursor: pointer;
+}
+.photo-frame__keep.is-done {
+  background: var(--berry-deep, var(--accent));
+}
 .photo-frame__shuffle {
   position: absolute;
   top: 0.5rem;

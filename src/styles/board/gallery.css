@@ -90,6 +90,71 @@
   color: var(--paper);
   background: var(--berry-deep, var(--accent, #4a8a5a));
 }
+/* « Garder » (C1): the keepsake pin, the fridge pin's twin one step to the right. */
+.drawgallery__keep {
+  position: absolute;
+  top: 0.3rem;
+  left: 2.3rem;
+  display: inline-flex;
+  padding: 0.3rem;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--card) 85%, transparent);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.drawgallery__keep.is-done {
+  color: var(--paper);
+  background: var(--berry-deep, var(--accent, #4a8a5a));
+}
+
+/* « Souvenirs » (PLAN-mots C1, SouvenirsCard): the keepsake shelf — kept photos, drawings
+   and mots on ONE scrolling line (a Rail: wheel + arrow keys reach it). Square thumbnails
+   and a hand-written line, no count, no « on this day ». */
+.souv {
+  --tile: 92px;
+  gap: 0.6rem;
+  padding: 0.1rem 0 0.3rem;
+}
+.souv__tile {
+  flex: 0 0 auto;
+  width: var(--tile);
+  height: var(--tile);
+  margin: 0;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+}
+.souv__tile img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.souv__mot {
+  flex: 0 0 auto;
+  max-width: 12rem;
+  min-height: var(--tile);
+  padding: 0.5rem 0.7rem;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--marigold-wash);
+  color: var(--ink);
+  font-family: var(--font-hand);
+  font-size: 1.15rem;
+  line-height: 1.25;
+  text-align: left;
+  cursor: pointer;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.souv__mot--mini {
+  min-height: 0;
+  padding: 0;
+  background: none;
+}
 /* B-11 (bmad/09): the album reads by YEAR once a second year exists — a quiet
    mono heading between the year grids. A single-year gallery shows none. */
 .drawgallery__year {

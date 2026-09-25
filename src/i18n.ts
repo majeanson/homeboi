@@ -959,6 +959,7 @@ export const FR = {
     notes: 'Notes (frigo)',
     heroes: 'Ce soir + météo',
     mots: 'Mots',
+    souvenirs: 'Souvenirs',
     aRegler: 'À régler',
     autoCard: 'L’auto',
     today: 'Aujourd’hui',

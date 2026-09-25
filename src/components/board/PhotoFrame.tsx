@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { usePhotos } from '../../lib/photoGallery'
+import { usePhotos, useKeepPhoto } from '../../lib/photoGallery'
+import { isGuest } from '../../lib/device'
 import { imgUrl } from '../../lib/image'
 import { useT } from '../../i18n'
 import { useReportEmpty } from '../../lib/useReportEmpty'
@@ -16,6 +17,7 @@ export function PhotoFrame() {
   const t = useT()
   const lens = useCardLens()
   const { data } = usePhotos({ poll: true })
+  const keep = useKeepPhoto()
   const photos = data?.photos ?? []
   const [idx, setIdx] = useState(0)
   useEffect(() => {
@@ -66,6 +68,20 @@ export function PhotoFrame() {
         </button>
       )}
       <ZoomableImg key={p.id} src={imgUrl(p.key)} />
+      {/* « Garder » (C1): keep the photo on show for the « Souvenirs » shelf — a toggle,
+          its pressed state the whole confirmation. Bottom-right, clear of the ⟳ shuffle. */}
+      {!isGuest() && (
+        <button
+          type="button"
+          className={'photo-frame__keep' + (p.saved_at ? ' is-done' : '')}
+          onClick={() => void keep(p.id, !p.saved_at).catch(() => {})}
+          aria-pressed={!!p.saved_at}
+          aria-label={p.saved_at ? t.mots.kept : t.mots.keep}
+          title={p.saved_at ? t.mots.kept : t.mots.keep}
+        >
+          <Icon name="hand-heart-bold" size={18} />
+        </button>
+      )}
       {photos.length > 1 && (
         <button
           type="button"

@@ -93,11 +93,12 @@ test.describe('board layout customization', () => {
     await expect(page.locator('.wg-slot[data-card="notes"]')).toBeVisible()
 
     await openLayout(page)
-    // The band lists its four cards, and every one of them carries a drag grip: band
-    // cards used to be show/hide-only, pinned in place. That asymmetry is gone.
+    // The band lists its five cards (Souvenirs joined on 2026-09-25), and every one of
+    // them carries a drag grip: band cards used to be show/hide-only, pinned in place.
+    // That asymmetry is gone.
     const band = page.locator('.board-layout').first()
-    await expect(band.locator('.board-layout__row')).toHaveCount(4)
-    await expect(band.locator('.board-layout__row .dnd-grip')).toHaveCount(4)
+    await expect(band.locator('.board-layout__row')).toHaveCount(5)
+    await expect(band.locator('.board-layout__row .dnd-grip')).toHaveCount(5)
     // Each zone ends in a drop target, so a card can be moved into an emptied group.
     await expect(page.locator('.board-layout__end')).toHaveCount(2)
 
