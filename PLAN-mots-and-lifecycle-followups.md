@@ -22,7 +22,11 @@
 > `COMPONENTS.md`; new user-facing behaviour → the in-app Guide (`lib/guideContent.ts`).
 
 > ⚪ **This is an idea pool, not a backlog.** Every entry below is uncommitted —
-> inspiration for a *deliberate* decision, never a queue to work down. Twelve designed-but-unbuilt features (A5–D2); none started.
+> inspiration for a *deliberate* decision, never a queue to work down. Twelve designed
+> features (A5–D2). **Walked with Marc on 2026-09-25**, each accepted / dismissed /
+> challenged in turn (the table below carries the verdict + the commit): seven accepted
+> and six of those shipped the same day; four dismissed with the reason; C1 waits on a
+> fresh decision because its premise (a `MomentPeek` band to grow) no longer exists.
 > It deliberately carries **no checkboxes**: a `- [ ]` in this repo means real open
 > work, and these are not that. See `STATE.md` §4-F and its checkbox convention.
 
@@ -34,20 +38,20 @@
 | ID | Feature | Effort | Value | Migration? |
 | -- | ------- | ------ | ----- | ---------- |
 | A5 | ✅ **DONE 2026-08-27** — Voice-mot transcription preview | M | High (glance + a11y) | 0123 |
-| A6 | Mot → transformer (route to capture) | M | High (LAC-spirit) | no |
-| A7 | Reply mini-thread in the peek | S | Medium | no |
-| A8 | Occasion mots (surface on a birthday) | S | Medium | no |
-| B2 | "En cours" in-progress state | S | Medium (softens the flip) | no |
-| B3 | Unify the "maintenant" marker into the today list | S | Medium (consistency) | no |
-| B4 | Dusk → "Demain commence" preview | M | Medium | no |
-| B5 | Page-turn transition at midnight | S | Low (polish) | no |
-| C1 | « Souvenirs » keepsake shelf | M–L | High (gives `saved_at` a home) | maybe |
-| C2 | "Pour toi" face digest | S–M | High (personal glance) | no |
-| C3 | Bonne-nuit / quiet-hours board | M | Medium | no (pref) |
-| D2 | Author-coloured face-dot | S | Low (see caveat) | no |
+| A6 | ✅ **SHIPPED 2026-09-25** (`49e5dff0`) — Mot → transformer (route to capture) | M | High (LAC-spirit) | no |
+| A7 | ✅ **SHIPPED 2026-09-25** (`a89d5f25`) — Reply mini-thread in the peek | S | Medium | no |
+| A8 | ✅ **SHIPPED 2026-09-25** (`47999974`) — Occasion mots (surface on a birthday) | S | Medium | no |
+| B2 | ✅ **SHIPPED 2026-09-25** (`dfc3b363`) — "En cours" in-progress state | S | Medium (softens the flip) | no |
+| B3 | ✅ **SHIPPED 2026-09-25** (`dfc3b363`) — Unify the "maintenant" marker into the today list | S | Medium (consistency) | no |
+| B4 | ⛔ **dismissed 2026-09-25** (Marc) — Dusk → "Demain commence" preview | M | Medium | no |
+| B5 | ⛔ **dismissed 2026-09-25** — polish with a reverted precedent, no on-device validation | S | Low (polish) | no |
+| C1 | ✅ accepted 2026-09-25, **NOT STARTED — premise stale**: no `MomentPeek` band exists any more (« Moments » was retired), drawings/photos carry no kept flag. Needs a new shape decision before code | M–L | High (gives `saved_at` a home) | yes (kept flag) |
+| C2 | ✅ **SHIPPED 2026-09-25** (`f91ac410`) — "Pour toi" face digest | S–M | High (personal glance) | no |
+| C3 | ⛔ **dismissed 2026-09-25** — its content was B4; the screensaver already owns the night | M | Medium | no (pref) |
+| D2 | ⛔ **dismissed 2026-09-25** — the dot stays boolean; the caveat below stands | S | Low (see caveat) | no |
 
-Recommended next slice: **A5 + A6** (they make the inbox smart), then **C2**
-(the personal glance that ties mots + board + routines together).
+What is left to decide: **C1 only.** Re-read its entry knowing the band it names is gone;
+the honest shape is probably a Notes-side shelf over `saved_at` mots + a new kept flag.
 
 ---
 

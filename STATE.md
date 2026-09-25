@@ -102,7 +102,7 @@ interchangeable. Read this table before opening any of them.
 | `PARITY.md` | **Playbook** | The feature × dimension matrix + the canonical new-entity checklist. 0 open — Wave D is a `[~]` standing policy. Parts 5–6 are a template: copy, don't tick. |
 | `ACTIONS.md` | **Playbook** | The action × door matrix (action × entry point × undo tier × non-touch). No open items — Part 5 is a template. |
 | `LEAN.md` · `DISCOVERY.md` · `COMPONENTS.md` · `OFFLINE.md` · `DEPLOY.md` | Reference | Consult when touching their concern. |
-| `PLAN-mots-and-lifecycle-followups.md` | ⚪ Idea pool | 12 designed-but-unbuilt features (A5–D2), never started. Not a backlog. |
+| `PLAN-mots-and-lifecycle-followups.md` | ⚪ Idea pool | 12 designed features, walked with Marc 2026-09-25: 7 shipped, 4 dismissed, C1 awaits a shape. |
 | ~~`bmad/`~~ | **Deleted 2026-09-17** | The planning folder and the archive: brief, PRD, architecture, the idea pools, every finished ledger, and this file's own past. ~10 000 lines of documents about an app that is built. **In git, not in the tree** — `git log --diff-filter=D -- bmad/` finds the deleting commit; `git show <sha>^:bmad/<file>` reads any of it. Code comments still cite its tags (`NFR-CALM-1`, `PRD C5`, `bmad/08 E-36`); they are labels now, not pointers (see CLAUDE.md ▸ Requirement tags). |
 
 **The trap this table used to exist to stop is now fixed at the source.** `PARITY.md` +
@@ -113,26 +113,22 @@ now, so the repo-wide count is honest for the first time.
 
 ## 3. What just shipped
 
-### Signup is open — and the day it took to make that true — 2026-09-24
+### The pool, walked — and six of its seven picks shipped the same day — 2026-09-25
 
-**The gate** (`f56bbb9e` → `5a8e1360`): deleting `LOGIN_PASSWORD` would have opened
-four doors, not one — it was also every legacy (no-hash) account's password and sudo
-lock, and login's « unknown email creates the household » path would have become a
-passwordless signup. The invite is its own switch (`SIGNUP_OPEN`, `_lib/signupGate.ts`),
-that login path is gone, the shared secret stays. **Strangers cost what a visitor
-costs** (`b185cb90`, 0139): the daily AI/R2 ceiling follows the household's TRUST
-(sandbox · unverified · confirmed) plus one pool all strangers share. **Other households
-reach Marc** (`beb38285`): their remarks and the door's COUNTS ride the nightly mail. The
-weekly stranger walk takes `/signup` in FR + EN (`e359eeff`).
+**Housekeeping first.** The E2E job was red twice on one note-editor test: two harness
+races (a native-key selection ProseMirror reads one task later; TipTap's focus deferred to
+a frame), fixed at the cause (`097cff97`). The shared password is retired (`3e16adba`):
+production counted zero hash-less rows, so a hash-less row is refused and the secret has
+one name, `INVITE_CODE`. The door's cold start is re-measured with its preset written
+down this time (`0cb0ba1e`, `npm run perf:door`): 15 requests / 305 KB, bandwidth-bound.
 
-**Then Marc's phone, one morning** — each fixed the same day, each proven red: the
-keyboard opened on its own on a dozen screens (`727637db`, `autofocus.test`); an add had
-no « Annuler » (`a05c3da7`, `useCreateWithUndo` everywhere); a checked list item flipped
-back seconds later (`d7fc54c0`, `writeWith` cancels in-flight polls + `reapply`); and the
-photo import — quotes on every line, the method as ingredients, « Cuire 2 minutes » gone.
-Reproduced six ways against production: the vision model, asked for JSON, cut by
-max_tokens. **It only transcribes now**; the transcript takes the paste path
-(`_lib/recipeDraft`), and `_lib/recipeRepair` holds the six real reads (`8b059a2c`).
+**Then the idea pool, presented item by item** (accept / dismiss / challenge): A7 the
+quoted thread (`a89d5f25`), B2 « en cours » + B3 the now-line on the flat list
+(`dfc3b363`), A8 « Sa fête » (`47999974`), C2 « Pour toi » (`f91ac410`), A6
+« Transformer » (`49e5dff0`) — each with a red-then-green guard and a frozen-clock spec.
+Dismissed with the reason in the pool: B4, B5, C3, D2. **C1 waits**: the `MomentPeek`
+band it tells us to grow was retired with « Moments », and drawings/photos carry no
+kept flag — a shape to decide, not a box to tick.
 
 ## 4. What still needs improvement — consolidated and ranked
 
@@ -320,8 +316,8 @@ blocker at any wave above.
 
 The `bmad/` idea pools are gone with the folder (21 never-built ideas, plus the
 lifestyle brainstorms — in git if ever wanted). What is left:
-`PLAN-mots-and-lifecycle-followups.md` (12 designed features, A5/A6 recommended first).
-All explicitly uncommitted. They are inspiration for a *deliberate* feature decision.
+`PLAN-mots-and-lifecycle-followups.md` — walked 2026-09-25, its table carries every
+verdict; only C1 is still a decision to make. Uncommitted until Marc says otherwise.
 
 ---
 
