@@ -35,11 +35,18 @@ export function ReviewChecklist<T>({
   busy = false,
 }: ReviewChecklistProps<T>) {
   const t = useT()
-  // Which indices are ticked — all preselected, reset whenever the batch changes.
+  // Which indices are ticked — all preselected when a review OPENS or its batch changes
+  // size. NOT on the array's identity: every parent builds `items` inline, so any
+  // re-render above (a refetch landing, a poll tick) minted a new array and this effect
+  // quietly re-ticked what someone had just unticked — CI caught it twice on 2026-09-25
+  // (family-import.spec: Théo unticked, then « Ajouter la sélection (3) »), and a person
+  // unticking a relative while the cercle query refreshed lost the untick the same way.
+  // A pick is theirs until the review closes (ReviewChecklist.test.ts holds it).
   const [picked, setPicked] = useState<Set<number>>(() => new Set(items.map((_, i) => i)))
   useEffect(() => {
     setPicked(new Set(items.map((_, i) => i)))
-  }, [items])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- identity is the bug, see above
+  }, [open, items.length])
 
   const allOn = picked.size === items.length && items.length > 0
 

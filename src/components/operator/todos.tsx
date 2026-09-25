@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useT } from '../../i18n'
@@ -46,6 +46,13 @@ export function TodoTemplatesSection({ help }: { help?: HelpMode }) {
   const [newName, setNewName] = useState('')
 
   const open = (tpl: TodoTemplate) => nav(`/liste-modele/${tpl.id}`)
+  // Warm the editor scene's chunk while its rows are on screen (Board's warmCalendars
+  // precedent): the ✏ then opens on the tap instead of paying the lazy import there. On
+  // CI's cold Vite that first import outran the spec's 15 s budget (2026-09-25); for a
+  // person it is the difference between a scene and a pause.
+  useEffect(() => {
+    void import('../../pages/TodoTemplatePage')
+  }, [])
 
   // A brand-new list is empty by definition, so creating one and staying here would
   // leave you looking at a row with nothing in it: the create hands straight over to
