@@ -25,8 +25,8 @@
 > inspiration for a *deliberate* decision, never a queue to work down. Twelve designed
 > features (A5–D2). **Walked with Marc on 2026-09-25**, each accepted / dismissed /
 > challenged in turn (the table below carries the verdict + the commit): seven accepted
-> and six of those shipped the same day; four dismissed with the reason; C1 waits on a
-> fresh decision because its premise (a `MomentPeek` band to grow) no longer exists.
+> and all seven shipped the same day; four dismissed with the reason. Nothing is left in
+> it to decide — new ideas start a new pool, they do not reopen this one.
 > It deliberately carries **no checkboxes**: a `- [ ]` in this repo means real open
 > work, and these are not that. See `STATE.md` §4-F and its checkbox convention.
 
@@ -45,13 +45,13 @@
 | B3 | ✅ **SHIPPED 2026-09-25** (`dfc3b363`) — Unify the "maintenant" marker into the today list | S | Medium (consistency) | no |
 | B4 | ⛔ **dismissed 2026-09-25** (Marc) — Dusk → "Demain commence" preview | M | Medium | no |
 | B5 | ⛔ **dismissed 2026-09-25** — polish with a reverted precedent, no on-device validation | S | Low (polish) | no |
-| C1 | ✅ accepted 2026-09-25, **NOT STARTED — premise stale**: no `MomentPeek` band exists any more (« Moments » was retired), drawings/photos carry no kept flag. Needs a new shape decision before code | M–L | High (gives `saved_at` a home) | yes (kept flag) |
+| C1 | ✅ **SHIPPED 2026-09-25** (`ab94fc74`) — « Souvenirs » keepsake shelf, as a BAND CARD (Marc: « put the widget back »); `saved_at` on drawings + photos (0140) with a keep pin on the frame and in the gallery | M–L | High (gives `saved_at` a home) | 0140 |
 | C2 | ✅ **SHIPPED 2026-09-25** (`f91ac410`) — "Pour toi" face digest | S–M | High (personal glance) | no |
 | C3 | ⛔ **dismissed 2026-09-25** — its content was B4; the screensaver already owns the night | M | Medium | no (pref) |
 | D2 | ⛔ **dismissed 2026-09-25** — the dot stays boolean; the caveat below stands | S | Low (see caveat) | no |
 
-What is left to decide: **C1 only.** Re-read its entry knowing the band it names is gone;
-the honest shape is probably a Notes-side shelf over `saved_at` mots + a new kept flag.
+Nothing left to decide: every accepted item shipped on 2026-09-25 (the table has the
+commits), and the four dismissed ones carry their reason beside the verdict.
 
 ---
 

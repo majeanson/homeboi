@@ -29,7 +29,7 @@
 | --- | --- |
 | **What it is** | A calm household command-center for a cheap always-on wall tablet. Single-page React app + one Cloudflare Worker (static assets + `/api/*`) + D1 + Workers AI + R2. FR-CA first. |
 | **Code** | ~157k lines across 955 `.ts`/`.tsx` files (`src/`, `functions/`, `worker/`) |
-| **Schema** | 139 forward-only migrations (0139 = la confiance derrière chaque dépense) |
+| **Schema** | 140 forward-only migrations (0140 = un dessin, une photo qu'on garde) |
 | **Tests** | 2 452 unit tests in 195 files · 124 real-runtime cases in 19 files (`npm run test:d1`, the Worker in workerd against a real D1) · 157 Playwright spec files |
 | **Deploy** | Push to `main` → CI (typecheck · test · build · bundle budget · **test:d1** · knip) gates `db:migrate:prod` + `wrangler deploy`. E2E is decoupled (`workflow_run`), runs after a green CI, never blocks the ship. |
 | **Second interface** | `/api/mcp` — read-only over the household — of the 12 tools, most proxy a GET handler that already exists, so the caps, the recurrence expansion and the time zone are decided once and inherited. (This row lives HERE, not in §3: docCounts derives that number from the registry, and the claim died the first time §3 rotated.) |
@@ -102,7 +102,7 @@ interchangeable. Read this table before opening any of them.
 | `PARITY.md` | **Playbook** | The feature × dimension matrix + the canonical new-entity checklist. 0 open — Wave D is a `[~]` standing policy. Parts 5–6 are a template: copy, don't tick. |
 | `ACTIONS.md` | **Playbook** | The action × door matrix (action × entry point × undo tier × non-touch). No open items — Part 5 is a template. |
 | `LEAN.md` · `DISCOVERY.md` · `COMPONENTS.md` · `OFFLINE.md` · `DEPLOY.md` | Reference | Consult when touching their concern. |
-| `PLAN-mots-and-lifecycle-followups.md` | ⚪ Idea pool | 12 designed features, walked with Marc 2026-09-25: 7 shipped, 4 dismissed, C1 awaits a shape. |
+| `PLAN-mots-and-lifecycle-followups.md` | ⚪ Idea pool | 12 designed features, walked with Marc 2026-09-25: 7 accepted and shipped, 4 dismissed. Closed. |
 | ~~`bmad/`~~ | **Deleted 2026-09-17** | The planning folder and the archive: brief, PRD, architecture, the idea pools, every finished ledger, and this file's own past. ~10 000 lines of documents about an app that is built. **In git, not in the tree** — `git log --diff-filter=D -- bmad/` finds the deleting commit; `git show <sha>^:bmad/<file>` reads any of it. Code comments still cite its tags (`NFR-CALM-1`, `PRD C5`, `bmad/08 E-36`); they are labels now, not pointers (see CLAUDE.md ▸ Requirement tags). |
 
 **The trap this table used to exist to stop is now fixed at the source.** `PARITY.md` +
@@ -125,10 +125,11 @@ down this time (`0cb0ba1e`, `npm run perf:door`): 15 requests / 305 KB, bandwidt
 **Then the idea pool, presented item by item** (accept / dismiss / challenge): A7 the
 quoted thread (`a89d5f25`), B2 « en cours » + B3 the now-line on the flat list
 (`dfc3b363`), A8 « Sa fête » (`47999974`), C2 « Pour toi » (`f91ac410`), A6
-« Transformer » (`49e5dff0`) — each with a red-then-green guard and a frozen-clock spec.
-Dismissed with the reason in the pool: B4, B5, C3, D2. **C1 waits**: the `MomentPeek`
-band it tells us to grow was retired with « Moments », and drawings/photos carry no
-kept flag — a shape to decide, not a box to tick.
+« Transformer » (`49e5dff0`), and C1 « Souvenirs » (`ab94fc74`, 0140) once Marc said
+« put the widget back » — each with a red-then-green guard and a spec. Dismissed with
+the reason in the pool: B4, B5, C3, D2. **And the night's mail** (07:11): the backup died
+at the ninth of fifteen households on D1's per-invocation request cap — one batch per
+household now, the plan once per run (`391e7ccb`, guard counts the requests).
 
 ## 4. What still needs improvement — consolidated and ranked
 
@@ -316,8 +317,8 @@ blocker at any wave above.
 
 The `bmad/` idea pools are gone with the folder (21 never-built ideas, plus the
 lifestyle brainstorms — in git if ever wanted). What is left:
-`PLAN-mots-and-lifecycle-followups.md` — walked 2026-09-25, its table carries every
-verdict; only C1 is still a decision to make. Uncommitted until Marc says otherwise.
+`PLAN-mots-and-lifecycle-followups.md` — walked 2026-09-25 and CLOSED: its table carries
+every verdict and commit. A new idea starts a new pool; this one is history.
 
 ---
 
