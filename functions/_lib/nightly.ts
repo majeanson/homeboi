@@ -1,5 +1,5 @@
 import type { Env } from './env'
-import { dumpHousehold } from './takeout'
+import { dumpHousehold, planDump, type DumpPlan } from './takeout'
 import { countDemoSandboxes, countStaleDemoSandboxes, sweepExpiredDemoSandboxes } from './demoHousehold'
 import { mailEnabled, sendMail, type Mail } from './mail'
 import { localDayOfWeek } from './ids'
@@ -65,11 +65,15 @@ export interface NightlyDeps {
 
 export function realDeps(env: Env, now: number): NightlyDeps {
   const bucket = env.PHOTOS
+  // The dump plan — which tables, scoped how — once for the whole run, not once per
+  // household (takeout.ts says why: the API-request budget of ONE invocation).
+  let plan: Promise<DumpPlan> | null = null
+  const getPlan = () => (plan ??= planDump(env))
   return {
     listHouseholds: async () => ((await env.DB.prepare('SELECT id FROM households').all<{ id: string }>()).results ?? []).map((r) => r.id),
     backup: async (id, date) => {
       if (!bucket) return
-      const dump = await dumpHousehold(env, id)
+      const dump = await dumpHousehold(env, id, await getPlan())
       await bucket.put(`backup/${id}/${date}.json`, JSON.stringify(dump))
       // Prune beyond the newest KEEP (keys are date-named → lexicographic = chronological).
       const listed = await bucket.list({ prefix: `backup/${id}/` })

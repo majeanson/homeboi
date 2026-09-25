@@ -74,13 +74,71 @@ export interface Takeout {
   media: string[]
 }
 
-export async function dumpHousehold(env: Env, householdId: string): Promise<Takeout> {
+// D1 counts every prepare().all() as one API request, and a Worker invocation gets a
+// fixed budget of them (« Too many API requests by single Worker invocation »). The
+// first shape of this dump spent ~2 requests PER TABLE per household — a PRAGMA to
+// learn the scope, then the SELECT — about 145 for ~72 tables. Fine for one takeout;
+// the nightly cron backs up EVERY household in one invocation, and on 2026-09-25, with
+// fifteen households after signup opened, it died at the ninth (Marc's own among the
+// seven lost) and took the sandbox count and the door counts down with it. So:
+//
+//   · the PLAN — which tables, scoped how — is computed once (`planDump`): sqlite_master,
+//     then ONE batch of PRAGMAs. The cron computes it once per run and hands it to every
+//     household; a takeout computes its own.
+//   · the ROWS come back in one `batch()` per household (chunked at BATCH_MAX, well under
+//     any per-batch cap). A batch is one API request whatever it carries.
+//
+// A batch is atomic, so one statement D1 refuses fails the whole batch. That is the one
+// property the table-at-a-time walk had that a batch does not — « a table the scan
+// can't read must not sink the export » — so the walk stays as the FALLBACK, paying a
+// request per table only on that exception path.
+const BATCH_MAX = 50
+
+export interface DumpPlan {
+  queries: { name: string; sql: string }[]
+  skipped: string[]
+}
+
+async function batched<T>(env: Env, stmts: D1PreparedStatement[]): Promise<D1Result<T>[]> {
+  const out: D1Result<T>[] = []
+  for (let i = 0; i < stmts.length; i += BATCH_MAX) out.push(...(await env.DB.batch<T>(stmts.slice(i, i + BATCH_MAX))))
+  return out
+}
+
+export async function planDump(env: Env): Promise<DumpPlan> {
   const master = await env.DB.prepare(
     "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf%'",
   ).all<{ name: string }>()
+  // Table names come from sqlite_master (our own migrations), but never interpolate
+  // anything that isn't a plain identifier.
+  const names = (master.results ?? [])
+    .map((r) => r.name)
+    .filter((name) => /^[A-Za-z0-9_]+$/.test(name) && !TAKEOUT_EXCLUDE.has(name))
+    .sort((a, b) => a.localeCompare(b))
+  const infos = await batched<{ name: string }>(
+    env,
+    names.map((name) => env.DB.prepare(`PRAGMA table_info(${name})`)),
+  )
+  const queries: DumpPlan['queries'] = []
+  const skipped: string[] = []
+  names.forEach((name, i) => {
+    if (CUSTOM[name]) return queries.push({ name, sql: CUSTOM[name] })
+    const cols = new Set((infos[i]?.results ?? []).map((c) => c.name))
+    if (cols.has('household_id')) return queries.push({ name, sql: `SELECT * FROM ${name} WHERE household_id = ?1` })
+    if (VIA_PARENT[name]) {
+      const { parent, fk } = VIA_PARENT[name]
+      return queries.push({ name, sql: `SELECT * FROM ${name} WHERE ${fk} IN (SELECT id FROM ${parent} WHERE household_id = ?1)` })
+    }
+    skipped.push(name)
+  })
+  return { queries, skipped }
+}
+
+export async function dumpHousehold(env: Env, householdId: string, plan?: DumpPlan): Promise<Takeout> {
+  plan ??= await planDump(env)
 
   const tables: Record<string, Row[]> = {}
-  const skipped: string[] = []
+  const skipped: string[] = [...plan.skipped]
   const media = new Set<string>()
 
   const collectMedia = (table: string, rows: Row[]) => {
@@ -97,42 +155,34 @@ export async function dumpHousehold(env: Env, householdId: string): Promise<Take
     }
   }
 
-  for (const { name } of (master.results ?? []).sort((a, b) => a.name.localeCompare(b.name))) {
-    // Table names come from sqlite_master (our own migrations), but never
-    // interpolate anything that isn't a plain identifier.
-    if (!/^[A-Za-z0-9_]+$/.test(name) || TAKEOUT_EXCLUDE.has(name)) continue
-    try {
-      let rows: Row[]
-      if (CUSTOM[name]) {
-        rows = ((await env.DB.prepare(CUSTOM[name]).bind(householdId).all<Row>()).results ?? [])
-      } else {
-        const info = await env.DB.prepare(`PRAGMA table_info(${name})`).all<{ name: string }>()
-        const cols = new Set((info.results ?? []).map((c) => c.name))
-        if (cols.has('household_id')) {
-          rows = ((await env.DB.prepare(`SELECT * FROM ${name} WHERE household_id = ?1`).bind(householdId).all<Row>()).results ?? [])
-        } else if (VIA_PARENT[name]) {
-          const { parent, fk } = VIA_PARENT[name]
-          rows = ((
-            await env.DB.prepare(`SELECT * FROM ${name} WHERE ${fk} IN (SELECT id FROM ${parent} WHERE household_id = ?1)`)
-              .bind(householdId)
-              .all<Row>()
-          ).results ?? [])
-        } else {
-          skipped.push(name)
-          continue
-        }
+  const HOUSEHOLD_ROW = 'SELECT * FROM households WHERE id = ?1'
+  let household: Row | null = null
+  try {
+    const res = await batched<Row>(env, [
+      ...plan.queries.map((q) => env.DB.prepare(q.sql).bind(householdId)),
+      env.DB.prepare(HOUSEHOLD_ROW).bind(householdId),
+    ])
+    plan.queries.forEach((q, i) => {
+      const rows = res[i]?.results ?? []
+      tables[q.name] = rows
+      collectMedia(q.name, rows)
+    })
+    household = res[plan.queries.length]?.results?.[0] ?? null
+  } catch {
+    // The batch is atomic: one table D1 refuses (an odd PRAGMA, a transient) fails it
+    // whole. Walk the plan a table at a time instead, so THAT table lands in `skipped`
+    // — visible, never silent — and the rest still export.
+    for (const q of plan.queries) {
+      try {
+        const rows = (await env.DB.prepare(q.sql).bind(householdId).all<Row>()).results ?? []
+        tables[q.name] = rows
+        collectMedia(q.name, rows)
+      } catch {
+        skipped.push(q.name)
       }
-      tables[name] = rows
-      collectMedia(name, rows)
-    } catch {
-      // A table the scan can't read (odd PRAGMA, transient) must not sink the
-      // whole export — record it and keep going.
-      skipped.push(name)
     }
+    household = ((await env.DB.prepare(HOUSEHOLD_ROW).bind(householdId).all<Row>()).results ?? [])[0] ?? null
   }
-
-  const household =
-    ((await env.DB.prepare('SELECT * FROM households WHERE id = ?1').bind(householdId).all<Row>()).results ?? [])[0] ?? null
 
   return {
     app: 'Babillard',
