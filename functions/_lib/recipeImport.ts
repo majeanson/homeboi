@@ -686,8 +686,34 @@ const NOTE_HEADING = /^(?:notes?|remarques?|conseils?|astuces?|tips?|variantes?)
 // "Préparation : 20 min", "Cuisson 1 h 30", "Total time: 45 minutes" — the time
 // block most printed recipes start with. Must be checked BEFORE the step
 // heading ("Préparation" alone flips the mode; with a duration it's a time).
+// The value must START with a number (or « environ / about »): « Bake 60 min » is a
+// time; « Bake for 1 hour. » is a STEP, and adding « bake » to the labels swallowed it
+// once (the EN fixture caught it). No comma either — a clause is a step.
 const TIME_LINE =
-  /^(pr[ée]p(?:aration)?(?:\s*time)?|cuisson|cook(?:ing)?(?:\s*time)?|temps\s+total|total(?:\s*time)?)\s*:?\s+(.{1,30})$/i
+  /^(pr[ée]p(?:aration)?(?:\s*time)?|cuisson|cook(?:ing)?(?:\s*time)?|bak(?:e|ing)(?:\s*time)?|au\s+four|temps\s+total|total(?:\s*time)?)\s*:?\s+((?:environ|about|~)?\s*\d[^,]{0,28})$/i
+
+// A card's META STRIP is several facts on one printed line; the separators vary with the
+// typesetting (« · », « • », « | », a spaced dash, a breadcrumb « › »).
+const STRIP_SEP = /\s*[•·|]\s*|\s+[–—-]\s+|\s+[›»]\s+/
+const splitStrip = (l: string): string[] => l.split(STRIP_SEP).map((s) => s.trim()).filter(Boolean)
+const isMetaFrag = (f: string): boolean => TIME_LINE.test(f) || SERVINGS_LINE.test(f)
+// A website's NAV BAR or breadcrumb transcribed as one line (« RECETTES.QC • Menu •
+// Recherche • Connexion », « Accueil › Plats › Pâtes »): three or more short wordy
+// fragments. Never a title, never a step.
+const isNavStrip = (frags: string[]): boolean => frags.length >= 3 && frags.every((f) => f.length <= 20 && !/\d/.test(f))
+// A star rating (« ★★★★☆ 128 avis ») — stars with, at most, a count and a word.
+const isRating = (l: string): boolean => /[★☆✩✭✮⭐]/.test(l) && /^[★☆✩✭✮⭐\s\d.,/()]+(?:avis|reviews?|notes?|votes?|[ée]valuations?)?\s*$/i.test(l)
+// Where a website's chrome resumes AFTER the recipe body — everything from here on is
+// other recipes, ads and buttons. Only honoured once the body has started; before it,
+// the same line is merely skipped (a share bar above a recipe must not eat the recipe).
+const NOISE_START =
+  /^(?:recettes?\s+(?:populaires?|similaires?|sugg[ée]r[ée]es?|du\s+moment)|popular\s+recipes?|related\s+recipes?|more\s+recipes?|vous\s+aimerez|you\s+(?:may|might)\s+also\s+like|[àa]\s+lire\s+aussi|voir\s+aussi|see\s+also|publicit[ée]s?|advertisement|sponsored|commentaires?\b|comments?\b|abonnez|newsletter|s['’]abonner|subscribe|tous\s+droits|all\s+rights|©)/i
+// A bare part label inside the ingredient or method block (« Sauce », « Garniture »,
+// « Poisson »): one to three capitalised words, no digits, no punctuation.
+const isBareLabel = (l: string): boolean => /^[A-ZÀ-ÖŒ][^\d.!?:;,()]{0,30}$/.test(l) && l.split(/\s+/).length <= 3
+// …and the part names common enough to trust without a blank line above them.
+const PART_WORD =
+  /^(?:sauces?|garnitures?|p[âa]tes?|cro[ûu]tes?|gla[çc]age|farce|marinade|vinaigrette|topping|filling|crust|dough|frosting|glaze|dressing|assemblage|montage|finition|service|d[ée]coration|base|streusel|coulis|cr[èe]me)\b/i
 
 // Free-text duration → minutes: "1 h 30", "20 min", "45 minutes", "1 heure".
 export function textToMinutes(s: string): number | null {
@@ -703,7 +729,9 @@ export function textToMinutes(s: string): number | null {
 // Second branch ("Donne 24 biscuits") also captures the unit word so the card
 // can say "24 biscuits" instead of "24 portions".
 const SERVINGS_LINE =
-  /(?:^|\b)(\d{1,2})\s*(?:[àa]\s*\d{1,2}\s*)?(?:portions?|servings?|personnes?|convives|parts)\b|(?:donne|serves?|rendement|yield)\s*:?\s*(\d{1,2})\b\s*([a-zà-öœ]{3,24})?/i
+  /(?:^|\b)(\d{1,2})\s*(?:[àa]\s*\d{1,2}\s*)?(?:portions?|servings?|personnes?|convives|parts)\b|(?:donne|serves?|rendement|yield)\s*:?\s*(\d{1,2})\b\s*([a-zà-öœ]{3,24})?|^(?:portions?|servings?|personnes?|pour)\s*:\s*(\d{1,2})\b/i
+// The number, whichever branch matched: « 4 portions », « Donne 4 », « Portions : 4 ».
+const servingsOf = (sv: RegExpMatchArray): number => +(sv[1] ?? sv[2] ?? sv[4])
 
 // An ingredient-looking line: bullet or quantity-leading, short. Used only by
 // the no-headings fallback.
@@ -766,10 +794,13 @@ export function parsePastedRecipe(text: string): PastedRecipe {
   let sawIngHeading = false
   let sawStepHeading = false
 
-  for (const line of lines) {
+  const nextNonEmpty = (from: number): string => lines.slice(from + 1).find((l) => l !== '') ?? ''
+  for (let li = 0; li < lines.length; li++) {
+    const line = lines[li]
     if (!line) continue
     const justAfterTitle = afterTitle
     afterTitle = false
+    const prevBlank = li > 0 && lines[li - 1] === ''
 
     // Meta lines can appear anywhere; consume them when they stand alone. True when
     // the line was one and has been read.
@@ -779,7 +810,7 @@ export function parsePastedRecipe(text: string): PastedRecipe {
         const mins = textToMinutes(tm[2])
         if (mins) {
           const kind = tm[1].toLowerCase()
-          if (/^cuisson|^cook/.test(kind)) times.cook ??= mins
+          if (/^cuisson|^cook|^bak|^au\s+four/.test(kind)) times.cook ??= mins
           else if (/total/.test(kind)) times.total ??= mins
           else times.prep ??= mins
           return true
@@ -788,7 +819,7 @@ export function parsePastedRecipe(text: string): PastedRecipe {
       if (servings == null) {
         const sv = l.match(SERVINGS_LINE)
         if (sv) {
-          servings = clampServings(+(sv[1] ?? sv[2]))
+          servings = clampServings(servingsOf(sv))
           // "Donne 24 biscuits" — keep the unit word ("biscuits") when it isn't
           // a plain portion word; the UI then labels servings with it.
           const unit = sv[3]?.trim()
@@ -805,12 +836,23 @@ export function parsePastedRecipe(text: string): PastedRecipe {
     // that way. Read each fragment as its own meta line, but only when EVERY fragment
     // is one: a step that merely contains a « • » is not a meta strip. Unsplit, the
     // strip lost both times and, first on the page, became the title (2026-09-24).
-    const frags = line.split(/\s+[•·|]\s+/).map((s) => s.trim()).filter(Boolean)
-    if (frags.length > 1 && frags.every((f) => TIME_LINE.test(f) || SERVINGS_LINE.test(f))) {
-      for (const f of frags) consumeMeta(f)
+    const frags = splitStrip(line)
+    if (frags.length > 1) {
+      // Two or more meta facts make it a strip; the rest of the line (a star rating,
+      // a « | » separator's leftovers) is dropped with it, not allowed to block it.
+      const meta = frags.filter(isMetaFrag)
+      if (meta.length >= 2) {
+        for (const f of meta) consumeMeta(f)
+        continue
+      }
+      if (isNavStrip(frags)) continue
+    }
+    if (isRating(line)) continue
+    if (consumeMeta(line)) continue
+    if (NOISE_START.test(line)) {
+      if (mode !== 'pre') break // the recipe is over; what follows is the site
       continue
     }
-    if (consumeMeta(line)) continue
 
     const ingH = line.match(ING_HEADING)
     if (ingH) {
@@ -850,8 +892,14 @@ export function parsePastedRecipe(text: string): PastedRecipe {
       // Further preamble (description, byline) is dropped — it isn't the recipe.
       continue
     }
+    // A bare part label (« Poisson », « Sauce », « Garniture ») heads a named part when
+    // the layout says so — a blank line above it, or a part name common enough to
+    // trust — and an ingredient-looking line follows. Conservative on purpose: « Sel »
+    // between two quantity lines is an ingredient, not a part.
+    const bareLabel = stripBullet(line)
+    const partLabel = isBareLabel(bareLabel) && (prevBlank || PART_WORD.test(bareLabel)) ? bareLabel : null
     if (mode === 'ing') {
-      const sec = inlineSectionTitle(line)
+      const sec = inlineSectionTitle(line) ?? (partLabel && ING_LIKE.test(nextNonEmpty(li)) ? partLabel : null)
       if (sec) {
         ings.push(makeSectionHeading(sec))
         continue
@@ -861,7 +909,7 @@ export function parsePastedRecipe(text: string): PastedRecipe {
       continue
     }
     if (mode === 'steps') {
-      const sec = inlineSectionTitle(line)
+      const sec = inlineSectionTitle(line) ?? (partLabel && nextNonEmpty(li).length > 20 ? partLabel : null)
       stepLines.push(sec ? makeSectionHeading(sec) : line)
       continue
     }
@@ -879,9 +927,13 @@ export function parsePastedRecipe(text: string): PastedRecipe {
         continue // the title (one line, or two when wrapped) was already captured above
       }
       if (TIME_LINE.test(line) || (line.length <= 40 && SERVINGS_LINE.test(line))) continue // meta, already read
-      // …and the one-line meta strip (see the pass above), already read fragment by fragment.
-      const metaFrags = line.split(/\s+[•·|]\s+/).map((s) => s.trim()).filter(Boolean)
-      if (metaFrags.length > 1 && metaFrags.every((f) => TIME_LINE.test(f) || SERVINGS_LINE.test(f))) continue
+      // …and the one-line meta strip (see the pass above), already read fragment by
+      // fragment; a nav bar and a star rating are not recipe either.
+      const metaFrags = splitStrip(line)
+      if (metaFrags.length > 1 && (metaFrags.filter(isMetaFrag).length >= 2 || isNavStrip(metaFrags))) continue
+      if (isRating(line)) continue
+      // The site's chrome after the body: the recipe is over.
+      if (NOISE_START.test(line) && stepLines.length) break
       // A WRAPPED line of prose is a continuation, not an ingredient — even when the
       // wrap happens to fall right before a quantity (« Verser » / « 15 ml (1 c. à
       // soupe) de miel et 7,5 ml (1/2 c. à » / « soupe) de sauce soya… »). The tell is

@@ -128,7 +128,10 @@ export async function draftFromText(env: Env, raw: string, lang: Lang, aiOn: boo
     if (r.ingredients.length || r.steps.length) {
       const steps = refineSteps(r.steps)
       return draft({
-        title: r.title ?? heuristic.title,
+        // The transcript's own title first — it is the printed one. The model's is a
+        // fallback: asked to organise, it titled an English recipe « Recette de
+        // crevettes » (corpus, 2026-09-24).
+        title: heuristic.title ?? r.title,
         ingredients: r.ingredients,
         steps,
         servings: heuristic.servings,

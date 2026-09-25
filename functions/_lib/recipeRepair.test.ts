@@ -102,6 +102,11 @@ describe('2 · the footer', () => {
     expect(metaLine('Se conserve 1 semaine au frigo.').meta).toBe(true)
     expect(metaLine('Keeps for 3 days in the fridge.').meta).toBe(true)
   })
+  it('a footer of several sentences is meta only when every sentence is', () => {
+    expect(metaLine('Donne 6 portions. Se congèle très bien.')).toEqual({ meta: true, servings: 6 })
+    expect(metaLine('Serves 4. Keeps 2 days in the fridge.')).toEqual({ meta: true, servings: 4 })
+    expect(metaLine('Donne 6 portions. Servir chaud avec du pain.').meta).toBe(false)
+  })
   it('a real step that mentions portions or the fridge is NOT meta', () => {
     expect(metaLine('Diviser en 4 portions et servir.').meta).toBe(false)
     expect(metaLine('Laisser reposer 30 minutes au réfrigérateur avant de rouler.').meta).toBe(false)

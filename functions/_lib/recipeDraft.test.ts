@@ -132,6 +132,63 @@ describe('draftFromText — the model runs only when the plain read is not good 
   })
 })
 
+// Transcript shapes from the eight-card corpus run against production (2026-09-24),
+// each one a miss that day. All deterministic — AI off.
+describe('draftFromText — the corpus', () => {
+  it('a meta strip with a dash, no colons and « Bake » (the English card)', async () => {
+    const d = await draftFromText(noAi, `Banana Bread\nServes 8 – Prep 15 min – Bake 60 min\n\nIngredients\n3 ripe bananas, mashed\n1/3 cup melted butter\n\nDirections\n1. Preheat the oven to 350 °F (175 °C).\n2. Bake for 60 minutes. Cool on a rack.`, 'en', false)
+    expect(d.title).toBe('Banana Bread')
+    expect(d.servings).toBe(8)
+    expect(d.times).toEqual({ prep: 15, cook: 60, total: null })
+    expect(d.steps).toEqual(['Preheat the oven to 350 °F (175 °C).', 'Bake for 60 minutes. Cool on a rack.'])
+  })
+
+  it('a website screenshot: nav bar, rating strip, « Portions : 4 », sidebar after the body', async () => {
+    const t = `RECETTES.QC • Menu • Recherche • Connexion
+Accueil › Plats principaux › Pâtes
+Spaghetti sauce rosée aux crevettes
+★★★★☆ 128 avis | Préparation : 10 min | Cuisson : 15 min | Portions : 4
+
+Ingrédients
+340 g de spaghetti
+450 g de crevettes décortiquées
+125 ml (1/2 tasse) de crème 15 %
+
+Préparation
+1. Cuire les pâtes selon les indications de l'emballage.
+2. Mélanger avec les pâtes et servir.
+
+Recettes populaires
+Poulet général Tao
+Pâté chinois
+Publicité
+Épicerie en ligne dès 4,99 $ de livraison`
+    const d = await draftFromText(noAi, t, 'fr', false)
+    expect(d.title).toBe('Spaghetti sauce rosée aux crevettes')
+    expect(d.servings).toBe(4)
+    expect(d.times).toEqual({ prep: 10, cook: 15, total: null })
+    expect(d.ingredients).toEqual(['340 g de spaghetti', '450 g de crevettes décortiquées', '125 ml (1/2 tasse) de crème 15 %'])
+    expect(d.steps).toEqual(["Cuire les pâtes selon les indications de l'emballage.", 'Mélanger avec les pâtes et servir.'])
+  })
+
+  it('a footer of two meta sentences after numbered steps is not a step', async () => {
+    const d = await draftFromText(noAi, `SOUPE AUX LENTILLES\n\nINGRÉDIENTS\n250 ml (1 tasse) de lentilles vertes\n1 oignon haché\n\nPRÉPARATION\n1. Faire revenir l'oignon dans l'huile 5 minutes.\n2. Rectifier l'assaisonnement et servir.\n\nDonne 6 portions. Se congèle très bien.`, 'fr', false)
+    expect(d.servings).toBe(6)
+    expect(d.steps).toEqual(["Faire revenir l'oignon dans l'huile 5 minutes.", "Rectifier l'assaisonnement et servir."])
+  })
+
+  it('bare part labels become sections when the layout says so (blank line above, or a known part word)', async () => {
+    const d = await draftFromText(noAi, `Tacos au poisson\n\nIngrédients\n\nPoisson\n450 g de filets de tilapia\n15 ml (1 c. à soupe) de paprika\nSauce\n125 ml (1/2 tasse) de yogourt grec\n1 lime (jus)\n\nGarniture\n8 petites tortillas\n\nPréparation\nSaupoudrer le poisson de paprika et le cuire 3 minutes de chaque côté.\nGarnir de poisson et de sauce.\n\nPour 4 personnes`, 'fr', false)
+    expect(d.ingredients).toEqual(['## Poisson', '450 g de filets de tilapia', '15 ml (1 c. à soupe) de paprika', '## Sauce', '125 ml (1/2 tasse) de yogourt grec', '1 lime (jus)', '## Garniture', '8 petites tortillas'])
+    expect(d.servings).toBe(4)
+  })
+
+  it('« Sel » between two quantity lines stays an ingredient — never a section', async () => {
+    const d = await draftFromText(noAi, `Omelette\n\nIngrédients\n3 oeufs\nSel\n15 ml de beurre\n\nPréparation\nBattre les oeufs avec le sel.\nCuire dans le beurre.`, 'fr', false)
+    expect(d.ingredients).toEqual(['3 oeufs', 'Sel', '15 ml de beurre'])
+  })
+})
+
 describe('draftFromText — a reply that is JSON, or its broken remains', () => {
   // What the vision model handed back when max_tokens cut its JSON mid-array: no
   // closing brace, so the old prose fallback read every line quotes and all.

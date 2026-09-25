@@ -158,15 +158,32 @@ const YIELD_LINE = new RegExp(
 const KEEPING_LINE =
   /^(?:(?:cette|ces|la|le|les)\s+\w+\s+)?(?:se\s+(?:conserve|garde)|peut\s+se\s+conserver|conserver|se\s+cong[èe]le|keeps?\b|will\s+keep|store\b|can\s+be\s+(?:stored|kept|frozen)|refrigerate\b|freeze\b)/i
 
-export function metaLine(line: string): { meta: boolean; servings: number | null } {
-  const s = line.trim()
-  if (!s || s.startsWith('## ')) return { meta: false, servings: null }
+function oneMetaSentence(s: string): { meta: boolean; servings: number | null } {
   const y = s.match(YIELD_LINE)
   if (y && /\d/.test(s) && new RegExp(PORTION, 'i').test(s)) return { meta: true, servings: parseInt(y[1] ?? y[2], 10) || null }
   if (y && /^(?:donne|rendement|yield|serves?|makes)\b/i.test(s)) return { meta: true, servings: parseInt(y[1] ?? y[2], 10) || null }
-  if (KEEPING_LINE.test(s) && /\b(?:jours?|days?|semaines?|weeks?|mois|months?|heures?|hours?|r[ée]frig[ée]rateur|cong[ée]lateur|frigo|fridge|freezer|refrigerator)\b/i.test(s))
-    return { meta: true, servings: null }
+  if (KEEPING_LINE.test(s)) {
+    if (/\b(?:jours?|days?|semaines?|weeks?|mois|months?|heures?|hours?|r[ée]frig[ée]rateur|cong[ée]lateur|frigo|fridge|freezer|refrigerator)\b/i.test(s))
+      return { meta: true, servings: null }
+    // « Se congèle très bien. » / « Freezes well. » — the verb alone says it, when short.
+    if (s.length <= 60 && /^(?:se\s+(?:conserve|garde|cong[èe]le)|peut\s+se\s+conserver|keeps?\b|will\s+keep|freezes?\s+well)/i.test(s))
+      return { meta: true, servings: null }
+  }
   return { meta: false, servings: null }
+}
+
+export function metaLine(line: string): { meta: boolean; servings: number | null } {
+  const s = line.trim()
+  if (!s || s.startsWith('## ')) return { meta: false, servings: null }
+  // « Donne 6 portions. Se congèle très bien. » — a footer of several sentences is meta
+  // when EVERY sentence is; one real instruction among them keeps the line.
+  const sentences = s.split(/(?<=[.!?])\s+(?=[A-ZÀ-ÖŒ«"(\d])/).map((t) => t.trim()).filter(Boolean)
+  if (sentences.length > 1) {
+    const parts = sentences.map(oneMetaSentence)
+    if (parts.every((p) => p.meta)) return { meta: true, servings: parts.find((p) => p.servings != null)?.servings ?? null }
+    return { meta: false, servings: null }
+  }
+  return oneMetaSentence(s)
 }
 
 // ── 3. Method vs list ────────────────────────────────────────────────────────────
