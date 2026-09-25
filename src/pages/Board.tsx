@@ -140,7 +140,7 @@ import { useEscapeKey } from '../lib/sceneNav'
 import { BOARD_KEY, TODOS_KEY, WEATHER_KEY, MONTH_KEY, CHORES_KEY, HOME_PROJECTS_KEY, CARNETS_KEY, ROUTINES_KEY } from '../lib/queryKeys'
 import { useMots, waitingMots } from '../lib/mots'
 import { pickMyNext, pickMyRoutine } from '../lib/pourToi'
-import { tintInk } from '../lib/routineTod'
+import { tintInk } from '../lib/colors'
 import { useChoreRemovals, useRemoveMealFromPlan } from '../components/detail/EntityRemovals'
 import { TodoSection } from '../components/todos/TodoSection'
 import { type TodosData, todosKey, todosPath, splitTodos } from '../lib/todos'
@@ -1793,7 +1793,7 @@ export function Board() {
       {/* « Pour toi » (C2): one quiet line in the face's tint. Plain text — a glance, not a
           door; each thing it names is already one tap away on the board below. */}
       {me && pourToi.length > 0 && (
-        <p className="pourtoi" style={{ '--tint': tintInk(me.colour, null) } as CSSProperties}>
+        <p className="pourtoi" style={{ '--tint': me.colour, '--tint-ink': tintInk(me.colour) } as CSSProperties}>
           <span className="pourtoi__name">{greetName(me.display_name)}</span> — {pourToi.join(' · ')}
         </p>
       )}

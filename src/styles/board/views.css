@@ -28,8 +28,11 @@
 }
 /* « Pour toi » (C2, lib/pourToi): ONE line in the picked face's tint under the controls
    row — a mot waiting (presence, never a count), their next rendez-vous, the routine of
-   the moment. Absent when nothing is pending. The name reads in `--tint`, which Board
-   sets through tintInk() so a pale member colour still clears AA on cream. */
+   the moment. Absent when nothing is pending. The bar is the member's colour (`--tint`);
+   the NAME reads in `--tint-ink` — lib/colors tintInk(), the colour mixed toward ink so a
+   pale or a deep member colour both clear AA on cream. (Seen on production the first
+   day: the name painted near-white — routineTod's tintInk answers the ink to put ON a
+   tint, not a tint to read on cream. Two functions, one name; this is the other one.) */
 .pourtoi {
   margin: -6px 0 12px;
   padding-left: 0.6rem;
@@ -39,7 +42,7 @@
   line-height: 1.35;
 }
 .pourtoi__name {
-  color: var(--tint);
+  color: var(--tint-ink);
   font-weight: 700;
 }
 .weather-tip {
