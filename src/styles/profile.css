@@ -288,3 +288,15 @@
 }
 /* « Me le rappeler » is no longer a top-level button — it is a preset chip inside
    « Plus tard » (ScheduleFields extraPresets), so it needs no rule of its own. */
+
+/* « Transformer » (A6, MotsCard): the capture form inside a mot's modal, with its one-line
+   hint above and the « retirer / garder le mot » pair once a route has landed. */
+.mot-transform {
+  display: grid;
+  gap: 0.7rem;
+}
+.mot-transform__hint {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}

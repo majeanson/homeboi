@@ -1860,6 +1860,11 @@ export const EN: typeof FR = {
     later: 'Later',
     when: 'When',
     reply: 'Reply',
+    transform: 'Turn into…',
+    transformTitle: 'Turn this message into…',
+    transformHint: 'Its words become an appointment, a chore, a list item, a note… The message stays until you remove it.',
+    transformRemove: 'Remove the message',
+    transformKeep: 'Keep the message',
     inReplyTo: 'In reply',
     replyTo: (name: string) => `Reply to ${name}`,
     // Schedule presets (“Later” quick chips) + self-mot.

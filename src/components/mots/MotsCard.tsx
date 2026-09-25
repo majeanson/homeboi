@@ -6,6 +6,7 @@ import { useProfile } from '../../lib/profile'
 import { useWrite } from '../../lib/write'
 import { useConfirm } from '../../lib/confirm'
 import { isGuest } from '../../lib/device'
+import { useAi } from '../../lib/ai'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { type Member } from '../../lib/members'
 import { MEMBERS_KEY, MOTS_KEY, BOARD_KEY } from '../../lib/queryKeys'
@@ -20,6 +21,8 @@ import { useReportEmpty } from '../../lib/useReportEmpty'
 import { Modal } from '../Modal'
 import { MotComposer } from './MotComposer'
 import { RescheduleBody } from './RescheduleBody'
+import { CaptureForm } from '../CaptureForm'
+import { Cluster } from '../Layout'
 import { useEntityDetail } from '../detail/DetailProvider'
 import { buildMot, type DetailCtx } from '../detail/adapters'
 
@@ -48,6 +51,13 @@ export function MotsCard({ help }: { help?: HelpMode } = {}) {
   const [replyTo, setReplyTo] = useState<Mot | null>(null)
   // The reschedule sheet (a Modal) — set to the sent mot whose « Plus tard » is being moved.
   const [reschedule, setReschedule] = useState<Mot | null>(null)
+  // « Transformer » (A6) — the mot whose words are going through the capture spine, and
+  // whether a route has landed (which is when « retirer / garder le mot » becomes a question).
+  const [transform, setTransform] = useState<Mot | null>(null)
+  const [transformed, setTransformed] = useState(false)
+  // AI unset / switched off → the action hides, as the ＋ sheet's own classify does; the
+  // spine would only degrade the words into a note, which a mot already is.
+  const ai = useAi()
 
   const mots = useMots()
   // The RAW list feeds the sender outbox only — it must show a still-scheduled mot (which the
@@ -135,6 +145,16 @@ export function MotsCard({ help }: { help?: HelpMode } = {}) {
         onDelete: () => remove(m),
         // Reply only when there's a real sender to answer (a Maisonnée-from-noone mot has none).
         onReply: m.author_member_id ? () => setReplyTo(m) : undefined,
+        // Transform only what has WORDS to route (a voice / drawing / photo mot has none —
+        // a transcript is the machine's guess, not something to file), and only when the
+        // spine can classify. Never for a guest: it writes.
+        onTransform:
+          ai.available && !isGuest() && m.text.trim()
+            ? () => {
+                setTransformed(false)
+                setTransform(m)
+              }
+            : undefined,
       }),
     )
     // Opening IS the stamp — first open wins server-side (idempotent), the card re-renders
@@ -231,6 +251,38 @@ export function MotsCard({ help }: { help?: HelpMode } = {}) {
       {/* Reply composer — opened from a mot's peek; recipient locked to the original sender. */}
       <Modal open={!!replyTo} onClose={() => setReplyTo(null)} title={fn.reply} className="cnote-memo">
         {replyTo && <MotComposer replyTo={replyTo} onDone={() => setReplyTo(null)} />}
+      </Modal>
+      {/* « Transformer » (A6) — a text mot goes through the capture spine: its words become a
+          rendez-vous, a corvée, a list item, a « manque »… The form is the ＋ sheet's own
+          (CaptureForm), so the routed line, « Non, plutôt… » and the calm undo are the ones
+          people already know — and the route is shown before anything else happens. The mot
+          STAYS until you retire it: a transform never deletes on its own, and retiring it
+          rides the same undo toast as any delete. Never automatic; one explicit tap. */}
+      <Modal open={!!transform} onClose={() => setTransform(null)} title={fn.transformTitle} className="cnote-memo">
+        {transform && (
+          <div className="mot-transform">
+            <p className="mot-transform__hint mono">{fn.transformHint}</p>
+            <CaptureForm seed={transform.text} onRouted={() => setTransformed(true)} />
+            {transformed && (
+              <Cluster>
+                <button
+                  type="button"
+                  className="btn btn--sm"
+                  onClick={() => {
+                    const m = transform
+                    setTransform(null)
+                    remove(m)
+                  }}
+                >
+                  {fn.transformRemove}
+                </button>
+                <button type="button" className="btn btn--sm btn--ghost" onClick={() => setTransform(null)}>
+                  {fn.transformKeep}
+                </button>
+              </Cluster>
+            )}
+          </div>
+        )}
       </Modal>
       {/* Reschedule sheet — move a sent, still-scheduled mot (or send it now). */}
       <Modal open={!!reschedule} onClose={() => setReschedule(null)} title={fn.rescheduleTitle} className="cnote-memo">

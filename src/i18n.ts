@@ -2101,6 +2101,12 @@ export const FR = {
     later: 'Plus tard',
     when: 'Quand',
     reply: 'Répondre',
+    // « Transformer » (A6): a text mot through the capture spine — the ＋ sheet's own form.
+    transform: 'Transformer',
+    transformTitle: 'Transformer ce mot',
+    transformHint: 'Ses mots deviennent un rendez-vous, une corvée, un item de liste, une note… Le mot reste tant que tu ne le retires pas.',
+    transformRemove: 'Retirer le mot',
+    transformKeep: 'Garder le mot',
     inReplyTo: 'En réponse',
     replyTo: (name: string) => `Réponse à ${name}`,
     // Schedule presets (« Plus tard » quick chips) + self-mot.

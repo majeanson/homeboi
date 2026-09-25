@@ -290,6 +290,9 @@ export function buildMot(
     onToggleSave?: () => void
     onDelete?: () => void
     onReply?: () => void
+    // « Transformer » (A6): route this mot's words through the capture spine. The card
+    // decides when to offer it (a TEXT mot, AI usable, not a guest).
+    onTransform?: () => void
     // Sender-outbox extras: reschedule a « Plus tard » that hasn't landed, and show its
     // programmed time as the « when » line instead of the created date.
     onReschedule?: () => void
@@ -321,6 +324,8 @@ export function buildMot(
   // was the same failure class as the arrow-icon fix (78590d2), just labeled well
   // enough it never got reported.
   if (opts?.onReply) actions.push({ key: 'reply', label: fn.reply, icon: 'arrow-bend-up-left-bold', primary: true, run: opts.onReply })
+  // The sparkle is the capture spine's own mark (the ＋ sheet's « Classer », the AI ask).
+  if (opts?.onTransform) actions.push({ key: 'transform', label: fn.transform, icon: 'sparkle-bold', run: opts.onTransform })
   if (opts?.onReschedule)
     actions.push({ key: 'reschedule', label: fn.reschedule, icon: 'clock-bold', run: opts.onReschedule })
   if (opts?.onToggleSave)
