@@ -196,6 +196,68 @@ function visibleBottom(el?: HTMLElement | null): number {
   return bottom + shift - (kbInset > KB_THRESHOLD ? accessoryPad() : 0)
 }
 
+// Top of the area the user can SEE, the twin of visibleBottom: iOS pans the layout
+// viewport up under the keyboard (vv.offsetTop > 0), so a field pinned to the layout's
+// top edge can sit in the band scrolled out of view. Same glue correction.
+function visibleTop(el?: HTMLElement | null): number {
+  const vv = window.visualViewport
+  return (vv ? vv.offsetTop : 0) + (el ? fixedShellShift(el) : 0)
+}
+
+// Where the caret's LINE sits inside a <textarea>, as a client-rect band. The Selection
+// API cannot see inside a form control, so the text up to the caret is laid out again in
+// a hidden mirror with the same font, width and padding, and a marker's position is the
+// caret's. Needed for a TALL textarea only — RecipeReadReview's growing lines, a long
+// paste box — where « the caret stays within the control » no longer means the caret is
+// within the visible band (2026-09-24). One mirror for the page, restyled per call.
+let mirror: HTMLDivElement | null = null
+function caretBandInTextarea(ta: HTMLTextAreaElement): { top: number; bottom: number } | null {
+  const cs = getComputedStyle(ta)
+  if (!mirror) {
+    mirror = document.createElement('div')
+    mirror.setAttribute('aria-hidden', 'true')
+    mirror.style.cssText = 'position:absolute;top:0;left:-99999px;visibility:hidden;pointer-events:none;overflow:hidden;'
+    document.body.appendChild(mirror)
+  }
+  const m = mirror.style
+  for (const p of [
+    'fontFamily',
+    'fontSize',
+    'fontWeight',
+    'fontStyle',
+    'letterSpacing',
+    'lineHeight',
+    'textTransform',
+    'textIndent',
+    'paddingTop',
+    'paddingBottom',
+    'paddingLeft',
+    'paddingRight',
+    'borderTopWidth',
+    'borderBottomWidth',
+    'borderLeftWidth',
+    'borderRightWidth',
+    'borderStyle',
+    'boxSizing',
+    'tabSize',
+  ] as const)
+    m[p] = cs[p]
+  const rect = ta.getBoundingClientRect()
+  m.width = `${rect.width}px`
+  m.whiteSpace = 'pre-wrap'
+  m.wordBreak = 'break-word'
+  m.overflowWrap = 'break-word'
+  const at = ta.selectionStart ?? ta.value.length
+  mirror.textContent = ta.value.slice(0, at)
+  const mark = document.createElement('span')
+  mark.textContent = ta.value.slice(at, at + 1) || '​'
+  mirror.appendChild(mark)
+  const lh = mark.offsetHeight || parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.3
+  if (!lh) return null
+  const top = rect.top + (parseFloat(cs.borderTopWidth) || 0) + mark.offsetTop - ta.scrollTop
+  return { top, bottom: top + lh }
+}
+
 // Keep the CARET visible inside a scrolling contentEditable.
 //
 // The global focus-pin below scrolls the focused ELEMENT into view, which is right for
@@ -296,12 +358,12 @@ function scrollersUp(from: HTMLElement | null): HTMLElement[] {
   return out
 }
 
-// Scroll `from`'s ANCESTORS down by dy px, nearest scroller first, spilling the
-// remainder outward until absorbed. Never scrolls `from` itself — for a
-// <textarea> that would scroll its own text away from the caret.
+// Scroll `from`'s ANCESTORS by dy px (down when positive, up when negative), nearest
+// scroller first, spilling the remainder outward until absorbed. Never scrolls `from`
+// itself — for a <textarea> that would scroll its own text away from the caret.
 function nudgeBy(from: HTMLElement, dy: number): void {
   for (const sc of scrollersUp(from.parentElement)) {
-    if (dy <= 0.5) return
+    if (Math.abs(dy) <= 0.5) return
     const before = sc.scrollTop
     sc.scrollTop += dy
     dy -= sc.scrollTop - before
@@ -321,12 +383,22 @@ function followCaret(el: HTMLElement): void {
     if (scroller) caretIntoView(scroller)
     return
   }
-  // <input>/<textarea>: the Selection API can't see the caret inside a form
-  // control, but every one of ours is a few rems tall and scrolls internally —
-  // the browser keeps the caret visible WITHIN the control, so revealing the
-  // control's bottom edge is enough.
-  const over = el.getBoundingClientRect().bottom - (visibleBottom(el) - 24)
-  if (over > 0) nudgeBy(el, over)
+  // <input>/<textarea>. A SHORT control keeps the caret within itself, so its own
+  // edges stand for the caret. A TALL <textarea> (a grown memo line, a paste box) does
+  // not: the caret may sit anywhere in it, so its LINE is measured (caretBandInTextarea)
+  // — revealing the box's bottom edge used to push line 1 off the top. Both directions:
+  // below the band (typing past the keyboard) AND above it (iOS panned the layout under
+  // the keyboard and the field sits in the band scrolled out of view — hub pages have
+  // no --vvt padding, only this correction).
+  const rect = el.getBoundingClientRect()
+  const bottomEdge = visibleBottom(el) - 24
+  const topEdge = visibleTop(el) + 12
+  const band = el instanceof HTMLTextAreaElement && rect.height > 120 ? caretBandInTextarea(el) : null
+  const top = band ? band.top : rect.top
+  const bottom = band ? band.bottom : rect.bottom
+  if (bottom > bottomEdge) nudgeBy(el, bottom - bottomEdge)
+  else if (top < topEdge) nudgeBy(el, top - topEdge)
+  kbDebug(`follow ${el.tagName}${band ? '/line' : ''} ${Math.round(top)}..${Math.round(bottom)} in ${Math.round(topEdge)}..${Math.round(bottomEdge)}`)
 }
 
 // Re-read the visual viewport ON DEMAND. The vars above only recompute when the
@@ -414,7 +486,11 @@ export function trackVisualViewport(): void {
   const pinOnce = (behavior: ScrollBehavior) => {
     if (kbInset <= KB_THRESHOLD) return
     const el = document.activeElement
-    if (!isEditable(el) || !el.isConnected) return
+    // Anything whose focus summons a keyboard OR a picker wheel: a date/time/select
+    // has no caret to follow, but its wheel occludes the same band, and until
+    // 2026-09-24 it was never pinned at all — the fit padding applied, the field
+    // stayed wherever it was.
+    if (!(el instanceof HTMLElement) || !canSummonKeyboard(el) || !el.isConnected) return
     kbDebug(`pin ${el.tagName}${el.isContentEditable ? '/ce' : ''}`)
     const action = actionBelow(el)
     if (action) action.scrollIntoView({ block: 'nearest', behavior })
@@ -423,7 +499,13 @@ export function trackVisualViewport(): void {
     // scrollIntoView on the ELEMENT would no-op. Pin the CARET instead; the
     // input-driven follow takes over from the first keystroke either way.
     else if (el.isContentEditable) followCaret(el)
-    else el.scrollIntoView({ block: 'start', behavior })
+    else {
+      el.scrollIntoView({ block: 'start', behavior })
+      // The settle re-pins are instant ('auto'): follow right after, so a field that
+      // block:'start' left in the panned-out band above (no --vvt on a hub page) is
+      // brought down into the visible one. Not after a smooth scroll still in flight.
+      if (behavior === 'auto' && isEditable(el)) followCaret(el)
+    }
   }
 
   // Pin NOW, then RE-pin a few times as the keyboard slide-in, a combobox dropdown
@@ -577,7 +659,7 @@ export function trackVisualViewport(): void {
   // dance) just resets a cheap idempotent schedule instead of cancelling the one
   // chance to scroll.
   document.addEventListener('focusin', (e) => {
-    if (!isEditable(e.target)) return
+    if (!canSummonKeyboard(e.target)) return
     // --kb-fixed is derived from the FOCUSED field's fixed shell — recompute when
     // focus moves (keyboard already up = no viewport event will do it for us).
     schedule()

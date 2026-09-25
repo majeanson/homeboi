@@ -153,6 +153,38 @@ for (const d of DEVICES) {
     await expectAbove(dialog.getByRole('button', { name: 'Envoyer' }), VISIBLE, 'remark « Envoyer »')
   })
 
+  // --- A TALL textarea: the verify dialog's growing memo line. The follow used to
+  // reveal the box's BOTTOM edge — right for a two-line field, wrong for one grown
+  // taller than the visible band: with the caret on line 1, typing pushed that line
+  // off the top. The caret's own line is measured now (caretBandInTextarea). ---
+  test(`kb ${d.name}: tall memo keeps the caret line in view`, async ({ page }) => {
+    await open(page, '/dev/kit')
+    const entry = page.locator('details.kit-entry').filter({ hasText: 'Ouvrir la vérification' })
+    await entry.locator('summary').click()
+    await entry.getByRole('button', { name: 'Ouvrir la vérification' }).click()
+    const memo = page.locator('.read-review__memo').first()
+    await memo.waitFor({ state: 'visible' })
+    // Grow it well past the visible band, caret on the FIRST line.
+    await memo.fill(Array.from({ length: 40 }, (_, i) => `ligne ${i + 1} de la vérification`).join('\n'))
+    await memo.evaluate((el) => {
+      const ta = el as HTMLTextAreaElement
+      ta.setSelectionRange(0, 0)
+      ta.focus()
+    })
+    await openKeyboard(page, d.kb)
+    // Past the pin's settle window (re-pins up to 900 ms after the keyboard opens):
+    // real typing happens seconds later, and a re-pin must not be what saves the caret.
+    await page.waitForTimeout(1100)
+    await page.keyboard.type('x')
+    await page.waitForTimeout(350)
+    await page.screenshot({ path: png('tall-memo'), fullPage: false })
+    const box = await memo.boundingBox()
+    expect(box, 'memo has a box').not.toBeNull()
+    // Line 1 is at the box's top: that top must be on screen and above the keyboard.
+    expect(box!.y, 'the caret line (box top) is on-screen').toBeGreaterThanOrEqual(-1)
+    expect(box!.y, 'the caret line (box top) is above the keyboard').toBeLessThanOrEqual(VISIBLE - 20)
+  })
+
   // --- Recipe modal: create form (title input summons the keyboard) ---
   test(`kb ${d.name}: recipe form`, async ({ page }) => {
     // The recipe builder is a standalone route now (RecipeForm → .recipe-modal).
