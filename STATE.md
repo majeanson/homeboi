@@ -125,11 +125,10 @@ down this time (`0cb0ba1e`, `npm run perf:door`): 15 requests / 305 KB, bandwidt
 **Then the idea pool, presented item by item** (accept / dismiss / challenge): A7 the
 quoted thread (`a89d5f25`), B2 « en cours » + B3 the now-line on the flat list
 (`dfc3b363`), A8 « Sa fête » (`47999974`), C2 « Pour toi » (`f91ac410`), A6
-« Transformer » (`49e5dff0`), and C1 « Souvenirs » (`ab94fc74`, 0140) once Marc said
-« put the widget back » — each with a red-then-green guard and a spec. Dismissed with
-the reason in the pool: B4, B5, C3, D2. **And the night's mail** (07:11): the backup died
-at the ninth of fifteen households on D1's per-invocation request cap — one batch per
-household now, the plan once per run (`391e7ccb`, guard counts the requests).
+« Transformer » (`49e5dff0`), C1 « Souvenirs » (`ab94fc74`, 0140) once Marc said « put the
+widget back » — each with a red-then-green guard and a spec; B4, B5, C3, D2 dismissed with
+the reason. **And the night's mail**: the backup died at the ninth of fifteen households on
+D1's per-invocation request cap — one batch per household, the plan once (`391e7ccb`).
 
 ## 4. What still needs improvement — consolidated and ranked
 
