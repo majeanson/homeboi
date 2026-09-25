@@ -100,6 +100,28 @@ export function sentMots(mots: Mot[], authorId: string | null): Mot[] {
   return mots.filter((m) => m.author_member_id === authorId).slice().sort((a, b) => b.created_at - a.created_at)
 }
 
+// The mots a reply ANSWERS, oldest first (root … direct parent), for the peek's quoted
+// context (A7). One hop was all the peek ever showed, so a maman→enfant→maman exchange
+// lost its opening line the moment it was answered twice. Walks reply_to up from `id`
+// through the LIVE list; a parent that was deleted ends the walk quietly (the chain
+// simply starts later), and a cycle cannot loop it. Capped at `maxHops` from the NEAREST
+// end — the direct parent is never the one dropped — because this is context for one
+// message, not a chat transcript: no « N replies », no scroll. Pure; unit-tested.
+export function threadOf(mots: Mot[], id: string, maxHops = 3): Mot[] {
+  const byId = new Map(mots.map((m) => [m.id, m]))
+  const seen = new Set<string>([id])
+  const chain: Mot[] = []
+  let cur = byId.get(id)?.reply_to ?? null
+  while (cur && !seen.has(cur) && chain.length < maxHops) {
+    const parent = byId.get(cur)
+    if (!parent) break
+    seen.add(cur)
+    chain.unshift(parent)
+    cur = parent.reply_to
+  }
+  return chain
+}
+
 // Member ids with ≥1 unopened mot addressed TO THEM — feeds the per-face presence DOT.
 // Maisonnée mots (recipient null) are DELIBERATELY excluded: they're already discoverable
 // on the at-rest board (the « Mots » card shows family-wide mots to everyone), so dotting

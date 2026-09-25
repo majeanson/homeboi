@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isSurfaced, isScheduled, visibleMots, waitingMots, savedMots, sweepableMots, sentMots, waitingRecipientIds, motLabel, type Mot } from './mots'
+import { isSurfaced, isScheduled, visibleMots, waitingMots, savedMots, sweepableMots, sentMots, waitingRecipientIds, motLabel, threadOf, type Mot } from './mots'
 
 // A minimal Mot factory — only the fields the pure helpers read.
 function mot(p: Partial<Mot>): Mot {
@@ -135,5 +135,39 @@ describe('motLabel', () => {
   })
   it('a mot with nothing at all still reads as something', () => {
     expect(motLabel(mot({ text: '' }), L)).toBe('Un mot')
+  })
+})
+
+describe('threadOf (the quoted thread above a reply — A7)', () => {
+  const root = mot({ id: 'root', text: 'On soupe à quelle heure ?' })
+  const r1 = mot({ id: 'r1', text: '18 h', reply_to: 'root' })
+  const r2 = mot({ id: 'r2', text: 'Parfait', reply_to: 'r1' })
+  const r3 = mot({ id: 'r3', text: 'Je mets la table', reply_to: 'r2' })
+  const r4 = mot({ id: 'r4', text: 'Merci !', reply_to: 'r3' })
+  const all = [root, r1, r2, r3, r4]
+
+  it('a top-level mot has no thread', () => {
+    expect(threadOf(all, 'root')).toEqual([])
+  })
+  it('one hop is the parent alone', () => {
+    expect(threadOf(all, 'r1').map((m) => m.id)).toEqual(['root'])
+  })
+  it('walks up to the root, OLDEST FIRST, so the peek reads top-down', () => {
+    // Red against chain.push (newest first) — the opening line would sit at the bottom.
+    expect(threadOf(all, 'r3').map((m) => m.id)).toEqual(['root', 'r1', 'r2'])
+  })
+  it('the cap keeps the NEAREST ancestors — the direct parent is never the one dropped', () => {
+    // Red against capping from the root end (['root','r1','r2']) or an uncapped walk.
+    expect(threadOf(all, 'r4').map((m) => m.id)).toEqual(['r1', 'r2', 'r3'])
+    expect(threadOf(all, 'r4', 1).map((m) => m.id)).toEqual(['r3'])
+  })
+  it('a deleted parent ends the walk quietly instead of throwing or skipping over it', () => {
+    const withoutR1 = all.filter((m) => m.id !== 'r1')
+    expect(threadOf(withoutR1, 'r3').map((m) => m.id)).toEqual(['r2'])
+  })
+  it('a cycle cannot loop it', () => {
+    const a = mot({ id: 'a', reply_to: 'b' })
+    const b = mot({ id: 'b', reply_to: 'a' })
+    expect(threadOf([a, b], 'a', 10).map((m) => m.id)).toEqual(['b'])
   })
 })

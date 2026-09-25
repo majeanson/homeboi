@@ -9,7 +9,7 @@ import { isGuest } from '../../lib/device'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { type Member } from '../../lib/members'
 import { MEMBERS_KEY, MOTS_KEY, BOARD_KEY } from '../../lib/queryKeys'
-import { useMots, useAllMots, waitingMots, visibleMots, sweepableMots, sentMots, isScheduled, motLabel, type Mot } from '../../lib/mots'
+import { useMots, useAllMots, waitingMots, visibleMots, sweepableMots, sentMots, isScheduled, motLabel, threadOf, type Mot } from '../../lib/mots'
 import { formatDayTime } from '../../lib/format'
 import { CATS } from '../../lib/cats'
 import { InlineIcon, type IconName } from '../Icon'
@@ -88,12 +88,9 @@ export function MotsCard({ help }: { help?: HelpMode } = {}) {
   // transcript → the media label. « Mémo vocal · Papa » told you nothing about a
   // message whose whole job is to be glanceable.
   const labelOf = (m: Mot) => motLabel(m, fn)
-  // A reply quotes the mot it answers (resolved from the live list) for the peek's context.
-  const quoteOf = (m: Mot): string | null => {
-    if (!m.reply_to) return null
-    const p = mots.find((x) => x.id === m.reply_to)
-    return p ? labelOf(p) : null
-  }
+  // A reply quotes what it answers — the short thread above it, oldest first, resolved
+  // from the live list and capped (lib/mots threadOf) — for the peek's context.
+  const quotesOf = (m: Mot): string[] => threadOf(mots, m.id).map(labelOf)
 
   function remove(m: Mot) {
     const run = () =>
@@ -133,7 +130,7 @@ export function MotsCard({ help }: { help?: HelpMode } = {}) {
     detail.open(
       buildMot(m, ctx, {
         saved: !!m.saved_at,
-        parentQuote: quoteOf(m),
+        quotes: quotesOf(m),
         onToggleSave: () => toggleSave(m),
         onDelete: () => remove(m),
         // Reply only when there's a real sender to answer (a Maisonnée-from-noone mot has none).
@@ -154,7 +151,7 @@ export function MotsCard({ help }: { help?: HelpMode } = {}) {
     detail.open(
       buildMot(m, ctx, {
         saved: !!m.saved_at,
-        parentQuote: quoteOf(m),
+        quotes: quotesOf(m),
         onReschedule: scheduled ? () => setReschedule(m) : undefined,
         onDelete: () => remove(m),
         whenOverride: scheduled ? fn.scheduledFor(whenLabel(m.surface_at!)) : undefined,

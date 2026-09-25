@@ -284,7 +284,9 @@ export function buildMot(
   ctx: DetailCtx,
   opts?: {
     saved?: boolean
-    parentQuote?: string | null
+    // The answered mots' labels, oldest first (lib/mots threadOf) — a short thread, capped
+    // by the caller, never a transcript.
+    quotes?: string[]
     onToggleSave?: () => void
     onDelete?: () => void
     onReply?: () => void
@@ -299,8 +301,9 @@ export function buildMot(
   const icon: IconName =
     m.media_kind === 'audio' ? 'microphone-bold' : m.media_kind === 'drawing' ? 'paint-brush-bold' : m.media_kind === 'image' ? 'image-square-bold' : 'envelope-bold'
   const blocks: DetailBlock[] = []
-  // A reply quotes the mot it answers, up top, so the thread reads in context.
-  if (opts?.parentQuote?.trim()) blocks.push({ kind: 'text', text: `↩ ${opts.parentQuote.trim()}`, hand: true })
+  // A reply quotes what it answers, up top and oldest first, so the exchange reads in
+  // context — the root line, then each answer, then this one below (A7).
+  for (const q of opts?.quotes ?? []) if (q.trim()) blocks.push({ kind: 'text', text: `↩ ${q.trim()}`, hand: true })
   if (m.text.trim()) blocks.push({ kind: 'text', text: m.text.trim() })
   // The spoken words, when there are any and no written line already says them.
   // Labelled, so nobody mistakes the machine's guess for what was typed — and it
