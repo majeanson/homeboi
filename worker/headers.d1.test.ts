@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { anon, household } from '../functions/test/d1'
+import { anon } from '../functions/test/d1'
 import { ENFORCED } from '../functions/_lib/securityHeaders'
 
 // Every response leaves the Worker with the security headers (STATE.md §4-L L6) —
