@@ -2103,6 +2103,7 @@ export const FR = {
     // Schedule presets (« Plus tard » quick chips) + self-mot.
     preset: { tonight: 'Ce soir', tomorrowAm: 'Demain matin', weekend: 'Ce week-end' },
     remindMe: 'Me le rappeler',
+    birthdayPreset: 'Sa fête', // « Plus tard » on the recipient's next birthday morning (A8)
     // Sender outbox (« Ce que j'ai laissé ») — status of what I sent, never a household tally.
     sentGroup: 'Ce que j’ai laissé',
     to: (name: string) => `Pour ${name}`,

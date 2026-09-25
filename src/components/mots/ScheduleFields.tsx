@@ -44,6 +44,25 @@ export function presetWhen(kind: SchedulePreset, now: Date = new Date()): { date
   return { date: dateStr(d), time: '09:00' }
 }
 
+// « Sa fête » (A8) — the next occurrence of a birthday, 08:00 that morning, so a mot can
+// wait for the day itself (« leave Léa a note for her birthday »). `birthday` is the
+// cercle's 'YYYY-MM-DD' ('0000-MM-DD' when the year is unknown — irrelevant here). The
+// day itself still counts as "next" until 08:00 has passed (a mot left at 07:30 lands
+// this morning); after that it is a year away. Feb 29 on a non-leap year overflows to
+// Mar 1, the calmest answer Date gives for the one birthday the calendar skips. null when
+// the string is unreadable — the preset simply does not show. Pure; unit-tested.
+export function birthdayWhen(birthday: string | null | undefined, now: Date = new Date()): { date: string; time: string } | null {
+  const m = /^\d{4}-(\d{2})-(\d{2})$/.exec(birthday ?? '')
+  if (!m) return null
+  const month = Number(m[1]) - 1
+  const day = Number(m[2])
+  if (month < 0 || month > 11 || day < 1 || day > 31) return null
+  const at = (year: number) => new Date(year, month, day, 8, 0, 0, 0)
+  let d = at(now.getFullYear())
+  if (d.getTime() <= now.getTime()) d = at(now.getFullYear() + 1)
+  return { date: dateStr(d), time: '08:00' }
+}
+
 const PRESETS: SchedulePreset[] = ['tonight', 'tomorrowAm', 'weekend']
 
 export function ScheduleFields({

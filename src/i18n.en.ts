@@ -1864,6 +1864,7 @@ export const EN: typeof FR = {
     // Schedule presets (“Later” quick chips) + self-mot.
     preset: { tonight: 'Tonight', tomorrowAm: 'Tomorrow morning', weekend: 'This weekend' },
     remindMe: 'Remind me',
+    birthdayPreset: 'Their birthday',
     // Sender outbox (“What I left”) — status of what I sent, never a household tally.
     sentGroup: 'What I left',
     to: (name: string) => `For ${name}`,

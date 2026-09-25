@@ -8,7 +8,7 @@ import { useCreateWithUndo } from '../../lib/undoCreate'
 import { useSurface } from '../../lib/surface'
 import { useProfile } from '../../lib/profile'
 import { useVoiceInput } from '../../lib/useVoiceInput'
-import { type Member } from '../../lib/members'
+import { type OperatorMember } from '../../lib/members'
 import { MEMBERS_KEY, MOTS_KEY } from '../../lib/queryKeys'
 import { type Mot } from '../../lib/mots'
 import { Icon } from '../Icon'
@@ -16,7 +16,7 @@ import { MemberSwitcher } from '../MemberSwitcher'
 import { FaceSelect } from '../FaceSelect'
 import { EditField } from '../EditField'
 import { useMemoAttach } from '../MemoAttach'
-import { ScheduleFields, todayDateStr, presetWhen } from './ScheduleFields'
+import { ScheduleFields, todayDateStr, presetWhen, birthdayWhen } from './ScheduleFields'
 
 // « Laisse un mot » composer — the board ＋ FAB « Mot » panel (#mots), AND the reply sheet.
 // Pick a recipient face (or the whole Maisonnée), then write a line and/or clip a voice
@@ -66,10 +66,21 @@ export function MotComposer({ replyTo, onDone }: { replyTo?: Mot; onDone: () => 
     setTimeStr(w.time)
   }
 
-  const { data } = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: Member[] }>('members') })
+  // The full row (/api/members sends it): « Sa fête » below needs the recipient's birthday.
+  const { data } = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: OperatorMember[] }>('members') })
   const members = data?.members ?? []
   const replyName = replyTo ? members.find((m) => m.id === replyTo.author_member_id)?.display_name ?? null : null
   const faces = facesFromMembers(members)
+  // « Sa fête » (A8) — a fourth preset, only when the picked recipient has a birthday
+  // in the cercle: the mot waits for that morning. Scheduling + the derived birthday
+  // engine both existed; this is the one-tap join. Still no push: it surfaces on the
+  // board like any « Plus tard » mot. One preset, not a recurring-reminder engine.
+  const fete = birthdayWhen(recipient ? members.find((m) => m.id === recipient)?.birthday : null)
+  function saFete() {
+    if (!fete) return
+    setDateStr(fete.date)
+    setTimeStr(fete.time)
+  }
 
   const extraBody = { recipient_id: recipient, surface_at: surfaceAt, reply_to: replyTo?.id ?? null }
 
@@ -169,11 +180,18 @@ export function MotComposer({ replyTo, onDone }: { replyTo?: Mot; onDone: () => 
             onDate={setDateStr}
             onTime={setTimeStr}
             extraPresets={
-              canRemindMe ? (
-                <button type="button" className="btn btn--sm btn--ghost mono" onClick={remindMe}>
-                  <Icon name="hourglass-high-bold" size={15} /> {fn.remindMe}
-                </button>
-              ) : undefined
+              <>
+                {canRemindMe && (
+                  <button type="button" className="btn btn--sm btn--ghost mono" onClick={remindMe}>
+                    <Icon name="hourglass-high-bold" size={15} /> {fn.remindMe}
+                  </button>
+                )}
+                {fete && (
+                  <button type="button" className="btn btn--sm btn--ghost mono" onClick={saFete}>
+                    <Icon name="cake-bold" size={15} /> {fn.birthdayPreset}
+                  </button>
+                )}
+              </>
             }
           />
         )}
