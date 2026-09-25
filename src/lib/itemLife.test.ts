@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isPastSec, mealSlotPast } from './itemLife'
+import { isPastSec, isNowSec, mealSlotPast } from './itemLife'
 import { DEFAULT_SLOT_HOURS } from './mealSlots'
 
 // The shared board lifecycle rule — one "is this timed thing past?" predicate so meals,
@@ -17,6 +17,29 @@ describe('itemLife', () => {
     it('treats null / undefined (untimed / all-day) as never past', () => {
       expect(isPastSec(null, now)).toBe(false)
       expect(isPastSec(undefined, now)).toBe(false)
+    })
+  })
+
+  describe('isNowSec (« en cours » — B2)', () => {
+    const now = 1_000_000 * 1000
+
+    it('is live between start (inclusive) and end (exclusive)', () => {
+      expect(isNowSec(999_000, 1_001_000, now)).toBe(true)
+      expect(isNowSec(1_000_000, 1_001_000, now)).toBe(true) // starts exactly now
+      // Red against `<=` on the end: an ended window would still read as live.
+      expect(isNowSec(999_000, 1_000_000, now)).toBe(false) // ends exactly now → past
+    })
+    it('is not live before it starts, nor after it ends', () => {
+      expect(isNowSec(1_000_001, 1_002_000, now)).toBe(false)
+      expect(isNowSec(998_000, 999_000, now)).toBe(false)
+    })
+    it('a point item (no end) has no "during" — never live', () => {
+      // Red against treating a missing end as "still open".
+      expect(isNowSec(999_000, null, now)).toBe(false)
+      expect(isNowSec(999_000, undefined, now)).toBe(false)
+    })
+    it('an untimed / all-day item (no start) is never live', () => {
+      expect(isNowSec(null, 1_001_000, now)).toBe(false)
     })
   })
 

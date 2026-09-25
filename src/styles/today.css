@@ -1231,6 +1231,16 @@
 .act--past .spine {
   opacity: 0.35;
 }
+/* « En cours » (lib/itemLife isNowSec — B2): a timed window that spans now, started but
+   not ended. Before this a rendez-vous with a « Jusqu'à » read as past the moment it
+   started. A STATIC accent in the row's own tint (`--act-tint`, set by Act): the spine
+   widens and a soft inset edge frames the row — never a pulse, no countdown. */
+.act--live .spine {
+  width: 8px;
+}
+.act--live {
+  box-shadow: var(--shadow-sm), inset 0 0 0 2px color-mix(in srgb, var(--act-tint) 45%, transparent);
+}
 /* Photo tile: a recipe's image fills the washed tile (the cook-mode pickers). */
 .act .tile--photo {
   overflow: hidden;

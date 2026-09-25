@@ -31,6 +31,16 @@ export function isPastSec(anchorSec: number | null | undefined, nowMs: number): 
   return anchorSec != null && anchorSec * 1000 < nowMs
 }
 
+// « En cours » (B2) — a timed WINDOW that spans now: started, not yet ended. Before this
+// a rendez-vous with a « Jusqu'à » was binary on the flat list — full strength, then
+// struck the moment it STARTED (the Fil already waited for its end via `until`). Only an
+// item with an end can be in progress: a point rendez-vous has no "during", it is
+// upcoming and then past. All-day items pass null and are never live. A static accent
+// is all this drives — never a pulse, no « temps restant » (operating, not glancing).
+export function isNowSec(startSec: number | null | undefined, endSec: number | null | undefined, nowMs: number): boolean {
+  return startSec != null && endSec != null && startSec * 1000 <= nowMs && nowMs < endSec * 1000
+}
+
 // Meal slots carry no per-item time, only a slot — so their "past" anchor is derived
 // from the household's serve times (Réglages ▸ Repas, `hours`): a meal is crossed out
 // once its serve window has closed, i.e. exactly when it stops being the meal

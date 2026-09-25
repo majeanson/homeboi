@@ -44,13 +44,13 @@ import { live } from '../lib/query'
 import { weatherIcon, weatherTint, type Weather, type DayOutlook, type HourOutlook } from '../lib/weather'
 import { formatDay, formatDayMaybeYear, formatTime, weekdayShort } from '../lib/format'
 import { todayLocalDay, addLocalDays, daysUntilLocal } from '../lib/localDay'
-import { useNow, isPastSec } from '../lib/itemLife'
+import { useNow, isPastSec, isNowSec } from '../lib/itemLife'
 import { imgUrl } from '../lib/image'
 import { SLOT_ICON_NAME, heroCardLabel, slotLabel as slotLabelFor, type MealSlot } from '../lib/mealSlots'
 import { Act, Section } from '../components/board/Act'
 import { type CompactRow } from '../components/board/BoardCard'
 import { Disclosure } from '../components/Disclosure'
-import { Fil } from '../components/board/Fil'
+import { Fil, NowMarker } from '../components/board/Fil'
 import { PhotoFrame } from '../components/board/PhotoFrame'
 import { RemarksCard } from '../components/board/RemarksCard'
 import { BoardCanvas } from '../components/board/BoardCanvas'
@@ -673,6 +673,10 @@ export function Board() {
     const d = daysUntilLocal(at)
     return d >= 0 && d < 3 ? `${when} · ${t.cercle.inDaysN(d)}` : when
   }
+  // A rendez-vous with a « Jusqu'à » (end_at, 0118) is past once it has ENDED, not when it
+  // starts — the Fil already read it that way through `until`; the flat list struck it at
+  // its start (B2). All-day: never.
+  const evtEnd = (e: EventRow) => (e.all_day ? null : (e.end_at ?? e.start_at))
   const eventAct = (e: EventRow) =>
     e.holiday ? (
       // A fête (derived, lib/year) is an ANNOUNCEMENT, not a thing to manage —
@@ -701,7 +705,10 @@ export function Board() {
       // A TIMED rendez-vous crosses out once its time has passed (the same line-crossed
       // treatment meals get) — all-day events + birthdays have no time, so never strike.
       // For a future day (Demain / À venir) start_at is ahead of now, so this is false.
-      past={isPastSec(e.all_day ? null : e.start_at, nowMs)}
+      past={isPastSec(evtEnd(e), nowMs)}
+      // « En cours » (B2): the window has started and not ended — a static accent, not a
+      // strike. A point rendez-vous has no during: upcoming, then past.
+      live={isNowSec(e.all_day ? null : e.start_at, e.all_day ? null : e.end_at, nowMs)}
       onOpen={() => detail.open(buildEvent(e, detailCtx, eventActions.optsFor(e)))}
     />
     )
@@ -1139,7 +1146,7 @@ export function Board() {
   // so the flat list + the trailing past rows only run on a quiet day. `shownEvents` is
   // therefore empty while `filActive`.
   const shownEvents = !filActive ? todayEvents.filter((e) => e.id !== nextUpToday?.id) : []
-  const evtPast = (e: EventRow) => isPastSec(e.all_day ? null : e.start_at, nowMs)
+  const evtPast = (e: EventRow) => isPastSec(evtEnd(e), nowMs)
   const liveMeals = otherMeals.filter((m) => !m.past)
   const pastMeals = otherMeals.filter((m) => m.past)
   const liveEvents = shownEvents.filter((e) => !evtPast(e))
@@ -1288,7 +1295,7 @@ export function Board() {
          still ticks. `home` tasks (untimed, family-wide) stay in the plain list below. */
       <Fil
         timed={[
-          ...filTimed.map((e) => ({ id: e.id, start_at: e.start_at, node: eventAct(e) })),
+          ...filTimed.map((e) => ({ id: e.id, start_at: e.start_at, until: e.end_at ?? undefined, node: eventAct(e) })),
           ...filWork.map((w) => ({ id: `work-${w.id}`, start_at: w.at, until: w.endAt, node: workAct(w) })),
         ]}
         untimed={[
@@ -1326,6 +1333,10 @@ export function Board() {
         already legible — and it hid, on an evening like Marc's, the only rows the card
         had. The ribbon path still dims its past items in place, so `pastEls` is empty
         there and nothing doubles up. */}
+    {/* The « maintenant » line above the struck rows (B3) — the Fil's own divider, so the
+        plain list reads « past below, next above » exactly like the ribbon. Only when
+        something IS behind us: a day with nothing past has nothing to divide. */}
+    {pastEls.length > 0 && <NowMarker label={t.board.now} nowSec={Math.floor(nowMs / 1000)} lang={lang} />}
     {pastEls}
   </>
 )}

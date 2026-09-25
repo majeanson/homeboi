@@ -18,6 +18,21 @@ export interface FilUntimed {
   node: ReactNode
 }
 
+// The « maintenant » divider — one quiet line with the time, between what is behind us
+// and what is ahead. Shared with the plain « Aujourd'hui » list (B3): the Fil drops it on
+// its axis, the flat agenda sets it above its struck rows, so both surfaces read « past
+// below, next above » the same way. `as` because the Fil's rows are <li> in an <ol> and
+// the agenda's are not. Decorative (aria-hidden): the struck rows already say it.
+export function NowMarker({ label, nowSec, lang, as: Tag = 'div' }: { label: string; nowSec: number; lang: Lang; as?: 'div' | 'li' }) {
+  return (
+    <Tag className="fil__now" aria-hidden="true">
+      <span className="fil__now-label">
+        {label} · {formatTime(nowSec, lang)}
+      </span>
+    </Tag>
+  )
+}
+
 // « Le fil du jour » — the day-ribbon. The day read as a SHAPE: timed things (events +
 // L'auto rides + work/job windows) placed in time order, spaced by how far apart they
 // are (a soft time axis), past ones dimmed, with a calm « maintenant » marker dropped in
@@ -53,13 +68,7 @@ export function Fil({
 
   const { rows, nowIndex } = placeFil(timed, nowSec)
 
-  const marker = (
-    <li className="fil__now" aria-hidden="true">
-      <span className="fil__now-label">
-        {nowLabel} · {formatTime(nowSec, lang)}
-      </span>
-    </li>
-  )
+  const marker = <NowMarker as="li" label={nowLabel} nowSec={nowSec} lang={lang} />
 
   return (
     <div className="fil">

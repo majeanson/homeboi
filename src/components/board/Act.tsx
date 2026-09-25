@@ -143,6 +143,7 @@ export function Act({
   whoFaces,
   done,
   past,
+  live,
   onCheck,
   onActivate,
   onOpen,
@@ -162,6 +163,7 @@ export function Act({
   whoFaces?: Face[] // several household faces (an event's « Qui ») — a small stack under the title, in place of the `who` text
   done?: boolean
   past?: boolean // meal/event whose time has passed → struck-through, faded
+  live?: boolean // a timed window spanning now (lib/itemLife isNowSec) → a static « en cours » accent in the row's tint
   onCheck?: () => void
   onActivate?: () => void // a plain navigation row: makes it a <button>, shows a caret
   // Tap the row to open the shared entity-detail peek (lib/detail). With NO check
@@ -188,6 +190,7 @@ export function Act({
   const spine = color ?? c.color
   const tileBg = color ? color + '22' : c.wash
   const glyph = color ?? c.deep
+  const rootStyle = { '--act-tint': spine } as React.CSSProperties
   // onOpen + a check ⇒ split row (body peeks, check ticks). onOpen alone behaves
   // like a nav row (whole row peeks, trailing caret).
   const split = !!onOpen && !!onCheck
@@ -196,6 +199,7 @@ export function Act({
     'act' +
     (done ? ' done' : '') +
     (past ? ' act--past' : '') +
+    (live && !past ? ' act--live' : '') +
     (mine ? ' act--mine' : '') +
     (activate ? ' act--nav' : '') +
     (split ? ' act--split' : '')
@@ -253,7 +257,7 @@ export function Act({
   // Split: the info area is its own button (peek), the check disc another (tick).
   if (split) {
     return (
-      <div className={cls}>
+      <div className={cls} style={rootStyle}>
         {spineEl}
         <button type="button" className="act__hit" onClick={onOpen}>
           {tileEl}
@@ -296,7 +300,7 @@ export function Act({
     return (
       <button
         type="button"
-        className={cls}
+        className={cls} style={rootStyle}
         onClick={onCheck ?? activate}
         aria-pressed={onCheck ? !!done : undefined}
       >
@@ -304,5 +308,5 @@ export function Act({
       </button>
     )
   }
-  return <div className={cls}>{body}</div>
+  return <div className={cls} style={rootStyle}>{body}</div>
 }
