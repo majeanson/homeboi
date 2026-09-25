@@ -42,6 +42,20 @@ async function openEditor(page: import('@playwright/test').Page) {
   return body
 }
 
+// Select the whole body THROUGH ProseMirror, never with native keys. `Home` +
+// `Shift+End` moves the DOM selection at once, but ProseMirror only learns of it from
+// the browser's `selectionchange` event, which is dispatched as a LATER task — and the
+// harness's very next click can land before that task runs (a human never could: the
+// window is a few ms). When it does, the toolbar command sees the STALE collapsed
+// selection, sets a stored mark instead of wrapping, and the button reads
+// `aria-pressed` with nothing bold on screen — 3 of 20 runs locally, twice in a row on
+// CI (2026-09-25). `Mod-A` is a ProseMirror keymap command (`selectAll`): it runs inside
+// the keydown handler and dispatches synchronously, so the state holds the selection
+// before the click is even sent.
+async function selectAll(page: import('@playwright/test').Page) {
+  await page.keyboard.press('ControlOrMeta+a')
+}
+
 test('« Pour qui » opens from inside the editor scene, and a face can actually be picked', async ({ page }) => {
   // Reported from the phone as "the toggle can't be clicked, nothing happens".
   // It is a LAYERING failure, not a wiring one: FaceSelect's picker is a `Sheet`,
@@ -177,19 +191,16 @@ test('inline buttons (bold / italic / strike) wrap the selected text', async ({ 
   const body = await openEditor(page)
   await body.click()
   await page.keyboard.type('Hello')
-  await page.keyboard.press('Home')
-  await page.keyboard.press('Shift+End')
+  await selectAll(page)
 
   await page.getByRole('button', { name: 'Gras' }).click()
   await expect(body.locator('strong')).toHaveText('Hello')
 
   // Re-select and add italic + strike on top.
-  await page.keyboard.press('Home')
-  await page.keyboard.press('Shift+End')
+  await selectAll(page)
   await page.getByRole('button', { name: 'Italique' }).click()
   await expect(body.locator('em')).toHaveCount(1)
-  await page.keyboard.press('Home')
-  await page.keyboard.press('Shift+End')
+  await selectAll(page)
   await page.getByRole('button', { name: 'Barré' }).click()
   await expect(body.locator('s')).toHaveCount(1)
 })
@@ -287,6 +298,12 @@ test('a button works on a fresh note without first tapping the body', async ({ p
   const body = await openEditor(page)
   await page.getByRole('button', { name: 'Liste à puces' }).click()
   await expect(body.locator('ul > li')).toHaveCount(1)
+  // THE claim, stated: the button focused the body by itself. TipTap's `focus()`
+  // hands the DOM focus to a requestAnimationFrame, and the harness can type before
+  // that frame runs — the bullet exists, « milk » lands on <body>, the item reads ""
+  // (1 in ~30 runs, only when other tests ran first). A human's next key is always a
+  // frame away; the test has to wait for the same thing.
+  await expect(body).toBeFocused()
   await page.keyboard.type('milk')
   await expect(body.locator('ul > li')).toHaveText('milk')
 })
@@ -308,8 +325,7 @@ test('the body never shows raw Markdown characters', async ({ page }) => {
   const body = await openEditor(page)
   await body.click()
   await page.keyboard.type('Bold me')
-  await page.keyboard.press('Home')
-  await page.keyboard.press('Shift+End')
+  await selectAll(page)
   await page.getByRole('button', { name: 'Gras' }).click()
   // The visible text is the words only — no ** markers leak into the surface.
   await expect(body).toHaveText('Bold me')
