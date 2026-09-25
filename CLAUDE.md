@@ -186,17 +186,17 @@ npm run e2e:ci         # …in CI's shape (workers 1, retries 0). Run THIS befor
                        #   anything that touches shared machinery — see the note below.
 npm run e2e:sw         # SW offline-shell e2e only (own harness on the PROD bundle)
 npm run e2e:matrix     # ON-DEMAND visual state sweep → screenshots/matrix/manifest.json for
-                       #   a review pass. Several frames per state; prunes; AXE per state.
-                       #   Weekly in CI (Actions ▸ "State matrix"). The spec's header has the rest.
+                       #   a review pass. Several frames per state; prunes; AXE per state. Weekly in CI.
 npm run e2e:stranger   # ON-DEMAND walk of the DEPLOYED app as a stranger (laptop + iPhone):
                        #   the demo door, every tab, one write, the ＋ sheet, /garder, and
                        #   /signup in FR + EN (creates + deletes a household). Weekly in CI.
 npm run e2e:flipp      # ON-DEMAND live contract with flipp.com (list-storage shape, routes,
                        #   the bookmarklet on their real page). Weekly in CI.
+npm run perf:door      # ON-DEMAND cold start of the DEPLOYED door: wire bytes + stopwatch under CDP presets
 npm run deploy         # build + wrangler deploy → https://babillard.<account>.workers.dev
 ```
 
-Every on-demand harness (`matrix`, `stranger`, `flipp`, `sw`) documents itself in its
+Every on-demand harness (`matrix`, `stranger`, `flipp`, `sw`, `perf:door`) documents itself in its
 spec's header comment — that is the source; this table only says which door to open.
 
 Run one test file or one test by name:

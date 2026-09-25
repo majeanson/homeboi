@@ -216,9 +216,9 @@ tab's title cut (« Bon apr », « La li… »), and it was never the font: a fi
 four-disc header cluster left ~83px for the title, so below 340px the decorative section
 avatar hides. Cold start was measured on production under CDP throttling, then re-measured
 after the hub went lazy: **78 requests → 17, and the slow-link headline 11.2 s → 7.1 s.**
-The door's last 55 KB came off on 2026-09-22 (the `drawpad` commons chunk, §3). The
-install prompt shipped in two faces, Marc's shape. The one thing NOT re-measured is the
-production cold-start table after that last 55 KB — bytes, not a stopwatch.
+The last 55 KB came off 2026-09-22; the install prompt shipped. **Re-measured 2026-09-25**
+(`npm run perf:door`, presets in its header): **15 requests / 305 KB** on the wire (was 78 /
+487), one parallel wave, no chained round trip — bandwidth-bound; the levers left are bytes.
 
 **Wave 3 — password reset. ✅ CLOSED 2026-09-23, verified against production.** It was
 called the longest pole and it was: there was no forgot-password flow at all and the app

@@ -13,6 +13,7 @@
     "cf:dev": "wrangler dev",
     "typecheck": "tsc -b --noEmit",
     "check:bundle": "node scripts/check-bundle.mjs",
+    "perf:door": "node scripts/coldstart.mjs",
     "knip": "knip",
     "test": "vitest run",
     "test:watch": "vitest",
