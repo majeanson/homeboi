@@ -20,16 +20,16 @@ export interface Env {
   // or verify anything; validated to be >= 32 chars at use (see auth.ts).
   SESSION_SECRET?: string
 
-  // OPTIONAL shared secret from before per-account passwords existed. Two jobs:
-  // (1) the password of a LEGACY operator row (no password_hash) at login and at the
-  // sudo doors — unset means those rows need no password, fine for local dev / a LAN,
-  // a hole on a public deployment that still has such rows; (2) the signup INVITE code
-  // while SIGNUP_OPEN is not "1" (_lib/signupGate.ts). Keep it set in production even
-  // after signup opens: job (1) does not end with job (2).
-  LOGIN_PASSWORD?: string
+  // OPTIONAL signup invite code, asked while SIGNUP_OPEN is not "1" (_lib/signupGate.ts).
+  // Unset → signup is open (local dev / a LAN / the d1 harness). This was LOGIN_PASSWORD
+  // until 2026-09-25, when it ALSO was the password of every legacy (no-hash) operator
+  // row at login and at the sudo doors; production counted zero such rows and that job
+  // was retired, so the name now says the one thing the value does. Nothing reads
+  // LOGIN_PASSWORD any more — `wrangler secret delete` it.
+  INVITE_CODE?: string
   // OPTIONAL plain var (wrangler.toml [vars]): exactly "1" opens signup and the demo
-  // claim to anyone — no invite code asked. Anything else keeps the LOGIN_PASSWORD
-  // invite gate. Separate from LOGIN_PASSWORD on purpose (_lib/signupGate.ts says why).
+  // claim to anyone — no invite code asked. Anything else keeps the INVITE_CODE gate.
+  // A var and not the secret's absence on purpose (_lib/signupGate.ts says why).
   SIGNUP_OPEN?: string
 
   // OPTIONAL outbound email (functions/_lib/mail.ts — Resend's REST API). Both unset
@@ -58,7 +58,7 @@ export interface Env {
   // the shared secret GitHub Actions presents after a successful deploy of main, to mark
   // a remark « expédiée » with the commit that fixed it. ≥32 chars.
   //
-  // UNLIKE LOGIN_PASSWORD, UNSET CLOSES THE DOOR (503). An unset gate on an
+  // UNLIKE INVITE_CODE, UNSET CLOSES THE DOOR (503). An unset gate on an
   // unauthenticated write is a hole, not a convenience — do not copy the login shape.
   //
   // `wrangler secret put DEPLOY_NOTIFY_SECRET`, and the SAME value as the repo's

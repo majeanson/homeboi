@@ -11,11 +11,10 @@ ENVIRONMENT=development
 # Generate one: `openssl rand -hex 32`
 SESSION_SECRET=replace-with-at-least-32-random-characters-xx
 
-# OPTIONAL shared secret from before per-account passwords. It is the password of a
-# LEGACY account (no password_hash) at login, and — while SIGNUP_OPEN (wrangler.toml)
-# is not "1" — the signup invite code. Leave unset on a trusted LAN / local dev; SET it
-# on any public deployment that has legacy accounts, even after signup opens.
-# LOGIN_PASSWORD=choose-a-strong-passphrase
+# OPTIONAL signup invite code, asked while SIGNUP_OPEN (wrangler.toml) is not "1".
+# Leave unset on a trusted LAN / local dev (signup is then open). It was LOGIN_PASSWORD
+# until 2026-09-25, when it also unlocked legacy (no-hash) accounts; that job is gone.
+# INVITE_CODE=choose-a-strong-passphrase
 
 # OPTIONAL Mistral API key — enables the high-accuracy CLOUD recipe-photo reader
 # (Réglages ▸ Affichage ▸ « Lecture des photos de recette » → Haute précision).
@@ -27,7 +26,7 @@ SESSION_SECRET=replace-with-at-least-32-random-characters-xx
 # app that a deploy shipped the fix for a remark (« Les remarques », 0136). MUST be ≥32
 # characters, and MUST match the repo's DEPLOY_NOTIFY_SECRET Actions secret.
 #
-# UNSET CLOSES THE DOOR (503), unlike LOGIN_PASSWORD above — an unset gate on an
+# UNSET CLOSES THE DOOR (503), unlike INVITE_CODE above — an unset gate on an
 # unauthenticated write endpoint is a hole, not a convenience. Leave it unset locally
 # unless you are testing the callback; the rest of the feature works without it.
 # Production: `wrangler secret put DEPLOY_NOTIFY_SECRET`. /api/health reports `deployHook`.

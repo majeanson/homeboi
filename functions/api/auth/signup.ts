@@ -17,7 +17,7 @@ import { mailEnabled } from '../../_lib/mail'
 // maisonnée ») and behind one opt-in tap (« Charger des exemples », /api/seed).
 //
 // Who may sign up is _lib/signupGate.ts: SIGNUP_OPEN = "1" (wrangler.toml) opens it
-// to anyone; otherwise LOGIN_PASSWORD, when set, is the INVITE CODE; neither = open
+// to anyone; otherwise INVITE_CODE, when set, is asked for; neither = open
 // (local dev / LAN). The demo claim asks the same question through the same module.
 export const onRequestPost: PagesFunction<Env> = async (ctx) => {
   // Per-address bound (_lib/rateLimit.ts): a signup seeds a whole household, and the

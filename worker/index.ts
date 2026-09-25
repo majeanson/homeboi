@@ -61,8 +61,8 @@ const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 //
 // THE NARROWER GATE is DEPLOY_NOTIFY_SECRET: a ≥32-char shared secret presented in
 // X-Deploy-Secret and compared CONSTANT-TIME (_lib/deployHook.ts). Its polarity is the
-// INVERSE of LOGIN_PASSWORD's — an unset, empty or short secret CLOSES this door (503)
-// rather than opening it. Copying the login.ts shape here deletes the lock.
+// INVERSE of INVITE_CODE's — an unset, empty or short secret CLOSES this door (503)
+// rather than opening it. Copying the signup-gate shape here deletes the lock.
 //
 // NOT X-Device-Token, deliberately: that header already skips CSRF for EVERY route
 // (below) and resolves through resolveActor into an Actor with a household. A deploy is

@@ -25,7 +25,7 @@ describe('the deploy-hook gate', () => {
     // goes red for a reason that is easy to miss reading the code: safeEqual('', '') is
     // TRUE, so an `=== undefined` guard would accept a request whose header is present
     // and empty. And '' is a shape this repo genuinely produces — vitest.d1.config.ts
-    // binds LOGIN_PASSWORD exactly that way, and wrangler does it for any declared-but-
+    // binds INVITE_CODE exactly that way, and wrangler does it for any declared-but-
     // empty var.
     expect(checkDeploySecret('', '')).toBe('unconfigured')
     expect(checkDeploySecret('', 'anything')).toBe('unconfigured')

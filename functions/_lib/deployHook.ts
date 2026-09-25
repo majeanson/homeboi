@@ -11,16 +11,16 @@ import { safeEqual } from './password'
 // without a Worker. That matters because you cannot unbind a variable per-test in
 // vitest.d1.config.ts, and the polarity is the single most dangerous line here.
 //
-// ── THE POLARITY IS INVERTED FROM LOGIN_PASSWORD, ON PURPOSE ──────────────────────
-// functions/api/auth/login.ts reads:
-//     const required = ctx.env.LOGIN_PASSWORD
-//     if (required && !safeEqual(password, required)) return unauthorized(...)
-// i.e. UNSET ⇒ the gate is OPEN. That is right THERE: LOGIN_PASSWORD is an optional
-// extra lock on a door that already has a password store behind it, and unset means
-// "local dev". Here the same shape would be a hole. An unset secret on an unauthenticated
-// WRITE endpoint reachable from the open internet must CLOSE the door, not remove it.
-// If you ever find yourself copying the login shape into this file, you are deleting the
-// only lock on it.
+// ── THE POLARITY IS INVERTED FROM INVITE_CODE, ON PURPOSE ─────────────────────────
+// functions/_lib/signupGate.ts reads:
+//     inviteRequired = !signupOpen(env) && !!env.INVITE_CODE
+// i.e. UNSET ⇒ the gate is OPEN. That is right THERE: the invite code is an optional
+// extra lock on a door (signup) that already validates a password of its own, and unset
+// means "local dev". (Until 2026-09-25 that secret was LOGIN_PASSWORD and login.ts had
+// the same shape, `required && !safeEqual(…)`, for legacy rows.) Here the same shape
+// would be a hole. An unset secret on an unauthenticated WRITE endpoint reachable from
+// the open internet must CLOSE the door, not remove it. If you ever find yourself copying
+// the signup-gate shape into this file, you are deleting the only lock on it.
 //
 // ── A SHORT SECRET IS AN UNSET SECRET ─────────────────────────────────────────────
 // auth.ts refuses a SESSION_SECRET under 32 chars rather than signing with a weak key.
@@ -29,7 +29,7 @@ import { safeEqual } from './password'
 //
 // ── '' IS A REAL VALUE, AND IT IS THE TRAP ────────────────────────────────────────
 // `!secret` and NOT `secret === undefined`, deliberately: wrangler hands a Worker '' for
-// a declared-but-empty var, vitest.d1.config.ts binds LOGIN_PASSWORD: '' exactly that
+// a declared-but-empty var, vitest.d1.config.ts binds INVITE_CODE: '' exactly that
 // way, and **safeEqual('', '') is TRUE**. An `=== undefined` check would leave this
 // endpoint open to anyone who sends `X-Deploy-Secret:` with nothing after the colon.
 // deployHook.test.ts holds that case specifically.

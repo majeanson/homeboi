@@ -22,7 +22,7 @@ import { useSurface } from '../lib/surface'
 // be mistaken for the other thing.
 //
 // No household-name field and no invite-code field: the link carries the household,
-// and it is itself the narrower gate (see the endpoint on why LOGIN_PASSWORD does not
+// and it is itself the narrower gate (see the endpoint on why INVITE_CODE does not
 // apply here).
 export function JoinHouseholdPage() {
   const t = useT()

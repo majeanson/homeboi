@@ -36,7 +36,7 @@ export default defineConfig(async () => {
             MISTRAL_API_KEY: '',
             RESEND_API_KEY: '',
             NASA_APOD_KEY: '',
-            LOGIN_PASSWORD: '',
+            INVITE_CODE: '',
             // The deploy callback's secret (0136). ≥32 chars, because deployHook.ts
             // treats anything shorter as unconfigured. Bound here so the d1 suite
             // exercises the CONFIGURED path end to end; the unconfigured one — the half

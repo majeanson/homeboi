@@ -13,7 +13,7 @@ describe('account', () => {
   })
 
   it('an unknown email is refused at login — login never creates a household', async () => {
-    // The harness runs with LOGIN_PASSWORD unset, which is exactly the shape that made
+    // The harness runs with the invite code unset, which is exactly the shape that made
     // the old « first login creates the household » path a passwordless signup door
     // with no invite question. Red against restoring that path (it answered 200).
     const before = await env.DB.prepare('SELECT COUNT(*) AS n FROM households').first<{ n: number }>()
@@ -29,11 +29,13 @@ describe('account', () => {
     expect(after!.n).toBe(before!.n)
   })
 
-  it('a LEGACY account (no password_hash) still opens its own household — and no other', async () => {
-    // The accounts the old first-login path created (removed 2026-09-24) have no hash of
-    // their own; they sign in with the shared LOGIN_PASSWORD, which the harness leaves
-    // unset (so any password passes here — production keeps it set). What must hold for
-    // them: the row they already have is the row they land on, and nothing new is made.
+  it('a row without a password_hash is refused at login, and at the password door', async () => {
+    // The accounts the old first-login path created had no hash of their own and signed
+    // in with the shared LOGIN_PASSWORD — which the harness left unset, so in THIS suite
+    // any password used to pass. Production was counted on 2026-09-25: zero such rows.
+    // The branch is gone; what must hold now is the inverse — a hash-less row opens
+    // nothing, the sudo door refuses it too, and nothing new is made. Red against
+    // restoring the legacy branch in either file (both answered 200 / passed here).
     const a = await household('legacy', undefined, { empty: true })
     await env.DB.prepare('UPDATE operators SET password_hash = NULL WHERE email = ?').bind(a.email).run()
     const before = await env.DB.prepare('SELECT COUNT(*) AS n FROM households').first<{ n: number }>()
@@ -43,12 +45,13 @@ describe('account', () => {
       body: { email: `  ${a.email.toUpperCase()} `, password: 'the shared code' },
       headers: { 'CF-Connecting-IP': '10.2.0.2' },
     })
-    expect(res.status).toBe(200)
-    const cookie = (res.headers as unknown as { getSetCookie(): string[] }).getSetCookie().map((c: string) => c.split(';')[0]).join('; ')
-    const me = (await (await anon('/api/auth/me', { headers: { Cookie: cookie } })).json()) as { household?: { id: string } }
-    expect(me.household?.id).toBe(a.householdId)
+    expect(res.status).toBe(401)
     const after = await env.DB.prepare('SELECT COUNT(*) AS n FROM households').first<{ n: number }>()
     expect(after!.n).toBe(before!.n)
+    // The session minted at signup is still valid (nothing revoked it) — and even so,
+    // the password door has nothing to compare against.
+    expect((await a.fetch('/api/auth/sessions/revoke', { method: 'POST', body: { password: 'the shared code' } })).status).toBe(403)
+    expect((await a.fetch('/api/auth/sessions/revoke', { method: 'POST', body: { password: a.password } })).status).toBe(403)
   })
 
   it('« Se déconnecter partout ailleurs » ends the other device’s session and keeps this one', async () => {

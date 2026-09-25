@@ -9,7 +9,7 @@ import { isSandboxEmail } from '../functions/_lib/demoHousehold'
 // claim never touched it), which would have silently cost it the two doors migration
 // 0138 gates the day mail was wired. The first case below is the one that was red.
 //
-// Not covered here: the invite-gate branch. LOGIN_PASSWORD is unset in the harness and
+// Not covered here: the invite-gate branch. INVITE_CODE is unset in the harness and
 // env is fixed per run, so it is held as a pure table instead — _lib/signupGate.test.ts,
 // the one module signup and the claim both ask.
 describe('demo claim', () => {

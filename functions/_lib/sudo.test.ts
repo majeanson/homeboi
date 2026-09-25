@@ -5,9 +5,9 @@ import type { Env } from './env'
 import type { Actor } from './household'
 
 // The password door (STATE.md §4-L, L5). Verification mirrors login: a row with a
-// hash checks it; a legacy row checks LOGIN_PASSWORD; a legacy row on an open
-// deployment has nothing to ask. Only an operator may pass — a kiosk or a guest is
-// refused before any lookup.
+// hash checks it; a row without one is refused (the shared-LOGIN_PASSWORD fallback is
+// gone, 2026-09-25). Only an operator may pass — a kiosk or a guest is refused before
+// any lookup.
 
 const stubDb = (firstRow: unknown): D1Database =>
   ({ prepare: () => ({ bind: () => ({ first: async () => firstRow }) }) }) as unknown as D1Database
@@ -28,15 +28,12 @@ describe('requirePassword', () => {
     expect((await requirePassword(env, operator, 42))!.status).toBe(400)
   })
 
-  it('a legacy row (no hash) checks the shared LOGIN_PASSWORD, like login does', async () => {
-    const env = envWith({ password_hash: null }, { LOGIN_PASSWORD: 'shared-code' })
-    expect(await requirePassword(env, operator, 'shared-code')).toBeNull()
-    expect((await requirePassword(env, operator, 'nope'))!.status).toBe(403)
-  })
-
-  it('a legacy row on an open deployment (no LOGIN_PASSWORD) has no password to ask for', async () => {
-    const env = envWith({ password_hash: null })
-    expect(await requirePassword(env, operator, 'anything')).toBeNull()
+  it('a row without a hash is refused — nothing to compare, and no shared fallback', async () => {
+    // Red against restoring the legacy branch: with the secret unset it PASSED anything
+    // (the first line), and with it set the invite code opened the door (the second).
+    expect((await requirePassword(envWith({ password_hash: null }), operator, 'anything'))!.status).toBe(403)
+    const withCode = envWith({ password_hash: null }, { INVITE_CODE: 'shared-code' })
+    expect((await requirePassword(withCode, operator, 'shared-code'))!.status).toBe(403)
   })
 
   it('refuses a kiosk or a guest before any lookup, and an operator row that vanished', async () => {

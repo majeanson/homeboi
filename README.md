@@ -87,7 +87,7 @@ the Worker on 8787, so run `cf:dev` alongside).
 ### Optional bindings degrade gracefully
 
 `DB` and `SESSION_SECRET` are required; **`AI`, `PHOTOS` (R2),
-`REALTIME_HUB` (the Durable Object), and `LOGIN_PASSWORD` are optional**. AI
+`REALTIME_HUB` (the Durable Object), and `INVITE_CODE` are optional**. AI
 unset → capture falls back to a manual type-picker; R2 unset → photo / voice-
 clip / step-photo features hide; DO unset → `/api/live` 503s and clients poll.
 Locally without `wrangler login`, Workers AI is unavailable — that's the

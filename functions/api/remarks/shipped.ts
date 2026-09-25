@@ -52,7 +52,7 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
   if (await overLimit(ctx.env, 'ip', clientIp(ctx.request))) return tooManyRequests()
 
   // 2. The gate. UNSET ⇒ CLOSED. See _lib/deployHook.ts for why the polarity is the
-  //    inverse of LOGIN_PASSWORD's, and why '' counts as unset.
+  //    inverse of INVITE_CODE's, and why '' counts as unset.
   const gate = checkDeploySecret(ctx.env.DEPLOY_NOTIFY_SECRET, ctx.request.headers.get(DEPLOY_HEADER))
   if (gate === 'unconfigured') {
     // 503, not 404 and not 401: this deployment has no hook wired, which is a fact about

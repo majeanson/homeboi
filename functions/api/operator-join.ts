@@ -73,7 +73,7 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
   // if it ever moves it moves in all three.
   if (password.length < 8) return badRequest('Mot de passe trop court (8 caractères minimum).')
 
-  // NO LOGIN_PASSWORD GATE HERE, unlike signup.ts and demo/claim.ts, and that is
+  // NO INVITE_CODE GATE HERE, unlike signup.ts and demo/claim.ts, and that is
   // deliberate rather than forgotten. That shared code gates who may create a NEW
   // household on this deployment. This link is a per-household capability an operator
   // minted and handed to one person; it is the narrower gate of the two, and asking

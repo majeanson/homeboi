@@ -578,7 +578,7 @@ Footnotes (verdicts recorded so far):
     (`functions/api/demo/claim.ts`, `authed(…, 'operator')` + `worker/routes.ts` row +
     `SILENT_PATHS` — credential-only write, no polled cache): sandbox-operator-only
     (403 otherwise), signup-grade validation (same regex / 8-char floor / PBKDF2
-    `hashPassword` / `LOGIN_PASSWORD` invite gate / 409 on an existing email), then ONE
+    `hashPassword` / `INVITE_CODE` invite gate / 409 on an existing email), then ONE
     in-place `UPDATE operators SET email, password_hash` — the household id never moves, so
     every row survives; the response re-issues session cookies for the new email so the
     device stays signed in. **Sweep-skip verified against code:** the sweep + cap key

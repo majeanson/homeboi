@@ -6,7 +6,7 @@
 # → https://babillard.<account>.workers.dev.
 #
 # Plaintext config lives here, not in the dashboard. Secrets (SESSION_SECRET,
-# optional LOGIN_PASSWORD) go through `wrangler secret put` for prod and
+# optional INVITE_CODE) go through `wrangler secret put` for prod and
 # .dev.vars for local dev (see .dev.vars.example).
 
 name = "babillard"
@@ -72,9 +72,8 @@ bucket_name = "babillard-photos"
 APP_NAME = "Babillard"
 DEFAULT_LANG = "fr"
 # Who may create an account (functions/_lib/signupGate.ts). "1" = anyone, no invite
-# code; anything else = the LOGIN_PASSWORD secret doubles as the invite code. Opening
-# signup is THIS line, in a commit — never `wrangler secret delete LOGIN_PASSWORD`,
-# which would also unlock every legacy (no-hash) account at login.
+# code; anything else = the INVITE_CODE secret is asked for (unset = open). Opening
+# signup is THIS line, in a commit someone can read — not a secret's absence.
 SIGNUP_OPEN = "1"
 
 # --- Nightly backup (bmad/08 E-36) --------------------------------------------

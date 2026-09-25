@@ -2,7 +2,7 @@ import type { Env } from './env'
 import type { Actor } from './household'
 import { forbidden, badRequest, tooManyRequests } from './json'
 import { overLimit } from './rateLimit'
-import { safeEqual, verifyPassword } from './password'
+import { verifyPassword } from './password'
 
 // The irreversible doors ask for the password (STATE.md §4-L, item L5).
 //
@@ -13,11 +13,11 @@ import { safeEqual, verifyPassword } from './password'
 // live content, or (Wave 4) deleting the household. Those doors re-ask the one thing a
 // cookie does not carry.
 //
-// Verification mirrors login exactly (functions/api/auth/login.ts): a signup-era row
-// checks ITS hash; a legacy row (no hash — created before self-serve signup existed)
-// checks the shared LOGIN_PASSWORD, constant-time; a legacy row on a deployment with
-// no LOGIN_PASSWORD set has no password to ask for and passes (that deployment chose
-// open login; a sudo door cannot be stricter than its front door).
+// Verification mirrors login exactly (functions/api/auth/login.ts): the row's OWN hash,
+// nothing else. A row without one (the legacy shape — it used to check the shared
+// LOGIN_PASSWORD, and PASSED when that was unset; retired 2026-09-25 once production
+// counted zero such rows) has nothing to compare and is refused: a password door with
+// no password behind it is not a door. « Mot de passe oublié » gives it a hash.
 //
 // Returns null when the password is right, else the Response to send back. Every
 // attempt is charged against the per-target rate limit (L2, `sudo:<email>`) before
@@ -29,13 +29,8 @@ export async function requirePassword(env: Env, actor: Actor, password: unknown)
   const row = await env.DB.prepare('SELECT password_hash FROM operators WHERE email = ?')
     .bind(actor.email)
     .first<{ password_hash: string | null }>()
-  if (!row) return forbidden('Mot de passe invalide.')
-  if (row.password_hash) {
-    return (await verifyPassword(password, row.password_hash)) ? null : forbidden('Mot de passe invalide.')
-  }
-  const required = env.LOGIN_PASSWORD
-  if (required && !safeEqual(password, required)) return forbidden('Mot de passe invalide.')
-  return null
+  if (!row?.password_hash) return forbidden('Mot de passe invalide.')
+  return (await verifyPassword(password, row.password_hash)) ? null : forbidden('Mot de passe invalide.')
 }
 
 // The second lock on the doors that take EVERYTHING — leaving (DELETE /api/household)

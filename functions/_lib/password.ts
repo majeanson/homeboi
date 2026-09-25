@@ -68,8 +68,8 @@ function timingSafeBytes(a: Uint8Array, b: Uint8Array): boolean {
   return diff === 0
 }
 
-// Length-aware constant-time string compare for the shared LOGIN_PASSWORD /
-// invite code (the length difference can leak; the bytes don't).
+// Length-aware constant-time string compare for a shared secret — the INVITE_CODE, the
+// deploy hook's (the length difference can leak; the bytes don't).
 export function safeEqual(a: string, b: string): boolean {
   const ea = new TextEncoder().encode(a)
   const eb = new TextEncoder().encode(b)

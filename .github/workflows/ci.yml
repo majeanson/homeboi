@@ -82,7 +82,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       # `npm run deploy` == build (tsc + vite) then `wrangler deploy`. Wrangler
       # reads the API token + account id from these env vars; D1/R2/AI bindings
-      # and the runtime secrets (SESSION_SECRET, LOGIN_PASSWORD) already live in
+      # and the runtime secrets (SESSION_SECRET, INVITE_CODE) already live in
       # the Cloudflare project, so they are NOT needed here.
       #
       # `tee` because the NEXT step reads the URLs wrangler just printed (see there).

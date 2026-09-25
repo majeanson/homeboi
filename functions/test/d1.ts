@@ -57,7 +57,7 @@ function sessionFrom(email: string, householdId: string, c: { cookie: string; cs
   }
 }
 
-// A brand-new household through the real signup endpoint (LOGIN_PASSWORD is unset in
+// A brand-new household through the real signup endpoint (INVITE_CODE is unset in
 // the harness, so signup is open — the same shape as local dev). Production signup
 // starts EMPTY since 2026-09-23 (the examples moved to the demo sandbox), so a test
 // that needs a lived-in household — rows in most tables, which the isolation sweep

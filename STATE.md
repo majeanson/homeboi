@@ -82,8 +82,8 @@ interchangeable. Read this table before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md` is now
-> a number you can trust. It reads **1** — §4-K's last: retiring the shared
-> `LOGIN_PASSWORD` once no legacy account needs it. Signup itself opened 2026-09-24. **Asserted from the boxes themselves** by
+> a number you can trust. It reads **1** — §4-K's last: deleting the retired
+> `LOGIN_PASSWORD` secret in production, Marc's `wrangler login`. **Asserted from the boxes themselves** by
 > `src/lib/docCounts.test.ts`, so this sentence cannot drift the way `REVIEW-PASS.md`'s
 > banner once did — it claimed 15 for twelve days against a single box.
 >
@@ -285,8 +285,11 @@ stranger now meets ONE story (try → keep, or sign up → an empty household).
 
 - [x] **Open signup — OPEN 2026-09-24**: `SIGNUP_OPEN = "1"` (`_lib/signupGate.ts`), after
       the prep commit `f56bbb9e` split the invite from `LOGIN_PASSWORD`, which stays set.
-- [ ] **Retire the shared password**: count prod `operators` rows with `password_hash IS NULL`
-      (needs `wrangler login`); at zero, drop the legacy branch in `login.ts` + `_lib/sudo.ts`.
+- [x] **Retire the shared password — DONE 2026-09-25.** Production counted **zero** rows with
+      `password_hash IS NULL`; the legacy branch is gone from `login.ts` + `_lib/sudo.ts` (a hash-less
+      row is refused; « Mot de passe oublié » is its way in) and the invite code is `INVITE_CODE`.
+- [ ] **`npx wrangler secret delete LOGIN_PASSWORD`** in production, after this deploy —
+      nothing reads that name any more; the value was the invite handed to other households.
 
 **Parked, Marc's call, not code:** whether « L'autre parent » (F37) stays — it only
 earns its keep if a second phone actually wants full rights; a partner who only touches
@@ -312,9 +315,6 @@ blocker at any wave above.
   section only with a layout signal (blank line, first after the heading, or a common
   part word). The transcript rides in `recipe-vision`'s response so a miss is read at
   the source, not guessed. Re-render the corpus when a new card style fails.
-- **Accounts, Marc's.** The shared `LOGIN_PASSWORD` was handed out as the invite and is
-  still the password of every legacy (no-hash) account: set an own password, rotate the
-  secret, then count the legacy rows (`wrangler login`) to retire it — §K's last box.
 
 ### F. Not a backlog — do not mine these for work
 
