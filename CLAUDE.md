@@ -177,46 +177,27 @@ npm run cf:dev         # full stack: wrangler dev on :8787 (SPA + Worker + local
 npm run build          # tsc -b (typechecks SPA + Worker + Functions) then vite build → dist/
 npm run typecheck      # tsc -b --noEmit
 npm test               # vitest run (pure-logic unit tests; *.d1.test.ts excluded)
-npm run test:d1        # the REAL-RUNTIME suite (vitest.d1.config.ts): the Worker in workerd
-                       #   against a real D1 with every migration applied + R2 + the DO. The
-                       #   tenant-isolation sweep (worker/isolation.d1.test.ts: household B walks
-                       #   every route naming A's ids), the account flows, the demo sandbox +
-                       #   its sweep. Needs dist/ (wrangler.toml [assets]) → run after a build.
-                       #   CI runs it after check:bundle. Helpers in functions/test/d1.ts.
+npm run test:d1        # the REAL-RUNTIME suite: the Worker in workerd against a real D1 +
+                       #   R2 + the DO (vitest.d1.config.ts; helpers functions/test/d1.ts).
+                       #   Needs dist/ → run after a build. CI runs it after check:bundle.
 npm run test:watch     # vitest watch
 npm run e2e            # Playwright (boots its own Vite, stubs every /api/* — no D1/secrets)
-npm run e2e:sw         # SW offline-shell e2e ONLY (own harness: vite build + preview the PROD
-                       #   bundle, since the service worker registers only in a PROD build).
-                       #   sw.spec.ts is testIgnore'd from the default `npm run e2e`.
-npm run e2e:matrix     # ON-DEMAND visual state sweep (e2e/state-matrix.spec.ts, own harness):
-                       #   route × opened state × theme × lens × fake keyboard → screenshots +
-                       #   structural assertions + screenshots/matrix/manifest.json, built for a
-                       #   Claude review pass (read the manifest, open flagged PNGs). A state is
-                       #   SEVERAL frames — `<name>.png` then `<name>--2.png`… down the real inner
-                       #   scroller, since the document itself never scrolls (`fullPage` is a
-                       #   no-op here); `manifest.frames` is the number to review against, and a
-                       #   whole run PRUNES the PNGs of states that no longer exist. It also runs
-                       #   an AXE pass per state (WCAG A/AA, report-only) and aggregates the
-                       #   violations PER RULE into manifest.review.a11y with example targets —
-                       #   the dimension a screenshot cannot show. Never runs
-                       #   per-push; CI twin = Actions ▸ "State matrix" (dispatch + WEEKLY,
-                       #   Mondays — the contentTopPx ratchet needs something to pull it).
-npm run e2e:stranger   # ON-DEMAND walk of the DEPLOYED app as a first-time visitor
-                       #   (e2e/stranger-live.spec.ts, own harness, NO Vite/stubs, laptop +
-                       #   iPhone): the marketing door → « Essayer pour vrai » → every tab →
-                       #   one real write → the ＋ sheet → /garder, AND /signup in FR + EN,
-                       #   asserting our API never 4xxs, the console stays clean, and each
-                       #   step arrives. Mints one 24 h sandbox (the nightly cron sweeps it)
-                       #   and one real household per language (deleted in-test by the
-                       #   leave door; the letter goes to Resend's test inbox). CI twin = Actions ▸
-                       #   "Stranger walk" (dispatch + WEEKLY, Mondays 07:30). Never per-push.
-npm run e2e:flipp      # ON-DEMAND live contract with flipp.com (e2e/flipp-live.spec.ts, own
-                       #   harness, NO Vite/stubs): pins the list-storage shape lib/flippList
-                       #   writes, the bare /liste_dachats route, the item page's postal rule,
-                       #   and runs our bookmarklet on their real list page. CI twin = Actions ▸
-                       #   "Flipp live contract" (dispatch + WEEKLY, Mondays). Never per-push.
+npm run e2e:ci         # …in CI's shape (workers 1, retries 0). Run THIS before pushing
+                       #   anything that touches shared machinery — see the note below.
+npm run e2e:sw         # SW offline-shell e2e only (own harness on the PROD bundle)
+npm run e2e:matrix     # ON-DEMAND visual state sweep → screenshots/matrix/manifest.json for
+                       #   a review pass. Several frames per state; prunes; AXE per state.
+                       #   Weekly in CI (Actions ▸ "State matrix"). The spec's header has the rest.
+npm run e2e:stranger   # ON-DEMAND walk of the DEPLOYED app as a stranger (laptop + iPhone):
+                       #   the demo door, every tab, one write, the ＋ sheet, /garder, and
+                       #   /signup in FR + EN (creates + deletes a household). Weekly in CI.
+npm run e2e:flipp      # ON-DEMAND live contract with flipp.com (list-storage shape, routes,
+                       #   the bookmarklet on their real page). Weekly in CI.
 npm run deploy         # build + wrangler deploy → https://babillard.<account>.workers.dev
 ```
+
+Every on-demand harness (`matrix`, `stranger`, `flipp`, `sw`) documents itself in its
+spec's header comment — that is the source; this table only says which door to open.
 
 Run one test file or one test by name:
 
@@ -689,39 +670,23 @@ scroller. Réglages ▸ Régler ▸ Système's (then) nine subs were simply uncl
   pill, the board▸thisweek / settings▸system precedent) and stack your section's
   body there instead of widening the pill row.
 - **A new guard must be run against the bug it was written for, before it is
-  trusted** (standing rule). The build-gating grep tests (`calm-tenets`,
-  `field-fit`, `keyboard-fit`, `write-rule`, `write-owners`, `intl-rule`,
-  `nested-interactive`, `discovery`, `demoHousehold`, `realtime`, `layer-order`,
-  `chip-rule`, and — added by the UNIFY week — `glossary` (one word per idea, ratcheted),
-  `undoTier` (one delete mechanism per entity), `tour-rule` (no help anchor without its
-  step), `docCounts` (a number in prose must be derivable from code), `devkitParity`
-  (a primitive is in the gallery or says why not, and one name = one file — it found the
-  `MemberSwitcher` fork on its first run, and the prover meant to prove it red first
-  called six vitest STARTUP CRASHES "green") and `link-button-rule`
-  (a class worn by BOTH a `<button>` and a `<Link>` must reset the UA button chrome — from
-  a real defect that shipped, was photographed by the matrix, and passed every assertion
-  because a border moves no measurement)) are the best
-  thing in this codebase — and a green
-  one proves nothing on its own. `nested-interactive.test.ts` was written to catch
-  a control-inside-a-control on the routines grid and reported GREEN over exactly
-  that defect: it walked JSX by indentation, and prettier breaks a multi-attribute
-  open tag right after the tag name, so `<div` is the whole line and the walk ended
-  on the element's own first line. Re-counted by tag depth it went red — and found a
-  third case nobody had reported. Stash the fix (or plant a violation), watch the
-  guard fail, then restore. Two lines of shell; it is the difference between a test
-  and a decoration.
+  trusted** (standing rule). The build-gating grep tests — `calm-tenets`, `field-fit`,
+  `keyboard-fit`, `write-rule`, `write-owners`, `intl-rule`, `nested-interactive`,
+  `discovery`, `demoHousehold`, `realtime`, `layer-order`, `chip-rule`, `glossary`,
+  `undoTier`, `tour-rule`, `docCounts`, `devkitParity`, `link-button-rule`, `autofocus`,
+  `usageRule`, `csrfExempt` — are the best thing in this codebase, and a green one
+  proves nothing on its own: `nested-interactive` once reported green over the very
+  defect it was written for (STATE.md §5 has the story). Plant the violation (or stash
+  the fix), watch the guard fail, restore. **And check that the plant actually landed**
+  — a `sed` whose pattern did not match "proves" a rule just as convincingly as a real
+  run (2026-09-24: two of three plants were no-ops until the mutation was re-applied
+  through an exact-match edit).
 - **Measure with `boxOf()` in e2e, never `(await x.boundingBox())!`** (standing rule).
-  `e2e/measure.ts` retries; the bare call throws « Cannot read properties of null »
-  when the selector re-resolves onto a node React detached between the assert and the
-  measure. Waiting for visibility does NOT prevent it — `lean-forms.spec.ts` threw one
-  line under its own passing `toBeVisible()`. Two CI reds in two days (`cbed72c`, then
-  again the next morning) came from this one pattern. **The sweep is done (2026-09-09):
-  0 bare call sites are left** — the last one, `hold()` in `board-edit.spec.ts`, was held
-  back until CI ruled on a flake in the test it feeds, then converted with that evidence.
-  The count is asserted from the suite by
-  `docCounts.test.ts` and is a ratchet — it may fall to 0, never rise. This entry read
-  « 74 » long after the real number was 40, which made a nearly-finished job look
-  hopeless; that is the whole reason the number is derived now instead of typed.
+  `e2e/measure.ts` retries; the bare call throws when the selector re-resolves onto a
+  node React detached between the assert and the measure, and waiting for visibility
+  does not prevent it (two CI reds in two days from this one pattern).
+  **The sweep is done (2026-09-09): 0 bare call sites are left**; the count is derived
+  from the suite by `docCounts.test.ts` and is a ratchet — it may fall, never rise.
 - **Push straight to `main`** — no PR branches; CI (typecheck/test/build) is the
   only gate, fix forward if it goes red (standing rule). If a branch ever is used,
   delete it (local + remote) after it merges.

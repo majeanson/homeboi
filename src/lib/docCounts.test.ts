@@ -288,8 +288,23 @@ describe('the docs quote the real counts', () => {
 // file `wc -l` calls 600 measures 601 to this test. Trim to **`wc -l` ≤ MAX − 1**.
 // Deliberately not "fixed" by dropping the empty element: this number is a budget, and a
 // budget that quietly forgives one line is how the next one gets forgiven too.
-const STATE_MAX_LINES = 415 // today 414 by wc -l, 415 here
+const STATE_MAX_LINES = 361 // today 360 by wc -l, 361 here
 const STATE_FIRST_OPEN_BOX_BY = 300 // today 254
+
+// CLAUDE.md is the LAW, read by every session before it writes code — and it grows the
+// same way STATE.md did, one honest paragraph at a time (734 lines on 2026-09-24, with a
+// 95-line Commands block whose essays each spec's header already carried). Same ratchet,
+// same escape hatch: a story belongs in git or in the doc it points at, not here.
+const CLAUDE_MAX_LINES = 700 // today 699 by wc -l, 700 here
+
+describe('CLAUDE.md stays a law, not a chronicle', () => {
+  it(`is at most ${CLAUDE_MAX_LINES} lines — a ratchet: lower it when you prune`, () => {
+    expect(
+      read('CLAUDE.md').split(/\r?\n/).length,
+      'CLAUDE.md grew. Move the story to the doc or spec it points at (git keeps it) and LOWER this number, do not raise it',
+    ).toBeLessThanOrEqual(CLAUDE_MAX_LINES)
+  })
+})
 
 describe('STATE.md stays a front door', () => {
   const state = read('STATE.md').split(/\r?\n/)

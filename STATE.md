@@ -297,6 +297,25 @@ happens. See the 2026-09-16 conversation; re-raise after Wave 1's walk.
 Workers AI neurons are the ceiling, then Workers Paid at $5/month buys hundreds. Not a
 blocker at any wave above.
 
+### M. Known limits after the 2026-09-24 pass — not boxes; each needs a device or evidence
+
+- **Keyboard, needs Marc's phone.** Two suspects the code cannot settle: iOS still
+  reporting a shrunken viewport after dismissal (the tab bar stays hidden — the
+  diagnostic shows `open=true ae=BODY`), and a stranded pan after close (`open=false
+  vvT>0`). Réglages ▸ Système ▸ Appareils & accès ▸ « diagnostic clavier », on the screen
+  where it happens. Fixed blind and proven by the fake-vv e2e: dialogs and sheets fit the
+  visible band, a tall textarea follows its caret line, date/time inputs are pinned,
+  « above the band » is corrected too (`997306a5`, `2d9ab542`).
+- **Photo read.** An eight-card corpus (`8b059a2c` → `7b20ee09`): the transcriber's
+  misspellings (« Broccoli », « SOUPES ») are the model's and the verify screen's to
+  catch; the second model still runs in ~3 reads of 16; a bare part label heads a
+  section only with a layout signal (blank line, first after the heading, or a common
+  part word). The transcript rides in `recipe-vision`'s response so a miss is read at
+  the source, not guessed. Re-render the corpus when a new card style fails.
+- **Accounts, Marc's.** The shared `LOGIN_PASSWORD` was handed out as the invite and is
+  still the password of every legacy (no-hash) account: set an own password, rotate the
+  secret, then count the legacy rows (`wrangler login`) to retire it — §K's last box.
+
 ### F. Not a backlog — do not mine these for work
 
 The `bmad/` idea pools are gone with the folder (21 never-built ideas, plus the
@@ -306,109 +325,36 @@ All explicitly uncommitted. They are inspiration for a *deliberate* feature deci
 
 ---
 
-## 5. Process review — fresh eyes
+## 5. Process review — the lessons that keep earning their keep
 
-### What is genuinely working
+Written 2026-08-27 as a long retrospective; its action items are done (the `useWrite`
+test, one checkbox convention, the friction tier-1, the finished ledgers moved out). What
+remains is the part later sessions keep needing, kept short — git has the full text.
 
-- **Invariants as tests.** The nine build-gating checks in §1 are the best thing in this
-  repo. The calm tenet cannot drift in by accident because a test scans every migration
-  for it. Guide deep-links cannot rot because a test walks all seven registries. This is
-  the pattern that should absorb every other prose rule.
-- **Comments carry the *why*, including rejected alternatives.** `widget-grid.css`
-  documents the `dense` trade-off; `outbox.ts` explains why FIFO order is load-bearing;
-  `mocks.ts` now records what `fresh` does *not* empty. Sessions land cold and stay
-  oriented. Keep doing this.
-- **Push-to-main with a fast gate.** ~2m20s CI, deploy on green, browser suite decoupled.
-  Four commits shipped in a day with no rollback.
-- **Verdicts are recorded, not just decisions.** `[~]` entries that say "reviewed, kept
-  distinct, here's why" stop the same question being re-litigated. Underused, but right.
+**What works.** Invariants as tests (the build-gating greps in §1 — the pattern that
+should absorb every prose rule). Comments that carry the *why*, rejected alternatives
+included. Push-to-main behind a ~2m20s gate. Verdicts recorded (`[~]` with the reason)
+so a question is not re-litigated.
 
-### What is not working
+**What to keep doing.**
 
-0. **A guard that has never been red proves nothing** — and this is not a slogan, it
-   cost real work twice on 2026-08-27. `nested-interactive.test.ts` was written to catch
-   a control-inside-a-control on the routines grid and **reported green over exactly that
-   defect**: it walked JSX by indentation, and prettier breaks a multi-attribute open tag
-   right after the tag name, so `<div` was the whole line and the "does the tag close
-   here?" scan ended on the element's own first line. Re-counted by tag depth, it went red
-   on the routines grid, on « Notre monde », and on a THIRD case in cook mode that no
-   audit had reported. The same hour, `write-rule.test.ts` had been deliberately checked
-   against a planted violation, and that habit is the only reason the difference was
-   visible. **Every new guard gets run against the bug it was written for, before it is
-   trusted.**
-
-   The sibling lesson, same day: **three defects in my own new code were found by
-   re-reading it cold, not by a red test** — an undo painted underneath the full-screen
-   scene that offered it (z-index 90 vs 40), a payload key destructured wrong on a path
-   nothing exercised, and a pull-to-refresh that froze a nested scroller under the thumb.
-   Green tests said nothing about any of them. A review pass after the work is not
-   ceremony.
-
-1. **The ledgers rot faster than they are ticked, and nobody notices.** This session
-   found **~13 stale findings** — work already shipped, boxes never ticked: Voyage's
-   "ZERO e2e coverage" (18 cases existed), guest flows' "zero coverage" (4 specs), the
-   routine step editor, `createBringList`'s silent failure, help-copy drift, the whole
-   UNIFORMIZING Part-D "do this now while it's cheap" list (migrations 0086–0090 had
-   shipped *days* after it was written), `DayNote`, the two-todo board question,
-   `.board-wall`'s max-width, the masonry's `columns: 300px`. **Roughly a third of the
-   work I picked up was already done.**
-   *Cause:* a fix lands in the file that owns it, and the *other* document that also
-   mentions it is never opened. `PARITY.md` already states the rule — "flip a cell in the
-   same commit that resolves it" — and it is not followed across files.
-   *Fix:* before starting any item, `grep` the claim in code. Before committing, `grep`
-   the repo for other docs naming the same thing.
-
-2. **Five overlapping backlogs, no ranking, no front door.** 6,144 lines of process docs
-   against 141k lines of code — individually excellent, collectively unusable. The proof:
-   this whole session began with the question "next steps?", which the repo could not
-   answer for itself. *This file is the attempted fix; it only works if it is maintained.*
-
-3. ~~**`- [ ]` means three different things.**~~ ✅ **fixed 2026-08-28.** It meant a real
-   to-do, a template checklist item (`PARITY`, `ACTIONS`) and a recorded not-doing, so
-   anyone counting got a number more than half wrong — 75 against a true 17. The 40
-   template boxes are plain bullets now ("copy, don't tick"), the idea pools carry a ⚪
-   banner instead, and the convention is stated canonically in §2 with a copy at the top
-   of each live ledger. `- [ ]` now means exactly one thing, repo-wide.
-
-4. **Audits are produced faster than they are acted on.** The friction audit generated 33 verified
-   seams; none were approved; the document has stood as a permanent unfixed inventory for
-   six weeks. The idea pools and PLAN-mots added ~45 more designed-but-unbuilt
-   items. **Writing another audit right now would be the wrong move** — the constraint is
-   decisions, not information.
-
-5. **Prose rules drift; only tests hold.** The `useWrite` rule is stated forcefully in
-   `CLAUDE.md`, and there are ~35 raw `api()` writes, one of which loses user data
-   (§4-A). Compare: the CSS invariants have a test and have not drifted. **Every
-   cross-cutting rule in `CLAUDE.md` worth enforcing should be asked: could a test hold
-   this?** For `useWrite` the answer is plainly yes.
-
-6. **My own scoping was too literal — twice.**
-   - I fixed *"Réglages writes via `api()`"* exactly as written and never asked "is this
-     rule broken elsewhere?" A 30-second grep would have surfaced `/share`'s data loss in
-     wave 1 instead of during cleanup. **When a finding names a rule violation, sweep the
-     rule, not the site.**
-   - Wave 2 was mis-scoped before it began: I offered "the schema migration window" as a
-     major option when every item in it had shipped two months earlier — because I built
-     the *offer* from the documents and only verified once I started building. **Verify
-     before offering, not just before building.**
-
-7. **Effort went where the documents pointed, not where the harm is.** Waves 2–4 were
-   valuable but low-stakes (class renames, doc reconciliation, test coverage, a11y).
-   Meanwhile five tier-1 friction seams that block real household rituals sat untouched
-   in the friction audit — because they were parked in a file the "next steps?" survey treated as
-   settled. The ranking in §4 is the correction.
-
-### The four changes worth making
-
-1. ~~**Decide the friction audit's tier-1.**~~ ✅ **done** — all five closed (2026-08-27/28), and tier 2
-   with them. The decision never needed to be a five-seam grouping: taken one at a time,
-   verified in code first, five of the fourteen turned out to be already fixed.
-2. **Turn the `useWrite` rule into a test** (`write-rule.test.ts` + allowlist), and fix
-   `/share` as its first customer.
-3. ~~**Adopt one checkbox convention**~~ ✅ **done 2026-08-28** — legend at the top of each
-   live ledger, template boxes stripped from `PARITY`/`ACTIONS`, ⚪ banners on the three
-   idea pools, and the canonical statement in §2.
-4. **Maintain this file, and freeze new audit docs** until the existing pools are decided
-   or deleted. ✅ **Partly done 2026-08-28**: the three *finished* ledgers moved to
-   the archive (with a README saying why they're kept and not to mine them), so the
-   root now holds ten files instead of thirteen and none of them is closed.
+0. **A guard that has never been red proves nothing.** `nested-interactive` reported
+   green over the very defect it was written for (it walked JSX by indentation; prettier
+   put `<div` alone on its line). Plant the violation, watch it fail, restore — **and
+   check the plant landed**: on 2026-09-24 two of three `sed` plants were no-ops and
+   "proved" a rule until the mutation was re-applied through an exact-match edit.
+1. **Ledgers rot faster than they are ticked.** A third of the work picked up on
+   2026-08-27 was already done. Before starting an item, grep the claim in code; before
+   committing, grep the repo for the other docs naming it.
+2. **A review pass after the work is not ceremony.** Three defects in fresh code were
+   found by re-reading it cold, not by a red test (an undo painted under the scene that
+   offered it, a mis-destructured payload, a frozen nested scroller).
+3. **Sweep the rule, not the site.** Fixing « Réglages writes via `api()` » literally
+   left `/share` losing data for weeks; a 30-second grep would have found it.
+4. **Verify before offering, not just before building.** An option built from the
+   documents (« the schema migration window ») had shipped two months earlier.
+5. **Effort goes where the harm is, not where the documents point.** §4's ranking is
+   the correction; audits are produced faster than they are acted on, so the constraint
+   is decisions, not information.
+6. **Prose rules drift; only tests hold.** For every cross-cutting rule in `CLAUDE.md`,
+   ask whether a test could hold it. For `useWrite` the answer was yes, and it did.
