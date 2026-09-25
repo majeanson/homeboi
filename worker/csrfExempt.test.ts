@@ -40,7 +40,6 @@ describe('the CSRF-exempt list', () => {
         // one thing — a `verified_at` stamp. Nothing else is reachable with it, and the
         // resend half refuses anything but the address on the signed-in ACCOUNT.
         'auth/verify',
-        'csp-report',
         'demo',
         'mcp',
         'operator-join',

@@ -43,8 +43,6 @@ const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 // token in the body IS the credential, and it is checked against the household's live
 // `invite_nonce` — a narrower gate than CSRF, not a missing one. (The MINT side,
 // 'operator-invite', is NOT exempt: that one runs on a real operator session.)
-// 'csp-report' is the browser's own POST (Content-Security-Policy-Report-Only,
-// _lib/securityHeaders.ts): it carries no header of ours and answers 204 whatever it gets.
 // 'mcp' is exempt because an MCP client is not a browser: it has no cookie, no CSRF
 // pair to echo, and (per a known Claude Code bug, anthropics/claude-code#29562) may
 // not even get its custom headers sent on the first call — so the token has to be
@@ -85,7 +83,7 @@ const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 // been doing nothing at all. Harmless, but dead weight in the one list that has to stay
 // readable, and an entry that looks like a live hole is worse than no entry. If it ever
 // grows a POST it starts out gated, which is the right default.
-const CSRF_EXEMPT = new Set(['auth/login', 'auth/signup', 'auth/forgot', 'auth/reset', 'auth/verify', 'pair/start', 'demo', 'operator-join', 'csp-report', 'mcp', 'remarks/shipped'])
+const CSRF_EXEMPT = new Set(['auth/login', 'auth/signup', 'auth/forgot', 'auth/reset', 'auth/verify', 'pair/start', 'demo', 'operator-join', 'mcp', 'remarks/shipped'])
 
 const METHOD_EXPORT: Record<string, string> = {
   GET: 'onRequestGet',

@@ -29,7 +29,6 @@ import * as cercleLinks from '../functions/api/cercle-links'
 import * as cerclePhotos from '../functions/api/cercle-photos'
 import * as pets from '../functions/api/pets'
 import * as chores from '../functions/api/chores'
-import * as cspReport from '../functions/api/csp-report'
 import * as choresLedger from '../functions/api/chores-ledger'
 import * as dayNotes from '../functions/api/day-notes'
 import * as deals from '../functions/api/deals'
@@ -168,8 +167,6 @@ const TABLE: Record<string, RouteMod> = {
   'auth/password': authPassword,
   'a-regler': aRegler,
   // The browser's CSP violation reports (_lib/securityHeaders.ts): unauthenticated,
-  // CSRF-exempt (worker/index.ts), rate-limited, log-only, 204.
-  'csp-report': cspReport,
   'ai-errors': aiErrors,
   'ai-test': aiTest,
   ask,

@@ -94,7 +94,7 @@ verdicts inline; (5) commit `PARITY.md` with whatever shipped (push to `main`).
 
 ## Part 1 — Feature roster (the rows)
 
-**42** user-facing features — the row count of this table, not an estimate.
+**43** user-facing features — the row count of this table, not an estimate.
 Anchors are the feature’s _reach_: tables (migration
 numbers), endpoints (`worker/routes.ts` names), pages/components, shared query
 keys (`src/lib/queryKeys.ts`). A feature missing an anchor kind isn't a gap per
@@ -172,6 +172,7 @@ se (Recherche has no table) — the anchors just tell the auditor where to look.
 | F41 | Agent IA (serveur MCP, lecture seule)                                     | devices.kind='agent' (0083, aucune migration)                                                  | mcp, pair/devices (mintAgent)                                    | operator/devices `AgentSection`, \_lib/mcp (le fil), \_lib/askSnapshot                                   | DEVICES                             |
 | F42 | Les remarques (bogue/souhait/amélioration + la boucle de déploiement)     | remarks, remark_events (0136)                                                                  | remarks, remark-media, remarks/shipped (rappel CI)               | operator/remarks, RemarkComposer, board/RemarksCard (＋ et verdict sur place), lib/remarks (useRemarkVerdict — LE verdict, deux portes), HelpBubble (la porte « ? », composer sur place), ErrorBoundary (la porte « Signaler »), \_lib/deployHook, \_lib/invariants | REMARKS                             |
 | F43 | Partir : supprimer la maisonnée, ou repartir à neuf + les deux documents publics (Loi 25) | aucune table (efface les ~90 existantes)                                                        | household (DELETE), household/reset (POST), takeout, health (contact) | operator/takeout (la porte « Supprimer »), pages/LegalPage (PrivacyPage + TermsPage), pages/Home (le pied), _lib/sudo (requirePassword + requireHouseholdName), _lib/demoHousehold (deleteHousehold), _lib/restore (resetHouseholdContent) | —                                   |
+| F44 | Souvenirs (l'étagère des choses gardées — PLAN-mots C1, 2026-09-25) | mots.saved_at (0094) · drawings.saved_at + photos.saved_at (0140) | mots (PATCH saved), drawings (PATCH { id, saved }), photos (PATCH { id, saved }) | board/SouvenirsCard, board/PhotoFrame (la punaise « Garder »), pages/DrawingGalleryPage (la punaise), detail/adapters buildMot | MOTS, DRAWINGS, PHOTOS |
 
 > Roster rule: if a future audit day finds a surface not covered by a row (a new
 > feature shipped since), **add a row first**, then score it.
@@ -353,6 +354,7 @@ scored by the ACTIONS.md row being gap-free, same pattern as D7 → `DISCOVERY.m
 | F41 Agent IA (MCP)       | ✅⁹³    | ➖⁹⁴    | ✅⁹⁵    | ➖⁹⁶       | ➖⁹⁷  | ➖⁹⁴      | ✅⁹⁸     | ➖⁴⁸       | ✅⁹⁹         | ➖⁴⁷      | ✅¹⁰⁰     | ➖⁹⁴    | ✅¹⁰¹      | ➖¹       | ✅       | ✅¹⁰²   |
 | F42 Les remarques        | ✅      | ➖¹⁰³   | ✅¹⁰⁴   | ✅         | ✅¹⁰⁵ | ➖¹⁰⁶     | ✅¹⁰⁷    | ➖⁴⁸       | ✅           | ✅        | ✅        | ✅¹⁰⁸   | ✅         | ✅       | ✅       | ✅      |
 | F43 Partir (Loi 25)      | ✅¹⁰⁹   | ➖¹¹⁰   | ➖¹¹¹   | ➖¹¹²      | ➖¹¹³ | ➖¹¹⁴     | ➖¹¹⁵    | ➖⁴⁸       | ✅           | ➖¹¹⁶     | ➖¹¹⁷     | ➖¹¹⁸   | ✅¹¹⁹      | ➖¹²⁰     | ✅       | ✅¹²¹   |
+| F44 Souvenirs            | ✅¹²²   | ✅      | ➖¹²³   | ✅         | ✅¹²⁴ | ➖¹²⁵     | ✅¹²⁶    | ➖⁴⁸       | ✅¹²⁷        | ➖⁴⁷      | ✅¹²⁸     | ✅¹²⁹   | ✅¹³⁰      | ✅        | ✅       | ✅¹³¹   |
 
 Footnotes (verdicts recorded so far):
 
@@ -888,6 +890,16 @@ Footnotes (verdicts recorded so far):
 120. **Media (F43)** — no media of its own; the delete FREES the household's R2 blobs
      through the inventory `collectMediaKeys` walks.
 121. **e2e (F43)** — `e2e/leave-and-legal.spec.ts` (7, the start-over door included) + `worker/reset.d1.test.ts` (4, proven red twice) for the lock, the request shape
+122. **CRUD (F44)** — a keepsake is a TOGGLE on an existing row (`saved_at`), never a row of its own: keep/un-keep is the whole CRUD, and delete stays where the thing lives (the mots card, the gallery, the frame). Nothing on the shelf can be created or deleted from the shelf — it shows, it opens.
+123. **Undo (F44)** — a toggle is its own undo: the pressed pin is the state, one tap back is the reversal (the cook-mode « Il en manque » precedent). No toast, because nothing is lost.
+124. **Realtime (F44)** — `mots` and `photos` writes already nudge their keys (keysForPath); `drawings` never did (pre-existing — the gallery is a scene you visit, not a polled card), so a drawing kept on one device reaches another's shelf on the next gallery/board load. Recorded, not fixed here.
+125. **Search (F44)** — the shelf holds things that are already searchable by their own kind (a mot by its text, a picture not at all); « kept » is not a search facet, by design (a shelf you visit, never a filter).
+126. **Guide (F44)** — one sentence in the mots card's « La galerie de dessins » point (the board card is at its point cap; DISCOVERY's merge-first rule); the board card's « Changer la vue » point covers the face lens the kept mots follow.
+127. **Kiosk/Mobile (F44)** — one `Rail` (wheel + arrow keys reach it, useHScroll), square thumbnails; the compact lens shows the newest picture or the first kept line (CardMini).
+128. **Empty (F44)** — mode `auto`: the slot stays mounted and hidden until the first keepsake (`useReportEmpty`); no empty frame, no invitation — a shelf appears when there is something on it.
+129. **Who (F44)** — kept mots follow the face lens like the mots card (a keepsake is the recipient's); pictures are the household's; a read-only guest sees pictures only (MotsCard's privacy line).
+130. **Schema (F44)** — 0140 adds `saved_at INTEGER` to `drawings` and `photos`: the SAME name and sense as `mots.saved_at` (NULL = not kept), not a `kept`/`starred` of its own — the schema conventions' « never coin a new name for a named sense ».
+131. **e2e (F44)** — `e2e/souvenirs.spec.ts` (3: exactly what is kept and nothing else, the mot opens its peek, the hidden slot, the frame's pin → one PATCH), `e2e/board-customize.spec.ts` counts the fifth band card, `src/lib/boardCards.test.ts` the canonical order; 0140 applied in workerd by the d1 suite.
      and both documents signed-out, plus `worker/leave.d1.test.ts` (5) in the REAL
      runtime: the refusals, the accent/case fold, the session kill switch, and the
      neighbouring household left untouched — the property that matters most and the one

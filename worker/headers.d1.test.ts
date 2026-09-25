@@ -30,11 +30,10 @@ describe('security headers', () => {
       expect(csp, path).toContain("object-src 'none'")
       expect(csp, path).toContain("frame-ancestors 'self'")
       expect(csp, path).toContain("script-src 'self' https://cdn.jsdelivr.net https://static.cloudflareinsights.com 'unsafe-inline'")
-      // …and the report-only twin keeps the STRICT script-src, so the evidence for
-      // tightening later keeps arriving.
-      const ro = res.headers.get('content-security-policy-report-only') ?? ''
-      expect(ro, path).toContain('report-uri /api/csp-report')
-      expect(ro, path).not.toContain("'unsafe-inline' https://cdn.jsdelivr.net")
+      // No report-only twin any more (2026-09-25): its only findings were the edge's own
+      // scripts, and it cost two POSTs per visitor. Red against its return.
+      expect(res.headers.get('content-security-policy-report-only'), path).toBeNull()
+      expect(csp, path).not.toContain('report-uri')
     }
   })
 
@@ -44,16 +43,13 @@ describe('security headers', () => {
     expect(res.headers.get('x-content-type-options')).toBe('nosniff')
   })
 
-  it('the CSP report door takes the browser’s POST with no CSRF header, from anyone, and answers 204', async () => {
+  it('the retired CSP report door is not a door any more — no 204, no 500', async () => {
+    // The report-only twin and its endpoint went on 2026-09-25 (securityHeaders.ts says
+    // why). A browser with a stale tab may still POST here for a while; it must meet a
+    // plain refusal, never the old 204 (that would mean the door came back) and never a
+    // 500 (that would be a crash on unauthenticated input).
     const report = { 'csp-report': { 'document-uri': 'https://babillard.test/board', 'violated-directive': 'script-src', 'blocked-uri': 'https://evil.test/x.js' } }
     const res = await anon('/api/csp-report', { method: 'POST', headers: { 'content-type': 'application/csp-report' }, body: report })
-    expect(res.status).toBe(204)
-    // …and a signed-in operator's browser too, still without the CSRF echo.
-    const a = await household('csp')
-    const res2 = await anon('/api/csp-report', { method: 'POST', body: report, headers: { Cookie: a.cookie } })
-    expect(res2.status).toBe(204)
-    // Garbage is swallowed, never a 500.
-    const res3 = await anon('/api/csp-report', { method: 'POST', headers: { 'content-type': 'text/plain' }, body: 'not json' })
-    expect(res3.status).toBe(204)
+    expect([403, 404]).toContain(res.status)
   })
 })

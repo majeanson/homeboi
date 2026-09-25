@@ -26,7 +26,7 @@ import { forbidden, serverError } from './_lib/json'
 // ⚠️ DEAD ON PRODUCTION. wrangler.toml's `main` is worker/index.ts, which reproduces
 // this gate inline — THAT is the live CSRF_EXEMPT, and worker/csrfExempt.test.ts
 // ratchets it. This copy is several entries behind (it has never known auth/forgot,
-// auth/reset, operator-join, csp-report, mcp or remarks/shipped) and is not maintained.
+// auth/reset, operator-join, mcp or remarks/shipped) and is not maintained.
 //
 // DO NOT ADD AN EXEMPTION HERE expecting it to take effect. This is the file whose NAME
 // makes it the obvious place to do that, and doing it would ship nothing while reading

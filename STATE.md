@@ -159,10 +159,10 @@ D1's per-invocation request cap — one batch per household, the plan once (`391
       keeps `'unsafe-inline'` and **every other directive is now ENFORCED** — `default-src
       'self'`, `object-src 'none'`, `base-uri`, `form-action`, the allow-lists and
       `frame-ancestors`. What survives the concession is worth naming: a remote script
-      from an origin nobody allowed still cannot load. The report-only twin keeps the
-      STRICT `script-src`, so the evidence for tightening keeps arriving and the day the
-      edge stops injecting is a data question, not a guess. Verified on production after
-      the deploy (the live stranger walk reads the visitor's console: zero CSP errors).
+      from an origin nobody allowed still cannot load. Verified on production after the
+      deploy. **The report-only twin was DROPPED 2026-09-25**: two weeks of reports were
+      only ever the edge's own scripts, and it cost two POSTs per visitor to the door; its
+      report endpoint went with it (`csrfExempt` ratchets down by one).
 
 ### K. Towards a public app — the plan, written 2026-09-16 (start here)
 

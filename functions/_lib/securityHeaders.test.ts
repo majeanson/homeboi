@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { CSP_REPORT_ONLY, ENFORCED, headersFileSource, withSecurityHeaders } from './securityHeaders'
+import { ENFORCED_CSP, ENFORCED, headersFileSource, withSecurityHeaders } from './securityHeaders'
 
 describe('security headers', () => {
   it('sets every enforced header on a JSON response and keeps the body + status', async () => {
@@ -34,36 +34,22 @@ describe('security headers', () => {
     for (const line of lines) expect(line.length, line.slice(0, 40)).toBeLessThan(2000)
   })
 
-  it('the report-only policy names the report door and every host the code loads from', () => {
-    expect(CSP_REPORT_ONLY).toContain('report-uri /api/csp-report')
+  it('the enforced policy names every host the code loads from, frames nothing foreign, and concedes inline scripts to the edge only', () => {
     for (const host of ['https://fonts.googleapis.com', 'https://fonts.gstatic.com', 'https://cdn.jsdelivr.net', 'https://flipp.com', 'https://static.cloudflareinsights.com']) {
-      expect(CSP_REPORT_ONLY, host).toContain(host)
+      expect(ENFORCED_CSP, host).toContain(host)
     }
-    // `frame-ancestors` is IGNORED in a report-only policy — the browser warns about it
-    // in every console, which the live walk read on night one. It belongs to the
-    // ENFORCED header only, where it is the whole enforced policy for now (the rest
-    // stays report-only until a week of reports says it matches the app).
-    expect(CSP_REPORT_ONLY).not.toContain('frame-ancestors')
-    // ENFORCED IS THE WHOLE POLICY NOW (2026-09-22), after the week of report-only the
-    // comment above was waiting for. Three properties, not a string compare: it carries
-    // every directive the report-only twin does, it adds `frame-ancestors` (which is
-    // meaningless in a report-only header), and its `script-src` is the ONE directive
-    // deliberately looser — the edge injects inline scripts into the marketing door, so
-    // a strict script-src would break it intermittently in production while passing
-    // every test here.
     const enforced = ENFORCED.find(([n]) => n === 'Content-Security-Policy')?.[1] ?? ''
-    for (const directive of CSP_REPORT_ONLY.split('; ')) {
-      if (directive.startsWith('script-src ')) continue
-      expect(enforced, `enforced policy dropped: ${directive}`).toContain(directive)
-    }
+    expect(enforced).toBe(ENFORCED_CSP)
+    expect(enforced).toContain("default-src 'self'")
+    expect(enforced).toContain("object-src 'none'")
     expect(enforced).toContain("frame-ancestors 'self'")
-    expect(enforced).toContain("'unsafe-inline'")
-    // …and the report-only twin keeps the strict one, so tightening later is a decision
-    // made from evidence rather than from hope.
-    expect(CSP_REPORT_ONLY).toContain("script-src 'self' https://cdn.jsdelivr.net https://static.cloudflareinsights.com")
-    expect(CSP_REPORT_ONLY.split('; ').find((d) => d.startsWith('script-src'))).not.toContain("'unsafe-inline'")
-    // The edge injects Cloudflare's RUM beacon into our HTML; a policy written from our
-    // own source alone would have blocked it the day it was enforced.
-    expect(CSP_REPORT_ONLY).toContain('https://static.cloudflareinsights.com')
+    // The ONE deliberate concession: the edge injects inline scripts into the door, so a
+    // strict script-src would break it intermittently in production while passing every
+    // test here. A remote script from an origin nobody allowed still cannot load.
+    expect(enforced).toContain("script-src 'self' https://cdn.jsdelivr.net https://static.cloudflareinsights.com 'unsafe-inline'")
+    // No report-only twin and no report door since 2026-09-25 (securityHeaders.ts says why):
+    // red against re-adding either — a twin is two POSTs per visitor for an answer we have.
+    expect(ENFORCED.some(([n]) => n === 'Content-Security-Policy-Report-Only')).toBe(false)
+    expect(enforced).not.toContain('report-uri')
   })
 })

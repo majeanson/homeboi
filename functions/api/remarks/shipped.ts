@@ -34,8 +34,8 @@ import { broadcastInvalidate, keysForPath } from '../../_lib/realtime'
 // That bound is load-bearing for the threat model in worker/index.ts's CSRF_EXEMPT
 // comment: keep it true. The household is never a parameter; it is read off the row.
 //
-// Shape: functions/api/csp-report.ts (unauthenticated, CSRF-exempt, rate-limited,
-// body-capped POST) with a real gate bolted on.
+// Shape: an unauthenticated, CSRF-exempt, rate-limited, body-capped POST (the retired
+// CSP report door's shape, 2026-09-16 → 09-25) with a real gate bolted on.
 
 const MAX_BYTES = 8 * 1024
 const EXPLANATION_MAX = 2000

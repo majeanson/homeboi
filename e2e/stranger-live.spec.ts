@@ -29,15 +29,10 @@ const SLOW_MS = 20_000
 interface Trouble {
   badRequests: string[]
   consoleErrors: string[]
-  // Violations of the REPORT-ONLY CSP. Collected and attached, never asserted:
-  // report-only blocks nothing, so a violation is a finding about the POLICY, not a
-  // fault in the page — and a weekly walk that fails on findings is a walk nobody
-  // reads. They are the input to the decision about enforcing it (STATE §4-L L6).
-  cspReports: string[]
 }
 
 function watch(page: Page): Trouble {
-  const t: Trouble = { badRequests: [], consoleErrors: [], cspReports: [] }
+  const t: Trouble = { badRequests: [], consoleErrors: [] }
   // OUR API only: `/cdn-cgi/*` is Cloudflare's own edge (the RUM beacon), same origin
   // but not ours to answer for.
   const ours = (url: string) => new URL(url).origin === new URL(BASE_URL).origin && !new URL(url).pathname.startsWith('/cdn-cgi/')
@@ -60,11 +55,8 @@ function watch(page: Page): Trouble {
     // costs the same thing: a weekly guard nobody can read.
     const from = m.location()?.url ?? ''
     if (from && !ours(from)) return
-    // A report-only violation is the POLICY talking, not the page failing.
-    if (text.includes('[Report Only]')) {
-      t.cspReports.push(text.slice(0, 200))
-      return
-    }
+    // (A CSP violation is a console error like any other now: the report-only twin is
+    // gone, 2026-09-25, and the enforced policy blocking something IS a page fault.)
     t.consoleErrors.push(`${page.url()} :: ${text.slice(0, 200)}`)
   })
   page.on('requestfailed', (r: Request) => {
@@ -183,8 +175,6 @@ test('a stranger can open the door, try the demo, walk every tab, write once, an
   times.claim = await step(page, '« Garder ma maisonnée »', () => page.goto('/garder', { waitUntil: 'domcontentloaded' }), 'form, .scene, h1')
 
   await testInfo.attach('walk-timings.json', { body: JSON.stringify(times, null, 2), contentType: 'application/json' })
-  if (trouble.cspReports.length)
-    await testInfo.attach('csp-report-only.txt', { body: [...new Set(trouble.cspReports)].join('\n'), contentType: 'text/plain' })
   await testInfo.attach('walk-end.png', { body: await page.screenshot({ fullPage: false }), contentType: 'image/png' })
 
   // 1 + 2 — last, so a failure above names the step rather than the symptom.

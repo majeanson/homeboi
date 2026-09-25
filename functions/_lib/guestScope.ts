@@ -11,8 +11,6 @@ import type { GuestKind } from './auth'
 // whole handler table (those modules are CF-typed and don't load in a node test).
 export function guestKindAllows(kind: GuestKind, apiPath: string): boolean {
   // The browser's CSP violation report (_lib/securityHeaders.ts) is not household data
-  // and every kind's browser sends one; the handler is log-only and answers 204.
-  if (apiPath === 'csp-report') return true
   if (kind === 'showcase') {
     // Read-ONLY of the hub: deny every guest write/mint path at the allowlist level too
     // (not just via authed()), so showcase keeps the default-deny property for writes —

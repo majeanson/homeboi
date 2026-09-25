@@ -24,11 +24,18 @@
 // Two corrections the LIVE report-only policy earned on its first night (the stranger
 // walk read the visitor's console, 2026-09-16):
 //   · `frame-ancestors` is IGNORED in a report-only policy and the browser says so in
-//     every console — it belongs only to the enforced header below, where it already is;
+//     every console — it belongs only to the enforced header, where it is;
 //   · Cloudflare's RUM beacon (static.cloudflareinsights.com/beacon.min.js) is injected
 //     by the EDGE, not by our HTML, so a policy written from our source alone would have
-//     blocked analytics the moment it was enforced. Exactly what report-only is for.
-export const CSP_REPORT_ONLY = [
+//     blocked analytics the moment it was enforced. Exactly what report-only was for.
+//
+// THE REPORT-ONLY TWIN IS GONE (2026-09-25). It stayed a week past enforcement « so the
+// evidence for tightening keeps arriving », and the evidence never changed: every report
+// was the edge's own inline scripts, which no tightening of OURS can address. Meanwhile
+// it cost two POSTs to the Worker per visitor to the door — a request budget spent on a
+// question that had its answer. The day the edge stops injecting is a data question
+// still, but the data is the edge's changelog, not our report log.
+const CSP_DIRECTIVES = [
   "default-src 'self'",
   "script-src 'self' https://cdn.jsdelivr.net https://static.cloudflareinsights.com",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
@@ -41,11 +48,10 @@ export const CSP_REPORT_ONLY = [
   "base-uri 'self'",
   "form-action 'self'",
   "object-src 'none'",
-  'report-uri /api/csp-report',
 ].join('; ')
 
-// THE ENFORCED POLICY (2026-09-22) — everything the report-only one says, except that
-// `script-src` also allows INLINE.
+// THE ENFORCED POLICY (2026-09-22) — every directive above, except that `script-src`
+// also allows INLINE.
 //
 // The week of facts the report-only header was shipped to collect came back with one
 // finding, and it is not ours: the edge injects inline scripts into the marketing page
@@ -62,11 +68,8 @@ export const CSP_REPORT_ONLY = [
 // a remote script from an origin nobody allowed still cannot load, which is the vector
 // that matters for a stolen-CDN or a compromised-dependency attack.
 //
-// The REPORT-ONLY header stays, with the STRICT `script-src` — so the evidence keeps
-// coming and a future session can tighten it the day the edge stops injecting, with the
-// same kind of data this decision was made from rather than a guess.
-const ENFORCED_CSP = [
-  ...CSP_REPORT_ONLY.split('; ').map((d) =>
+export const ENFORCED_CSP = [
+  ...CSP_DIRECTIVES.split('; ').map((d) =>
     d.startsWith('script-src ') ? `${d} 'unsafe-inline'` : d,
   ),
   "frame-ancestors 'self'",
@@ -80,7 +83,6 @@ export const ENFORCED: ReadonlyArray<readonly [name: string, value: string]> = [
   // nothing it frames needs either, and it never asks where the device is.
   ['Permissions-Policy', 'camera=(self), microphone=(self), geolocation=()'],
   ['Content-Security-Policy', ENFORCED_CSP],
-  ['Content-Security-Policy-Report-Only', CSP_REPORT_ONLY],
 ]
 
 // THE OTHER HALF OF THE SAME GUARANTEE — and it is not optional (verified on production
