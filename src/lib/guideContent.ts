@@ -446,8 +446,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Changer la vue', en: 'Change the view' },
         detail: {
-          fr: 'Quatre zooms : la Grille (la journée), La semaine (sept jours écrits au long), le Mois et L’année. Le visage choisi filtre tout — [[mot:maisonnee|Maisonnée]] montre tout le monde, un visage montre ses affaires à lui.',
-          en: 'Four zooms: the Grid (the day), The week (seven days spelled out), the Month and The year. The picked face filters everything — Household shows everyone, a face shows just their things.',
+          fr: 'Quatre zooms : la Grille (la journée), La semaine (sept jours écrits au long), le Mois et L’année. Le visage choisi filtre tout — [[mot:maisonnee|Maisonnée]] montre tout le monde, un visage montre ses affaires à lui, et une ligne sous les commandes dit ce qui est à lui en ce moment (un mot qui attend, son prochain rendez-vous, la routine du moment), rien quand rien n’attend.',
+          en: 'Four zooms: the Grid (the day), The week (seven days spelled out), the Month and The year. The picked face filters everything — Household shows everyone, a face shows just their things, and one line under the controls says what is theirs right now (a message waiting, their next appointment, the routine of the moment), nothing when nothing is pending.',
         },
       },
       {

@@ -1,4 +1,4 @@
-import { Suspense, lazy, useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { Suspense, lazy, useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { isBoardStale } from '../lib/online'
 import { liveInterval } from '../lib/query'
 import { settingsHref } from '../lib/settingsNav'
@@ -136,7 +136,10 @@ import { useEscapeKey } from '../lib/sceneNav'
 // and stays empty — no counters, no score for clearing it. The board has two
 // glances — « Grille » (this file) and « Mois » (MonthView) — with the face picker
 // as the per-person lens; the card/section atoms live in src/components/board/*.
-import { BOARD_KEY, TODOS_KEY, WEATHER_KEY, MONTH_KEY, CHORES_KEY, HOME_PROJECTS_KEY, CARNETS_KEY } from '../lib/queryKeys'
+import { BOARD_KEY, TODOS_KEY, WEATHER_KEY, MONTH_KEY, CHORES_KEY, HOME_PROJECTS_KEY, CARNETS_KEY, ROUTINES_KEY } from '../lib/queryKeys'
+import { useMots, waitingMots } from '../lib/mots'
+import { pickMyNext, pickMyRoutine } from '../lib/pourToi'
+import { tintInk } from '../lib/routineTod'
 import { useChoreRemovals, useRemoveMealFromPlan } from '../components/detail/EntityRemovals'
 import { TodoSection } from '../components/todos/TodoSection'
 import { type TodosData, todosKey, todosPath, splitTodos } from '../lib/todos'
@@ -397,6 +400,15 @@ export function Board() {
   // Per-slot meal colour + visibility (Réglages ▸ Repas). A meal's slot tints its
   // card here and everywhere it shows; a hidden slot drops off the glance.
   const mealPrefs = useMealPrefs()
+  // « Pour toi » (C2, lib/pourToi) — its two reads, ABOVE the early returns (hook-order
+  // law). Both share caches the board already holds: the mots card polls MOTS_KEY, and
+  // « Prochaine routine » fetches ROUTINES_KEY — so neither adds a request.
+  const motsAll = useMots()
+  const { data: routinesData } = useQuery({
+    queryKey: ROUTINES_KEY,
+    queryFn: () => api<{ routines: { id: string; name: string; memberId: string | null; timeOfDay: string | null; cards: { icon?: string }[] }[] }>('routines'),
+    staleTime: 5 * 60_000,
+  })
   // The day's HERO meal — the souper unless the household promoted another slot.
   // « Préparer le repas » — the next meal due that resolves to a recipe → its cook
   // mode (or the picker when it's free-text). Reused from the retired « Maintenant »
@@ -651,6 +663,17 @@ export function Board() {
   // now-card (tonight's supper), then a gentle grouped timeline of colour-coded
   // activity cards. Same data + writes as before — just the calm Pip surface.
   const tod = timeOfDay(nowMs)
+  // « Pour toi » (C2): the one line under the controls, only for a picked face and only
+  // when something is theirs right now — a mot waiting (presence), their next
+  // rendez-vous, the routine of the moment. Empty → nothing rendered (see lib/pourToi).
+  const pourToi: string[] = []
+  if (me) {
+    if (waitingMots(motsAll, me.id).length > 0) pourToi.push(t.board.pourToi.mot)
+    const mine = pickMyNext(todayEvents, me.id, Math.floor(nowMs / 1000))
+    if (mine) pourToi.push(t.board.pourToi.next(mine.title, formatTime(mine.start_at, lang)))
+    const routine = pickMyRoutine(routinesData?.routines ?? [], me.id, nowMs)
+    if (routine) pourToi.push(t.board.pourToi.routine(routine.name))
+  }
   // LOCAL midnight of "today" — the calendar's day key, matching the server's
   // local-day bucketing (lib/monthgrid + /api/month). UTC midnight flipped a day
   // ahead every evening (~8 PM Eastern), so "today" highlighted tomorrow's cell.
@@ -1763,6 +1786,13 @@ export function Board() {
         {/* The help "?" lives in the HubHead action slot (like La liste), NOT here:
             appended to this row it wrapped to a stranded second line on mobile. */}
       </div>
+      {/* « Pour toi » (C2): one quiet line in the face's tint. Plain text — a glance, not a
+          door; each thing it names is already one tap away on the board below. */}
+      {me && pourToi.length > 0 && (
+        <p className="pourtoi" style={{ '--tint': tintInk(me.colour, null) } as CSSProperties}>
+          <span className="pourtoi__name">{greetName(me.display_name)}</span> — {pourToi.join(' · ')}
+        </p>
+      )}
       {help.hint && <HelpHint card="board" />}
       {help.bubble}
 

@@ -26,6 +26,22 @@
   color: var(--ink-soft);
   font-size: 0.9rem;
 }
+/* « Pour toi » (C2, lib/pourToi): ONE line in the picked face's tint under the controls
+   row — a mot waiting (presence, never a count), their next rendez-vous, the routine of
+   the moment. Absent when nothing is pending. The name reads in `--tint`, which Board
+   sets through tintInk() so a pale member colour still clears AA on cream. */
+.pourtoi {
+  margin: -6px 0 12px;
+  padding-left: 0.6rem;
+  border-left: 3px solid var(--tint);
+  font-size: 0.92rem;
+  color: var(--ink-soft);
+  line-height: 1.35;
+}
+.pourtoi__name {
+  color: var(--tint);
+  font-weight: 700;
+}
 .weather-tip {
   margin-top: 0.35rem;
   font-size: 0.9rem;

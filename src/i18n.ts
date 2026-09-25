@@ -747,6 +747,9 @@ export const FR = {
     anytime: 'À tout moment',
     atWork: 'Au travail',
     free: 'Libre',
+    // « Pour toi » (C2): the one line under the controls when a face is picked — presence,
+    // never a count (« un mot t’attend », not « 3 mots »).
+    pourToi: { mot: 'un mot t’attend', next: (title: string, time: string) => `${title} ${time}`, routine: (name: string) => `routine ${name}` },
     tonight: 'Ce soir',
     tomorrow: 'Demain',
     planToday: 'Planifier aujourd’hui',

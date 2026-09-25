@@ -634,6 +634,7 @@ export const EN: typeof FR = {
     anytime: 'Anytime today',
     atWork: 'At work',
     free: 'Free',
+    pourToi: { mot: 'a message is waiting for you', next: (title: string, time: string) => `${title} ${time}`, routine: (name: string) => `${name} routine` },
     tonight: 'Tonight',
     tomorrow: 'Tomorrow',
     planToday: 'Plan today',
