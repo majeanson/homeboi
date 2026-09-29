@@ -2785,7 +2785,7 @@ export const EN: typeof FR = {
     catchupIntro:
       'Only fill this in if one person paid more than the other up front and you are closing that gap. Otherwise leave it folded — most households have none.',
     catchupExample: 'Example: she put in $72,000 more up front, he sends $300 extra per payment until August 2028.',
-    transferIntro: 'Tick what this transfer covers. The total and the message for your bank write themselves.',
+    transferIntro: 'Tick what this transfer covers — the total and the bank message write themselves.',
     dueDatesHint: 'Tick the dates this transfer pays. A ✓ means it is already sent — nothing to do there.',
 
     graphLabel: (from: string, to: string) => `The gap being closed, from ${from} to ${to}`,

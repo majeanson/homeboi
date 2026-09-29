@@ -3200,7 +3200,7 @@ export const FR = {
     catchupIntro:
       'À remplir seulement si une personne a payé plus que l’autre au départ et que vous rattrapez l’écart. Sinon, laisse fermé — la plupart des maisonnées n’en ont pas.',
     catchupExample: 'Exemple : elle a mis 72 000 $ de plus au départ, il envoie 300 $ de plus par paiement jusqu’en août 2028.',
-    transferIntro: 'Coche ce que ce virement couvre. Le total et le message pour la banque se composent tout seuls.',
+    transferIntro: 'Coche ce que ce virement couvre — le total et le message se composent seuls.',
     dueDatesHint: 'Coche les dates que ce virement paie. Un ✓ veut dire que c’est déjà envoyé — pas besoin d’y retoucher.',
 
     // ---- L’écart, dessiné --------------------------------------------------
