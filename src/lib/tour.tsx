@@ -5,7 +5,7 @@
 // knows nothing about a specific tour. Same context+localStorage shape as Calm/
 // Help (see main.tsx), guarded with try/catch so storage quirks never break boot.
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useAudience } from './audience'
 import { useAuth } from './auth'
 import { isGuest, isPaired } from './device'
@@ -122,6 +122,7 @@ export const useTour = () => useContext(TourContext)
 
 export function TourProvider({ children }: { children: ReactNode }) {
   const nav = useNavigate()
+  const { pathname } = useLocation()
   const { audience } = useAudience()
   const { signedIn } = useAuth()
   const { surface } = useSurface()
@@ -225,10 +226,16 @@ export function TourProvider({ children }: { children: ReactNode }) {
     // / family / welcome / cast link carries a guest token (isGuest), and the « Diffuser
     // au salon » TV board lives at /cast; neither should ever get the spotlight tour.
     // (Don't set autoTried here, so a later normal session in this tab still runs it.)
-    if (isGuest() || window.location.pathname.startsWith('/cast')) return
+    if (isGuest() || pathname.startsWith('/cast')) return
+    // Only ON the tour's own start route (2026-09-29). Launching elsewhere meant its first
+    // act was to navigate there — so a newcomer's deep link (a Réglages link, a shared
+    // page, a bookmark) was pulled to the board mid-load. Not marked tried here either:
+    // `pathname` is a dep, so the first visit to the board is where it begins.
+    const essentials = TOURS.find((tr) => tr.id === 'essentials')
+    if (essentials?.startRoute && pathname !== essentials.startRoute) return
     autoTried.current = true
     if (!hasTourSeen('essentials')) start('essentials')
-  }, [audience, signedIn, surface, start])
+  }, [audience, signedIn, surface, start, pathname])
 
   const value: TourValue = {
     activeTour,

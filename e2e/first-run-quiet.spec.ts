@@ -145,3 +145,23 @@ test('…and when the BOARD CHUNK is what arrives late — the shape production 
   await expect(page).toHaveURL(/\/board(\?|$)/)
   await expect(page.locator('.habitudes')).toHaveCount(0)
 })
+
+// A DEEP LINK IS NOT HIJACKED (2026-09-29). The tour lives at the app root and used to
+// auto-start on WHATEVER page a new device opened first — and its first act is to go to
+// its start route. So a newcomer who opened a Réglages link, a shared page or any
+// bookmark before meeting the tour was pulled to the board mid-load. The weekly stranger
+// walk hit it every Monday on the phone (« navigation interrupted by another navigation
+// to /board ») and only passed on retry. The welcome now waits for the board.
+test('a brand-new device that opens a deep link stays there — the welcome waits for the board', async ({ page }) => {
+  await fresh(page, { tourSeen: false })
+  await page.goto('/settings?tab=settings')
+  await expect(page.locator('#operator-panel')).toBeVisible({ timeout: 15_000 })
+  // Long enough for the auth check to resolve and the old auto-launch to navigate.
+  await page.waitForTimeout(1_500)
+  await expect(page, 'the tour pulled a deep link to the board').toHaveURL(/\/settings/)
+  await expect(page.locator('.tour')).toHaveCount(0)
+
+  // …and it has not been lost: the first visit to the board is where it begins.
+  await page.getByRole('link', { name: 'Aujourd’hui' }).first().click()
+  await expect(page.locator('.tour')).toBeVisible({ timeout: 15_000 })
+})
