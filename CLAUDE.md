@@ -220,7 +220,7 @@ once CI concluded successfully on `main` — so it gives signal *after* a green 
 never blocks the deploy (main ships as soon as typecheck/test/build are green). The E2E
 job runs `npm run e2e` then `npm run e2e:sw` (the SW harness). **Trust CI as the baseline;
 don't run e2e locally by default — check the E2E job on the run page for visual/flow
-regressions.** Node 24.
+regressions.** Node 26.
 
 > **A local e2e run is WEAKER than CI, and knowing how is the point.** CI runs
 > `workers: 1, retries: 0`; locally it is `4` workers with `retries: 1`. A test that
