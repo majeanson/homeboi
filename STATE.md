@@ -45,7 +45,7 @@
   for a day). It cannot be finished on Marc's machine: two attempts died of memory
   pressure on 2026-09-22 (a V8 heap OOM, then Vite itself refusing connections mid-run).
 - `npm run e2e:sw` — 5 passed (the kiosk's offline reboot, against the real PROD bundle).
-- `npm run check:bundle` — the door's static closure is **9 chunks / 676 KB** (was 70 /
+- `npm run check:bundle` — the door's static closure is **9 chunks / 522 KB** (was 70 /
   1 131 before the hub went lazy); every chunk within budget; the SW precache covers all
   offline-needed chunks and skips build metadata.
 - **The build-gating invariants** are the codebase's best feature (§5), and the list is

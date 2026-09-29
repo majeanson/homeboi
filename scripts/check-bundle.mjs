@@ -49,8 +49,14 @@ const EAGER_CHUNKS = [
   //
   // Ratcheted here, in the same commit that earned it: **365 KB** (~25 KB of room).
   // The rule is unchanged — reach for `lazy()` before you reach for a bigger number.
-  { re: /^index-/, cap: 365 * KB, label: 'eager entry' }, // today ~340 KB
-  { re: /^react-vendor-/, cap: 280 * KB, label: 'eager react-vendor' }, // today ~227 KB
+  //
+  // 2026-09-29, the same move twice as big: lib/tour.tsx (mounted by main.tsx) statically
+  // imported the tour scripts, and they import the WHOLE in-app guide — ~150 KB of prose
+  // on the boot path for a script that runs once per device. Loaded on the first start()
+  // now: entry 340 → **159 KB**, door 676 → 522 KB. Ratcheted the same way: **185 KB**.
+  { re: /^index-/, cap: 185 * KB, label: 'eager entry' }, // today ~159 KB
+  // today ~253 KB — React 19.3 (2026-09-29) added 28 KB of react-dom on its own; no lazy fix.
+  { re: /^react-vendor-/, cap: 280 * KB, label: 'eager react-vendor' },
   // today ~99 KB under a 110 KB cap. THE NOTE THAT USED TO SIT HERE HAS BEEN CASHED.
   //
   // It read: « today ~130 KB — i.e. AT the cap », after « Les remarques » (0136) pushed it

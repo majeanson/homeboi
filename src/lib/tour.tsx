@@ -10,7 +10,16 @@ import { useAudience } from './audience'
 import { useAuth } from './auth'
 import { isGuest, isPaired } from './device'
 import { useSurface } from './surface'
-import { TOURS, type Tour } from './tourContent'
+import type { Tour } from './tourContent'
+
+// THE TOUR SCRIPTS ARE LAZY (2026-09-29). `tourContent` pulls the whole in-app guide
+// (`guideContent`, ~134 KB) and the ＋ help, and this provider is mounted by main.tsx —
+// so a static import put ~150 KB of prose into the door's eager closure, for a script
+// that runs once per device. It loads on the first `start()` now. The one fact the
+// shell needs before that — where the auto-launched tour begins — lives here, and
+// tourContent reads it from here, so the two cannot disagree.
+export const ESSENTIALS_START = '/board'
+const loadTours = () => import('./tourContent').then((m) => m.TOURS)
 
 // One key holds the SET of finished/skipped tour ids (JSON array), so adding more
 // tours later each track independently without new storage keys.
@@ -156,9 +165,14 @@ export function TourProvider({ children }: { children: ReactNode }) {
 
   const start = useCallback(
     (id: string) => {
-      const tour = TOURS.find((tr) => tr.id === id)
-      if (!tour) return
-      startTour(tour)
+      void loadTours()
+        .then((tours) => {
+          const tour = tours.find((tr) => tr.id === id)
+          if (tour) startTour(tour)
+        })
+        // A chunk that cannot load (offline, a stale deploy) is a tour that does not
+        // start — never an error on the screen the person is using.
+        .catch(() => {})
     },
     [startTour],
   )
@@ -172,13 +186,17 @@ export function TourProvider({ children }: { children: ReactNode }) {
   // future branch means "this tour has done its job", whatever it branched into.
   const branchTo = useCallback(
     (id: string) => {
-      const tour = TOURS.find((tr) => tr.id === id)
-      if (!tour) return
-      setActiveTour((cur) => {
-        if (cur) markTourSeen(cur.id)
-        return cur
-      })
-      startTour(tour)
+      void loadTours()
+        .then((tours) => {
+          const tour = tours.find((tr) => tr.id === id)
+          if (!tour) return
+          setActiveTour((cur) => {
+            if (cur) markTourSeen(cur.id)
+            return cur
+          })
+          startTour(tour)
+        })
+        .catch(() => {})
     },
     [startTour],
   )
@@ -231,8 +249,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
     // act was to navigate there — so a newcomer's deep link (a Réglages link, a shared
     // page, a bookmark) was pulled to the board mid-load. Not marked tried here either:
     // `pathname` is a dep, so the first visit to the board is where it begins.
-    const essentials = TOURS.find((tr) => tr.id === 'essentials')
-    if (essentials?.startRoute && pathname !== essentials.startRoute) return
+    if (pathname !== ESSENTIALS_START) return
     autoTried.current = true
     if (!hasTourSeen('essentials')) start('essentials')
   }, [audience, signedIn, surface, start, pathname])

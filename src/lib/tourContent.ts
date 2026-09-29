@@ -13,6 +13,7 @@
 import type { IconName } from '../components/Icon'
 import { ADD_HELP } from './addHelp'
 import { GUIDE, guideWhat, type Bi } from './guideContent'
+import { ESSENTIALS_START } from './tour'
 
 // guideWhat (the one-line `what` of a Guide card, reused verbatim as a coachmark
 // body so a step and its full reference share ONE source for that sentence) now
@@ -105,7 +106,7 @@ function addSheetSteps(id: string, extra: TourStep[] = []): TourStep[] {
 const BASE_TOURS: Tour[] = [
   {
     id: 'essentials',
-    startRoute: '/board',
+    startRoute: ESSENTIALS_START,
     steps: [
       {
         icon: 'sun-bold',
