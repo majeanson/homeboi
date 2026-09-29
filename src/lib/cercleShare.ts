@@ -3,7 +3,7 @@
 // (Union-Find over links, ./cercle), so before it can be handed to another household
 // we snapshot the exact people + relationship edges + pets into an `IntakeSubmission`
 // — the SAME wire shape a relative's intake form produces (./intake), so the recipient
-// merges it through the existing IntakeReview flow (matchIntakePerson + /api/cercle*).
+// merges it through the one « fiche famille » merge (lib/ficheMerge, /cercle/import).
 //
 // Pure (no React, no network) so it's unit-testable and framework-free, mirroring
 // ./cercle. The reverse direction (payload → cercle rows) lives client-side in the

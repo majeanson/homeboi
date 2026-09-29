@@ -9,10 +9,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLang, useT } from '../i18n'
 import { api, ApiError, isUnauthorized } from '../lib/api'
 import { isGuest } from '../lib/device'
-import { uploadMedia } from '../lib/uploadMedia'
-import { imgUrl } from '../lib/image'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
-import { CERCLE_KEY, BOARD_KEY } from '../lib/queryKeys'
+import { CERCLE_KEY, BOARD_KEY, INTAKE_KEY } from '../lib/queryKeys'
 import { SceneHead } from '../components/SceneHead'
 import { Loading } from '../components/Fallback'
 import { ReviewChecklist } from '../components/ReviewChecklist'
@@ -22,16 +20,32 @@ import { Avatar } from '../components/Avatar'
 import { Icon } from '../components/Icon'
 import { Chip } from '../components/Chip'
 import { EditField } from '../components/EditField'
-import { genderedRelLabel, type Contact, type Member, type RelationshipType } from '../lib/cercle'
-import { matchIntakePerson, type IntakeSubmission, type IntakePersonInput, type IntakePetInput, type IntakeMatch } from '../lib/intake'
+import { THING_DEFAULTS } from '../lib/things'
+import { fullName, genderedRelLabel, type Contact, type Member } from '../lib/cercle'
+import type { IntakeMatch, IntakeSubmission, PendingIntake } from '../lib/intake'
+import {
+  buildReview,
+  copyPhotoToOwn,
+  displayName,
+  matchKey,
+  mergeIntoCercle,
+  mergeSteps,
+  ownPhoto,
+  type Decisions,
+  type ReviewItem,
+} from '../lib/ficheMerge'
 
-// « Ajouter une famille » — the RECIPIENT side of « Partager une famille ». A friend
-// on their own account opened Le cercle, shared a family, and sent the /cercle/import?s=<id>
-// link. Here we (signed into OUR OWN account) read the shared snapshot by its capability
-// id, preview who's in it (flagging likely duplicates against our own cercle), and MERGE
-// the ticked people + relationships + pets into our cercle via the existing /api/cercle*
-// endpoints — the same reuse the intake review does (matchIntakePerson + ReviewChecklist).
-// One-time COPY: photos are re-copied into OUR R2 ownership so nothing is shared live.
+// « Ajouter une famille » — THE review screen for a family record coming in, from
+// either door (2026-09-29, « fiche famille »):
+//   · `?s=<id>`      — a family another household shared (« Partager une famille »).
+//                      We read the snapshot by its capability id; photos are re-copied
+//                      into OUR R2 ownership so nothing stays shared live.
+//   · `?intake=<id>` — a family-info form a relative filled from our own link, waiting
+//                      in quarantine. Its photos were staged for us already; the sender
+//                      always comes in (they are who the link was for), and a link aimed
+//                      at one person merges into that person.
+// Either way the ticked people, relationships and pets merge through lib/ficheMerge —
+// the one merge; this page only decides where the family comes FROM.
 
 interface ShareResponse {
   label: string
@@ -39,45 +53,31 @@ interface ShareResponse {
   sourceName: string | null
 }
 
-const matchKey = (m: IntakeMatch) => `${m.kind}:${m.id}`
-
-// An incoming person → /api/cercle body. Blank fields → undefined so a merge never
-// clobbers an existing value; the re-copied photo rides as photoKey.
-function personBody(p: IntakePersonInput, photoKey: string | null) {
-  return {
-    firstName: p.firstName,
-    lastName: p.lastName || undefined,
-    nickname: p.nickname || undefined,
-    birthday: p.birthday || undefined,
-    gender: p.gender ?? undefined,
-    email: p.email || undefined,
-    phone: p.phone || undefined,
-    address: p.address ?? undefined,
-    notes: p.notes || undefined,
-    photoKey: photoKey ?? undefined,
-  }
+// What the page needs to know about where the family comes from.
+interface Source {
+  payload: IntakeSubmission
+  title: string
+  from: string | null
+  groupLabel: string | null
+  alwaysSelf: boolean
+  selfCandidate: IntakeMatch | null
+  photo: (key: string | null) => Promise<string | null>
+  finish: () => Promise<void>
 }
 
-const displayName = (p: IntakePersonInput): string => `${p.firstName} ${p.lastName}`.trim() || p.firstName
-
-// Re-copy a shared photo (a share-owned `fs_` R2 key) into a blob WE own, by fetching
-// it and re-uploading through the contact photo endpoint. Best-effort: any failure (R2
-// unset on our side, blob gone) → no photo, and the person still imports.
-async function copyPhotoToOwn(fsKey: string | null): Promise<string | null> {
-  if (!fsKey) return null
-  try {
-    const res = await fetch(imgUrl(fsKey), { credentials: 'same-origin' })
-    if (!res.ok) return null
-    const blob = await res.blob()
-    return await uploadMedia('cercle', blob, { resize: false })
-  } catch {
-    return null
+// An intake link aimed at one person carries `contact:<id>` / `member:<id>`.
+function targetMatch(targetKey: string | null, contacts: Contact[], members: Member[]): IntakeMatch | null {
+  if (!targetKey) return null
+  const sep = targetKey.indexOf(':')
+  const kind = targetKey.slice(0, sep) as 'contact' | 'member'
+  const id = targetKey.slice(sep + 1)
+  if (kind === 'contact') {
+    const c = contacts.find((x) => x.id === id)
+    return c ? { kind, id, name: fullName(c) } : null
   }
+  const m = members.find((x) => x.id === id)
+  return m ? { kind, id, name: m.displayName } : null
 }
-
-type ReviewItem =
-  | { kind: 'person'; index: number; person: IntakePersonInput; relType: RelationshipType | null; candidate: IntakeMatch | null }
-  | { kind: 'pet'; petIndex: number; pet: IntakePetInput }
 
 export function FamilyImportPage() {
   const t = useT()
@@ -89,13 +89,19 @@ export function FamilyImportPage() {
 
   const [params] = useSearchParams()
   const shareId = params.get('s')
+  const intakeId = params.get('intake')
   const [codeInput, setCodeInput] = useState('')
 
-  const { data: share, error, isLoading } = useQuery({
+  const { data: share, error, isLoading: shareLoading } = useQuery({
     queryKey: ['family-share', shareId],
     queryFn: () => api<ShareResponse>(`family-share?s=${encodeURIComponent(shareId!)}`),
     enabled: !!shareId,
     retry: false,
+  })
+  const { data: intake, isLoading: intakeLoading } = useQuery({
+    queryKey: INTAKE_KEY,
+    queryFn: () => api<{ submissions: PendingIntake[] }>('intake'),
+    enabled: !!intakeId,
   })
 
   // Our OWN circle, for dedupe suggestions at review.
@@ -108,7 +114,7 @@ export function FamilyImportPage() {
 
   const [reviewing, setReviewing] = useState(false)
   const [items, setItems] = useState<ReviewItem[]>([])
-  const [decision, setDecision] = useState<Record<number, string>>({}) // person index → 'new' | 'contact:id' | 'member:id'
+  const [decision, setDecision] = useState<Decisions>({})
   // Merge runs many sequential writes (create each person + copy their photo + each
   // link + each pet); for a big family that's a while, so we drive a progress bar
   // instead of a bare spinner. null = not merging.
@@ -123,7 +129,7 @@ export function FamilyImportPage() {
   if (isUnauthorized(error)) return <Navigate to="/login" replace />
 
   // No id in the URL → let them paste a share code.
-  if (!shareId) {
+  if (!shareId && !intakeId) {
     return (
       <div className="scene" aria-label={t.familyShare.importTitle}>
         <SceneHead title={t.familyShare.importTitle} icon="users-three-bold" card="cercle" onClose={close} />
@@ -144,114 +150,59 @@ export function FamilyImportPage() {
     )
   }
 
-  const notFound = error instanceof ApiError && (error.status === 404 || error.status === 400)
+  const pending = intakeId ? intake?.submissions.find((x) => x.id === intakeId) : undefined
+  const source: Source | null = share
+    ? {
+        payload: share.payload,
+        title: share.label || t.familyShare.importTitle,
+        from: t.familyShare.from(share.sourceName || t.cercle.memberBadge),
+        groupLabel: share.label || null,
+        alwaysSelf: false,
+        selfCandidate: null,
+        photo: copyPhotoToOwn,
+        finish: async () => {},
+      }
+    : pending
+      ? {
+          payload: pending,
+          title: t.intake.reviewItemTitle(displayName(pending.self)),
+          from: null,
+          groupLabel: null,
+          alwaysSelf: true,
+          selfCandidate: targetMatch(pending.targetKey, contacts, members),
+          photo: ownPhoto,
+          finish: async () => {
+            await api('intake', { method: 'PATCH', body: { id: pending.id, status: 'merged' } })
+            qc.invalidateQueries({ queryKey: INTAKE_KEY })
+          },
+        }
+      : null
+  const isLoading = shareLoading || intakeLoading
+  const notFound =
+    (error instanceof ApiError && (error.status === 404 || error.status === 400)) || (!!intakeId && !intakeLoading && !pending)
 
-  function openReview(sub: IntakeSubmission) {
-    const relOf = (idx: number): RelationshipType | null =>
-      sub.links.find((l) => (l.aIndex === idx && l.bIndex === 0) || (l.bIndex === idx && l.aIndex === 0))?.type ?? null
-    const people: ReviewItem[] = [
-      { kind: 'person', index: 0, person: sub.self, relType: null, candidate: matchIntakePerson(sub.self, contacts, members) },
-      ...sub.household.map((p, i): ReviewItem => ({
-        kind: 'person',
-        index: i + 1,
-        person: p,
-        relType: relOf(i + 1),
-        candidate: matchIntakePerson(p, contacts, members),
-      })),
-    ]
-    const petItems: ReviewItem[] = sub.pets.map((p, i): ReviewItem => ({ kind: 'pet', petIndex: i, pet: p }))
-    const dec: Record<number, string> = {}
-    for (const it of people) if (it.kind === 'person') dec[it.index] = it.candidate ? matchKey(it.candidate) : 'new'
-    setItems([...people, ...petItems])
-    setDecision(dec)
+  function openReview(src: Source) {
+    const r = buildReview(src.payload, contacts, members, src.selfCandidate)
+    setItems(r.items)
+    setDecision(r.decision)
     setErr(null)
     setReviewing(true)
   }
 
-  // Create OR merge one person; returns the resulting contact id (for linking/owning).
-  async function upsertPerson(index: number, person: IntakePersonInput): Promise<string> {
-    const photoKey = await copyPhotoToOwn(person.photoKey)
-    const choice = decision[index] ?? 'new'
-    if (choice !== 'new') {
-      const sep = choice.indexOf(':')
-      const kind = choice.slice(0, sep)
-      const id = choice.slice(sep + 1)
-      if (kind === 'contact') {
-        await api('cercle', { method: 'PATCH', body: { id, ...personBody(person, photoKey) } })
-        return id
-      }
-      // Merging into one of our members: patch its linked contact if it has one, else
-      // create a contact hard-linked to the member.
-      const linked = contacts.find((c) => c.memberId === id)
-      if (linked) {
-        await api('cercle', { method: 'PATCH', body: { id: linked.id, ...personBody(person, photoKey) } })
-        return linked.id
-      }
-      const res = await api<{ id: string }>('cercle', { method: 'POST', body: { ...personBody(person, photoKey), memberId: id } })
-      return res.id
-    }
-    const res = await api<{ id: string }>('cercle', { method: 'POST', body: personBody(person, photoKey) })
-    return res.id
-  }
-
-  async function merge(selected: ReviewItem[]) {
-    if (!share) return
-    const persons = selected.filter((i): i is Extract<ReviewItem, { kind: 'person' }> => i.kind === 'person')
-    const petsSel = selected.filter((i): i is Extract<ReviewItem, { kind: 'pet' }> => i.kind === 'pet')
-    const importedIdx = new Set(persons.map((p) => p.index))
-    const linkCount = share.payload.links.filter((l) => importedIdx.has(l.aIndex) && importedIdx.has(l.bIndex)).length
-    const groupSteps = share.label && persons.length > 1 ? 1 + persons.length : 0
-    const total = Math.max(1, persons.length + linkCount + petsSel.length + groupSteps)
+  async function merge(src: Source, selected: ReviewItem[]) {
+    const plan = { sub: src.payload, items, selected, alwaysSelf: src.alwaysSelf, groupLabel: src.groupLabel }
     setReviewing(false)
     setErr(null)
-    setProgress({ current: 0, total })
-    const bump = () => setProgress((p) => (p ? { ...p, current: Math.min(p.current + 1, p.total) } : p))
+    setProgress({ current: 0, total: mergeSteps(plan) })
     try {
-      const idByIndex = new Map<number, string>()
-      for (const item of persons) {
-        idByIndex.set(item.index, await upsertPerson(item.index, item.person))
-        bump()
-      }
-      // Relationship links between two imported people (server auto-derives the inverse).
-      for (const l of share.payload.links) {
-        const aId = idByIndex.get(l.aIndex)
-        const bId = idByIndex.get(l.bIndex)
-        if (aId && bId) {
-          await api('cercle-links', { method: 'POST', body: { aId, aKind: 'contact', bId, bKind: 'contact', type: l.type } })
-          bump()
-        }
-      }
-      // Pets: create each, then link it to its owner (fallback to the first imported
-      // person when the owner wasn't imported), so the animal lands in the family.
-      const firstId = idByIndex.values().next().value as string | undefined
-      for (const item of petsSel) {
-        const photoKey = await copyPhotoToOwn(item.pet.photoKey)
-        const ownerId = idByIndex.get(item.pet.ownerIndex) ?? firstId
-        const res = await api<{ id: string }>('pets', {
-          method: 'POST',
-          body: { name: item.pet.name, species: item.pet.species || undefined, photoKey: photoKey ?? undefined },
-        })
-        if (ownerId) {
-          await api('cercle-links', { method: 'POST', body: { aId: ownerId, aKind: 'contact', bId: res.id, bKind: 'pet', type: 'owner' } })
-        }
-        bump()
-      }
-      // Carry the shared family's NAME as an explicit family group, so people land
-      // grouped even if the relationship edges alone wouldn't cluster them. Best-effort.
-      const importedIds = [...idByIndex.values()]
-      if (share.label && importedIds.length > 1) {
-        try {
-          const g = await api<{ id: string }>('cercle-groups', { method: 'POST', body: { name: share.label, kind: 'family' } })
-          bump()
-          for (const pid of importedIds) {
-            await api('cercle-groups', { method: 'POST', body: { groupId: g.id, personId: pid, personKind: 'contact' } })
-            bump()
-          }
-        } catch {
-          /* the people + links already merged; the group label is a nicety */
-        }
-      }
-
+      await mergeIntoCercle({
+        ...plan,
+        decision,
+        contacts,
+        photo: src.photo,
+        onStep: () => setProgress((p) => (p ? { ...p, current: Math.min(p.current + 1, p.total) } : p)),
+      })
+      await src.finish()
       qc.invalidateQueries({ queryKey: CERCLE_KEY })
       qc.invalidateQueries({ queryKey: BOARD_KEY })
       setProgress(null)
@@ -268,7 +219,7 @@ export function FamilyImportPage() {
       <div className="scene__body">
         {isLoading ? (
           <Loading />
-        ) : notFound || !share ? (
+        ) : notFound || !source ? (
           <EmptyState>{t.familyShare.notFound}</EmptyState>
         ) : progress ? (
           <div className="sharesheet-preview">
@@ -281,15 +232,15 @@ export function FamilyImportPage() {
         ) : (
           <>
             <div className="sharesheet-preview">
-              <p className="sharesheet-preview__from mono">{t.familyShare.from(share.sourceName || t.cercle.memberBadge)}</p>
-              {share.label && <h3 className="sharesheet-preview__label">{share.label}</h3>}
-              <p className="operator__hint mono">{t.familyShare.importIntro}</p>
+              {source.from && <p className="sharesheet-preview__from mono">{source.from}</p>}
+              <h3 className="sharesheet-preview__label">{source.title}</h3>
+              <p className="operator__hint mono">{share ? t.familyShare.importIntro : t.intake.reviewHint}</p>
               <p className="mono">
-                {t.familyShare.peopleN(1 + share.payload.household.length)}
-                {share.payload.pets.length > 0 ? ` · ${share.payload.pets.length} 🐾` : ''}
+                {t.familyShare.peopleN(1 + source.payload.household.length)}
+                {source.payload.pets.length > 0 ? ` · ${source.payload.pets.length} 🐾` : ''}
               </p>
               {err && <StatusMessage tone="error">{err}</StatusMessage>}
-              <button type="button" className="btn btn--primary" onClick={() => openReview(share.payload)}>
+              <button type="button" className="btn btn--primary" onClick={() => openReview(source)}>
                 <Icon name="check-bold" size={16} /> {t.familyShare.reviewAdd}
               </button>
             </div>
@@ -297,12 +248,12 @@ export function FamilyImportPage() {
             <ReviewChecklist<ReviewItem>
               open={reviewing}
               onClose={() => setReviewing(false)}
-              title={share.label || t.familyShare.importTitle}
+              title={source.title}
               items={items}
               renderItem={(item) =>
                 item.kind === 'pet' ? (
                   <>
-                    <Avatar kind={item.pet.photoKey ? 'photo' : null} photo={item.pet.photoKey} colour="#C7873F" name={item.pet.name} size={28} />
+                    <Avatar kind={item.pet.photoKey ? 'photo' : null} photo={item.pet.photoKey} colour={THING_DEFAULTS.pet.colour} name={item.pet.name} size={28} />
                     <span className="review__name">{item.pet.name}</span>
                     <span className="review__sub mono">{item.pet.species || t.familyShare.petFallback}</span>
                   </>
@@ -311,7 +262,11 @@ export function FamilyImportPage() {
                     <Avatar kind={item.person.photoKey ? 'photo' : null} photo={item.person.photoKey} colour="#2A8F85" name={item.person.firstName} size={28} />
                     <span className="review__name">{displayName(item.person)}</span>
                     <span className="review__sub mono">
-                      {item.relType ? genderedRelLabel(item.relType, item.person.gender, lang) : ''}
+                      {source.alwaysSelf && item.index === 0
+                        ? t.intake.thePerson
+                        : item.relType
+                          ? genderedRelLabel(item.relType, item.person.gender, lang)
+                          : ''}
                     </span>
                     {item.candidate && (
                       <Chip
@@ -329,7 +284,7 @@ export function FamilyImportPage() {
                   </>
                 )
               }
-              onApply={(sel) => void merge(sel)}
+              onApply={(sel) => void merge(source, sel)}
               applyAllLabel={(n) => t.familyShare.addAll(n)}
               applySelectedLabel={(n) => t.familyShare.addSelected(n)}
               busy={!!progress}

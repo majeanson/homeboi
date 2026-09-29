@@ -66,7 +66,11 @@ test('the operator reviews a pending intake and accepts it into the cercle', asy
   await page.goto('/settings?tab=settings&sub=tablets&focus=guestLinks')
   // IntakeReview surfaces the quarantined submission by the sender's name.
   await expect(page.getByText(/Mamie/).first()).toBeVisible()
-  await page.getByRole('button', { name: 'Réviser' }).click()
+  // « Réviser » opens THE review scene for a family coming in (2026-09-29, « fiche
+  // famille ») — the same one a shared family opens, fed by ?intake=<id>.
+  await page.getByRole('link', { name: 'Réviser' }).click()
+  await expect(page).toHaveURL(/\/cercle\/import\?intake=/)
+  await page.getByRole('button', { name: 'Réviser et ajouter' }).click()
 
   // The review checklist opens (all items preselected); "Ajouter (1)" applies the
   // merge → POST cercle then PATCH intake (status: merged). Assert the completion.

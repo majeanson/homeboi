@@ -205,15 +205,16 @@ const ALLOWED = new Set<string>([
   // 8. Multi-step operator transactions. A merge reads ids back BETWEEN steps
   //    (create the person → link them → mark the submission merged), so a queue
   //    would half-apply it — worse than failing and being retried deliberately.
-  'components/operator/IntakeReview.tsx → cercle',
-  'components/operator/IntakeReview.tsx → cercle-links',
-  'components/operator/IntakeReview.tsx → pets',
+  // « Fiche famille » (2026-09-29): the intake review and the shared-family import
+  // merged into ONE merge (lib/ficheMerge) and one review scene; the scene marks the
+  // submission merged once the family is in, and the Réglages queue can dismiss one.
+  'lib/ficheMerge.ts → cercle',
+  'lib/ficheMerge.ts → cercle-links',
+  'lib/ficheMerge.ts → cercle-groups',
+  'lib/ficheMerge.ts → pets',
+  'pages/FamilyImportPage.tsx → intake',
   'components/operator/IntakeReview.tsx → intake',
   'components/operator/PostboxReview.tsx → postbox',
-  'pages/FamilyImportPage.tsx → cercle',
-  'pages/FamilyImportPage.tsx → cercle-links',
-  'pages/FamilyImportPage.tsx → cercle-groups',
-  'pages/FamilyImportPage.tsx → pets',
 
   // 9. Import-on-arrival. These run in the same breath as fetching a shared snapshot
   //    that is itself online-only; queueing the write without the fetch it came from

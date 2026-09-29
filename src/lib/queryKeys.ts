@@ -62,6 +62,9 @@ export const HOME_PROJECTS_KEY = ['home-projects']
 // tab AND on the board (upcoming birthdays derive from it), so the key is shared —
 // a contact/birthday edit invalidates it and both surfaces refresh.
 export const CERCLE_KEY = ['cercle']
+// Family-info forms waiting in quarantine: listed in Réglages (IntakeReview) and
+// reviewed + merged in /cercle/import?intake= (FamilyImportPage) — two readers.
+export const INTAKE_KEY = ['intake']
 // Le cercle → Famille → "Notes & recommandations": durable per-member / family-wide
 // quick notes. Read on the cercle tab AND by the global search, so the key is shared.
 export const FAMILY_NOTES_KEY = ['family-notes']
