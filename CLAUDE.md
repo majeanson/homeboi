@@ -218,7 +218,7 @@ CI (`.github/workflows/ci.yml`) runs typecheck → test → build on every push,
 **decoupled**: it **chains off** the CI & Deploy workflow (`workflow_run`) and only runs
 once CI concluded successfully on `main` — so it gives signal *after* a green merge but
 never blocks the deploy (main ships as soon as typecheck/test/build are green). The E2E
-job runs `npm run e2e` then `npm run e2e:sw` (the SW harness). **Trust CI as the baseline;
+job runs `npm run e2e` in four shards beside `npm run e2e:sw` (the SW harness). **Trust CI as the baseline;
 don't run e2e locally by default — check the E2E job on the run page for visual/flow
 regressions.** Node 26.
 

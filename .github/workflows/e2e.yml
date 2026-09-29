@@ -20,12 +20,21 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # FOUR SHARDS, not one serial run (2026-09-29). The suite took ~50 min per push on one
+  # worker, so a red arrived long after anyone was looking. Each shard is still
+  # `workers: 1, retries: 0` — CI's strictness is per-shard, unchanged — and
+  # `fullyParallel` splits by TEST, so the four stay even as specs grow.
   e2e:
-    name: E2E (Playwright)
+    name: E2E (Playwright) ${{ matrix.shard }}/4
     runs-on: ubuntu-latest
     # On the workflow_run path, only proceed if CI actually passed. (A manual
     # workflow_dispatch has no upstream conclusion, so let that through.)
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    strategy:
+      # One shard's red must not cancel the others — the whole point is the full list.
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     steps:
       # workflow_run checks out the default branch by default — pin to the exact
       # commit CI validated so E2E tests the same code (no-op on dispatch).
@@ -42,24 +51,47 @@ jobs:
       - run: npx playwright install --with-deps chromium
       # Playwright boots the Vite dev server itself (webServer config) and stubs
       # every /api/* call per-test — no wrangler/D1/secrets needed.
-      - run: npm run e2e
-      # The service-worker offline shell can't be exercised against the DEV server
-      # (no SW there), so it runs under its own harness: `vite build` → `vite preview`
-      # serves the real PROD bundle, still with mocked /api/*. Separate step so a
-      # failure here is attributable and doesn't need the full matrix above.
-      - run: npm run e2e:sw
+      - run: npm run e2e -- --shard="$SHARD/4"
+        env:
+          SHARD: ${{ matrix.shard }}
       # Always upload the HTML report + the surface×theme×format PNGs so a failure
-      # (or just a visual review) is inspectable from the run page.
+      # (or just a visual review) is inspectable from the run page. One per shard.
       - name: Upload Playwright report + screenshots
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-report
+          name: playwright-report-${{ matrix.shard }}
           path: |
             e2e/report
             e2e/screenshots
-            # The SW harness writes here (e2e/sw.config.ts outputDir + its own
-            # trace-on-first-retry). It was missing, so the one spec guarding the
-            # offline promise failed on CI with nothing to open.
-            e2e/test-results-sw
+          retention-days: 7
+
+  # The service-worker offline shell can't be exercised against the DEV server (no SW
+  # there), so it runs under its own harness: `vite build` → `vite preview` serves the
+  # real PROD bundle, still with mocked /api/*. Its own job, beside the shards, so a
+  # failure here is attributable and never waits behind them.
+  sw:
+    name: E2E (service worker)
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run e2e:sw
+      - name: Upload SW harness results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-sw
+          # e2e/sw.config.ts outputDir + its own trace-on-first-retry. It was once missing,
+          # so the one spec guarding the offline promise failed on CI with nothing to open.
+          path: e2e/test-results-sw
+          if-no-files-found: ignore
           retention-days: 7
