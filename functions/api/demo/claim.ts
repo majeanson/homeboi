@@ -5,6 +5,7 @@ import { signInAs, sessionCookies } from '../../_lib/auth'
 import { hashPassword } from '../../_lib/password'
 import { inviteAccepted } from '../../_lib/signupGate'
 import { nowSec } from '../../_lib/ids'
+import { countDoor } from '../../_lib/strangers'
 import { DEMO_SANDBOX_DOMAIN, isSandboxEmail } from '../../_lib/demoHousehold'
 import { mailEnabled } from '../../_lib/mail'
 import { sendVerification } from '../../_lib/verify'
@@ -80,6 +81,9 @@ export const onRequestPost = authed(async (ctx, actor) => {
   } catch {
     return conflict('Un compte existe déjà pour ce courriel — connecte-toi.')
   }
+  // A trial KEPT. From here on the household reads exactly like a signup, so this is the
+  // only place the difference is ever known (0141).
+  await countDoor(ctx.env, 'kept')
 
   // Best-effort, exactly as signup: a lost letter is recoverable from Réglages, a claim
   // that 500s because mail hiccuped is not.

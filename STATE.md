@@ -29,11 +29,11 @@
 | --- | --- |
 | **What it is** | A calm household command-center for a cheap always-on wall tablet. Single-page React app + one Cloudflare Worker (static assets + `/api/*`) + D1 + Workers AI + R2. FR-CA first. |
 | **Code** | ~157k lines across 955 `.ts`/`.tsx` files (`src/`, `functions/`, `worker/`) |
-| **Schema** | 140 forward-only migrations (0140 = un dessin, une photo qu'on garde) |
+| **Schema** | 141 forward-only migrations (0141 = la porte, en chiffres) |
 | **Tests** | 2 452 unit tests in 195 files · 124 real-runtime cases in 19 files (`npm run test:d1`, the Worker in workerd against a real D1) · 157 Playwright spec files |
 | **Deploy** | Push to `main` → CI (typecheck · test · build · bundle budget · **test:d1** · knip) gates `db:migrate:prod` + `wrangler deploy`. E2E is decoupled (`workflow_run`), runs after a green CI, never blocks the ship. |
 | **Second interface** | `/api/mcp` — read-only over the household — of the 12 tools, most proxy a GET handler that already exists, so the caps, the recurrence expansion and the time zone are decided once and inherited. (This row lives HERE, not in §3: docCounts derives that number from the registry, and the claim died the first time §3 rotated.) |
-| **Households in production** | **Six** real, re-counted in D1 on 2026-09-29 — Marc's (4 members), four other real accounts from the invite gate, and the legacy read-only demo singleton — plus two live 24 h sandboxes. **Zero signups in the five days since the gate opened (09-24)**: the door works (the weekly stranger walk is green), nobody has come through it yet |
+| **Households in production** | **Six** real, re-counted in D1 on 2026-09-29 — Marc's (4 members), four other real accounts from the invite gate, and the legacy read-only demo singleton — plus two live 24 h sandboxes. **Zero signups in the five days since the gate opened (09-24)**: the door works (the weekly stranger walk is green), nobody has come through it yet — and whether nobody CAME is now answerable: the nightly mail counts trials opened, kept and refused at the cap, and direct signups (0141, `_lib/strangers.ts`) |
 
 *(Numbers rot: re-run the commands before quoting them — `docCounts.test.ts` holds the derivable ones.)*
 

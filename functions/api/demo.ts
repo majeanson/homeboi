@@ -4,6 +4,7 @@ import { overAuthLimit } from '../_lib/rateLimit'
 import { issueGuestToken, signInAs, sessionCookies } from '../_lib/auth'
 import { hashPassword } from '../_lib/password'
 import { newId, nowSec } from '../_lib/ids'
+import { countDoor } from '../_lib/strangers'
 import { clearSampleData, countSampleData, seedSampleData } from '../_lib/sampleData'
 import {
   DEMO_SANDBOX_CAP,
@@ -68,7 +69,12 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
   } catch {
     /* count failed → be conservative, use the fallback */
   }
-  if (alive >= DEMO_SANDBOX_CAP) return mintShowcaseFallback(ctx, now)
+  if (alive >= DEMO_SANDBOX_CAP) {
+    // A visitor who got the read-only look instead of a trial — the one number that says
+    // the cap, not the door, is what turned them away (0141).
+    await countDoor(ctx.env, 'demo_full', now)
+    return mintShowcaseFallback(ctx, now)
+  }
 
   // ---- The sandbox: household + throwaway operator + seed + session ---------
   const householdId = newId()
@@ -85,6 +91,8 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
   } catch {
     return serverError('Démo indisponible pour le moment.')
   }
+  // A trial opened: the sandbox exists now, and in 24 h no row will say it ever did (0141).
+  await countDoor(ctx.env, 'demo', now)
   // The sandbox is where the examples LIVE (a real signup starts empty since
   // 2026-09-23) — the board must read alive on first paint.
   // Best-effort: an empty sandbox is still a working sandbox.

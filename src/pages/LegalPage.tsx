@@ -37,7 +37,7 @@ interface Section {
 const PRIVACY: Record<Lang, { title: string; lead: string; updated: string; sections: Section[] }> = {
   fr: {
     title: 'Confidentialité',
-    updated: 'Mise à jour : 24 septembre 2026',
+    updated: 'Mise à jour : 29 septembre 2026',
     lead: 'Babillard est le tableau d’une maisonnée. Ce qu’il garde, il le garde pour elle — voici exactement quoi, où, et pour combien de temps.',
     sections: [
       {
@@ -69,7 +69,7 @@ const PRIVACY: Record<Lang, { title: string; lead: string; updated: string; sect
         h: 'Ce qui n’est PAS fait',
         p: [
           'Aucune analyse d’audience, aucun pisteur, aucun cookie publicitaire. Les seuls témoins sont ceux de la session et de la protection CSRF.',
-          'La personne qui opère Babillard reçoit chaque semaine des TOTAUX seulement — combien de nouvelles maisonnées, combien actives — pour savoir si l’app fonctionne. Jamais un nom, une adresse ni un contenu.',
+          'La personne qui opère Babillard reçoit chaque semaine des TOTAUX seulement — combien d’essais ouverts et gardés, combien de nouvelles maisonnées, combien actives — pour savoir si l’app fonctionne. Jamais un nom, une adresse, un appareil ni un contenu.',
           'Rien n’est vendu, loué ni partagé avec un tiers à des fins de marketing.',
           'Aucune notification poussée : l’app n’a pas de quoi en envoyer, et c’est un choix de conception, pas un oubli.',
         ],
@@ -93,7 +93,7 @@ const PRIVACY: Record<Lang, { title: string; lead: string; updated: string; sect
   },
   en: {
     title: 'Privacy',
-    updated: 'Updated: 24 September 2026',
+    updated: 'Updated: 29 September 2026',
     lead: 'Babillard is one household’s board. What it keeps, it keeps for them — here is exactly what, where, and for how long.',
     sections: [
       {
@@ -125,7 +125,7 @@ const PRIVACY: Record<Lang, { title: string; lead: string; updated: string; sect
         h: 'What is NOT done',
         p: [
           'No analytics, no trackers, no advertising cookies. The only cookies are the session and its CSRF protection.',
-          'Whoever runs Babillard receives TOTALS once a week — how many new households, how many active — to know the app is working. Never a name, an address or any content.',
+          'Whoever runs Babillard receives TOTALS once a week — how many trials opened and kept, how many new households, how many active — to know the app is working. Never a name, an address, a device or any content.',
           'Nothing is sold, rented or shared with a third party for marketing.',
           'No push notifications: the app has nothing to send them with, and that is a design choice, not an oversight.',
         ],

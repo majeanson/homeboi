@@ -5,6 +5,7 @@ import { signInAs, sessionCookies } from '../../_lib/auth'
 import { hashPassword } from '../../_lib/password'
 import { inviteAccepted } from '../../_lib/signupGate'
 import { newId, nowSec } from '../../_lib/ids'
+import { countDoor, isWalkerEmail } from '../../_lib/strangers'
 import { sendVerification } from '../../_lib/verify'
 import { mailEnabled } from '../../_lib/mail'
 
@@ -60,6 +61,8 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
   } catch {
     return conflict('Un compte existe déjà pour ce courriel — connecte-toi.')
   }
+  // Counted once the account exists — never the weekly walk's Resend test inbox (0141).
+  if (!isWalkerEmail(email)) await countDoor(ctx.env, 'signup')
 
   // « Confirme ton courriel » (0138). Best-effort by contract — an account whose letter
   // was lost is recoverable from Réglages; a signup that 500s because mail hiccuped is

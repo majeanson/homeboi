@@ -173,6 +173,7 @@ export function alertFor(report: NightlyReport, weekday: number): Omit<Mail, 'to
     ...(d
       ? [
           `La porte (7 j) : ${d.newHouseholds} nouvelle(s) maisonnée(s) · ${d.newConfirmed} confirmée(s) · ${d.active} active(s) · ${d.stuckEmpty} restée(s) vide(s) après 3 jours`,
+          `Essais (7 j) : ${d.demos} ouvert(s) · ${d.kept} gardé(s) · ${d.demosFull} refusé(s), plafond plein · ${d.signups} inscription(s) directe(s) — le passage du robot du lundi compte dans les essais`,
         ]
       : []),
     ...report.failed.map((f) => `ÉCHEC ${f.id} : ${f.error}`),

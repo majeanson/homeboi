@@ -16,7 +16,7 @@ function deps(over: Partial<NightlyDeps> = {}): NightlyDeps {
     countStale: async () => 0,
     strangerSpend: async () => ({ ai: 0, bytes: 0 }),
     strangerRemarks: async () => [],
-    doorCounts: async () => ({ newHouseholds: 0, newConfirmed: 0, active: 0, stuckEmpty: 0 }),
+    doorCounts: async () => ({ demos: 0, demosFull: 0, kept: 0, signups: 0, newHouseholds: 0, newConfirmed: 0, active: 0, stuckEmpty: 0 }),
     ...over,
   }
 }
@@ -139,8 +139,10 @@ describe('alertFor', () => {
     expect(remarkLine({ ...remark, body: '  ', seenPath: null })).toBe('[bug] La liste ne se vide pas\n(— · maisonnée hhX)')
   })
   it('the door counts ride in the Monday digest', () => {
-    const m = alertFor({ ...quiet, door: { newHouseholds: 3, newConfirmed: 2, active: 5, stuckEmpty: 1 } }, 1)
+    const m = alertFor({ ...quiet, door: { demos: 9, demosFull: 1, kept: 2, signups: 1, newHouseholds: 3, newConfirmed: 2, active: 5, stuckEmpty: 1 } }, 1)
     expect(m?.text).toContain('La porte (7 j) : 3 nouvelle(s) maisonnée(s) · 2 confirmée(s) · 5 active(s) · 1 restée(s) vide(s) après 3 jours')
+    // The passing events (0141): the half of the door that leaves no row behind.
+    expect(m?.text).toContain('Essais (7 j) : 9 ouvert(s) · 2 gardé(s) · 1 refusé(s), plafond plein · 1 inscription(s) directe(s) — le passage du robot du lundi compte dans les essais')
   })
   it('no bucket alerts too', () => {
     expect(alertFor({ ...quiet, noBucket: true }, 3)?.text).toContain('AUCUNE sauvegarde')

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { env } from 'cloudflare:workers'
-import { household } from '../functions/test/d1'
-import { doorCounts, recentStrangerRemarks } from '../functions/_lib/strangers'
+import { anon, household } from '../functions/test/d1'
+import { countDoor, doorCounts, recentStrangerRemarks } from '../functions/_lib/strangers'
 import { nowSec } from '../functions/_lib/ids'
 import type { Env } from '../functions/_lib/env'
 
@@ -84,5 +84,44 @@ describe('la porte, en chiffres', () => {
     const t2 = await doorCounts(env, nowSec())
     expect(t2.stuckEmpty - t0.stuckEmpty).toBe(0)
     expect(t2.active - t0.active).toBe(2)
+  })
+
+  // The half of the door that leaves no row behind (0141): a trial opened, a trial kept,
+  // a signup — each counted where it HAPPENS, through the real handlers. Deltas, again.
+  it('counts trials opened and kept, and signups — never the weekly walk', async () => {
+    const t0 = await doorCounts(env, nowSec())
+
+    const res = await anon('/api/demo', { method: 'POST', headers: { 'CF-Connecting-IP': `10.2.0.${Math.floor(Math.random() * 250)}` } })
+    expect(res.status).toBe(200)
+    const cookie = (res.headers as unknown as { getSetCookie(): string[] }).getSetCookie().map((c) => c.split(';')[0]).join('; ')
+    const csrf = (cookie.match(/bb_csrf=([^;]+)/) ?? [])[1] ?? ''
+    const t1 = await doorCounts(env, nowSec())
+    expect(t1.demos - t0.demos, 'a minted sandbox is a trial opened').toBe(1)
+    expect(t1.kept - t0.kept).toBe(0)
+
+    const kept = await anon('/api/demo/claim', {
+      method: 'POST',
+      body: { email: `door-kept-${Date.now()}@d1.test`, password: 'correct horse battery' },
+      headers: { Cookie: cookie, 'X-CSRF-Token': csrf },
+    })
+    expect(kept.status).toBe(200)
+    const t2 = await doorCounts(env, nowSec())
+    expect(t2.kept - t0.kept, 'a claim is a trial kept — and NOT a signup').toBe(1)
+    expect(t2.signups - t0.signups).toBe(0)
+
+    await household('door-signup', undefined, { empty: true })
+    // Red against dropping isWalkerEmail: the Monday walk signs up with Resend's inboxes.
+    const walker = await anon('/api/auth/signup', {
+      method: 'POST',
+      body: { email: `delivered+walk-fr-${Date.now()}@resend.dev`, password: 'correct horse battery', householdName: 'Robot' },
+    })
+    expect(walker.status).toBe(201)
+    const t3 = await doorCounts(env, nowSec())
+    expect(t3.signups - t0.signups, 'one real signup; the walker is not counted').toBe(1)
+
+    // The cap's fallback is one branch away from the mint and needs 25 live sandboxes to
+    // reach through the door; the counter it calls is asserted directly.
+    await countDoor(env, 'demo_full')
+    expect((await doorCounts(env, nowSec())).demosFull - t0.demosFull).toBe(1)
   })
 })
