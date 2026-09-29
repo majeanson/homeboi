@@ -33,19 +33,19 @@
 | **Tests** | 2 452 unit tests in 195 files · 124 real-runtime cases in 19 files (`npm run test:d1`, the Worker in workerd against a real D1) · 157 Playwright spec files |
 | **Deploy** | Push to `main` → CI (typecheck · test · build · bundle budget · **test:d1** · knip) gates `db:migrate:prod` + `wrangler deploy`. E2E is decoupled (`workflow_run`), runs after a green CI, never blocks the ship. |
 | **Second interface** | `/api/mcp` — read-only over the household — of the 12 tools, most proxy a GET handler that already exists, so the caps, the recurrence expansion and the time zone are decided once and inherited. (This row lives HERE, not in §3: docCounts derives that number from the registry, and the claim died the first time §3 rotated.) |
-| **Households in production** | **Six**, counted in D1 on 2026-09-22 — Marc's (4 members), four other real accounts from the invite gate, and the legacy read-only demo singleton. This row said « One (Marc's) » for months: other people's households are already in there, which is what Wave 4 (deletion, privacy, a contact door) is actually about |
+| **Households in production** | **Six** real, re-counted in D1 on 2026-09-29 — Marc's (4 members), four other real accounts from the invite gate, and the legacy read-only demo singleton — plus two live 24 h sandboxes. **Zero signups in the five days since the gate opened (09-24)**: the door works (the weekly stranger walk is green), nobody has come through it yet |
 
 *(Numbers rot: re-run the commands before quoting them — `docCounts.test.ts` holds the derivable ones.)*
 
 ### Health signals
 
-- `npm run typecheck` · `npm test` · `npm run test:d1` · `npm run build` · `npm run check:bundle` · `npm run knip` — green 2026-09-17, and all six gate the deploy.
+- `npm run typecheck` · `npm test` · `npm run test:d1` · `npm run build` · `npm run check:bundle` · `npm run knip` — green 2026-09-29 (TypeScript 7), and all six gate the deploy.
 - `npm run e2e:ci` — CI's E2E job is the standing whole-suite signal, and it chains off
   CI, so **a red CI means no E2E ran at all** (that hid three commits' worth of failures
   for a day). It cannot be finished on Marc's machine: two attempts died of memory
   pressure on 2026-09-22 (a V8 heap OOM, then Vite itself refusing connections mid-run).
 - `npm run e2e:sw` — 5 passed (the kiosk's offline reboot, against the real PROD bundle).
-- `npm run check:bundle` — the door's static closure is **9 chunks / 645 KB** (was 70 /
+- `npm run check:bundle` — the door's static closure is **9 chunks / 676 KB** (was 70 /
   1 131 before the hub went lazy); every chunk within budget; the SW precache covers all
   offline-needed chunks and skips build metadata.
 - **The build-gating invariants** are the codebase's best feature (§5), and the list is
@@ -113,22 +113,18 @@ now, so the repo-wide count is honest for the first time.
 
 ## 3. What just shipped
 
-### The pool, walked — and six of its seven picks shipped the same day — 2026-09-25
+### Housekeeping, and a red nobody was reading — 2026-09-29
 
-**Housekeeping first.** The E2E job was red twice on one note-editor test: two harness
-races (a native-key selection ProseMirror reads one task later; TipTap's focus deferred to
-a frame), fixed at the cause (`097cff97`). The shared password is retired (`3e16adba`):
-production counted zero hash-less rows, so a hash-less row is refused and the secret has
-one name, `INVITE_CODE`. The door's cold start is re-measured with its preset written
-down this time (`0cb0ba1e`, `npm run perf:door`): 15 requests / 305 KB, bandwidth-bound.
+**The weekly state matrix had been red for three Mondays** (09-14, 09-21, 09-28):
+`form-virement` measured 128 px of chrome against 115, because on CI's Linux fonts the
+composer's intro left « seuls. » alone on a third line. Shortened, same job (`cd64de04`).
+**A scheduled red is invisible** — nothing chains off it, no mail goes out: read Mondays.
 
-**Then the idea pool, presented item by item** (accept / dismiss / challenge): A7 the
-quoted thread (`a89d5f25`), B2 « en cours » + B3 the now-line on the flat list
-(`dfc3b363`), A8 « Sa fête » (`47999974`), C2 « Pour toi » (`f91ac410`), A6
-« Transformer » (`49e5dff0`), C1 « Souvenirs » (`ab94fc74`, 0140) once Marc said « put the
-widget back » — each with a red-then-green guard and a spec; B4, B5, C3, D2 dismissed with
-the reason. **And the night's mail**: the backup died at the ninth of fifteen households on
-D1's per-invocation request cap — one batch per household, the plan once (`391e7ccb`).
+**Dependencies:** the 19-package minor group (#30) and `actions/checkout@v7` (#23)
+merged; `@cloudflare/workers-types` 5 (`56d76d4f` — wrangler 4.140 already peered on it)
+and **TypeScript 7** (`762dfaf3`, the native compiler: `tsc -b` in ~2 s, proven red on a
+planted error in `src/` and in `functions/`). **Vitest 5 is blocked upstream** —
+`@cloudflare/vitest-plugin` 1.3.1 still peers `vitest ^4`; #28 stays open until it moves.
 
 ## 4. What still needs improvement — consolidated and ranked
 
@@ -254,8 +250,8 @@ No undo tier, recorded as a ➖ with the argument (PARITY ¹¹¹). `deleteDemoHo
 `deleteHousehold` in the same commit. `/confidentialite` + `/conditions` ship FR and EN
 from the marketing footer and from Réglages, written to be TRUE rather than reassuring —
 every claim checked against code that day — and living in their own lazy page, not in
-`i18n.ts`. `CONTACT_EMAIL` is the contact door, still unset in production and the one Law
-25 prerequisite before signup opens. Guards: `worker/leave.d1.test.ts` (5, including the
+`i18n.ts`. `CONTACT_EMAIL` is the contact door — **set in production** (`app_health`
+reports it, 2026-09-29), so the Law 25 prerequisite held when signup opened. Guards: `worker/leave.d1.test.ts` (5, including the
 neighbouring household left untouched) + `e2e/leave-and-legal.spec.ts` (6).
 
 **Wave 5 — bounds, then the gate opens.** Both bounds shipped 2026-09-23.

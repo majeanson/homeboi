@@ -288,8 +288,8 @@ describe('the docs quote the real counts', () => {
 // file `wc -l` calls 600 measures 601 to this test. Trim to **`wc -l` ≤ MAX − 1**.
 // Deliberately not "fixed" by dropping the empty element: this number is a budget, and a
 // budget that quietly forgives one line is how the next one gets forgiven too.
-const STATE_MAX_LINES = 357 // today 356 by wc -l, 357 here (2026-09-25: §3 rotated, four lines shorter)
-const STATE_FIRST_OPEN_BOX_BY = 300 // today 254
+const STATE_MAX_LINES = 353 // today 352 by wc -l, 353 here (2026-09-29: §3 rotated, four lines shorter)
+const STATE_FIRST_OPEN_BOX_BY = 300 // today 283
 
 // CLAUDE.md is the LAW, read by every session before it writes code — and it grows the
 // same way STATE.md did, one honest paragraph at a time (734 lines on 2026-09-24, with a
