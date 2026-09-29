@@ -1619,21 +1619,23 @@ export const GUIDE: GuideEntry[] = [
     points: [
       // ⚠ GUIDE_CARD_ALIAS ('share' → 6, 'share-target' → 8) — append only.
       {
-        label: { fr: 'Six genres de liens', en: 'Six kinds of links' },
+        label: { fr: 'Cinq genres de liens', en: 'Five kinds of links' },
         detail: {
-          fr: '« Démo » (tout le babillard), « Gardienne » (la journée + routines + urgences + wifi), « Accueil » (wifi + poubelles + règles), « Famille » (la fenêtre des grands-parents), « Fiche famille » et « Boîte aux lettres » (les deux qui écrivent). Un genre par besoin.',
-          en: '“Demo” (the whole board), “Sitter” (the day + routines + emergencies + wifi), “Welcome” (wifi + bins + rules), “Family” (the grandparents’ window), “Family details” and “Postbox” (the two that write). One kind per need.',
+          fr: '« Démo » (tout le babillard), « Gardienne » (la journée + routines + urgences + wifi), « Accueil » (wifi + poubelles + règles), « Famille » (la fenêtre des grands-parents) et « Boîte aux lettres » (le seul qui écrit). Un genre par besoin.',
+          en: '“Demo” (the whole board), “Sitter” (the day + routines + emergencies + wifi), “Welcome” (wifi + bins + rules), “Family” (the grandparents’ window) and “Postbox” (the only one that writes). One kind per need.',
         },
       },
       {
-        label: { fr: '« Fiche famille »', en: '“Family details”' },
+        // Index 1 was « Fiche famille », its own link kind until 2026-09-29; it is the
+        // box's details slot now. Kept IN PLACE — points are addressed by index.
+        label: { fr: '« Boîte aux lettres » : sa fiche', en: '“Postbox”: their details' },
         detail: {
-          fr: 'Un proche remplit lui-même ses coordonnées et te les renvoie. Rien n’entre tout de suite : tu révises, tu coches qui ajouter, et « Compléter les familles » déduit le reste.',
-          en: 'A relative fills in their own info and sends it back. Nothing lands right away: you review, tick who to add, and “Complete the families” infers the rest.',
+          fr: 'Dans la même boîte, un proche peut remplir lui-même sa fiche et celle de sa maisonnée — et un lien qui vise une personne s’ouvre directement sur SA fiche. Rien n’entre tout de suite : tu révises, tu coches qui ajouter, et « Compléter les familles » déduit le reste.',
+          en: 'In the same box, a relative can fill in their own details and their household’s — and a link aimed at one person opens straight on THEIR details. Nothing lands right away: you review, tick who to add, and “Complete the families” infers the rest.',
         },
       },
       {
-        label: { fr: '« Boîte aux lettres »', en: '“Postbox”' },
+        label: { fr: '« Boîte aux lettres » : un mot', en: '“Postbox”: a note' },
         detail: {
           fr: 'Mamie laisse un mot, une voix, un dessin ou une photo — sans compte, depuis son téléphone. Tu acceptes, et il se pose sur le babillard comme une note de frigo, signé de son nom.',
           en: 'Grandma leaves a note, a voice message, a drawing or a photo — no account, from her phone. You accept it, and it lands on the board like a fridge note, signed with her name.',
@@ -2445,15 +2447,15 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Choisir le genre de lien', en: 'Pick the link kind' },
         detail: {
-          fr: 'Crée un lien temporaire en lecture seule — Démo, Gardienne, Accueil ou Famille — plus la « Fiche famille » qu’un proche remplit et te renvoie. Voir [[card:share-access|Partager un accès]] pour le détail des genres.',
-          en: 'Mint a temporary read-only link — Demo, Sitter, Welcome or Family — plus the “Family details” form a relative fills and sends back. See [[card:share-access|Share access]] for the detail of the kinds.',
+          fr: 'Crée un lien temporaire en lecture seule — Démo, Gardienne, Accueil ou Famille — plus la « Boîte aux lettres », où un proche laisse un mot ou remplit sa fiche. Voir [[card:share-access|Partager un accès]] pour le détail des genres.',
+          en: 'Mint a temporary read-only link — Demo, Sitter, Welcome or Family — plus the “Postbox”, where a relative leaves a note or fills in their details. See [[card:share-access|Share access]] for the detail of the kinds.',
         },
       },
       {
         label: { fr: 'Chaque genre, sa vue', en: 'Each kind, its view' },
         detail: {
-          fr: 'Démo (tout le babillard), Gardienne (journée + routines + à savoir + le plan de secours « en cas de pépin » + wifi), Accueil (wifi + poubelles + règles), Famille (dates des enfants + anniversaires + photos) ou Fiche famille (un proche remplit ses infos et te les renvoie) — chacun avec sa durée.',
-          en: 'Demo (the whole board), Sitter (day + routines + things-to-know + the house’s “in a pinch” map + wifi), Welcome (wifi + bin day + rules), Family (kids’ dates + birthdays + photos) or Family details (a relative fills in their info and sends it back) — each with its own duration.',
+          fr: 'Démo (tout le babillard), Gardienne (journée + routines + à savoir + le plan de secours « en cas de pépin » + wifi), Accueil (wifi + poubelles + règles), Famille (dates des enfants + anniversaires + photos) ou Boîte aux lettres (un proche laisse un mot ou remplit sa fiche) — chacun avec sa durée.',
+          en: 'Demo (the whole board), Sitter (day + routines + things-to-know + the house’s “in a pinch” map + wifi), Welcome (wifi + bin day + rules), Family (kids’ dates + birthdays + photos) or Postbox (a relative leaves a note or fills in their details) — each with its own duration.',
         },
         why: {
           fr: 'Un lien par besoin : le visiteur ne voit que ce qui le concerne.',

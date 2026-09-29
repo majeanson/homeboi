@@ -50,13 +50,12 @@ import { guestWindowKey } from '../../lib/queryKeys'
 //   postbox  → /courrier, « La boîte aux lettres » — a relative leaves a MESSAGE
 //              (word / voice / drawing / photo) that, once accepted, lands as a board
 //              fridge note (the second writable kind; quarantined for the operator)
-type KindLabelKey = 'kindShowcase' | 'kindSitter' | 'kindWelcome' | 'kindFamily' | 'kindIntake' | 'kindPostbox'
+type KindLabelKey = 'kindShowcase' | 'kindSitter' | 'kindWelcome' | 'kindFamily' | 'kindPostbox'
 type KindHintKey =
   | 'kindShowcaseHint'
   | 'kindSitterHint'
   | 'kindWelcomeHint'
   | 'kindFamilyHint'
-  | 'kindIntakeHint'
   | 'kindPostboxHint'
 // Curated, least-privilege kinds lead; `showcase` (the read-EVERYTHING Démo link) sits
 // LAST and is no longer the default — an operator must consciously pick it (and see its
@@ -65,7 +64,6 @@ const KINDS: { kind: GuestKind; path: string; labelKey: KindLabelKey; hintKey: K
   { kind: 'sitter', path: '/handoff', labelKey: 'kindSitter', hintKey: 'kindSitterHint' },
   { kind: 'welcome', path: '/welcome', labelKey: 'kindWelcome', hintKey: 'kindWelcomeHint' },
   { kind: 'family', path: '/family', labelKey: 'kindFamily', hintKey: 'kindFamilyHint' },
-  { kind: 'intake', path: '/intake', labelKey: 'kindIntake', hintKey: 'kindIntakeHint' },
   { kind: 'postbox', path: '/courrier', labelKey: 'kindPostbox', hintKey: 'kindPostboxHint' },
   { kind: 'showcase', path: '/board', labelKey: 'kindShowcase', hintKey: 'kindShowcaseHint' },
 ]
@@ -99,13 +97,8 @@ const TTL_BY_KIND: Record<GuestKind, { seconds: number; key: TtlKey }[]> = {
     { seconds: 48 * H, key: 'ttl2d' },
     { seconds: 7 * 24 * H, key: 'ttl7d' },
   ],
-  // A relative needs a few days to get to the form — same window as the family one.
-  intake: [
-    { seconds: 24 * H, key: 'ttl24h' },
-    { seconds: 48 * H, key: 'ttl2d' },
-    { seconds: 7 * 24 * H, key: 'ttl7d' },
-  ],
-  // « La boîte aux lettres » — an open link relatives keep around to drop a word.
+  // « La boîte aux lettres » — a link relatives keep around to drop a word, or get to
+  // their details form over a few days (its own kind with this window until 2026-09-29).
   postbox: [
     { seconds: 24 * H, key: 'ttl24h' },
     { seconds: 48 * H, key: 'ttl2d' },
@@ -117,7 +110,6 @@ const DEFAULT_TTL: Record<GuestKind, number> = {
   sitter: 12 * H,
   welcome: 4 * H,
   family: 7 * 24 * H,
-  intake: 7 * 24 * H,
   postbox: 7 * 24 * H,
 }
 
@@ -181,12 +173,13 @@ export function GuestSection({ help }: { help?: HelpMode }) {
   const [link, setLink] = useState<string | null>(null)
   const [linkStanding, setLinkStanding] = useState(false)
   const [copied, setCopied] = useState(false)
-  // For an 'intake' link: the person it's pre-addressed to (null = an open link
-  // anyone can fill). Bound into the signed token by the server.
+  // For a 'postbox' link: the person it's pre-addressed to — the box then opens
+  // straight on THEIR details form (null = an open box anyone can use). Bound into
+  // the signed token by the server.
   const [targetKey, setTargetKey] = useState<string | null>(null)
   const [targetText, setTargetText] = useState('')
-  // For an 'intake' link: which optional sections the form asks for (name is always
-  // required). All on by default — the operator unchecks what they don't want.
+  // For a 'postbox' link: which optional sections its details form asks for (name is
+  // always required). All on by default — the operator unchecks what they don't want.
   const [scope, setScope] = useState<IntakeScope>({
     bday: true,
     contact: true,
@@ -197,11 +190,11 @@ export function GuestSection({ help }: { help?: HelpMode }) {
   })
   // D-19 — for a 'sitter' link: opt-in « Joindre un parent ». Off by default; when
   // on, `reachParentKey` (a member's Person.key, `member:<id>`) rides into the same
-  // signed `targetKey` slot intake uses.
+  // signed `targetKey` slot the postbox uses.
   const [reachParent, setReachParent] = useState(false)
   const [reachParentKey, setReachParentKey] = useState<string | null>(null)
 
-  // People to choose a per-person link's recipient from — loaded for 'intake' (any
+  // People to choose a per-person link's recipient from — loaded for 'postbox' (any
   // person) and 'sitter' (D-19's reach-parent picker, members only, below). unifyCircle
   // gives one node per person (member + hard-linked contact merged), and its .key is
   // exactly the token's targetKey.
@@ -209,7 +202,7 @@ export function GuestSection({ help }: { help?: HelpMode }) {
     queryKey: CERCLE_KEY,
     queryFn: () =>
       api<{ contacts: Contact[]; members: Member[]; links: ContactLink[]; groups?: ContactGroupRaw[] }>('cercle'),
-    enabled: kind === 'intake' || kind === 'sitter',
+    enabled: kind === 'postbox' || kind === 'sitter',
   })
   const people = useMemo<Person[]>(
     () =>
@@ -276,7 +269,7 @@ export function GuestSection({ help }: { help?: HelpMode }) {
           ...(standing ? { standing: true, label: standingLabel.trim() } : { ttlSeconds: ttl }),
           kind,
           ...(guestLang !== 'household' ? { lang: guestLang } : {}),
-          ...(kind === 'intake'
+          ...(kind === 'postbox'
             ? { ...(targetKey ? { targetKey } : {}), fields: encodeIntakeScope(scope) }
             : {}),
           ...(kind === 'sitter' && reachParent && reachParentKey ? { targetKey: reachParentKey } : {}),
@@ -415,9 +408,9 @@ export function GuestSection({ help }: { help?: HelpMode }) {
           </div>
         )}
 
-        {/* Per-person intake: pick WHO the form is for, or leave blank for an open
-            "add yourself" link the whole family can use. */}
-        {kind === 'intake' && (
+        {/* Per-person box: pick WHO it is for — it then opens on their details form —
+            or leave blank for an open box the whole family can use. */}
+        {kind === 'postbox' && (
           <div className="operator__seg">
             <span className="operator__seg-label mono">{t.guest.intakeForLabel}</span>
             <EntityCombobox<Person>
@@ -443,9 +436,9 @@ export function GuestSection({ help }: { help?: HelpMode }) {
           </div>
         )}
 
-        {/* Which optional sections the form asks for. Name is always required; the
-            operator unchecks anything they'd rather not request. */}
-        {kind === 'intake' && (
+        {/* Which optional sections the details form asks for. Name is always
+            required; the operator unchecks anything they'd rather not request. */}
+        {kind === 'postbox' && (
           <div className="operator__seg">
             <span className="operator__seg-label mono">{t.guest.intakeAsk}</span>
             <div className="cf__gender-chips">

@@ -96,13 +96,10 @@ const HandoffPage = lazy(() => import('./pages/HandoffPage').then((m) => ({ defa
 const WelcomePage = lazy(() => import('./pages/WelcomePage').then((m) => ({ default: m.WelcomePage })))
 // #36 — the grandparents' window: kids' upcoming dates + birthdays + latest photos.
 const FamilyWindowPage = lazy(() => import('./pages/FamilyWindowPage').then((m) => ({ default: m.FamilyWindowPage })))
-// Family-info intake: a relative fills their own card + household via an 'intake'
-// share link; the operator reviews + merges it into Le cercle. See lib/auth GuestKind.
-const IntakeForm = lazy(() => import('./pages/IntakeForm').then((m) => ({ default: m.IntakeForm })))
 // « La boîte aux lettres » — a relative's 'postbox' share link lands here: name
 // yourself + leave a message (word / voice / drawing / photo) → quarantined → the
 // operator accepts it into a board fridge note. See lib/device GuestKind.
-const Postbox = lazy(() => import('./pages/Postbox').then((m) => ({ default: m.Postbox })))
+const Courrier = lazy(() => import('./pages/Postbox').then((m) => ({ default: m.Courrier })))
 const VoiturePage = lazy(() => import('./pages/VoiturePage').then((m) => ({ default: m.VoiturePage })))
 // « Voyage » — the trip notebook (Carnet de voyage): a full-screen scene with the
 // Itinéraire / Infos / Bagages / Documents sub-tabs. Standalone (no hub chrome).
@@ -269,9 +266,14 @@ export function AppRoutes() {
         <Route path="/welcome" element={<WelcomePage />} />
         <Route path="/family" element={<FamilyWindowPage />} />
         {/* Family-info intake form — a relative's 'intake' share link lands here. */}
-        <Route path="/intake" element={<IntakeForm />} />
+        {/* Retired as its own door (2026-09-29): the details form is the postbox's
+            second slot. A link already sent keeps working — it lands on that slot. */}
+        <Route
+          path="/intake"
+          element={<LegacyHubRedirect map={(p) => (p.set('quoi', 'fiche'), { path: '/courrier', params: p })} />}
+        />
         {/* « La boîte aux lettres » — a relative's 'postbox' share link lands here. */}
-        <Route path="/courrier" element={<Postbox />} />
+        <Route path="/courrier" element={<Courrier />} />
         {/* #28 — « L'auto » week view (single-car + carpool + work schedules). */}
         <Route path="/voiture" element={<VoiturePage />} />
         {/* « Voyage partagé » — the invite-link landing + the shared trip scene. Both

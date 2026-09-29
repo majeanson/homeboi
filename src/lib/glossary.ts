@@ -336,8 +336,8 @@ const ENTITIES: GlossaryTerm[] = [
     fr: 'Invité',
     en: 'Guest',
     def: {
-      fr: 'Quelqu’un à qui tu prêtes un lien pour REGARDER la maisonnée — la gardienne, un proche. Il ne peut rien changer.',
-      en: 'Someone you lend a link to LOOK at the household — the sitter, a relative. They can change nothing.',
+      fr: 'Quelqu’un à qui tu prêtes un lien pour REGARDER la maisonnée — la gardienne, un proche. Il ne peut rien changer ; seule la boîte aux lettres lui laisse t’envoyer quelque chose, qui attend ta révision.',
+      en: 'Someone you lend a link to LOOK at the household — the sitter, a relative. They can change nothing; only the postbox lets them send you something, which waits for your review.',
     },
     card: 'share-access',
   },

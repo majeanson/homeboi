@@ -26,7 +26,8 @@ import {
   type IntakeAddress,
 } from '../lib/intake'
 
-// The relative-facing family-info form (the 'intake' share kind). A relative opens a
+// The relative-facing family-info form — the details slot of « La boîte aux lettres »
+// (/courrier?quoi=fiche; its own 'intake' kind and route until 2026-09-29). A relative opens a
 // typed, time-boxed link, fills in their own card and — if the operator's link asked
 // for it — their household, pets, and a photo each, then sends it back. The submission
 // is quarantined server-side (migration 0075); photos are staged in R2 (0076) and
@@ -38,7 +39,7 @@ import {
 // review still runs proposeAllFamilyLinks to infer the rest (siblings, in-laws).
 
 interface GreetingData {
-  kind: 'intake'
+  kind: 'postbox'
   householdName: string
   targetName: string | null
   scope?: IntakeScope
@@ -135,12 +136,12 @@ function PhotoPick({
   )
 }
 
-export function IntakeForm() {
+export function IntakeForm({ onSwitch }: { onSwitch?: () => void } = {}) {
   const t = useT()
   const preview = useSharePreview()
 
   const { data } = useQuery({
-    queryKey: guestWindowKey(preview, 'intake'),
+    queryKey: guestWindowKey(preview, 'postbox'),
     queryFn: () => api<GreetingData>(`guest/window${preview ? `?kind=${preview}` : ''}`),
   })
 
@@ -401,6 +402,12 @@ export function IntakeForm() {
           busy={busy}
           saveIcon="arrow-right-bold"
         />
+        {/* The box's other slot, offered at the END — the first screen stays the form. */}
+        {onSwitch && (
+          <button type="button" className="btn btn--ghost btn--sm" onClick={onSwitch}>
+            <Icon name="envelope-bold" size={15} /> {t.intake.switchToMot}
+          </button>
+        )}
       </div>
     </div>
   )

@@ -16,7 +16,7 @@ import { insertStagedMedia } from '../../_lib/stagedMedia'
 const MAX_BYTES = 3 * 1024 * 1024
 
 export const onRequestPost = authed(async (ctx, actor) => {
-  if (!(actor.scope === 'guest' && actor.guestKind === 'intake')) {
+  if (!(actor.scope === 'guest' && actor.guestKind === 'postbox')) {
     return forbidden('Ce lien ne permet pas d’envoyer une photo.')
   }
   if (!ctx.env.PHOTOS) return serviceUnavailable('Stockage indisponible ici.')

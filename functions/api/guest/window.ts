@@ -5,7 +5,7 @@ import { parseRecur, expandRange } from '../../_lib/recur'
 import { householdShareInfo } from '../../_lib/shareModes'
 import { decodeIntakeScope } from '../../_lib/intake'
 import { fetchBirthdayPeople, birthdayOccurrences } from '../../_lib/birthdays'
-import type { GuestKind } from '../../_lib/auth'
+import { normalizeGuestKind, type GuestKind } from '../../_lib/auth'
 import type { Env } from '../../_lib/env'
 
 // The ONE curated read endpoint a non-showcase share link is allowed to hit (the
@@ -41,21 +41,9 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const kind: GuestKind | null =
     actor.scope === 'guest'
       ? (actor.guestKind ?? 'showcase')
-      : previewKind && (CURATED.includes(previewKind) || previewKind === 'intake' || previewKind === 'postbox')
-        ? previewKind
+      : previewKind && (CURATED.includes(previewKind) || previewKind === 'postbox' || (previewKind as string) === 'intake')
+        ? normalizeGuestKind(previewKind)
         : null
-
-  // ---- intake: the family-info form greeting --------------------------------
-  // Deliberately minimal — only the addressed person's first name (for "Bonjour
-  // Marie, complète ta fiche") plus the field scope the operator chose. NO stored
-  // private fields are returned, so the form starts blank and the link can't be
-  // used to read the household.
-  if (kind === 'intake') {
-    const targetKey = actor.scope === 'guest' ? (actor.guestTargetKey ?? null) : url.searchParams.get('target')
-    // Operator preview has no token scope → show everything; a real guest carries it.
-    const fields = actor.scope === 'guest' ? (actor.guestFields ?? null) : null
-    return ok(await intakeGreeting(ctx.env, actor.householdId, targetKey, fields))
-  }
 
   // ---- postbox: « La boîte aux lettres » greeting ---------------------------
   // Just the household name, so the sender's scene can say "Laisse un mot à la
@@ -66,10 +54,16 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // as a quiet "reçu ✓" line on their NEXT visit — pull, not push; rides this same
   // fetch, no new poll, no unread state kept once read. An operator preview (no
   // guestId) never sees a receipt — there's no sender to attribute it to.
+  //
+  // …and the details form's greeting rides the same fetch (the box has two slots since
+  // 2026-09-29): only the addressed person's first name (« Bonjour Marie, complète ta
+  // fiche ») plus the sections the operator chose. NO stored private fields are
+  // returned, so the form starts blank and the link can't be used to read the household.
   if (kind === 'postbox') {
-    const nameRow = await ctx.env.DB.prepare('SELECT name FROM households WHERE id = ?')
-      .bind(actor.householdId)
-      .first<{ name: string }>()
+    const targetKey = actor.scope === 'guest' ? (actor.guestTargetKey ?? null) : url.searchParams.get('target')
+    // Operator preview has no token scope → show everything; a real guest carries it.
+    const fields = actor.scope === 'guest' ? (actor.guestFields ?? null) : null
+    const fiche = await intakeGreeting(ctx.env, actor.householdId, targetKey, fields)
     let receipt: { lastAcceptedAt: number; snippet: string } | null = null
     if (actor.scope === 'guest' && actor.guestId) {
       const r = await ctx.env.DB.prepare(
@@ -79,7 +73,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
         .first<{ text: string | null; reviewed_at: number }>()
       if (r) receipt = { lastAcceptedAt: r.reviewed_at, snippet: (r.text ?? '').slice(0, 40) }
     }
-    return ok({ kind: 'postbox' as const, householdName: nameRow?.name ?? '', receipt })
+    return ok({ kind: 'postbox' as const, householdName: fiche.householdName, receipt, targetName: fiche.targetName, scope: fiche.scope })
   }
 
   if (!kind || !CURATED.includes(kind)) {
@@ -229,7 +223,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   return ok({ ...base, today: { events, meals: meals.results }, bedtimeRoutines, toKnow, emergency, pins, reachParent })
 })
 
-// The intake form greeting (the 'intake' GuestKind). Returns ONLY the household
+// The details form's greeting (the postbox's second slot). Returns ONLY the household
 // name and — for a per-person link — the addressed person's first name, so the form
 // can say "Bonjour Marie". No birthday/phone/notes/etc. are returned: the link is a
 // write surface, not a read one, and pre-filling stored data would leak the cercle.
@@ -254,7 +248,7 @@ async function intakeGreeting(env: Env, hh: string, targetKey: string | null, fi
       targetName = r?.first_name ?? null
     }
   }
-  return { kind: 'intake' as const, householdName: nameRow?.name ?? '', targetName, scope: decodeIntakeScope(fields) }
+  return { householdName: nameRow?.name ?? '', targetName, scope: decodeIntakeScope(fields) }
 }
 
 // The grandparents' window (#36): the grandkids' upcoming dates, the family's

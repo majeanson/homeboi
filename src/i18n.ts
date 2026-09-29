@@ -2384,16 +2384,14 @@ export const FR = {
     kindSitter: 'Gardienne — l’essentiel du jour',
     kindWelcome: 'Accueil — pour un visiteur',
     kindFamily: 'Famille — fenêtre des grands-parents',
-    kindIntake: 'Fiche famille — à remplir et renvoyer',
-    kindPostbox: 'Boîte aux lettres — laisser un mot',
+    kindPostbox: 'Boîte aux lettres — un mot, ou ses coordonnées',
     kindShowcaseHint: 'Le babillard complet, en lecture seule, avec tes vraies données. Pour montrer l’appli.',
     kindShowcaseWarn:
       'Ce lien montre TOUTE la maisonnée (cercle, photos, notes, voyages) en lecture seule. Ne le partage pas publiquement — pour une gardienne ou un proche, choisis plutôt un lien ciblé ci-dessus.',
     kindSitterHint: 'Le plan du jour, les routines du soir, allergies, contacts d’urgence, Wi-Fi et règles.',
     kindWelcomeHint: 'Juste l’essentiel pour un visiteur : Wi-Fi, jour des poubelles, règles de la maison.',
     kindFamilyHint: 'Pour la parenté : les prochaines dates des enfants, les anniversaires et les dernières photos. Pas de réglages.',
-    kindIntakeHint: 'Un proche remplit ses coordonnées (et sa maisonnée), puis te les renvoie. Tu révises et tu ajoutes au cercle. Seul type de lien qui peut écrire.',
-    kindPostboxHint: 'Un proche laisse un mot, un vocal, un dessin ou une photo ; tu révises, puis ça se pose sur le babillard, signé. Toute la famille peut s’en servir.',
+    kindPostboxHint: 'Un proche laisse un mot (vocal, dessin, photo) ou t’envoie ses coordonnées et sa maisonnée. Tout attend ta révision : le mot se pose sur le babillard, la fiche s’ajoute au cercle. Seul type de lien qui peut écrire.',
     intakeForLabel: 'Pour qui ?',
     intakeOpenPlaceholder: 'Tout le monde (lien ouvert)…',
     intakeOpenHint: 'Laisse vide pour un lien ouvert : n’importe qui peut s’ajouter.',
@@ -2460,6 +2458,7 @@ export const FR = {
   postbox: {
     // The relative-facing message drop (the 'postbox' share link).
     title: 'Laisser un mot',
+    switchToFiche: 'Plutôt remplir ta fiche ?',
     greeting: 'Laisse un mot à la famille',
     intro:
       'Écris un mot, enregistre ta voix, fais un dessin ou envoie une photo. Ça apparaîtra sur le babillard de la maison, signé de ton nom. Rien d’autre n’est partagé.',
@@ -2556,6 +2555,7 @@ export const FR = {
   intake: {
     // The relative-facing family-info form (the 'intake' share link).
     title: 'Ta fiche famille',
+    switchToMot: 'Plutôt nous laisser un mot ?',
     greeting: 'Bonjour !',
     greetingNamed: (name: string) => `Bonjour ${name} !`,
     intro:
@@ -2592,7 +2592,7 @@ export const FR = {
     // Operator review of received forms (Réglages ▸ Système ▸ Appareils & accès).
     reviewTitle: 'Fiches reçues',
     reviewHint: 'Ce qu’un proche t’a envoyé. Révise, puis ajoute au cercle. Astuce : ensuite, « Compléter les familles » déduit le reste (frères, beaux-parents…).',
-    reviewNone: 'Aucune fiche reçue. Elles arrivent quand un proche remplit ton lien « Fiche famille ».',
+    reviewNone: 'Aucune fiche reçue. Elles arrivent quand un proche remplit sa fiche dans ta « Boîte aux lettres ».',
     reviewPending: (n: number) => (n === 1 ? '1 fiche à réviser' : `${n} fiches à réviser`),
     reviewOne: 'Réviser',
     reviewItemTitle: (name: string) => `Fiche de ${name}`,

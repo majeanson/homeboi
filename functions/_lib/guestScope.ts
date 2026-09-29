@@ -35,15 +35,18 @@ export function guestKindAllows(kind: GuestKind, apiPath: string): boolean {
   // phone still holding a sitter/welcome guest token must be able to open one. Read-only
   // (GET); the endpoint isn't authed() at all, so this just clears the guest allowlist gate.
   if (apiPath === 'share-public') return true
-  // 'intake' is the one writable kind: the relative-facing form link. It may read its
-  // greeting context (guest/window branches on kind) and POST its one submission —
-  // and NOTHING else (not board/cercle/list). The write itself is let through by a
-  // matching carve-out in route.ts; together they pin intake to exactly one write.
-  if (kind === 'intake')
-    return apiPath === 'guest/window' || apiPath === 'guest/intake-submit' || apiPath === 'guest/intake-media'
-  // 'postbox' (« La boîte aux lettres ») is the second writable kind: it reads its
-  // greeting and POSTs a message (+ stages its one media blob) — and nothing else.
+  // 'postbox' (« La boîte aux lettres ») is the ONE writable kind: it reads its greeting
+  // and sends in ONE of two things — a message, or its own details (the family-info
+  // form) — each with its one staged media blob. NOTHING else (not board/cercle/list).
+  // The write itself is let through by a matching carve-out in route.ts; together they
+  // pin the box to exactly these four endpoints.
   if (kind === 'postbox')
-    return apiPath === 'guest/window' || apiPath === 'guest/postbox-submit' || apiPath === 'guest/postbox-media'
+    return (
+      apiPath === 'guest/window' ||
+      apiPath === 'guest/postbox-submit' ||
+      apiPath === 'guest/postbox-media' ||
+      apiPath === 'guest/intake-submit' ||
+      apiPath === 'guest/intake-media'
+    )
   return apiPath === 'guest/window' // sitter | welcome | family: their curated endpoint
 }

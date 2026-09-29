@@ -22,7 +22,7 @@ const MAX_PENDING = 200
 // table here. The household comes from the SIGNED token, never the client body, so
 // a form can only ever write into the household that issued its link.
 export const onRequestPost = authed(async (ctx, actor) => {
-  if (!(actor.scope === 'guest' && actor.guestKind === 'intake')) {
+  if (!(actor.scope === 'guest' && actor.guestKind === 'postbox')) {
     return forbidden('Ce lien ne permet pas d’envoyer un formulaire.')
   }
   // Per-token flood cap (§509): bound how many rows/blobs ONE leaked link can create

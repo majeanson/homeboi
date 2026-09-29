@@ -20,11 +20,9 @@ const TTL_BY_KIND: Record<GuestKind, { max: number; def: number }> = {
   // The grandparents' window is a standing pane they glance at over days — longest
   // allowed (still expiring, never permanent), defaulting to the full week.
   family: { max: 7 * DAY, def: 7 * DAY },
-  // An intake form link: a relative needs a few days to get around to filling it,
-  // so it matches the family window (a week, still expiring).
-  intake: { max: 7 * DAY, def: 7 * DAY },
-  // « La boîte aux lettres » — an open link relatives keep handy to drop a word over
-  // several days; same window as intake (a week, still expiring).
+  // « La boîte aux lettres » — a link relatives keep handy to drop a word, or get
+  // around to filling their details, over several days (a week, still expiring). The
+  // family-info form was its own kind with the same window until 2026-09-29.
   postbox: { max: 7 * DAY, def: 7 * DAY },
 }
 

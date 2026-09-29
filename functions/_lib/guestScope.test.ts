@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { guestKindAllows } from './guestScope'
+import { normalizeGuestKind } from './auth'
 
 // The privacy boundary: a curated share link (sitter / welcome) may read ONLY its
 // own curated endpoint + whoami + opaque-key images. A showcase link reads anything
@@ -31,7 +32,7 @@ describe('guestKindAllows', () => {
   })
 
   it('every guest kind may open a public /partage share (capability-by-id, read-only)', () => {
-    for (const kind of ['showcase', 'sitter', 'welcome', 'family', 'intake', 'postbox'] as const) {
+    for (const kind of ['showcase', 'sitter', 'welcome', 'family', 'postbox'] as const) {
       expect(guestKindAllows(kind, 'share-public')).toBe(true)
     }
   })
@@ -48,31 +49,33 @@ describe('guestKindAllows', () => {
     })
   }
 
-  // The 'intake' kind is the only WRITABLE link, but its reach is still tightly
-  // scoped: its greeting endpoint, whoami, images, and its ONE submit path.
-  it('intake reaches only whoami / window / intake-submit / img', () => {
-    for (const p of ['guest/whoami', 'guest/window', 'guest/intake-submit', 'img', 'img/x']) {
-      expect(guestKindAllows('intake', p)).toBe(true)
-    }
-  })
-
-  it('intake is blocked from the household AND from minting links', () => {
-    for (const p of [...sensitive, 'guest/start']) {
-      expect(guestKindAllows('intake', p)).toBe(false)
-    }
-  })
-
-  // 'postbox' (« La boîte aux lettres ») is the second writable link: its greeting,
-  // whoami, images, and its TWO write paths (submit + media stage) — nothing else.
-  it('postbox reaches only whoami / window / postbox-submit / postbox-media / img', () => {
-    for (const p of ['guest/whoami', 'guest/window', 'guest/postbox-submit', 'guest/postbox-media', 'img', 'img/x']) {
+  // 'postbox' (« La boîte aux lettres ») is the ONE writable link since 2026-09-29: its
+  // greeting, whoami, images, and its two slots — a message OR its own details — each a
+  // submit + a media stage. Nothing else.
+  it('postbox reaches only whoami / window / its two submit+media pairs / img', () => {
+    for (const p of [
+      'guest/whoami',
+      'guest/window',
+      'guest/postbox-submit',
+      'guest/postbox-media',
+      'guest/intake-submit',
+      'guest/intake-media',
+      'img',
+      'img/x',
+    ]) {
       expect(guestKindAllows('postbox', p)).toBe(true)
     }
   })
 
-  it('postbox is blocked from the household, from minting links, and from intake paths', () => {
-    for (const p of [...sensitive, 'guest/start', 'guest/intake-submit']) {
+  it('postbox is blocked from the household AND from minting links', () => {
+    for (const p of [...sensitive, 'guest/start']) {
       expect(guestKindAllows('postbox', p)).toBe(false)
     }
   })
+
+  // A token still signed with the retired kind is the box — never the showcase.
+  it("a retired 'intake' kind reads as the postbox, not as a read-everything showcase", () => {
+    expect(normalizeGuestKind('intake')).toBe('postbox')
+  })
+
 })

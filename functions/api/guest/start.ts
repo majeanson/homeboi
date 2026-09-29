@@ -42,7 +42,8 @@ export const onRequestPost = authed(async (ctx, actor) => {
 
   // Validate the kind explicitly: an unknown string is a client bug, not a silent
   // downgrade to showcase (which would over-share). Absent kind defaults to showcase.
-  if (body?.kind != null && normalizeGuestKind(body.kind) !== body.kind) {
+  // 'intake' is accepted as the retired name of the postbox (auth.ts KIND_ALIASES).
+  if (body?.kind != null && body.kind !== 'intake' && normalizeGuestKind(body.kind) !== body.kind) {
     return badRequest('Unknown share-mode kind.')
   }
   const kind: GuestKind = normalizeGuestKind(body?.kind)
@@ -65,14 +66,14 @@ export const onRequestPost = authed(async (ctx, actor) => {
   // postbox have no target). Validated in-household at READ time (guest/window.ts),
   // not here — mirrors intake exactly (a bogus id just yields nothing back).
   const targetKey =
-    (kind === 'intake' || kind === 'sitter') && typeof body?.targetKey === 'string' && body.targetKey
+    (kind === 'postbox' || kind === 'sitter') && typeof body?.targetKey === 'string' && body.targetKey
       ? body.targetKey
       : null
 
   // Field scope: which optional sections the intake form asks for. Clamp to the
   // valid 4-bit range; anything out of range (or non-intake) → null = ask everything.
   const fields =
-    kind === 'intake' && typeof body?.fields === 'number' && body.fields >= 0 && body.fields <= 15
+    kind === 'postbox' && typeof body?.fields === 'number' && body.fields >= 0 && body.fields <= 15
       ? Math.floor(body.fields)
       : null
 

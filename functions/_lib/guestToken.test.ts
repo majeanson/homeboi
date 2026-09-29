@@ -11,7 +11,8 @@ describe('normalizeGuestKind', () => {
     expect(normalizeGuestKind('sitter')).toBe('sitter')
     expect(normalizeGuestKind('welcome')).toBe('welcome')
     expect(normalizeGuestKind('family')).toBe('family')
-    expect(normalizeGuestKind('intake')).toBe('intake')
+    expect(normalizeGuestKind('postbox')).toBe('postbox')
+    expect(normalizeGuestKind('intake'), 'the retired kind is the box now').toBe('postbox')
     expect(normalizeGuestKind('showcase')).toBe('showcase')
     expect(normalizeGuestKind(undefined)).toBe('showcase')
     expect(normalizeGuestKind('bogus')).toBe('showcase')
@@ -21,17 +22,26 @@ describe('normalizeGuestKind', () => {
 
 describe('guest token kind round-trip', () => {
   it('preserves the kind through issue → verify', async () => {
-    for (const kind of ['showcase', 'sitter', 'welcome', 'family', 'intake'] as const) {
+    for (const kind of ['showcase', 'sitter', 'welcome', 'family', 'postbox'] as const) {
       const token = await issueGuestToken(env, 'g1', 'hh1', 3600, kind)
       const v = await verifyGuestToken(env, token)
       expect(v).toEqual({ guestId: 'g1', householdId: 'hh1', kind, targetKey: null, fields: null, standing: false })
     }
   })
 
-  it('binds an intake target person + field scope into the token', async () => {
-    const token = await issueGuestToken(env, 'g1', 'hh1', 3600, 'intake', 'member:m9', 3)
+  it('binds a postbox target person + field scope into the token', async () => {
+    const token = await issueGuestToken(env, 'g1', 'hh1', 3600, 'postbox', 'member:m9', 3)
     const v = await verifyGuestToken(env, token)
-    expect(v).toEqual({ guestId: 'g1', householdId: 'hh1', kind: 'intake', targetKey: 'member:m9', fields: 3, standing: false })
+    expect(v).toEqual({ guestId: 'g1', householdId: 'hh1', kind: 'postbox', targetKey: 'member:m9', fields: 3, standing: false })
+  })
+
+  // Signed before 2026-09-29, when the details form was its own kind. It must open the
+  // box on the same person with the same sections — and must NOT fall to 'showcase',
+  // which reads the whole household.
+  it("an old 'intake' token verifies as the postbox, target and sections intact", async () => {
+    const token = await issueGuestToken(env, 'g1', 'hh1', 3600, 'intake' as never, 'contact:c3', 5)
+    const v = await verifyGuestToken(env, token)
+    expect(v).toEqual({ guestId: 'g1', householdId: 'hh1', kind: 'postbox', targetKey: 'contact:c3', fields: 5, standing: false })
   })
 
   it('treats a legacy token with no kind as showcase', async () => {

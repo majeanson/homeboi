@@ -254,30 +254,35 @@ export async function currentDevice(
 // (it branches on kind), so the allowlist is identical for them. The kind is bound
 // into the SIGNED token, so a curated guest can't widen its scope by editing the
 // URL. A legacy token (no `k`) normalizes to 'showcase'.
-//   - 'intake'    a relative-facing FORM link: a guest kind that may WRITE, and only
-//                 to its single submit endpoint (functions/api/guest/intake-submit.ts).
-//                 It fills a quarantine row the operator later reviews — it never
-//                 touches the live cercle. Its scope (whoami / window greeting /
-//                 intake-submit) lives in guestScope.ts and the narrow write carve-out
-//                 in route.ts. An optional target person is bound into the token (`p`)
-//                 for a per-person link; absent ⇒ an open family link.
-//   - 'postbox'   « La boîte aux lettres » — the SECOND writable kind: a relative
-//                 names themselves and drops a message (word / voice / drawing / photo)
-//                 that lands quarantined and, on accept, becomes a board fridge note
-//                 (functions/api/postbox.ts). Same shape as intake: scoped reads +
-//                 two write endpoints (postbox-submit / postbox-media) in guestScope.ts.
-export type GuestKind = 'showcase' | 'sitter' | 'welcome' | 'family' | 'intake' | 'postbox'
-// Kinds that share the curated read-only guest/window endpoint. The writable kinds
-// ('intake', 'postbox') are NOT among them — each has its own scope + write endpoints —
-// but they ARE valid requestable kinds, so normalization recognises them without
-// granting the window scope.
+//   - 'postbox'   « La boîte aux lettres » — the ONE writable kind. Someone outside the
+//                 household sends something in, and it lands QUARANTINED for review —
+//                 never in the live board or cercle: either a message (word / voice /
+//                 drawing / photo → on accept, a fridge note; functions/api/postbox.ts)
+//                 or their own details, the family-info form (→ reviewed and merged
+//                 through the one « fiche famille », /cercle/import?intake=). An optional
+//                 target person is bound into the token (`p`) — « complète TA fiche » —
+//                 with the form's sections (`f`); absent ⇒ an open box. Its scope (window
+//                 greeting + the two submit/media pairs) lives in guestScope.ts and the
+//                 narrow write carve-out in route.ts.
+//
+//                 ONE kind since 2026-09-29. The family-info form used to be a second
+//                 writable kind, 'intake', with its own link, route (/intake) and card;
+//                 no household ever minted either. A token still signed 'intake' reads
+//                 as 'postbox' (normalizeGuestKind) and keeps its target and sections.
+export type GuestKind = 'showcase' | 'sitter' | 'welcome' | 'family' | 'postbox'
+// Kinds that share the curated read-only guest/window endpoint. The writable kind
+// ('postbox') is NOT among them — it has its own scope + write endpoints — but it IS a
+// valid requestable kind, so normalization recognises it without granting the window scope.
 const CURATED_KINDS: GuestKind[] = ['sitter', 'welcome', 'family']
-const KNOWN_KINDS: GuestKind[] = [...CURATED_KINDS, 'intake', 'postbox']
+const KNOWN_KINDS: GuestKind[] = [...CURATED_KINDS, 'postbox']
+// A retired kind that still means something: 'intake' IS the postbox now.
+const KIND_ALIASES: Record<string, GuestKind> = { intake: 'postbox' }
 
 // One place decides the legacy/unknown → 'showcase' fallback, so every reader
 // (verify, the allowlist, the SPA) agrees. Today's guests are read-only-
 // everything, which IS showcase — so old links keep working unchanged.
 export function normalizeGuestKind(k: unknown): GuestKind {
+  if (typeof k === 'string' && k in KIND_ALIASES) return KIND_ALIASES[k]
   return KNOWN_KINDS.includes(k as GuestKind) ? (k as GuestKind) : 'showcase'
 }
 
@@ -296,12 +301,12 @@ export async function issueGuestToken(
   householdId: string,
   ttlSeconds: number,
   kind: GuestKind = 'showcase',
-  // Only meaningful for 'intake': the person key (`member:<id>` / `contact:<id>`)
-  // this form link is pre-addressed to, signed in so it can't be tampered. Absent
-  // ⇒ an open "add yourself" link.
+  // 'postbox' (and a sitter's « Joindre un parent »): the person key (`member:<id>` /
+  // `contact:<id>`) this link is pre-addressed to, signed in so it can't be tampered.
+  // Absent ⇒ an open box.
   targetKey?: string | null,
-  // Only meaningful for 'intake': a bitmask of which optional sections the form asks
-  // for (see _lib/intake.ts decodeIntakeScope). Absent ⇒ ask everything.
+  // Only meaningful for 'postbox': a bitmask of which optional sections the details
+  // form asks for (see _lib/intake.ts decodeIntakeScope). Absent ⇒ ask everything.
   fields?: number | null,
   // D-18 — mint a STANDING link (any kind may be standing). The caller still passes
   // `ttlSeconds`, but a standing mint should pass STANDING_TTL so the signed expiry

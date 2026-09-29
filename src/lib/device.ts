@@ -94,16 +94,19 @@ export function clearGuestToken(): void {
 // when a new ?guest= token arrives (main.tsx), so a different link can't inherit
 // a stale kind. The token is opaque/server-signed — the client can't read its own
 // kind without asking the server.
-// Two WRITABLE share kinds: 'intake' (the family-info form a relative fills → /intake)
-// and 'postbox' (« La boîte aux lettres » — a relative drops a message → /courrier).
-// Each is scoped server-side to its own submit endpoints. See functions/_lib/auth.ts.
-export type GuestKind = 'showcase' | 'sitter' | 'welcome' | 'family' | 'intake' | 'postbox'
+// ONE WRITABLE share kind: 'postbox' (« La boîte aux lettres », /courrier) — a relative
+// drops a message, or sends their own details (the family-info form). Scoped
+// server-side to its two submit/media pairs. See functions/_lib/auth.ts. The details
+// form was its own kind, 'intake', until 2026-09-29; a device that cached it reads it
+// as the box.
+export type GuestKind = 'showcase' | 'sitter' | 'welcome' | 'family' | 'postbox'
 const GUEST_KIND_KEY = 'babillard-guest-kind'
-const GUEST_KINDS: GuestKind[] = ['showcase', 'sitter', 'welcome', 'family', 'intake', 'postbox']
+const GUEST_KINDS: GuestKind[] = ['showcase', 'sitter', 'welcome', 'family', 'postbox']
 
 export function getGuestKind(): GuestKind | null {
   try {
-    const k = localStorage.getItem(GUEST_KIND_KEY) as GuestKind | null
+    const raw = localStorage.getItem(GUEST_KIND_KEY)
+    const k = (raw === 'intake' ? 'postbox' : raw) as GuestKind | null
     return k && GUEST_KINDS.includes(k) ? k : null
   } catch {
     return null

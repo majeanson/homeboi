@@ -4,6 +4,7 @@ import '../styles/cercle.css'
 // intake.css — reuses the .intake__* field/section classes for its own layout.
 import '../styles/intake.css'
 import { useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api, isStatus } from '../lib/api'
@@ -14,9 +15,10 @@ import { SharePreviewBar, useSharePreview } from '../components/SharePreviewBar'
 import { GuestExpired } from '../components/GuestExpired'
 import { Icon, InlineIcon } from '../components/Icon'
 import { StatusMessage } from '../components/StatusMessage'
+import { IntakeForm } from './IntakeForm'
 
 // « La boîte aux lettres » — the relative-facing message drop (the 'postbox' share
-// kind, the second writable one after intake). A relative opens a typed, time-boxed
+// kind, the ONE writable kind; its second slot is the details form, see Courrier below). A relative opens a typed, time-boxed
 // link, says who they are, and leaves a message: a written word, a voice clip, a
 // drawing, or a photo. The submission is QUARANTINED server-side (migration 0085);
 // any media is staged in R2 and resolved at the operator's review, where accepting it
@@ -35,9 +37,41 @@ interface GreetingData {
   // visitor (a durable/standing link — « Mamie ») sees a quiet confirmation next
   // time she opens it. null when nothing's been accepted yet (or an operator preview).
   receipt: { lastAcceptedAt: number; snippet: string } | null
+  // The details slot's greeting rides the same fetch: a link aimed at one person
+  // (« complète TA fiche ») names them, and then opens on that slot.
+  targetName?: string | null
 }
 
-export function Postbox() {
+// /courrier — « La boîte aux lettres », ONE link with two slots (2026-09-29). Someone
+// outside the household either leaves a message (Postbox) or sends their own details
+// and household (IntakeForm, which used to be a link kind and a route of its own —
+// /intake redirects here with ?quoi=fiche). A link aimed at one person always opens on
+// their details. Each slot carries one line to the other, so an open box offers both
+// without a chooser screen in front of the one thing most people came to do.
+export function Courrier() {
+  const preview = useSharePreview()
+  const [params, setParams] = useSearchParams()
+  const { data } = useQuery({
+    queryKey: guestWindowKey(preview, 'postbox'),
+    queryFn: () => api<GreetingData>(`guest/window${preview ? `?kind=${preview}` : ''}`),
+    retry: (count, err) => !isStatus(err, 401) && !isStatus(err, 403) && count < 2,
+  })
+  const aimed = !!data?.targetName
+  const go = (slot: 'mot' | 'fiche') =>
+    setParams(
+      (p) => {
+        const next = new URLSearchParams(p)
+        if (slot === 'fiche') next.set('quoi', 'fiche')
+        else next.delete('quoi')
+        return next
+      },
+      { replace: true },
+    )
+  if (aimed || params.get('quoi') === 'fiche') return <IntakeForm onSwitch={aimed ? undefined : () => go('mot')} />
+  return <Postbox onSwitch={() => go('fiche')} />
+}
+
+export function Postbox({ onSwitch }: { onSwitch?: () => void }) {
   const t = useT()
   const preview = useSharePreview()
 
@@ -206,6 +240,12 @@ export function Postbox() {
             <Icon name="arrow-right-bold" size={18} /> {busy ? t.postbox.sending : t.postbox.submit}
           </button>
         </div>
+        {/* The box's other slot, offered at the END — the first screen stays the message. */}
+        {onSwitch && (
+          <button type="button" className="btn btn--ghost btn--sm" onClick={onSwitch}>
+            <Icon name="users-three-bold" size={15} /> {t.postbox.switchToFiche}
+          </button>
+        )}
       </div>
     </div>
   )

@@ -2114,16 +2114,14 @@ export const EN: typeof FR = {
     kindSitter: 'Babysitter — today’s essentials',
     kindWelcome: 'Welcome — for a visitor',
     kindFamily: 'Family — grandparents’ window',
-    kindIntake: 'Family details — to fill in and send back',
-    kindPostbox: 'Postbox — leave a letter',
+    kindPostbox: 'Postbox — a letter, or their details',
     kindShowcaseHint: 'The whole board, read-only, with your real data. For showing off the app.',
     kindShowcaseWarn:
       'This link shows your WHOLE household (circle, photos, notes, trips) read-only. Don’t share it publicly — for a sitter or a relative, pick a targeted link above instead.',
     kindSitterHint: 'Today’s plan, bedtime routines, allergies, emergency contacts, wifi and house rules.',
     kindWelcomeHint: 'Just the basics for a visitor: wifi, bin day, house rules.',
     kindFamilyHint: 'For relatives: the kids’ upcoming dates, birthdays, and the latest photos. No settings.',
-    kindIntakeHint: 'A relative fills in their details (and their household), then sends them back. You review and add to the circle. The only link kind that can write.',
-    kindPostboxHint: 'A relative leaves a note, a voice message, a drawing or a photo; you review it, then it lands on the board, signed. The whole family can use it.',
+    kindPostboxHint: 'A relative leaves a note (voice, drawing, photo) or sends you their details and their household. Everything waits for your review: the note lands on the board, the details join the circle. The only link kind that can write.',
     intakeForLabel: 'For whom?',
     intakeOpenPlaceholder: 'Everyone (open link)…',
     intakeOpenHint: 'Leave blank for an open link: anyone can add themselves.',
@@ -2189,6 +2187,7 @@ export const EN: typeof FR = {
   postbox: {
     // The relative-facing message drop (the 'postbox' share link).
     title: 'Leave a letter',
+    switchToFiche: 'Rather fill in your details?',
     greeting: 'Leave a letter for the family',
     intro:
       'Write a note, record your voice, draw something or send a photo. It’ll appear on the family’s board, signed with your name. Nothing else is shared.',
@@ -2280,6 +2279,7 @@ export const EN: typeof FR = {
   intake: {
     // The relative-facing family-info form (the 'intake' share link).
     title: 'Your family details',
+    switchToMot: 'Rather leave us a note?',
     greeting: 'Hello!',
     greetingNamed: (name: string) => `Hello ${name}!`,
     intro:
@@ -2316,7 +2316,7 @@ export const EN: typeof FR = {
     // Operator review of received forms (Settings ▸ System ▸ Devices & access).
     reviewTitle: 'Forms received',
     reviewHint: 'What a relative sent you. Review, then add to the circle. Tip: afterwards, “Complete families” infers the rest (siblings, in-laws…).',
-    reviewNone: 'No forms received. They arrive when a relative fills in your “Family form” link.',
+    reviewNone: 'No forms received. They arrive when a relative fills in their details in your “Postbox”.',
     reviewPending: (n: number) => (n === 1 ? '1 form to review' : `${n} forms to review`),
     reviewOne: 'Review',
     reviewItemTitle: (name: string) => `${name}’s form`,

@@ -80,3 +80,36 @@ test('the operator reviews a pending intake and accepts it into the cercle', asy
     dialog.getByRole('button', { name: 'Ajouter (1)' }).click(),
   )
 })
+
+// ONE BOX, TWO SLOTS (2026-09-29). The details form stopped being a link kind and a route
+// of its own: it is the second slot of « La boîte aux lettres » at /courrier. A link
+// already sent to /intake still lands on it; an open box offers both slots, each at the
+// END of the other (the first screen stays the form); a link aimed at one person opens
+// on their details and offers nothing else.
+test('/intake lands on the details slot of the box, and an open box switches both ways', async ({ page }) => {
+  await page.goto('/intake')
+  await expect(page).toHaveURL(/\/courrier\?.*quoi=fiche/)
+  await expect(page.getByLabel('Prénom')).toBeVisible()
+
+  await page.getByRole('button', { name: 'Plutôt nous laisser un mot ?' }).click()
+  await expect(page).not.toHaveURL(/quoi=fiche/)
+  await expect(page.getByRole('button', { name: 'Plutôt remplir ta fiche ?' })).toBeVisible()
+
+  await page.getByRole('button', { name: 'Plutôt remplir ta fiche ?' }).click()
+  await expect(page).toHaveURL(/quoi=fiche/)
+  await expect(page.getByLabel('Prénom')).toBeVisible()
+})
+
+test('a box aimed at one person opens on THEIR details, with no way to a message', async ({ page }) => {
+  await page.route('**/api/guest/window**', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ kind: 'postbox', householdName: 'Maison Tremblay', receipt: null, targetName: 'Rose', scope: null }),
+    }),
+  )
+  await page.goto('/courrier')
+  await expect(page.getByText(/Rose/).first()).toBeVisible()
+  await expect(page.getByLabel('Prénom')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Plutôt nous laisser un mot ?' })).toHaveCount(0)
+})
