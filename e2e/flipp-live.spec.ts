@@ -159,7 +159,12 @@ test('2 · the bookmarklet renders a payload on their real list page, by store',
   await runBookmarklet(page, payload)
 
   for (const it of hits) {
-    await expect(page.getByText(it.merchant_name!, { exact: false }).first(), `store "${it.merchant_name}" on the list page`).toBeVisible({ timeout: 30_000 })
+    // The store name as a WHOLE WORD, case-sensitive, visible. A plain substring match
+    // is case-insensitive, and on 2026-09-29 « IGA » resolved to « nav·iga·tion » in
+    // their hidden cookie banner and went red — a test bug that only surfaces on the
+    // weeks IGA is among the live deals.
+    const name = new RegExp(`(?<![\\p{L}\\p{N}])${it.merchant_name!.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\p{L}\\p{N}])`, 'u')
+    await expect(page.getByText(name).filter({ visible: true }).first(), `store "${it.merchant_name}" on the list page`).toBeVisible({ timeout: 30_000 })
   }
   // The typed line too — their « Ma liste » group, the shape SLListItem reads.
   await expect(page.getByText('Oeufs Babillard', { exact: false }).first()).toBeVisible({ timeout: 30_000 })
