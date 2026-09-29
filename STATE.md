@@ -115,20 +115,21 @@ now, so the repo-wide count is honest for the first time.
 
 ### Housekeeping, and a red nobody was reading — 2026-09-29
 
-**The weekly state matrix had been red for three Mondays** (09-14, 09-21, 09-28):
-`form-virement` measured 128 px of chrome against 115, because on CI's Linux fonts the
-composer's intro left « seuls. » alone on a third line. Shortened, same job (`cd64de04`).
-**A scheduled red is invisible** — nothing chains off it, no mail goes out: read Mondays.
+**The weekly state matrix was red three Mondays running** (09-14 → 09-28): `form-virement`
+at 128 px of chrome against 115 — on CI's fonts « seuls. » sat alone on a third line
+(`cd64de04`). **A scheduled red was invisible** (a cron has no pusher to mail): now
+`scheduled-red.yml` opens an issue per red workflow, a green run closes it, and
+`scripts/scheduled-red.test.mjs` fails the build if a `schedule:` is left out.
 
 **Everything on latest, Node 26 in every workflow:** #30, `actions/*@v7`, workers-types 5,
 **TypeScript 7** (`762dfaf3`, native: `tsc -b` in ~2 s, proven red on a planted error in
 `src/` and `functions/`), tesseract.js 7 (same API, faster WASM core). **Except Vitest 5**,
-blocked upstream — `@cloudflare/vitest-plugin` 1.3.2 still peers `^4`; #28 waits on it.
+blocked upstream — the plugin peers `^4`; its 2.0 is cloudflare/workers-sdk#15500. #28 waits.
 
 ## 4. What still needs improvement — consolidated and ranked
 
 > **No open box.** (2026-09-29) §K's six waves and §L are all closed; what is left is §M
-> (needs a device) and one parked call (F37). New work starts from what real households do.
+> (needs a device) and F37's review (~12-29). New work starts from what real households do.
 
 > **Everything except §K is closed.** The argument, the measurements and the several
 > findings that turned out to be wrong are in git (`git log --diff-filter=D -- bmad/` finds the deleting commit; `git show <sha>^:bmad/<file>` reads any of it.). One line each here,
@@ -281,10 +282,9 @@ stranger now meets ONE story (try → keep, or sign up → an empty household).
 - [x] **`LOGIN_PASSWORD` is gone from production** — confirmed absent from `wrangler secret
       list` on 2026-09-29; nothing had read that name since `3e16adba`.
 
-**Parked, Marc's call, not code:** whether « L'autre parent » (F37) stays — it only
-earns its keep if a second phone actually wants full rights; a partner who only touches
-the wall is a member face. Retire it the way the calendars went if the second phone never
-happens. See the 2026-09-16 conversation; re-raise after Wave 1's walk.
+**« L'autre parent » (F37) — KEPT, review ~2026-12-29 (Marc, 09-29).** Never used yet (one
+operator per real household), kept for the first real couple now that signup is open. At
+review, count `operators` per household; still one everywhere → retire it like the calendars.
 
 **Capacity, for the record:** ~100 households on the free tier with realtime on, then
 Workers AI neurons are the ceiling, then Workers Paid at $5/month buys hundreds. Not a
