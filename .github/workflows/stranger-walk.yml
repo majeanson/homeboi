@@ -37,7 +37,7 @@ jobs:
     name: The stranger's walk (Playwright, live)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v5
         with:
           node-version: 24
