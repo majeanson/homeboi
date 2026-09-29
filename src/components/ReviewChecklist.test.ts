@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { act, createElement } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
+import { flushSync } from 'react-dom'
 import { ReviewChecklist } from './ReviewChecklist'
 
 // The review checklist's picks belong to the person until the review closes. They used to
@@ -68,5 +69,22 @@ describe('ReviewChecklist — the picks survive the parent', () => {
     act(() => root.render(createElement(ReviewChecklist, props(['Camille', 'Théo', 'Grisou'], false))))
     act(() => root.render(createElement(ReviewChecklist, props(['Camille', 'Théo', 'Grisou'], true))))
     expect(boxes().map((b) => b.checked)).toEqual([true, true, true])
+  })
+
+  // THE FIRST FRAME (2026-09-29). The checklist is mounted CLOSED with no rows, so its
+  // picks start empty; the « tick them all » reset ran in an effect, AFTER the first paint
+  // of the open review — one frame of every box unticked. CI's slow runner landed a
+  // Playwright uncheck() in that frame: it saw Théo already unticked, did nothing, and the
+  // effect then ticked him back (« Ajouter la sélection (3) », family-import.spec, 6 reds).
+  // flushSync commits WITHOUT flushing passive effects, which is exactly that frame.
+  it('the review opens already ticked — no frame with every box empty', () => {
+    act(() => root.render(createElement(ReviewChecklist, props([], false))))
+    globalThis.IS_REACT_ACT_ENVIRONMENT = false
+    try {
+      flushSync(() => root.render(createElement(ReviewChecklist, props(['Camille', 'Théo', 'Grisou']))))
+      expect(boxes().map((b) => b.checked)).toEqual([true, true, true])
+    } finally {
+      globalThis.IS_REACT_ACT_ENVIRONMENT = true
+    }
   })
 })

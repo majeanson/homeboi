@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Modal } from './Modal'
 import { Icon } from './Icon'
 import { useT } from '../i18n'
@@ -42,11 +42,18 @@ export function ReviewChecklist<T>({
   // (family-import.spec: Théo unticked, then « Ajouter la sélection (3) »), and a person
   // unticking a relative while the cercle query refreshed lost the untick the same way.
   // A pick is theirs until the review closes (ReviewChecklist.test.ts holds it).
+  //
+  // …and DURING RENDER, not in an effect (2026-09-29). The review is mounted closed with
+  // no rows, so an effect-based reset painted the opened review with every box EMPTY for
+  // one frame — and CI's uncheck() landed in it, saw Théo already unticked, did nothing,
+  // then watched the effect tick him back (6 reds). Adjusting state while rendering makes
+  // React redo this render before anything paints.
   const [picked, setPicked] = useState<Set<number>>(() => new Set(items.map((_, i) => i)))
-  useEffect(() => {
+  const [batch, setBatch] = useState({ open, n: items.length })
+  if (batch.open !== open || batch.n !== items.length) {
+    setBatch({ open, n: items.length })
     setPicked(new Set(items.map((_, i) => i)))
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- identity is the bug, see above
-  }, [open, items.length])
+  }
 
   const allOn = picked.size === items.length && items.length > 0
 
