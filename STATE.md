@@ -82,8 +82,8 @@ interchangeable. Read this table before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md` is now
-> a number you can trust. It reads **1** — §4-K's last: deleting the retired
-> `LOGIN_PASSWORD` secret in production, Marc's `wrangler login`. **Asserted from the boxes themselves** by
+> a number you can trust. It reads **0** — §4-K's last box (the retired
+> `LOGIN_PASSWORD` secret) closed 2026-09-29. **Asserted from the boxes themselves** by
 > `src/lib/docCounts.test.ts`, so this sentence cannot drift the way `REVIEW-PASS.md`'s
 > banner once did — it claimed 15 for twelve days against a single box.
 >
@@ -120,17 +120,15 @@ now, so the repo-wide count is honest for the first time.
 composer's intro left « seuls. » alone on a third line. Shortened, same job (`cd64de04`).
 **A scheduled red is invisible** — nothing chains off it, no mail goes out: read Mondays.
 
-**Dependencies:** the 19-package minor group (#30) and `actions/checkout@v7` (#23)
-merged; `@cloudflare/workers-types` 5 (`56d76d4f` — wrangler 4.140 already peered on it)
-and **TypeScript 7** (`762dfaf3`, the native compiler: `tsc -b` in ~2 s, proven red on a
-planted error in `src/` and in `functions/`). **Vitest 5 is blocked upstream** —
-`@cloudflare/vitest-plugin` 1.3.1 still peers `vitest ^4`; #28 stays open until it moves.
+**Everything on latest, Node 26 in every workflow:** #30, `actions/*@v7`, workers-types 5,
+**TypeScript 7** (`762dfaf3`, native: `tsc -b` in ~2 s, proven red on a planted error in
+`src/` and `functions/`), tesseract.js 7 (same API, faster WASM core). **Except Vitest 5**,
+blocked upstream — `@cloudflare/vitest-plugin` 1.3.2 still peers `^4`; #28 waits on it.
 
 ## 4. What still needs improvement — consolidated and ranked
 
-> **Asked « what should we work on? » on or after 2026-09-16 — go to [§K](#k-towards-a-public-app--the-plan-written-2026-09-16-start-here) for the product waves and [§L](#l-the-public-app-hardening-pass--planned-2026-09-16-thirteen-items-in-priority-order) for the hardening pass being worked through one item at a time.**
-> It is the plan toward a public app, in six ordered waves, and Wave 0 is the wide-screen
-> pass. Everything above §K in this section is settled history.
+> **No open box.** (2026-09-29) §K's six waves and §L are all closed; what is left is §M
+> (needs a device) and one parked call (F37). New work starts from what real households do.
 
 > **Everything except §K is closed.** The argument, the measurements and the several
 > findings that turned out to be wrong are in git (`git log --diff-filter=D -- bmad/` finds the deleting commit; `git show <sha>^:bmad/<file>` reads any of it.). One line each here,
@@ -280,8 +278,8 @@ stranger now meets ONE story (try → keep, or sign up → an empty household).
 - [x] **Retire the shared password — DONE 2026-09-25.** Production counted **zero** rows with
       `password_hash IS NULL`; the legacy branch is gone from `login.ts` + `_lib/sudo.ts` (a hash-less
       row is refused; « Mot de passe oublié » is its way in) and the invite code is `INVITE_CODE`.
-- [ ] **`npx wrangler secret delete LOGIN_PASSWORD`** in production, after this deploy —
-      nothing reads that name any more; the value was the invite handed to other households.
+- [x] **`LOGIN_PASSWORD` is gone from production** — confirmed absent from `wrangler secret
+      list` on 2026-09-29; nothing had read that name since `3e16adba`.
 
 **Parked, Marc's call, not code:** whether « L'autre parent » (F37) stays — it only
 earns its keep if a second phone actually wants full rights; a partner who only touches

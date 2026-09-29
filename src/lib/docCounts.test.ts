@@ -288,8 +288,8 @@ describe('the docs quote the real counts', () => {
 // file `wc -l` calls 600 measures 601 to this test. Trim to **`wc -l` ≤ MAX − 1**.
 // Deliberately not "fixed" by dropping the empty element: this number is a budget, and a
 // budget that quietly forgives one line is how the next one gets forgiven too.
-const STATE_MAX_LINES = 353 // today 352 by wc -l, 353 here (2026-09-29: §3 rotated, four lines shorter)
-const STATE_FIRST_OPEN_BOX_BY = 300 // today 283
+const STATE_MAX_LINES = 351 // today 350 by wc -l, 351 here (2026-09-29: §3 rotated, §4's stale pointer cut)
+const STATE_FIRST_OPEN_BOX_BY = 300 // today none — §4 says « No open box. »
 
 // CLAUDE.md is the LAW, read by every session before it writes code — and it grows the
 // same way STATE.md did, one honest paragraph at a time (734 lines on 2026-09-24, with a
@@ -320,7 +320,12 @@ describe('STATE.md stays a front door', () => {
   // sits on line 3 490 is not a front door, whatever its length.
   it(`puts the first open box within the first ${STATE_FIRST_OPEN_BOX_BY} lines`, () => {
     const first = state.findIndex((l) => /^- \[ \] /.test(l))
-    expect(first, 'no open box at all — if that is true, say so in §4 rather than leaving the section empty').toBeGreaterThanOrEqual(0)
+    // Zero open boxes is a real state (2026-09-29, the first time) — allowed only while
+    // §4 SAYS so, so an emptied section can never pass for a finished one.
+    if (first < 0) {
+      expect(state.some((l) => /^> \*\*No open box\.\*\*/.test(l)), 'no open box at all — if that is true, say so in §4 (« > **No open box.** ») rather than leaving the section empty').toBe(true)
+      return
+    }
     expect(
       first + 1,
       'the open work moved down the file. Whatever grew above it is history: cut it — git keeps it',
