@@ -20,5 +20,10 @@ export default defineConfig({
     // the LOCAL pool to bound peak memory; the suite is fast (~3 s of test work),
     // so fewer forks costs little. CI has more headroom (green today) → default.
     maxWorkers: process.env.CI ? undefined : 6,
+    // Node 25+ ships its OWN global `localStorage` (webstorage, on by default), and
+    // without `--localstorage-file` it is undefined — which shadows happy-dom's, so every
+    // `localStorage.clear()` threw the day CI moved to Node 26 (2026-09-29). The app never
+    // runs on Node; only this runner does. Turn Node's off in the workers.
+    execArgv: ['--no-experimental-webstorage'],
   },
 })
