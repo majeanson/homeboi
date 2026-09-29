@@ -43,7 +43,11 @@ export default defineConfig({
   outputDir: 'e2e/test-results',
   use: {
     baseURL: 'http://127.0.0.1:5173',
-    trace: 'on-first-retry',
+    // CI runs retries: 0, so « on-first-retry » meant CI had NEVER recorded a trace — every
+    // CI flake was read blind (config-panels « a list row opens its editor scene »: 4
+    // reds, 1 in 27 cold local runs, cause unprovable, 2026-09-29). Keep one on failure
+    // there; locally the retry still records it.
+    trace: process.env.CI ? 'retain-on-failure' : 'on-first-retry',
     navigationTimeout: 20_000,
     actionTimeout: 15_000,
     // Fonts come off Google Fonts; freeze the clock so time-of-day surfaces
@@ -72,5 +76,8 @@ export default defineConfig({
     url: 'http://127.0.0.1:5173',
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    // Vite's own log in the CI job (dependency re-optimisation, a failed transform, a
+    // reload it forced) — the half of a lazy-scene flake the page cannot see.
+    stdout: process.env.CI ? 'pipe' : 'ignore',
   },
 })
