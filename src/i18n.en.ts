@@ -589,8 +589,8 @@ export const EN: typeof FR = {
     galleryLink: 'The gallery',
     pinToFridge: 'Pin to the board',
     pinnedToFridge: 'Pinned to the board',
-    saveToGallery: 'Keep in My drawings',
-    savedToGallery: 'Kept in My drawings',
+    saveToGallery: 'Add to My drawings',
+    savedToGallery: 'Added to My drawings',
     editChoiceTitle: 'Continue drawing',
     editChoiceSub: 'What do you want to do with this drawing?',
     editChoiceModify: 'Edit the original',
@@ -601,9 +601,9 @@ export const EN: typeof FR = {
     editChoiceTraceHint: 'The original faded as a guide to redraw over — the original stays.',
     // A photo joined to a note: snap it, pin it — then keep it.
     photoAttach: 'Photo',
-    keepInPhotos: 'Keep in the photos',
-    keptInPhotos: 'Kept in the photos',
-    savedToPhotos: 'Kept in the photos',
+    keepInPhotos: 'Add to the photos',
+    keptInPhotos: 'Added to the photos',
+    savedToPhotos: 'Added to the photos',
     saveToDevice: 'Save to my device',
     savedToDevice: 'Saved',
     // #14b — draw over a faint watermark photo (photo layer).

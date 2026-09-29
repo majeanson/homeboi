@@ -12,7 +12,7 @@ import { useRecordUndo } from './toast'
 // wall board (PhotoFrame) and the screensaver (PhotoMosaic). Réglages ▸ Photos was
 // its ONLY door: a photo you snapped for a fridge note / un mot lived only on that
 // note, and clearing the note took it with it. So this is the photo twin of
-// lib/drawingGallery's « Garder dans Mes dessins », and it follows the same rule:
+// lib/drawingGallery's « Ajouter à Mes dessins », and it follows the same rule:
 //
 //   a kept photo owns its OWN R2 blob (a fresh `ph_` upload), never the note's `nm_`
 //   one — so clearing the note can't free a photo you decided to keep, and pruning

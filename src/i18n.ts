@@ -687,8 +687,10 @@ export const FR = {
     // a drawing is never lost. Each makes an INDEPENDENT copy (own R2 blobs).
     pinToFridge: 'Épingler au babillard',
     pinnedToFridge: 'Épinglé au babillard',
-    saveToGallery: 'Garder dans Mes dessins',
-    savedToGallery: 'Gardé dans Mes dessins',
+    // « Ajouter », pas « Garder » (2026-09-29) : c'est une COPIE dans une collection.
+    // « Garder » veut dire une seule chose — sur l'étagère « Souvenirs » (glossary.ts).
+    saveToGallery: 'Ajouter à Mes dessins',
+    savedToGallery: 'Ajouté à Mes dessins',
     // #14 — choix au moment de retoucher un dessin gardé : le modifier pour vrai,
     // en faire une copie identique, ou le calquer en filigrane (les deux derniers
     // gardent l’original intact).
@@ -707,9 +709,9 @@ export const FR = {
     // Les deux « et garde-la » offerts sur la photo jointe : dans le cadre de la
     // maison (Réglages ▸ Système ▸ Affichage & veille ▸ Photos, l'écran de veille) et dans les photos du téléphone —
     // une photo prise dans l'app ne se rend jamais toute seule dans la pellicule.
-    keepInPhotos: 'Garder dans les photos',
-    keptInPhotos: 'Gardée dans les photos',
-    savedToPhotos: 'Gardée dans les photos',
+    keepInPhotos: 'Ajouter aux photos',
+    keptInPhotos: 'Ajoutée aux photos',
+    savedToPhotos: 'Ajoutée aux photos',
     saveToDevice: 'Enregistrer sur l’appareil',
     savedToDevice: 'Enregistrée',
     // #14b — dessiner par-dessus une photo en filigrane (calque-photo).

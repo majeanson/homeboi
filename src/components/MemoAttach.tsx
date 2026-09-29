@@ -50,7 +50,7 @@ import { useOnline } from '../lib/online'
 // babillard ». The pad's own 🖼 tool still loads a photo, so nothing is lost.
 //
 // And a photo you attach can also be KEPT, two ways (both optional, both undoable /
-// harmless, offered on the staged chip): into the household frame (« Garder dans les
+// harmless, offered on the staged chip): into the household frame (« Ajouter aux
 // photos » → lib/photoGallery, an independent R2 copy so clearing the note never
 // takes it) and back onto the phone itself (« Enregistrer sur l'appareil » →
 // lib/saveToDevice — a pic snapped inside a web app never reaches the camera roll).
@@ -76,7 +76,7 @@ export interface MemoAttachOptions {
    *  (DocUploadButton) already takes images, so a second photo door would duplicate it. */
   photo?: boolean
   /** Offer the household's keep-it actions: « Épingler dans mes dessins » / « En faire
-   *  une routine » on the pad, and « Garder dans les photos » on an attached photo.
+   *  une routine » on the pad, and « Ajouter aux photos » on an attached photo.
    *  Household surfaces only — a guest's drawing/photo is headed for a message, and a
    *  guest can't write to the household anyway. */
   gallery?: boolean
@@ -256,7 +256,7 @@ export function useMemoAttach({
     srcRef.current = null
   }
 
-  // « Garder dans les photos » — the snapped pic ALSO joins the household frame
+  // « Ajouter aux photos » — the snapped pic ALSO joins the household frame
   // (Réglages ▸ Photos / the screensaver), as its own independent copy. Fires now
   // rather than on submit, with an undo toast: the photo is worth keeping whether or
   // not you go on to post the note, and « Annuler » takes it straight back out.

@@ -7,7 +7,7 @@ import { mockApi, seedState } from './mocks'
 //   1. A photo is ONE tap. The 📎's « Photo » chip attaches the file directly; it must
 //      NOT open the DrawPad (it used to — "draw over a photo" was the only door to
 //      "add a photo", which put a whole pad between you and a quick pic).
-//   2. « Garder dans les photos » copies it into the household frame (POST /api/photos)
+//   2. « Ajouter aux photos » copies it into the household frame (POST /api/photos)
 //      — its own independent blob, so clearing the note can't take it.
 //   3. « Enregistrer sur l'appareil » hands the shot back to the phone. Chromium has no
 //      file-share, so this exercises the download fallback — the half of the feature
@@ -46,16 +46,16 @@ test('« Photo » attaches the pic straight — no pad in the way — and offers
   expect(posts).toContain('/api/note-media')
 
   // The photo is attached; now the two optional keeps sit under it.
-  const keep = page.getByRole('button', { name: 'Garder dans les photos' })
+  const keep = page.getByRole('button', { name: 'Ajouter aux photos' })
   await expect(keep).toBeVisible()
   await expect(page.getByRole('button', { name: 'Enregistrer sur l’appareil' })).toBeVisible()
 
   // Keep → the household frame gets its own copy, and the chip says so.
   await keep.click()
-  await expect(page.getByRole('button', { name: 'Gardée dans les photos' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Ajoutée aux photos' })).toBeVisible()
   await expect.poll(() => posts.filter((p) => p === '/api/photos').length).toBe(1)
   // …undoably: the calm toast offers to take it straight back out.
-  await expect(page.locator('.undo-toast')).toContainText('Gardée dans les photos')
+  await expect(page.locator('.undo-toast')).toContainText('Ajoutée aux photos')
 })
 
 test('« Enregistrer sur l’appareil » falls back to a download where files can’t be shared', async ({ page }) => {

@@ -88,6 +88,21 @@ const VERBS: GlossaryTerm[] = [
     },
   },
   {
+    // One meaning since 2026-09-29. « Garder » was doing three jobs: onto the Souvenirs
+    // shelf (a mot, a drawing, a photo), AND « Garder dans Mes dessins » / « Garder dans
+    // les photos », which are COPIES into a collection. The copies say « Ajouter à… » now.
+    id: 'garder',
+    scope: 'verb',
+    fr: 'Garder',
+    en: 'Keep',
+    def: {
+      fr: 'Mettre sur l’étagère « Souvenirs » du babillard : un mot, un dessin ou une photo qu’on veut revoir. Rien n’est copié ni déplacé.',
+      en: 'Put on the board’s « Souvenirs » shelf: a message, a drawing or a photo you want to see again. Nothing is copied or moved.',
+    },
+    rivals: { fr: ['Garder dans', 'Gardé dans', 'Gardée dans'], en: ['Keep in', 'Kept in'] },
+    why: 'A copy into Mes dessins or into the photo frame is « Ajouter à… », because it makes a second, independent thing — keeping makes nothing.',
+  },
+  {
     id: 'revoquer',
     scope: 'verb',
     fr: 'Révoquer',

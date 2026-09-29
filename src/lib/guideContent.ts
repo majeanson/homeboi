@@ -1196,8 +1196,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Joindre un mémo, une photo', en: 'Attach a memo, a photo' },
         detail: {
-          fr: 'Le trombone 📎 joint un mémo vocal, un dessin ou une photo à ta note, sans effacer ce que tu as écrit. Sous une photo, « Garder dans les photos » l’ajoute au cadre de la maison et « Enregistrer sur l’appareil » te la redonne — deux copies indépendantes, effacer la note n’efface rien d’autre.',
-          en: 'The 📎 clips a voice memo, a drawing or a photo onto your note, without erasing what you wrote. Under a photo, “Keep in the photos” adds it to the household frame and “Save to my device” hands it back to you — two independent copies, clearing the note erases nothing else.',
+          fr: 'Le trombone 📎 joint un mémo vocal, un dessin ou une photo à ta note, sans effacer ce que tu as écrit. Sous une photo, « Ajouter aux photos » l’ajoute au cadre de la maison et « Enregistrer sur l’appareil » te la redonne — deux copies indépendantes, effacer la note n’efface rien d’autre.',
+          en: 'The 📎 clips a voice memo, a drawing or a photo onto your note, without erasing what you wrote. Under a photo, “Add to the photos” adds it to the household frame and “Save to my device” hands it back to you — two independent copies, clearing the note erases nothing else.',
         },
       },
       {
@@ -2727,8 +2727,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Photos de famille', en: 'Family photos' },
         detail: {
-          fr: 'Téléverse une ou plusieurs photos d’un coup : elles dérivent doucement sur le babillard et en mode veille, et une photo jointe à une note peut atterrir ici aussi (« Garder dans les photos »). Le [[icon:x-bold]] sur une vignette l’enlève, et sans stockage photo branché ces contrôles se cachent tout seuls.',
-          en: 'Upload one or several photos at once: they drift gently across the board and the screensaver, and a photo clipped to a note can land here too (“Keep in the photos”). The [[icon:x-bold]] on a thumbnail removes it, and without photo storage wired these controls hide themselves.',
+          fr: 'Téléverse une ou plusieurs photos d’un coup : elles dérivent doucement sur le babillard et en mode veille, et une photo jointe à une note peut atterrir ici aussi (« Ajouter aux photos »). Le [[icon:x-bold]] sur une vignette l’enlève, et sans stockage photo branché ces contrôles se cachent tout seuls.',
+          en: 'Upload one or several photos at once: they drift gently across the board and the screensaver, and a photo clipped to a note can land here too (“Add to the photos”). The [[icon:x-bold]] on a thumbnail removes it, and without photo storage wired these controls hide themselves.',
         },
         why: {
           fr: 'Elles sont redimensionnées petites avant l’envoi, pour charger vite et rester gratuites — et le total est plafonné.',

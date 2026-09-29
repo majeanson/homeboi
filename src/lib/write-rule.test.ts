@@ -228,7 +228,7 @@ const ALLOWED = new Set<string>([
   //     queued create returns null. The call site says so and disables offline.
   'components/forms/EventForm.tsx → todo-templates',
 
-  // 11. The undo half of an online-only flow. « Garder dans les photos » fetches the
+  // 11. The undo half of an online-only flow. « Ajouter aux photos » fetches the
   //     bytes back from R2 to make an independent copy, so it only ever runs online;
   //     its undo-delete inherits that and never outlives the session.
   'lib/photoGallery.ts → photos',

@@ -141,6 +141,14 @@ const RIVAL_CEILING: Record<string, number> = {
   'fr:Copier pour Flipp': 0,
   'en:Copy for Flipp': 0,
   'en:Everyone': 2,
+  // « Garder » = the Souvenirs shelf, and only that (2026-09-29). The two copy-into-a-
+  // collection buttons said « Garder dans Mes dessins / les photos »; swept to « Ajouter
+  // à… » in the commit that declared the rivals, so they start at 0.
+  'fr:Garder dans': 0,
+  'fr:Gardé dans': 0,
+  'fr:Gardée dans': 0,
+  'en:Keep in': 0,
+  'en:Kept in': 0,
 }
 
 // Day 2 spent this down to its floor, and day 3 learned the floor was 14 rather than 8 —
