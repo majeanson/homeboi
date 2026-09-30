@@ -163,6 +163,10 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     .bind(id, actor.householdId)
     .first<{ id: string; dismissed_at: number | null; media_key: string | null; scene_key: string | null }>()
   if (!row) return notFound('Mot introuvable.')
+  // The POST rule, held on the edit too (2026-09-30): a note is words OR a memo. An edit
+  // that empties a TEXT note left a blank card on the fridge — `COALESCE('', text)` keeps
+  // the '' — so it is refused; a memo's caption may go, its media is the note.
+  if (hasText && !body!.text!.trim() && !row.media_key) return badRequest('Note vide.')
 
   const now = nowSec()
   const surfaceAt =

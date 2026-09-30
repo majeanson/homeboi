@@ -9,6 +9,7 @@ import { writeWith } from './write'
 import { type Deal, type Pick } from './deals'
 import { normKey } from './cookable'
 import { heldIds } from './useDeferredRemoval'
+import { itemNameFromFlyer } from './flyerName'
 import { BOARD_KEY, HOUSEHOLD_KEY } from './queryKeys'
 
 // A list row as it arrives in the ['board'] cache (deal_json = the staged deal).
@@ -208,11 +209,16 @@ async function addLine(qc: QueryClient, body: Record<string, unknown>): Promise<
 // its search_terms and hand position), a checked match comes back to buy (uncheck —
 // re-adding a ticked line must not spawn a twin beside the strike-through), and
 // only a true miss inserts a new line. Returns the matched line's name, or null.
-export function ensureListLine(qc: QueryClient, name: string): Promise<AddedTo> {
-  return queuedByName(name, () => ensureListLineNow(qc, name))
+//
+// `fromFlyer`: `name` is a flyer PRODUCT title, not words a person typed — a miss then
+// inserts the calm generic name (`itemNameFromFlyer`) while matching, here and in the
+// server backstop, still runs on the full title. A typed term (Flipp's own list items,
+// the deals search box) passes nothing and lands exactly as written.
+export function ensureListLine(qc: QueryClient, name: string, opts: { fromFlyer?: boolean } = {}): Promise<AddedTo> {
+  return queuedByName(name, () => ensureListLineNow(qc, name, opts.fromFlyer === true))
 }
 
-async function ensureListLineNow(qc: QueryClient, name: string): Promise<AddedTo> {
+async function ensureListLineNow(qc: QueryClient, name: string, fromFlyer: boolean): Promise<AddedTo> {
   const existing = matchListItem(cachedList(qc), name)
   if (existing) {
     try {
@@ -229,7 +235,17 @@ async function ensureListLineNow(qc: QueryClient, name: string): Promise<AddedTo
       // create the line for real rather than report a landing that never happened.
     }
   }
-  return addLine(qc, { text: name })
+  return addLine(qc, fromFlyer ? flyerLine(name) : { text: name })
+}
+
+// A flyer title's insert body: the line takes the calm generic name, and the server's
+// backstop matches on the whole title (`match_text`) — the same decision the client just
+// made against its cache. The deal, when there is one, keeps the full title in its own
+// `name` (the till, the zoom caption and the Flipp clipping read that, never the line).
+// For a name that is already plain (a searched word) the two are the same.
+function flyerLine(name: string): { text: string; match_text?: string } {
+  const text = itemNameFromFlyer(name)
+  return text && text !== name ? { text, match_text: name } : { text: name }
 }
 
 // Stage a deal: attach it to its grocery line, reusing an existing line or adding
@@ -255,7 +271,7 @@ async function stageDealNow(qc: QueryClient, name: string, deal: Deal): Promise<
       // while the deal landed nowhere.
     }
   }
-  return addLine(qc, { text: name, deal })
+  return addLine(qc, { ...flyerLine(name), deal })
 }
 
 // Unstage: keep the grocery line, drop its deal (remove it from the cashier set).

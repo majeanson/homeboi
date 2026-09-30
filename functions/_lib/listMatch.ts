@@ -60,6 +60,17 @@ function singularWords(key: string): string {
     .join(' ')
 }
 
+// The SAME item — exact normalized name or exact saved synonym, and nothing looser.
+// Capture's door (2026-09-30): « œufs » said into the ＋ sheet re-uses an « Oeufs » line
+// (and brings a ticked one back) instead of adding its twin. Deliberately NOT the
+// containment tier below: that tier exists for flyer product names, and a person saying
+// « œufs en chocolat » means that, not the « Oeufs » line. The list page's own typed add
+// stays a plain insert — a second « pommes » there is still the household's call.
+export function lineSameItem(nameKey: string, line: { text: string; search_terms: string | null }): boolean {
+  if (!nameKey) return false
+  return [normalizeItem(line.text), ...parseTerms(line.search_terms).map(normalizeItem)].some((k) => k === nameKey)
+}
+
 // Exact normalized name, exact synonym, or the LINE's generic name/synonym
 // contained whole-word in the specific product name (one direction only — a deal
 // searched as "oeufs" must NOT land on an "Oeufs en chocolat" line). Flattened:

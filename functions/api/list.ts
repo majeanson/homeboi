@@ -128,7 +128,10 @@ export const onRequestPost = authed(async (ctx, actor) => {
   // `search_terms` lets the quick-add panel restock an item with the flyer
   // synonyms it carried last time (a JSON array of strings), so re-adding "Pain"
   // keeps "baguette/bread" without retyping.
-  const body = await readJson<{ text?: string; deal?: unknown; search_terms?: unknown; match?: unknown }>(ctx.request)
+  // `match_text`: the full flyer title a flyer door matches on when `text` is the calm
+  // generic name it inserts instead (src/lib/flyerName.ts) — so this backstop decides
+  // exactly what the client decided against its cache, on the same string.
+  const body = await readJson<{ text?: string; deal?: unknown; search_terms?: unknown; match?: unknown; match_text?: unknown }>(ctx.request)
   const text = body?.text?.trim()
   if (!text) return badRequest('Texte requis.')
   const id = newId()
@@ -143,7 +146,8 @@ export const onRequestPost = authed(async (ctx, actor) => {
   // POST: typing « pommes » twice before a big party is the household's call,
   // not ours.
   if (dealJson || body?.match === true) {
-    const key = normalizeItem(text)
+    const matchText = typeof body?.match_text === 'string' && body.match_text.trim() ? body.match_text : text
+    const key = normalizeItem(matchText)
     if (key) {
       const { results } = await ctx.env.DB.prepare(
         // Open lines first, so a still-to-buy line wins over a ticked twin.

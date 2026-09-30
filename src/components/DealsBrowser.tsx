@@ -151,7 +151,8 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
     // buy — and only a true miss inserts. writeWith inside, so an offline add
     // queues + replays; it lives under BOARD_KEY. The server runs the same match
     // before inserting, so a cold cache can't duplicate either.
-    const on = await ensureListLine(qc, lineName(name))
+    // A store-flyer product name (not a searched word) lands as its calm generic name.
+    const on = await ensureListLine(qc, lineName(name), { fromFlyer: lineName(name) === name })
     addedRef.current.set(name, on)
     setAdded(new Map(addedRef.current))
     return on

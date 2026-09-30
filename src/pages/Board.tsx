@@ -76,6 +76,12 @@ const YearView = lazy(() => import('../components/board/YearView').then((m) => (
 // `requestIdleCallback` where it exists (not Safari), a plain timeout otherwise. Fired
 // once per document, never on the critical path, and harmless if it races the real
 // import — the module cache dedupes it.
+// A birthday that already has a gift idea wears the gift instead of the cake
+// (2026-09-30). « À régler » nags when a fête two weeks out has NO idea; the other half —
+// « there is one, it's in there » — was invisible until someone tapped the row. The glyph
+// says it without a word on the row; the idea itself stays in the peek.
+const giftIcon = (e: EventRow): 'gift-bold' | undefined => (e.birthday && e.gift_ideas?.trim() ? 'gift-bold' : undefined)
+
 let warmed = false
 function warmCalendars() {
   if (warmed) return
@@ -720,7 +726,7 @@ export function Board() {
       // that holds it gets (workAct below), so "the car is spoken for" reads the same
       // wherever it appears. Until now the agenda could not tell a plain rendez-vous
       // from one that ties up the vehicle; only « L'auto » knew.
-      icon={e.car_id ? 'car-bold' : undefined}
+      icon={e.car_id ? 'car-bold' : giftIcon(e)}
       color={memberColor(e.member_id) ?? undefined}
       mine={!!profileId && eventMembers(e).includes(profileId)}
       soon={e.soon}
@@ -1678,6 +1684,7 @@ export function Board() {
       // days out otherwise read as a bare "12 h 00" with no day. Match
       // the chore rows below — date · time, then withRel's "· dans X j".
       when={withRel(`${formatDayMaybeYear(e.start_at, lang)} · ${eventWhen(e)}`, e.start_at)}
+      icon={giftIcon(e)}
       soon={e.soon}
       onOpen={() => detail.open(buildEvent(e, detailCtx, eventActions.optsFor(e)))}
     />

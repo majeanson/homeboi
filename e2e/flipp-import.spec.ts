@@ -94,3 +94,35 @@ test('a guest is read-only: the hash is dropped, nothing is asked, nothing is wr
   expect(writes).toEqual([])
   expect(new URL(page.url()).hash).toBe('')
 })
+
+// A FLYER CLIPPING WITH NO LINE TO RIDE ON (2026-09-30). It used to land on the list as
+// Flipp's own shout — « CUISSES DE POULET AVEC DEUX FORMATS CLUB ». The line now takes the
+// calm generic name (lib/flyerName), and nothing Flipp needs is lost: the server backstop
+// still matches on the full title (`match_text`), and the DEAL keeps that title and its
+// flyer item id — the next trip to Flipp sends the clipping from the deal, never the line.
+test('a clipping with no line lands as a calm name, and the deal keeps the whole flyer title', async ({ page }) => {
+  const TITLE = 'CUISSES DE POULET AVEC DEUX FORMATS CLUB'
+  const posts: Record<string, unknown>[] = []
+  page.on('request', (r) => {
+    if (listWrite(r) && r.method() === 'POST') posts.push(JSON.parse(r.postData() ?? '{}') as Record<string, unknown>)
+  })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await mockApi(page)
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+  const only: FlippExport = {
+    v: 1,
+    from: 'flipp',
+    clippings: [{ flyerItemId: 777, name: TITLE, flyerId: 5003, price: '9.99', merchantId: 7, merchantName: 'IGA', merchantLogoUrl: null, thumbnailUrl: null, validTo: '2099-01-01', checked: false }],
+    items: [],
+  }
+  await page.goto('/liste#flipp=' + encodeFlippExport(only))
+  const dialog = page.locator('.confirm')
+  await expect(dialog).toBeVisible({ timeout: 15_000 })
+  await dialog.getByRole('button', { name: /^Rapporter$/ }).click()
+  await expect.poll(() => posts.length, { timeout: 10_000 }).toBe(1)
+  expect(posts[0].text, 'the line reads like a grocery item').toBe('Cuisses de poulet')
+  expect(posts[0].match_text, 'the server still matches on the whole title').toBe(TITLE)
+  const deal = posts[0].deal as { id: number; name: string }
+  expect(deal.id, 'the deal keeps its flyer item').toBe(777)
+  expect(deal.name, 'the deal keeps the whole flyer title').toBe(TITLE)
+})

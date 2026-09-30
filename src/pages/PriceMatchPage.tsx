@@ -111,7 +111,8 @@ export function PriceMatchPage() {
     doneRef.current.set(name, null)
     setAdded(name)
     setAddedTo(null)
-    const on = await ensureListLine(qc, name)
+    // A deal or flyer product name: it lands as its calm generic name (lib/flyerName).
+    const on = await ensureListLine(qc, name, { fromFlyer: true })
     doneRef.current.set(name, on)
     setAddedTo(on)
     return on

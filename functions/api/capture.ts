@@ -11,6 +11,8 @@ import { parseRecurPhrase, seasonAnchorFor } from '../_lib/recurParse'
 import { profileMemberId } from '../_lib/profile'
 import { resolveMemberByName } from '../_lib/members'
 import { householdMealLayout } from '../_lib/mealSlots'
+import { normalizeItem } from '../_lib/normalize'
+import { lineSameItem } from '../_lib/listMatch'
 
 // THE SPINE. One free-text (or already-transcribed voice) capture in; the
 // intent-router classifies it; we route it to the right table. Every capture
@@ -88,6 +90,40 @@ const MEAL_SLOTS = new Set(['breakfast', 'lunch', 'supper', 'snack', 'dessert'])
 const slotOr = (proposed: string | undefined, hero: string): string =>
   proposed && MEAL_SLOTS.has(proposed) ? proposed : hero
 
+// Put a captured item on the list — or re-use the line that is already the SAME item
+// (exact name or saved synonym, `lineSameItem`), bringing a ticked one back to buy. A
+// re-used line is not this capture's to delete, so it stays out of the correction's
+// cleanup: « non, plutôt… » removes only what this capture created.
+async function captureListLine(
+  env: Env,
+  hh: string,
+  text: string,
+  source: string,
+  addedBy: string | null,
+  ts: number,
+): Promise<{ id: string; created: boolean }> {
+  const key = normalizeItem(text)
+  if (key) {
+    const { results } = await env.DB.prepare(
+      // Open lines first, so a still-to-buy line wins over a ticked twin.
+      'SELECT id, text, search_terms, checked_at FROM list_items WHERE household_id = ? ORDER BY checked_at IS NOT NULL, created_at',
+    )
+      .bind(hh)
+      .all<{ id: string; text: string; search_terms: string | null; checked_at: number | null }>()
+    const hit = results.find((r) => lineSameItem(key, r))
+    if (hit) {
+      if (hit.checked_at != null)
+        await env.DB.prepare('UPDATE list_items SET checked_at = NULL WHERE id = ? AND household_id = ?').bind(hit.id, hh).run()
+      return { id: hit.id, created: false }
+    }
+  }
+  const id = newId()
+  await env.DB.prepare('INSERT INTO list_items (id, household_id, text, source, added_by, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+    .bind(id, hh, text, source, addedBy, ts)
+    .run()
+  return { id, created: true }
+}
+
 async function routeIntent(
   env: Env,
   actor: Actor,
@@ -133,38 +169,22 @@ async function routeIntent(
     }
     case 'list-item': {
       const itemText = p.item || p.text || raw
-      const id = newId()
-      await env.DB.prepare(
-        'INSERT INTO list_items (id, household_id, text, source, added_by, created_at) VALUES (?, ?, ?, ?, ?, ?)',
-      )
-        .bind(id, hh, itemText, 'capture', addedBy, ts)
-        .run()
-      return { kind: 'list-item', label: itemText, cleanup: [{ table: 'list_items', id }] }
+      const line = await captureListLine(env, hh, itemText, 'capture', addedBy, ts)
+      return { kind: 'list-item', label: itemText, cleanup: line.created ? [{ table: 'list_items', id: line.id }] : [] }
     }
     case 'pantry-low': {
       // Two writes: record the "low" flag AND drop it on the shared list, so a
       // running-low item shows up where someone will actually buy it.
       const item = p.item || raw
       const lowId = newId()
-      const listId = newId()
-      await env.DB.batch([
-        env.DB.prepare('INSERT INTO pantry_low (id, household_id, item, marked_at) VALUES (?, ?, ?, ?)').bind(
-          lowId,
-          hh,
-          item,
-          ts,
-        ),
-        env.DB.prepare(
-          'INSERT INTO list_items (id, household_id, text, source, added_by, created_at) VALUES (?, ?, ?, ?, ?, ?)',
-        ).bind(listId, hh, item, 'pantry-low', addedBy, ts),
-      ])
+      await env.DB.prepare('INSERT INTO pantry_low (id, household_id, item, marked_at) VALUES (?, ?, ?, ?)')
+        .bind(lowId, hh, item, ts)
+        .run()
+      const line = await captureListLine(env, hh, item, 'pantry-low', addedBy, ts)
       return {
         kind: 'pantry-low',
         label: item,
-        cleanup: [
-          { table: 'pantry_low', id: lowId },
-          { table: 'list_items', id: listId },
-        ],
+        cleanup: [{ table: 'pantry_low', id: lowId }, ...(line.created ? [{ table: 'list_items', id: line.id }] : [])],
       }
     }
     case 'meal': {
