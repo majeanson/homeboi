@@ -117,7 +117,7 @@ now, so the repo-wide count is honest for the first time.
 
 **Reds nobody read, flakes that were bugs.** Matrix red three Mondays → `scheduled-red.yml`
 opens an issue. Two flakes were app defects (a review list's first frame, the tour hijacking
-deep links); CI keeps traces, E2E in 4 shards (~50 → ~23 min), a Sunday `flake-hunt.yml` ×3 (09-30: contrast ran out of budget, 22 routes × 2.2 s > 45 s → per-route timeout). `console-clean.spec` holds 60 routes to a silent console (found a <form> in a <form>, and contrast measuring hub tabs under four scene names: « day-plan », and three id scenes in an empty household).
+deep links); CI keeps traces, E2E in 4 shards (~50 → ~23 min), a Sunday `flake-hunt.yml` ×3 (09-30: contrast ran out of budget, 22 routes × 2.2 s > 45 s → per-route timeout). `console-clean.spec` holds 60 routes × 4 lenses (phone, wall, toddler, EN) to a silent console (found a <form> in a <form>, and contrast measuring hub tabs under four scene names: « day-plan », and three id scenes in an empty household).
 Deps latest, Node 26, TS 7 (not Vitest 5, #28); green minor bumps self-merge. Door 522 KB.
 
 **Fewer concepts, not more features** (dormancy audit: postbox, intake, mots, carnets unused).

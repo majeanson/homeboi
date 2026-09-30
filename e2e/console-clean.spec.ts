@@ -16,7 +16,8 @@ import { mockApi, seedState, MMID } from './mocks'
 // form existed and swallowed Enter), but it was invalid HTML that worked by accident:
 // an HTML parser drops the inner tag, and then Enter in a card word submits the routine.
 //
-// A survey of 64 routes under both the live clock and the fixtures' fixed day found no
+// A survey of 64 routes under both the live clock and the fixtures' fixed day, then under
+// the four lenses below, found no
 // other console error or warning, so this holds the whole console to zero, not a list of
 // known messages. A new route belongs here; a message that is genuinely not ours would
 // be excluded by its text, with the reason.
@@ -94,24 +95,39 @@ const ROUTES = [
   '/liste-modele/tpl1',
 ]
 
-for (const route of ROUTES) {
-  test(`the console stays clean on ${route}`, async ({ page }) => {
-    const noise: string[] = []
-    page.on('console', (m) => {
-      if (m.type() === 'error' || m.type() === 'warning') noise.push(`${m.type()}: ${m.text().split('\n')[0]}`)
+// The lenses render different components off the same routes (MemberSwitcher on the
+// wall, the picture-card views under toddler, the EN dictionary), so each paints its
+// own chance to warn. A survey of all four found only one difference, and it is by
+// design: the toddler lens never reaches Réglages (HubLayout sends it to /board).
+const LENSES = [
+  { name: 'phone', surface: 'mobile', audience: 'parent', lang: 'fr', size: { width: 390, height: 844 } },
+  { name: 'wall', surface: 'kiosk', audience: 'parent', lang: 'fr', size: { width: 1280, height: 800 } },
+  { name: 'toddler', surface: 'kiosk', audience: 'toddler', lang: 'fr', size: { width: 1280, height: 800 } },
+  { name: 'en', surface: 'mobile', audience: 'parent', lang: 'en', size: { width: 390, height: 844 } },
+] as const
+
+for (const lens of LENSES) {
+  for (const route of ROUTES) {
+    if (lens.audience === 'toddler' && route.startsWith('/settings')) continue
+    const at = `${route} @${lens.name}`
+    test(`the console stays clean on ${at}`, async ({ page }) => {
+      const noise: string[] = []
+      page.on('console', (m) => {
+        if (m.type() === 'error' || m.type() === 'warning') noise.push(`${m.type()}: ${m.text().split('\n')[0]}`)
+      })
+      page.on('pageerror', (e) => noise.push(`pageerror: ${e.message}`))
+      await page.setViewportSize(lens.size)
+      await mockApi(page)
+      await seedState(page, { theme: 'day', audience: lens.audience, lang: lens.lang, surface: lens.surface })
+      await page.goto(route)
+      await expect(page.locator('.loading, .skeleton'), `${at} finished loading`).toHaveCount(0, { timeout: 15_000 })
+      // Settle: a lazy scene bounces, and an effect warns, only after its first render.
+      await page.waitForTimeout(500)
+      const u = new URL(page.url())
+      expect(u.pathname + u.search, `${at} stayed put`).toBe(route)
+      const painted = await page.evaluate(() => (document.body?.innerText ?? '').trim().length)
+      expect(painted, `${at} painted`).toBeGreaterThan(30)
+      expect(noise, `console noise on ${at}`).toEqual([])
     })
-    page.on('pageerror', (e) => noise.push(`pageerror: ${e.message}`))
-    await page.setViewportSize({ width: 390, height: 844 })
-    await mockApi(page)
-    await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
-    await page.goto(route)
-    await expect(page.locator('.loading, .skeleton'), `${route} finished loading`).toHaveCount(0, { timeout: 15_000 })
-    // Settle: a lazy scene bounces, and an effect warns, only after its first render.
-    await page.waitForTimeout(500)
-    const at = new URL(page.url())
-    expect(at.pathname + at.search, `${route} stayed put`).toBe(route)
-    const painted = await page.evaluate(() => (document.body?.innerText ?? '').trim().length)
-    expect(painted, `${route} painted`).toBeGreaterThan(30)
-    expect(noise, `console noise on ${route}`).toEqual([])
-  })
+  }
 }
