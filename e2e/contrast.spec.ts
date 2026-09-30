@@ -62,9 +62,14 @@ const SURFACES = [
   // button at 4.06, a deal's « choisir » at 2.79, a recipe tag at 4.26.
   { name: 'form-recipe', route: '/kitchen/recipe/new' },
   { name: 'form-virement', route: '/virement/new' },
-  { name: 'form-routine', route: '/routine/r1' },
-  { name: 'recipe-view', route: '/kitchen/recipe/rc1' },
-  { name: 'price-match', route: '/liste/deals/l1' },
+  //
+  // `fresh` is where an EMPTY household goes instead: a scene that opens one record
+  // bounces to its tab when that record does not exist, and until 2026-09-30 the fresh
+  // pass measured /maison, /kitchen and /liste under these three names. The routine
+  // form has an empty twin; a recipe or a deal an empty household does not own has none.
+  { name: 'form-routine', route: '/routine/r1', fresh: '/routine/new' },
+  { name: 'recipe-view', route: '/kitchen/recipe/rc1', fresh: null },
+  { name: 'price-match', route: '/liste/deals/l1', fresh: null },
   { name: 'monde', route: '/cercle/monde' },
   { name: 'social', route: '/maison?section=social' },
   { name: 'kitchen-history', route: '/kitchen?tab=history' },
@@ -106,7 +111,9 @@ for (const theme of ['day', 'night'] as const) {
 
         const failures: string[] = []
         for (const s of SURFACES) {
-          await page.goto(s.route)
+          const route = fixture.fresh && 'fresh' in s ? s.fresh : s.route
+          if (route === null) continue
+          await page.goto(route)
           // WAIT FOR THE PAGE, NOT FOR A CLOCK (2026-09-30). This used to be the 700ms
           // beat below on its own, and on a cold CI runner the lazy route chunk can take
           // longer than that: the board was measured on its `<Loading>` fallback and
@@ -121,7 +128,7 @@ for (const theme of ['day', 'night'] as const) {
           // Read AFTER the page settled: a lazy scene bounces only once it has loaded and
           // judged its params, so a check right after goto() passes on the old URL.
           const at = new URL(page.url())
-          expect(at.pathname + at.search, `${s.name} stayed put`).toBe(s.route)
+          expect(at.pathname + at.search, `${s.name} stayed put`).toBe(route)
           // A FALSE GREEN IS THE FAILURE MODE: an empty page reports no violations, so a
           // route that stopped rendering would read as a pass forever. Assert painted
           // TEXT rather than a container — the first version listed `main, .hub__body,
