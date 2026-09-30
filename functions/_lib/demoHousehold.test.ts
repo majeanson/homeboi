@@ -1,7 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { readdirSync, readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
-import { dirname, join } from 'node:path'
+import { liveTables } from '../test/schema'
 import { CHILD_TABLES, EXEMPT_TABLES, HOUSEHOLD_TABLES, isSandboxEmail, sandboxEmail } from './demoHousehold'
 
 // The sandbox sweep (deleteHousehold) must cover EVERY table, or a demo
@@ -19,30 +17,8 @@ import { CHILD_TABLES, EXEMPT_TABLES, HOUSEHOLD_TABLES, isSandboxEmail, sandboxE
 // stays. A guard that walks the wrong shape reports the wrong thing with total
 // confidence (CLAUDE.md, the standing lesson); this one went red on the very first
 // replay, on the tables above — before it found the ones it was rewritten for (0132).
-const migrationsDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'db', 'migrations')
-const ddl = readdirSync(migrationsDir)
-  .filter((f) => f.endsWith('.sql'))
-  .sort()
-  .map((f) => readFileSync(join(migrationsDir, f), 'utf8'))
-  .join('\n')
-  .split('\n')
-  .filter((line) => !line.trim().startsWith('--'))
-  .join('\n')
-
-/** The tables that exist after every migration has run, in filename order. */
-function liveTables(): Set<string> {
-  const live = new Set<string>()
-  const re = /CREATE TABLE (?:IF NOT EXISTS )?(\w+)|DROP TABLE (?:IF EXISTS )?(\w+)|ALTER TABLE (\w+)\s+RENAME TO (\w+)/gi
-  for (const m of ddl.matchAll(re)) {
-    if (m[1]) live.add(m[1])
-    else if (m[2]) live.delete(m[2])
-    else if (m[3]) {
-      live.delete(m[3])
-      live.add(m[4])
-    }
-  }
-  return live
-}
+// The replay itself lives in test/schema (CREATE adds, DROP removes, RENAME moves) — one
+// reader of the migrations for every guard that needs the live table list.
 const createdTables = [...liveTables()]
 
 describe('demo sandbox sweep covers the whole schema', () => {

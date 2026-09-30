@@ -674,7 +674,7 @@ scroller. Réglages ▸ Régler ▸ Système's (then) nine subs were simply uncl
   `keyboard-fit`, `write-rule`, `write-owners`, `intl-rule`, `nested-interactive`,
   `discovery`, `demoHousehold`, `realtime`, `layer-order`, `chip-rule`, `glossary`,
   `undoTier`, `tour-rule`, `docCounts`, `devkitParity`, `link-button-rule`, `autofocus`,
-  `usageRule`, `csrfExempt` — are the best thing in this codebase, and a green one
+  `usageRule`, `csrfExempt`, `schemaRefs` — are the best thing in this codebase, and a green one
   proves nothing on its own: `nested-interactive` once reported green over the very
   defect it was written for (STATE.md §5 has the story). Plant the violation (or stash
   the fix), watch the guard fail, restore. **And check that the plant actually landed**
