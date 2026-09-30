@@ -20,7 +20,7 @@ import type { IntakeSubmission } from '../../lib/intake'
 // cercle (src/pages/FamilyImportPage.tsx). A share is a one-time copy, expiring on its
 // own; nothing is shared live.
 
-const SHARES_KEY = ['family-shares'] as const
+const FAMILY_SHARES_KEY = ['family-shares'] as const
 
 export function FamilyShareModal({
   open,
@@ -45,7 +45,7 @@ export function FamilyShareModal({
   const [trunc, setTrunc] = useState<{ shared: number; total: number } | null>(null)
 
   const { data } = useQuery({
-    queryKey: SHARES_KEY,
+    queryKey: FAMILY_SHARES_KEY,
     queryFn: () => api<{ shares: { id: string; label: string; createdAt: number; expiresAt: number | null }[] }>('family-share'),
     enabled: open,
   })
@@ -69,7 +69,7 @@ export function FamilyShareModal({
       })
       setUrl(res.url)
       setTrunc(res.sharedPeople < res.totalPeople ? { shared: res.sharedPeople, total: res.totalPeople } : null)
-      qc.invalidateQueries({ queryKey: SHARES_KEY })
+      qc.invalidateQueries({ queryKey: FAMILY_SHARES_KEY })
     } catch (e) {
       setErr((e as Error).message)
     } finally {
@@ -91,7 +91,7 @@ export function FamilyShareModal({
   async function revoke(id: string) {
     if (!(await confirm({ message: t.familyShare.revokeConfirm, confirmLabel: t.familyShare.revoke, tone: 'danger' }))) return
     await api('family-share', { method: 'DELETE', body: { id } })
-    qc.invalidateQueries({ queryKey: SHARES_KEY })
+    qc.invalidateQueries({ queryKey: FAMILY_SHARES_KEY })
   }
 
   const peopleCount = family ? 1 + family.payload.household.length : 0
