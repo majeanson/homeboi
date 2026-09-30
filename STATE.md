@@ -115,10 +115,10 @@ now, so the repo-wide count is honest for the first time.
 
 ### Housekeeping, then fewer concepts — 2026-09-29
 
-**Reds nobody read, flakes that were bugs.** The weekly matrix was red three Mondays;
-`scheduled-red.yml` now opens an issue for one. Two flakes were app defects (a review
-list's first frame, the tour hijacking deep links); CI keeps traces, E2E runs in 4 shards
-(~50 → ~23 min). Deps on latest, Node 26, TS 7 — not Vitest 5 (#28, upstream). Door 522 KB.
+**Reds nobody read, flakes that were bugs.** Matrix red three Mondays → `scheduled-red.yml`
+opens an issue. Two flakes were app defects (a review list's first frame, the tour hijacking
+deep links); CI keeps traces, E2E in 4 shards (~50 → ~23 min), a Sunday `flake-hunt.yml` ×3.
+Deps latest, Node 26, TS 7 (not Vitest 5, #28); green minor bumps self-merge. Door 522 KB.
 
 **Fewer concepts, not more features** (dormancy audit: postbox, intake, mots, carnets unused).
 One « Garder »; one « fiche famille » merge; one writable link (« Boîte aux lettres »); **mots

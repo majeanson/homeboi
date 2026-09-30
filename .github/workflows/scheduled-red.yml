@@ -7,7 +7,7 @@ name: Scheduled red
 # workflow comments on it instead of opening a second. The next green run of that
 # workflow — scheduled or dispatched by hand after a fix — closes it.
 #
-# Only the three on-demand/weekly harnesses are listed: CI & Deploy and E2E already
+# Only the on-demand/weekly harnesses are listed: CI & Deploy and E2E already
 # report to whoever pushed. A new scheduled workflow joins this list in the commit that
 # adds it.
 #
@@ -16,7 +16,7 @@ name: Scheduled red
 
 on:
   workflow_run:
-    workflows: ['State matrix (visual sweep)', 'Stranger walk', 'Flipp live contract']
+    workflows: ['State matrix (visual sweep)', 'Stranger walk', 'Flipp live contract', 'Flake hunt']
     types: [completed]
 
 permissions:

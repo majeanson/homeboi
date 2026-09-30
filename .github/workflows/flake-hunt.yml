@@ -1,0 +1,60 @@
+name: Flake hunt
+
+# EVERY TEST, THREE TIMES, ONCE A WEEK (2026-09-30). A flake shows itself on the push E2E
+# run once in a while, on somebody else's commit, and gets re-run until it is green — the
+# `config-panels` « a list row opens its editor scene » red came back four times that way
+# and was never read. This run goes looking instead: the whole browser suite with
+# `--repeat-each=3`, in CI's strict shape (workers 1, retries 0 — playwright.config.ts
+# under CI), on the current main. A test that passes on push but fails one repeat in
+# three is a flake, and now it has a name, a trace (retain-on-failure) and a date.
+#
+# A red here is NOT a broken main — the push E2E already said main was green. It means
+# one of the named tests is order- or timing-dependent: read its trace in the uploaded
+# report, fix the race (usually a measure or an assert that ran before the UI settled —
+# see `boxOf()` in CLAUDE.md), and dispatch this workflow by hand to close the issue.
+# scheduled-red.yml opens that issue; this workflow is on its `workflows:` list
+# (scripts/scheduled-red.test.mjs fails the build otherwise).
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Sundays 06:00 UTC — the day before the Monday harnesses, so a red is waiting with
+    # them at the start of the week and never competes with a push for runners.
+    - cron: '0 6 * * 0'
+
+concurrency:
+  group: flake-hunt
+  cancel-in-progress: true
+
+jobs:
+  hunt:
+    name: Flake hunt ${{ matrix.shard }}/4
+    runs-on: ubuntu-latest
+    # Three repeats of a ~12 min shard, plus the install — well under this.
+    timeout-minutes: 90
+    strategy:
+      # One shard's red must not cancel the others — the whole point is the full list.
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run e2e -- --shard="$SHARD/4" --repeat-each=3
+        env:
+          SHARD: ${{ matrix.shard }}
+      - name: Upload the report + traces
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: flake-hunt-${{ matrix.shard }}
+          path: |
+            e2e/report
+            e2e/test-results
+          if-no-files-found: ignore
+          retention-days: 14
