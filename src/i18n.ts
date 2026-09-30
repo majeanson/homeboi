@@ -1801,6 +1801,7 @@ export const FR = {
     // « Planifier un rendez-vous » — a peek action that opens the shared EventForm
     // pre-seeded with this person/business as the "Avec".
     scheduleRdv: 'Planifier un rendez-vous',
+    askFiche: 'Lui demander de compléter',
     // Read-only glance on the peek: the soonest upcoming event linked to this person/business.
     nextRdv: 'Prochain rendez-vous',
     memberBadge: 'Maisonnée',
@@ -2078,6 +2079,7 @@ export const FR = {
     kidTitle: 'Un mot pour toi',
     from: 'De',
     forYou: 'Pour toi',
+    postboxDoor: 'Boîte aux lettres',
     forMaisonnee: 'Pour la Maisonnée',
     memo: 'Mémo vocal',
     drawing: 'Dessin',
@@ -2376,6 +2378,10 @@ export const FR = {
     kindWelcomeHint: 'Juste l’essentiel pour un visiteur : Wi-Fi, jour des poubelles, règles de la maison.',
     kindFamilyHint: 'Pour la parenté : les prochaines dates des enfants, les anniversaires et les dernières photos. Pas de réglages.',
     kindPostboxHint: 'Un proche laisse un mot (vocal, dessin, photo) ou t’envoie ses coordonnées et sa maisonnée. Tout attend ta révision : le mot se pose sur le babillard, la fiche s’ajoute au cercle. Seul type de lien qui peut écrire.',
+    // The doors that open this form already set (C, 2026-09-29).
+    sitterTile: 'Lien pour la gardienne',
+    sharedOut: 'Ce que j’ai partagé',
+    sharedOutHint: 'Les liens encore actifs et les copies envoyées — chacun se retire d’un toucher, et cesse aussitôt de fonctionner.',
     intakeForLabel: 'Pour qui ?',
     intakeOpenPlaceholder: 'Tout le monde (lien ouvert)…',
     intakeOpenHint: 'Laisse vide pour un lien ouvert : n’importe qui peut s’ajouter.',
@@ -2413,8 +2419,6 @@ export const FR = {
     copy: 'Copier le lien',
     copied: 'Copié !',
     share: 'Partager',
-    activeLinks: 'Liens actifs',
-    activeLinksHint: 'Les liens que tu as créés et qui fonctionnent encore. Révoque-en un pour le fermer tout de suite.',
     revoke: 'Révoquer',
     revoked: 'Lien révoqué',
     linkExpiresPrefix: 'Expire',
@@ -2639,8 +2643,6 @@ export const FR = {
       'Crée un vrai lien vers cette recette. N’importe qui peut la voir ; ceux qui ont Babillard peuvent l’ajouter à leur livre.',
     kinds: { recipe: 'Recette', event: 'Rendez-vous', routine: 'Routine', family: 'Famille' },
     // « Mes partages » — Réglages ▸ Système ▸ Appareils & accès : la liste à retirer.
-    myShares: 'Mes partages',
-    mySharesHint: 'Tes liens de partage actifs. Retire-en un quand tu veux — le lien cesse alors de fonctionner.',
     noShares: 'Aucun partage actif.',
     revoke: 'Retirer',
     revokeConfirm: 'Retirer ce partage ? Le lien cessera de fonctionner.',

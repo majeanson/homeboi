@@ -118,6 +118,8 @@ const MODE_DRESS: Record<AddSheetMode, { cat: CatKey; icon: IconName }> = {
   pet: { cat: 'cercle', icon: 'smiley-bold' },
   carnet: { cat: 'cercle', icon: 'book-open-bold' },
   'family-import': { cat: 'cercle', icon: 'download-simple-bold' },
+  // « Lien pour la gardienne » — the babysitter's read-only link (navigate-only).
+  'sitter-link': { cat: 'cercle', icon: 'key-bold' },
   // « Voyage » — start a trip notebook (navigate-only to /voyage/new).
   voyage: { cat: 'event', icon: 'map-pin-bold' },
   // « Laisse un mot » — a little letter for a household face (the rose 'cercle' family
@@ -157,6 +159,7 @@ const NAV_TARGET: Partial<Record<AddSheetMode, string>> = {
   business: '/maison?add=business',
   carnet: '/maison?add=carnet',
   'family-import': '/cercle/import',
+  'sitter-link': '/settings?tab=settings&focus=guestLinks&kind=sitter',
   ...FORM_ROUTES,
 }
 
@@ -831,6 +834,7 @@ export function AddSheet({
       pet: t.cercle.pet.add,
       carnet: t.carnets.add,
       'family-import': t.familyShare.importTitle,
+      'sitter-link': t.guest.sitterTile,
       voyage: t.voyage.captureTile,
       mot: t.mots.tile,
       habit: t.habits.add,

@@ -252,6 +252,13 @@ export const ADD_HELP = {
     card: 'carnets',
     body: helpFromGuide('carnets'),
   },
+  'sitter-link': {
+    card: 'share-access',
+    body: {
+      fr: 'Un lien en lecture seule pour la gardienne : la journée, les routines, les urgences et le wifi. Il se retire d’un toucher dans « Ce que j’ai partagé ».',
+      en: 'A read-only link for the sitter: the day, the routines, emergencies and the wifi. It is withdrawn with one tap in “What I’ve shared”.',
+    },
+  },
   'family-import': {
     card: 'cercle',
     body: {

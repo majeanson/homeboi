@@ -120,10 +120,10 @@ now, so the repo-wide count is honest for the first time.
 list's first frame, the tour hijacking deep links); CI keeps traces, E2E runs in 4 shards
 (~50 → ~23 min). Deps on latest, Node 26, TS 7 — not Vitest 5 (#28, upstream). Door 522 KB.
 
-**Fewer concepts, not more features** (dormancy audit: postbox, intake, mots, carnets were
-unused). One « Garder » (copies say « Ajouter »); one « fiche famille » merge; one writable
-link, the « Boîte aux lettres »; **mots are fridge notes** (0142) — addressed papers keep the
-face dot, « Plus tard » and the outbox; replies + « Transformer » went. Next: C (buttons).
+**Fewer concepts, not more features** (dormancy audit: postbox, intake, mots, carnets unused).
+One « Garder »; one « fiche famille » merge; one writable link (« Boîte aux lettres »); **mots
+are fridge notes** (0142: face dot, « Plus tard », outbox kept; replies, « Transformer » gone);
+doors on the things (＋ gardienne, Mots card, contact peek) → ONE form, ONE « partagé » list.
 
 ## 4. What still needs improvement — consolidated and ranked
 

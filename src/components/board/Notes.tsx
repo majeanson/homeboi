@@ -7,6 +7,7 @@ import { useConfirm } from '../../lib/confirm'
 import { api, ApiError, isStatus } from '../../lib/api'
 import { BOARD_KEY, MEMBERS_KEY, MOTS_KEY } from '../../lib/queryKeys'
 import { useProfile } from '../../lib/profile'
+import { useAuth } from '../../lib/auth'
 import { formatDayTime } from '../../lib/format'
 import { useAllMots, sentMots, isScheduled, motLabel, type Mot } from '../../lib/mots'
 import { type Member as OperatorMember } from '../../lib/members'
@@ -112,6 +113,11 @@ export function Notes({
   // sees one — the dot on the face row is how it announces itself. The toddler lens
   // hears its addressed mots as « un mot pour toi » tiles, so its fridge stays family-wide.
   const { memberId: face } = useProfile()
+  // « Boîte aux lettres » (C, 2026-09-29): the way family OUTSIDE the house leaves a mot —
+  // and it lands right here. The door sits on the card its mots arrive on; it opens the
+  // one guest-link form with the box already chosen. Minting a link is the operator's.
+  const { signedIn } = useAuth()
+  const canBox = variant === 'notes' && !ro && !toddler && signedIn
   const mine = (n: NoteRow) => n.for_member_id == null || (!toddler && face != null && n.for_member_id === face)
   const waitsForMe = (n: NoteRow) => n.for_member_id != null && n.for_member_id === face && n.opened_at == null
   // « Tout effacer » (tidy seam #1) rides the shared deferred-removal store: the
@@ -446,8 +452,13 @@ export function Notes({
             galerie"). Grouped into ONE compact cluster that trails the cards on a
             wide tablet and wraps neatly under them on a phone, never claiming its
             own row. */}
-        {(canDraw || action) && (
+        {(canDraw || action || canBox) && (
           <div className="notes__action">
+            {canBox && (
+              <Chip to="/settings?tab=settings&focus=guestLinks&kind=postbox" icon="envelope-bold">
+                {t.mots.postboxDoor}
+              </Chip>
+            )}
             {canDraw && (
               <Chip onClick={() => setCreating(true)} icon="pencil-simple-bold">
                 {t.memo.draw}

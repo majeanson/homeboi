@@ -59,6 +59,7 @@ import { SubTabs } from '../components/SubTabs'
 import { MemberSwitcher } from '../components/MemberSwitcher'
 import { FaceSelect } from '../components/FaceSelect'
 import { useProfile } from '../lib/profile'
+import { useAuth } from '../lib/auth'
 import { Modal } from '../components/Modal'
 import { imgUrl } from '../lib/image'
 import { useHelpMode, HelpToggle, HelpHint, HelpTitle } from '../lib/helpMode'
@@ -164,6 +165,8 @@ function MaisonParent() {
   const bdaysScroll = useHScroll<HTMLDivElement>()
   // A guest is read-only: no drag-to-group affordance (every drop is a write).
   const ro = isGuest()
+  // Minting a link (« Lui demander de compléter ») is the operator's — not a paired tablet's.
+  const { signedIn } = useAuth()
   const [view, setView] = useTabParam<View>('view', 'list', ['list', 'links', 'tree'])
   // Distinct URL key so it composes with `view` (?section=family&view=list). Routines
   // is the default now (the merged tab's primary door — matches the toddler lens'
@@ -620,7 +623,7 @@ function MaisonParent() {
       const c = contactsById.get(p.id)
       if (!c) return
       const nextRdv = nextRdvFor(events, (e) => e.contact_id === c.id)
-      detail.open(buildContact(c, { t, lang, members: [] }, { accent: CERCLE_ACCENT, relations, groupToggle, onEdit: () => nav(`/cercle/person/${c.id}`), onDelete: ro ? undefined : () => void deleteContact(c.id, p.name), onExport: () => downloadVCard(c), onConnect, onSchedule, nextRdv, buildFamilyHref, onReach: () => bumpFrequent(JOINDRE_SCOPE, p.key) }))
+      detail.open(buildContact(c, { t, lang, members: [] }, { accent: CERCLE_ACCENT, relations, groupToggle, onEdit: () => nav(`/cercle/person/${c.id}`), onDelete: ro ? undefined : () => void deleteContact(c.id, p.name), onExport: () => downloadVCard(c), onConnect, onSchedule, nextRdv, buildFamilyHref, onReach: () => bumpFrequent(JOINDRE_SCOPE, p.key), askFicheHref: !ro && signedIn ? `/settings?tab=settings&focus=guestLinks&kind=postbox&target=${encodeURIComponent(p.key)}` : undefined }))
     } else {
       detail.open(buildMemberPerson(p, { t, lang, members: [] }, { relations, groupToggle, onDetail: () => openSheet({ id: p.id, name: p.name }), onConnect, onSchedule, buildFamilyHref, onReach: () => bumpFrequent(JOINDRE_SCOPE, p.key) }))
     }

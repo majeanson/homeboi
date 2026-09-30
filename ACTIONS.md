@@ -215,7 +215,8 @@ Board layout mirror (board▸layout, guest-allowed — device-local) · member a
 (maison▸members, ᴼ kiosk-hidden) · meal slots/hero/hours/colours (kitchen▸meals) ·
 aisle order, store filter, ghost (liste▸\*) · chore/routine series admin, todo
 templates, cars, schedules (maison▸\*) · recipe tags/pills/measure colours
-(kitchen▸apparence) · pairing + guest links (settings▸tablets/guest, ᴼ) ·
+(kitchen▸apparence) · pairing (settings▸tablets, ᴼ) — and guest links are MANAGED here but
+no longer only reached here (see their rows below, 2026-09-29) ·
 display/veille/photos/IA/voix/calme/diagnostics (settings▸\*, mostly guest-allowed
 device-local). Verdict: these surfaces are **always-managing by design** — no ⚙
 face, `RowActions` unconditional, recorded ➖.
@@ -227,6 +228,8 @@ and because the scoring pass that added them found a gap in the first one.
 | Entity · action | Row | Gesture | Peek | Add path | Réglages / link | Undo | Non-touch |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Co-operator · invite | — | — | — | — | ✅ settings▸coop « Créer un lien » | — | ✅ |
+| Guest link · **mint** (C, 2026-09-29) | — | — | ✅ contact ⋯ « Lui demander de compléter » (the box, aimed at them) | ✅ board ＋ « Lien pour la gardienne » · the Mots card's « Boîte aux lettres » | ✅ settings▸tablets — the ONE form every door opens (`?kind=&target=` preset) | — | ✅ |
+| Guest link / shared copy · **withdraw** | ✅ one row each in « Ce que j'ai partagé » (links, then copies — was two lists) | — | — | — | ✅ settings▸tablets | confirm for a standing link or a copy; a timed link is one tap | ✅ |
 | Co-operator · rotate the link | — | — | — | — | ✅ settings▸coop « Réinitialiser » | confirm¹⁹ | ✅ |
 | Co-operator · **remove access** | ✅ `RowActions` 🗑 | — | ➖²⁰ | — | ✅ settings▸coop | confirm²¹ **+ your password**²⁵ | ✅ |
 | Co-operator · set MY face | — | — | — | — | ✅ settings▸coop chips²² | — | ✅ |

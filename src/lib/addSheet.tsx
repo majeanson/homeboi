@@ -84,6 +84,9 @@ export type AddSheetMode =
   // to /cercle/import (paste a share code, or land there from a shared link) to preview +
   // merge a family a friend on their own account shared with you.
   | 'family-import'
+  // « Lien pour la gardienne » (C, 2026-09-29) — navigate-only to the ONE guest-link form
+  // with the babysitter kind already chosen. Operator-grade: minting a link is.
+  | 'sitter-link'
   // « Voyage » — start a new trip notebook. Navigate-only to /voyage/new (the create
   // form, then its scene). Operator-grade, like an event. Lets the planning rendez-vous
   // begin a trip straight from the board ＋.
@@ -137,7 +140,7 @@ export const SECTION_MODES: Record<string, AddSheetMode[]> = {
   // creates + manages them), so offering "add a routine" from the board too was a
   // redundant second door. Add routines from Routines; the board ＋ stays the
   // glance-surface quick-adds that have no section of their own.
-  board: ['note', 'event', 'chores-pick', 'todo', 'mot', 'habit-pick', 'voyage', 'plan-today', 'plan-tomorrow', 'departure'],
+  board: ['note', 'event', 'chores-pick', 'todo', 'mot', 'habit-pick', 'voyage', 'plan-today', 'plan-tomorrow', 'departure', 'sitter-link'],
   // `cook` isn't an "add" — it's a shortcut to cook mode for the next meal due —
   // but it rides the kitchen ＋ as the most-wanted kitchen action (see AddSheet,
   // where it's navigate-only and resolves its target from the meal plan). `reserve`
@@ -218,7 +221,7 @@ export function voiceModeFor(pathname: string, search: string): AddSheetMode | u
 // isn't signed in — showing the tile to an unsigned kiosk would lead to a dead
 // bounce. (Marking a habit done on the check-in scene needs no session.)
 // `habit-pick` rides along with `habit`: both of its doors land on the FormScene.
-export const OPERATOR_MODES = new Set<AddSheetMode>(['event', 'ride', 'activity', 'chore', 'chores-pick', 'routine', 'voyage', 'habit', 'habit-pick', 'virement'])
+export const OPERATOR_MODES = new Set<AddSheetMode>(['event', 'ride', 'activity', 'chore', 'chores-pick', 'routine', 'voyage', 'habit', 'habit-pick', 'virement', 'sitter-link'])
 
 // The operator forms are full-screen SCENE routes now, not in-sheet forms: a
 // tall multi-field form (a routine's name + member chips + template + card deck)
@@ -281,6 +284,7 @@ const ALL_MODES = {
   pet: 1,
   carnet: 1,
   'family-import': 1,
+  'sitter-link': 1,
   voyage: 1,
   mot: 1,
   habit: 1,

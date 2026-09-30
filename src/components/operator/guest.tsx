@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT, useLang } from '../../i18n'
 import { useOperatorT } from '../../i18n.operator'
@@ -162,8 +162,15 @@ export function GuestSection({ help }: { help?: HelpMode }) {
   const [subTab, setSubTab] = useState<'phone' | 'salon'>('phone')
   // Default to the safe curated « babysitter » link, NOT the read-everything Démo —
   // so the pre-selected option can't leak the whole household (REVIEW-PASS §518).
-  const [kind, setKind] = useState<GuestKind>('sitter')
-  const [ttl, setTtl] = useState(DEFAULT_TTL.sitter)
+  //
+  // …unless a DOOR sent us here with the kind already chosen (C, 2026-09-29): the board
+  // ＋ « Lien pour la gardienne », the Mots card's « Boîte aux lettres », a contact's
+  // « Lui demander de compléter » (which also names the person). ONE form, several doors —
+  // and only a kind this form offers is honoured, so a crafted URL can't pre-pick nothing.
+  const [params] = useSearchParams()
+  const presetKind: GuestKind = KINDS.find((k) => k.kind === params.get('kind'))?.kind ?? 'sitter'
+  const [kind, setKind] = useState<GuestKind>(presetKind)
+  const [ttl, setTtl] = useState(DEFAULT_TTL[presetKind])
   // D-18 — set when `ttl === STANDING_SENTINEL`; the required "Pour qui ?" name for
   // a standing link (guests.label). E-38 — the per-link locale override.
   const [standingLabel, setStandingLabel] = useState('')
@@ -176,7 +183,7 @@ export function GuestSection({ help }: { help?: HelpMode }) {
   // For a 'postbox' link: the person it's pre-addressed to — the box then opens
   // straight on THEIR details form (null = an open box anyone can use). Bound into
   // the signed token by the server.
-  const [targetKey, setTargetKey] = useState<string | null>(null)
+  const [targetKey, setTargetKey] = useState<string | null>(presetKind === 'postbox' ? params.get('target') : null)
   const [targetText, setTargetText] = useState('')
   // For a 'postbox' link: which optional sections its details form asks for (name is
   // always required). All on by default — the operator unchecks what they don't want.
@@ -211,6 +218,12 @@ export function GuestSection({ help }: { help?: HelpMode }) {
         : [],
     [cercleData],
   )
+  // A door that named the person: show their name once the circle has loaded.
+  useEffect(() => {
+    if (!targetKey || targetText) return
+    const p = people.find((x) => x.key === targetKey)
+    if (p) setTargetText(p.name)
+  }, [people, targetKey, targetText])
   // D-19 — only household MEMBERS with a phone on file can be reached; a contact
   // isn't "a parent" in the app's model.
   const reachableParents = useMemo(() => people.filter((p) => p.kind === 'member' && p.phone), [people])
@@ -553,12 +566,11 @@ export function GuestSection({ help }: { help?: HelpMode }) {
           </div>
         )}
 
-        {/* Every still-live link you've minted, each with a « Révoquer » so a leaked
-            or over-shared one can be killed before its TTL (§509). Hidden when empty. */}
-        {subTab === 'phone' && <ActiveLinksList />}
-        {/* « Mes partages » — the snapshot shares (recette/rendez-vous/routine/famille)
-            handed out via a /partage link, each revocable. Hidden when empty (calm). */}
-        {subTab === 'phone' && <MySharesList />}
+        {/* « Ce que j'ai partagé » — ONE list of everything handed out (C, 2026-09-29):
+            the still-live links (each « Révoquer », §509) and the /partage copies sent
+            out (each « Retirer »). It was two lists stacked one under the other, and
+            « what have I given away? » is one question. Hidden when empty (calm). */}
+        {subTab === 'phone' && <SharedOutList />}
       </OperatorSection>
 
       {/* The two "things people sent us" buckets — both hidden until one arrives, so
@@ -588,7 +600,7 @@ const SHARE_KIND_ICON: Record<ShareKind, IconName> = {
   family: 'user-bold',
 }
 
-function MySharesList() {
+function ShareRows() {
   const t = useT()
   const { lang } = useLang()
   const qc = useQueryClient()
@@ -613,10 +625,7 @@ function MySharesList() {
   }
 
   return (
-    <div className="operator__guest-links">
-      <h4 className="mono">{t.shareLink.myShares}</h4>
-      <p className="operator__hint mono">{t.shareLink.mySharesHint}</p>
-      <ul className="operator__list meal-slots">
+    <>
         {shares.map((s) => (
           <li key={s.id} className="meal-slots__row">
             <span className="meal-slots__name">
@@ -636,8 +645,7 @@ function MySharesList() {
             </button>
           </li>
         ))}
-      </ul>
-    </div>
+    </>
   )
 }
 
@@ -654,7 +662,7 @@ interface GuestLinkRow {
   expires_at: number
 }
 
-function ActiveLinksList() {
+function LinkRows() {
   const t = useT()
   const { lang } = useLang()
   const qc = useQueryClient()
@@ -684,10 +692,7 @@ function ActiveLinksList() {
     }
   }
   return (
-    <div className="operator__guest-links">
-      <h4 className="mono">{t.guest.activeLinks}</h4>
-      <p className="operator__hint mono">{t.guest.activeLinksHint}</p>
-      <ul className="operator__list meal-slots">
+    <>
         {links.map((l) => (
           <li key={l.id} className="meal-slots__row">
             <span className="meal-slots__name">
@@ -722,8 +727,32 @@ function ActiveLinksList() {
             </button>
           </li>
         ))}
+      {revoked && (
+        <li>
+          <StatusMessage tone="success">{t.guest.revoked}</StatusMessage>
+        </li>
+      )}
+    </>
+  )
+}
+
+// « Ce que j'ai partagé » — the ONE list (C, 2026-09-29): the live links first (a live
+// session into this household is the thing most worth withdrawing), then the copies
+// sent out. Each row keeps its own withdrawal — a link is REVOKED (the token dies at
+// once), a copy is RETIRED (the /partage page dies, its media copies are freed).
+function SharedOutList() {
+  const t = useT()
+  const { data: linkData } = useQuery({ queryKey: GUEST_LINKS_KEY, queryFn: () => api<{ links: GuestLinkRow[] }>('guest-links') })
+  const { data: shareData } = useShares()
+  if (!linkData?.links?.length && !shareData?.shares?.length) return null
+  return (
+    <div className="operator__guest-links">
+      <h4 className="mono">{t.guest.sharedOut}</h4>
+      <p className="operator__hint mono">{t.guest.sharedOutHint}</p>
+      <ul className="operator__list meal-slots">
+        <LinkRows />
+        <ShareRows />
       </ul>
-      {revoked && <StatusMessage tone="success">{t.guest.revoked}</StatusMessage>}
     </div>
   )
 }

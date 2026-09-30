@@ -716,7 +716,7 @@ export interface GroupToggle {
 export function buildContact(
   c: Contact,
   ctx: DetailCtx,
-  opts?: { accent?: string; relations?: string[]; groups?: string[]; groupToggle?: GroupToggle; onEdit?: () => void; onDelete?: () => void; onExport?: () => void; onConnect?: () => void; onSchedule?: () => void; nextRdv?: NextRdv | null; buildFamilyHref?: string; onReach?: () => void },
+  opts?: { accent?: string; relations?: string[]; groups?: string[]; groupToggle?: GroupToggle; onEdit?: () => void; onDelete?: () => void; onExport?: () => void; onConnect?: () => void; onSchedule?: () => void; nextRdv?: NextRdv | null; buildFamilyHref?: string; onReach?: () => void; askFicheHref?: string },
 ): DetailModel {
   const { t, lang } = ctx
   const accent = opts?.accent ?? '#2A8F85'
@@ -761,6 +761,10 @@ export function buildContact(
   // « Planifier un rendez-vous » — a rendez-vous with this person, opening the
   // shared EventForm pre-seeded with them as the "Avec".
   if (opts?.onSchedule) actions.push({ key: 'rdv', label: t.cercle.scheduleRdv, icon: 'calendar-blank-bold', overflow: true, run: opts.onSchedule })
+  // « Lui demander de compléter » (C, 2026-09-29) — the box's link aimed at THIS person,
+  // who then fills in their own fiche; it comes back through the one « fiche famille »
+  // review. Opens the one guest-link form with the person already named.
+  if (opts?.askFicheHref) actions.push({ key: 'askFiche', label: t.cercle.askFiche, icon: 'envelope-bold', overflow: true, href: opts.askFicheHref })
   // "Exporter (vCard)" — download a .vcf to drop this person into any phone/Mac.
   if (opts?.onExport) actions.push({ key: 'export', label: t.cercle.exportVcard, icon: 'arrow-up-right-bold', overflow: true, run: opts.onExport })
   // « Supprimer » — the same confirm-then-DELETE the person form scene carries; a
