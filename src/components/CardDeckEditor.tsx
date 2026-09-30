@@ -108,7 +108,7 @@ export function CardDeckEditor({
             {edge && <span className={`dnd-drop dnd-drop--${edge}`} aria-hidden="true" />}
             <EditField
               // `as="div"` like the tip field below: this renders inside RoutineForm's
-              // <form> (e2e/dom-nesting.spec.ts).
+              // <form> (e2e/console-clean.spec.ts).
               as="div"
               value={card.label}
               onChange={(v) => update(i, { label: v })}

@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
-import { mockApi, seedState } from './mocks'
+import { mockApi, seedState, MMID } from './mocks'
 
 // WCAG AA CONTRAST, ACROSS THE APP, IN BOTH THEMES AND BOTH DEVICE ROLES — a ratchet
 // at zero.
@@ -53,8 +53,10 @@ const SURFACES = [
   { name: 'famille', route: '/maison?section=family' },
   { name: 'settings', route: '/settings' },
   // The day planner, a route of its own rather than a tab — and the one the matrix
-  // sweep kept reporting while this file said zero.
-  { name: 'day-plan', route: '/kitchen/day/2025-06-08' },
+  // sweep kept reporting while this file said zero. It STILL said zero for the wrong
+  // reason until 2026-09-30: the route takes a unix day, an ISO date bounces to /kitchen,
+  // and the sweep measured the kitchen twice. The URL check below now catches that.
+  { name: 'day-plan', route: `/kitchen/day/${MMID}` },
   // SCENES. Full-screen routes are where half the remaining debt lived, because a tab
   // sweep never opens them: a selected chip at 2.07:1 on the recipe form, a delete
   // button at 4.06, a deal's « choisir » at 2.79, a recipe tag at 4.26.
@@ -115,6 +117,11 @@ for (const theme of ['day', 'night'] as const) {
             timeout: 15_000,
           })
           await page.waitForTimeout(700)
+          // A route that bounces measures some OTHER page and reads green (day-plan did).
+          // Read AFTER the page settled: a lazy scene bounces only once it has loaded and
+          // judged its params, so a check right after goto() passes on the old URL.
+          const at = new URL(page.url())
+          expect(at.pathname + at.search, `${s.name} stayed put`).toBe(s.route)
           // A FALSE GREEN IS THE FAILURE MODE: an empty page reports no violations, so a
           // route that stopped rendering would read as a pass forever. Assert painted
           // TEXT rather than a container — the first version listed `main, .hub__body,
