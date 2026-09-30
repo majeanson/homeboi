@@ -1,0 +1,63 @@
+name: Dependabot auto-merge
+
+# MINOR AND PATCH UPDATES MERGE THEMSELVES ONCE CI IS GREEN (2026-09-30). The weekly
+# minor-and-patch group sat for nine days in September with CI green the whole time, and
+# the majors queued up behind it. The rule stays what dependabot.yml says — CI is the gate
+# — this only removes the person clicking « Merge » after the gate already said yes.
+#
+#   · Listens for « CI & Deploy » finishing on a dependabot/* branch. That run is the full
+#     gate (typecheck · test · build · check:bundle · test:d1 · knip) — the same as a push.
+#   · Merges ONLY: the grouped « minor-and-patch » pull request, or a single bump whose
+#     MAJOR number does not change (« from 4.1.8 to 4.1.11 »). A major — React, Vite,
+#     TypeScript, an actions/* version — keeps waiting for a person; those are the ones
+#     that have moved this app before.
+#   · A merge made with this workflow's token starts NO new workflow run (GitHub's rule
+#     against loops), so main would never be tested or deployed. So it dispatches
+#     « CI & Deploy » on main itself — a dispatch is the one event that token may start.
+#
+# Every value from the triggering run reaches the shell through `env:`, never `${{ }}`
+# inside `run:` — scripts/ci-untrusted.test.mjs fails the build otherwise.
+
+on:
+  workflow_run:
+    workflows: ['CI & Deploy']
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+jobs:
+  merge:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      startsWith(github.event.workflow_run.head_branch, 'dependabot/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge a green minor / patch update, then run CI & Deploy on main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          BRANCH: ${{ github.event.workflow_run.head_branch }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          pr="$(gh pr list --head "$BRANCH" --state open --json number,title,headRefOid --jq '.[0] // empty')"
+          if [ -z "$pr" ]; then echo "no open PR for $BRANCH (already merged?)"; exit 0; fi
+          number="$(jq -r .number <<<"$pr")"
+          title="$(jq -r .title <<<"$pr")"
+          head="$(jq -r .headRefOid <<<"$pr")"
+          # Only the commit CI actually tested — a rebase since then gets its own run.
+          if [ "$head" != "$HEAD_SHA" ]; then echo "PR #$number moved past the tested commit; waiting for its own run"; exit 0; fi
+          ok=no
+          case "$title" in
+            *"the minor-and-patch group"*) ok=yes ;;
+            *) from="$(sed -nE 's/.* from v?([0-9]+)\..* to v?([0-9]+)\..*/\1 \2/p' <<<"$title")"
+               if [ -n "$from" ] && [ "$(cut -d' ' -f1 <<<"$from")" = "$(cut -d' ' -f2 <<<"$from")" ]; then ok=yes; fi ;;
+          esac
+          if [ "$ok" != yes ]; then echo "PR #$number is a major (or unreadable) update — left for a person: $title"; exit 0; fi
+          gh pr merge "$number" --squash --delete-branch
+          gh workflow run "CI & Deploy" --ref main
+          echo "merged PR #$number and dispatched CI & Deploy on main: $title"

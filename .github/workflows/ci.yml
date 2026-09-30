@@ -13,6 +13,9 @@ on:
   push:
     branches: ['**']
   pull_request:
+  # Dispatched on main by dependabot-automerge.yml after it merges a green minor/patch
+  # update: a merge made with a workflow token starts no run of its own.
+  workflow_dispatch:
 
 # One run per ref. Cancel superseded branch/PR runs, but never cancel a deploy
 # mid-flight (main runs are left to finish).
@@ -64,7 +67,7 @@ jobs:
     # suite — check the E2E job separately for visual/flow regressions.
     needs: [ci]
     # Only the real branch advancing — not PRs, not feature branches.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
