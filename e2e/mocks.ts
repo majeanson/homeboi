@@ -686,6 +686,9 @@ export const ROUTES: Record<string, unknown> = {
   // « Les remarques » (0136). Empty by default: the section's own spec seeds what it
   // needs, and every OTHER spec that lands on Réglages must see the calm empty state.
   remarks: { remarks: [] },
+  // Voyage's trip list. Empty by default (voyage.spec stubs its own); the shape
+  // matters, because the `{}` fallback crashed /voyage/new into the ErrorBoundary.
+  trips: { trips: [] },
   recipes: RECIPES,
   // ONE recipe’s as-imported snapshot, fetched only when the sheet’s « Original »
   // toggle is tapped. It is deliberately NOT part of `recipes` above: that payload is

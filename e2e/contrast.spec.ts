@@ -92,6 +92,12 @@ for (const theme of ['day', 'night'] as const) {
   for (const surface of ['mobile', 'kiosk'] as const) {
     for (const fixture of FIXTURES) {
       test(`no WCAG AA contrast failures across the app @${surface}-${theme}-${fixture.name}`, async ({ page }) => {
+        // THE BUDGET IS PER SURFACE, not per test (2026-09-30). One test walks every
+        // route above at ~2.2 s each (goto + load gate + the 700 ms beat + axe), so 22
+        // surfaces cost ~48 s — past the suite's 45 s default. The weekly flake hunt
+        // timed out 18 to 22 surfaces in, on whichever route happened to be next; the
+        // trace showed no page slow, only the sum. Adding a surface now buys its time.
+        test.setTimeout(SURFACES.length * 5_000)
         await page.setViewportSize(surface === 'kiosk' ? { width: 1280, height: 800 } : { width: 390, height: 844 })
         await mockApi(page, { fresh: fixture.fresh })
         await seedState(page, { theme, audience: 'parent', lang: 'fr', surface })
