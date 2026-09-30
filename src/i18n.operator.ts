@@ -33,10 +33,6 @@ export const FR_OPERATOR = {
   name: 'Nom',
   isChild: 'Enfant',
   companion: 'Compagnon de routine',
-  memberEmail: 'Courriel',
-  memberPhone: 'Téléphone',
-  memberBirthday: 'Anniversaire',
-  memberNotes: 'Notes',
   devices: 'Tablettes jumelées',
   revoke: 'Révoquer',
   noDevices: 'Aucune tablette jumelée.',
@@ -50,8 +46,6 @@ export const FR_OPERATOR = {
     'Le jeton n’est montré qu’une fois. Copie la commande, colle-la dans ton terminal. Tu peux le révoquer en tout temps dans la liste ci-dessus.',
   agentCopy: 'Copier la commande',
   agentCopied: 'Copié',
-  agentKindAgent: 'agent',
-  agentKindDisplay: 'écran',
   chores: 'Corvées',
   addChore: 'Ajouter une corvée',
   schedule: 'Céduler',
@@ -67,10 +61,7 @@ export const FR_OPERATOR = {
   editChore: 'Modifier la corvée',
   deleteChore: 'Supprimer la corvée',
   ledgerTitle: 'Qui a fait quoi cette semaine ?',
-  ledgerHint: 'Un simple coup d’œil pour replacer les tours — pas un pointage.',
   ledgerEmpty: 'Rien de noté pour l’instant. Ça se remplira tout seul.',
-  ledgerDoneBy: 'Fait par',
-  ledgerHelpedBy: 'Aidé par',
   ledgerHelperChild: 'Un coup de main',
   // « La maison cette année » (B-8, bmad/09) — the house's diary read view.
   diaryTab: 'Cette année',
@@ -173,11 +164,8 @@ export const FR_OPERATOR = {
   removeCard: 'Retirer la carte',
   dragHint: 'Glisser pour réordonner',
   display: 'Affichage',
-  displayHint: 'Le thème, la langue et la vue.',
   // Customizable measuring-tool colours (Cook-mode pills + scoop circles).
   measureColorsTitle: 'Couleurs des mesures',
-  measureColorsHint:
-    'Donne à chaque cuillère et tasse la couleur de tes vrais ustensiles. Les pastilles et les pastilles-pleines des recettes suivent.',
   measureColorsReset: 'Couleurs d’origine',
   measureColorsPreview: 'Aperçu',
   themeLabel: 'Thème',
@@ -264,9 +252,6 @@ export const FR_OPERATOR = {
   boardLayoutModeAlways: 'Toujours',
   boardLayoutModeAuto: 'Si non vide',
   boardLayoutModeNever: 'Jamais',
-  a11yTitle: 'Accessibilité',
-  a11yHint:
-    'Contraste renforcé et plus gros texte, pour mieux voir de loin ou de plus près. N’affecte que cet appareil.',
   contrastLabel: 'Contraste',
   contrastNormal: 'Normal',
   contrastHigh: 'Renforcé',
@@ -289,18 +274,14 @@ export const FR_OPERATOR = {
   voiceNone: 'Aucune voix « Français (Canada) » n’est installée sur cet appareil. Ajoute-en une dans les réglages du système pour entendre la lecture.',
   voiceNoneLang: 'Aucune voix pour cette langue sur cet appareil. Ajoute-en une dans les réglages de l’appareil (Accessibilité ▸ Contenu énoncé). Sur iPad et iPhone, seules les voix de base sont offertes ici.',
   tutorialTitle: 'Aide contextuelle',
-  tutorialHint: 'Les petits « ? » près des sections ouvrent le guide à la bonne page. Passe en mode expert pour les masquer.',
   tutorialLabel: 'Mode',
   tutorialOn: 'Tutoriel',
   tutorialOff: 'Expert',
   calmTitle: 'Mode calme',
-  calmHint:
-    'Allumé : la routine se termine sans récompense. Éteint : l’enfant colle en plus un autocollant sur son mur. Rien d’autre ne change — jamais de points ni de notifications.',
   calmOn: 'Activé',
   calmOff: 'Désactivé',
   aiOn: 'IA : active',
   aiOff: 'IA indisponible',
-  aiTab: 'IA',
   aiTitle: 'Intelligence artificielle',
   aiDisabled: 'IA : désactivée',
   aiSaving: 'Enregistrement…',
@@ -308,10 +289,8 @@ export const FR_OPERATOR = {
   aiToggleHintOn: 'L’IA est active. Touche pour la couper pour toute la maisonnée.',
   aiToggleHintOff:
     'L’IA est coupée. Les fonctions IA sont masquées et rien n’est envoyé pour analyse. Touche pour la réactiver.',
-  aiToggleTitle: 'Allumer / éteindre l’IA',
   aiLearnMore: 'En savoir plus sur l’IA',
   shopping: 'Magasinage',
-  shopHint: 'Ton code postal sert à trouver les circulaires près de chez toi (preuve de prix à la caisse).',
   postalLabel: 'Code postal',
   postalPlaceholder: 'H2X 1Y4',
   postalSaved: 'Enregistré.',
@@ -368,8 +347,6 @@ export const FR_OPERATOR = {
   flippCopyBookmarklet: 'Copier le signet',
   flippBookmarkletCopied: 'Signet copié',
   flippBookmarkletLabel: 'Adresse du signet',
-  storeFilterHint:
-    'Garde seulement les magasins où tu magasines : eux seuls paraîtront dans les rabais et les circulaires.',
   storeFilterNoPostal: 'Règle d’abord ton code postal ci-dessus pour voir les magasins du coin.',
   storeFilterError: 'Service de circulaires indisponible — réessaie plus tard.',
   storeFilterEmpty: 'Aucun magasin trouvé près de chez toi.',
@@ -387,14 +364,11 @@ export const FR_OPERATOR = {
   storeCashierHint:
     'Cache les rabais de ce magasin dans « Montrer à la caisse » — pratique pour le magasin où tu fais ton épicerie.',
   history: 'Articles déjà achetés',
-  historyHint:
-    'Ce que l’« Ajout rapide » propose. Renomme un article spécifique vers son nom générique (ex. « Oeuf blanc sélection » → « Oeufs ») pour le regrouper, ou retire-le.',
   historyEmpty: 'Rien encore : l’historique se remplit à mesure que tu coches des articles, et il nourrit l’Ajout rapide ⚡.',
   historyRename: 'Renommer',
   historyRemove: 'Retirer',
   ghost: 'Liste fantôme',
   ghostStopConfirm: 'Arrêter de suivre cet article ? Il cesse de remonter dans l’Ajout rapide ; son historique reste.',
-  mealsTab: 'Repas',
   mealColors: 'Couleurs des repas',
   // « Jours affichés » — the rolling meal-plan window (functions/_lib/mealSlots).
   // Replaced a Tuesday-anchored block that could not reach the coming weekend
@@ -403,12 +377,7 @@ export const FR_OPERATOR = {
   mealWindowLabel: 'La grille montre',
   mealWindowHint: 'À partir d’aujourd’hui, toujours. Dix jours suffisent pour planifier la fin de semaine qui vient, un dimanche soir comme un mercredi.',
   mealWindowDays: (n: number) => `${n} jours`,
-  mealColorsHint:
-    'Donne une couleur à chaque repas (déjeuner, dîner, collation, souper, dessert). Elle paraît partout où ce repas apparaît — babillard, calendrier, cuisine.',
   mealColorReset: 'Couleur de départ',
-  mealShow: 'Repas affichés',
-  mealShowHint:
-    'Choisis les repas à voir sur le babillard et la cuisine. Décoche ceux qui t’encombrent (ex. ne garder que le souper). Tu peux quand même les planifier dans La cuisine.',
   mealVisible: 'Affiché',
   mealHidden: 'Masqué',
   mealOrderHint:
@@ -419,15 +388,10 @@ export const FR_OPERATOR = {
   mealHeroHidden: 'Le repas vedette est masqué : le babillard n’affichera pas de manchette « Ce soir ».',
   mealHourEarlier: 'Plus tôt',
   mealHourLater: 'Plus tard',
-  todosTab: 'À compléter',
-  reserveTab: 'Réserve',
   reserveTitle: 'Emplacements de la réserve',
-  reserveHint:
-    'Les endroits où tu ranges les aliments « cachés » (garde-manger, congélateur…). Ils regroupent La réserve dans La cuisine. Renomme-les, change leur couleur, retire-les ou ajoute les tiens.',
   reserveLocationName: 'Nom de l’emplacement',
   reserveAddLocation: 'Ajouter un emplacement…',
   reserveEmpty: 'Aucun emplacement. La réserve regroupe tout sous « Autres ».',
-  autoTab: 'L’auto',
   carsTitle: 'Tes véhicules',
   carDefaultName: 'L’auto',
   carName: 'Nom du véhicule',
@@ -468,11 +432,8 @@ export const FR_OPERATOR = {
   cercleGroupsEmpty: 'Aucun groupe. Un groupe, c’est « Les cousins » ou « L’équipe de soccer » — crée-le dans Maison ▸ Famille avec le ＋.',
   cercleGroupMembers: (n: number) => `${n} ${n === 1 ? 'personne' : 'personnes'}`,
   cercleGroupHidden: 'Masqué du répertoire',
-  recipesTab: 'Recettes',
   // Recipe-tab pills config (migration 0045) — Réglages ▸ La cuisine ▸ Apparence.
   pillsTitle: 'Pastilles de recettes',
-  pillsHint:
-    'Les filtres au-dessus des recettes. Glisse pour les réordonner, masque ceux que tu n’utilises pas, ou crée tes propres pastilles selon le temps, le nombre d’ingrédients, une étiquette…',
   pillShow: 'Afficher',
   pillHide: 'Masquer',
   pillAdd: 'Créer une pastille',
@@ -503,19 +464,13 @@ export const FR_OPERATOR = {
       photo: 'Avec photo',
     }) as Record<string, string>)[f] ?? f,
   tagsTitle: 'Étiquettes de recettes',
-  tagsHint:
-    'Les pastilles proposées quand tu étiquettes une recette, et le grand ménage : renommer ou retirer une étiquette partout d’un coup.',
-  tagPills: 'Pastilles proposées',
-  tagPillsHint: 'Ces pastilles apparaissent dans le formulaire de recette ; leur ordre décide aussi de l’ordre des collections. Glisse le ⠿ pour réorganiser. Les étiquettes déjà utilisées s’ajoutent automatiquement.',
   tagAddPill: 'Ajouter une pastille…',
-  tagUsed: 'Étiquettes utilisées',
   tagNoneUsed: 'Aucune étiquette encore. Ajoute « Végé », « Rapide »… — elles classent tes recettes en collections.',
   tagOnN: (n: number) => `${n} recette${n > 1 ? 's' : ''}`,
   tagUnusedHint: 'Proposée',
   tagRename: 'Renommer',
   tagRemove: 'Retirer',
   tagRemoveConfirm: (tag: string) => `Retirer l’étiquette « ${tag} » de toutes les recettes ? Les recettes elles-mêmes restent.`,
-  tagColor: 'Couleur',
   tagColorPick: (tag: string) => `Couleur de « ${tag} »`,
   tagColorNone: 'Aucune couleur',
   // Une étiquette peut dire à quels repas elle appartient. C'était déjà possible
@@ -523,7 +478,6 @@ export const FR_OPERATOR = {
   // modéliser un filtre pour énoncer un fait sur un mot. L'étiquette est l'endroit
   // où on met le sens; c'est donc là que la préférence appartient.
   tagSlotsPick: (tag: string) => `Repas de « ${tag} »`,
-  tagSlotsLabel: 'Pour ces repas',
   tagSlotsHint:
     'Quand tu planifies un de ces repas, les recettes portant cette étiquette remontent en tête (juste après les restants).',
   // La ligne discrète sur la rangée, pour que ça se lise sans ouvrir le tiroir.
@@ -531,9 +485,7 @@ export const FR_OPERATOR = {
   events: 'Rendez-vous',
   addEvent: 'Ajouter un rendez-vous',
   eventWhat: 'Quoi ? (ex. dentiste)',
-  eventContact: '…ou quelqu’un du cercle',
   eventWith: '…ou avec une personne ou un commerce',
-  eventAllDay: 'Toute la journée',
   eventDateLabel: 'Date',
   eventTimeLabel: 'Heure (optionnel)',
   eventUntilLabel: 'Jusqu’à',
@@ -557,10 +509,8 @@ export const FR_OPERATOR = {
   schoolYearClearConfirm: 'Effacer la rentrée, le dernier jour et toutes les relâches tapées ? Rien ne se récupère.',
   schoolYearBad: 'Dates invalides — vérifie que la rentrée précède le dernier jour.',
   recapTitle: 'Bilan de la semaine',
-  recapHint: 'Un reflet doux de la semaine — sur demande, jamais automatique.',
   recapGen: 'Générer le bilan',
   recapThinking: 'Je résume…',
-  thisWeekTab: 'Cette semaine',
   thisWeekTitle: 'Cette semaine ensemble',
   thisWeekHint: 'Un coup d’œil calme sur la semaine — ce qui s’en vient, et ce qu’on a fait ensemble. Des visages, jamais des pointages.',
   thisWeekAhead: 'Cette semaine',
@@ -585,8 +535,6 @@ export const FR_OPERATOR = {
   noPhotos: 'Aucune photo pour le moment.',
   aiLog: 'Debug',
   aiLogTitle: 'Journal des erreurs IA',
-  aiLogHint:
-    'Quand une fonction IA échoue (modèle retiré, panne), une note apparaît à l’écran ; une fois acceptée, elle s’inscrit ici. Efface quand tu l’as lue.',
   aiLogEmpty: 'Aucune erreur enregistrée.',
   aiLogClear: 'Vider le journal',
   buildTitle: 'Version',
@@ -617,9 +565,6 @@ export const FR_OPERATOR = {
   healthRateLimitWhen: 'Sans elle : rien ne freine quelqu’un qui essaie des mots de passe en boucle sur la page de connexion.',
   healthAlerts: 'Alertes de nuit',
   healthAlertsWhen: 'Sans elles : une sauvegarde ratée ou un balayage cassé ne se voit que dans un journal que personne n’ouvre.',
-  // Sub-tab labels that GROUP several sections under one pill (IA & système).
-  weekTabTitle: 'La semaine',
-  sysTabTitle: 'Version & diagnostics',
   // The merged Réglages pills (28 → 14, 2026-09-08). Each names what its stack
   // holds, in the order it holds it — lib/settingsNav SUB_LABEL_KEY points here.
   subAgendaWeek: 'Agenda & semaine',
@@ -632,7 +577,6 @@ export const FR_OPERATOR = {
   subDisplayIdle: 'Affichage & veille',
   subVoiceAi: 'Voix & IA',
   ambientTitle: 'Mode veille',
-  ambientHint: 'Ce que la tablette du mur montre au repos : une horloge avec la date et tes photos après un délai, et le retour à « Maisonnée ».',
   ambientScreensaver: 'Économiseur',
   ambientIdleBefore: 'Délai avant la veille',
   ambientShows: 'Afficher',
@@ -682,7 +626,6 @@ export const FR_OPERATOR = {
   leaveNamePlaceholder: 'Le nom de la maisonnée',
   leaveGo: 'Supprimer pour de bon',
   leaveConfirm: 'Supprimer la maisonnée au complet ? Tout le contenu, les photos, les appareils et le compte disparaissent, et rien ne se récupère.',
-  leaveDone: 'C’est supprimé. Merci d’avoir essayé Babillard.',
   leaveNameWrong: 'Le nom ne correspond pas encore.',
   ambientPreview: 'Aperçu maintenant',
   // F-47 — le souffle de l'heure (l'anti-notification).
@@ -705,7 +648,6 @@ export const FR_OPERATOR = {
   // surface=mobile), so a phone really does fade to the clock after idleMin.
   ambientNote: 'L’économiseur s’affiche sur CET appareil — tablette murale comme téléphone. Touche l’écran pour le réveiller ; rien n’est jamais perdu.',
   aiTestTitle: 'État de l’IA',
-  aiTestHint: 'Vérifie que l’IA répond vraiment — un vrai appel à chaque modèle, ici maintenant.',
   aiTestBtn: 'Tester l’IA',
   aiTestRunning: 'Test en cours…',
   aiTestOk: 'Fonctionne',
@@ -717,8 +659,6 @@ export const FR_OPERATOR = {
   // can pass green while Réglages ▸ Système ▸ Voix & IA has AI off for everyone.
   aiTestWhileOff: 'L’IA est éteinte pour la maisonnée (Réglages ▸ Système ▸ Voix & IA). Ce test parle quand même au modèle : il vérifie le branchement, pas l’interrupteur.',
   micTestTitle: 'Test du micro',
-  micTestHint:
-    'Si le micro ne marche pas sur cet appareil, lance le test, dis « lait, œufs, pain », puis envoie-nous le rapport.',
   micTestBtn: 'Tester le micro',
   micTestStop: 'Arrêter',
   micTestListening: 'J’écoute… dis « lait, œufs, pain »',
@@ -727,7 +667,6 @@ export const FR_OPERATOR = {
   micTestCopied: 'Copié !',
   guide: 'Guide',
   guideTitle: 'Comment ça marche',
-  guideHint: 'Tout le fonctionnement de Babillard, expliqué simplement, au même endroit.',
   guideSearch: 'Chercher dans le guide…',
   guideNone: 'Rien trouvé. Essaie un autre mot.',
   // The guide-card action row: « Ouvrir » = the live feature, « Régler » reuses
@@ -740,7 +679,6 @@ export const FR_OPERATOR = {
   replayTour: 'Rejouer la visite guidée',
   replaySectionTour: 'Refaire le tour de cette section',
   resetOnboarding: 'Revoir l’accueil',
-  guestTab: 'Partage',
 }
 
 // EN cache + one in-flight promise, so N components mounting at once trigger exactly ONE

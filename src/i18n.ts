@@ -12,7 +12,6 @@ export type Lang = 'fr' | 'en'
 
 export const FR = {
   appName: 'Babillard',
-  tagline: 'Le planificateur familial calme.',
   // 'cercle'/'routines' are KEPT even though the hub tabs retired them — the
   // frozen /cercle/* and /routine/* scenes still use these words.
   nav: { board: 'Le babillard', kitchen: 'La cuisine', kid: 'Mode enfant', operator: 'Réglages', login: 'Connexion', logout: 'Déconnexion', today: 'Aujourd’hui', routines: 'Routines', list: 'La liste', cercle: 'Le cercle', maison: 'Maison', notes: 'Les notes', hideMenu: 'Cacher le menu', showMenu: 'Afficher le menu', sections: 'Sections', presenceHere: 'Quelqu’un d’autre est aussi ici' },
@@ -287,9 +286,6 @@ export const FR = {
     guest: 'Invité',
     guestPreviewHint: 'Aperçu invité : lecture seule. Choisis « Parent » pour revenir.',
     simpleHint: 'Vue simple : grands boutons, gros texte, à voix haute. Pour une visite ou un grand-parent. Choisis « Parent » pour revenir.',
-    kidView: 'Vue enfant',
-    parentView: 'Vue parent',
-    editInSettings: 'Modifier dans les réglages',
     exitHold: 'Garde le doigt appuyé pour sortir…',
     exitTitle: 'Sortir du mode enfant',
     exitTitleSimple: 'Sortir du mode simple',
@@ -306,18 +302,11 @@ export const FR = {
   tour: { label: 'Visite guidée', stepOf: (n: number, total: number) => `Étape ${n} sur ${total}`, skip: 'Passer', back: 'Retour', next: 'Suivant', done: 'Terminé', learnMore: 'En savoir plus' },
   today: { morning: 'Bon matin', afternoon: 'Bon après-midi', evening: 'Bonne soirée' },
   home: {
-    eyebrow: 'Une tablette au mur, pis c’est tout',
     title: 'Toute la maisonnée, d’un coup d’œil.',
     lead: 'Le souper, les rendez-vous, la liste d’épicerie, les corvées. Un enfant de trois ans peut faire sa routine tout seul. Pas de points, pas de notifications, pas de ménage à faire dans l’app.',
-    ctaLogin: 'Ouvrir mes réglages',
     ctaPair: 'Jumeler une tablette',
     calmTitle: 'Calme par choix',
-    calmBody: 'Pas de séquences à entretenir, pas de pastilles rouges, pas de fil sans fin. La liste de la journée se vide et reste vide.',
     kidTitle: 'Fait pour un pré-lecteur',
-    kidBody: 'Des grandes cartes en images, lues à voix haute sur l’appareil. Aucune lecture requise.',
-    privacyTitle: 'Tout reste chez Cloudflare',
-    privacyBody: 'Le peu d’IA travaille à l’intérieur du service. L’horaire de ta famille n’est jamais envoyé à un tiers (Loi 25).',
-    ctaStart: 'Commencer',
     ctaReturning: 'J’ai déjà un compte',
     ctaSignup: 'Créer ma maisonnée',
     // « Essaie pour vrai » (bmad/08 A-8) — the per-visitor sandbox demo (falls
@@ -329,13 +318,6 @@ export const FR = {
     demoOpening: 'On prépare ta maisonnée d’essai…',
     demoError: 'La démo n’est pas disponible pour le moment — réessaie tantôt.',
     login: 'Se connecter',
-    // Skeleton welcome: a small "what it's for" strip + a short calm promise.
-    whatHeading: 'Ça sert à quoi ?',
-    forSupper: 'Le souper',
-    forList: 'L’épicerie',
-    forRoutines: 'Les routines',
-    forChores: 'Les corvées',
-    forAgenda: 'Les rendez-vous',
     // The richer "everything it does" showcase — themed cards, same taxonomy as
     // the in-app Guide. Each says what it does in concrete household terms.
     featHeading: 'Tout ce que ça fait',
@@ -464,11 +446,9 @@ export const FR = {
     // A-2 (bmad/10): offline (or a transport hiccup), the raw text is queued and
     // replayed once reconnected — no round-trip, no lost tap.
     queued: 'Hors ligne — c’est gardé. Ça sera classé à la reconnexion.',
-    reroute: 'Non, plutôt…',
     // The quiet "correction" toggle after a successful route — hides the re-file
     // tiles behind one tap so the happy path stays just the confirmation line.
     correct: 'Corriger',
-    rerouteDone: 'Déplacé.',
     // The board chooser's low-frequency long tail (voyage / planifier / départ /
     // laisse un mot), tucked behind a calm disclosure so the everyday tiles lead.
     more: 'Plus…',
@@ -509,7 +489,6 @@ export const FR = {
     // Sort toggle: keep the hand-dragged order, or auto-group by store aisle.
     sortMine: 'Mon ordre',
     sortAisle: 'Par allée',
-    sortBy: 'Trier la liste',
     // "Mon ordre": one tap to seed it from the aisle walk, then tweak by hand (kept).
     sortApply: 'Ranger par allée',
     // The « Allées » menu, beside Circulaires / Déjà acheté: the sort choice AND the
@@ -543,11 +522,6 @@ export const FR = {
     voiceUnsupported: 'La reconnaissance vocale n’est pas dispo sur cet appareil.',
     // Quick add: reopen past/predicted items to restock a week in a few taps.
     quickAdd: 'Ajout rapide',
-    // The ⚡ button sits right under the field's own « Ajouter » submit — « Ajout »
-    // beside « Ajouter » is two near-identical CTAs and a first-timer can't tell
-    // which one adds. Name it after what it OPENS (the same words as its scene
-    // title, quickAddTitle) so the two buttons can't be confused.
-    quickAddShort: 'Déjà acheté',
     quickAddTitle: 'Déjà acheté',
     quickSearch: 'Chercher ou ajouter…',
     quickSortAlpha: 'Ordre alphabétique',
@@ -767,18 +741,14 @@ export const FR = {
     cooks: 'aux fourneaux',
     cook: 'Préparer le repas',
     cookPlan: 'Choisir une recette',
-    cookLeftover: 'Des restes ce soir — rien à cuisiner',
     list: 'La liste',
     listEmpty: 'Liste vide. Rien à acheter.',
     // The « Simple » board's fourth zone heading (the fridge notes, inline).
     notes: 'Notes',
     chores: 'Les corvées',
-    choresEmpty: 'Aucune corvée.',
     todos: 'À faire',
     // Umbrella for the bunched « Restants à finir » + « À faire » board card.
     toFinish: 'À finir',
-    focusedOn: 'Vue de',
-    showAll: 'Tout voir',
     upcoming: 'À venir',
     soon: 'Bientôt',
     // Entretien carry-forward — the calm « owed since » sub-line on a missed
@@ -786,7 +756,6 @@ export const FR = {
     lateSince: (d: string) => `En attente depuis le ${d}`,
     turn: 'C’est le tour de',
     done: 'Fait',
-    helpedBy: 'Aidé par',
     help: 'Aider',
     offline: 'Hors ligne — voici la dernière version reçue',
     allDay: 'Toute la journée',
@@ -797,7 +766,6 @@ export const FR = {
     // D-21 (bmad/10) « Sortir le bac » — the tag on a flagged recurring chore's
     // "evening before" announce line. Reads « Ce soir » on purpose (not « Fête »).
     binTonight: 'Ce soir',
-    welcomeHint: 'Le babillard est prêt — il manque juste ta famille.',
     welcomeCta: 'Ajouter les personnes',
     idleSoon: 'Retour à la maisonnée dans un instant…',
     todayClear: 'Rien de prévu. Tout est calme.',
@@ -843,7 +811,6 @@ export const FR = {
     editSizeFull: 'Max',
     editHiddenN: (n: number) => (n === 1 ? '1 carte cachée' : `${n} cartes cachées`),
     editRestore: 'Rétablir dans Réglages',
-    allClearSub: 'Rien de prévu aujourd’hui — profitez-en.',
     // The all-clear reassurance drifts gently by daypart or notable weather — same
     // calm tone, never a prompt, never a count. Keyed by daypart + weather bucket.
     allClearMoods: {
@@ -862,7 +829,6 @@ export const FR = {
     // relâche edges and in-term fériés earn it.
     tomorrowSchool: 'École demain',
     tomorrowConge: 'Congé demain',
-    laneClear: 'Libre',
     kidAllClear: 'Rien de prévu. Belle journée !',
     shufflePhoto: 'Une autre photo',
     // « Photo du jour » daily-wonder band — one localized kicker per NASA source
@@ -875,7 +841,6 @@ export const FR = {
     chooseSupper: 'Choisir un souper',
     apodReadMore: 'Lire la suite',
     apodReadLess: 'Lire moins',
-    apodHear: 'Écouter',
     // « Dehors aujourd'hui » (SkySheet) — tap the weather/wonder hero for the story
     // behind the glance: the wonder in full, the source gallery, the day's weather.
     sky: {
@@ -1063,7 +1028,6 @@ export const FR = {
     // bagages
     sharedList: 'Partagé',
     whosBag: 'Quelle valise ?',
-    whoseBag: 'Valise de',
     addToShared: 'Ajouter à la liste partagée…',
     addToBag: (name: string) => `Ajouter à la valise de ${name}…`,
     markPacked: 'Marquer comme emballé',
@@ -1302,17 +1266,11 @@ export const FR = {
     cookTogetherN: (n: number) => `${n} plats à la fois`,
     cookTogetherPick: 'Choisis les plats à cuisiner ensemble',
     cookTogetherStart: (n: number) => `Commencer · ${n} plats`,
-    cookColDone: 'C’est prêt !',
-    cookTimerReady: (label: string) => `${label} : c’est prêt !`,
     planMeal: 'Planifier un repas',
     whichDay: 'Quel jour veux-tu planifier ?',
-    mealPlaceholder: 'Quoi manger ? (ex. spaghetti)',
     plan:'Quoi pour souper ?',
     suggest: 'Qu’est-ce qu’on mange ?',
-    suggestAnother: 'Une autre suggestion.',
-    suggestThinking: 'Je pense…',
     low: 'Ce qui s’achève',
-    lowHint: 'Coche un article pour l’ajouter à la liste d’épicerie.',
     lowAdd: 'Ajouter un aliment',
     lowEmpty: 'Rien ne manque pour l’instant. Quand un produit achève, note-le ici — il ira sur la liste.',
     addToList: '→ ajouter à la liste',
@@ -1335,17 +1293,9 @@ export const FR = {
     // The day scene's two faces (?vue= on /kitchen/day/:date) — the day's agenda
     // vs its meal planner. Meal doors land on « Repas », day doors on « Journée ».
     dayVues: { jour: 'Journée', repas: 'Repas' },
-    suggestAi: 'Idées de l’IA',
-    suggestFromRecipes: 'Avec mes recettes',
     suggestAiOff: 'IA indisponible ici.',
-    // Emoji-free labels for the ＋ Add-sheet action tiles (the tile carries the icon).
-    aiIdeas: 'Idées de l’IA',
-    bookIdeas: 'Avec mes recettes',
-    useUpIdeas: 'À écouler',
-    suggestOpen: 'Voir',
     suggestKeep: 'Garder',
     suggestKept: 'Gardé',
-    suggestMore: 'Une autre',
     // « Vide-frigo » (#5) — invent a recipe from what's about to spoil.
     fridge: {
       tile: 'Vide-frigo AI',
@@ -1366,17 +1316,12 @@ export const FR = {
       thinEmpty: 'Pas assez de détails — garde-la et complète-la.',
       tag: 'Vide-frigo',
     },
-    fromRecipe: 'Depuis une recette',
-    pickRecipe: 'Choisir une recette',
-    chooseRecipe: 'Choisir une recette',
-    chooseLeftover: 'Choisir un reste',
     ideas: 'Idées de repas',
     // The grid opener beside the inline pool: the drawer holds the OTHER sources.
     ideasMore: 'Plus d’idées',
     ideasHint: 'Une liste d’idées à garder — place-les sur un jour quand tu veux.',
     ideasEmpty: 'Pas encore d’idées. Ajoute-en une.',
     addIdea: 'Ajouter une idée',
-    keepIdea: 'Garder l’idée',
     removeIdea: 'Retirer l’idée',
     shopWeek: 'Magasiner la semaine',
     shopWeekQ: 'Pour les soupers planifiés :',
@@ -1390,7 +1335,6 @@ export const FR = {
     // vers une recette) — visible sur la tuile même, pas juste en infobulle.
     shopWeekWhy: 'Planifie une recette pour magasiner la semaine',
     useSoon: 'À utiliser bientôt',
-    useSoonHint: 'Ce que tu as et veux finir — ça suggère des recettes, sans toucher à la liste.',
     useSoonAdd: 'Ajouter un aliment à finir',
     useSoonEmpty: 'Rien à finir pour l’instant. Note ce qui achève — « la crème » — et la cuisine proposera quoi en faire.',
     useSoonCheck: 'Marquer comme utilisé',
@@ -1398,7 +1342,6 @@ export const FR = {
     // La réserve — le rappel des aliments « cachés » au congélateur / au fond du
     // garde-manger, regroupés par emplacement de rangement.
     reserve: 'La réserve',
-    reserveHint: 'Ce qui est caché au congélateur ou au fond du garde-manger — un rappel pour ne plus l’oublier.',
     reserveAdd: 'Ajouter à la réserve',
     reserveEmpty: 'Rien dans la réserve. Note ce qui dort au congélateur ou au fond du garde-manger — « sauce à spag » — pour ne pas le racheter.',
     reserveWhere: 'Où ?',
@@ -1406,7 +1349,6 @@ export const FR = {
     reserveDefaultPantry: 'Garde-manger',
     reserveDefaultFreezer: 'Congélateur',
     leftovers: 'Restants',
-    leftoversHint: 'Un plat qu’on a fait et qu’il en reste — place-le sur un jour, ou laisse-le « à finir bientôt ».',
     leftoversBoard: 'Restants à finir',
     leftoversTag: 'Restants',
     leftoversAdd: 'Ajouter un reste',
@@ -1416,10 +1358,6 @@ export const FR = {
     // confirmation, la barre « Annuler » étant peinte sous la scène (z-index 40 vs 80).
     leftoversSaved: 'Dans les restants',
     leftoversToPool: 'À finir bientôt',
-    leftoversPlan: 'Planifier',
-    leftoversDone: 'Fini',
-    leftoversRecent: 'D’un repas des derniers jours',
-    leftoversRecentToggle: 'Suggestions',
     removeLeftover: 'Retirer le reste',
     aiWaking: 'L’IA se réveille… la première fois est plus longue.',
     // « Un seul tiroir d'idées-repas » (C-14) — the ONE IdeasDrawer, its source
@@ -1471,7 +1409,6 @@ export const FR = {
     stepDone: 'Terminé',
     removeStep: 'Retirer l’étape',
     draft: 'Brouillon IA',
-    draftThinking: 'Je rédige…',
     fillFrom: 'Remplir vite',
     readPhoto: 'Scanner une fiche',
     reading: 'Je lis la photo…',
@@ -1540,15 +1477,12 @@ export const FR = {
     selectNone: 'Rien',
     addSelected: (n: number) => `Ajouter (${n})`,
     plan: 'Planifier',
-    planOn: 'Planifier le',
     planPick: 'Quel jour ?',
     planSlot: 'Quel repas ?',
     planned: '✓ Planifié',
     sourceLabel: 'Source ↗',
     cook: 'Cuisiner',
-    cookStart: 'Commencer',
     stepLabel: 'Étape',
-    cookDone: 'Bon appétit !',
     deleteConfirm: 'Supprimer cette recette ? Elle disparaît du livre et des repas déjà planifiés.',
     // Backdrop/Esc on an edited (dirty) recipe editor — a stray tap on the scrim
     // must not silently discard the work.
@@ -1561,7 +1495,6 @@ export const FR = {
     servingsN: (n: number) => `${n} portion${n > 1 ? 's' : ''}`,
     scaleLess: 'Moins de portions',
     scaleMore: 'Plus de portions',
-    scaleReset: '↺ Portions d’origine',
     timer: 'Minuteur',
     timerDone: 'Terminé !',
     cookable: 'Quoi cuisiner ?',
@@ -1625,9 +1558,6 @@ export const FR = {
     timePrep: 'Préparation',
     timeCook: 'Cuisson',
     timeTotal: 'Total',
-    cookModeStep: 'Pas à pas',
-    cookModeFull: 'Recette',
-    cookModeSwitch: 'Mode d’affichage',
     // Cook-mode viewer: the parent's layout switcher (Recette / Côte à côte / Focus)
     // and the device-wide text-size control. Toddler stays locked to the stepper.
     cookViewLabel: 'Affichage',
@@ -1640,14 +1570,12 @@ export const FR = {
     stepPhotoAdd: 'Ajouter une photo',
     stepPhotoChange: 'Changer la photo',
     stepPhotoRemove: 'Retirer la photo',
-    stepPhotoOff: 'Photos d’étape indisponibles ici',
     shareRecipe: 'Partager',
   },
   kid: {
     title: 'Ma routine',
     pick: 'Choisis ton nom',
     pickRoutine: 'Quelle routine ?',
-    rightNow: 'c’est l’heure de',
     then: 'ensuite',
     tapNext: 'Suivant',
     start: 'Commencer',
@@ -1777,7 +1705,6 @@ export const FR = {
     pickPerson: 'Choisir une personne',
     noRelationships: 'Aucun lien pour l’instant',
     removeRelationship: 'Retirer le lien',
-    relationExists: 'Ce lien existe déjà.',
     familyOf: (name: string) => `Famille ${name}`,
     familyGeneric: 'Famille',
     others: 'Autres personnes',
@@ -1807,7 +1734,6 @@ export const FR = {
     memberBadge: 'Maisonnée',
     // The "voir le cercle selon une personne" focus row (reuses MemberSwitcher).
     focusLabel: 'Voir selon une personne',
-    focusBy: (name: string) => `Liens vus selon ${name}`,
     focusSelf: 'La personne au centre',
     focusNone: 'Aucun lien connu',
     egoHint: 'Touche un visage pour le mettre au centre',
@@ -1821,7 +1747,6 @@ export const FR = {
     turnsN: (n: number) => `${n} ans`,
     inDaysN: (n: number) => (n <= 0 ? 'aujourd’hui' : n === 1 ? 'demain' : `dans ${n} jours`),
     whoIsThis: 'Qui est-ce ?',
-    tapToHear: 'Touche une photo pour entendre son nom',
     tapForFamily: 'Touche une photo pour voir sa famille',
     kidRelBack: 'Retour',
     kidRelWith: (name: string) => `La famille de ${name}`,
@@ -1841,21 +1766,12 @@ export const FR = {
     groupKind: 'Type',
     groupColour: 'Couleur',
     groupKinds: { family: 'Famille', friends: 'Amis', work: 'Travail', other: 'Autre' },
-    addToGroup: 'Ajouter à un groupe',
-    removeFromGroup: 'Retirer du groupe',
-    groupCreated: 'Groupe créé',
-    groupDeleteConfirm: (name: string) => `Supprimer le groupe « ${name} » ? Les personnes restent dans le cercle.`,
     groupEmpty: 'Aucune personne dans ce groupe.',
     dragToGroup: 'Glisser vers un groupe',
     droppedInGroup: (name: string, group: string) => `${name} ajouté·e à « ${group} »`,
     suggestedLinks: 'Liens suggérés',
     acceptSuggestion: 'Ajouter',
     dismissSuggestion: 'Ignorer',
-    suggestionReason: (reason: string) => `Suggéré : ${reason}`,
-    memberEmail: 'Courriel',
-    memberPhone: 'Téléphone',
-    memberBirthday: 'Anniversaire',
-    memberNotes: 'Notes',
     gender: 'Genre',
     genderM: 'M',
     genderF: 'F',
@@ -1878,7 +1794,6 @@ export const FR = {
     removePhotoFromGallery: 'Retirer la photo',
     importContact: 'Importer un contact',
     importVcf: 'Importer un .vcf',
-    importVcfConfirm: (n: number) => `Ce fichier contient ${n} contacts. Les ajouter tous au cercle ?`,
     importVcfDo: (n: number) => `Importer tout (${n})`,
     // The multi-card picker: choose who to import (all preselected).
     importVcfPick: 'Quels contacts importer ?',
@@ -1936,10 +1851,6 @@ export const FR = {
     familyLinkCount: (n: number) => ` · +${n} lien${n > 1 ? 's' : ''}`,
     // Primary Social / Famille split (the new top-level segmented control).
     section: { social: 'Social', family: 'Famille', notes: 'Notes', business: 'Commerces', carnets: 'Carnets' },
-    sectionSocialHint: 'Amis, collègues et autres groupes',
-    sectionFamilyHint: 'Ta Maisonnée et tes familles',
-    sectionNotesHint: 'Notes & recommandations — pour toi ou la Maisonnée',
-    sectionBusinessHint: 'Tes commerces et services — vét, hôpital, plombier',
     // Le cercle → Business: a standalone services/vendors directory (NOT people).
     business: {
       title: 'Commerces',
@@ -2047,7 +1958,6 @@ export const FR = {
       newNotePlaceholder: 'Écris quelque chose…',
       done: 'Terminé',
       preview: 'Aperçu',
-      writeTab: 'Écrire',
       format: 'Mise en forme',
       fmtBold: 'Gras',
       fmtItalic: 'Italique',
@@ -2459,7 +2369,6 @@ export const FR = {
     addPhoto: 'Une photo',
     voicePreview: 'Écouter',
     attachment: 'Pièce jointe',
-    removeAttachment: 'Retirer',
     emptyMessage: 'Écris un mot ou ajoute un message vocal, un dessin ou une photo.',
     submit: 'Envoyer',
     sending: 'Envoi…',
@@ -2589,8 +2498,6 @@ export const FR = {
     thePerson: 'La personne',
     mergeInto: (name: string) => `Fusionner avec ${name}`,
     createNew: 'Créer une nouvelle fiche',
-    mergeAll: (n: number) => `Ajouter (${n})`,
-    mergeSelected: (n: number) => `Ajouter la sélection (${n})`,
   },
   familyShare: {
     // « Partager une famille » — hand a family you built to a proche on their own Babillard.
@@ -2721,7 +2628,6 @@ export const FR = {
     linkInvalid: 'Ce lien n’est plus valide.',
     // L’onglet Bagages (par maisonnée).
     myBag: 'Mes valises',
-    sharedBag: 'Valise commune',
     addToMyBag: 'Ajouter à mes valises…',
     bagName: 'Nom de la valise (optionnel)',
     otherBagsHint: 'Chaque maisonnée gère ses propres valises.',
@@ -2732,8 +2638,6 @@ export const FR = {
     due: 'dû',
     soon: 'bientôt',
     more: 'plus',
-    manageHint:
-      'Les essentiels (œufs, pain…) et ce que TU choisis de suivre — rien ne s’ajoute ici tout seul. Ajuste la fréquence, masque, ou ajoute un item.',
     every: 'tous les',
     days: 'j',
     mute: 'Masquer',
@@ -2749,10 +2653,8 @@ export const FR = {
     sourceStaple: 'Essentiel',
     sourceManual: 'Ajouté',
     candidatesTitle: 'Achetés souvent — les suivre ? (un tap = suivi)',
-    addAllDue: (n: number) => `Tout ajouter (${n})`,
   },
   shop: {
-    proof: 'Prix concurrent',
     proofTitle: 'Preuve de prix',
     searching: 'Je cherche les circulaires…',
     none: 'Aucune circulaire trouvée pour cet article.',
@@ -2879,7 +2781,6 @@ export const FR = {
     shown: 'Montré',
     showAgain: 'Tout réafficher',
     matchFor: 'Prix pour',
-    clearPicks: 'Vider',
     // The ended-deals refresh on the till (2026-09-10): a week later the grid is all
     // « Aubaine terminée » — one tap re-runs this week's best price for those lines.
     refreshEnded: (n: number) => `${n} rabais terminé${n > 1 ? 's' : ''} · chercher ceux de cette semaine`,
@@ -2887,7 +2788,6 @@ export const FR = {
     refreshed: (found: number, dropped: number) =>
       `${found} retrouvé${found > 1 ? 's' : ''}${dropped ? ` · ${dropped} sans rabais cette semaine` : ''}`,
     browse: 'Parcourir les circulaires',
-    browseShort: 'Circulaires',
     browseTitle: 'Les circulaires',
     search: 'Chercher un article…',
     browseStart: 'Cherche un article, ou touche une suggestion.',
@@ -2895,7 +2795,7 @@ export const FR = {
     byStore: 'Par magasin',
     share: 'Partager',
   },
-  common: { tooMany: 'Trop d’essais. Réessaie dans une minute.', loading: 'Chargement…', cancel: 'Annuler', save: 'Enregistrer', back: 'Retour', theme: 'Jour / Nuit', lang: 'EN', add: 'Ajouter', edit: 'Modifier', done: 'Terminé', delete: 'Supprimer', confirmTitle: 'Confirmer', deleteConfirm: 'Supprimer ? On ne pourra pas revenir en arrière.', saveFailed: 'Pas enregistré — réessaie.', loadFailed: 'Impossible de charger — réessaie.', close: 'Fermer', moreActions: 'Plus d’actions', zoomIn: 'Agrandir', zoomOut: 'Réduire', zoomReset: 'Réinitialiser le zoom', emojiChoose: 'Choisir un emoji', emojiChange: 'Changer', emojiSearch: 'Chercher un emoji… (ex. « eau », « outil »)', emojiNone: 'Aucun emoji', emojiClear: 'Retirer l’emoji', emojiNoResult: 'Aucun emoji trouvé.', tooLong: (max: number) => `Texte trop long — il serait coupé à ${max} caractères. Raccourcis-le avant d’enregistrer.` },
+  common: { tooMany: 'Trop d’essais. Réessaie dans une minute.', loading: 'Chargement…', cancel: 'Annuler', save: 'Enregistrer', back: 'Retour', theme: 'Jour / Nuit', lang: 'EN', add: 'Ajouter', edit: 'Modifier', done: 'Terminé', delete: 'Supprimer', confirmTitle: 'Confirmer', deleteConfirm: 'Supprimer ? On ne pourra pas revenir en arrière.', saveFailed: 'Pas enregistré — réessaie.', close: 'Fermer', moreActions: 'Plus d’actions', zoomIn: 'Agrandir', zoomOut: 'Réduire', zoomReset: 'Réinitialiser le zoom', emojiChoose: 'Choisir un emoji', emojiChange: 'Changer', emojiSearch: 'Chercher un emoji… (ex. « eau », « outil »)', emojiClear: 'Retirer l’emoji', emojiNoResult: 'Aucun emoji trouvé.', tooLong: (max: number) => `Texte trop long — il serait coupé à ${max} caractères. Raccourcis-le avant d’enregistrer.` },
   share: {
     title: 'Ajouter à Babillard',
     lead: 'Partagé depuis une autre app. Ajuste le texte au besoin, puis ajoute — l’app le classe (rendez-vous, liste, repas, note).',
@@ -2940,12 +2840,9 @@ export const FR = {
     uncheck: 'Décocher',
     clearChecked: 'Vider les cochés',
     templatesLabel: 'Modèles :',
-    // Summary of the collapsed-by-default toggle that tucks the checklist chips away.
-    templatesToggle: 'Listes prêtes',
     added: (s: string) => `« ${s} » ajouté`,
     removed: (s: string) => `« ${s} » retiré`,
     clearedN: (n: number) => `${n} retiré${n > 1 ? 's' : ''}`,
-    fromTemplate: (s: string) => `Liste « ${s} » ajoutée`,
     // Portée choisie dans la feuille ＋ : standing (en tout temps), aujourd’hui, ou une date précise.
     scopeGlobal: 'En tout temps',
     scopeToday: 'Aujourd’hui',
@@ -2959,8 +2856,6 @@ export const FR = {
     templateDayHint: 'Une liste s’ajoute pour la journée — ici, aujourd’hui.',
     // Réglages ▸ Maison ▸ Tâches de la maison (modèles de listes).
     templatesTitle: 'Listes à compléter',
-    templatesHint:
-      'Prépare des listes réutilisables — « Avant de partir », « Chez grand-papa » — et ajoute-les en un geste quand ça presse.',
     includeList: 'Inclure une liste…',
     listDeleted: 'Liste supprimée',
     templateName: 'Nom de la liste',
@@ -3018,8 +2913,6 @@ export const FR = {
     leftoverRemoved: (s: string) => `« ${s} » retiré des restants`,
     leftoverPlanned: (s: string) => `« ${s} » planifié`,
     photoRemoved: 'Photo retirée',
-    avatarCleared: (s: string) => `Photo de ${s} retirée`,
-    historyRemoved: (s: string) => `« ${s} » retiré de l’historique`,
     routineTime: (s: string) => `Moment de « ${s} » changé`,
   },
   // The calm "Récents" session log (#38): a quiet look back at recent actions.
@@ -3051,7 +2944,6 @@ export const FR = {
     makeLeftover: 'Créer des restants',
     removeFromPlan: 'Retirer du plan',
     planTonight: 'Planifier ce soir',
-    shopRecipe: 'Ajouter à la liste',
     makeRoutine: 'En routine pour enfant',
     eventGone: 'Ce rendez-vous n’est plus dans la liste.',
   },
@@ -3196,7 +3088,6 @@ export const FR = {
     // Pas de pourcentage, pas de couleur, pas d’axe à part le zéro.
     graphLabel: (from: string, to: string) => `L’écart à rattraper, de ${from} à ${to}`,
     graphZero: 'Réglé',
-    graphToday: 'Aujourd’hui',
     mathZeroOn: (when: string) => `À ce rythme, l’écart se ferme vers ${when}.`,
 
     // ---- Le sommaire de l’année -------------------------------------------

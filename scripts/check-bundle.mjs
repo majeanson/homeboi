@@ -70,7 +70,9 @@ const EAGER_CHUNKS = [
   // win is not a budget, it is a memory of one: it hands the next thirty kilobytes back
   // without anyone deciding to spend them. Same rule as every other ratchet here — it may
   // fall, never rise. The 11 KB left is room to write copy in, not room to re-fill.
-  { re: /^i18n-/, cap: 110 * KB, label: 'eager i18n (FR only — EN + Réglages lazy-load as their own chunks)' },
+  // 2026-09-30: 151 keys nothing read went out with src/lib/deadCopy.test.ts (99.8 → 97.3 KB),
+  // and the cap followed, 110 → 107 — the same ~10 KB of room to write copy in.
+  { re: /^i18n-/, cap: 107 * KB, label: 'eager i18n (FR only — EN + Réglages lazy-load as their own chunks)' },
 ]
 // THE THREE-FILENAME "EAGER TOTAL" IS GONE (2026-09-22). It was retired, not raised,
 // and the difference matters: it is REPLACED by the door-closure budget in check 2-bis,
