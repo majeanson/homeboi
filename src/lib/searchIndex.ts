@@ -9,7 +9,7 @@ import type { Habit } from './habits'
 import type { Mot } from './mots'
 import type { MealRow, MealIdea } from '../components/kitchen/types'
 import type { Trip } from '../components/voyage/voyage'
-import type { EventRow, NoteRow } from '../components/board/types'
+import type { EventRow } from '../components/board/types'
 import { plainText } from './noteMarkdown'
 
 // P2-7 (UNIFORMIZING) — THE searchable-entity contract. /search matches every
@@ -105,18 +105,12 @@ export const SEARCH_INDEX = {
     primary: (n) => n.title,
     secondary: (n) => plainText(n.text),
   }),
-  // A fridge memo has no NAME — its body is deliberately a SECONDARY hit, so
-  // things actually named what you typed rank above a memo that merely says it.
-  fridgeNote: entry<NoteRow>({
-    primary: () => '',
-    secondary: (n) => n.text ?? '',
-  }),
   // « Mes habitudes » — findable by title (no notes field on the row; per-day
   // check-in notes live in a separate `days` array, not worth indexing).
   habit: entry<Habit>({ primary: (h) => h.title }),
-  // « Laisse un mot » — a mot has NO name; its message text is a SECONDARY hit
-  // (mirrors fridgeNote), so a thing actually NAMED what you typed ranks above a
-  // mot that merely mentions it. A VOICE mot is searchable by its transcript now
+  // « Mots » — every paper on the fridge (0142: the fridge memos and « Laisse un mot » are
+  // one table, so one entry). A mot has NO name; its text is a SECONDARY hit, so a thing
+  // actually NAMED what you typed ranks above a mot that merely mentions it. A VOICE mot is searchable by its transcript now
   // (A5, migration 0123): it used to carry no text at all, so a message someone
   // spoke was unfindable by construction — you could only remember which face left
   // it and scroll. A mot with neither still never surfaces.

@@ -678,7 +678,8 @@ export async function seedSampleData(env: Env, householdId: string, ts = nowSec(
       ).bind(h, recipeId, mid, ts, S),
     ),
 
-    // « mots » — notes waiting (unopened) on a kid's face. Media-free.
+    // « Mots » addressed to a kid, waiting (unopened) on their face — fridge notes with a
+    // recipient since 0142. Media-free.
     ...(
       [
         [lea, maman, 'Je suis fière de toi ❤️'],
@@ -687,7 +688,7 @@ export async function seedSampleData(env: Env, householdId: string, ts = nowSec(
       ] as [string, string, string][]
     ).map(([mid, author, text]) =>
       P(
-        `INSERT INTO mots (id, household_id, member_id, author_member_id, text, created_at, is_sample)
+        `INSERT INTO notes (id, household_id, for_member_id, member_id, text, created_at, is_sample)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
       ).bind(newId(), h, mid, author, text, ts, S),
     ),

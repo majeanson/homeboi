@@ -1231,24 +1231,25 @@ export const GUIDE: GuideEntry[] = [
     route: '/board?plus=mot',
     title: { fr: 'Mots & dessins', en: 'Notes & drawings' },
     what: {
-      fr: 'Un petit message laissé à quelqu’un, qui l’attend sur son visage.',
-      en: 'A little message left for someone, waiting on their face.',
+      fr: 'Un papier sur le frigo, pour tous ou pour une seule personne.',
+      en: 'A paper on the fridge, for everyone or for just one person.',
     },
     points: [
       // ⚠ GUIDE_CARD_ALIAS ('drawings' → base 3) indexes into this card — append only.
+      // One card since 2026-09-29 (0142): the fridge notes and « Laisse un mot » merged.
       {
         label: { fr: 'Déposer un mot', en: 'Leave a message' },
         detail: {
-          fr: 'Touche le ＋ → « Laisse un mot », choisis à qui, puis écris ou enregistre. « Plus tard » le programme (un « bonne fête » au matin) ; « Me le rappeler » se laisse un mot à soi-même.',
-          en: 'Tap ＋ → “Leave a message”, choose who it’s for, then type or record. “Later” schedules it (a “happy birthday” in the morning); “Remind me” leaves one to yourself.',
+          fr: 'Touche le ＋ : écris sur le frigo, ou choisis « Mot » pour dire à qui il s’adresse. « Plus tard » le programme (un « bonne fête » au matin), et « Me le rappeler » te le laisse à toi.',
+          en: 'Tap ＋: write on the fridge, or pick “Message” to say who it’s for. “Later” schedules it (a “happy birthday” in the morning), and “Remind me” leaves it to yourself.',
         },
         route: '/board?plus=mot',
       },
       {
         label: { fr: 'Il attend, sans presser', en: 'It waits, no pressure' },
         detail: {
-          fr: 'Le mot reste fermé sur le visage du destinataire — jamais de pastille de compte — et on l’ouvre quand on passe, avec une réponse possible ; un mot dit à voix haute s’écrit tout seul. Une fois vus, ils descendent dans « Déjà vus », qu’un balai vide d’un coup, sauf ceux que tu as gardés.',
-          en: 'The message stays closed on the recipient’s face — never an unread count — and you open it when you pass by, reply if you like; a spoken message writes itself down. Once seen, they drop into “Already seen”, which one broom empties, except the ones you kept.',
+          fr: 'Un mot adressé ne se montre qu’à sa personne — un point sur son visage, jamais un compte — et s’ouvre d’une tape ; dit à voix haute, il s’écrit tout seul. Sous les papiers, « Ce que j’ai laissé » dit s’il a été vu, et déplace un « Plus tard ».',
+          en: 'An addressed message shows only to its person — a dot on their face, never a count — and opens with one tap; spoken aloud, it writes itself down. Under the papers, “What I left” says whether it was seen, and moves a “Later”.',
         },
       },
       {

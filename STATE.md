@@ -29,7 +29,7 @@
 | --- | --- |
 | **What it is** | A calm household command-center for a cheap always-on wall tablet. Single-page React app + one Cloudflare Worker (static assets + `/api/*`) + D1 + Workers AI + R2. FR-CA first. |
 | **Code** | ~157k lines across 955 `.ts`/`.tsx` files (`src/`, `functions/`, `worker/`) |
-| **Schema** | 141 forward-only migrations (0141 = la porte, en chiffres) |
+| **Schema** | 142 forward-only migrations (0142 = les mots entrent dans le frigo) |
 | **Tests** | 2 452 unit tests in 195 files · 124 real-runtime cases in 19 files (`npm run test:d1`, the Worker in workerd against a real D1) · 157 Playwright spec files |
 | **Deploy** | Push to `main` → CI (typecheck · test · build · bundle budget · **test:d1** · knip) gates `db:migrate:prod` + `wrangler deploy`. E2E is decoupled (`workflow_run`), runs after a green CI, never blocks the ship. |
 | **Second interface** | `/api/mcp` — read-only over the household — of the 12 tools, most proxy a GET handler that already exists, so the caps, the recurrence expansion and the time zone are decided once and inherited. (This row lives HERE, not in §3: docCounts derives that number from the registry, and the claim died the first time §3 rotated.) |
@@ -113,18 +113,17 @@ now, so the repo-wide count is honest for the first time.
 
 ## 3. What just shipped
 
-### Housekeeping, and a red nobody was reading — 2026-09-29
+### Housekeeping, then fewer concepts — 2026-09-29
 
-**The weekly state matrix was red three Mondays running** (09-14 → 09-28): `form-virement`
-at 128 px of chrome against 115 — on CI's fonts « seuls. » sat alone on a third line
-(`cd64de04`). **A scheduled red was invisible** (a cron has no pusher to mail): now
-`scheduled-red.yml` opens an issue per red workflow, a green run closes it, and
-`scripts/scheduled-red.test.mjs` fails the build if a `schedule:` is left out.
+**Reds nobody read, flakes that were bugs.** The weekly matrix was red three Mondays;
+`scheduled-red.yml` now opens an issue for one. Two flakes were app defects (a review
+list's first frame, the tour hijacking deep links); CI keeps traces, E2E runs in 4 shards
+(~50 → ~23 min). Deps on latest, Node 26, TS 7 — not Vitest 5 (#28, upstream). Door 522 KB.
 
-**Everything on latest, Node 26 in every workflow:** #30, `actions/*@v7`, workers-types 5,
-**TypeScript 7** (`762dfaf3`, native: `tsc -b` in ~2 s, proven red on a planted error in
-`src/` and `functions/`), tesseract.js 7 (same API, faster WASM core). **Except Vitest 5**,
-blocked upstream — the plugin peers `^4`; its 2.0 is cloudflare/workers-sdk#15500. #28 waits.
+**Fewer concepts, not more features** (dormancy audit: postbox, intake, mots, carnets were
+unused). One « Garder » (copies say « Ajouter »); one « fiche famille » merge; one writable
+link, the « Boîte aux lettres »; **mots are fridge notes** (0142) — addressed papers keep the
+face dot, « Plus tard » and the outbox; replies + « Transformer » went. Next: C (buttons).
 
 ## 4. What still needs improvement — consolidated and ranked
 

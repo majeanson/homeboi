@@ -191,15 +191,19 @@ const ENTITIES: GlossaryTerm[] = [
     fr: 'Mot',
     en: 'Message',
     def: {
-      fr: 'Un petit message laissé à quelqu’un de la maisonnée, comme un papier collé sur le frigo. Il attend la personne visée.',
-      en: 'A short message left for someone in the household, like a paper stuck on the fridge. It waits for the person it names.',
+      fr: 'Un papier collé sur le frigo du babillard, pour toute la maisonnée ou pour une personne — alors il l’attend, sur son visage, jusqu’à ce qu’elle l’ouvre.',
+      en: 'A paper stuck on the board’s fridge, for the whole household or for one person — then it waits on their face until they open it.',
     },
     card: 'mots',
+    // Not 'notes', although that is the table: the i18n key `notes` names the Les notes TAB
+    // all over the app, and a code id here claims every key spelled like it.
     codeIds: ['mots'],
     why:
-      'FR keeps three words for three different tables (mot · note du frigo · note de famille) and that ' +
-      'is the rule WORKING. English collapsed all three onto "note"; « Message » is the EN winner so the ' +
-      'three stay distinct in both languages.',
+      'TWO words since 2026-09-29, not three. « Mot » (the member-to-member message) and « note du frigo » ' +
+      'were two tables for one idea — a paper on the fridge, sometimes addressed — and migration 0142 made ' +
+      'them one (`notes`; the `mots` id stays frozen in code and query keys). What is left apart is real: ' +
+      'a MOT is a paper on the fridge, a NOTE lasts in Les notes. EN says "Message" so it never collapses ' +
+      'back onto "note".',
   },
   {
     id: 'note',
@@ -213,8 +217,8 @@ const ENTITIES: GlossaryTerm[] = [
     card: 'notes',
     codeIds: ['family_notes'],
     why:
-      'Three tables carry note-ish rows — `mots`, `notes` (the fridge memo) and `family_notes`. ' +
-      'This term is the last one. FR keeps them apart; EN had collapsed all three onto "note".',
+      'The durable one — `family_notes`, the Les notes tab. The fridge paper is a MOT (`notes` in code, ' +
+      'since 0142 the old `mots` too): a « Note » is what stays.',
   },
   {
     id: 'memo',

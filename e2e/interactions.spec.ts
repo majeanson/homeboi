@@ -1547,7 +1547,9 @@ test.describe('fridge notes', () => {
     await settle(page, '.hub')
     const note = page.locator('.note-card', { hasText: 'examen' })
     await expect(note).toBeVisible()
-    await expectApi(page, 'DELETE', 'notes', () => note.click())
+    // The paper is a card since 0142 (its « Garder » badge can't sit inside a button); the
+    // tap that takes it down is its own target.
+    await expectApi(page, 'DELETE', 'notes', () => note.locator('.note-card__tap').click())
     await expect(note).toHaveCount(0) // optimistically removed
   })
 

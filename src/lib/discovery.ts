@@ -37,8 +37,9 @@ export type DiscoveryProbe = {
 // list-read; keep alphabetical-ish and SMALL — this is a whisper, not a catalog.
 export const DISCOVERY_PROBES: DiscoveryProbe[] = [
   { card: 'voyage', key: TRIPS_KEY, path: 'trips', unused: noRows('trips') },
-  // 'mots' hosts the merged notes+drawings card, so one probe covers both.
-  { card: 'mots', key: MOTS_KEY, path: 'mots', unused: noRows('mots') },
+  // 'mots' hosts the merged notes+drawings card, so one probe covers both. Since 0142 the
+  // mots ARE the fridge notes — the same key lib/mots reads, the same wire shape.
+  { card: 'mots', key: MOTS_KEY, path: 'notes', unused: noRows('notes') },
   // Hearts folded into the recipes card; the loves read still decides "unused".
   { card: 'recipes', key: LOVES_KEY, path: 'recipe-loves', unused: noRows('loves') },
   { card: 'carnets', key: CARNETS_KEY, path: 'carnets', unused: noRows('carnets') },

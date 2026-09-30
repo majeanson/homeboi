@@ -105,6 +105,13 @@ export interface NoteRow {
   // Who left it, when it arrived via « La boîte aux lettres » (#postbox) — shown as
   // « — Papi ». NULL for ordinary household notes.
   author_label?: string | null
+  // A « Mot » (0142): the RECIPIENT (NULL = everyone — then it is simply on the fridge),
+  // when they first opened it (NULL = still waiting on their face), and whether it is
+  // kept on the Souvenirs shelf. `member_id` above stays the AUTHOR.
+  for_member_id?: string | null
+  opened_at?: number | null
+  saved_at?: number | null
+  transcript?: string | null
 }
 // A recurring chore expanded onto a specific day (today or an upcoming date).
 // `who`/`who_id` are whose turn it is (rotation + current_idx); null = unassigned

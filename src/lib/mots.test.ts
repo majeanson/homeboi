@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { isSurfaced, isScheduled, visibleMots, waitingMots, savedMots, sweepableMots, sentMots, waitingRecipientIds, motLabel, threadOf, type Mot } from './mots'
+import { isSurfaced, isScheduled, visibleMots, waitingMots, savedMots, sentMots, waitingRecipientIds, motLabel, motFromNote, type Mot } from './mots'
 
 // A minimal Mot factory — only the fields the pure helpers read.
 function mot(p: Partial<Mot>): Mot {
@@ -17,7 +17,8 @@ function mot(p: Partial<Mot>): Mot {
     opened_at: p.opened_at ?? null,
     saved_at: p.saved_at ?? null,
     surface_at: p.surface_at ?? null,
-    reply_to: p.reply_to ?? null,
+    dismissed_at: p.dismissed_at ?? null,
+    author_label: p.author_label ?? null,
   }
 }
 
@@ -56,14 +57,18 @@ describe('mots helpers', () => {
     })
   })
 
-  describe('sentMots (sender outbox)', () => {
+  describe('sentMots (the author’s outbox)', () => {
     const all = [
       mot({ id: 'a', author_member_id: 'A', member_id: 'B', created_at: 1 }),
-      mot({ id: 'b', author_member_id: 'A', member_id: null, created_at: 3, surface_at: 999 }), // scheduled, still included
+      mot({ id: 'b', author_member_id: 'A', member_id: null, created_at: 3, surface_at: 4000000000 }), // scheduled, still included
       mot({ id: 'c', author_member_id: 'C', member_id: 'A', created_at: 2 }), // someone else's
       mot({ id: 'd', author_member_id: 'A', member_id: 'B', created_at: 2, opened_at: 5 }), // seen, still included
+      // Since 0142 every fridge paper is a mot: a plain family-wide one I left is simply ON
+      // THE FRIDGE, where I see it — it is not « sent », or the outbox would be the fridge.
+      mot({ id: 'plain', author_member_id: 'A', member_id: null, created_at: 4 }),
+      mot({ id: 'gone', author_member_id: 'A', member_id: 'B', created_at: 5, dismissed_at: 6 }), // taken down
     ]
-    it('returns mots I authored, newest first, incl. scheduled + seen', () => {
+    it('returns what I left FOR someone (or for later), newest first, incl. scheduled + seen', () => {
       expect(sentMots(all, 'A').map((m) => m.id)).toEqual(['b', 'd', 'a'])
     })
     it('a null author (Maisonnée at rest) has no outbox', () => {
@@ -76,40 +81,47 @@ describe('mots helpers', () => {
       mot({ id: 'wait', member_id: 'A', opened_at: null }),
       mot({ id: 'seen', member_id: 'A', opened_at: 50 }),
       mot({ id: 'kept', member_id: 'A', opened_at: 50, saved_at: 60 }),
+      // A family-wide paper is on the fridge for everyone — it never « waits » on a face.
+      mot({ id: 'house', member_id: null, opened_at: null }),
     ]
-    it('waiting = unopened', () => {
+    it('waiting = addressed to THIS face and unopened — never a family-wide paper', () => {
       expect(waitingMots(all, 'A').map((m) => m.id)).toEqual(['wait'])
+      expect(waitingMots(all, null)).toEqual([])
     })
-    it('saved = kept keepsakes', () => {
-      expect(savedMots(all, 'A').map((m) => m.id)).toEqual(['kept'])
+    it('saved = kept keepsakes — and a kept one outlives being taken down', () => {
+      const shelf = [...all, mot({ id: 'retired', member_id: 'A', saved_at: 70, dismissed_at: 80 })]
+      expect(savedMots(shelf, 'A').map((m) => m.id).sort()).toEqual(['kept', 'retired'])
     })
-    // « Effacer les déjà vus » takes exactly this set. The kept mot's absence is
-    // the load-bearing assertion: a « Gardé » badge is someone saying "I want
-    // this", and deleting one otherwise asks a confirm — a broom that swept them
-    // along with the rest would be the one way this feature destroys something
-    // wanted. The unopened mot's absence matters too: it hasn't been read yet.
-    it('sweepable = seen but NOT kept — a keepsake is never swept', () => {
-      expect(sweepableMots(all, 'A').map((m) => m.id)).toEqual(['seen'])
-    })
-    it('sweepable respects the face: another member’s mots are not yours to clear', () => {
-      const mixed = [...all, mot({ id: 'theirs', member_id: 'B', opened_at: 50 })]
-      expect(sweepableMots(mixed, 'A').map((m) => m.id)).toEqual(['seen'])
-    })
-    it('a Maisonnée face sweeps only family-wide mots', () => {
-      const mixed = [...all, mot({ id: 'house', member_id: null, opened_at: 50 })]
-      expect(sweepableMots(mixed, null).map((m) => m.id)).toEqual(['house'])
+    it('a taken-down paper is off the fridge even for its own face', () => {
+      const withGone = [...all, mot({ id: 'gone', member_id: 'A', dismissed_at: 80 })]
+      expect(visibleMots(withGone, 'A').map((m) => m.id)).not.toContain('gone')
     })
   })
 
   describe('waitingRecipientIds (per-face dot)', () => {
-    it('returns member ids with an unopened mot, excluding Maisonnée', () => {
+    it('returns member ids with an unopened mot, excluding Maisonnée and taken-down ones', () => {
       const ids = waitingRecipientIds([
         mot({ member_id: 'A', opened_at: null }),
         mot({ member_id: 'B', opened_at: 99 }), // opened → no dot
-        mot({ member_id: null, opened_at: null }), // Maisonnée → excluded (card shows it)
+        mot({ member_id: null, opened_at: null }), // Maisonnée → excluded (the fridge shows it)
+        mot({ member_id: 'C', opened_at: null, dismissed_at: 5 }), // taken down → no dot
       ])
       expect([...ids]).toEqual(['A'])
     })
+  })
+})
+
+// THE trap, pinned in one place: `member_id` is the AUTHOR on a note row and the RECIPIENT
+// on a Mot. Every reader of the fridge-as-mots reads the Mot; only motFromNote reads the row.
+describe('motFromNote', () => {
+  it('maps the note author/recipient onto the mot shape the readers use', () => {
+    const m = motFromNote({
+      id: 'n1', text: 'Bravo', member_id: 'papa', for_member_id: 'lea', created_at: 1, updated_at: null,
+      media_kind: null, media_key: null, scene_key: null, opened_at: null, saved_at: null, surface_at: null,
+      transcript: null, dismissed_at: null, author_label: null,
+    })
+    expect(m.author_member_id).toBe('papa')
+    expect(m.member_id).toBe('lea')
   })
 })
 
@@ -135,39 +147,5 @@ describe('motLabel', () => {
   })
   it('a mot with nothing at all still reads as something', () => {
     expect(motLabel(mot({ text: '' }), L)).toBe('Un mot')
-  })
-})
-
-describe('threadOf (the quoted thread above a reply — A7)', () => {
-  const root = mot({ id: 'root', text: 'On soupe à quelle heure ?' })
-  const r1 = mot({ id: 'r1', text: '18 h', reply_to: 'root' })
-  const r2 = mot({ id: 'r2', text: 'Parfait', reply_to: 'r1' })
-  const r3 = mot({ id: 'r3', text: 'Je mets la table', reply_to: 'r2' })
-  const r4 = mot({ id: 'r4', text: 'Merci !', reply_to: 'r3' })
-  const all = [root, r1, r2, r3, r4]
-
-  it('a top-level mot has no thread', () => {
-    expect(threadOf(all, 'root')).toEqual([])
-  })
-  it('one hop is the parent alone', () => {
-    expect(threadOf(all, 'r1').map((m) => m.id)).toEqual(['root'])
-  })
-  it('walks up to the root, OLDEST FIRST, so the peek reads top-down', () => {
-    // Red against chain.push (newest first) — the opening line would sit at the bottom.
-    expect(threadOf(all, 'r3').map((m) => m.id)).toEqual(['root', 'r1', 'r2'])
-  })
-  it('the cap keeps the NEAREST ancestors — the direct parent is never the one dropped', () => {
-    // Red against capping from the root end (['root','r1','r2']) or an uncapped walk.
-    expect(threadOf(all, 'r4').map((m) => m.id)).toEqual(['r1', 'r2', 'r3'])
-    expect(threadOf(all, 'r4', 1).map((m) => m.id)).toEqual(['r3'])
-  })
-  it('a deleted parent ends the walk quietly instead of throwing or skipping over it', () => {
-    const withoutR1 = all.filter((m) => m.id !== 'r1')
-    expect(threadOf(withoutR1, 'r3').map((m) => m.id)).toEqual(['r2'])
-  })
-  it('a cycle cannot loop it', () => {
-    const a = mot({ id: 'a', reply_to: 'b' })
-    const b = mot({ id: 'b', reply_to: 'a' })
-    expect(threadOf([a, b], 'a', 10).map((m) => m.id)).toEqual(['b'])
   })
 })

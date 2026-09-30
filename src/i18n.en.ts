@@ -35,7 +35,6 @@ export const EN: typeof FR = {
     events: 'Appointments',
     listItems: 'The list',
     notes: 'Notes & recommendations',
-    boardNotes: 'Board notes',
     careLog: 'Care history',
     homePins: 'Home references',
     drawings: 'My drawings',
@@ -487,7 +486,7 @@ export const EN: typeof FR = {
     share: 'Share list',
   },
   notes: {
-    title: 'Notes',
+    title: 'Messages',
     addPlaceholder: 'Write or dictate a note…',
     clear: 'Remove',
     memo: 'Voice memo',
@@ -800,13 +799,9 @@ export const EN: typeof FR = {
   },
   // Card names for the board-layout panel (Settings ▸ The board ▸ Layout).
   boardCard: {
-    notes: 'Notes (fridge)',
+    // The fridge — "Messages" since 0142 (the old Messages card merged into it).
+    notes: 'Messages',
     heroes: 'Tonight + weather',
-    // Was 'Notes', which put « Notes (fridge) » and « Notes » next to each other in the
-    // same list — the exact EN collapse the `mot` → Message decision exists to end. The
-    // 2026-09-09 sweep fixed the `mots.*` block and missed this one, because a board-card
-    // NAME lives here rather than with the feature it names.
-    mots: 'Messages',
     souvenirs: 'Keepsakes',
     aRegler: 'To settle',
     autoCard: 'The car',
@@ -819,7 +814,7 @@ export const EN: typeof FR = {
     toFinish: 'To finish',
     todos: 'To do',
     upcoming: 'Coming up',
-    cercleNotes: 'Notes (circle)',
+    cercleNotes: 'Notes',
     voyage: 'Next trip',
     carnets: 'The logbooks',
     seasonUpkeep: 'This season',
@@ -1837,7 +1832,6 @@ export const EN: typeof FR = {
     toMaisonnee: 'The whole Household',
     placeholder: 'Write a message…',
     send: 'Leave the message',
-    cardTitle: 'Messages',
     // Toddler lens (ToddlerBoard) — the picture-first “a note is waiting” section.
     kidTitle: 'A message for you',
     from: 'From',
@@ -1847,27 +1841,16 @@ export const EN: typeof FR = {
     drawing: 'Drawing',
     photo: 'Photo',
     untitled: 'A message',
-    seenGroup: 'Already seen',
     transcript: 'What was said',
-    clearSeen: 'Remove the seen ones',
-    clearSeenKept: 'Clear the seen ones (kept ones stay)',
     clearedN: (n: number) => `${n} message${n > 1 ? 's' : ''} removed`,
     keep: 'Keep',
     kept: 'Kept',
     delete: 'Delete message',
     deleted: 'Message deleted',
-    deleteSavedConfirm: 'Delete this kept message? Its words and its recording go with it.',
     // Schedule (“Later”) + reply.
     later: 'Later',
     when: 'When',
-    reply: 'Reply',
     transform: 'Turn into…',
-    transformTitle: 'Turn this message into…',
-    transformHint: 'Its words become an appointment, a chore, a list item, a note… The message stays until you remove it.',
-    transformRemove: 'Remove the message',
-    transformKeep: 'Keep the message',
-    inReplyTo: 'In reply',
-    replyTo: (name: string) => `Reply to ${name}`,
     // Schedule presets (“Later” quick chips) + self-mot.
     preset: { tonight: 'Tonight', tomorrowAm: 'Tomorrow morning', weekend: 'This weekend' },
     remindMe: 'Remind me',
@@ -1881,7 +1864,6 @@ export const EN: typeof FR = {
     reschedule: 'Reschedule',
     rescheduleTitle: 'Reschedule message',
     sendNow: 'Send now',
-    cancelSend: 'Cancel send',
   },
   routines: {
     tag: "The day’s rhythm",

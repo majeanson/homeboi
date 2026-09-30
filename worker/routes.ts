@@ -69,7 +69,6 @@ import * as mealLeftovers from '../functions/api/meal-leftovers'
 import * as mcp from '../functions/api/mcp'
 import * as month from '../functions/api/month'
 import * as year from '../functions/api/year'
-import * as mots from '../functions/api/mots'
 import * as members from '../functions/api/members'
 import * as membersAvatar from '../functions/api/members/avatar'
 import * as notes from '../functions/api/notes'
@@ -225,7 +224,6 @@ const TABLE: Record<string, RouteMod> = {
   mcp,
   month,
   year,
-  mots,
   members,
   'members/avatar': membersAvatar,
   notes,

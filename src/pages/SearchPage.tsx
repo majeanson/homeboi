@@ -168,8 +168,9 @@ export function SearchPage() {
   // 'defi' is never an ordinary habit row (visibleHabits invariant) — the standing
   // défi carrier must not surface as a searchable « habitude » either.
   const habits = (useHabits({ live: false }).data?.habits ?? []).filter((h) => h.kind !== 'defi')
-  // « Laisse un mot » — the whole inbox (scheduled-but-unsurfaced mots are still the
-  // operator's own content, so they stay findable; media-only mots carry no text).
+  // « Mots » — every paper on the fridge since 0142 (the fridge memos and the old « Laisse
+  // un mot » are one table): scheduled-but-unsurfaced ones are still the household's own
+  // content, so they stay findable; a voice one by its transcript; media-only carry none.
   const mots = useAllMots()
   // Plan des repas — only the FREE-TEXT suppers; recipe-linked ones surface via the
   // recipe section, so filter them out to avoid a duplicate hit.
@@ -181,9 +182,6 @@ export function SearchPage() {
   // Name lookups for the row subtitles / drawing-author match.
   const carnetName = useMemo(() => new Map(carnets.map((c) => [c.id, c.name])), [carnets])
   const memberName = useMemo(() => new Map(members.map((m) => [m.id, m.display_name])), [members])
-  // The board's fridge memos (#38/#14/#13) — distinct from the cercle family notes
-  // above. Already in the board payload; only text notes surface (media-only carry none).
-  const boardNotes = board?.notes ?? []
 
   const needle = fold(q.trim())
   // Mark the typed words inside each result row (same calm <mark class="hl"> as
@@ -245,8 +243,6 @@ export function SearchPage() {
       SEARCH_INDEX.pantry,
     )
     const carHits = pick(cars, SEARCH_INDEX.car)
-    // The board's fridge memos — text notes only (media-only notes carry no text).
-    const fridgeNotes = pick(boardNotes.filter((n) => n.text), SEARCH_INDEX.fridgeNote)
     const carnetHits = pick(carnets, SEARCH_INDEX.carnet)
     const projectHits = pick(homeProjects, SEARCH_INDEX.homeProject)
     const careHits = pick(careLog, SEARCH_INDEX.careLog)
@@ -295,8 +291,8 @@ export function SearchPage() {
     }
     guideAll.sort((a, b) => a.r - b.r)
     const guide = { items: guideAll.slice(0, CAP).map((h) => h.g), best: guideAll.length ? guideAll[0].r : 99 }
-    return { recipes, people, pets: petHits, businesses: bizHits, routines: routineHits, todos: todoHits, pantry: pantryHits, cars: carHits, carnets: carnetHits, projects: projectHits, care: careHits, pins: pinHits, drawings: drawingHits, habits: habitHits, mots: motHits, meals: mealHits, ideas: ideaHits, groups: groupHits, trips: tripHits, events, listItems, notes, fridgeNotes, guide }
-  }, [needle, recipesData, contacts, pets, businesses, routines, todos, low, reserve, cars, carnets, homeProjects, careLog, homePins, drawings, habits, mots, meals, mealIdeas, groups, trips, memberName, board, familyNotes, boardNotes, lang])
+    return { recipes, people, pets: petHits, businesses: bizHits, routines: routineHits, todos: todoHits, pantry: pantryHits, cars: carHits, carnets: carnetHits, projects: projectHits, care: careHits, pins: pinHits, drawings: drawingHits, habits: habitHits, mots: motHits, meals: mealHits, ideas: ideaHits, groups: groupHits, trips: tripHits, events, listItems, notes, guide }
+  }, [needle, recipesData, contacts, pets, businesses, routines, todos, low, reserve, cars, carnets, homeProjects, careLog, homePins, drawings, habits, mots, meals, mealIdeas, groups, trips, memberName, board, familyNotes, lang])
 
   const total = res
     ? res.recipes.items.length +
@@ -321,7 +317,6 @@ export function SearchPage() {
       res.events.items.length +
       res.listItems.items.length +
       res.notes.items.length +
-      res.fridgeNotes.items.length +
       res.guide.items.length
     : 0
   // Are any queries still in flight? Used to distinguish a cold-load "searching" from a
@@ -824,25 +819,6 @@ export function SearchPage() {
                     </span>
                     <span className="search__main">
                       <span className="search__title">{hl(n.title.trim() || firstLine(n.text) || t.cercle.familyNotes.untitled)}</span>
-                    </span>
-                    <Icon name="arrow-right-bold" size={16} />
-                  </Link>
-                ))}
-              </Section>
-                ),
-              },
-
-              {
-                best: res!.fridgeNotes.best,
-                node: res!.fridgeNotes.items.length > 0 && (
-              <Section key="fridgeNotes" label={t.search.boardNotes}>
-                {res!.fridgeNotes.items.map((n) => (
-                  <Link key={n.id} to="/board" className="search__row">
-                    <span className="search__pic" aria-hidden="true" style={{ color: CATS.list.deep }}>
-                      <InlineIcon name="push-pin-bold" />
-                    </span>
-                    <span className="search__main">
-                      <span className="search__title">{hl(n.text)}</span>
                     </span>
                     <Icon name="arrow-right-bold" size={16} />
                   </Link>

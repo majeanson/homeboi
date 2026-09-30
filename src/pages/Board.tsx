@@ -20,7 +20,6 @@ import { VoyageCard } from '../components/board/VoyageCard'
 import { SeasonUpkeepCard } from '../components/board/SeasonUpkeepCard'
 import { RoutineNextCard } from '../components/board/RoutineNextCard'
 import { ARegler } from '../components/board/ARegler'
-import { MotsCard } from '../components/mots/MotsCard'
 import { SouvenirsCard } from '../components/board/SouvenirsCard'
 import { DayHeroes } from '../components/board/DayHeroes'
 import { Icon, InlineIcon } from '../components/Icon'
@@ -238,7 +237,6 @@ export function Board() {
       toFinish: t.board.toFinish,
       upcoming: t.board.upcoming,
       search: t.search.title,
-      mots: t.mots.cardTitle,
     }
     return titles[k] ?? k
   })
@@ -1069,7 +1067,7 @@ export function Board() {
   // arrays ALONE — every card must be renderable from either zone.
   const nodes: Partial<Record<BoardCardId, ReactNode>> = {}
   if (data) {
-  nodes.notes = <Notes notes={data.notes ?? []} members={data.members} variant="notes" />
+  nodes.notes = <Notes notes={data.notes ?? []} members={data.members} variant="notes" help={help} />
   // Tapping the supper opens its recipe outright; a recipe-less one peeks
   // with the leftover/remove plan actions.
   nodes.heroes = (
@@ -1095,11 +1093,10 @@ export function Board() {
       onOpenSky={() => setSkyOpen(true)}
     />
   )
-  // « Laisse un mot » — the recipient's waiting mots (self-hides when there's
-  // nothing for the picked face). Guests never see another face's mots.
-  nodes.mots = ro ? null : <MotsCard help={help} />
+  // (« Mots » has no card of its own since 0142: an addressed mot is a paper on the
+  // fridge card, shown to its face — see components/board/Notes.)
   // « Souvenirs » (C1) — the keepsake shelf. A guest sees the pictures, never another
-  // face's kept mots (the same line MotsCard draws).
+  // face's kept mots (the board payload never carries an addressed one to a guest).
   nodes.souvenirs = <SouvenirsCard readOnly={ro} />
   nodes.aRegler = <ARegler enabled={audience === 'parent' && !ro} variant="card" />
   // « L'auto » glance — the car's status today + today's rides. #28

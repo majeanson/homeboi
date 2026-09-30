@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockApi, seedState, BASE } from './mocks'
+import { mockApi, seedState, BASE, notesFromMots } from './mocks'
 
 // #30 — global search (/search). The pure fold() matcher is unit-tested elsewhere; this
 // proves the SCENE end-to-end: a typed query surfaces rows across sections, the newly
@@ -83,7 +83,7 @@ const MOT = { id: 'mo1', member_id: null, author_member_id: 'm1', text: 'Réunio
 const TRIP = { id: 'tr1', title: 'Voyage en Gaspésie', destination: 'Percé', notes: 'Apporter les bottes', start_at: BASE, end_at: BASE, members: [], colour: '#2a8f85', media_kind: null, media_key: null, position: 0, created_at: BASE, updated_at: BASE }
 
 test('Wave S — the six newly-indexed kinds each surface a section (habit/mot/meal/idea/group/trip)', async ({ page }) => {
-  await overrideJson(page, 'mots', { mots: [MOT] })
+  await overrideJson(page, 'notes', notesFromMots([MOT])) // mots are fridge notes (0142)
   await overrideJson(page, 'trips', { trips: [TRIP] })
   await page.goto('/search')
 

@@ -166,11 +166,23 @@ export const onRequestGet = authed(async (ctx, actor) => {
     )
       .bind(hh)
       .all(),
-    // Fridge notes (uncleared), newest first — shown on the Aujourd'hui board.
+    // « Mots » — the fridge (uncleared), newest first. Since 0142 a paper may be addressed
+    // (for_member_id) and scheduled (surface_at). Two things are decided HERE, not in
+    // the card, because a client-side hide is a hide the payload still carries:
+    //   · a paper due later (« Plus tard », « Sa fête ») is not on the fridge yet — a
+    //     surprise must not ride the board poll to the very face it is for;
+    //   · a guest link never receives a paper addressed to one person (the operator can
+    //     mint a showcase link to their OWN household — the mots card's privacy hide).
     ctx.env.DB.prepare(
-      'SELECT id, text, member_id, created_at, media_kind, media_key FROM notes WHERE household_id = ? AND dismissed_at IS NULL ORDER BY created_at DESC LIMIT 12',
+      `SELECT id, text, member_id, created_at, media_kind, media_key, scene_key, author_label,
+              for_member_id, opened_at, saved_at, transcript
+         FROM notes
+        WHERE household_id = ? AND dismissed_at IS NULL
+          AND (surface_at IS NULL OR surface_at <= ?)
+          AND (? = 0 OR for_member_id IS NULL)
+        ORDER BY created_at DESC LIMIT 12`,
     )
-      .bind(hh)
+      .bind(hh, now, actor.scope === 'guest' ? 1 : 0)
       .all(),
     // "Restants à finir" — undated leftovers to eat before cooking the rest. A
     // calm nudge, newest first; planning or finishing one happens from the card.

@@ -23,7 +23,7 @@ const fresh = (): BoardCardPrefs => reconcile({})
 describe('reconcile — canonical shape', () => {
   it('an unset device gets every card, in canonical zones and order', () => {
     const p = fresh()
-    expect(p.band).toEqual(['notes', 'heroes', 'mots', 'souvenirs', 'aRegler'])
+    expect(p.band).toEqual(['notes', 'heroes', 'souvenirs', 'aRegler'])
     expect(p.grid[0]).toBe('autoCard')
     expect([...p.band, ...p.grid].sort()).toEqual([...ALL].sort())
   })
@@ -73,15 +73,15 @@ describe('reconcile — canonical shape', () => {
 
 describe('reconcile — v1 → v2 migration', () => {
   // The shape every already-shipped device has in localStorage['babillard-card-prefs'].
-  const V1 = { order: ['today', 'upcoming'], hidden: ['todos', 'mots'] }
+  const V1 = { order: ['today', 'upcoming'], hidden: ['todos', 'souvenirs'] }
 
   it('turns the v1 hidden set into mode: never', () => {
     const p = reconcile(V1)
     expect(cardMode(p, 'todos')).toBe('never')
-    expect(cardMode(p, 'mots')).toBe('never')
+    expect(cardMode(p, 'souvenirs')).toBe('never')
     expect(isCardVisible(p, 'todos')).toBe(false)
     // A band card could be hidden in v1 too — that must survive.
-    expect(cardZone(p, 'mots')).toBe('band')
+    expect(cardZone(p, 'souvenirs')).toBe('band')
   })
 
   // Every already-shipped wall tablet may carry an id we have since RETIRED (« Moments »
@@ -363,11 +363,11 @@ describe('moveCard', () => {
 
   it('moves a card across zones — the band/grid split is now just placement', () => {
     const p = fresh()
-    expect(cardZone(p, 'mots')).toBe('band')
-    const next = moveCard(p, 'mots', 'grid', p.grid[0]!)
-    expect(cardZone(next, 'mots')).toBe('grid')
-    expect(next.band).not.toContain('mots')
-    expect(next.grid[0]).toBe('mots')
+    expect(cardZone(p, 'souvenirs')).toBe('band')
+    const next = moveCard(p, 'souvenirs', 'grid', p.grid[0]!)
+    expect(cardZone(next, 'souvenirs')).toBe('grid')
+    expect(next.band).not.toContain('souvenirs')
+    expect(next.grid[0]).toBe('souvenirs')
   })
 
   it('drags a grid card up into the band', () => {

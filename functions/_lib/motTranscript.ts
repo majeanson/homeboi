@@ -61,7 +61,8 @@ export async function transcribeMot(env: Env, householdId: string, motId: string
 
     // Scoped to the household AND to a still-live row: the sender may have deleted
     // the mot in the seconds this took.
-    await env.DB.prepare('UPDATE mots SET transcript = ? WHERE id = ? AND household_id = ? AND deleted_at IS NULL')
+    // The fridge note it belongs to (0142 — mots live on `notes` now).
+    await env.DB.prepare('UPDATE notes SET transcript = ? WHERE id = ? AND household_id = ? AND dismissed_at IS NULL')
       .bind(text, motId, householdId)
       .run()
   } catch {

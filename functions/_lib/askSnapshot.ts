@@ -91,7 +91,8 @@ export async function gatherAskSnapshot(env: Env, householdId: string, today: nu
       .bind(hh)
       .all<{ title: string }>(),
     env.DB.prepare(
-      'SELECT text FROM notes WHERE household_id = ? AND dismissed_at IS NULL AND text IS NOT NULL ORDER BY created_at DESC LIMIT 12',
+      // Not a scheduled one (0142): « Sa fête » must not be spoiled by asking the house.
+      "SELECT text FROM notes WHERE household_id = ? AND dismissed_at IS NULL AND text IS NOT NULL AND (surface_at IS NULL OR surface_at <= CAST(strftime('%s', 'now') AS INTEGER)) ORDER BY created_at DESC LIMIT 12",
     )
       .bind(hh)
       .all<{ text: string }>(),

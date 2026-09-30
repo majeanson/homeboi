@@ -39,32 +39,15 @@ test('the contextual ? deep-links into the matching Guide card', async ({ page }
   await expect(target).toContainText('cuisine')
 })
 
-// Wave H (F5×D7): the « Mots » board card now carries an in-place « ? » help entry —
+// Wave H (F5×D7): the « Mots » board card (the fridge, since 0142) carries an in-place « ? » help entry —
 // arm the board's help mode, tap the card title, get a bubble that deep-links to the
 // mots guide card. (Mots is a Section/div card, so the armed title explains in place
 // rather than navigating.)
 test('board ? explains « Mots » in place and links to its guide', async ({ page }) => {
-  // Same setup as boot(), but slot in a per-test « Mots » override AFTER mockApi's
-  // catch-all (Playwright tries the last-registered route first) so one waiting
-  // family-wide mot makes the card render at rest — every OTHER board spec's snapshots
-  // stay untouched (the default /api/mots still returns empty there).
+  // « Mots » is the fridge card since 0142 — the board fixture's two papers make it render
+  // at rest, so no per-test override is needed any more.
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await mockApi(page)
-  await page.route('**/api/mots**', (route) =>
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        mots: [
-          {
-            id: 'mo1', member_id: null, author_member_id: 'm2', text: 'Bonne journée !',
-            media_kind: null, media_key: null, scene_key: null, created_at: 1_749_369_600,
-            updated_at: null, opened_at: null, saved_at: null, surface_at: null, reply_to: null,
-          },
-        ],
-      }),
-    }),
-  )
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
   await page.addInitScript(() => {
     try {

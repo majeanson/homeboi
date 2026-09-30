@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { mockApi, seedState, BASE } from './mocks'
+import { mockApi, seedState, BASE, notesFromMots } from './mocks'
 
 // « Pour toi » (PLAN-mots C2, accepted 2026-09-25): with a face picked, ONE calm line
 // under the board's controls says what is theirs right now — a mot waiting (presence,
@@ -41,7 +41,8 @@ async function boot(page: import('@playwright/test').Page, face: string | null, 
     }
   }, face)
   await mockApi(page)
-  await page.route('**/api/mots**', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ mots }) }))
+  // Mots are fridge notes since 0142 — served in the notes shape.
+  await page.route('**/api/notes**', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(notesFromMots(mots as Record<string, unknown>[])) }))
   await page.route('**/api/routines**', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ routines: ROUTINES }) }))
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
   await page.clock.setFixedTime(BASE * 1000)

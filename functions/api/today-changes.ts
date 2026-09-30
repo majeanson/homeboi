@@ -94,6 +94,11 @@ export const onRequestGet = authed(async (ctx, actor) => {
            FROM notes n
            LEFT JOIN members m ON m.id = n.member_id
           WHERE n.household_id = ? AND n.created_at >= ? AND n.dismissed_at IS NULL
+            -- Since 0142 a note may be addressed or scheduled. Neither is « what changed on
+            -- the fridge »: an addressed mot waits on ITS face (it never rode this feed as a
+            -- mot), and a scheduled one must not spoil its own surprise.
+            AND n.for_member_id IS NULL
+            AND (n.surface_at IS NULL OR n.surface_at <= CAST(strftime('%s', 'now') AS INTEGER))
           ORDER BY n.created_at DESC LIMIT ?`,
       )
       .bind(hh, since, PER_SOURCE_LIMIT)

@@ -19,7 +19,6 @@ import { MonthView } from '../components/board/MonthView'
 import { YearView } from '../components/board/YearView'
 import { RoutinesTab } from '../components/maison/RoutinesTab'
 import { NotesKidView } from '../components/cercle/NotesKidView'
-import { MotsCard } from '../components/mots/MotsCard'
 import { SampleBanner } from '../components/SampleBanner'
 import { WelcomeCard } from '../components/WelcomeCard'
 import { DidYouKnowCard, WhatsNewLine } from '../components/operator/discover'
@@ -1846,9 +1845,9 @@ export function DevKit() {
       file: 'components/mots/MotComposer.tsx',
       kw: 'mot laisse un mot message answering machine fridge member to member recipient voice drawing photo text mots inbox board card face dot',
       render: () => (
-        // « Laisse un mot » composer (board ＋ « Mot » panel): pick a recipient face (or the
-        // whole Maisonnée), then type or record a voice/drawing/photo memo. The waiting mots
-        // surface in the board's « Mots » band card (MotsCard) with a per-face presence dot.
+        // « Mot » composer (board ＋ « Mot » panel): pick a recipient face (or the whole
+        // Maisonnée), then type or record a voice/drawing/photo memo. Since 0142 it lands on
+        // the fridge card, shown to its face, with a per-face presence dot while it waits.
         <Demo label="Leave-a-note composer (recipient + text/voice/draw/photo)">
           <MotComposer onDone={() => {}} />
         </Demo>
@@ -3771,18 +3770,6 @@ export function DevKit() {
           <div className="devkit__lens">
             <NotesKidView />
           </div>
-        </Demo>
-      ),
-    },
-    {
-      cat: 'Affichage',
-      name: 'MotsCard',
-      file: 'components/mots/MotsCard.tsx',
-      kw: 'mot message laisser répondre répondeur visage attente babillard',
-      render: () => (
-        <Demo label="« Laisse un mot » : la carte-répondeur du babillard. Un mot attend une PERSONNE — la pastille de présence est booléenne, jamais un compte (NFR-CALM). Cachée pour un invité en lecture seule — un opérateur peut se partager un lien vers SA propre maisonnée.">
-          <BoardLensNote />
-          <MotsCard />
         </Demo>
       ),
     },

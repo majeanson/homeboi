@@ -9,8 +9,7 @@ import { useSurface } from '../../lib/surface'
 import { useProfile } from '../../lib/profile'
 import { useVoiceInput } from '../../lib/useVoiceInput'
 import { type OperatorMember } from '../../lib/members'
-import { MEMBERS_KEY, MOTS_KEY } from '../../lib/queryKeys'
-import { type Mot } from '../../lib/mots'
+import { BOARD_KEY, MEMBERS_KEY, MOTS_KEY } from '../../lib/queryKeys'
 import { Icon } from '../Icon'
 import { MemberSwitcher } from '../MemberSwitcher'
 import { FaceSelect } from '../FaceSelect'
@@ -18,7 +17,8 @@ import { EditField } from '../EditField'
 import { useMemoAttach } from '../MemoAttach'
 import { ScheduleFields, todayDateStr, presetWhen, birthdayWhen } from './ScheduleFields'
 
-// « Laisse un mot » composer — the board ＋ FAB « Mot » panel (#mots), AND the reply sheet.
+// « Mot » composer — the board ＋ FAB « Mot » panel (#mots). Since 0142 a mot is a fridge
+// note with a recipient and, maybe, a moment; replies went with the old table.
 // Pick a recipient face (or the whole Maisonnée), then write a line and/or clip a voice
 // memo / drawing / photo onto it. The recipient is chosen EXPLICITLY (it does NOT follow
 // the device profile); default Maisonnée. Two add-ons:
@@ -26,12 +26,10 @@ import { ScheduleFields, todayDateStr, presetWhen, birthdayWhen } from './Schedu
 //     until then (« bonne fête » on the morning, a reminder before they leave). Its quick
 //     presets now include « Me le rappeler » (demain matin, addressed to me) — which used
 //     to be a rival top-level button that just opened this same panel.
-//   • REPLY — when `replyTo` is set the recipient is LOCKED to the original sender and the
-//     composer shows « En réponse à … »; the new mot carries reply_to to thread them.
 // ONE write: text + any attachment go in a single POST through useWrite (offline-queued),
-// because /api/mots takes both on one row (`if (!text && !(kind && mediaKey))`).
+// because /api/notes takes both on one row (`if (!text && !(kind && mediaKey))`).
 
-export function MotComposer({ replyTo, onDone }: { replyTo?: Mot; onDone: () => void }) {
+export function MotComposer({ onDone }: { onDone: () => void }) {
   const t = useT()
   const fn = t.mots
   const write = useWrite()
@@ -39,7 +37,7 @@ export function MotComposer({ replyTo, onDone }: { replyTo?: Mot; onDone: () => 
   const { surface } = useSurface()
   const { memberId: profileId } = useProfile()
   // A reply is addressed back to the original sender; otherwise default Maisonnée.
-  const [recipient, setRecipient] = useState<string | null>(replyTo ? replyTo.author_member_id : null)
+  const [recipient, setRecipient] = useState<string | null>(null)
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
   const voice = useVoiceInput(setText)
@@ -57,7 +55,7 @@ export function MotComposer({ replyTo, onDone }: { replyTo?: Mot; onDone: () => 
   // my own face (no push, no badge). It is a PRESET of « Plus tard » (recipient = me, demain
   // matin), not a rival button: as its own top-level control it merely opened this same
   // schedule panel, which read as two ways to do one thing.
-  const canRemindMe = !replyTo && !!profileId
+  const canRemindMe = !!profileId
   function remindMe() {
     if (!profileId) return
     setRecipient(profileId)
@@ -69,7 +67,6 @@ export function MotComposer({ replyTo, onDone }: { replyTo?: Mot; onDone: () => 
   // The full row (/api/members sends it): « Sa fête » below needs the recipient's birthday.
   const { data } = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: OperatorMember[] }>('members') })
   const members = data?.members ?? []
-  const replyName = replyTo ? members.find((m) => m.id === replyTo.author_member_id)?.display_name ?? null : null
   const faces = facesFromMembers(members)
   // « Sa fête » (A8) — a fourth preset, only when the picked recipient has a birthday
   // in the cercle: the mot waits for that morning. Scheduling + the derived birthday
@@ -82,7 +79,10 @@ export function MotComposer({ replyTo, onDone }: { replyTo?: Mot; onDone: () => 
     setTimeStr(fete.time)
   }
 
-  const extraBody = { recipient_id: recipient, surface_at: surfaceAt, reply_to: replyTo?.id ?? null }
+  // A mot is a fridge note with a recipient and, maybe, a moment (0142) — one table, so
+  // the board's fridge and the mots readers (face dot, Souvenirs, outbox) both refresh.
+  const extraBody = { recipient_id: recipient, surface_at: surfaceAt }
+  const keys = [MOTS_KEY, BOARD_KEY]
 
   // ONE write for text + attachment. An attachment alone is a valid mot (a drawing
   // for a pre-reader), which is why EditField gets `allowEmpty` — but an empty mot
@@ -96,16 +96,16 @@ export function MotComposer({ replyTo, onDone }: { replyTo?: Mot; onDone: () => 
       // mot carrying a drawing / photo / voice memo does not — its blob is freed on
       // delete, and media rows confirm rather than undo (the media-undo-blob rule).
       if (memo.draft)
-        await write('mots', {
+        await write('notes', {
           method: 'POST',
           body: { text: value, ...memo.body, ...extraBody },
-          affectedKeys: [MOTS_KEY],
+          affectedKeys: keys,
         })
       else
         await createWithUndo({
-          endpoint: 'mots',
+          endpoint: 'notes',
           body: { text: value, ...extraBody },
-          affectedKeys: [MOTS_KEY],
+          affectedKeys: keys,
           message: t.undo.added(value),
           rethrow: true,
         })
@@ -121,24 +121,15 @@ export function MotComposer({ replyTo, onDone }: { replyTo?: Mot; onDone: () => 
 
   return (
     <div className="mot-composer">
-      {replyTo ? (
-        // Reply: recipient is fixed to the original sender — show « En réponse à … » instead
-        // of a picker, with a snippet of the mot being answered.
-        <p className="mot-composer__reply mono">
-          <Icon name="arrow-bend-up-left-bold" size={14} /> {replyName ? fn.replyTo(replyName) : fn.inReplyTo}
-        </p>
+      {/* À qui — the recipient face. Maisonnée (everyone) is the neutral default: then it
+          is simply a paper on the fridge. */}
+      <p className="sheet__group-label mono">{fn.toWhom}</p>
+      {surface === 'kiosk' ? (
+        <MemberSwitcher faces={faces} value={recipient} onChange={setRecipient} allLabel={fn.toMaisonnee} ariaLabel={fn.toWhom} />
       ) : (
-        <>
-          {/* À qui — the recipient face. Maisonnée (everyone) is the neutral default. */}
-          <p className="sheet__group-label mono">{fn.toWhom}</p>
-          {surface === 'kiosk' ? (
-            <MemberSwitcher faces={faces} value={recipient} onChange={setRecipient} allLabel={fn.toMaisonnee} ariaLabel={fn.toWhom} />
-          ) : (
-            <div className="mot-composer__face">
-              <FaceSelect faces={faces} value={recipient} onChange={setRecipient} allLabel={fn.toMaisonnee} ariaLabel={fn.toWhom} />
-            </div>
-          )}
-        </>
+        <div className="mot-composer__face">
+          <FaceSelect faces={faces} value={recipient} onChange={setRecipient} allLabel={fn.toMaisonnee} ariaLabel={fn.toWhom} />
+        </div>
       )}
 
       {/* Write the mot, and/or clip a voice memo / drawing / photo onto it via the 📎
@@ -157,7 +148,7 @@ export function MotComposer({ replyTo, onDone }: { replyTo?: Mot; onDone: () => 
         busy={busy || memo.busy}
         allowEmpty={!!memo.draft}
         boxActions={memo.attachButton}
-        maxLength={2000}
+        maxLength={280}
       >
         {memo.panel}
       </EditField>

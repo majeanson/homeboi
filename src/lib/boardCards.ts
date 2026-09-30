@@ -32,7 +32,6 @@ import { createDeviceStore } from './createDeviceStore'
 export type BoardCardId =
   | 'notes'
   | 'heroes'
-  | 'mots'
   | 'souvenirs'
   | 'aRegler'
   | 'autoCard'
@@ -160,9 +159,10 @@ export const BOARD_CARDS: readonly BoardCardMeta[] = [
   // in-card « Choisir un souper » CTA offers, so the board never goes silent at the
   // supper decision (friction audit, cook seam #1).
   { id: 'heroes', icon: 'sun-bold', tint: 'var(--marigold)', zone: 'band', size: 'full', mode: 'auto', emptyTo: '/kitchen/idees' },
-  { id: 'mots', icon: 'envelope-bold', tint: 'var(--teal)', zone: 'band', size: 1, mode: 'auto' },
+  // (No « Mots » card since 0142 — an addressed mot is a paper on the fridge card above.
+  // A saved layout that still names 'mots' just drops it: parse() skips unknown ids.)
   // « Souvenirs » (PLAN-mots C1): the keepsake shelf — kept mots, drawings, photos. 'auto':
-  // nothing kept, no card; the first keepsake makes it appear beside « Mots ».
+  // nothing kept, no card; the first keepsake makes it appear beside the fridge.
   { id: 'souvenirs', icon: 'hand-heart-bold', tint: 'var(--berry)', zone: 'band', size: 1, mode: 'auto' },
   { id: 'aRegler', icon: 'warning-bold', tint: 'var(--marigold-deep)', zone: 'band', size: 1, mode: 'auto' },
   // ── the masonry: car → the day → standing lists → upcoming → media ──

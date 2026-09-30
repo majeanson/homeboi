@@ -26,6 +26,21 @@ export const BASE = 1_749_369_600 // 2025-06-08T08:00:00Z (a fixed PAST anchor, 
 export const MMID = 1_749_355_200 // 2025-06-08T00:00:00-04:00 (a Sunday — the same day as BASE)
 // An ISO date N days from the real clock — for flyer run dates, since the store
 // browser's current/upcoming split keys on the live Date.now() (not BASE).
+// « Mots » live on the fridge notes since migration 0142. A spec that thinks in MOTS
+// (member_id = the RECIPIENT, author_member_id = who left it) serves /api/notes through
+// this — the ONE place the two shapes swap, mirroring src/lib/mots.ts motFromNote.
+export function notesFromMots(mots: Record<string, unknown>[]): { notes: Record<string, unknown>[] } {
+  return {
+    notes: mots.map((m) => ({
+      ...m,
+      member_id: m.author_member_id ?? null,
+      for_member_id: m.member_id ?? null,
+      transcript: m.transcript ?? null,
+      dismissed_at: m.dismissed_at ?? null,
+      author_label: m.author_label ?? null,
+    })),
+  }
+}
 export const flyerIso = (days: number): string => new Date(Date.now() + days * DAY * 1000).toISOString()
 
 const MEMBERS = [

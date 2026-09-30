@@ -18,7 +18,7 @@ export function RescheduleBody({ mot, onDone }: { mot: Mot; onDone: () => void }
   const at = date ? Math.floor(new Date(`${date}T${time || '00:00'}`).getTime() / 1000) : null
 
   const save = (surface_at: number | null) => {
-    void write('mots', { method: 'PATCH', body: { id: mot.id, surface_at }, affectedKeys: [MOTS_KEY, BOARD_KEY] }).catch(
+    void write('notes', { method: 'PATCH', body: { id: mot.id, surface_at }, affectedKeys: [MOTS_KEY, BOARD_KEY] }).catch(
       () => {},
     )
     onDone()

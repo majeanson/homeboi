@@ -275,3 +275,41 @@
      it secondary while moving away from it. */
   color: color-mix(in srgb, currentColor 45%, var(--ink));
 }
+
+/* --- « Mots » (0142): a parent text paper is a card holding its tap target + badges ---
+   The paper used to BE the button; the « Garder » badge cannot sit inside a button
+   (nested-interactive), so the paper is a div and this is the old tap, looking the same. */
+.note-card__tap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.note-card--paper {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.15rem;
+  padding-bottom: 1.9rem; /* room for the keep badge, bottom-right */
+}
+.note-card--media {
+  padding-bottom: 1.9rem;
+}
+/* « Garder » — onto the Souvenirs shelf. Bottom-RIGHT: the other three corners are
+   the drawing's ✏️, the ✕ and « Ajouter à Mes dessins ». */
+.note-card__shelf-badge {
+  left: auto;
+  right: 0.4rem;
+}
+/* A mot still waiting on the picked face: a quiet dashed edge, never a count or a dot
+   on the paper itself — tapping it opens it, and the edge goes. */
+.note-card--waiting {
+  outline: 2px dashed color-mix(in srgb, var(--note-tint) 65%, var(--ink));
+  outline-offset: 2px;
+}

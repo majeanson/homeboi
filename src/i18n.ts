@@ -43,7 +43,6 @@ export const FR = {
     events: 'Rendez-vous',
     listItems: 'La liste',
     notes: 'Notes & recommandations',
-    boardNotes: 'Notes du babillard',
     careLog: 'Historique d’entretien',
     homePins: 'Repères de la maison',
     drawings: 'Mes dessins',
@@ -575,7 +574,9 @@ export const FR = {
     share: 'Partager la liste',
   },
   notes: {
-    title: 'Notes',
+    // The fridge card — « Mots » since 0142 (one idea: a paper on the fridge, sometimes
+    // addressed). « Notes » is Les notes, the durable notebook.
+    title: 'Mots',
     // Short enough to survive a 390px field that also carries the mic + 📎 icons —
     // « Écris une note pour le babillard… » truncated to « Écris une n ».
     addPlaceholder: 'Écris ou dicte une note…',
@@ -958,9 +959,9 @@ export const FR = {
   // Card names for « Disposition du babillard » (Réglages ▸ Le babillard ▸ Disposition) — show/hide +
   // reorder the Grille cards per device.
   boardCard: {
-    notes: 'Notes (frigo)',
+    // The fridge — « Mots » since 0142 (the old « Mots » card merged into it).
+    notes: 'Mots',
     heroes: 'Ce soir + météo',
-    mots: 'Mots',
     souvenirs: 'Souvenirs',
     aRegler: 'À régler',
     autoCard: 'L’auto',
@@ -973,7 +974,7 @@ export const FR = {
     toFinish: 'À finir',
     todos: 'À faire',
     upcoming: 'À venir',
-    cercleNotes: 'Notes (cercle)',
+    cercleNotes: 'Les notes',
     voyage: 'Prochain voyage',
     carnets: 'Les carnets',
     seasonUpkeep: 'Cette saison',
@@ -2073,7 +2074,6 @@ export const FR = {
     toMaisonnee: 'Toute la Maisonnée',
     placeholder: 'Écris un mot…',
     send: 'Laisser le mot',
-    cardTitle: 'Mots',
     // Toddler lens (ToddlerBoard) — the picture-first « un mot t'attend » section.
     kidTitle: 'Un mot pour toi',
     from: 'De',
@@ -2083,35 +2083,20 @@ export const FR = {
     drawing: 'Dessin',
     photo: 'Photo',
     untitled: 'Un mot',
-    seenGroup: 'Déjà vus',
     // Le texte d'un mot vocal, écrit par la machine (A5, migration 0123). Nommé
     // pour qu'on ne le prenne pas pour ce que l'expéditeur a tapé : c'est une
     // commodité, jamais la source — l'enregistrement reste à un toucher.
     transcript: 'Ce qui a été dit',
-    // Empty « Déjà vus » in one tap (the Sunday tidy was per-item labour). Lives
-    // INSIDE the fold, so a collapsed card costs nothing for it. A KEPT mot is a
-    // keepsake and is never swept — the label says so, and clearN counts only what
-    // will actually go.
-    clearSeen: 'Retirer les déjà vus',
-    clearSeenKept: 'Retirer les déjà vus (les gardés restent)',
     clearedN: (n: number) => `${n} mot${n > 1 ? 's' : ''} retiré${n > 1 ? 's' : ''}`,
     keep: 'Garder',
     kept: 'Gardé',
     delete: 'Supprimer le mot',
     deleted: 'Mot supprimé',
-    deleteSavedConfirm: 'Supprimer ce mot gardé ? Son texte et son enregistrement partent avec lui.',
     // Schedule (« Plus tard ») + reply.
     later: 'Plus tard',
     when: 'Quand',
-    reply: 'Répondre',
     // « Transformer » (A6): a text mot through the capture spine — the ＋ sheet's own form.
     transform: 'Transformer',
-    transformTitle: 'Transformer ce mot',
-    transformHint: 'Ses mots deviennent un rendez-vous, une corvée, un item de liste, une note… Le mot reste tant que tu ne le retires pas.',
-    transformRemove: 'Retirer le mot',
-    transformKeep: 'Garder le mot',
-    inReplyTo: 'En réponse',
-    replyTo: (name: string) => `Réponse à ${name}`,
     // Schedule presets (« Plus tard » quick chips) + self-mot.
     preset: { tonight: 'Ce soir', tomorrowAm: 'Demain matin', weekend: 'Ce week-end' },
     remindMe: 'Me le rappeler',
@@ -2125,7 +2110,6 @@ export const FR = {
     reschedule: 'Reprogrammer',
     rescheduleTitle: 'Reprogrammer le mot',
     sendNow: 'Envoyer maintenant',
-    cancelSend: 'Annuler l’envoi',
   },
   routines: {
     tag: 'Le rythme du jour',

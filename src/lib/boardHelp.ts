@@ -66,12 +66,12 @@ export const BOARD_HELP = {
       en: 'Today’s challenge: a little challenge that lasts all day (“wear something yellow”). Draw one — or write your own — try it, then each person checks it off once they’ve done it. An invitation, never a duty — nothing is counted.',
     },
   },
-  // « Laisse un mot » — the member-to-member inbox card. Deep-links to the `mots` guide.
+  // « Mots » — the fridge card (one card since 0142). Deep-links to the `mots` guide.
   mots: {
     card: 'mots',
     body: {
-      fr: 'Mots : un petit message qu’un membre laisse à un autre — écrit, vocal, dessiné ou en photo. Il attend, fermé, sur ton visage; touche-le pour l’ouvrir. Jamais de compte de non-lus.',
-      en: 'Notes: a little message one member leaves for another — typed, spoken, drawn or a photo. It waits, unopened, on your face; tap it to open. Never an unread count.',
+      fr: 'Mots : les papiers du frigo — écrits, vocaux, dessinés ou en photo. Un mot pour quelqu’un n’apparaît qu’à son visage et s’ouvre d’une tape; jamais de compte de non-lus.',
+      en: 'Messages: the papers on the fridge — typed, spoken, drawn or a photo. One for someone shows only on their face and opens with a tap; never an unread count.',
     },
   },
   // The rest of the board's section cards — a one-line "what is this" each, deep-linking to

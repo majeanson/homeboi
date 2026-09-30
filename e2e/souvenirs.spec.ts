@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { mockApi, seedState, BASE } from './mocks'
+import { mockApi, seedState, BASE, notesFromMots } from './mocks'
 
 // « Souvenirs » (PLAN-mots C1, accepted 2026-09-25 — « put the widget back »): a band card
 // that shelves what the household chose to KEEP — kept mots (saved_at, since 0094), kept
@@ -26,7 +26,10 @@ async function boot(page: Page, o: { mots?: object[]; photos?: object[]; drawing
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await mockApi(page)
   const json = (body: unknown) => ({ status: 200, contentType: 'application/json', body: JSON.stringify(body) })
-  await page.route('**/api/mots**', (route) => (route.request().method() === 'GET' ? route.fulfill(json({ mots: o.mots ?? [] })) : route.fulfill(json({ ok: true }))))
+  // Mots are fridge notes since 0142 — served in the notes shape.
+  await page.route('**/api/notes**', (route) =>
+    route.request().method() === 'GET' ? route.fulfill(json(notesFromMots((o.mots ?? []) as Record<string, unknown>[]))) : route.fulfill(json({ ok: true })),
+  )
   await page.route('**/api/photos**', (route) => (route.request().method() === 'GET' ? route.fulfill(json({ photos: o.photos ?? [] })) : route.fulfill(json({ ok: true }))))
   await page.route('**/api/drawings**', (route) => (route.request().method() === 'GET' ? route.fulfill(json({ drawings: o.drawings ?? [], more: false })) : route.fulfill(json({ ok: true }))))
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })

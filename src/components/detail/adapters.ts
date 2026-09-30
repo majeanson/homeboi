@@ -284,15 +284,9 @@ export function buildMot(
   ctx: DetailCtx,
   opts?: {
     saved?: boolean
-    // The answered mots' labels, oldest first (lib/mots threadOf) — a short thread, capped
-    // by the caller, never a transcript.
-    quotes?: string[]
     onToggleSave?: () => void
     onDelete?: () => void
-    onReply?: () => void
-    // « Transformer » (A6): route this mot's words through the capture spine. The card
-    // decides when to offer it (a TEXT mot, AI usable, not a guest).
-    onTransform?: () => void
+    // (Replies and « Transformer » went with the mots table, 0142.)
     // Sender-outbox extras: reschedule a « Plus tard » that hasn't landed, and show its
     // programmed time as the « when » line instead of the created date.
     onReschedule?: () => void
@@ -304,9 +298,6 @@ export function buildMot(
   const icon: IconName =
     m.media_kind === 'audio' ? 'microphone-bold' : m.media_kind === 'drawing' ? 'paint-brush-bold' : m.media_kind === 'image' ? 'image-square-bold' : 'envelope-bold'
   const blocks: DetailBlock[] = []
-  // A reply quotes what it answers, up top and oldest first, so the exchange reads in
-  // context — the root line, then each answer, then this one below (A7).
-  for (const q of opts?.quotes ?? []) if (q.trim()) blocks.push({ kind: 'text', text: `↩ ${q.trim()}`, hand: true })
   if (m.text.trim()) blocks.push({ kind: 'text', text: m.text.trim() })
   // The spoken words, when there are any and no written line already says them.
   // Labelled, so nobody mistakes the machine's guess for what was typed — and it
@@ -317,15 +308,7 @@ export function buildMot(
   if (m.media_key && m.media_kind === 'audio') blocks.push({ kind: 'audio', src: imgUrl(m.media_key) })
 
   const actions: DetailAction[] = []
-  // Reply leads (the warm action); reschedule (sender only) then keep + delete follow.
-  // `arrow-bend-up-left-bold`, not `arrow-left-bold`: that one already means "go
-  // back a step" everywhere else (AddSheet's chooser-back, CookMode/RoutinePlayer
-  // "previous step", SharedVoyagePage "back to board") — reusing it for "reply"
-  // was the same failure class as the arrow-icon fix (78590d2), just labeled well
-  // enough it never got reported.
-  if (opts?.onReply) actions.push({ key: 'reply', label: fn.reply, icon: 'arrow-bend-up-left-bold', primary: true, run: opts.onReply })
-  // The sparkle is the capture spine's own mark (the ＋ sheet's « Classer », the AI ask).
-  if (opts?.onTransform) actions.push({ key: 'transform', label: fn.transform, icon: 'sparkle-bold', run: opts.onTransform })
+  // Reschedule (the author only) leads, then keep + delete.
   if (opts?.onReschedule)
     actions.push({ key: 'reschedule', label: fn.reschedule, icon: 'clock-bold', run: opts.onReschedule })
   if (opts?.onToggleSave)
