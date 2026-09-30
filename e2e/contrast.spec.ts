@@ -99,8 +99,15 @@ for (const theme of ['day', 'night'] as const) {
         const failures: string[] = []
         for (const s of SURFACES) {
           await page.goto(s.route)
-          // These surfaces paint from a warm cache; give the real content a beat to
-          // land, so this measures the page a household sees, not its skeleton.
+          // WAIT FOR THE PAGE, NOT FOR A CLOCK (2026-09-30). This used to be the 700ms
+          // beat below on its own, and on a cold CI runner the lazy route chunk can take
+          // longer than that: the board was measured on its `<Loading>` fallback and
+          // painted exactly 11 characters — « Chargement… ». Wait until neither
+          // `Loading` nor a `Skeleton` is on screen; THEN the beat, for the cards that
+          // fade their content in.
+          await expect(page.locator('.loading, .skeleton'), `${s.name} finished loading`).toHaveCount(0, {
+            timeout: 15_000,
+          })
           await page.waitForTimeout(700)
           // A FALSE GREEN IS THE FAILURE MODE: an empty page reports no violations, so a
           // route that stopped rendering would read as a pass forever. Assert painted
