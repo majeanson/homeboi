@@ -174,3 +174,24 @@ test('?focus=measureColors lands inside kitchen ▸ Apparence on the exact card'
   await expect(page.locator('#op-measureColors')).toBeVisible()
   await expect(page).not.toHaveURL(/focus=/)
 })
+
+// ?focus= ALONE is a full address (2026-09-30): the section names its tab and pill. The
+// doors into Réglages from elsewhere (the board ＋ « Lien pour la gardienne », a contact's
+// « Lui demander de compléter ») first shipped with the tab spelled out because a bare
+// focus landed on Découvrir — and once the focus is consumed, the derived tab must stay
+// pinned in the URL or the page folds back.
+test('?focus= alone lands on its section — tab and pill derived, and they stay', async ({ page }) => {
+  await boot(page, '/settings?focus=guestLinks')
+  await expectTab(page, 'settings')
+  await expect(page.locator('#op-guestLinks')).toBeVisible()
+  await expect(page).toHaveURL(/tab=settings/)
+  await expect(page).not.toHaveURL(/focus=/)
+  await expect(page.locator('#op-guestLinks')).toBeVisible()
+})
+
+// …and the one guide-card link builder (settingsNav guideHref) is the card alone.
+test('a bare ?card= link homes onto the card', async ({ page }) => {
+  await boot(page, '/settings?card=kitchen')
+  await expectTab(page, 'kitchen')
+  await expect(page.locator('.guide__card.is-target')).toBeVisible()
+})

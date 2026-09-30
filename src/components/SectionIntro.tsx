@@ -8,6 +8,7 @@ import { TOURS } from '../lib/tourContent'
 import { GUIDE } from '../lib/guideContent'
 import { renderRich } from '../lib/richText'
 import { Icon } from './Icon'
+import { guideHref } from '../lib/settingsNav'
 
 // A calm, once-per-section welcome card shown the FIRST time a parent opens a
 // themed tab — the progressive, in-context half of onboarding (the guided tour
@@ -116,7 +117,7 @@ export function SectionIntro({ card }: { card: string }) {
             <span>{t.help.takeTour}</span>
           </button>
         )}
-        <Link className="section-intro__more" to={`/settings?tab=guide&card=${card}`}>
+        <Link className="section-intro__more" to={guideHref(card)}>
           <span>{t.help.learnMore}</span>
           <Icon name="arrow-right-bold" size={16} />
         </Link>

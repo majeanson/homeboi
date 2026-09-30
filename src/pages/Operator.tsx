@@ -54,7 +54,7 @@ import {
   SUB_LABEL_KEY,
   LEGACY_TAB,
   LEGACY_SUB,
-  subOfFocus,
+  subOfFocus, tabOfFocus,
   visibleSections,
   visibleSubs,
   type SettingsTabId,
@@ -184,6 +184,12 @@ export function Operator() {
   const legacyTarget = legacy ? (rawSub ? legacy.bySub?.[rawSub] : undefined) ?? { tab: legacy.tab, sub: legacy.sub } : null
   let tab = legacyTarget ? legacyTarget.tab : rawTab
   if (!sectionIds.includes(tab)) tab = sectionIds[0]
+  // ?focus= with no ?tab= — the SECTION is the address, so its tab is derived too
+  // (2026-09-30). The doors that open a settings card from elsewhere (the board ＋ « Lien
+  // pour la gardienne », a contact's « Lui demander de compléter ») used to need the tab
+  // spelled out, and one that forgot it landed on Découvrir with the URL still « working ».
+  const focusHome = !params.get('tab') && params.get('focus') ? tabOfFocus(params.get('focus')!) : undefined
+  if (focusHome && sectionIds.includes(focusHome)) tab = focusHome
   // ?card= homing: a guide-card deep-link (HelpDot / HelpBubble / EmptyState /
   // richText token / end-of-tour / search result) forces the card's home tab and
   // the Comprendre lens; ComprendrePanel then consumes the param and pins
@@ -262,6 +268,9 @@ export function Operator() {
           // URL back to the tab's first pill and unmount the card we just reached.
           const derived = subOfFocus(tab, focus)
           if (derived && !next.get('sub')) next.set('sub', derived)
+          // …and the TAB, when the focus derived that too: dropping the param would
+          // otherwise fold the page back to Découvrir.
+          if (!next.get('tab')) next.set('tab', tab)
           return next
         },
         { replace: true },

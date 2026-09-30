@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { GUIDE, GUIDE_CARD_ALIAS, CONCEPT_THEMES, FEATURE_MAP_TILES } from './guideContent'
-import { SETTINGS_SUBS, SETTINGS_FOCUS, SUB_GOTO, ROUTE_PREFIXES, RETIRED_SUB_IDS, subOfFocus } from './settingsNav'
+import { SETTINGS_SUBS, SETTINGS_FOCUS, SUB_GOTO, ROUTE_PREFIXES, RETIRED_SUB_IDS, subOfFocus, tabOfFocus } from './settingsNav'
+import { readdirSync, readFileSync } from 'node:fs'
+import { dirname, join, relative, sep } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { ADD_MODES } from './addSheet'
 
 // The other half of the guide-orphan kill (helpRegistry.test.ts guards the
@@ -42,8 +45,10 @@ const checkLink = (link: string, where: string): string | null => {
     // say which one — that is what keeps the next reshuffle from stranding it on the
     // wrong card while the URL still "works".
     if (focus) {
-      if (!tab) return `${where}: ?focus needs ?tab in "${link}"`
-      const home = subOfFocus(tab, focus)
+      // ?focus alone is a full address since 2026-09-30 (Operator derives the tab).
+      const inTab = tab ?? tabOfFocus(focus)
+      if (!inTab) return `${where}: focus "${focus}" is no section anywhere in Réglages in "${link}"`
+      const home = subOfFocus(inTab, focus)
       if (!home) return `${where}: focus "${focus}" is no section of tab "${tab}" in "${link}"`
       if (sub && sub !== home) return `${where}: focus "${focus}" lives under "${tab}/${home}", not "${tab}/${sub}" in "${link}"`
     } else if (tab && sub && (SETTINGS_FOCUS[`${tab}/${sub}`] ?? []).length > 1) {
@@ -140,5 +145,39 @@ describe('guide links resolve (the guide is a launcher now)', () => {
     expect(orphans, `concept cards missing from every theme bucket: ${orphans.join(', ')}`).toEqual([])
     const dead = [...themed].filter((id) => !guideById.has(id))
     expect(dead, `CONCEPT_THEMES lists retired ids: ${dead.join(', ')}`).toEqual([])
+  })
+})
+
+// EVERY settings link in the app, not only the guide's (2026-09-30). The doors that open a
+// Réglages card from elsewhere are plain strings in components — the board ＋ tile, the Mots
+// card, a contact's peek — and the first draft of those three pointed at Découvrir for a day
+// because nothing but a person checked them. Template parts (`${id}`) stand in as « x ».
+describe('every /settings link in src/ lands', () => {
+  const srcDir = join(dirname(fileURLToPath(import.meta.url)), '..')
+  const files = (dir: string): string[] =>
+    readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
+      const p = join(dir, e.name)
+      if (e.isDirectory()) return files(p)
+      return /\.(ts|tsx)$/.test(e.name) && !/\.test\.tsx?$/.test(e.name) ? [p] : []
+    })
+  const links = files(srcDir).flatMap((f) =>
+    [...readFileSync(f, 'utf8').matchAll(/['`](\/settings\?[^'`\s]*)['`]/g)].map((m) => ({
+      where: relative(srcDir, f).split(sep).join('/'),
+      link: m[1].replace(/\$\{[^}]*\}/g, 'x'),
+    })),
+  )
+
+  it('finds the links at all', () => {
+    expect(links.length).toBeGreaterThan(10)
+  })
+
+  it('each one names a live tab, pill and section', () => {
+    // A link whose focus is a template part (`focus=${key}`) is data-driven — its keys are
+    // checked where they are defined, not here.
+    const bad = links
+      .filter(({ link }) => !/[?&](focus|card)=x(&|$)/.test(link))
+      .map(({ link, where }) => checkLink(link, where))
+      .filter((m): m is string => m !== null)
+    expect(bad).toEqual([])
   })
 })

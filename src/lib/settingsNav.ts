@@ -213,6 +213,21 @@ export const FOCUSABLE_HELP_KEYS: ReadonlySet<string> = new Set(Object.values(SE
 
 /** The sub that holds a section today — so a link may say `?focus=` alone and let the
  *  sub follow the section wherever the next reshuffle puts it. */
+/** THE link to a guide card (and optionally one of its points). ONE builder since
+ *  2026-09-30: fifteen components spelled it by hand, with « tab=guide » before the card,
+ *  « guide » being a tab retired months ago that only kept working because LEGACY_TAB
+ *  folds it and `?card=` homes the page onto the card's own tab anyway. The card is the
+ *  address; the tab is derived. */
+export const guideHref = (card: string, point?: number | null): string =>
+  `/settings?card=${card}${point != null ? `&point=${point}` : ''}`
+
+/** The tab that holds section `focus` — so a link may name ONLY the section
+ *  (`/settings?focus=guestLinks`) and still land, whatever pill or tab it moves to next.
+ *  Section keys are unique across the tree (guideLinks.test holds that), so this is exact. */
+export function tabOfFocus(focus: string): SettingsTabId | undefined {
+  return (Object.keys(SETTINGS_TREE) as SettingsTabId[]).find((tab) => subOfFocus(tab, focus) !== undefined)
+}
+
 export function subOfFocus(tab: string, focus: string): string | undefined {
   const subs = SETTINGS_TREE[tab as SettingsTabId] as Record<string, readonly SettingsSection[]> | undefined
   if (!subs) return undefined

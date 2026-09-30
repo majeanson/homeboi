@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { useLang, useT } from '../i18n'
 import type { GlossaryTerm } from '../lib/glossary'
 import { Icon } from './Icon'
+import { guideHref } from '../lib/settingsNav'
 
 // A WORD YOU CAN TAP, in Réglages and Comprendre only.
 //
@@ -161,7 +162,7 @@ export function GlossaryTermMark({ id, label }: { id: string; label: string }) {
             {term.card && (
               <Link
                 className="gloss__guide"
-                to={`/settings?tab=guide&card=${term.card}`}
+                to={guideHref(term.card)}
                 onClick={(e) => e.stopPropagation()}
               >
                 {t.help.goToGuide} <Icon name="arrow-right-bold" size={13} />

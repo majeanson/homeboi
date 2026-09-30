@@ -2,6 +2,7 @@ import { Fragment, Suspense, lazy, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { InlineIcon, type IconName } from '../components/Icon'
 import { foldRanges } from './normalize'
+import { guideHref } from './settingsNav'
 
 // `renderRich` is reachable from the BOARD (the welcome card, the tour), so everything
 // it imports statically lands in the eager entry chunk. The glossary mark is the exact
@@ -25,7 +26,7 @@ const GlossaryTermMark = lazy(() =>
 //                       — reading the manual is a one-off, so the mark costs a daily
 //                       user nothing; the same underline on the board would be a tax.
 //   [[card:id|label]] → a calm in-text link that opens another Guide card. It
-//                       deep-links to /settings?tab=guide&card=<id>; inside the
+//                       deep-links to /settings?card=<id>; inside the
 //                       Guide the ?card effect opens + scrolls to that card. This
 //                       turns the manual into a browsable graph — features can
 //                       cross-reference each other instead of sitting as islands.
@@ -96,7 +97,7 @@ export function renderRich(text: string, hl?: string): ReactNode {
         <Link
           key={m.index}
           className="guide-link"
-          to={`/settings?tab=guide&card=${id}`}
+          to={guideHref(id)}
           onClick={(e) => e.stopPropagation()}
         >
           {seg(label)}

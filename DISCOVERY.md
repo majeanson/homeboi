@@ -53,7 +53,7 @@ settings) are one tap back.** No dead-end prose.
 
 **Feature → comprehension** (was already strong): "?" help-mode bubbles,
 `HelpDot`, `EmptyState` links, end-of-tour « En savoir plus » — all target
-`/settings?tab=guide&card=<id>&point=<n>`.
+`/settings?card=<id>&point=<n>`, built by ONE helper, `guideHref` (lib/settingsNav; the card homes its own tab).
 
 **Comprehension → action** (the 2026-07 rework): every guide card carries
 - `route` → « Ouvrir » (the live feature),

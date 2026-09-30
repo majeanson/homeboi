@@ -6,6 +6,7 @@ import { OperatorSection } from './OperatorSection'
 import { useAi, useAiToggle } from '../../lib/ai'
 import { isGuest } from '../../lib/device'
 import { InlineIcon } from '../Icon'
+import { guideHref } from '../../lib/settingsNav'
 
 // Réglages ▸ IA — the household AI on/off switch (the operator's "turn it off
 // completely"). Flipping it off makes /api/health report AI as off, which hides
@@ -57,7 +58,7 @@ export function AiSection({ help }: { help?: HelpMode }) {
         </>
       )}
       <p className="operator__hint mono">
-        <Link to="/settings?tab=guide&card=ai" className="devkit__link">
+        <Link to={guideHref('ai')} className="devkit__link">
           <InlineIcon name="book-open-bold" size={14} /> {o18n.aiLearnMore}
         </Link>
       </p>

@@ -3,6 +3,7 @@ import { Icon, type IconName } from './Icon'
 import { useT } from '../i18n'
 import { useHelp } from '../lib/help'
 import { useAudience } from '../lib/audience'
+import { guideHref } from '../lib/settingsNav'
 
 // The section's identity glyph in the top-right of every themed tab's header.
 // When tutorial help is on (and we're in the parent lens) the WHOLE disc is a
@@ -40,7 +41,7 @@ export function SectionAvatar({
     )
   return (
     <Link
-      to={`/settings?tab=guide&card=${card}`}
+      to={guideHref(card)}
       className="avatar avatar--help"
       style={{ background }}
       aria-label={t.help.learnMore}

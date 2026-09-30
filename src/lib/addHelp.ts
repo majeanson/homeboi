@@ -1,7 +1,7 @@
 // In-place help for each ＋ Add-sheet control (the sheet's "?" help mode). Tapping
 // the "?" arms help mode; tapping any tile then shows a small box (HelpBubble) with
 // this one-line "what it does" instead of running it, plus a "→ Voir le guide" link
-// that opens the matching GUIDE card (/settings?tab=guide&card=<id>, the same target
+// that opens the matching GUIDE card (/settings?card=<id>, the same target
 // as HelpDot). Keyed by AddSheet mode OR kitchen-week action key; the title comes
 // from the tile's own label. Calm: help is opt-in (tutorial mode), never modal-blocking.
 //

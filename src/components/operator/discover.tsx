@@ -13,6 +13,7 @@ import { WHATS_NEW } from '../../lib/whatsNew'
 import { resetIntrosSeen } from '../SectionIntro'
 import { renderRich } from '../../lib/richText'
 import { Icon } from '../Icon'
+import { guideHref } from '../../lib/settingsNav'
 
 // Découvrir's two calm discovery cards (bmad/08 B-11 + B-14), both rendered with
 // the SectionIntro look (.section-intro — same head/dismiss/actions family, no
@@ -95,7 +96,7 @@ export function WhatsNewLine() {
       <p className="section-intro__what">{renderRich(entry.text[lang])}</p>
       <div className="section-intro__actions">
         {entry.card && (
-          <Link className="section-intro__more" to={`/settings?tab=guide&card=${entry.card}`}>
+          <Link className="section-intro__more" to={guideHref(entry.card)}>
             <span>{t.help.learnMore}</span>
             <Icon name="arrow-right-bold" size={16} />
           </Link>
@@ -180,7 +181,7 @@ export function DidYouKnowCard() {
             <span>{t.discover.tourStart(candidates.length)}</span>
           </button>
         )}
-        <Link className="section-intro__more" to={`/settings?tab=guide&card=${entry.id}`}>
+        <Link className="section-intro__more" to={guideHref(entry.id)}>
           <span>{t.help.learnMore}</span>
           <Icon name="arrow-right-bold" size={16} />
         </Link>

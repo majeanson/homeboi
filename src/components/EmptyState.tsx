@@ -5,6 +5,7 @@ import { useHelp } from '../lib/help'
 import { useAudience } from '../lib/audience'
 import { isGuest } from '../lib/device'
 import { InlineIcon, type IconName } from './Icon'
+import { guideHref } from '../lib/settingsNav'
 
 // The ONE "nothing here, and that's fine" line. Empty states were scattered across
 // ~7 class names (feed-empty, board__empty, *-empty…); this is the calm default —
@@ -14,7 +15,7 @@ import { InlineIcon, type IconName } from './Icon'
 //
 // Optional `guide` adds a small "→ Voir le guide" deep-link under the line (#8),
 // for the "what do I even do here?" empties a first-time household lands on — the
-// same /settings?tab=guide&card=… target HelpDot/HelpBubble use. Opt-in on purpose:
+// same /settings?card=… target HelpDot/HelpBubble use. Opt-in on purpose:
 // a link on every trivial empty would be noise, not calm. Gated exactly like the
 // HelpDot "?": tutorial mode only, never the toddler lens — an expert household
 // (help off) sees the empty line with no guide link.
@@ -52,7 +53,7 @@ export function EmptyState({
   const { audience } = useAudience()
   const to =
     guide && tutorial && audience !== 'toddler'
-      ? `/settings?tab=guide&card=${guide.card}${guide.point != null ? `&point=${guide.point}` : ''}`
+      ? guideHref(guide.card, guide.point)
       : null
   return (
     <p

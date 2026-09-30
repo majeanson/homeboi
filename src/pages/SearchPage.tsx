@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery, useIsFetching } from '@tanstack/react-query'
 import { useT, useLang } from '../i18n'
 import { api } from '../lib/api'
-import { settingsHref } from '../lib/settingsNav'
+import { settingsHref, guideHref } from '../lib/settingsNav'
 import { useAi } from '../lib/ai'
 import { fold } from '../lib/normalize'
 import { SEARCH_INDEX, drawingFields, type SearchFields, type PantryRow } from '../lib/searchIndex'
@@ -285,7 +285,7 @@ export function SearchPage() {
           icon: e.icon,
           title: titleStr,
           sub: usePoint ? stripTokens(e.points[pointIdx].label[lang]) : whatStr,
-          to: usePoint ? `/settings?tab=guide&card=${e.id}&point=${pointIdx}` : `/settings?tab=guide&card=${e.id}`,
+          to: guideHref(e.id, usePoint ? pointIdx : null),
         },
       })
     }

@@ -7,6 +7,7 @@ import { HelpBubble } from '../components/HelpBubble'
 import { Chip } from '../components/Chip'
 import { Cluster } from '../components/Layout'
 import { Icon } from '../components/Icon'
+import { guideHref } from './settingsNav'
 
 // Reusable "?" contextual help mode (first shipped in AddSheet, now app-wide). A
 // surface calls useHelpMode(content, label): tapping its HelpToggle arms help mode,
@@ -210,7 +211,7 @@ export function HelpHint({ card }: { card?: string }) {
               <Icon name="play-bold" size={13} /> {t.help.takeTour}
             </Chip>
           )}
-          <Chip to={`/settings?tab=guide&card=${card}`}>
+          <Chip to={guideHref(card)}>
             <Icon name="book-open-bold" size={13} /> {t.help.guideShort}
           </Chip>
         </Cluster>

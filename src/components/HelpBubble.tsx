@@ -4,13 +4,14 @@ import { useT } from '../i18n'
 import { Icon } from './Icon'
 import { Cluster } from './Layout'
 import { scrollBehavior } from '../lib/motion'
+import { guideHref } from '../lib/settingsNav'
 
 // Lazy on purpose — see the header. The bubble renders on every surface; the composer
 // (the modal, the write hook, the attach panel) arrives only when someone reports.
 const RemarkComposer = lazy(() => import('./RemarkComposer').then((m) => ({ default: m.RemarkComposer })))
 
 // A small in-place help box: a title, one calm line, and two ways out. « Voir le guide »
-// opens the full Guide card (/settings?tab=guide&card=<id>, the same deep link HelpDot
+// opens the full Guide card (/settings?card=<id>, the same deep link HelpDot
 // uses). « Signaler » opens « Les remarques » (0136) already knowing WHICH section you
 // were asking about.
 //
@@ -71,7 +72,7 @@ export function HelpBubble({
   }, [title])
 
   const to = card
-    ? `/settings?tab=guide&card=${card}${point != null ? `&point=${point}` : ''}`
+    ? guideHref(card, point)
     : null
   return (
     <div className="help-bubble" role="status" ref={ref}>

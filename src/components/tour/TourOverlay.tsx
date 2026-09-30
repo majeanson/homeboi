@@ -8,6 +8,7 @@ import { useModal } from '../../lib/useModal'
 import { renderRich } from '../../lib/richText'
 import { useTour } from '../../lib/tour'
 import { Icon } from '../Icon'
+import { guideHref } from '../../lib/settingsNav'
 
 // The one renderer for any active guided tour (engine: lib/tour.tsx). It dims the
 // screen, cuts a spotlight around the step's target element (via an SVG mask, so
@@ -74,7 +75,7 @@ export function TourOverlay() {
   const learnMore = useCallback(
     (card: string) => {
       end('finished')
-      nav(`/settings?tab=guide&card=${card}`)
+      nav(guideHref(card))
     },
     [end, nav],
   )
