@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { CONTENT_TABLES, HOUSEHOLD_KEEP, RESET_KEEP, RESET_TABLES, chunk, fitRow, freshIdMap, idsIn, rewriteIds, validateTakeout } from './restore'
+import { CONTENT_TABLES, HOUSEHOLD_KEEP, RESET_KEEP, RESET_TABLES, chunk, fitRow, freshIdMap, idsIn, rewriteIds, upgradeTakeout, validateTakeout } from './restore'
 import { TAKEOUT_EXCLUDE } from './takeout'
 import { HOUSEHOLD_TABLES } from './demoHousehold'
 
@@ -84,5 +84,27 @@ describe('the reset set', () => {
   it('never reaches who may open the household', () => {
     for (const t of ['operators', 'devices', 'guests', 'shares', 'pairing_codes']) expect(RESET_TABLES, t).not.toContain(t)
     for (const t of ['members', 'recipes', 'events', 'notes', 'list_items', 'photos']) expect(RESET_TABLES, t).toContain(t)
+  })
+})
+// A nightly copy from BEFORE migration 0142 keeps its mots in a `mots` table the database
+// no longer has (0143 dropped it). Restore would skip an unknown table — every mot gone,
+// on the one day a household asked for its things back. upgradeTakeout brings the dump
+// forward the way the migration brought the database.
+describe('upgradeTakeout (a pre-0142 copy)', () => {
+  const base = { app: 'babillard', format: 1 as const, householdId: 'h1', exportedAt: 0, household: null, skipped: [], media: [] }
+  const MOT = { id: 'm1', household_id: 'h1', member_id: 'lea', author_member_id: 'papa', text: 'Bravo', created_at: 5, opened_at: null, saved_at: 9, surface_at: null, deleted_at: null, reply_to: null, is_sample: 0 }
+
+  it('turns each live mot into an addressed fridge note — author and recipient the right way round', () => {
+    const t = upgradeTakeout({ ...base, tables: { mots: [MOT, { ...MOT, id: 'm2', deleted_at: 7 }], notes: [{ id: 'n1', text: 'lait' }] } })
+    expect(t.tables.mots).toBeUndefined()
+    const moved = t.tables.notes.find((n) => n.id === 'm1')!
+    expect(moved).toMatchObject({ member_id: 'papa', for_member_id: 'lea', saved_at: 9, text: 'Bravo' })
+    expect(moved).not.toHaveProperty('reply_to') // the threads went with the table
+    expect(t.tables.notes.map((n) => n.id).sort()).toEqual(['m1', 'n1']) // the deleted one stays gone
+  })
+
+  it('leaves a copy taken after 0142 exactly as it is', () => {
+    const t = { ...base, tables: { notes: [{ id: 'n1' }] } }
+    expect(upgradeTakeout(t)).toBe(t)
   })
 })

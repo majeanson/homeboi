@@ -21,7 +21,10 @@ import { deleteR2Blob } from './r2'
 //   • NOT NULL refs (routines, recipe_loves, schedule_blocks) — the rows belong to
 //     the member alone; DELETE them (routine_runs first, they FK routines).
 //   • A « mot » to/from the member is a private 1:1 message; DELETE it rather than
-//     SET NULL (a NULL recipient would re-broadcast it to the whole Maisonnée).
+//     SET NULL (a NULL recipient would re-broadcast it to the whole Maisonnée). Since
+//     0142 a mot is a fridge note with a recipient (`notes.for_member_id`): an ADDRESSED
+//     note to or from the member goes; a family-wide paper they wrote only loses its
+//     author, like any other note.
 //   • A member-owned « habitude » is private too; DELETE it with its habit_days
 //     history (a NULL owner would promote it to a household habit). Household
 //     habits survive — only the departed member's day-mark attribution is detached.
@@ -40,8 +43,10 @@ export function memberRefStatements(env: Env, householdId: string, memberId: str
     P('DELETE FROM routines WHERE member_id = ? AND household_id = ?').bind(id, hh),
     P('DELETE FROM recipe_loves WHERE member_id = ? AND household_id = ?').bind(id, hh),
     P('DELETE FROM schedule_blocks WHERE member_id = ? AND household_id = ?').bind(id, hh),
-    // A private « mot » loses meaning without its member; delete both directions.
-    P('DELETE FROM mots WHERE household_id = ? AND (member_id = ? OR author_member_id = ?)').bind(hh, id, id),
+    // A private « mot » loses meaning without its member; delete both directions — an
+    // addressed note (0142) TO them, or FROM them to someone. Before the author detach
+    // below, or a sent mot would survive as an anonymous one.
+    P('DELETE FROM notes WHERE household_id = ? AND for_member_id IS NOT NULL AND (for_member_id = ? OR member_id = ?)').bind(hh, id, id),
     // A member's own « habitude » is private to them — delete it with its history
     // (day rows first: they FK habits). Household-wide habits (member_id NULL)
     // survive; only this member's authorship of their day marks is detached below.
@@ -79,17 +84,21 @@ export function memberRefStatements(env: Env, householdId: string, memberId: str
   ]
 }
 
-// Free R2 blobs that `memberRefStatements` will hard-DELETE (only mots carry media;
-// every other reference is SET NULL and keeps its row + blob). Best-effort and
-// no-ops when R2 is unset — mirrors `deleteR2Blob`. Call BEFORE the ref batch.
+// Free R2 blobs that `memberRefStatements` will hard-DELETE (only the addressed mots —
+// fridge notes with a recipient since 0142 — carry media among them; every other
+// reference is SET NULL and keeps its row + blob). Best-effort and no-ops when R2 is
+// unset — mirrors `deleteR2Blob`. Call BEFORE the ref batch.
 export async function freeMemberMediaBlobs(env: Env, householdId: string, memberId: string): Promise<void> {
   if (!env.PHOTOS) return
   const { results } = await env.DB.prepare(
-    'SELECT media_key FROM mots WHERE household_id = ? AND media_key IS NOT NULL AND (member_id = ? OR author_member_id = ?)',
+    'SELECT media_key, scene_key FROM notes WHERE household_id = ? AND media_key IS NOT NULL AND for_member_id IS NOT NULL AND (for_member_id = ? OR member_id = ?)',
   )
     .bind(householdId, memberId, memberId)
-    .all<{ media_key: string }>()
-  for (const r of results) await deleteR2Blob(env.PHOTOS, r.media_key)
+    .all<{ media_key: string; scene_key: string | null }>()
+  for (const r of results) {
+    await deleteR2Blob(env.PHOTOS, r.media_key)
+    await deleteR2Blob(env.PHOTOS, r.scene_key)
+  }
 }
 
 // Fold accents + case so a spoken/typed name matches the stored one: "Léa" ↔

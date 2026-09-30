@@ -38,6 +38,8 @@ function tablesReferencingMembers(): Set<string> {
     const create = [...before.matchAll(/create\s+table\s+(\w+)/g)].pop()
     if (create) tables.add(create[1])
   }
+  // A table a later migration DROPPED references nothing any more (0143 dropped `mots`).
+  for (const d of schema.matchAll(/drop\s+table\s+(?:if\s+exists\s+)?(\w+)/g)) tables.delete(d[1])
   return tables
 }
 
@@ -63,7 +65,7 @@ describe('member deletion FK cleanup', () => {
   it('finds the known member-referencing tables (sanity)', () => {
     // A floor so a broken scan (0 matches) can't make the coverage test vacuous.
     expect(referencing.has('recipe_loves')).toBe(true)
-    expect(referencing.has('mots')).toBe(true)
+    expect(referencing.has('notes')).toBe(true)
     expect(referencing.has('schedule_blocks')).toBe(true)
     expect(referencing.size).toBeGreaterThanOrEqual(12)
   })
@@ -76,7 +78,7 @@ describe('member deletion FK cleanup', () => {
   }
 
   it('DELETEs the NOT NULL refs (rows are the member’s own), not SET NULL', () => {
-    for (const t of ['recipe_loves', 'schedule_blocks', 'mots']) {
+    for (const t of ['recipe_loves', 'schedule_blocks']) {
       expect(sqls.some((s) => new RegExp(`delete from ${t}\\b`).test(s))).toBe(true)
     }
   })

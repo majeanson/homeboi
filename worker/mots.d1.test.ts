@@ -65,14 +65,37 @@ describe('mots on the fridge (0142)', () => {
     expect(board.notes.find((n) => n.id === keep.id)).toBeUndefined()
   })
 
-  it('the migration brought the live mots across as addressed fridge notes', async () => {
-    // A row written straight into the retired table, the way a household had them before
-    // 0142, would already have moved when the harness applied the migration — so assert
-    // the SHAPE the migration produces on this database: no live row left in `mots`.
-    const live = await env.DB.prepare('SELECT COUNT(*) AS n FROM mots WHERE deleted_at IS NULL').first<{ n: number }>()
-    expect(live?.n ?? 0).toBe(0)
+  it('the mots live on notes, and the retired table is gone (0142 → 0143)', async () => {
+    // 0142 moved the live mots onto `notes`; 0143 dropped `mots` once nothing read it. Assert
+    // the shape those two leave on this database: no `mots` table, the columns on `notes`.
+    const table = await env.DB.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'mots'").first<{ name: string }>()
+    expect(table, 'a second answer to « where are the mots? »').toBeNull()
     const cols = await env.DB.prepare("SELECT name FROM pragma_table_info('notes')").all<{ name: string }>()
     const names = cols.results.map((c) => c.name)
     for (const c of ['for_member_id', 'opened_at', 'saved_at', 'surface_at', 'transcript', 'updated_at']) expect(names).toContain(c)
+  })
+
+  // A private mot loses its meaning without its member (functions/_lib/members.ts) — and
+  // since 0142 it lives on `notes`, so deleting a member must reach there, in BOTH
+  // directions, while a family-wide paper they wrote only loses its author.
+  it('deleting a member takes their private mots with them — and only those', async () => {
+    const s = await household('mots-leave', undefined, { empty: true })
+    const add = async (name: string) => ((await (await s.fetch('/api/members', { method: 'POST', body: { name } })).json()) as { id: string }).id
+    const lea = await add('Léa')
+    const papa = await add('Papa')
+    const as = (face: string) => ({ 'X-Profile': face })
+    await s.fetch('/api/notes', { method: 'POST', body: { text: 'Pour Léa', recipient_id: lea }, headers: as(papa) })
+    await s.fetch('/api/notes', { method: 'POST', body: { text: 'Pour Papa', recipient_id: papa }, headers: as(lea) })
+    await s.fetch('/api/notes', { method: 'POST', body: { text: 'Pour tous' }, headers: as(lea) })
+
+    expect((await s.fetch('/api/members', { method: 'DELETE', body: { id: lea } })).status).toBeLessThan(300)
+
+    const { notes } = (await (await s.fetch('/api/notes')).json()) as { notes: Note[] }
+    const texts = notes.map((n) => n.text)
+    expect(texts, 'a mot TO the departed member goes').not.toContain('Pour Léa')
+    expect(texts, 'a mot FROM them to someone goes too — never re-broadcast as an anonymous one').not.toContain('Pour Papa')
+    const shared = notes.find((n) => n.text === 'Pour tous')
+    expect(shared, 'a family-wide paper stays on the fridge').toBeTruthy()
+    expect(shared!.member_id).toBeNull()
   })
 })

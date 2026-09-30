@@ -78,7 +78,6 @@ export const DEMO_SANDBOX_IDLE_TTL = 2 * 3600
 // the two cannot drift.
 export const SELF_REFS: ReadonlyArray<readonly [table: string, column: string]> = [
   ['carnets', 'parent_id'],
-  ['mots', 'reply_to'],
 ]
 
 // Child tables WITHOUT a household_id column, deleted via their parent's ids.
@@ -107,7 +106,6 @@ export const HOUSEHOLD_TABLES: readonly string[] = [
   'contact_links',
   'contact_photos',
   'recipe_loves',
-  'mots',
   'care_log',
   'home_pins',
   'home_projects',
@@ -229,7 +227,6 @@ export const EXEMPT_TABLES: Readonly<Record<string, string>> = {
 const MEDIA_SCALAR_COLUMNS: ReadonlyArray<readonly [table: string, columns: readonly string[]]> = [
   ['notes', ['media_key', 'scene_key']],
   ['family_notes', ['media_key', 'scene_key']],
-  ['mots', ['media_key', 'scene_key']],
   ['drawings', ['media_key', 'scene_key']],
   ['trip_notes', ['media_key', 'scene_key']],
   ['photos', ['media_key']],

@@ -24,7 +24,6 @@ const SAMPLE_TABLES = [
   // deepest children (reference members/recipes/carnets/…)
   'contact_links', // polymorphic edges (no DB FK, but conceptually first)
   'recipe_loves', // → recipes, members
-  'mots', // → members
   'care_log', // → carnets
   'home_projects', // soft-ref carnets
   'carnets', // flat (all parent_id NULL) → after its care_log/pins

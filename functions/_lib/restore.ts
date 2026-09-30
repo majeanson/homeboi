@@ -25,7 +25,7 @@ import { TAKEOUT_EXCLUDE, type Takeout } from './takeout'
 //      same-household restore keeps the device preferences that remember a face;
 //   4. INSERT with the intersection of the dump's keys and the live table's columns (a
 //      backup from before a migration gets defaults; a dropped column is ignored),
-//      parents before children, self-references (carnets.parent_id, mots.reply_to) in a
+//      parents before children, self-references (carnets.parent_id) in a
 //      second pass; the household row's preference columns are updated, its identity
 //      (id, tier, status, created_at, invite_nonce) kept;
 //   5. R2 keys are NOT remapped: the blobs are still there for a same-household
@@ -172,7 +172,42 @@ export interface RestoreSummary {
   skippedTables: string[]
 }
 
-export async function restoreHousehold(env: Env, householdId: string, takeout: Takeout): Promise<RestoreSummary> {
+// A copy taken BEFORE migration 0142 holds its mots in a `mots` table that no longer
+// exists. Skipping it (what an unknown table gets) would lose every mot the household
+// had, silently, on the one day they asked for their things back. So the dump is brought
+// forward the way the migration brought the database: each live mot becomes a fridge
+// note — its author (`author_member_id`) as `member_id`, its recipient (`member_id`) as
+// `for_member_id` — and the `mots` table leaves the dump. Pure; unit-tested.
+export function upgradeTakeout(t: Takeout): Takeout {
+  const mots = t.tables.mots
+  if (!mots) return t
+  const rest = { ...t.tables }
+  delete rest.mots
+  const known = new Set((rest.notes ?? []).map((r) => r.id))
+  const moved = mots
+    .filter((m) => m.deleted_at == null && !known.has(m.id))
+    .map((m) => ({
+      id: m.id,
+      household_id: m.household_id,
+      text: m.text ?? '',
+      member_id: m.author_member_id ?? null,
+      for_member_id: m.member_id ?? null,
+      created_at: m.created_at,
+      media_kind: m.media_kind ?? null,
+      media_key: m.media_key ?? null,
+      scene_key: m.scene_key ?? null,
+      opened_at: m.opened_at ?? null,
+      saved_at: m.saved_at ?? null,
+      surface_at: m.surface_at ?? null,
+      transcript: m.transcript ?? null,
+      updated_at: m.updated_at ?? null,
+      is_sample: m.is_sample ?? 0,
+    }))
+  return { ...t, tables: { ...rest, notes: [...(rest.notes ?? []), ...moved] } }
+}
+
+export async function restoreHousehold(env: Env, householdId: string, dump: Takeout): Promise<RestoreSummary> {
+  const takeout = upgradeTakeout(dump)
   const P = env.DB.prepare.bind(env.DB)
   const from = takeout.householdId
   const selfRefTables = new Map(SELF_REFS.map(([t, c]) => [t, c]))

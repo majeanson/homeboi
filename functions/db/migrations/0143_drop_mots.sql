@@ -1,0 +1,12 @@
+-- 0143 — La table `mots` s'en va : ses mots vivent dans `notes` depuis 0142.
+--
+-- 0142 a copié chaque mot vivant dans le frigo et marqué le reste supprimé, puis s'est
+-- arrêtée là exprès — une étape à la fois : le code déployé avec 0142 ne lisait plus
+-- `mots`, et c'est ce déploiement-là qui devait le prouver avant qu'on jette la table.
+-- C'est fait (vérifié en production le 2026-09-29 : zéro ligne vivante). Rien ne la lit,
+-- rien ne l'écrit ; la garder, c'est garder une deuxième réponse possible à « où sont
+-- les mots ? ».
+--
+-- Une copie de nuit d'AVANT 0142 contient encore une table `mots` : la restauration la
+-- convertit en papiers adressés (_lib/restore.ts upgradeTakeout) au lieu de la sauter.
+DROP TABLE IF EXISTS mots;
