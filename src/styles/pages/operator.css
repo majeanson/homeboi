@@ -98,6 +98,15 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 0.5rem;
+  /* The space under the row lives HERE, on the row. SubTabs' own wrapper
+     (`.subtabs-row`, core.css) carries a 1.25rem bottom margin, and as a flex item
+     that margin is part of what `align-items: center` centres — so the « ? » and
+     « Voir dans l'app » sat 10px below the lens pills (Marc, 2026-10-01). Same fix
+     as `.recipe-view-toggle .subtabs-row` (cook.css). */
+  margin: 0 0 1.25rem;
+}
+.operator__lensrow > .subtabs-row {
+  margin: 0;
 }
 .operator__lensrow .operator__lens {
   flex: 1 1 auto;

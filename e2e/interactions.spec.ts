@@ -152,6 +152,20 @@ test.describe('navigation', () => {
     expect(await page.evaluate(() => localStorage.getItem('babillard-boardview'))).toBe('bento')
   })
 
+  test('Réglages: the « ? » and « Voir dans l’app » sit on the lens toggle’s centre line', async ({ page }) => {
+    // SubTabs' wrapper carries a bottom margin; as a flex item in the lens row it was
+    // centred WITH that margin, so the tools sat 10px low (Marc, 2026-10-01).
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await APP('/settings?tab=kitchen')(page)
+    const lens = page.locator('.operator__lensrow [role="tablist"]')
+    await lens.waitFor({ timeout: 15_000 })
+    const mid = (b: { y: number; height: number }) => b.y + b.height / 2
+    const lensMid = mid(await boxOf(lens))
+    for (const sel of ['.operator__lenstools .help-toggle', '.operator__goto']) {
+      expect(Math.abs(mid(await boxOf(page.locator(sel))) - lensMid), sel).toBeLessThanOrEqual(1)
+    }
+  })
+
   test('the audience switch enters the kid view as a one-way door', async ({ page }) => {
     // Entering the toddler lens lives in Réglages ▸ Système ▸ Affichage now (the
     // nav's one-tap peek is gone). Parent → Enfant from the display sub's switch.
