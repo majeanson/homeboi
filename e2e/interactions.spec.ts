@@ -114,15 +114,42 @@ test.describe('navigation', () => {
     // A short viewport so the 7-day plan is guaranteed to scroll — a page that
     // cannot scroll would pass the « back at the top » check without the fix.
     await page.setViewportSize({ width: 390, height: 500 })
-    await APP('/kitchen?tab=meals&x=1')(page)
+    await APP('/kitchen?tab=recipes&x=1')(page)
+    const repas = page.getByRole('tab', { name: 'Repas', exact: true })
     await settle(page, '.hub [role="tab"][aria-selected="true"]')
+    await expect(repas).toHaveAttribute('aria-selected', 'false')
     const body = page.locator('.hub__body')
-    await body.evaluate((el) => el.scrollTo({ top: el.scrollHeight }))
-    await expect.poll(() => body.evaluate((el) => el.scrollTop)).toBeGreaterThan(100)
+    // Scroll inside the poll: the recipe book fills in after the tab paints, and a
+    // scroll issued before then has nowhere to go.
+    await expect
+      .poll(() =>
+        body.evaluate((el) => {
+          el.scrollTo({ top: el.scrollHeight })
+          return el.scrollTop
+        }),
+      )
+      .toBeGreaterThan(100)
     await page.locator('.hubnav a[href="/kitchen"]').click()
     await expect(page).toHaveURL(/\/kitchen$/)
     await expect(page.locator('.hubnav a[href="/kitchen"]')).toHaveClass(/is-active/)
+    // The DEFAULT sub-tab, not just the top of the one we were on.
+    await expect(repas).toHaveAttribute('aria-selected', 'true')
     await expect.poll(() => body.evaluate((el) => el.scrollTop)).toBe(0)
+  })
+
+  test('re-tapping the board tab returns to « Grille », the view picker remembered per device', async ({ page }) => {
+    // The board's Grille · Semaine · Mois · Année toggle is NOT in the URL — it is
+    // localStorage (lib/boardview) — so dropping ?params alone left a retap on Mois.
+    await page.emulateMedia({ reducedMotion: 'reduce' })
+    await mockApi(page)
+    await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, boardView: 'month' })
+    await page.goto('/board')
+    const on = page.locator('.boardview__opt[aria-pressed="true"]')
+    await expect(on).toHaveAttribute('aria-label', 'Mois', { timeout: 15_000 })
+    await page.locator('.hubnav a[href="/board"]').click()
+    await expect(on).toHaveAttribute('aria-label', 'Grille')
+    // …and the device remembers it (a reload here would re-run seedState's init script).
+    expect(await page.evaluate(() => localStorage.getItem('babillard-boardview'))).toBe('bento')
   })
 
   test('the audience switch enters the kid view as a one-way door', async ({ page }) => {

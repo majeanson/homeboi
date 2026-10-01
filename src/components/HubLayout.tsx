@@ -8,6 +8,7 @@ import { MEALS_KEY } from './kitchen/types'
 import { useAudience } from '../lib/audience'
 import { useSurface } from '../lib/surface'
 import { useProfile } from '../lib/profile'
+import { saveBoardView, DEFAULT_BOARD_VIEW } from '../lib/boardview'
 import { announcePresence, usePresenceMap } from '../lib/realtime'
 import { useHabitCheckinTrigger } from '../lib/habitCheckin'
 import { onIdleDebug, idleOverrideMs } from '../lib/idleDebug'
@@ -205,9 +206,16 @@ export function HubLayout() {
   // each page's default is the param-less URL, lib/tabParam), remount the page so
   // its local state (a search typed, a fold opened, a picker) starts over, scroll
   // to the top and refetch what it shows. Preferences that live in localStorage
-  // (list sort, board layout) belong to the device, not the page, and stay.
+  // (list sort, the Simple/Avancé faces, the board's card layout) belong to the
+  // device, not the page, and stay.
+  //
+  // One view picker is NOT in the URL: the board's Grille · Semaine · Mois · Année
+  // toggle is remembered per device (lib/boardview). It is a sub-tab all the same —
+  // Marc, 2026-10-01: a retap must land on « Grille » like it lands on « Repas » — so
+  // it is reset here, BEFORE the remount, whose initializer reads it back.
   const [pageReset, setPageReset] = useState(0)
   const retapTab = (to: string) => {
+    if (to === '/board') saveBoardView(DEFAULT_BOARD_VIEW)
     if (loc.pathname !== to || loc.search) nav(to)
     setPageReset((n) => n + 1)
     bodyRef.current?.scrollTo({ top: 0, behavior: 'smooth' })

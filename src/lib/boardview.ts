@@ -21,6 +21,9 @@ export type BoardView = 'bento' | 'semaine' | 'month' | 'annee'
 
 const KEY = 'babillard-boardview'
 
+/** « Grille » — where a fresh device lands, and where re-tapping the board's tab returns (HubLayout retapTab). */
+export const DEFAULT_BOARD_VIEW: BoardView = 'bento'
+
 export function readBoardView(): BoardView {
   try {
     // Only 'month'/'annee' survive as alternates; every legacy value (next/lanes/
@@ -30,7 +33,7 @@ export function readBoardView(): BoardView {
   } catch {
     /* noop */
   }
-  return 'bento'
+  return DEFAULT_BOARD_VIEW
 }
 
 export function saveBoardView(v: BoardView): void {
