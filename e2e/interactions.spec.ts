@@ -108,6 +108,23 @@ test.describe('navigation', () => {
     }
   })
 
+  test('re-tapping the active tab returns it to the top and its default state', async ({ page }) => {
+    // Deep inside La cuisine (the recipe sub-tab), scrolled down: tapping « La
+    // cuisine » again must land on its default sub, at the top (HubLayout retapTab).
+    // A short viewport so the 7-day plan is guaranteed to scroll — a page that
+    // cannot scroll would pass the « back at the top » check without the fix.
+    await page.setViewportSize({ width: 390, height: 500 })
+    await APP('/kitchen?tab=meals&x=1')(page)
+    await settle(page, '.hub [role="tab"][aria-selected="true"]')
+    const body = page.locator('.hub__body')
+    await body.evaluate((el) => el.scrollTo({ top: el.scrollHeight }))
+    await expect.poll(() => body.evaluate((el) => el.scrollTop)).toBeGreaterThan(100)
+    await page.locator('.hubnav a[href="/kitchen"]').click()
+    await expect(page).toHaveURL(/\/kitchen$/)
+    await expect(page.locator('.hubnav a[href="/kitchen"]')).toHaveClass(/is-active/)
+    await expect.poll(() => body.evaluate((el) => el.scrollTop)).toBe(0)
+  })
+
   test('the audience switch enters the kid view as a one-way door', async ({ page }) => {
     // Entering the toddler lens lives in Réglages ▸ Système ▸ Affichage now (the
     // nav's one-tap peek is gone). Parent → Enfant from the display sub's switch.

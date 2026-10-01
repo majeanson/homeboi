@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, Navigate, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
@@ -199,6 +199,20 @@ export function HubLayout() {
   useEffect(() => {
     bodyRef.current?.scrollTo({ top: 0 })
   }, [section])
+
+  // Tapping the tab you are ALREADY on means « take me back to the start » (the
+  // phone-app convention): drop every ?param (sub-tab, section, lens, open item —
+  // each page's default is the param-less URL, lib/tabParam), remount the page so
+  // its local state (a search typed, a fold opened, a picker) starts over, scroll
+  // to the top and refetch what it shows. Preferences that live in localStorage
+  // (list sort, board layout) belong to the device, not the page, and stay.
+  const [pageReset, setPageReset] = useState(0)
+  const retapTab = (to: string) => {
+    if (loc.pathname !== to || loc.search) nav(to)
+    setPageReset((n) => n + 1)
+    bodyRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+    void qc.invalidateQueries()
+  }
 
   // Pull-to-refresh (bmad/12 #17). The browser can't offer its own here — the
   // document never scrolls, .hub__body does (see lib/pullToRefresh.ts) — so the
@@ -522,6 +536,11 @@ export function HubLayout() {
             // polling/realtime stay in charge of correctness as always.
             onPointerDown={() => warmTab(tab.to)}
             onMouseEnter={() => warmTab(tab.to)}
+            onClick={(e) => {
+              if (loc.pathname !== tab.to && !loc.pathname.startsWith(tab.to + '/')) return
+              e.preventDefault()
+              retapTab(tab.to)
+            }}
           >
             {({ isActive }) => (
               <>
@@ -592,7 +611,9 @@ export function HubLayout() {
             {guestLocked && guestKind === 'showcase' ? t.guest.demoBadge : t.guest.banner}
           </p>
         )}
-        <Outlet />
+        <Fragment key={pageReset}>
+          <Outlet />
+        </Fragment>
       </div>
 
       {idleWarn && (

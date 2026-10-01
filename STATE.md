@@ -123,7 +123,7 @@ Deps latest, Node 26, TS 7 (not Vitest 5, #28); green minor bumps self-merge. Do
 **Fewer concepts, not more features** (dormancy audit: postbox, intake, mots, carnets unused).
 One « Garder »; one « fiche famille » merge; one writable link (« Boîte aux lettres »); **mots
 are fridge notes** (0142: face dot, « Plus tard », outbox kept; replies, « Transformer » gone);
-doors on the things (＋ gardienne, Mots card, contact peek) → ONE form, ONE « partagé » list. **09-30, from real use:** a flyer title lands as a calm item name (`lib/flyerName`, the deal keeps the title; 9 of 14 real lines were shouts); capture re-uses the SAME item; a note cannot be edited blank; a birthday with a gift idea wears 🎁.
+doors on the things (＋ gardienne, Mots card, contact peek) → ONE form, ONE « partagé » list. **09-30, from real use:** a flyer title lands as a calm item name (`lib/flyerName`, the deal keeps the title; 9 of 14 real lines were shouts); capture re-uses the SAME item; a note cannot be edited blank; a birthday with a gift idea wears 🎁. **10-01:** re-tapping the tab you are on returns it to its start — top, default sub, fresh data (`HubLayout` retapTab).
 
 ## 4. What still needs improvement — consolidated and ranked
 
