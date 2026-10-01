@@ -13,6 +13,7 @@ import {
   CARNET_CAP,
   WORK_CAP,
   workForPrompt,
+  noteForPrompt,
   type AskSnapshot,
   type AskEventRow,
   type AskRecurEventRow,
@@ -170,6 +171,37 @@ describe('contactDisplayName', () => {
   })
 })
 
+// A drawing or a voice memo has no text. Before this, the snapshot read `text` alone
+// and the assistant saw a row of blank notes (three on the real board, 2026-10-01).
+describe('noteForPrompt — an attachment is named, never a blank', () => {
+  it('names a text-less attachment by its kind, FR and EN', () => {
+    expect(noteForPrompt({ text: '', media_kind: 'drawing' }, 'fr')).toBe('(un dessin)')
+    expect(noteForPrompt({ text: null, media_kind: 'audio' }, 'fr')).toBe('(un mot vocal)')
+    expect(noteForPrompt({ text: '  ', media_kind: 'image' }, 'en')).toBe('(a photo)')
+  })
+  it('keeps the text and adds the attachment beside it', () => {
+    expect(noteForPrompt({ text: 'Bonne fête', media_kind: 'audio' }, 'fr')).toBe('Bonne fête (+ un mot vocal)')
+  })
+  it('an unknown kind is still an attachment, not a blank', () => {
+    expect(noteForPrompt({ text: '', media_kind: 'video' }, 'fr')).toBe('(une pièce jointe)')
+  })
+  it('nothing to say → null, and the Notes section drops it', () => {
+    expect(noteForPrompt({ text: '', media_kind: null }, 'fr')).toBeNull()
+    const lines = buildAskPromptLines(
+      {
+        ...emptySnapshot,
+        notes: [
+          { text: '', media_kind: null },
+          { text: '', media_kind: 'drawing' },
+        ],
+      },
+      'fr',
+    ).join('\n')
+    expect(lines).toContain('Notes : (un dessin)')
+    expect(lines).not.toContain(' · ')
+  })
+})
+
 describe('buildAskPromptLines — sections, FR/EN, omission of empty sections', () => {
   it('always opens with the dated "today" line', () => {
     const lines = buildAskPromptLines(emptySnapshot, 'fr')
@@ -189,7 +221,7 @@ describe('buildAskPromptLines — sections, FR/EN, omission of empty sections', 
       birthdays: [{ id: 'birthday:member:lea:2026', personKey: 'member:lea', name: 'Léa', at: d(2026, 6, 24), age: 6, memberId: 'lea', giftIdeas: null }],
       list: [{ text: 'Lait' }],
       chores: [{ title: 'Poubelles' }],
-      notes: [{ text: 'Ne pas oublier le lunch' }],
+      notes: [{ text: 'Ne pas oublier le lunch', media_kind: null }],
     }
     const text = buildAskPromptLines(snap, 'fr').join('\n')
     expect(text).toContain('Repas planifiés :')

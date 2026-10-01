@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll } from 'vitest'
+import { env } from 'cloudflare:workers'
 import { anon, household, type Session } from '../functions/test/d1'
 import { MCP_LATEST } from '../functions/_lib/mcp'
 
@@ -226,6 +227,20 @@ describe('the tools actually read the household', () => {
     const out = (await res.json()) as { result: { isError: boolean; content: { text: string }[] } }
     expect(out.result.isError).toBe(false)
     expect(out.result.content[0].text.length).toBeGreaterThan(0)
+  })
+
+  it('household_snapshot names a text-less drawing instead of printing a blank note', async () => {
+    // The real board held three drawings/voice memos with '' text, and the snapshot
+    // read `text` alone — the assistant saw « Notes :  ·  · ». The SELECT must carry
+    // media_kind, which only a run against the real schema can prove.
+    await env.DB.prepare(
+      "INSERT INTO notes (id, household_id, text, created_at, media_kind, media_key) VALUES ('n_draw', ?1, '', ?2, 'drawing', 'k/draw.png')",
+    )
+      .bind(op.householdId, Math.floor(Date.now() / 1000))
+      .run()
+    const res = await rpc(msg('tools/call', { name: 'household_snapshot' }))
+    const out = (await res.json()) as { result: { content: { text: string }[] } }
+    expect(out.result.content[0].text).toContain('(un dessin)')
   })
 
   it('calendar_range accepts YYYY-MM-DD and refuses nonsense as a TOOL error', async () => {

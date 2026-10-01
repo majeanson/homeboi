@@ -31,6 +31,7 @@ import {
   type AskMealRow,
   type AskContactRow,
   type AskBusinessRow,
+  type AskNoteRow,
 } from './askContext'
 
 const DAY = 86400
@@ -92,10 +93,12 @@ export async function gatherAskSnapshot(env: Env, householdId: string, today: nu
       .all<{ title: string }>(),
     env.DB.prepare(
       // Not a scheduled one (0142): « Sa fête » must not be spoiled by asking the house.
-      "SELECT text FROM notes WHERE household_id = ? AND dismissed_at IS NULL AND text IS NOT NULL AND (surface_at IS NULL OR surface_at <= CAST(strftime('%s', 'now') AS INTEGER)) ORDER BY created_at DESC LIMIT 12",
+      // media_kind rides along: a drawing or a voice memo has no text, and without its
+      // kind it read as a blank note (askContext.noteForPrompt names it instead).
+      "SELECT text, media_kind FROM notes WHERE household_id = ? AND dismissed_at IS NULL AND (text IS NOT NULL OR media_kind IS NOT NULL) AND (surface_at IS NULL OR surface_at <= CAST(strftime('%s', 'now') AS INTEGER)) ORDER BY created_at DESC LIMIT 12",
     )
       .bind(hh)
-      .all<{ text: string }>(),
+      .all<AskNoteRow>(),
     fetchBirthdayPeople(env.DB, hh),
     // Le cercle contacts: name + how to reach them.
     env.DB.prepare(

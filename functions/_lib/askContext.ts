@@ -174,7 +174,7 @@ export interface AskSnapshot {
   birthdays: BirthdayOccurrence[] // already capped (birthdaysForPrompt)
   list: { text: string }[]
   chores: { title: string }[]
-  notes: { text: string }[]
+  notes: AskNoteRow[]
   contacts: AskContactRow[]
   businesses: AskBusinessRow[]
   carnetDues: CarnetLifeSoon[] // already capped (carnetDuesForPrompt)
@@ -183,6 +183,32 @@ export interface AskSnapshot {
   // events alone and cheerfully said yes while he was at work 8 h–17 h. Already
   // expanded + capped by the caller.
   work: AskWorkOcc[]
+}
+
+// A fridge note as the board holds it: its text, and the attachment's kind when it has
+// one ('audio' | 'drawing' | 'image', the media trio). A drawing or a voice memo
+// usually has NO text — reading `text` alone handed the assistant a row of blanks
+// (three of them on the real board, 2026-10-01).
+export interface AskNoteRow {
+  text: string | null
+  media_kind: string | null
+}
+
+const NOTE_MEDIA: Record<Lang, Record<string, string>> = {
+  fr: { audio: 'un mot vocal', drawing: 'un dessin', image: 'une photo' },
+  en: { audio: 'a voice memo', drawing: 'a drawing', image: 'a photo' },
+}
+
+// One note → one printable phrase, or null when there is nothing to say (no text and
+// no attachment). An attachment is NAMED, never described: its content is not
+// readable here, and « un dessin » is true where guessing what it shows would not be.
+export function noteForPrompt(n: AskNoteRow, lang: Lang): string | null {
+  const text = (n.text ?? '').trim()
+  const kind = n.media_kind
+    ? (NOTE_MEDIA[lang][n.media_kind] ?? (lang === 'fr' ? 'une pièce jointe' : 'an attachment'))
+    : null
+  if (!kind) return text || null
+  return text ? `${text} (+ ${kind})` : `(${kind})`
 }
 
 // One derived work window, ready to print: who, when, and whether it ties up the
@@ -254,8 +280,9 @@ export function buildAskPromptLines(s: AskSnapshot, lang: Lang): string[] {
       lines.push(`- ${c.name} : ${fmtDay(c.at, lang)}${overdue}`)
     }
   }
-  if (s.notes.length) {
-    lines.push('', (lang === 'fr' ? 'Notes : ' : 'Notes: ') + s.notes.map((r) => r.text).join(' · '))
+  const notes = s.notes.map((r) => noteForPrompt(r, lang)).filter((t): t is string => t !== null)
+  if (notes.length) {
+    lines.push('', (lang === 'fr' ? 'Notes : ' : 'Notes: ') + notes.join(' · '))
   }
   return lines
 }
