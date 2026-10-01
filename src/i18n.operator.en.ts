@@ -126,7 +126,7 @@ export const EN_OPERATOR: typeof FR_OPERATOR = {
   },
   cardWord: 'word',
   addCard: 'card',
-  emojiPick: 'Change emoji',
+  emojiPick: 'Picture',
   moveUp: 'Move up',
   moveDown: 'Move down',
   removeCard: 'Remove card',

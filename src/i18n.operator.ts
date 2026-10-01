@@ -158,7 +158,7 @@ export const FR_OPERATOR = {
   },
   cardWord: 'mot',
   addCard: 'carte',
-  emojiPick: 'Changer l’emoji',
+  emojiPick: 'Image',
   moveUp: 'Monter',
   moveDown: 'Descendre',
   removeCard: 'Retirer la carte',

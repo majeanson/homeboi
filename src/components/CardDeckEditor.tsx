@@ -281,7 +281,7 @@ export function CardDeckEditor({
               update(paletteFor, { icon: e })
               setPaletteFor(null)
             }}
-            ariaLabel={o18n.emojiPick}
+            ariaLabel={t.common.emojiChoose}
             className="emoji-picker--tall"
           />
         )}
