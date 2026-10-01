@@ -1,5 +1,6 @@
 import { test, expect, type Page, type Request } from '@playwright/test'
 import { mockApi, seedState } from './mocks'
+import { boxOf } from './measure'
 
 // Behavioural coverage for the routine card-deck editor (CardDeckEditor inside
 // RoutineForm, /routine/new). The step editor was screenshot-only; this drives the
@@ -92,4 +93,23 @@ test('the edit scene can delete a routine (confirm → DELETE → back to the ta
   ])
   expect(JSON.parse(req.postData() || '{}')).toMatchObject({ id: 'r1' })
   await expect(page).toHaveURL(/\/maison$/)
+})
+
+test('on a phone the routine editor commits from one row: Annuler · Enregistrer, above Supprimer', async ({ page }) => {
+  // With Supprimer + Partager filling the footer's first line, Enregistrer used to drop
+  // ALONE onto a second one — a lone pill at the foot of the deck that read as floating,
+  // under the destructive button, and the editor was the one form with no « Annuler »
+  // (UX walk, 2026-10-01).
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await mockApi(page)
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+  await page.goto('/routine/r1')
+  const foot = page.locator('.operator__routine-form .form-footer')
+  await expect(foot).toBeVisible({ timeout: 15_000 })
+  const save = await boxOf(foot.getByRole('button', { name: 'Enregistrer' }))
+  const cancel = await boxOf(foot.getByRole('button', { name: 'Annuler' }))
+  const del = await boxOf(foot.getByRole('button', { name: 'Supprimer la routine' }))
+  expect(Math.abs(cancel.y - save.y), 'Annuler and Enregistrer share a line').toBeLessThan(4)
+  expect(save.y + save.height, 'the commit pair leads, Supprimer follows').toBeLessThanOrEqual(del.y)
 })

@@ -41,6 +41,10 @@ test('« Cette semaine » shows WHICH faces helped — and never a count', async
   const week = page.locator('.tweek')
   await expect(week).toBeVisible({ timeout: 15_000 })
 
+  // Nothing to sort (the fixture's a-regler is empty): « À régler » drops its marigold ⚠
+  // frame for a quiet one — an alarm around « Tout est sous contrôle » read as trouble.
+  await expect(page.locator('.tweek__regler')).toHaveClass(/tweek__regler--clear/)
+
   // The faces are the content: three helpers on the first chore, named, not tallied.
   const firstChore = week.locator('.tweek__row--faces', { hasText: 'Vaisselle' })
   await expect(firstChore.locator('.ledger__helper')).toHaveCount(3)

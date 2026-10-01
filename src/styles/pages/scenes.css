@@ -474,7 +474,12 @@
   align-items: center;
 }
 .auto-card__what {
-  flex: 1 1 auto;
+  /* Basis 0, not auto: at basis auto the title + « Maman conduit » claimed their
+     whole one-line width, so the passenger faces wrapped onto a line of their own
+     (a lone « L » under « Soccer de Léa » — UX walk, 2026-10-01). From 0 the text
+     wraps INSIDE its own box and the faces stay on the ride's line; the 8rem floor
+     below is what still makes a genuinely crowded row wrap honestly. */
+  flex: 1 1 0;
   /* A floor so a crowded line (when + avatar + several passenger avatars)
      wraps THIS onto its own full-width line instead of squeezing it toward
      0 — at 0 width, `overflow-wrap: anywhere` below wraps every glyph onto

@@ -154,13 +154,16 @@ test.describe('the habit form', () => {
     await page.getByLabel('L’habitude').fill('Sortie à vélo')
     // « Selon un horaire » is the default and shows the shared RecurPicker.
     await expect(page.locator('.recur')).toBeVisible()
+    // No rule on a HABIT means every day — the picker must say so, not « Jamais »
+    // under « Selon un horaire » (UX walk, 2026-10-01).
+    await expect(page.locator('.recur select option:checked')).toHaveText('Chaque jour')
     // Switching to the weekly quota hides the schedule entirely (the two cadences
     // are different shapes — a quota has no rule to expand).
     await page.locator('.habit-form__seg', { hasText: 'X fois par semaine' }).click()
     await expect(page.locator('.recur')).toHaveCount(0)
     await page.getByLabel('Combien de fois').fill('3')
 
-    await page.getByRole('button', { name: 'Nouvelle habitude' }).click()
+    await page.getByRole('button', { name: 'Ajouter l’habitude' }).click()
     await expect.poll(() => posted.length).toBe(1)
     expect(posted[0]).toMatchObject({ title: 'Sortie à vélo', cadence: 'week', weekTimes: 3, recur: null, kind: 'do' })
   })
@@ -196,7 +199,7 @@ test.describe('the habit form', () => {
     await page.getByLabel('Toutes les').fill('6')
     await expect(page.locator('.habit-form__moments')).toContainText('3 moments : 08:00 · 14:00 · 20:00')
 
-    await page.getByRole('button', { name: 'Nouvelle habitude' }).click()
+    await page.getByRole('button', { name: 'Ajouter l’habitude' }).click()
     await expect.poll(() => posted.length).toBe(1)
     // Only the chosen rhythm's own shape is sent; the server NULLs the rest.
     expect(posted[0]).toMatchObject({

@@ -565,6 +565,18 @@ a.ledger__chore--link {
   gap: 0.5rem;
   margin-left: auto; /* Cancel + Save to the right; Delete keeps the left edge */
 }
+/* A phone with a Delete (and « Partager ») on the left: those filled the first line,
+   and Save dropped ALONE to the right of a second one — a lone orange pill at the
+   foot of a long deck that read as floating, under the destructive button (the
+   routine editor, UX walk 2026-10-01). There the commit pair leads, on its own line,
+   and the thing's quieter actions follow beneath it. */
+@media (max-width: 480px) {
+  .form-footer:has(> :not(.form-footer__main)) > .form-footer__main {
+    order: -1;
+    flex: 1 1 100%;
+    justify-content: flex-end;
+  }
+}
 .form-footer__del {
   /* --warn resolves to the -deep (glyph, 3:1) tier; this is a button LABEL. 4.06:1 by
      day, 3.97 at night. Same palette rule as everywhere else: text takes -ink. */

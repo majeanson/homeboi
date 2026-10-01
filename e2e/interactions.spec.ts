@@ -711,6 +711,27 @@ test.describe('add sheet', () => {
     await del
   })
 
+  // UX walk, 2026-10-01: the drawer's ⚙ sat alone on a line of its own above the
+  // field — a whole row before the one thing the page is for. It rides the field's row.
+  test('the Idées scene keeps its ⚙ on the field’s row', async ({ page }) => {
+    await APP('/kitchen/idees')(page)
+    const field = page.locator('.ideas-drawer .kitchen__ideas-combo')
+    await expect(field).toBeVisible({ timeout: 15_000 })
+    const f = await boxOf(field)
+    const g = await boxOf(page.locator('.ideas-drawer .kitchen__ideas-composer .mode-toggle'))
+    expect(Math.abs(f.y + f.height / 2 - (g.y + g.height / 2)), 'same line').toBeLessThan(4)
+  })
+
+  // UX walk, 2026-10-01: « Listes de départ 2 » sat right over the one fold « Avant de
+  // partir 2 » — the same number twice. With ONE folded checklist the fold carries it.
+  test('Avant de partir does not say its one checklist’s count twice', async ({ page }) => {
+    await APP('/board/departure')(page)
+    const sec = page.locator('.departure__body .todo-sec').first()
+    await expect(sec.locator('.todo-fold')).toHaveCount(1, { timeout: 15_000 })
+    await expect(sec.locator('.todo-fold')).toContainText('2')
+    await expect(sec.locator('.sec-label .ct')).toHaveCount(0)
+  })
+
   // C-14 — a child's suggestion (meal_ideas `date` + `suggested_by`) surfaces a
   // small chip on the matching empty day tile; tapping it deep-links to the drawer
   // scene on 👧 « Proposé par » (?tab=kid) — never auto-plans.

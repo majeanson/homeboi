@@ -275,7 +275,7 @@ export function HabitForm({
             <>
               {/* The hint leads, so « Répéter » arrives already explained. */}
               <p className="habit-form__hint mono">{recur ? fn.scheduleHint : fn.everyDayHint}</p>
-              <RecurPicker value={recur} onChange={setRecur} />
+              <RecurPicker value={recur} onChange={setRecur} noneLabel={fn.everyDay} />
             </>
           )}
 
@@ -387,7 +387,7 @@ export function HabitForm({
           (RoutineForm/PetForm) — never a bespoke row below the footer. Pause
           (rest it, history kept) is the non-destructive `extra` beside it. */}
       <FormFooter
-        saveLabel={value ? t.common.save : fn.add}
+        saveLabel={value ? t.common.save : fn.create}
         saveDisabled={!title.trim()}
         busy={busy}
         onCancel={onCancel}

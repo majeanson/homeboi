@@ -11,7 +11,18 @@ export interface RecurValue {
   weekdays: number[] // 0=Sun … 6=Sat
 }
 
-export function RecurPicker({ value, onChange }: { value: RecurValue | null; onChange: (v: RecurValue | null) => void }) {
+export function RecurPicker({
+  value,
+  onChange,
+  noneLabel,
+}: {
+  value: RecurValue | null
+  onChange: (v: RecurValue | null) => void
+  /** What « no rule » MEANS to the caller. An event with no rule happens once (« Jamais »,
+   *  the default); a habit with no rule comes back every day — there, « Jamais » under
+   *  « Selon un horaire » contradicted the line above it. */
+  noneLabel?: string
+}) {
   const t = useT()
   const freq = value?.freq ?? 'none'
 
@@ -41,7 +52,7 @@ export function RecurPicker({ value, onChange }: { value: RecurValue | null; onC
       <label className="recur__row mono">
         <span>{t.recur.repeat}</span>
         <select className="input" value={freq} onChange={(e) => setFreq(e.target.value)}>
-          <option value="none">{t.recur.none}</option>
+          <option value="none">{noneLabel ?? t.recur.none}</option>
           <option value="daily">{t.recur.daily}</option>
           <option value="weekly">{t.recur.weekly}</option>
           <option value="monthly">{t.recur.monthly}</option>

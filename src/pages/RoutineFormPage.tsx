@@ -80,6 +80,9 @@ export function RoutineFormPage() {
                 qc.invalidateQueries({ queryKey: ROUTINES_KEY })
                 close()
               }}
+              // « Annuler » beside « Enregistrer », like every sibling form page — the
+              // routine editor was the one with only a ✕ to back out (UX walk, 2026-10-01).
+              onCancel={close}
               onDelete={onDelete || undefined}
               // « Partager » — operator only (minting the link is a server write).
               onShare={routine && signedIn ? () => setSharing(true) : undefined}

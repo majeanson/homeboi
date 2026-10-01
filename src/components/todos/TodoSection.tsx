@@ -162,6 +162,11 @@ export function TodoSection({
   const isOverdue = (td: Todo) => td.day != null && td.day < todayLocalDay()
   const overdue = scope === null ? loose.filter(isOverdue) : []
   const current = scope === null ? loose.filter((td) => !isOverdue(td)) : loose
+  // ONE folded checklist and nothing else: its fold already carries the open count, so
+  // the heading's would say the same number twice (« Listes de départ 2 » over
+  // « Avant de partir 2 » — UX walk, 2026-10-01). The heading keeps it whenever it
+  // sums more than one group.
+  const loneFold = foldSections && checklistGroups.length === 1 && current.length === 0 && overdue.length === 0
   const showScope =
     scope === null && current.some((td) => td.day == null) && current.some((td) => td.day != null)
 
@@ -385,7 +390,7 @@ export function TodoSection({
         )}
         <b>{title}</b>
         <span className="ln" />
-        {openCount ? <span className="ct">{openCount}</span> : null}
+        {openCount && !loneFold ? <span className="ct">{openCount}</span> : null}
         {action ? <span className="sec-label__act">{action}</span> : null}
       </div>
 

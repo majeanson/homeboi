@@ -1754,6 +1754,7 @@ textarea.input {
 .cercle-fam > .cf__rels-empty,
 .reminders > .reminders__sub,
 fieldset > .operator__seg-hint,
+.operator__seg > .operator__hint,
 .todo-tpl-edit > :is(.todo-tpl__items, .todo-tpl__adders),
 :is(.day-plan__sections, .departure__body) > .todo-sec,
 .habitudes__body > .defi-block,

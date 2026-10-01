@@ -104,9 +104,13 @@ export function ThisWeekTogetherSection({ help }: { help?: HelpMode }) {
       <p className="operator__hint mono">{o18n.thisWeekHint}</p>
 
       {/* « À régler » — the few cross-domain frictions to resolve first, each a one-tap
-          fix link. Calm: empties to « Tout est sous contrôle », never a backlog. */}
-      <div className="tweek__regler">
-        <h3 className="tweek__col-h"><Icon name="warning-bold" size={14} /> {t.aRegler.title}</h3>
+          fix link. Calm: empties to « Tout est sous contrôle », never a backlog — and an
+          empty one drops the marigold ⚠ frame (--clear): an alarm around good news read
+          as « something is wrong » (UX walk, 2026-10-01). */}
+      <div className={'tweek__regler' + (frictions.length === 0 ? ' tweek__regler--clear' : '')}>
+        <h3 className="tweek__col-h">
+          <Icon name={frictions.length === 0 ? 'check-bold' : 'warning-bold'} size={14} /> {t.aRegler.title}
+        </h3>
         {frictions.length === 0 ? (
           <EmptyState tone="calm">{t.aRegler.empty}</EmptyState>
         ) : (

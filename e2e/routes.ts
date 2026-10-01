@@ -24,7 +24,7 @@ export const ROUTES = [
   '/settings?tab=liste',
   '/settings?tab=notes',
   '/settings?tab=maison',
-  '/settings?tab=systeme',
+  '/settings?tab=settings',
   // Scenes.
   '/liste/circulaires',
   '/liste/cashier',

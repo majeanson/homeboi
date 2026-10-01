@@ -76,7 +76,7 @@ const SURFACES = [
   // Réglages' themed tabs each carry their own sub-pill row; the top-level route only
   // ever paints ONE of them, and the active pill was failing on the others.
   { name: 'settings-kitchen', route: '/settings?tab=kitchen' },
-  { name: 'settings-systeme', route: '/settings?tab=systeme' },
+  { name: 'settings-systeme', route: '/settings?tab=settings' },
 ] as const
 
 // THE EMPTY HOUSEHOLD IS A REAL STATE, AND IT WAS THE BLIND SPOT.

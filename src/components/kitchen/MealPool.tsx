@@ -18,6 +18,7 @@ import { useInlineEdit } from '../../lib/useInlineEdit'
 import { RowActions } from '../RowActions'
 import { SectionAdd, useSectionAdd } from '../SectionAdd'
 import { ModeToggle } from '../ModeToggle'
+import { Cluster } from '../Layout'
 import { useMealPoolAdvanced, setMealPoolAdvanced } from '../../lib/surfaceMode'
 import { CATS } from '../../lib/cats'
 import { useSingleOpen } from '../Disclosure'
@@ -166,11 +167,48 @@ export function MealPool<T extends { id: string; title: string }, O>({
   }
 
   const visible = removal.visible(items)
+  // Not gated on the guest: a device-local presentation pref renders for everyone
+  // (ModeToggle's own rule) — the rows' RowActions hide themselves.
+  const modeToggle = (
+    <ModeToggle
+      advanced={advanced}
+      onToggle={() => setMealPoolAdvanced(!advanced)}
+      toSimple={t.mode.toSimple}
+      toAdvanced={t.mode.toAdvanced}
+      tint={CATS.meal.deep}
+    />
+  )
+  const combo = (
+    // Type a free-text candidate OR pick an existing entity (a recipe / a recent
+    // meal) from the same box — the dropdown filters as you type.
+    <EntityCombobox
+      value={text}
+      onChange={setText}
+      options={options}
+      onPick={(o) => add(o.label, o)}
+      onSubmit={(v) => add(v, null)}
+      submitIcon="plus-bold"
+      placeholder={options.length > 0 ? t.combo.typeOrPick : labels.addPlaceholder}
+      ariaLabel={labels.addAria}
+      noMatchLabel={noMatchLabel}
+      frequentsKey="meal"
+      busy={busy}
+      className="kitchen__ideas-combo"
+      // The ＋ that opened it lands the caret too — an expand that costs a second
+      // tap is worse than the always-open box it replaced (useSectionAdd’s note).
+      autoFocus={composer.autoFocus}
+    />
+  )
+  // In the drawer (no heading) the ⚙ rides the FIELD's row: on its own line it cost a
+  // whole row above the one thing the page is for (UX walk, 2026-10-01). A read-only
+  // guest has no field, so there it keeps the quiet right-aligned line below.
+  const toolsBesideField = hideHeading && !ro
   return (
     <section className="kitchen__ideas">
       {/* The ⚙ rides the heading row; a heading-less pool (the drawer, whose chip
           already names the concept) still gets it, right-aligned on its own quiet
           line — it is the only door back to the ✏️/🗑, so it can't be host-optional. */}
+      {!toolsBesideField && (
       <div className={'kitchen__head' + (hideHeading ? ' kitchen__head--end' : '')}>
         {!hideHeading && <HelpTitle help={help} k={helpKey}>{labels.heading}</HelpTitle>}
         <span className="kitchen__head-actions">
@@ -184,39 +222,19 @@ export function MealPool<T extends { id: string; title: string }, O>({
               deliberately opened to write in, where the field IS the page and folding
               it would be the opposite mistake. Lean to scan, generous once inside. */}
           {!hideHeading && <SectionAdd open={composer.open} onToggle={composer.toggle} label={labels.addAria} />}
-          {/* Not gated on the guest: a device-local presentation pref renders for
-              everyone (ModeToggle's own rule) — the rows' RowActions hide themselves. */}
-          <ModeToggle
-            advanced={advanced}
-            onToggle={() => setMealPoolAdvanced(!advanced)}
-            toSimple={t.mode.toSimple}
-            toAdvanced={t.mode.toAdvanced}
-            tint={CATS.meal.deep}
-          />
+          {modeToggle}
         </span>
       </div>
+      )}
       {help?.bubbleFor(helpKey)}
 
-      {!ro && (hideHeading || composer.open) && (
-        // Type a free-text candidate OR pick an existing entity (a recipe / a recent
-        // meal) from the same box — the dropdown filters as you type.
-        <EntityCombobox
-          value={text}
-          onChange={setText}
-          options={options}
-          onPick={(o) => add(o.label, o)}
-          onSubmit={(v) => add(v, null)}
-          submitIcon="plus-bold"
-          placeholder={options.length > 0 ? t.combo.typeOrPick : labels.addPlaceholder}
-          ariaLabel={labels.addAria}
-          noMatchLabel={noMatchLabel}
-          frequentsKey="meal"
-          busy={busy}
-          className="kitchen__ideas-combo"
-          // The ＋ that opened it lands the caret too — an expand that costs a second
-          // tap is worse than the always-open box it replaced (useSectionAdd’s note).
-          autoFocus={composer.autoFocus}
-        />
+      {toolsBesideField ? (
+        <Cluster className="kitchen__ideas-composer">
+          {combo}
+          {modeToggle}
+        </Cluster>
+      ) : (
+        !ro && composer.open && combo
       )}
 
       {visible.length === 0 ? (

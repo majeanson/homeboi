@@ -399,9 +399,21 @@
 .tweek__regler > .tweek__col-h {
   margin: 0 0 0.5rem;
   color: var(--marigold-deep);
+  /* The glyph sits ON the title's line (a block SVG put it on a line of its own). */
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 .tweek__regler .a-regler__row {
   padding: 0.34rem 0;
+}
+/* Nothing to sort: a quiet frame, not the warning one. */
+.tweek__regler--clear {
+  background: transparent;
+  border-color: var(--line);
+}
+.tweek__regler--clear > .tweek__col-h {
+  color: var(--ink-soft);
 }
 /* The day's meals as a centred row of colour-coded slot chips (.meal-chip, shared
    — see misc.css), with a quiet label. Wraps on a narrow phone. */

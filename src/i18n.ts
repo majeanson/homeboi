@@ -24,7 +24,7 @@ export const FR = {
   search: {
     title: 'Chercher partout',
     open: 'Chercher',
-    placeholder: 'Recette, personne, animal, rendez-vous, article…',
+    placeholder: 'Recette, personne, rendez-vous…',
     hint: 'Cherche dans tes recettes, ton cercle, tes animaux, tes rendez-vous, ta liste, tes routines et l’auto — et le guide d’aide — d’un seul endroit.',
     noResults: 'Rien trouvé. Essaie un autre mot — une personne, une recette, un commerce…',
     searching: 'Recherche…',
@@ -166,6 +166,9 @@ export const FR = {
     monthDone: (n: number) => (n === 1 ? '1 jour ce mois-ci' : `${n} jours ce mois-ci`),
     // le formulaire
     add: 'Nouvelle habitude',
+    // Le bouton qui crée — un verbe, comme « Ajouter un rendez-vous » ; « Nouvelle
+    // habitude » reste le TITRE de la scène.
+    create: 'Ajouter l’habitude',
     edit: 'Modifier l’habitude',
     editOne: (title: string) => `Modifier « ${title} »`,
     titleLabel: 'L’habitude',
@@ -206,7 +209,10 @@ export const FR = {
     },
     scheduleHint: 'Choisis les jours où elle revient.',
     weekHint: 'Aucun jour fixe : elle attend que la semaine soit remplie.',
-    everyDayHint: 'Sans horaire, l’habitude revient chaque jour.',
+    // « Selon un horaire » est choisi, alors l’indice ne peut pas commencer par « Sans
+    // horaire » ; et le sélecteur dit « Chaque jour » (everyDay), pas « Jamais ».
+    everyDayHint: 'Elle revient chaque jour — ou choisis d’autres jours ci-dessous.',
+    everyDay: 'Chaque jour',
     weekTimesLabel: 'Combien de fois',
     weekTimesUnit: 'fois par semaine',
     // Les deux rythmes intra-journée : l'habitude revient chaque jour, et c'est
@@ -978,7 +984,7 @@ export const FR = {
     deleteTrip: 'Supprimer le voyage',
     deleteTripConfirm: 'Supprimer ce voyage et tout son contenu (infos, itinéraire, bagages, documents) ? On ne pourra pas l’annuler.',
     tripName: 'Nom du voyage',
-    tripNamePlaceholder: 'Vacances en Floride, fin de semaine à Québec…',
+    tripNamePlaceholder: 'ex. Floride en mars',
     destination: 'Destination',
     destinationPlaceholder: 'Québec, Orlando…',
     startDate: 'Départ',
