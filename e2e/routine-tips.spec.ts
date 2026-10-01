@@ -166,3 +166,37 @@ test('editing a routine keeps every step’s photo and voice clip it did not tou
   expect(body.cards[0].photoKey).toBe('rcp_step1photo')
   expect(body.cards[1].clipKey).toBe('rn_step2clip')
 })
+
+test('tapping a step’s picture offers a photo above the emojis, and it saves', async ({ page }) => {
+  // Marc, 2026-10-01: the photo lived only under the « Minuterie, truc, voix,
+  // photo… » fold; tapping the picture is where a parent looks for it.
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await mockApi(page)
+  await page.route('**/api/routine-card-photo', (route) =>
+    route.request().method() === 'POST' ? route.fulfill({ json: { key: 'rcp_newphoto' } }) : route.fallback(),
+  )
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+  await page.goto('/routine/r1')
+  const form = page.locator('.operator__routine-form')
+  await expect(form).toBeVisible()
+
+  await form.locator('.deck__emoji').first().click()
+  const picker = page.locator('.deck__palette-photo')
+  await expect(picker.getByRole('button', { name: 'Ajouter une photo' })).toBeVisible()
+  await picker.locator('input[type="file"]').setInputFiles({ name: 'brosse.png', mimeType: 'image/png', buffer: PNG_1x1 })
+  // A new photo closes the picker and becomes the step's picture in the deck.
+  await expect(picker).toHaveCount(0)
+  await expect(form.locator('.deck__emoji').first().locator('img')).toBeVisible()
+
+  const [req] = await Promise.all([
+    page.waitForRequest(isApi('PATCH', 'routines'), { timeout: 20_000 }),
+    form.getByRole('button', { name: 'Enregistrer', exact: true }).click(),
+  ])
+  const body = JSON.parse(req.postData() || '{}') as { cards: { photoKey?: string }[] }
+  expect(body.cards[0].photoKey).toBe('rcp_newphoto')
+})
+
+const PNG_1x1 = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+  'base64',
+)

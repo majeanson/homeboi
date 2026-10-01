@@ -256,6 +256,24 @@ export function CardDeckEditor({
           cramped under the card row. `paletteFor` is the card index (0 is valid, so
           guard on !== null). */}
       <Modal open={paletteFor !== null} onClose={() => setPaletteFor(null)} title={o18n.emojiPick}>
+        {/* The step's picture is ONE choice — a photo or an emoji — so the photo
+            door sits here too, above the emojis: tapping the picture is where a
+            parent looks for it (Marc, 2026-10-01), not under the aids fold. Same
+            PhotoControl as the fold; a new photo closes the picker, a cleared one
+            leaves it open on the emojis, which become the picture again. */}
+        {paletteFor !== null && media && !photoOff && (
+          <div className="deck__palette-photo">
+            <PhotoControl
+              photoKey={cards[paletteFor]?.photoKey ?? ''}
+              onUploaded={(key) => {
+                setPhoto(paletteFor, key)
+                setPaletteFor(null)
+              }}
+              onClear={() => setPhoto(paletteFor, '')}
+              onPhotoOff={() => setPhotoOff(true)}
+            />
+          </div>
+        )}
         {paletteFor !== null && (
           <EmojiPicker
             value={cards[paletteFor]?.icon}

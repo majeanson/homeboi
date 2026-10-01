@@ -747,6 +747,11 @@
 .deck__media .deck__timer {
   display: contents;
 }
+/* The same photo control at the head of the emoji picker (tap a step's picture):
+   no step-row indent there, and a little air before the emoji search. */
+.deck__palette-photo .deck__photo {
+  margin: 0 0 12px;
+}
 
 /* « Le truc » — the trick the companion says for this step. A full-width field, so it
    gets its OWN row under the control pills (sharing the same 56px indent) rather than
