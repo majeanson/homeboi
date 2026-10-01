@@ -1729,3 +1729,34 @@ textarea.input {
     flex: 0 1 auto;
   }
 }
+
+/* ==== The gap owns the spacing (2026-10-01) ==================================
+   A shared component carries an outer margin for the day it stands alone in the
+   page flow: SubTabs' row and MemberSwitcher 1.25rem below, a Disclosure 0.5rem
+   above, a <p> the browser's 1em on both sides. Dropped into a flex container that
+   already spaces its children with `gap`, that margin does not replace the gap — it
+   ADDS to it (flex margins never collapse). In a column that is the space counted
+   twice: Maison put 36px under its section pills where the page breathes 16px, and
+   « Pour qui ? » floated 28px from the field it belongs to with 8px above it. In a
+   row, it is part of the box `align-items: center` centres, so the neighbours sit
+   off the line (the Réglages « ? » sat 10px low — operator.css, the same fix).
+
+   So inside these gapped containers the gap alone spaces them. Found by measuring
+   every route at 390 and 1440px; e2e/spacing.spec.ts keeps it that way. What is
+   NOT here is deliberate rhythm, kept and listed in that spec's allow-list: a
+   heading or label sitting closer to what follows than to what precedes it, and a
+   form's submit row standing apart from its fields. */
+:is(.today-feed, .habitudes__body) > :is(.subtabs-row, .mswitch, .btn),
+:is(.operator__inline-form, .picker-chips) > .mswitch,
+:is(.cf, .recipe-modal__body, .habitudes__body) > .disclosure,
+.cf > :is(.cf__rels, .lc),
+.cf__field > .cercle-fam__newrow,
+.cercle-fam > .cf__rels-empty,
+.reminders > .reminders__sub,
+fieldset > .operator__seg-hint,
+.todo-tpl-edit > :is(.todo-tpl__items, .todo-tpl__adders),
+:is(.day-plan__sections, .departure__body) > .todo-sec,
+.habitudes__body > .defi-block,
+.recipe-modal__body > .recipe-scale-row {
+  margin-block: 0;
+}

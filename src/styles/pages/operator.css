@@ -145,6 +145,16 @@
   font-size: 1rem;
   margin: 0 0 0.75rem;
 }
+/* A section head with an action beside its title is a centred ROW: the h2's bottom
+   margin above was part of what `align-items: center` centred, lifting the title 6px
+   above its button (2026-10-01, the « gap owns the spacing » sweep in core.css). The
+   space under the head moves onto the head. */
+.operator__section .operator__section-head {
+  margin-bottom: 0.75rem;
+}
+.operator__section .operator__section-head > h2 {
+  margin: 0;
+}
 /* A single labelled settings field (the household-name rename). */
 .operator__field {
   display: flex;

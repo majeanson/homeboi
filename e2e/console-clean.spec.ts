@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
-import { mockApi, seedState, MMID } from './mocks'
+import { mockApi, seedState } from './mocks'
+import { ROUTES } from './routes'
 
 // EVERY ROUTE OPENS WITH A SILENT CONSOLE — a ratchet at zero (2026-09-30).
 //
@@ -28,72 +29,7 @@ import { mockApi, seedState, MMID } from './mocks'
 //     so the listener sees it);
 //   • a route that BOUNCES sweeps some other page — the contrast spec measured /kitchen
 //     as « day-plan » for weeks, because /kitchen/day/ takes a unix day, not an ISO date.
-const ROUTES = [
-  // Hub tabs and their sections.
-  '/board',
-  '/kitchen',
-  '/kitchen?tab=pantry',
-  '/kitchen?tab=recipes',
-  '/kitchen?tab=history',
-  '/liste',
-  '/notes',
-  '/notes?section=virements',
-  '/maison',
-  '/maison?section=family',
-  '/maison?section=social',
-  '/maison?section=business',
-  '/maison?section=carnets',
-  '/settings',
-  '/settings?tab=board',
-  '/settings?tab=kitchen',
-  '/settings?tab=liste',
-  '/settings?tab=notes',
-  '/settings?tab=maison',
-  '/settings?tab=systeme',
-  // Scenes.
-  '/liste/circulaires',
-  '/liste/cashier',
-  '/liste/quick',
-  '/liste/deals/l1',
-  '/liste/item/l1',
-  `/kitchen/day/${MMID}`,
-  '/kitchen/idees',
-  '/kitchen/book',
-  '/kitchen/recipe/rc1',
-  '/kitchen/recipe/rc1/cook',
-  '/cercle/person/c1',
-  '/cercle/monde',
-  '/cercle/import',
-  '/jouer',
-  '/routine/r1/run',
-  '/drawings',
-  '/search',
-  '/board/departure',
-  '/board/habitudes',
-  '/voiture',
-  '/courrier',
-  '/family',
-  '/welcome',
-  '/handoff',
-  // Form scenes — where a primitive that owns its own <form> (EditField) meets a host
-  // that owns one too. EntityCombobox is a <div> on purpose; EditField has `as="div"`.
-  '/routine/r1',
-  '/routine/new',
-  '/kitchen/recipe/new',
-  '/kitchen/recipe/rc1/edit',
-  '/event/new',
-  '/chore/new',
-  '/home-project/new',
-  '/habitude/new',
-  '/habitude/hb1/edit',
-  '/virement/new',
-  '/virement/plan/new',
-  '/cercle/person/new',
-  '/cercle/pet/new',
-  '/cercle/family/new',
-  '/voyage/new',
-  '/liste-modele/tpl1',
-]
+// The route list lives in e2e/routes.ts, shared with spacing.spec.ts.
 
 // The lenses render different components off the same routes (MemberSwitcher on the
 // wall, the picture-card views under toddler, the EN dictionary), so each paints its
