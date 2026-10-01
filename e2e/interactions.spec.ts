@@ -677,6 +677,26 @@ test.describe('add sheet', () => {
     expect([...new Set(Object.values(ys))], `tab row moved: ${JSON.stringify(ys)}`).toHaveLength(1)
   })
 
+  // Marc, 2026-10-01: in the Idées scene, picking a day for an idea changed nothing
+  // on screen (the week grid is not there) and offered no way back — usePlanIdea was
+  // a bare POST. It is a create-with-undo now: a toast names the dish and the day,
+  // and « Annuler » DELETEs exactly the meal just planned.
+  test('planning an idea from the Idées scene says so, and « Annuler » takes it back', async ({ page }) => {
+    await APP('/kitchen/idees')(page)
+    await page.route('**/api/meals', (r) =>
+      r.request().method() === 'POST'
+        ? r.fulfill({ contentType: 'application/json', body: '{"ok":true,"id":"planned1"}' })
+        : r.fallback(),
+    )
+    const del = page.waitForRequest((r) => isApi('DELETE', 'meals')(r) && r.postData()?.includes('planned1') === true)
+    await page.locator('.ideas-drawer .kitchen__idea-name', { hasText: 'Soupe poulet-nouilles' }).click()
+    await page.locator('.ideas-drawer .meal-plan-pick__days .chip').first().click()
+    const toast = page.locator('.undo-toast')
+    await expect(toast).toContainText('« Soupe poulet-nouilles » planifié —')
+    await toast.getByRole('button', { name: 'Annuler' }).click()
+    await del
+  })
+
   // C-14 — a child's suggestion (meal_ideas `date` + `suggested_by`) surfaces a
   // small chip on the matching empty day tile; tapping it deep-links to the drawer
   // scene on 👧 « Proposé par » (?tab=kid) — never auto-plans.

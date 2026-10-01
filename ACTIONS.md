@@ -130,7 +130,7 @@ at all (❌).
 | Entity · action | Row | Gesture | Peek | Add path | Réglages / link | Undo | Non-touch |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Day plan · glance / plan empty / full edit | ✅ tap summary; « À planifier » → inline field; pencil → `/kitchen/day/:date?vue=repas` (the scene's « Repas » face; day doors land the default « Journée » face) | ✅ drag day→day (`dayDnd`) | ✅ `buildDay` (two window doors since 2026-09-02: « Voir la journée » + primary « Planifier un repas » — **plus, per meal that resolves a recipe, 📖 recette · 🍲 Cuisiner**⁹) | ＋ `meal` (`?vue=repas`) | kitchen▸meals (slots/hero/hours) | — | ✅ |
-| Idées / Restants · add / plan / rename / delete | ✅ `EntityCombobox`; chip tap → `MealPlanPicker`; ✏️/🗑 behind ⚙¹⁰ | — | — | ＋ `leftovers` | — | add: compensating (`useCreateWithUndo`, 2026-09-24) · delete: deferred | ✅ (⚙) |
+| Idées / Restants · add / plan / rename / delete | ✅ `EntityCombobox`; chip tap → `MealPlanPicker`; ✏️/🗑 behind ⚙¹⁰ | — | — | ＋ `leftovers` | — | add: compensating (`useCreateWithUndo`, 2026-09-24) · plan: compensating, the toast names the day (`usePlanIdea`, 2026-10-01) · delete: deferred | ✅ (⚙) |
 | Meal row (day editor) · reorder / leftover / delete | ✅ ✏️ + row ⋯ (`MealRows.tsx:160`) | ➖ no drag (⋯ Monter/Descendre is the door) | — | — | — | ⋯ confirm-free | ✅ |
 | Pantry low · to list / delete / rename | ✅ check = to-list; ✏️ + 🗑 behind ⚙¹⁰ | — | — | ✅ `SectionAdd` ×2 + ＋ `pantry` | — | add: compensating · check/delete: deferred | ✅ (⚙) |
 | À utiliser (use-soon) · clear / rename / add | ✅ check; ✏️ behind ⚙¹⁰ | — | — | 🔶 `SectionAdd` only, no ＋ tile¹¹ | — | deferred | ✅ (⚙) |

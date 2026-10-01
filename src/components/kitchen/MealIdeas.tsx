@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
-import { useT } from '../../i18n'
-import { useWrite } from '../../lib/write'
+import { useT, useLang } from '../../i18n'
+import { useCreateWithUndo } from '../../lib/undoCreate'
+import { formatDayLong } from '../../lib/format'
 import { BOARD_KEY, MONTH_KEY } from '../../lib/queryKeys'
 import { type Recipe } from '../../lib/recipes'
 import { type MealSlot } from '../../lib/mealSlots'
@@ -11,8 +12,9 @@ import { recipeOptions } from './comboOptions'
 import { type MealIdea, MEAL_IDEAS_KEY, MEALS_KEY, MEAL_HISTORY_KEY } from './types'
 
 // « Idées de repas » — the kept, reusable pool: free text ("tacos") or a saved-recipe
-// shortcut. Planning an idea onto a day LEAVES it in the pool, so no compensating
-// undo (unlike « Restants », which is consumed).
+// shortcut. Planning an idea onto a day LEAVES it in the pool — nothing is consumed,
+// so the pool needs no restore (unlike « Restants »). The PLAN itself is undoable,
+// though: see usePlanIdea.
 //
 // It renders in TWO places on purpose, from this ONE configuration of <MealPool>:
 //   • inline under the kitchen week grid (Repas tab) — the pool you add to daily,
@@ -23,15 +25,26 @@ import { type MealIdea, MEAL_IDEAS_KEY, MEALS_KEY, MEAL_HISTORY_KEY } from './ty
 // Both callers share this file so the add body, the recipe link, and the copy can't
 // drift between the grid and the drawer.
 
-/** Plan a pool idea onto a day+slot. Reusable: the row stays in the pool. */
+/**
+ * Plan a pool idea onto a day+slot. Reusable: the row stays in the pool.
+ *
+ * THE planning write for every pool source — Idées, ⭐ Favoris, 🧊, 🤖 IA, 👧 and
+ * Historique all go through here. It used to be a bare POST: in the Idées scene the
+ * week grid is not on screen, so picking a day changed nothing visible and there was
+ * no way back (Marc, 2026-10-01: « no popup says anything … no way to revert »).
+ * Now it is a create-with-undo whose toast names the dish AND the day.
+ */
 export function usePlanIdea() {
-  const write = useWrite()
+  const createWithUndo = useCreateWithUndo()
+  const t = useT()
+  const { lang } = useLang()
   return (idea: Pick<MealIdea, 'title' | 'recipe_id'>, date: number, slot: MealSlot) => {
-    void write('meals', {
-      method: 'POST',
+    void createWithUndo({
+      endpoint: 'meals',
       body: { date, slot, title: idea.title, recipeId: idea.recipe_id ?? null, staples: [] },
       affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY, MONTH_KEY],
-    }).catch(() => {})
+      message: t.undo.mealPlanned(idea.title, formatDayLong(date, lang)),
+    })
   }
 }
 

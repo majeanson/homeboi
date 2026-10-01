@@ -14,7 +14,7 @@ import { useLoves } from '../../lib/loves'
 import { type Member } from '../../lib/members'
 import { type MealSlot } from '../../lib/mealSlots'
 import { useMealPrefs } from '../../lib/mealPrefs'
-import { MEMBERS_KEY, BOARD_KEY, MONTH_KEY } from '../../lib/queryKeys'
+import { MEMBERS_KEY } from '../../lib/queryKeys'
 import { type AiWake } from './useAiWake'
 import { useMealSuggest } from './useMealSuggest'
 import { type Recipe } from '../../lib/recipes'
@@ -25,8 +25,6 @@ import {
   type MealHistorySummary,
   type PastDish,
   MEAL_IDEAS_KEY,
-  MEALS_KEY,
-  MEAL_HISTORY_KEY,
   MEAL_HISTORY_SUMMARY_KEY,
 } from './types'
 import { MealIdeas, usePlanIdea } from './MealIdeas'
@@ -128,22 +126,15 @@ export function IdeasDrawer({
   const planIdea = usePlanIdea()
 
   // A recipe row (⭐ Favoris / the 🧊 use-soon shortlist) plans REUSABLY, like an
-  // idea — nothing is consumed, so no undo bookkeeping is needed.
+  // idea — nothing is consumed — and through the SAME helper, so it gets the same
+  // « planifié — <jour> » toast and its « Annuler ».
   function planRecipe(r: Recipe, date: number, slot: MealSlot) {
-    void write('meals', {
-      method: 'POST',
-      body: { date, slot, title: r.title, recipeId: r.id, staples: [] },
-      affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY, MONTH_KEY],
-    }).catch(() => {})
+    planIdea({ title: r.title, recipe_id: r.id }, date, slot)
   }
 
   // A bare AI-suggested title (🤖, no recipe link yet) plans the same way.
   function planAiIdea(title: string, date: number, slot: MealSlot) {
-    void write('meals', {
-      method: 'POST',
-      body: { date, slot, title, recipeId: null, staples: [] },
-      affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY, MONTH_KEY],
-    }).catch(() => {})
+    planIdea({ title, recipe_id: null }, date, slot)
   }
 
   // Keep a free-text AI title into the pool (mirrors the old suggestion card's

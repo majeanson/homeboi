@@ -2537,6 +2537,7 @@ export const EN: typeof FR = {
     postponed: (s: string) => `"${s}" postponed`,
     todoDone: (s: string) => `"${s}" done`,
     mealRemoved: (s: string) => `"${s}" removed from the menu`,
+    mealPlanned: (s: string, day: string) => `"${s}" planned — ${day}`,
     slotCleared: 'Meals removed',
     dayCleared: 'Day cleared',
     dayNoteCleared: 'Day note removed',
