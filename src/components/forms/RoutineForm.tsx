@@ -77,9 +77,12 @@ export function RoutineForm({
   const [memberIds, setMemberIds] = useState<string[]>([])
   const [name, setName] = useState(value?.name ?? seed?.name ?? '')
   const [cards, setCards] = useState<DeckCard[]>(
-    // Field-by-field, so every per-card aid stored inline in cards_json (the timer, the
-    // « truc ») survives an edit. A field left out here is a field the next save drops.
-    value?.cards?.map((c) => ({ icon: c.icon, label: c.label, seconds: c.seconds, tip: c.tip })) ??
+    // The WHOLE card, not a field list. This used to be field-by-field, and every
+    // field it forgot was silently dropped by the next save — the timer, then the
+    // « truc », then the photo and the voice clip: the form opened without them, the
+    // save sent a deck without them, and the server freed their R2 blobs as
+    // « removed » (routines.ts PATCH). Adding a photo to step 2 erased step 1's.
+    value?.cards?.map((c) => ({ ...c })) ??
       seed?.cards ??
       [],
   )

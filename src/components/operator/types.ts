@@ -59,6 +59,10 @@ interface RoutineCard {
   // is a field the next save silently drops.
   seconds?: number
   tip?: string
+  // The media ride ON the card (Wave D) — the edit form prefills them, so an edit
+  // that does not touch a step keeps its photo and its clip.
+  clipKey?: string
+  photoKey?: string
 }
 export interface Routine {
   id: string

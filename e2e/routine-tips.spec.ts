@@ -124,3 +124,45 @@ test('a parent’s own « truc » reaches the saved POST body', async ({ page })
   const body = JSON.parse(req.postData() || '{}') as { cards: { label: string; tip?: string }[] }
   expect(body.cards[0]).toMatchObject({ label: 'Manteau', tip: 'regarde derrière la porte' })
 })
+
+test('editing a routine keeps every step’s photo and voice clip it did not touch', async ({ page }) => {
+  // Marc, 2026-10-01: « the moment I saved a photo the other one disappeared ». The
+  // edit form prefilled each card field-by-field and left photoKey/clipKey out, so a
+  // save sent a deck without them — and the server freed their blobs for good.
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await mockApi(page)
+  // The edit scene reads GET /api/routines; serve r1 with media on two steps.
+  await page.route('**/api/routines', (route) => {
+    if (route.request().method() !== 'GET') return route.fallback()
+    return route.fulfill({
+      json: {
+        routines: [
+          {
+            id: 'r1',
+            name: 'Matin',
+            memberName: 'Léa',
+            timeOfDay: 'morning',
+            cards: [
+              { icon: '👕', label: 'Habille-toi', photoKey: 'rcp_step1photo' },
+              { icon: '🥞', label: 'Déjeuner', clipKey: 'rn_step2clip' },
+              { icon: '🪥', label: 'Brosse tes dents' },
+            ],
+            doneIdx: [],
+          },
+        ],
+      },
+    })
+  })
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+  await page.goto('/routine/r1')
+  const form = page.locator('.operator__routine-form')
+  await expect(form).toBeVisible()
+
+  const [req] = await Promise.all([
+    page.waitForRequest(isApi('PATCH', 'routines'), { timeout: 20_000 }),
+    form.getByRole('button', { name: 'Enregistrer', exact: true }).click(),
+  ])
+  const body = JSON.parse(req.postData() || '{}') as { cards: { photoKey?: string; clipKey?: string }[] }
+  expect(body.cards[0].photoKey).toBe('rcp_step1photo')
+  expect(body.cards[1].clipKey).toBe('rn_step2clip')
+})
