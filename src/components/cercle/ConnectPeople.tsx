@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLang, useT } from '../../i18n'
-import { useWrite } from '../../lib/write'
+import { useWrite, writeFailed } from '../../lib/write'
 import { CERCLE_KEY } from '../../lib/queryKeys'
 import {
   type Person,
@@ -84,7 +84,7 @@ export function ConnectPeople({
         method: 'POST',
         body: { aId: A.id, aKind: A.kind, bId: B.id, bKind: B.kind, type },
         affectedKeys: [CERCLE_KEY],
-      }).catch(() => {})
+      }).catch(writeFailed)
       setAText('')
       setAKey(null)
       setBText('')

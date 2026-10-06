@@ -5,7 +5,7 @@ import { useT } from '../../i18n'
 import { useOperatorT } from '../../i18n.operator'
 import { settingsHref } from '../../lib/settingsNav'
 import { api } from '../../lib/api'
-import { useWrite } from '../../lib/write'
+import { useWrite, writeFailed } from '../../lib/write'
 import { useConfirm } from '../../lib/confirm'
 import { useOpenPersonSheet } from '../../lib/personSheet'
 import { HOUSEHOLD_KEY, CERCLE_KEY, MEMBERS_KEY, BOARD_KEY, ROUTINES_KEY } from '../../lib/queryKeys'
@@ -93,7 +93,7 @@ export function MembersSection({ members, onChange, help }: { members: Member[];
       method: 'DELETE',
       body: { id: m.id },
       affectedKeys: [MEMBERS_KEY, BOARD_KEY, CERCLE_KEY],
-    }).catch(() => {})
+    }).catch(writeFailed)
     onChange()
   }
 
@@ -195,7 +195,7 @@ function HouseholdPets() {
 
   async function remove(pet: Pet) {
     if (!(await confirm({ title: p.delete, message: pet.name, tone: 'danger' }))) return
-    await write('pets', { method: 'DELETE', body: { id: pet.id }, affectedKeys: [CERCLE_KEY] }).catch(() => {})
+    await write('pets', { method: 'DELETE', body: { id: pet.id }, affectedKeys: [CERCLE_KEY] }).catch(writeFailed)
   }
 
   return (
@@ -260,7 +260,7 @@ function HouseholdTzField() {
 
   async function save(tz: string) {
     if (tz === current) return
-    await write('household', { method: 'PATCH', body: { tz }, affectedKeys: [HOUSEHOLD_KEY] }).catch(() => {})
+    await write('household', { method: 'PATCH', body: { tz }, affectedKeys: [HOUSEHOLD_KEY] }).catch(writeFailed)
     qc.invalidateQueries({ queryKey: HOUSEHOLD_KEY })
   }
 
@@ -301,7 +301,7 @@ function HouseholdNameField() {
     const v = name.trim()
     if (!v || v === saved) return
     setSaved(v)
-    await write('household', { method: 'PATCH', body: { name: v }, affectedKeys: [HOUSEHOLD_KEY] }).catch(() => {})
+    await write('household', { method: 'PATCH', body: { name: v }, affectedKeys: [HOUSEHOLD_KEY] }).catch(writeFailed)
     qc.invalidateQueries({ queryKey: HOUSEHOLD_KEY })
   }
 
@@ -361,7 +361,7 @@ function MemberCard({
 
   async function setPhoto(file: File) {
     // The shared media path (resize → POST → {key}, 503 → MediaUnavailableError).
-    await uploadMedia(`members/avatar?id=${member.id}`, file, { resize: AVATAR_MAX }).catch(() => {})
+    await uploadMedia(`members/avatar?id=${member.id}`, file, { resize: AVATAR_MAX }).catch(writeFailed)
     onChange()
   }
   async function clearPhoto() {
@@ -372,7 +372,7 @@ function MemberCard({
       // them; a delete mutates contact_links) — refresh the circle so a rename/
       // recolour/delete doesn't leave a stale name/colour or a dangling edge.
       affectedKeys: [MEMBERS_KEY, BOARD_KEY, CERCLE_KEY],
-    }).catch(() => {})
+    }).catch(writeFailed)
     onChange()
   }
   async function save() {
@@ -387,7 +387,7 @@ function MemberCard({
       // recolour/delete doesn't leave a stale name/colour or a dangling edge.
       // ROUTINES_KEY: the companion shows on the routine player, keyed off the member.
       affectedKeys: [MEMBERS_KEY, BOARD_KEY, CERCLE_KEY, ROUTINES_KEY],
-    }).catch(() => {})
+    }).catch(writeFailed)
     setBusy(false)
     setEditing(false)
     onChange()

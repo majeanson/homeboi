@@ -4,7 +4,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, isUnauthorized } from '../lib/api'
-import { useWrite } from '../lib/write'
+import { useWrite, writeFailed, wrote } from '../lib/write'
 import { useCreateWithUndo } from '../lib/undoCreate'
 import { isGuest } from '../lib/device'
 import { useLang, useT } from '../i18n'
@@ -369,7 +369,7 @@ function DayPlanScene() {
               method: 'POST',
               body: { date: note.date, text: note.text },
               affectedKeys: [DAY_NOTES_KEY, BOARD_KEY],
-            }).catch(() => {}),
+            }).catch(writeFailed),
         })
     } catch {
       /* keep the editor open so the clear can be retried */
@@ -396,7 +396,7 @@ function DayPlanScene() {
 
   // Reorder one meal within its slot (↑/↓). The server renumbers the slot.
   async function moveMeal(id: string, dir: 'up' | 'down') {
-    await write('meals', { method: 'POST', body: { action: 'move', id, dir }, affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY, MONTH_KEY] }).catch(() => {})
+    await write('meals', { method: 'POST', body: { action: 'move', id, dir }, affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY, MONTH_KEY] }).catch(writeFailed)
   }
   // Rename one meal in place (✏️) — keeps its slot/position/recipe link. Optimistic;
   // the board re-reads too (today's supper headline shows there).
@@ -414,7 +414,7 @@ function DayPlanScene() {
         // The meal may live in the past-day query instead of the window (see `isPast`).
         if (isPast) c.setQueryData<MealsData>([...MEALS_KEY, 'past', date], patch)
       },
-    }).catch(() => {})
+    }).catch(writeFailed)
   }
 
   // "Il en reste ?" from a meal row — announce leftovers into the Restants pool,
@@ -433,7 +433,7 @@ function DayPlanScene() {
   // Clearing the whole day empties the editor — leave the scene back to the grid.
   async function clearDay(d: number) {
     const removed = days.filter((m) => m.date === d)
-    await write('meals', { method: 'POST', body: { action: 'clear', date: d }, affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY, MONTH_KEY] }).catch(() => {})
+    if (!(await wrote(write('meals', { method: 'POST', body: { action: 'clear', date: d }, affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY, MONTH_KEY] })))) return
     if (removed.length) recordUndo({ message: t.undo.dayCleared, onUndo: () => restoreMeals(qc, removed) })
     close()
   }

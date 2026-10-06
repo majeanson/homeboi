@@ -1,3 +1,4 @@
+import { writeFailed } from '../../lib/write'
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
@@ -125,7 +126,7 @@ export function AiErrorLogSection({ help }: { help?: HelpMode }) {
   // disabled offline rather than pretending to work. (The other exception is the
   // `ai-test` POST above: a probe, not a write — a queued probe is meaningless.)
   async function clearAll() {
-    await api('ai-errors', { method: 'DELETE' }).catch(() => {})
+    await api('ai-errors', { method: 'DELETE' }).catch(writeFailed)
     qc.invalidateQueries({ queryKey: AI_ERRORS_KEY })
   }
 

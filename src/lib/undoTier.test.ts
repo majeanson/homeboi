@@ -40,7 +40,6 @@ const RAW_TOAST_ALLOWED: Record<string, string> = {
   'components/board/MonthView.tsx': 'moving a meal to another day — an undoable MOVE, nothing is removed',
   'components/kitchen/ReserveSection.tsx': 'the reserve edit + its own removal already rides useDeferredRemoval',
   'components/operator/shopping.tsx': 'store/aisle list edits — compensating undo',
-  'pages/Board.tsx': 'the board’s own composite undos (layout, card moves)',
   'pages/QuickAddPage.tsx': 'the ⚡ add chips — a compensating undo on a CREATE',
 }
 

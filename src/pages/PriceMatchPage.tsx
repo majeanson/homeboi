@@ -6,7 +6,7 @@ import { InlineIcon } from '../components/Icon'
 import { Chip } from '../components/Chip'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, isStatus } from '../lib/api'
-import { useWrite } from '../lib/write'
+import { useWrite, writeFailed } from '../lib/write'
 import { live } from '../lib/query'
 import { useT } from '../i18n'
 import { Loading } from '../components/Fallback'
@@ -46,7 +46,7 @@ export function PriceMatchPage() {
   async function choose(deal: Deal) {
     // Offline-aware (in-store signal is flaky): queue + replay, then reconcile the
     // board cache the list reads from.
-    await write('list', { method: 'PATCH', body: { id: itemId, deal }, affectedKeys: [BOARD_KEY] }).catch(() => {})
+    await write('list', { method: 'PATCH', body: { id: itemId, deal }, affectedKeys: [BOARD_KEY] }).catch(writeFailed)
   }
   // Cache the expensive Flipp lookup per query, per day — flyers change ~weekly,
   // so a day-scoped key serves re-opens instantly and refreshes tomorrow.

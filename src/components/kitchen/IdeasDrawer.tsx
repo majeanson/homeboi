@@ -167,7 +167,7 @@ export function IdeasDrawer({
   const kidVisible = kidRemoval.visible(kidIdeas)
   function dismissKidIdea(idea: MealIdea) {
     kidRemoval.remove([idea.id], t.undo.mealIdeaRemoved(idea.title), () =>
-      write('meal-ideas', { method: 'DELETE', body: { id: idea.id }, affectedKeys: [MEAL_IDEAS_KEY] }).catch(() => {}),
+      write('meal-ideas', { method: 'DELETE', body: { id: idea.id }, affectedKeys: [MEAL_IDEAS_KEY] }),
     )
   }
 

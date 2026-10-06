@@ -7,7 +7,7 @@ import { useT } from '../../i18n'
 import { useOperatorT } from '../../i18n.operator'
 import { type HelpMode } from '../../lib/helpMode'
 import { api } from '../../lib/api'
-import { useWrite } from '../../lib/write'
+import { useWrite, writeFailed } from '../../lib/write'
 import { useConfirm } from '../../lib/confirm'
 import { CERCLE_KEY } from '../../lib/queryKeys'
 import {
@@ -52,7 +52,7 @@ export function CercleGroupsSection({ help }: { help?: HelpMode }) {
 
   async function remove(g: ContactGroup) {
     if (!(await confirm({ message: t.cercle.deleteGroupConfirm, tone: 'danger' }))) return
-    await write('cercle-groups', { method: 'DELETE', body: { id: g.id }, affectedKeys: [CERCLE_KEY] }).catch(() => {})
+    await write('cercle-groups', { method: 'DELETE', body: { id: g.id }, affectedKeys: [CERCLE_KEY] }).catch(writeFailed)
   }
 
   if (isLoading && !data) return <p className="loading mono">{t.common.loading}</p>

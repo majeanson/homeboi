@@ -5,7 +5,7 @@ import { useOperatorT } from '../../i18n.operator'
 import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
 import { api, isStatus } from '../../lib/api'
-import { useWrite } from '../../lib/write'
+import { useWrite, writeFailed } from '../../lib/write'
 import { useConfirm } from '../../lib/confirm'
 import { useUndoToast } from '../../lib/toast'
 import { BOARD_KEY, FLYERS_KEY, GHOSTS_KEY, HISTORY_KEY, HOUSEHOLD_KEY } from '../../lib/queryKeys'
@@ -367,7 +367,7 @@ export function HistorySection({ help }: { help?: HelpMode }) {
       onCommit: async () => {
         // HISTORY_KEY: QuickAddPage's suggestions read the purchase history —
         // this section's own list is local state, but that cache isn't.
-        await write('list', { method: 'DELETE', body: { historyKey: it.key }, affectedKeys: [HISTORY_KEY] }).catch(() => {})
+        await write('list', { method: 'DELETE', body: { historyKey: it.key }, affectedKeys: [HISTORY_KEY] }).catch(writeFailed)
         refresh()
       },
     })
@@ -377,7 +377,7 @@ export function HistorySection({ help }: { help?: HelpMode }) {
     setEditing(null)
     if (!text || text === it.text) return
     mark(it.key, true)
-    await write('list', { method: 'PATCH', body: { historyKey: it.key, renameTo: text }, affectedKeys: [HISTORY_KEY] }).catch(() => {})
+    await write('list', { method: 'PATCH', body: { historyKey: it.key, renameTo: text }, affectedKeys: [HISTORY_KEY] }).catch(writeFailed)
     refresh()
     mark(it.key, false)
   }
@@ -478,7 +478,7 @@ export function GhostSection({ help }: { help?: HelpMode }) {
       method: 'PATCH',
       body: { key: c.key, label: c.label, cadenceDays: c.cadenceDays },
       affectedKeys: [GHOSTS_KEY],
-    }).catch(() => {})
+    }).catch(writeFailed)
     load()
   }
 
@@ -497,13 +497,13 @@ export function GhostSection({ help }: { help?: HelpMode }) {
         standing: patch.standing ?? item.standing,
       },
       affectedKeys: [GHOSTS_KEY],
-    }).catch(() => {})
+    }).catch(writeFailed)
     load()
   }
   async function remove(item: GhostManageItem) {
     // Removing a tracked staple is permanent (no undo here) — confirm first.
     if (!(await confirm({ message: o18n.ghostStopConfirm, tone: 'danger' }))) return
-    await write('ghost', { method: 'DELETE', body: { key: item.key }, affectedKeys: [GHOSTS_KEY] }).catch(() => {})
+    await write('ghost', { method: 'DELETE', body: { key: item.key }, affectedKeys: [GHOSTS_KEY] }).catch(writeFailed)
     load()
   }
   async function add(e: React.FormEvent) {
@@ -511,7 +511,7 @@ export function GhostSection({ help }: { help?: HelpMode }) {
     const name = label.trim()
     if (!name) return
     const n = Math.max(1, Math.min(365, Math.round(Number(days) || 7)))
-    await write('ghost', { method: 'PATCH', body: { label: name, cadenceDays: n }, affectedKeys: [GHOSTS_KEY] }).catch(() => {})
+    await write('ghost', { method: 'PATCH', body: { label: name, cadenceDays: n }, affectedKeys: [GHOSTS_KEY] }).catch(writeFailed)
     setLabel('')
     setDays('7')
     load()

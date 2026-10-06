@@ -8,7 +8,7 @@ import { GroupForm, type GroupFormValue } from './GroupForm'
 import { ApiError } from '../../lib/api'
 import { AVATAR_MAX } from '../../lib/image'
 import { useConfirm } from '../../lib/confirm'
-import { useWrite } from '../../lib/write'
+import { useWrite, writeFailed } from '../../lib/write'
 import { CERCLE_KEY, BOARD_KEY } from '../../lib/queryKeys'
 import { colourFor } from '../../lib/things'
 import {
@@ -191,7 +191,7 @@ export function ContactForm({
             tags: p.tags,
           },
           affectedKeys: [CERCLE_KEY, BOARD_KEY],
-        }).catch(() => {})
+        }).catch(writeFailed)
       }
     } finally {
       setSaving(false)

@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
-import { useWrite } from '../lib/write'
+import { useWrite, writeFailed } from '../lib/write'
 import { useCreateWithUndo } from '../lib/undoCreate'
 import { useUndoToast, useNotice } from '../lib/toast'
 import { mintTmpId } from '../lib/tmpIds'
@@ -149,7 +149,7 @@ export function QuickAddPage() {
             method: 'DELETE',
             body: { historyKey: item.historyKey },
             affectedKeys: [BOARD_KEY, HISTORY_KEY],
-          }).catch(() => {})
+          }).catch(writeFailed)
         if (ghostKey)
           // muted hides it from predictions; standing:false drops it from the
           // "Toujours" staple group. Both in one upsert covers every ghost source.
@@ -159,7 +159,7 @@ export function QuickAddPage() {
             method: 'PATCH',
             body: { key: ghostKey, label: item.label, muted: true, standing: false },
             affectedKeys: [GHOSTS_KEY],
-          }).catch(() => {})
+          }).catch(writeFailed)
       },
     })
   }

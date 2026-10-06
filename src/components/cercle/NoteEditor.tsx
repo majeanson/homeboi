@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useT } from '../../i18n'
-import { useWrite } from '../../lib/write'
+import { useWrite, writeFailed } from '../../lib/write'
 import { useNotice } from '../../lib/toast'
 import { api } from '../../lib/api'
 import { useOnline } from '../../lib/online'
@@ -168,7 +168,7 @@ export function NoteEditor({
     if (empty) {
       // Emptied to nothing = deleted. Deliberately NOT announced as "saved" — the
       // row is gone, and saying so would read as a confirmation of the opposite.
-      void write('family-notes', { method: 'DELETE', body: { id: note.id }, affectedKeys: [FAMILY_NOTES_KEY] }).catch(() => {})
+      void write('family-notes', { method: 'DELETE', body: { id: note.id }, affectedKeys: [FAMILY_NOTES_KEY] }).catch(writeFailed)
       return
     }
     void write('family-notes', {

@@ -20,7 +20,7 @@ import { spliceListLine } from '../lib/listAdd'
 import { useAudience } from '../lib/audience'
 import { useSurface } from '../lib/surface'
 import { api, isUnauthorized } from '../lib/api'
-import { useWrite } from '../lib/write'
+import { useWrite, writeFailed } from '../lib/write'
 import { live } from '../lib/query'
 import { PairPrompt } from '../components/Fallback'
 import { Skeleton } from '../components/Skeleton'
@@ -34,6 +34,7 @@ import { cashierPicksFrom, pickListFrom, useTillHiddenStores, parseDeal, parseTe
 import { useFlippImport } from '../lib/flippImport'
 import { pictoFor } from '../lib/picto'
 import { useSwipeToDelete } from '../lib/useSwipeToDelete'
+import { healingDeleteBody } from '../lib/staleDelete'
 import { usePointerDnd, DragGhost, DND_HOLD_MS, dropCueOf, dropEdgeClass } from '../lib/dnd'
 import { BOARD_KEY, GHOSTS_KEY, HISTORY_KEY, HOUSEHOLD_KEY } from '../lib/queryKeys'
 import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
@@ -554,7 +555,7 @@ export function Liste() {
       // Setting checked_at is idempotent, so a poll that beats this PATCH to the server
       // gets the check re-applied instead of flipping it back (lib/write.ts).
       reapply: true,
-    }).catch(() => {})
+    }).catch(writeFailed)
   }
 
   // Clear checked: every ticked line is a confirmed buy. The shared hook hides them
@@ -589,24 +590,19 @@ export function Liste() {
           )
           return { ...b, list: sorted }
         }),
-    }).catch(() => {})
+    }).catch(writeFailed)
   }
 
   // Swipe-left delete: a plain remove from the list — NOT logged as bought (that
   // path is the check + "Clear checked"). Same deferred shape via the shared hook.
   function deleteItem(item: ListRow) {
-    // `text` + `asOf` (the gesture's time, not the commit's — the write fires ~15 s
-    // later) let the server heal a STALE id onto the same item: a frame predating a
-    // « Vider » + re-add, or a persisted tmp row from a dead session, carries ids
-    // the database no longer has, and a delete by id alone then removed nothing —
-    // the vacuous « ok » behind « I swipe and the items always come back »
-    // (2026-10-06). The server only heals onto a line that existed at `asOf`, so a
-    // queued offline delete replaying late can't eat a line re-added meanwhile.
-    const asOf = Math.floor(Date.now() / 1000)
+    // healingDeleteBody: the server heals a STALE id onto the same item (lib/staleDelete).
+    // asOf is taken NOW — the gesture — not when the held write fires ~15 s later.
+    const body = healingDeleteBody(item.id, item.text)
     // No .catch here on purpose: useDeferredRemoval needs to SEE a rejection to
     // tell "deleted, refetch failed" from "the delete failed" (it owns both cases).
     removal.remove([item.id], t.undo.cleared(item.text), () =>
-      write('list', { method: 'DELETE', body: { id: item.id, text: item.text, asOf }, affectedKeys: [BOARD_KEY] }),
+      write('list', { method: 'DELETE', body, affectedKeys: [BOARD_KEY] }),
     )
   }
 

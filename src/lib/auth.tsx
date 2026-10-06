@@ -1,6 +1,7 @@
 // Operator auth context. Thin: the server's bb_session cookie is the source of
 // truth; this just caches /api/auth/me so the UI knows whether to show the
 // operator surfaces. No external state lib (boring-tech).
+import { writeFailed } from './writeFailed'
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { api } from './api'
 import { onAuthLost } from './authEvents'
@@ -127,7 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function signOut() {
-    await api('auth/logout', { method: 'POST' }).catch(() => {})
+    await api('auth/logout', { method: 'POST' }).catch(writeFailed)
     // Explicit and immediate — the user's intent here is unambiguous. Note this
     // CAN be overwritten by the refresh() below: if the logout request itself
     // failed for a reason other than being offline (a transient 5xx, a CSRF

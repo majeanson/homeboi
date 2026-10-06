@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useWrite } from '../../lib/write'
+import { useWrite, writeFailed } from '../../lib/write'
 import { useCreateWithUndo } from '../../lib/undoCreate'
 import { useT } from '../../i18n'
 import { BOARD_KEY, MONTH_KEY } from '../../lib/queryKeys'
@@ -65,7 +65,7 @@ export function useMealPlanning(profileId: string | null) {
       method: 'POST',
       body: { title: recipe.title, recipeId: recipe.id, suggestedBy: profileId, date },
       affectedKeys: [MEAL_IDEAS_KEY],
-    }).catch(() => {})
+    }).catch(writeFailed)
   }
 
   return {

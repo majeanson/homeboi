@@ -122,6 +122,40 @@ describe('a swiped line dies even when the client aimed at a stale id', () => {
   })
 })
 
+// Todos mint optimistic `tmp-…` rows too (TodoSection), so the same stale-id hole existed there:
+// a vacuous « ok » on an id the database never had. Same three truths, same helper.
+describe('a deleted todo dies even when the client aimed at a stale id', () => {
+  const nowSec = () => Math.floor(Date.now() / 1000)
+  const titles = async (s: Session) =>
+    (await env.DB.prepare('SELECT title FROM todos WHERE household_id = ? ORDER BY created_at').bind(s.householdId).all<{ title: string }>()).results.map(
+      (r) => r.title,
+    )
+
+  it('an id the server never had answers 404, not a vacuous ok', async () => {
+    const s = await household('todo-stale', undefined, { empty: true })
+    await s.fetch('/api/todos', { method: 'POST', body: { title: 'Sortir les poubelles' } })
+    const res = await s.fetch('/api/todos', { method: 'DELETE', body: { id: 'tmp-1759780000-zz' } })
+    expect(res.status).toBe(404)
+    expect(await titles(s)).toEqual(['Sortir les poubelles'])
+  })
+
+  it('heals onto the same item when the client says what it was deleting', async () => {
+    const s = await household('todo-heal', undefined, { empty: true })
+    await s.fetch('/api/todos', { method: 'POST', body: { title: 'Appeler le dentiste' } })
+    const res = await s.fetch('/api/todos', { method: 'DELETE', body: { id: 'Zstale0rowZZ', text: 'appeler le dentiste', asOf: nowSec() + 5 } })
+    expect(res.status).toBe(200)
+    expect(await titles(s)).toEqual([])
+  })
+
+  it('never reaches a todo added AFTER the gesture', async () => {
+    const s = await household('todo-future', undefined, { empty: true })
+    await s.fetch('/api/todos', { method: 'POST', body: { title: 'Payer le loyer' } })
+    const res = await s.fetch('/api/todos', { method: 'DELETE', body: { id: 'Zstale0rowZZ', text: 'Payer le loyer', asOf: nowSec() - 60 } })
+    expect(res.status).toBe(404)
+    expect(await titles(s)).toEqual(['Payer le loyer'])
+  })
+})
+
 describe('a fridge note cannot go blank', () => {
   it('refuses an edit to no words on a text note, allows it on a memo', async () => {
     const s = await household('note-blank', undefined, { empty: true })

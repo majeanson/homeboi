@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useLang, useT } from '../../i18n'
-import { useWrite } from '../../lib/write'
+import { useWrite, writeFailed } from '../../lib/write'
 import { CERCLE_KEY, BOARD_KEY } from '../../lib/queryKeys'
 import { usePointerDnd, DragGhost, DND_HOLD_MS } from '../../lib/dnd'
 import { SubTabs } from '../SubTabs'
@@ -267,7 +267,7 @@ export function FamilyBuilder({
             method: 'POST',
             body: { aId: a.id, aKind: a.kind, bId: b.id, bKind: b.kind, type: g.type },
             affectedKeys: [CERCLE_KEY],
-          }).catch(() => {})
+          }).catch(writeFailed)
         }
         onSaved()
         return
@@ -283,7 +283,7 @@ export function FamilyBuilder({
         })
         groupId = res.queued ? null : res.data?.id ?? null
       } else if (groupId && trimmed && trimmed !== group?.name) {
-        await write('cercle-groups', { method: 'PATCH', body: { id: groupId, name: trimmed }, affectedKeys: [CERCLE_KEY] }).catch(() => {})
+        await write('cercle-groups', { method: 'PATCH', body: { id: groupId, name: trimmed }, affectedKeys: [CERCLE_KEY] }).catch(writeFailed)
       }
       // 2. Drop everyone into the group (best-effort; needs the id, INSERT OR IGNORE-safe).
       if (groupId) {
@@ -293,7 +293,7 @@ export function FamilyBuilder({
             method: 'POST',
             body: { groupId, personId: id, personKind: kind },
             affectedKeys: [CERCLE_KEY],
-          }).catch(() => {})
+          }).catch(writeFailed)
         }
       }
       // 3. The relationships — only the ones not already present. A server-side dup
@@ -305,7 +305,7 @@ export function FamilyBuilder({
           method: 'POST',
           body: { aId: a.id, aKind: a.kind, bId: b.id, bKind: b.kind, type: g.type },
           affectedKeys: [CERCLE_KEY],
-        }).catch(() => {})
+        }).catch(writeFailed)
       }
       onSaved()
     } finally {

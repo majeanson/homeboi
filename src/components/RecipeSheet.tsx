@@ -2,7 +2,7 @@ import { Fragment, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { api } from '../lib/api'
-import { useWrite } from '../lib/write'
+import { useWrite, writeFailed } from '../lib/write'
 import { BOARD_KEY, MONTH_KEY } from '../lib/queryKeys'
 import { type Recipe, type RecipeTagsData, RECIPES_KEY, RECIPE_TAGS_KEY, recipeImg, tagColor, useRecipeOriginal } from '../lib/recipes'
 import { isGuest } from '../lib/device'
@@ -208,7 +208,7 @@ export function RecipeSheet({
     // A recipe is a HEAVY object to lose by a stray tap — deliberate yes/no via
     // the in-app confirm dialog (not the platform confirm, which e2e can't see).
     if (!(await confirm({ message: t.recipes.deleteConfirm, confirmLabel: t.common.delete, tone: 'danger' }))) return
-    await write('recipes', { method: 'DELETE', body: { id: recipe.id }, affectedKeys: [RECIPES_KEY] }).catch(() => {})
+    await write('recipes', { method: 'DELETE', body: { id: recipe.id }, affectedKeys: [RECIPES_KEY] }).catch(writeFailed)
     onClose()
   }
 

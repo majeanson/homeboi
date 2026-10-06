@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useT } from '../../i18n'
-import { useWrite } from '../../lib/write'
+import { useWrite, writeFailed } from '../../lib/write'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { SHARED_TRIP_PACKING_KEY } from '../../lib/queryKeys'
 import { EditField } from '../EditField'
@@ -74,7 +74,7 @@ export function SharedPackingList({
     const body: { id: string; text: string; bag_label?: string | null } = { id: item.id, text: value }
     const nextBag = bagLabel.trim() || null
     if (nextBag !== (item.bag_label ?? null)) body.bag_label = nextBag
-    void write('shared-trip-packing', { method: 'PATCH', body, affectedKeys: [packingKey] }).catch(() => {})
+    void write('shared-trip-packing', { method: 'PATCH', body, affectedKeys: [packingKey] }).catch(writeFailed)
   }
 
   const bagNote = (label: string | null) => (label && label.trim() ? label : undefined)

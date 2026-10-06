@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useT, useLang } from '../../i18n'
-import { useWrite } from '../../lib/write'
+import { useWrite, writeFailed, wrote } from '../../lib/write'
 import { useRecordUndo } from '../../lib/toast'
 import { useConfirm } from '../../lib/confirm'
 import { formatDayLong, capitalize as cap } from '../../lib/format'
@@ -55,7 +55,7 @@ export function VoyageItinerary({ trip, notes, faces }: { trip: Trip; notes: Tri
   function moveInDay(d: number, from: number, to: number) {
     const dayNotes = notes.filter((n) => n.date === d)
     for (const patch of reorderPatches(dayNotes, from, to))
-      void write(voyageApi.notesEndpoint, { method: 'PATCH', body: patch, affectedKeys: [affectedKey] }).catch(() => {})
+      void write(voyageApi.notesEndpoint, { method: 'PATCH', body: patch, affectedKeys: [affectedKey] }).catch(writeFailed)
   }
   const dnd = usePointerDnd({
     onDrop: (fromId, toZone) => {
@@ -92,7 +92,7 @@ export function VoyageItinerary({ trip, notes, faces }: { trip: Trip; notes: Tri
   }
 
   function save(n: TripNote, text: string) {
-    void write(voyageApi.notesEndpoint, { method: 'PATCH', body: { id: n.id, text }, affectedKeys: [affectedKey] }).catch(() => {})
+    void write(voyageApi.notesEndpoint, { method: 'PATCH', body: { id: n.id, text }, affectedKeys: [affectedKey] }).catch(writeFailed)
   }
 
   async function del(n: TripNote) {
@@ -102,10 +102,10 @@ export function VoyageItinerary({ trip, notes, faces }: { trip: Trip; notes: Tri
     if (n.media_kind != null) {
       if (!(await confirm({ message: t.voyage.deleteMediaNoteConfirm, tone: 'danger', confirmLabel: t.common.delete })))
         return
-      await write(voyageApi.notesEndpoint, { method: 'DELETE', body: { id: n.id }, affectedKeys: [affectedKey] }).catch(() => {})
+      await write(voyageApi.notesEndpoint, { method: 'DELETE', body: { id: n.id }, affectedKeys: [affectedKey] }).catch(writeFailed)
       return
     }
-    await write(voyageApi.notesEndpoint, { method: 'DELETE', body: { id: n.id }, affectedKeys: [affectedKey] }).catch(() => {})
+    if (!(await wrote(write(voyageApi.notesEndpoint, { method: 'DELETE', body: { id: n.id }, affectedKeys: [affectedKey] })))) return
     recordUndo({
       message: t.voyage.planRemoved,
       onUndo: () =>
@@ -123,7 +123,7 @@ export function VoyageItinerary({ trip, notes, faces }: { trip: Trip; notes: Tri
             scene_key: n.scene_key,
           },
           affectedKeys: [affectedKey],
-        }).catch(() => {}),
+        }).catch(writeFailed),
     })
   }
 

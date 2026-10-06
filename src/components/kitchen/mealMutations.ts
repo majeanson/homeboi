@@ -1,5 +1,5 @@
 import { type QueryClient } from '@tanstack/react-query'
-import { writeWith } from '../../lib/write'
+import { writeWith, writeFailed } from '../../lib/write'
 import { BOARD_KEY, MONTH_KEY } from '../../lib/queryKeys'
 import { type Recipe } from '../../lib/recipes'
 import { MEALS_KEY, MEAL_HISTORY_KEY, type MealRow, type MealsData } from './types'
@@ -32,7 +32,7 @@ export async function planMealRecipe(qc: QueryClient, date: number, slot: string
     method: 'POST',
     body: { date, slot, title: recipe.title, recipeId: recipe.id },
     affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY, MONTH_KEY],
-  }).catch(() => {})
+  }).catch(writeFailed)
 }
 
 // Drag-to-move: drop a meal on another day (slot kept) or another slot (same day).
@@ -49,7 +49,7 @@ export async function reschedule(qc: QueryClient, id: string, toDate: number, sl
       c.setQueryData<MealsData>(MEALS_KEY, (d) =>
         d ? { ...d, days: d.days.map((m) => (m.id === id ? { ...m, date: toDate, slot: slot ?? m.slot } : m)) } : d,
       ),
-  }).catch(() => {})
+  }).catch(writeFailed)
 }
 
 // Re-create a set of removed meals from their snapshot (the undo inverse). Each
@@ -61,6 +61,6 @@ export async function restoreMeals(qc: QueryClient, meals: MealRow[]) {
       method: 'POST',
       body: { date: m.date, slot: m.slot, title: m.title, recipeId: m.recipe_id ?? null },
       affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY, MONTH_KEY],
-    }).catch(() => {})
+    }).catch(writeFailed)
   }
 }

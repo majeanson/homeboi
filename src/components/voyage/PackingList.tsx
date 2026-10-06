@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useT } from '../../i18n'
-import { useWrite } from '../../lib/write'
+import { useWrite, writeFailed } from '../../lib/write'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { EditField } from '../EditField'
 import { EmptyState } from '../EmptyState'
@@ -58,7 +58,7 @@ export function PackingList({ trip, items, faces }: { trip: Trip; items: Packing
     if (!value) return
     const body: { id: string; text: string; member_id?: string | null } = { id: item.id, text: value }
     if (memberId !== item.member_id) body.member_id = memberId
-    void write(voyageApi.packingEndpoint, { method: 'PATCH', body, affectedKeys: [packingKey] }).catch(() => {})
+    void write(voyageApi.packingEndpoint, { method: 'PATCH', body, affectedKeys: [packingKey] }).catch(writeFailed)
   }
 
   return (

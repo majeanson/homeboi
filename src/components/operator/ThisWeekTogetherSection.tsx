@@ -6,7 +6,7 @@ import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
 import { api } from '../../lib/api'
 import { useARegler, frictionRow, type Friction } from '../../lib/aRegler'
-import { useWrite } from '../../lib/write'
+import { useWrite, writeFailed } from '../../lib/write'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { A_REGLER_KEY } from '../../lib/queryKeys'
 import { Avatar } from '../Avatar'
@@ -73,7 +73,7 @@ export function ThisWeekTogetherSection({ help }: { help?: HelpMode }) {
   const snoozed = useDeferredRemoval(A_REGLER_KEY)
   const snooze = (f: Friction) =>
     snoozed.remove([f.key], t.aRegler.snoozed, () =>
-      write('a-regler', { method: 'POST', body: { key: f.key }, affectedKeys: [A_REGLER_KEY] }).catch(() => {}),
+      write('a-regler', { method: 'POST', body: { key: f.key }, affectedKeys: [A_REGLER_KEY] }).catch(writeFailed),
     )
 
   // Rows mid-snooze are hidden here, keyed by the signal's own stable key.

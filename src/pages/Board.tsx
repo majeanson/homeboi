@@ -149,7 +149,7 @@ import { tintInk } from '../lib/colors'
 import { useChoreRemovals, useRemoveMealFromPlan } from '../components/detail/EntityRemovals'
 import { TodoSection } from '../components/todos/TodoSection'
 import { type TodosData, todosKey, todosPath, splitTodos } from '../lib/todos'
-import { useUndoToast } from '../lib/toast'
+import { useDeferredRemoval, heldIds } from '../lib/useDeferredRemoval'
 import { isGuest, isDisplay } from '../lib/device'
 import { Cluster } from '../components/Layout'
 import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
@@ -199,7 +199,6 @@ function BoardClock() {
 
 export function Board() {
   const t = useT()
-  const undo = useUndoToast()
   const write = useWrite()
   const qc = useQueryClient()
   const ro = isGuest()
@@ -266,15 +265,16 @@ export function Board() {
       qc.invalidateQueries({ queryKey: TODOS_KEY })
     }
   }, [nowMs, qc])
-  // Chores/todos whose "done" PATCH is DEFERRED behind the undo toast. Filtered
-  // out of the rendered board at once so the live poll can't resurrect them before
-  // the write commits — same guard as Liste's pendingClear. Tapping Annuler means
-  // the completion simply never happens (no rotation advance, no credit).
-  const [pendingDone, setPendingDone] = useState<Set<string>>(new Set())
-  // Leftovers marked "Fini" from the board, held behind the undo toast — filtered
-  // out of the rendered reminder at once so the live poll can't resurrect them
-  // before the delete commits (same guard as pendingDone).
-  const [pendingLeftover, setPendingLeftover] = useState<Set<string>>(new Set())
+  // Chores/todos/leftovers whose "done" write is DEFERRED behind the undo toast, held
+  // through the ONE shared hook (lib/useDeferredRemoval): hidden at once, the write
+  // held, and un-hidden only once a FRESH frame proves it landed. This page used to
+  // hand-roll the pattern five times — hide, commit, await a refetch, un-hide — and
+  // that un-hide fired even when the refetch had ERRORED, repainting the row out of
+  // the stale pre-write frame (the resurrection class, 2026-10-06). Tapping Annuler
+  // means the completion simply never happens (no rotation advance, no credit).
+  const held = useDeferredRemoval(BOARD_KEY)
+  const pendingDone = heldIds(BOARD_KEY)
+  const pendingLeftover = pendingDone
   // « L'année » → « Mois » drill-down: a tapped mini-month lands the Mois view on that
   // month. It used to be a transient `monthJump` state threaded in as `initialOffset`;
   // Mois now keeps where-you-are in the URL (`?date=<local-midnight secs>`), so the drill
@@ -773,61 +773,26 @@ export function Board() {
   // is merely held, an undo means the rotation never advanced (no server "un-do"
   // for completion exists, so deferring is the only correct way to take it back).
   const markChoreDone = (c: ChoreInstance) => {
-    setPendingDone((s) => new Set(s).add(c.id))
-    undo({
-      message: t.undo.choreDone(c.title),
-      onUndo: () =>
-        setPendingDone((s) => {
-          const n = new Set(s)
-          n.delete(c.id)
-          return n
-        }),
-      onCommit: async () => {
-        // CHORES + MONTH too: completing advances the rotation server-side, so
-        // the Réglages chores list (CHORES_KEY, live on DayPlanPage too) and the
-        // month grid change with it — BOARD alone left them stale until poll.
-        await write('chores', {
-          method: 'PATCH',
-          body: { id: c.id, complete: true },
-          affectedKeys: [BOARD_KEY, CHORES_KEY, MONTH_KEY],
-        }).catch(() => {})
-        // Wait for the board to reflect the change before un-hiding, else the stale
-        // cached frame (still holding the row) flashes it back for a frame.
-        await qc.refetchQueries({ queryKey: BOARD_KEY }).catch(() => {})
-        setPendingDone((s) => {
-          const n = new Set(s)
-          n.delete(c.id)
-          return n
-        })
-      },
-    })
+    // CHORES + MONTH too: completing advances the rotation server-side, so
+    // the Réglages chores list (CHORES_KEY, live on DayPlanPage too) and the
+    // month grid change with it — BOARD alone left them stale until poll.
+    held.remove([c.id], t.undo.choreDone(c.title), () =>
+      write('chores', {
+            method: 'PATCH',
+            body: { id: c.id, complete: true },
+            affectedKeys: [BOARD_KEY, CHORES_KEY, MONTH_KEY],
+          }),
+    )
   }
   // "Fini" a leftover from the board (we ate it). DEFERRED behind the undo toast,
   // mirroring markChoreDone: hide it now (pendingLeftover), hold the DELETE, and a
   // tap of Annuler leaves it in the pool.
   const markLeftoverDone = (l: { id: string; title: string }) => {
-    setPendingLeftover((s) => new Set(s).add(l.id))
-    undo({
-      message: t.undo.leftoverRemoved(l.title),
-      onUndo: () =>
-        setPendingLeftover((s) => {
-          const n = new Set(s)
-          n.delete(l.id)
-          return n
-        }),
-      onCommit: async () => {
-        // BOTH keys: the kitchen's Restants strip shows this row too, and a
-        // board-only invalidate left it stale until its next poll (2026-09-03).
-        await write('meal-leftovers', { method: 'DELETE', body: { id: l.id }, affectedKeys: [BOARD_KEY, LEFTOVERS_KEY] }).catch(() => {})
-        // Wait for the refetch so the stale frame can't flash the row back.
-        await qc.refetchQueries({ queryKey: BOARD_KEY }).catch(() => {})
-        setPendingLeftover((s) => {
-          const n = new Set(s)
-          n.delete(l.id)
-          return n
-        })
-      },
-    })
+    // BOTH keys: the kitchen's Restants strip shows this row too, and a
+    // board-only invalidate left it stale until its next poll (2026-09-03).
+    held.remove([l.id], t.undo.leftoverRemoved(l.title), () =>
+      write('meal-leftovers', { method: 'DELETE', body: { id: l.id }, affectedKeys: [BOARD_KEY, LEFTOVERS_KEY] }),
+    )
   }
   const choreAct = (c: ChoreInstance, withDay?: boolean) => (
     <Act
@@ -865,33 +830,16 @@ export function Board() {
   // DEFERRED behind the undo toast, mirroring markChoreDone: hide it now, hold the
   // write, and a tap of Annuler leaves it un-done.
   const markTodoDone = (c: ChoreInstance) => {
-    setPendingDone((s) => new Set(s).add(c.id))
-    undo({
-      message: t.undo.todoDone(c.title),
-      onUndo: () =>
-        setPendingDone((s) => {
-          const n = new Set(s)
-          n.delete(c.id)
-          return n
-        }),
-      onCommit: async () => {
-        // CHORES + MONTH too: completing advances the rotation server-side, so
-        // the Réglages chores list (CHORES_KEY, live on DayPlanPage too) and the
-        // month grid change with it — BOARD alone left them stale until poll.
-        await write('chores', {
-          method: 'PATCH',
-          body: { id: c.id, complete: true },
-          affectedKeys: [BOARD_KEY, CHORES_KEY, MONTH_KEY],
-        }).catch(() => {})
-        // Wait for the refetch so the stale frame can't flash the row back.
-        await qc.refetchQueries({ queryKey: BOARD_KEY }).catch(() => {})
-        setPendingDone((s) => {
-          const n = new Set(s)
-          n.delete(c.id)
-          return n
-        })
-      },
-    })
+    // CHORES + MONTH too: completing advances the rotation server-side, so
+    // the Réglages chores list (CHORES_KEY, live on DayPlanPage too) and the
+    // month grid change with it — BOARD alone left them stale until poll.
+    held.remove([c.id], t.undo.todoDone(c.title), () =>
+      write('chores', {
+            method: 'PATCH',
+            body: { id: c.id, complete: true },
+            affectedKeys: [BOARD_KEY, CHORES_KEY, MONTH_KEY],
+          }),
+    )
   }
   const todoAct = (c: ChoreInstance) => (
     <Act
@@ -911,63 +859,31 @@ export function Board() {
   // (home-projects PATCH with id alone), so a recurring upkeep's next occurrence
   // shows and a one-off drops off. DEFERRED behind the undo toast, like markChoreDone.
   const markHomeDone = (c: ChoreInstance) => {
-    setPendingDone((s) => new Set(s).add(c.id))
-    undo({
-      message: t.undo.choreDone(c.title),
-      onUndo: () =>
-        setPendingDone((s) => {
-          const n = new Set(s)
-          n.delete(c.id)
-          return n
-        }),
-      onCommit: async () => {
-        // The full HomeProjectForm list: stamping last_done_at re-derives nextAt
-        // (recur_from 'done' re-anchors), which the month grid, Réglages ▸ Projets
-        // and a carnet's own rows all display — BOARD alone left them stale.
-        await write('home-projects', {
-          method: 'PATCH',
-          body: { id: c.id },
-          affectedKeys: [BOARD_KEY, HOME_PROJECTS_KEY, MONTH_KEY, CARNETS_KEY],
-        }).catch(() => {})
-        await qc.refetchQueries({ queryKey: BOARD_KEY }).catch(() => {})
-        setPendingDone((s) => {
-          const n = new Set(s)
-          n.delete(c.id)
-          return n
-        })
-      },
-    })
+    // The full HomeProjectForm list: stamping last_done_at re-derives nextAt
+    // (recur_from 'done' re-anchors), which the month grid, Réglages ▸ Projets
+    // and a carnet's own rows all display — BOARD alone left them stale.
+    held.remove([c.id], t.undo.choreDone(c.title), () =>
+      write('home-projects', {
+            method: 'PATCH',
+            body: { id: c.id },
+            affectedKeys: [BOARD_KEY, HOME_PROJECTS_KEY, MONTH_KEY, CARNETS_KEY],
+          }),
+    )
   }
   // « Reporter » — postpone an owed/due entretien without checking it: the row
   // goes quiet and returns on its own (next week, or the next scheduled cycle).
   // Same deferral shape as markHomeDone: hidden at once via pendingDone, the
   // PATCH held behind the undo toast, offline-safe through useWrite.
   const postponeHome = (c: ChoreInstance, mode: 'week' | 'cycle') => {
-    setPendingDone((s) => new Set(s).add(c.id))
-    undo({
-      message: t.undo.postponed(c.title),
-      onUndo: () =>
-        setPendingDone((s) => {
-          const n = new Set(s)
-          n.delete(c.id)
-          return n
-        }),
-      onCommit: async () => {
-        // Same list as markHomeDone: a snooze moves the next occurrence, which
-        // the month grid + Réglages ▸ Projets + carnet rows display too.
-        await write('home-projects', {
-          method: 'PATCH',
-          body: { id: c.id, snooze: mode },
-          affectedKeys: [BOARD_KEY, HOME_PROJECTS_KEY, MONTH_KEY, CARNETS_KEY],
-        }).catch(() => {})
-        await qc.refetchQueries({ queryKey: BOARD_KEY }).catch(() => {})
-        setPendingDone((s) => {
-          const n = new Set(s)
-          n.delete(c.id)
-          return n
-        })
-      },
-    })
+    // Same list as markHomeDone: a snooze moves the next occurrence, which
+    // the month grid + Réglages ▸ Projets + carnet rows display too.
+    held.remove([c.id], t.undo.postponed(c.title), () =>
+      write('home-projects', {
+            method: 'PATCH',
+            body: { id: c.id, snooze: mode },
+            affectedKeys: [BOARD_KEY, HOME_PROJECTS_KEY, MONTH_KEY, CARNETS_KEY],
+          }),
+    )
   }
   const homeAct = (c: ChoreInstance, withDay?: boolean, overdue?: boolean) => {
     // A carnet-scoped row wears its thing's emoji so « Le chauffe-eau · filtre » reads

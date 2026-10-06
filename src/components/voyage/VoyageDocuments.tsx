@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { useT } from '../../i18n'
-import { useWrite } from '../../lib/write'
+import { useWrite, writeFailed } from '../../lib/write'
 import { useConfirm } from '../../lib/confirm'
 import { useOnline } from '../../lib/online'
 import { imgUrl } from '../../lib/image'
@@ -72,7 +72,7 @@ export function VoyageDocuments({ trip, notes }: { trip: Trip; notes: TripNote[]
     const label = n.label?.trim() || t.voyage.thisDocument
     if (!(await confirm({ message: t.voyage.deleteDocConfirm(label), tone: 'danger', confirmLabel: t.common.delete })))
       return
-    await write(voyageApi.notesEndpoint, { method: 'DELETE', body: { id: n.id }, affectedKeys: [affectedKey] }).catch(() => {})
+    await write(voyageApi.notesEndpoint, { method: 'DELETE', body: { id: n.id }, affectedKeys: [affectedKey] }).catch(writeFailed)
   }
 
   async function prepareOffline() {

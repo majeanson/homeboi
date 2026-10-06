@@ -75,9 +75,9 @@ export interface BoardModelInput {
   schoolYear?: SchoolYear | null
   // Chores/todos/home rows whose "done" write is DEFERRED behind the undo toast —
   // filtered out at once so a live poll can't resurrect them mid-undo.
-  pendingDone?: Set<string>
+  pendingDone?: ReadonlySet<string>
   // Leftovers marked "Fini", held the same way.
-  pendingLeftover?: Set<string>
+  pendingLeftover?: ReadonlySet<string>
   // Presence-only externals the emptiness flags need (their own polls, outside the
   // one /api/board read) — the model asks "is there one?", never the payload.
   hasWeather: boolean

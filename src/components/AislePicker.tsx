@@ -1,5 +1,5 @@
 import { useT, useLang } from '../i18n'
-import { useWrite } from '../lib/write'
+import { useWrite, writeFailed } from '../lib/write'
 import { isGuest } from '../lib/device'
 import { HOUSEHOLD_KEY } from '../lib/queryKeys'
 import { useAisleOverrides } from '../lib/aislePrefs'
@@ -43,7 +43,7 @@ export function AislePicker({
       method: 'PATCH',
       body: { aisleOverride: { key, aisle: value === 'auto' ? null : value } },
       affectedKeys: [HOUSEHOLD_KEY],
-    }).catch(() => {})
+    }).catch(writeFailed)
   }
   // The name the icon stands for — the tooltip/aria label, so the collapsed face is
   // never a mystery glyph (and stays honest about auto vs. a set override).

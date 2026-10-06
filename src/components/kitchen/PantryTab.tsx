@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { useT } from '../../i18n'
-import { useWrite } from '../../lib/write'
+import { useWrite, writeFailed } from '../../lib/write'
 import { useCreateWithUndo } from '../../lib/undoCreate'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { useVoiceInput } from '../../lib/useVoiceInput'
@@ -94,15 +94,15 @@ export function PantryTab({
       // Add to the shared list first, then drop the low flag. Invalidate the quick-add
       // prediction caches too (GHOSTS/HISTORY), like the canonical Liste.postAdd — else
       // the now-listed item lingers in the quick-add candidate set until the next poll.
-      await write('list', { method: 'POST', body: { text: l.item }, affectedKeys: [BOARD_KEY, GHOSTS_KEY, HISTORY_KEY] }).catch(() => {})
-      await write('pantry', { method: 'DELETE', body: { id: l.id }, affectedKeys: [PANTRY_KEY] }).catch(() => {})
+      await write('list', { method: 'POST', body: { text: l.item }, affectedKeys: [BOARD_KEY, GHOSTS_KEY, HISTORY_KEY] })
+      await write('pantry', { method: 'DELETE', body: { id: l.id }, affectedKeys: [PANTRY_KEY] })
     })
   }
   // Delete a low item WITHOUT putting it on the list (the 🗑️) — a real gap before:
   // a mis-typed "running low" could only leave by being shopped. Deferred undo.
   function removeLowItem(l: LowRow) {
     lowRemoval.remove([l.id], t.undo.cleared(l.item), () =>
-      write('pantry', { method: 'DELETE', body: { id: l.id }, affectedKeys: [PANTRY_KEY] }).catch(() => {}),
+      write('pantry', { method: 'DELETE', body: { id: l.id }, affectedKeys: [PANTRY_KEY] }),
     )
   }
   // Rename a low item in place (the ✏️). Optimistic via useWrite (guest-safe, one
@@ -118,7 +118,7 @@ export function PantryTab({
         qc.setQueryData<PantryData>(PANTRY_KEY, (d) =>
           d ? { low: d.low.map((x) => (x.id === l.id ? { ...x, item: v } : x)) } : d,
         ),
-    }).catch(() => {})
+    }).catch(writeFailed)
   }
 
   async function postSoon(item: string, viaVoice = false) {
@@ -142,7 +142,7 @@ export function PantryTab({
   // like the low list. No list side-effects — use-soon never touches shopping.
   function clearSoonItem(s: LowRow) {
     soonRemoval.remove([s.id], t.undo.cleared(s.item), () =>
-      write('use-soon', { method: 'DELETE', body: { id: s.id }, affectedKeys: [USE_SOON_KEY] }).catch(() => {}),
+      write('use-soon', { method: 'DELETE', body: { id: s.id }, affectedKeys: [USE_SOON_KEY] }),
     )
   }
   async function renameSoonItem(s: LowRow, item: string) {
@@ -156,7 +156,7 @@ export function PantryTab({
         qc.setQueryData<{ soon: LowRow[] }>(USE_SOON_KEY, (d) =>
           d ? { soon: d.soon.map((x) => (x.id === s.id ? { ...x, item: v } : x)) } : d,
         ),
-    }).catch(() => {})
+    }).catch(writeFailed)
   }
 
   return (

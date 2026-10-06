@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api, ApiError } from '../lib/api'
-import { useWrite } from '../lib/write'
+import { useWrite, writeFailed } from '../lib/write'
 import { StatusMessage } from '../components/StatusMessage'
 import { useConfirm } from '../lib/confirm'
 import { isGuest } from '../lib/device'
@@ -124,7 +124,7 @@ export function ListEditPage() {
         cache.setQueryData<{ list: ListItem[] }>(BOARD_KEY, (b) =>
           b ? { ...b, list: b.list.map((i) => (i.id === itemId ? { ...i, non_urgent: noRush ? 1 : null } : i)) } : b,
         ),
-    }).catch(() => {})
+    }).catch(writeFailed)
   }
 
   async function unlink() {

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useT } from '../../i18n'
 import { useOperatorT } from '../../i18n.operator'
 import { api } from '../../lib/api'
-import { useWrite } from '../../lib/write'
+import { useWrite, writeFailed } from '../../lib/write'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { isGuest } from '../../lib/device'
 import { DEVICES_KEY } from '../../lib/queryKeys'
@@ -143,7 +143,7 @@ function DeviceRow({ device, onChange, onRevoke }: { device: Device; onChange: (
         qc.setQueryData<{ devices: Device[] }>(DEVICES_KEY, (data) =>
           data ? { devices: data.devices.map((x) => (x.id === device.id ? { ...x, label: next } : x)) } : data,
         ),
-    }).catch(() => {})
+    }).catch(writeFailed)
     onChange()
     setBusy(false)
   }

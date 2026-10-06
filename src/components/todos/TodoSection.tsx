@@ -1,8 +1,9 @@
+import { healingDeleteBody } from '../../lib/staleDelete'
 import { useState, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { EmptyState } from '../EmptyState'
 import { api } from '../../lib/api'
-import { useWrite } from '../../lib/write'
+import { useWrite, writeFailed } from '../../lib/write'
 import { mintTmpId } from '../../lib/tmpIds'
 import { useT } from '../../i18n'
 import { live } from '../../lib/query'
@@ -240,7 +241,7 @@ export function TodoSection({
         qc.setQueriesData<TodosData>({ queryKey: TODOS_KEY }, (d) =>
           d ? { todos: d.todos.map((x) => (x.id === todo.id ? { ...x, done_at: next } : x)) } : d,
         ),
-    }).catch(() => {})
+    }).catch(writeFailed)
   }
 
   // — rename in place —
@@ -260,21 +261,24 @@ export function TodoSection({
         qc.setQueriesData<TodosData>({ queryKey: TODOS_KEY }, (d) =>
           d ? { todos: d.todos.map((x) => (x.id === todo.id ? { ...x, title: value } : x)) } : d,
         ),
-    }).catch(() => {})
+    }).catch(writeFailed)
     setEditId(null)
   }
 
   // — delete one (behind a deferred undo — a mis-tap costs nothing) —
   function remove(todo: Todo) {
+    // Todos mint optimistic tmp- ids too, so the delete carries what lets the server heal a
+    // stale one onto the same item (lib/staleDelete).
+    const body = healingDeleteBody(todo.id, todo.title)
     removal.remove([todo.id], t.todos.removed(todo.title), () =>
-      write('todos', { method: 'DELETE', body: { id: todo.id }, affectedKeys: [TODOS_KEY, MONTH_KEY] }).catch(() => {}),
+      write('todos', { method: 'DELETE', body, affectedKeys: [TODOS_KEY, MONTH_KEY] }),
     )
   }
 
   // — "Effacer cochées" — sweep the ticked rows (deferred; pass exact ids) —
   function clearChecked(ids: string[]) {
     removal.remove(ids, t.todos.clearedN(ids.length), () =>
-      write('todos', { method: 'PATCH', body: { clearChecked: true, ids }, affectedKeys: [TODOS_KEY, MONTH_KEY] }).catch(() => {}),
+      write('todos', { method: 'PATCH', body: { clearChecked: true, ids }, affectedKeys: [TODOS_KEY, MONTH_KEY] }),
     )
   }
 
@@ -286,7 +290,7 @@ export function TodoSection({
       method: 'POST',
       body: { templateId, day: scope },
       affectedKeys: [TODOS_KEY, MONTH_KEY],
-    }).catch(() => {})
+    }).catch(writeFailed)
   }
 
   const templates = templatesQ.data?.templates ?? []

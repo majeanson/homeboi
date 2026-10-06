@@ -24,6 +24,7 @@ const norm = (s: string) => s.trim().toLowerCase()
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 vi.mock('./write', () => ({
+  writeOrNull: async (p: Promise<unknown>) => p.catch(() => null),
   writeWith: async (
     _qc: unknown,
     _path: string,

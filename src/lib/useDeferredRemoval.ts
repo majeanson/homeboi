@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react'
 import { useQueryClient, type QueryClient, type QueryKey } from '@tanstack/react-query'
 import { useUndoToast } from './toast'
 import { isStatus } from './api'
+import { writeFailed } from './writeFailed'
 import { onOutboxChange, outboxCount } from './outbox'
 import { onTmpIdResolved, resolveId } from './tmpIds'
 
@@ -238,6 +239,9 @@ export function useDeferredRemoval(queryKey: QueryKey) {
           // A 404 counts as confirmed-gone (see rejectionMeansGone): the row this
           // delete aimed at is not on the server, so keeping it hidden is the truth.
           confirmed = rejectionMeansGone(err)
+          // The delete really did not happen: the row is about to reappear, so say why
+          // (one calm notice) instead of letting it silently snap back.
+          if (!confirmed) writeFailed(err)
         }
         // Freshness fence: only a scope frame fetched AFTER this instant proves the
         // deletion reached the render data. (Captured after `commit`, so a fetch the

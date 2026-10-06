@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useT } from '../../i18n'
-import { useWrite } from '../../lib/write'
+import { useWrite, writeFailed, wrote } from '../../lib/write'
 import { useRecordUndo } from '../../lib/toast'
 import { useConfirm } from '../../lib/confirm'
 import { EmptyState } from '../EmptyState'
@@ -33,7 +33,7 @@ export function VoyageInfos({ trip, notes, faces }: { trip: Trip; notes: TripNot
   const shown = cat == null ? infoNotes : infoNotes.filter((n) => n.category === cat)
 
   function save(n: TripNote, text: string) {
-    void write(voyageApi.notesEndpoint, { method: 'PATCH', body: { id: n.id, text }, affectedKeys: [affectedKey] }).catch(() => {})
+    void write(voyageApi.notesEndpoint, { method: 'PATCH', body: { id: n.id, text }, affectedKeys: [affectedKey] }).catch(writeFailed)
   }
 
   async function del(n: TripNote) {
@@ -44,10 +44,10 @@ export function VoyageInfos({ trip, notes, faces }: { trip: Trip; notes: TripNot
     if (n.media_kind != null) {
       if (!(await confirm({ message: t.voyage.deleteMediaNoteConfirm, tone: 'danger', confirmLabel: t.common.delete })))
         return
-      await write(voyageApi.notesEndpoint, { method: 'DELETE', body: { id: n.id }, affectedKeys: [affectedKey] }).catch(() => {})
+      await write(voyageApi.notesEndpoint, { method: 'DELETE', body: { id: n.id }, affectedKeys: [affectedKey] }).catch(writeFailed)
       return
     }
-    await write(voyageApi.notesEndpoint, { method: 'DELETE', body: { id: n.id }, affectedKeys: [affectedKey] }).catch(() => {})
+    if (!(await wrote(write(voyageApi.notesEndpoint, { method: 'DELETE', body: { id: n.id }, affectedKeys: [affectedKey] })))) return
     recordUndo({
       message: t.voyage.infoRemoved,
       onUndo: () =>
@@ -64,7 +64,7 @@ export function VoyageInfos({ trip, notes, faces }: { trip: Trip; notes: TripNot
             scene_key: n.scene_key,
           },
           affectedKeys: [affectedKey],
-        }).catch(() => {}),
+        }).catch(writeFailed),
     })
   }
 

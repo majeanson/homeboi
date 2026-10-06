@@ -5,6 +5,7 @@ import { formatAgo } from './format'
 import { Icon } from '../components/Icon'
 import { findEntry, pushEntry, removeEntry, type UndoEntry } from './undoStack'
 import { setReplayRejectedNotifier } from './outbox'
+import { setWriteFailedNotifier } from './writeFailed'
 
 // The app's undo surface: a small BOUNDED stack of recent undoable actions —
 // newest shown as a pill, the rest reachable behind a "Récents (N)" toggle — so a
@@ -232,6 +233,14 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setReplayRejectedNotifier(() => noticeRef.current(replayFailedMsg))
     return () => setReplayRejectedNotifier(null)
   }, [replayFailedMsg])
+
+  // Same wiring for a write the SERVER refused (lib/write writeFailed): one calm line,
+  // never a silent snap-back of the optimistic row.
+  const writeFailedMsg = t.common.saveFailed
+  useEffect(() => {
+    setWriteFailedNotifier(() => noticeRef.current(writeFailedMsg))
+    return () => setWriteFailedNotifier(null)
+  }, [writeFailedMsg])
 
   const record = useCallback(
     (req: RecordRequest) => {

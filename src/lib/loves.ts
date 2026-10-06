@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from './api'
-import { useWrite } from './write'
+import { useWrite, writeFailed } from './write'
 import { useProfile } from './profile'
 import { LOVES_KEY } from './queryKeys'
 
@@ -41,7 +41,7 @@ export function useLoves() {
           return { loves: [...cur, { recipe_id: recipeId, member_id: memberId }] }
         })
       },
-    }).catch(() => {})
+    }).catch(writeFailed)
   }
   return { loversOf, toggle, lovedSet }
 }

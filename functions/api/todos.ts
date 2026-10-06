@@ -1,7 +1,8 @@
-import { badRequest, ok, readJson } from '../_lib/json'
+import { badRequest, notFound, ok, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec, localDayStart } from '../_lib/ids'
 import { profileMemberId } from '../_lib/profile'
+import { deleteHealing } from '../_lib/staleDelete'
 
 // À cocher — standalone check-off lists (todos), separate from the loose-chore
 // "À faire" board section (`tasks` table + the board payload's `todos` field). A
@@ -246,14 +247,22 @@ export const onRequestPatch = authed(async (ctx, actor) => {
 })
 
 export const onRequestDelete = authed(async (ctx, actor) => {
-  const body = await readJson<{ id?: string }>(ctx.request)
+  const body = await readJson<{ id?: string; text?: string; asOf?: number }>(ctx.request)
   const id = body?.id?.trim()
   if (!id) return badRequest('id requis.')
-  await ctx.env.DB.batch([
-    ctx.env.DB.prepare('DELETE FROM todos WHERE id = ? AND household_id = ?').bind(id, actor.householdId),
-    sweepStale(ctx.env.DB, actor.householdId, localDayStart(new Date())),
-  ])
-  return ok({ ok: true })
+  // Optimistic rows exist here too (TodoSection mints tmp- ids), so a vacuous « ok » on
+  // an id the DB never had would let the row come back — see _lib/staleDelete.
+  const r = await deleteHealing(ctx.env.DB, {
+    table: 'todos',
+    textColumn: 'title',
+    householdId: actor.householdId,
+    id,
+    text: body?.text,
+    asOf: body?.asOf,
+  })
+  await sweepStale(ctx.env.DB, actor.householdId, localDayStart(new Date())).run()
+  if (r.outcome === 'missing') return notFound('Tâche introuvable.')
+  return ok(r.outcome === 'healed' ? { ok: true, healed: r.id } : { ok: true })
 })
 
 // ── Template composition (server mirror of src/lib/todos.ts) ──────────────────

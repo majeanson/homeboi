@@ -3,7 +3,7 @@ import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { useOperatorT } from '../../i18n.operator'
-import { useWrite } from '../../lib/write'
+import { useWrite, writeFailed } from '../../lib/write'
 import { useAddSheet } from '../../lib/addSheet'
 import { useRecordUndo } from '../../lib/toast'
 import { isGuest } from '../../lib/device'
@@ -141,7 +141,7 @@ export function RoutinesSection({ routines, onChange, help }: { routines: Routin
           qc.setQueryData<{ routines: Routine[] }>(ROUTINES_KEY, (d) =>
             d ? { routines: d.routines.map((x) => (x.id === r.id ? { ...x, timeOfDay: tod } : x)) } : d,
           ),
-      }).catch(() => {})
+      }).catch(writeFailed)
     await setTodWrite(next)
     onChange()
     // Compensating undo: put the previous cue back (chip + server).

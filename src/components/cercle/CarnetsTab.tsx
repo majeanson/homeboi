@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
-import { useWrite } from '../../lib/write'
+import { useWrite, writeFailed } from '../../lib/write'
 import { isGuest } from '../../lib/device'
 import { imgUrl } from '../../lib/image'
 import { faint } from '../../lib/colors'
@@ -45,7 +45,7 @@ export function CarnetsTab() {
       method: 'PATCH',
       body: { id: x.id, restore: true },
       affectedKeys: [CARNETS_KEY, ARCHIVED_CARNETS_KEY, BOARD_KEY],
-    }).catch(() => {})
+    }).catch(writeFailed)
   }
 
   // A top-level carnet's subtree counts as "needs a look" if it OR any of its

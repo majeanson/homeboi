@@ -18,7 +18,7 @@ import { useEntityDetail } from '../components/detail/DetailProvider'
 import { buildContact, buildMemberPerson, buildPet } from '../components/detail/adapters'
 import { api, isUnauthorized } from '../lib/api'
 import { live } from '../lib/query'
-import { useWrite } from '../lib/write'
+import { useWrite, writeFailed } from '../lib/write'
 import { useConfirm } from '../lib/confirm'
 import { useRecordUndo } from '../lib/toast'
 import { usePointerDnd, DragGhost } from '../lib/dnd'
@@ -523,11 +523,11 @@ function MaisonParent() {
       const body = { groupId: g.id, personId: p.id, personKind: p.kind }
       // A coloured family cascades its colour onto the newly-added member/pet server-side,
       // which shows on the board faces + members list — refresh those too.
-      void write('cercle-groups', { method: 'POST', body, affectedKeys: [CERCLE_KEY, MEMBERS_KEY, BOARD_KEY] }).catch(() => {})
+      void write('cercle-groups', { method: 'POST', body, affectedKeys: [CERCLE_KEY, MEMBERS_KEY, BOARD_KEY] }).catch(writeFailed)
       recordUndo({
         message: t.cercle.droppedInGroup(p.firstName, g.name),
         onUndo: () => {
-          void write('cercle-groups', { method: 'DELETE', body, affectedKeys: [CERCLE_KEY] }).catch(() => {})
+          void write('cercle-groups', { method: 'DELETE', body, affectedKeys: [CERCLE_KEY] }).catch(writeFailed)
         },
       })
     },
@@ -586,7 +586,7 @@ function MaisonParent() {
               body: { groupId, personId: p.id, personKind: p.kind },
               // Adding to a coloured family cascades its colour onto this person → board + members.
               affectedKeys: [CERCLE_KEY, MEMBERS_KEY, BOARD_KEY],
-            }).catch(() => {})
+            }).catch(writeFailed)
           },
         }
       : undefined

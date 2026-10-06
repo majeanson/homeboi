@@ -4,6 +4,7 @@ import { newId, nowSec } from '../_lib/ids'
 import { normalizeItem } from '../_lib/normalize'
 import { lineMatches, normTerms } from '../_lib/listMatch'
 import { profileMemberId } from '../_lib/profile'
+import { deleteHealing } from '../_lib/staleDelete'
 
 // Shared list: ONE active list. Read, add, toggle a check (a mark — the item
 // stays put), clear the checked ones (logs the buy + deletes), delete a line.
@@ -347,47 +348,17 @@ export const onRequestDelete = authed(async (ctx, actor) => {
   }
 
   if (!body?.id) return badRequest('id requis.')
-  const res = await ctx.env.DB.prepare('DELETE FROM list_items WHERE id = ? AND household_id = ?')
-    .bind(body.id, actor.householdId)
-    .run()
-  if (res.meta.changes > 0) return ok({ ok: true })
-
-  // The id matched NOTHING — the client aimed at a row this database does not have
-  // (a frame predating a « Vider les cochés » + re-add, or a persisted optimistic
-  // `tmp-…` row from a session whose tmp→real registry is gone). Answering a vacuous
-  // « ok » here is what made swiped items « always come back » (2026-10-06, verified
-  // against production: six {"ok":true} deletes that afternoon, zero rows gone — the
-  // client's deferred removal trusted the 200, un-hid on the next fresh frame, and
-  // the same-named line it never touched repainted). Two truths instead:
-  //
-  // · The swipe carried the line's TEXT + the gesture's time (`asOf`): delete the
-  //   same ITEM the way the POST matcher re-uses one — the id was stale, the intent
-  //   ("this thing, off the list") is not. Only a line that already existed at
-  //   gesture time qualifies: a queued offline delete replaying late must never eat
-  //   a same-named line someone re-added meanwhile.
-  // · Nothing safe to heal onto → 404, so the client KNOWS (and un-hides honestly)
-  //   instead of confirming a deletion that never happened.
-  //
-  // The console.warn is the field diagnostic: `wrangler tail` names the stale id's
-  // shape (tmp- vs real) the next time a device shows this, without a repro session.
-  const asOf = typeof body.asOf === 'number' && Number.isFinite(body.asOf) ? Math.floor(body.asOf) : null
-  const key = typeof body.text === 'string' && body.text.trim() ? normalizeItem(body.text) : ''
-  if (key && asOf) {
-    const { results } = await ctx.env.DB.prepare(
-      // Open lines first (a still-to-buy line is the one being swiped), oldest first.
-      'SELECT id, text FROM list_items WHERE household_id = ? AND created_at <= ? ORDER BY checked_at IS NOT NULL, created_at',
-    )
-      .bind(actor.householdId, asOf)
-      .all<{ id: string; text: string }>()
-    const hit = results.find((r) => normalizeItem(r.text) === key)
-    if (hit) {
-      await ctx.env.DB.prepare('DELETE FROM list_items WHERE id = ? AND household_id = ?')
-        .bind(hit.id, actor.householdId)
-        .run()
-      console.warn(`list DELETE healed a stale id onto the same item: ${body.id} → ${hit.id}`)
-      return ok({ ok: true, healed: hit.id })
-    }
-  }
-  console.warn(`list DELETE matched 0 rows (id ${body.id}${key ? ', no same-item line to heal onto' : ', no text sent'})`)
-  return notFound('Ligne introuvable.')
+  // A swiped line must really die even when the client aimed at an id this database
+  // does not have — see _lib/staleDelete (2026-10-06: a vacuous « ok » here made
+  // swiped items « always come back »).
+  const r = await deleteHealing(ctx.env.DB, {
+    table: 'list_items',
+    textColumn: 'text',
+    householdId: actor.householdId,
+    id: body.id,
+    text: body.text,
+    asOf: body.asOf,
+  })
+  if (r.outcome === 'missing') return notFound('Ligne introuvable.')
+  return ok(r.outcome === 'healed' ? { ok: true, healed: r.id } : { ok: true })
 })

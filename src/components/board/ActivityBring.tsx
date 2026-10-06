@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { live } from '../../lib/query'
-import { useWrite } from '../../lib/write'
+import { useWrite, writeFailed } from '../../lib/write'
 import { useT } from '../../i18n'
 import { TODO_TEMPLATES_KEY, TODOS_KEY, MONTH_KEY } from '../../lib/queryKeys'
 import { type TemplatesData, expandTemplate } from '../../lib/todos'
@@ -39,7 +39,7 @@ export function ActivityBring({ events, day }: { events: BringEvent[]; day: numb
   if (sections.length === 0) return null
 
   const add = (templateId: string) =>
-    write('todos', { method: 'POST', body: { templateId, day }, affectedKeys: [TODOS_KEY, MONTH_KEY] }).catch(() => {})
+    write('todos', { method: 'POST', body: { templateId, day }, affectedKeys: [TODOS_KEY, MONTH_KEY] }).catch(writeFailed)
 
   return (
     <section className="departure__bring">

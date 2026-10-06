@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import type { QueryKey } from '@tanstack/react-query'
 import { useT } from '../../i18n'
-import { useWrite } from '../../lib/write'
+import { useWrite, writeFailed } from '../../lib/write'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { useCreateWithUndo } from '../../lib/undoCreate'
 import { isGuest } from '../../lib/device'
@@ -142,7 +142,7 @@ export function MealPool<T extends { id: string; title: string }, O>({
 
   function removeItem(item: T) {
     removal.remove([item.id], labels.removedUndo(item.title), () =>
-      write(endpoint, { method: 'DELETE', body: { id: item.id }, affectedKeys: [queryKey] }).catch(() => {}),
+      write(endpoint, { method: 'DELETE', body: { id: item.id }, affectedKeys: [queryKey] }),
     )
   }
 
@@ -158,7 +158,7 @@ export function MealPool<T extends { id: string; title: string }, O>({
         c.setQueryData<Record<string, T[]>>(queryKey, (d) =>
           d ? { ...d, [collectionKey]: d[collectionKey].map((x) => (x.id === item.id ? { ...x, title: v } : x)) } : d,
         ),
-    }).catch(() => {})
+    }).catch(writeFailed)
   }
 
   const planOn = (item: T, date: number, slot: MealSlot) => {

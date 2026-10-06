@@ -2,7 +2,7 @@ import { useRef, useState, type ReactNode } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLang, useT } from '../../i18n'
 import { formatAgo } from '../../lib/format'
-import { useWrite } from '../../lib/write'
+import { useWrite, writeFailed } from '../../lib/write'
 import { useConfirm } from '../../lib/confirm'
 import { api, ApiError, isStatus } from '../../lib/api'
 import { BOARD_KEY, MEMBERS_KEY, MOTS_KEY } from '../../lib/queryKeys'
@@ -130,11 +130,11 @@ export function Notes({
   // « Garder »: onto the Souvenirs shelf (and back). A kept paper outlives being taken
   // down — the server keeps its media for the shelf — so no confirm is needed to keep one.
   const toggleKeep = (n: { id: string; saved_at?: number | null }) =>
-    void write('notes', { method: 'PATCH', body: { id: n.id, saved: !n.saved_at }, affectedKeys: [BOARD_KEY, MOTS_KEY] }).catch(() => {})
+    void write('notes', { method: 'PATCH', body: { id: n.id, saved: !n.saved_at }, affectedKeys: [BOARD_KEY, MOTS_KEY] }).catch(writeFailed)
   // Opening a mot that waits on YOUR face: first open wins server-side (idempotent), the
   // dot clears on every device. Its words are already on the paper — opening is the stamp.
   const openMot = (n: NoteRow) =>
-    void write('notes', { method: 'PATCH', body: { id: n.id, opened: true }, affectedKeys: [BOARD_KEY, MOTS_KEY] }).catch(() => {})
+    void write('notes', { method: 'PATCH', body: { id: n.id, opened: true }, affectedKeys: [BOARD_KEY, MOTS_KEY] }).catch(writeFailed)
   const shelfBadge = (n: NoteRow) =>
     ro || toddler ? null : (
       <button
@@ -207,7 +207,7 @@ export function Notes({
     const ids = shown.map((n) => n.id)
     removal.remove(ids, t.notes.clearedN(ids.length), () =>
       Promise.all(
-        ids.map((id) => write('notes', { method: 'DELETE', body: { id }, affectedKeys: [BOARD_KEY] }).catch(() => {})),
+        ids.map((id) => write('notes', { method: 'DELETE', body: { id }, affectedKeys: [BOARD_KEY] })),
       ),
     )
   }
@@ -225,7 +225,7 @@ export function Notes({
         affectedKeys: [BOARD_KEY],
         optimistic: (qc) =>
           qc.setQueryData<BoardData>(BOARD_KEY, (d) => (d ? { ...d, notes: d.notes.filter((x) => x.id !== n.id) } : d)),
-      }).catch(() => {})
+      }).catch(writeFailed)
       return
     }
     // A TEXT note rides the same held, undoable clear as « Tout effacer » (ACTIONS.md
@@ -233,7 +233,7 @@ export function Notes({
     // toddler tap-to-clear or a parent mis-tap silently ate the note). Deferred, so
     // no poll can flash it back mid-undo, and undo simply cancels the held DELETE.
     removal.remove([n.id], t.notes.clearedN(1), () =>
-      write('notes', { method: 'DELETE', body: { id: n.id }, affectedKeys: [BOARD_KEY] }).catch(() => {}),
+      write('notes', { method: 'DELETE', body: { id: n.id }, affectedKeys: [BOARD_KEY] }),
     )
   }
 

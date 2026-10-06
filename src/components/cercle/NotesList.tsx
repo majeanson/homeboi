@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useT, useLang } from '../../i18n'
 import { formatDay, formatDayTime } from '../../lib/format'
-import { useWrite } from '../../lib/write'
+import { useWrite, writeFailed } from '../../lib/write'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { FAMILY_NOTES_KEY } from '../../lib/queryKeys'
 import { type FamilyNote, sortNotes, noteRowText } from '../../lib/familyNotes'
@@ -135,7 +135,7 @@ export function NotesList({
   // their index — fewer writes).
   function move(from: number, to: number) {
     for (const patch of reorderPatches(shown, from, to))
-      void write('family-notes', { method: 'PATCH', body: patch, affectedKeys: [FAMILY_NOTES_KEY] }).catch(() => {})
+      void write('family-notes', { method: 'PATCH', body: patch, affectedKeys: [FAMILY_NOTES_KEY] }).catch(writeFailed)
   }
   const dnd = usePointerDnd({
     onDrop: (fromId, toZone) => move(Number(fromId), Number(toZone)),
@@ -159,14 +159,14 @@ export function NotesList({
   // Rename an audio memo — its caption is the note's title.
   function saveRename(id: string, v: string) {
     setRenameId(null)
-    void write('family-notes', { method: 'PATCH', body: { id, title: v.trim() }, affectedKeys: [FAMILY_NOTES_KEY] }).catch(() => {})
+    void write('family-notes', { method: 'PATCH', body: { id, title: v.trim() }, affectedKeys: [FAMILY_NOTES_KEY] }).catch(writeFailed)
   }
 
   // Tick / untick one checklist item from the read view → rewrite the body line + PATCH.
   function toggleCheck(n: FamilyNote, lineIndex: number) {
     const next = toggleCheckAt(n.text, lineIndex)
     if (next === n.text) return
-    void write('family-notes', { method: 'PATCH', body: { id: n.id, text: next }, affectedKeys: [FAMILY_NOTES_KEY] }).catch(() => {})
+    void write('family-notes', { method: 'PATCH', body: { id: n.id, text: next }, affectedKeys: [FAMILY_NOTES_KEY] }).catch(writeFailed)
   }
 
   function playClip(key: string) {

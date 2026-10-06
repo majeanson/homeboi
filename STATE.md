@@ -114,15 +114,16 @@ now, so the repo-wide count is honest for the first time.
 ## 3. What just shipped
 
 ### « Je glisse pour supprimer et l'item revient » — rond QUATRE : le menteur était le serveur — 2026-10-06
-
-Diagnosed against PRODUCTION (§5): D1 + the idempotency ledger + `wrangler tail` showed Marc's swipes
-committed (six `{"ok":true}` DELETEs) and deleted ZERO rows — `DELETE /api/list` answered a vacuous « ok »
-on an id the DB didn't have (stale frame, or a dead session's `tmp-…` row), so the next frame repainted
-the line. Now the delete sends **text + `asOf`**; a stale id **heals onto the same item** (never one
-created after `asOf`); else **404 + `console.warn`**; a 404 commit is confirmed-gone
-(`rejectionMeansGone`). Guards, run red first: 3 d1 cases, unit cases, `e2e/liste-swipe-delete.spec.ts`
-(possible only once `e2e/mocks.ts` stopped KEEPING ok-deleted rows). **Open:** why the frame held dead
-ids — watch the warn; a stale-frame « Vider » has the same hole (cleared 0, silent).
+Diagnosed against PRODUCTION (§5): D1 + the idempotency ledger + `wrangler tail` during Marc's repro showed his
+swipes committed (six « ok » DELETEs) and deleted ZERO rows — `DELETE /api/list` answered a vacuous « ok » on an id
+the DB didn't have (stale frame, a dead session's `tmp-…` row), so the next frame repainted the line. Now the delete
+sends **text + `asOf`**; a stale id **heals onto the same item** (never one created after `asOf`) else **404 +
+`console.warn`** — one helper (`_lib/staleDelete`) for the list AND todos, the only resources with optimistic `tmp-`
+rows. **Then the class:** ~100 write sites wrote `.catch(() => {})`, so a refused write reverted its row unexplained →
+`.catch(writeFailed)` (one calm notice); `wrote()`/`writeOrNull()` where a follow-up assumes success (4 « Annuler »s
+followed FAILED deletes); 10 removal commits stopped swallowing; Board's five hand-rolled hold/refetch/un-hide
+copies now use `useDeferredRemoval`. Guards, run red first: d1, unit, `swallow-rule`, `e2e/liste-swipe-delete` (the mock
+used to KEEP ok-deleted rows). **Open:** why the frame held dead ids; a stale-frame « Vider » has the same hole.
 
 ## 4. What still needs improvement — consolidated and ranked
 

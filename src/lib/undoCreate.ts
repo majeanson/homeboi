@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import type { QueryClient, QueryKey } from '@tanstack/react-query'
-import { useWrite, type WriteResult } from './write'
+import { useWrite, type WriteResult, writeFailed } from './write'
 import { useRecordUndo } from './toast'
 import { recordTmpId } from './tmpIds'
 
@@ -78,7 +78,7 @@ export function useCreateWithUndo() {
                 method: 'DELETE',
                 body: { id },
                 affectedKeys: opts.undoAffectedKeys ?? opts.affectedKeys,
-              }).catch(() => {})
+              }).catch(writeFailed)
             opts.afterUndo?.()
           },
         })

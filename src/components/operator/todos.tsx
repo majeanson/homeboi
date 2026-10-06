@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { useT } from '../../i18n'
 import { type HelpMode } from '../../lib/helpMode'
 import { api } from '../../lib/api'
-import { useWrite } from '../../lib/write'
+import { useWrite, writeFailed, writeOrNull } from '../../lib/write'
 import { live } from '../../lib/query'
 import { useRecordUndo } from '../../lib/toast'
 import { isGuest } from '../../lib/device'
@@ -62,11 +62,11 @@ export function TodoTemplatesSection({ help }: { help?: HelpMode }) {
     const name = newName.trim()
     if (!name) return
     setNewName('')
-    const res = await write<{ id?: string }>('todo-templates', {
+    const res = await writeOrNull(write<{ id?: string }>('todo-templates', {
       method: 'POST',
       body: { title: name, items: [] },
       affectedKeys: [TODO_TEMPLATES_KEY],
-    }).catch(() => null)
+    }))
     const id = res && !res.queued ? res.data?.id : undefined
     if (id) nav(`/liste-modele/${id}`)
   }
@@ -76,7 +76,7 @@ export function TodoTemplatesSection({ help }: { help?: HelpMode }) {
   // the refetch; re-create is the clean reversal. NOTE: a new id means any OTHER
   // list that referenced this one keeps a now-dangling ref (skipped at instantiate).
   function removeTemplate(tpl: TodoTemplate) {
-    void write('todo-templates', { method: 'DELETE', body: { id: tpl.id }, affectedKeys: [TODO_TEMPLATES_KEY] }).catch(() => {})
+    void write('todo-templates', { method: 'DELETE', body: { id: tpl.id }, affectedKeys: [TODO_TEMPLATES_KEY] }).catch(writeFailed)
     recordUndo({
       message: t.todos.removed(tpl.title),
       onUndo: () =>
@@ -84,7 +84,7 @@ export function TodoTemplatesSection({ help }: { help?: HelpMode }) {
           method: 'POST',
           body: { title: tpl.title, items: toStored(tpl.items) },
           affectedKeys: [TODO_TEMPLATES_KEY],
-        }).catch(() => {}),
+        }).catch(writeFailed),
     })
   }
 

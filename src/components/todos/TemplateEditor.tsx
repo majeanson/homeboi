@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useT } from '../../i18n'
 import { useOperatorT } from '../../i18n.operator'
-import { useWrite } from '../../lib/write'
+import { useWrite, writeFailed } from '../../lib/write'
 import { TODO_TEMPLATES_KEY } from '../../lib/queryKeys'
 import {
   type TodoTemplate,
@@ -47,7 +47,7 @@ export function TemplateEditor({ templates, tpl }: { templates: TodoTemplate[]; 
       method: 'PATCH',
       body: { id: tpl.id, items: toStored(items) },
       affectedKeys: [TODO_TEMPLATES_KEY],
-    }).catch(() => {})
+    }).catch(writeFailed)
 
   function renameTemplate(title: string) {
     const v = title.trim()
@@ -56,7 +56,7 @@ export function TemplateEditor({ templates, tpl }: { templates: TodoTemplate[]; 
       method: 'PATCH',
       body: { id: tpl.id, title: v },
       affectedKeys: [TODO_TEMPLATES_KEY],
-    }).catch(() => {})
+    }).catch(writeFailed)
   }
   function addItem() {
     const label = newItem.trim()

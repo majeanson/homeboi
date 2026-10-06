@@ -1,5 +1,5 @@
 import { useT } from '../../i18n'
-import { useWrite } from '../../lib/write'
+import { useWrite, wrote, writeFailed } from '../../lib/write'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { useRecordUndo } from '../../lib/toast'
 import { settingsHref } from '../../lib/settingsNav'
@@ -71,10 +71,11 @@ export function useRemoveMealFromPlan() {
   const recordUndo = useRecordUndo()
   return async (m: { id: string; title: string; slot: string; day: number }) => {
     const keys = [BOARD_KEY, MEALS_KEY, MEAL_HISTORY_KEY, MONTH_KEY]
-    await write('meals', { method: 'DELETE', body: { id: m.id }, affectedKeys: keys }).catch(() => {})
+    // No « Annuler » for a removal that did not happen (it would re-plan a meal never removed).
+    if (!(await wrote(write('meals', { method: 'DELETE', body: { id: m.id }, affectedKeys: keys })))) return
     recordUndo({
       message: t.undo.mealRemoved(m.title),
-      onUndo: () => write('meals', { method: 'POST', body: { date: m.day, slot: m.slot, title: m.title }, affectedKeys: keys }).catch(() => {}),
+      onUndo: () => write('meals', { method: 'POST', body: { date: m.day, slot: m.slot, title: m.title }, affectedKeys: keys }).catch(writeFailed),
     })
   }
 }

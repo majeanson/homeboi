@@ -5,7 +5,7 @@ import { api } from '../../lib/api'
 import { resizeImage, imgUrl } from '../../lib/image'
 import { live } from '../../lib/query'
 import { useConfirm } from '../../lib/confirm'
-import { useWrite } from '../../lib/write'
+import { useWrite, writeFailed } from '../../lib/write'
 import { CERCLE_KEY, BUSINESSES_KEY } from '../../lib/queryKeys'
 import { type Business } from '../../lib/businesses'
 import {
@@ -123,10 +123,10 @@ export function PetForm({ value, onSaved, onCancel }: { value?: Pet | null; onSa
         method: 'POST',
         body: { aId: id, aKind: kind, bId: petId, bKind: 'pet', type: 'owner' },
         affectedKeys: [CERCLE_KEY],
-      }).catch(() => {})
+      }).catch(writeFailed)
     }
     for (const [key, linkId] of existingOwners) {
-      if (!ownerKeys.has(key)) await write('cercle-links', { method: 'DELETE', body: { id: linkId }, affectedKeys: [CERCLE_KEY] }).catch(() => {})
+      if (!ownerKeys.has(key)) await write('cercle-links', { method: 'DELETE', body: { id: linkId }, affectedKeys: [CERCLE_KEY] }).catch(writeFailed)
     }
   }
 

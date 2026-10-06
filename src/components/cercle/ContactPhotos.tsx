@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { useConfirm } from '../../lib/confirm'
-import { useWrite } from '../../lib/write'
+import { useWrite, writeFailed } from '../../lib/write'
 import { imgUrl } from '../../lib/image'
 import { useMediaUpload } from '../../lib/uploadMedia'
 import { useOnline } from '../../lib/online'
@@ -56,7 +56,7 @@ export function ContactPhotos({ contactId, memberPhoto }: { contactId: string; m
     if (key) {
       // Link the stored blob to this contact (silent on failure — offline/R2 unset
       // keeps the current gallery).
-      await api('cercle-photos', { method: 'POST', body: { contactId, photoKey: key } }).catch(() => {})
+      await api('cercle-photos', { method: 'POST', body: { contactId, photoKey: key } }).catch(writeFailed)
       refresh()
     }
     if (fileRef.current) fileRef.current.value = ''

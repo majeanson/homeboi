@@ -1,5 +1,5 @@
 import { useT } from '../../i18n'
-import { useWrite } from '../../lib/write'
+import { useWrite, writeFailed, writeOrNull } from '../../lib/write'
 import { useRecordUndo } from '../../lib/toast'
 import { BOARD_KEY, MONTH_KEY } from '../../lib/queryKeys'
 import { type MealSlot } from '../../lib/mealSlots'
@@ -30,21 +30,21 @@ export function usePlanLeftover() {
   const recordUndo = useRecordUndo()
   return async (l: Pick<Leftover, 'id' | 'title' | 'recipe_id' | 'source_meal_id'>, date: number, slot: MealSlot) => {
     const keys = [LEFTOVERS_KEY, MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY, MONTH_KEY]
-    const res = await write<{ mealId?: string }>('meal-leftovers', {
+    const res = await writeOrNull(write<{ mealId?: string }>('meal-leftovers', {
       method: 'POST',
       body: { action: 'plan', id: l.id, date, slot },
       affectedKeys: keys,
-    }).catch(() => null)
+    }))
     const mealId = res && !res.queued ? res.data?.mealId : undefined
     recordUndo({
       message: t.undo.leftoverPlanned(l.title),
       onUndo: async () => {
-        if (mealId) await write('meals', { method: 'DELETE', body: { id: mealId }, affectedKeys: keys }).catch(() => {})
+        if (mealId) await write('meals', { method: 'DELETE', body: { id: mealId }, affectedKeys: keys }).catch(writeFailed)
         await write('meal-leftovers', {
           method: 'POST',
           body: { title: l.title, recipeId: l.recipe_id ?? null, sourceMealId: l.source_meal_id ?? null },
           affectedKeys: keys,
-        }).catch(() => {})
+        }).catch(writeFailed)
       },
     })
   }
@@ -86,17 +86,17 @@ export function useAnnounceLeftover() {
     opts?: { undo?: boolean },
   ): Promise<string | undefined> => {
     const keys = [LEFTOVERS_KEY, BOARD_KEY]
-    const res = await write<{ id?: string }>('meal-leftovers', {
+    const res = await writeOrNull(write<{ id?: string }>('meal-leftovers', {
       method: 'POST',
       body: { title: from.title, recipeId: from.recipe_id ?? null, sourceMealId: from.id ?? null },
       affectedKeys: keys,
-    }).catch(() => null)
+    }))
     const id = res && !res.queued ? res.data?.id : undefined
     if (opts?.undo !== false)
       recordUndo({
         message: t.undo.leftoverAdded(from.title),
         onUndo: () => {
-          if (id) void write('meal-leftovers', { method: 'DELETE', body: { id }, affectedKeys: keys }).catch(() => {})
+          if (id) void write('meal-leftovers', { method: 'DELETE', body: { id }, affectedKeys: keys }).catch(writeFailed)
         },
       })
     return id

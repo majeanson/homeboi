@@ -5,7 +5,7 @@
 // no per-device localStorage store anymore.
 import { useQuery, type QueryClient } from '@tanstack/react-query'
 import { api } from './api'
-import { writeWith } from './write'
+import { writeWith, writeOrNull } from './write'
 import { type Deal, type Pick } from './deals'
 import { normKey } from './cookable'
 import { heldIds } from './useDeferredRemoval'
@@ -197,11 +197,11 @@ interface AddResult {
 // (`match: true`) — the client decides first against its cached board list, but a
 // cold cache or a replayed offline add has nothing to decide against.
 async function addLine(qc: QueryClient, body: Record<string, unknown>): Promise<AddedTo> {
-  const res = await writeWith<AddResult>(qc, 'list', {
+  const res = await writeOrNull(writeWith<AddResult>(qc, 'list', {
     method: 'POST',
     body: { ...body, match: true },
     affectedKeys: [BOARD_KEY],
-  }).catch(() => null)
+  }))
   return res && !res.queued && res.data?.matched ? res.data.text : null
 }
 

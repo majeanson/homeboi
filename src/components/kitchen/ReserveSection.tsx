@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useT } from '../../i18n'
-import { useWrite } from '../../lib/write'
+import { useWrite, writeFailed } from '../../lib/write'
 import { useCreateWithUndo } from '../../lib/undoCreate'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { useUndoToast } from '../../lib/toast'
@@ -74,7 +74,7 @@ export function ReserveSection({ reserve, help }: { reserve: ReserveRow[]; help?
   // other pantry lists — a mis-tap costs nothing and never round-trips.
   function clearItem(r: ReserveRow) {
     removal.remove([r.id], t.undo.cleared(r.item), () =>
-      write('reserve', { method: 'DELETE', body: { id: r.id }, affectedKeys: [RESERVE_KEY] }).catch(() => {}),
+      write('reserve', { method: 'DELETE', body: { id: r.id }, affectedKeys: [RESERVE_KEY] }),
     )
   }
 
@@ -91,7 +91,7 @@ export function ReserveSection({ reserve, help }: { reserve: ReserveRow[]; help?
       onCommit: () =>
         // Invalidate the quick-add prediction caches too (GHOSTS/HISTORY), like the
         // canonical Liste.postAdd — else the newly-listed item lingers as a candidate.
-        void write('list', { method: 'POST', body: { text: r.item }, affectedKeys: [BOARD_KEY, GHOSTS_KEY, HISTORY_KEY] }).catch(() => {}),
+        void write('list', { method: 'POST', body: { text: r.item }, affectedKeys: [BOARD_KEY, GHOSTS_KEY, HISTORY_KEY] }).catch(writeFailed),
     })
   }
 
@@ -113,7 +113,7 @@ export function ReserveSection({ reserve, help }: { reserve: ReserveRow[]; help?
         qc.setQueryData<ReserveData>(RESERVE_KEY, (d) =>
           d ? { reserve: d.reserve.map((x) => (x.id === r.id ? { ...x, item: v, location_id: locationId } : x)) } : d,
         ),
-    }).catch(() => {})
+    }).catch(writeFailed)
   }
 
   // Group items under their location, in the configured order, then an "Autres"
