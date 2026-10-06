@@ -86,6 +86,18 @@ describe('writeWith — B-9 idempotency', () => {
     expect(enqueueMock).not.toHaveBeenCalled()
   })
 
+  it('a DELETE answered 404 resolves — the row is already gone, which is what was asked', async () => {
+    apiMock.mockRejectedValueOnce(new MockApiError(404, 'Ligne introuvable.'))
+    const res = await writeWith(new QueryClient(), 'list', { method: 'DELETE', body: { id: 'x' } })
+    expect(res).toEqual({ data: null, queued: false })
+    expect(enqueueMock).not.toHaveBeenCalled()
+  })
+
+  it('a 404 on any OTHER method is still a refusal — the row the user edited is gone, tell them', async () => {
+    apiMock.mockRejectedValueOnce(new MockApiError(404, 'Ligne introuvable.'))
+    await expect(writeWith(new QueryClient(), 'list', { method: 'PATCH', body: { id: 'x', checked: true } })).rejects.toBeInstanceOf(MockApiError)
+  })
+
   it('a guest write still short-circuits before any network call or enqueue', async () => {
     localStorage.setItem('babillard-guest-token', 'tok')
     const qc = new QueryClient()

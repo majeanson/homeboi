@@ -160,7 +160,14 @@ export async function writeWith<T = unknown>(
     // see the B-9 note above). An ApiError means the server answered (4xx/5xx): a
     // real error, surface it (the optimistic change is corrected by the invalidate
     // below).
-    if (err instanceof ApiError) throw err
+    if (err instanceof ApiError) {
+      // A DELETE the server answers 404 is a row that is ALREADY GONE — what the caller wanted.
+      // Treating it as a failure made “Annuler” on an add the user had since swiped away say
+      // « Pas enregistré » (writeFailed), and every deferred delete re-derive the same fact by
+      // hand (useDeferredRemoval.rejectionMeansGone). The refetch below shows the truth.
+      if (err.status === 404 && method === 'DELETE') return { data: null as T, queued: false }
+      throw err
+    }
     return await queue()
   } finally {
     stopReapply()
