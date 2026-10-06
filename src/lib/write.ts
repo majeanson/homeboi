@@ -71,7 +71,7 @@ export interface WriteSpec {
 // The rejection helpers live in writeFailed.ts (a leaf the always-loaded toast bar can import
 // without pulling this whole module into the first-load bundle); re-exported so call sites
 // keep importing everything write-shaped from here.
-export { setWriteFailedNotifier, writeFailed, wrote, writeOrNull } from './writeFailed'
+export { writeFailed, wrote, writeOrNull } from './writeFailed'
 
 export type WriteResult<T> = { data: T; queued: false } | { data: null; queued: true }
 

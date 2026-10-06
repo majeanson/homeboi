@@ -22,7 +22,7 @@ import { normalizeItem } from './normalize'
 //             happened.
 //
 // Pass the table's TITLE column as `textColumn`; both tables carry `created_at`.
-export type StaleDelete =
+type StaleDelete =
   | { outcome: 'deleted'; id: string }
   | { outcome: 'healed'; id: string }
   | { outcome: 'missing' }
