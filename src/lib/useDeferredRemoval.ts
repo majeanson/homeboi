@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react'
 import { useQueryClient, type QueryClient, type QueryKey } from '@tanstack/react-query'
 import { useUndoToast } from './toast'
+import { isStatus } from './api'
 import { onOutboxChange, outboxCount } from './outbox'
 import { onTmpIdResolved, resolveId } from './tmpIds'
 
@@ -169,6 +170,19 @@ function unhideWhenFresh(qc: QueryClient, scope: string, ids: string[], t0: numb
   )
 }
 
+// What a REJECTED commit means for the row. A 404 is the server saying « the row
+// under this id is already gone » — deleted by another device mid-undo, or an id
+// from a stale frame the database never had (the list DELETE answers 404 instead of
+// a vacuous 200 since 2026-10-06, after production showed six « ok » deletes that
+// removed nothing). Either way the row-as-aimed-at does NOT exist server-side, so
+// un-hiding it would resurrect exactly what the server doesn't have — treat it as
+// gone and let the refetch repaint the truth. Every OTHER rejection (403, 500, a
+// validation 400) means the delete genuinely didn't happen: show the row again
+// rather than lie. Pure + exported for the unit test beside the store.
+export function rejectionMeansGone(err: unknown): boolean {
+  return isStatus(err, 404)
+}
+
 // Keep `ids` hidden until the offline outbox has fully drained (every queued write
 // replayed on reconnect), then refetch + un-hide. On a poor/no connection a deferred
 // delete is QUEUED, not yet on the server — un-hiding right away lets the next poll
@@ -220,8 +234,10 @@ export function useDeferredRemoval(queryKey: QueryKey) {
         let confirmed = true
         try {
           await commit()
-        } catch {
-          confirmed = false
+        } catch (err) {
+          // A 404 counts as confirmed-gone (see rejectionMeansGone): the row this
+          // delete aimed at is not on the server, so keeping it hidden is the truth.
+          confirmed = rejectionMeansGone(err)
         }
         // Freshness fence: only a scope frame fetched AFTER this instant proves the
         // deletion reached the render data. (Captured after `commit`, so a fetch the

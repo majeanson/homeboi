@@ -1001,6 +1001,20 @@ export async function mockApi(
           /* no body */
         }
       }
+      // A swipe-delete removes its row — the next board read must NOT contain it,
+      // or the deferred removal's freshness fence un-hides the row straight back
+      // out of the refetched frame (the resurrection liste-swipe-delete.spec.ts
+      // guards). Before 2026-10-06 the mock answered a bare ok and KEPT the row,
+      // so no spec could ever assert « swiped means gone » — the exact blind spot
+      // the production bug lived in.
+      if (method === 'DELETE' && path === 'list') {
+        try {
+          const body = JSON.parse(route.request().postData() || '{}')
+          if (body.id) clearedItems.add(body.id)
+        } catch {
+          /* no body */
+        }
+      }
       // Record list writes so the next board read confirms the optimistic UI: a
       // check marks in place (checked_at), clearChecked removes the ticked rows.
       if (method === 'PATCH' && path === 'list') {

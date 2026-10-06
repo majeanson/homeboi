@@ -113,17 +113,16 @@ now, so the repo-wide count is honest for the first time.
 
 ## 3. What just shipped
 
-### Housekeeping, then fewer concepts — 2026-09-29
+### « Je glisse pour supprimer et l'item revient » — rond QUATRE : le menteur était le serveur — 2026-10-06
 
-**Reds nobody read, flakes that were bugs.** Matrix red three Mondays → `scheduled-red.yml`
-opens an issue. Two flakes were app defects (a review list's first frame, the tour hijacking
-deep links); CI keeps traces, E2E in 4 shards (~50 → ~23 min), a Sunday `flake-hunt.yml` ×3 (09-30: contrast ran out of budget, 22 routes × 2.2 s > 45 s → per-route timeout). `console-clean.spec` holds 60 routes × 4 lenses (phone, wall, toddler, EN) to a silent console (found a <form> in a <form>, and contrast measuring hub tabs under four scene names: « day-plan », and three id scenes in an empty household).
-Deps latest, Node 26, TS 7 (not Vitest 5, #28); green minor bumps self-merge. Door 522 KB.
-
-**Fewer concepts, not more features** (dormancy audit: postbox, intake, mots, carnets unused).
-One « Garder »; one « fiche famille » merge; one writable link (« Boîte aux lettres »); **mots
-are fridge notes** (0142: face dot, « Plus tard », outbox kept; replies, « Transformer » gone);
-doors on the things (＋ gardienne, Mots card, contact peek) → ONE form, ONE « partagé » list. **09-30, from real use:** a flyer title lands as a calm item name (`lib/flyerName`, the deal keeps the title; 9 of 14 real lines were shouts); capture re-uses the SAME item; a note cannot be edited blank; a birthday with a gift idea wears 🎁. **10-01:** re-tapping the tab you are on returns it to its start — top, default sub (the board's device-remembered view picker too: back to « Grille »), fresh data (`HubLayout` retapTab); editing a routine no longer erases the photos and voice clips of the steps it did not touch (the form prefilled field-by-field and the save freed their blobs), and tapping a step’s picture offers « Ajouter une photo » / « Dessiner » above the emojis. **The gap owns the spacing**: a component's flow margin inside a gapped flex container added to the gap (Maison 36px under its pills, « Pour qui ? » 28px from its field, the Réglages « ? » 10px low) — zeroed in one `core.css` block, held by `e2e/spacing.spec.ts` (60 routes × phone + desktop; routes now shared in `e2e/routes.ts`). **A walk as a user** (82 phone frames, three reviewers, every finding verified — half were fixture dates or the test browser's English date picker): the shared route list held a dead `/settings?tab=systeme` (it is `settings`), so console, spacing AND contrast had never looked at Système; « À régler » empty drops its ⚠ frame; a habit with no rule reads « Chaque jour », not « Jamais » under « Selon un horaire » (`RecurPicker` `noneLabel`), and its button is a verb; Idées' ⚙ rides the field's row; one folded checklist does not repeat its count; L'auto keeps passengers on the ride's line; on a phone `FormFooter` leads with « Annuler · Enregistrer » above Supprimer. Kept by Marc: the « Compléter les familles » count. Planning a dish from the Idées scene (every source, and Historique) now toasts « planifié — <jour> » with « Annuler » — it was a silent POST with no way back (`usePlanIdea`). « Demander » and the MCP snapshot read a text-less fridge drawing/voice memo/photo as « (un dessin) », not a blank (`noteForPrompt`). Considered and skipped by Marc: a note line on a meal, the day's events at supper; the signup funnel waits for more days.
+Diagnosed against PRODUCTION (§5): D1 + the idempotency ledger + `wrangler tail` showed Marc's swipes
+committed (six `{"ok":true}` DELETEs) and deleted ZERO rows — `DELETE /api/list` answered a vacuous « ok »
+on an id the DB didn't have (stale frame, or a dead session's `tmp-…` row), so the next frame repainted
+the line. Now the delete sends **text + `asOf`**; a stale id **heals onto the same item** (never one
+created after `asOf`); else **404 + `console.warn`**; a 404 commit is confirmed-gone
+(`rejectionMeansGone`). Guards, run red first: 3 d1 cases, unit cases, `e2e/liste-swipe-delete.spec.ts`
+(possible only once `e2e/mocks.ts` stopped KEEPING ok-deleted rows). **Open:** why the frame held dead
+ids — watch the warn; a stale-frame « Vider » has the same hole (cleared 0, silent).
 
 ## 4. What still needs improvement — consolidated and ranked
 

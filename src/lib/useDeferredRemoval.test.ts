@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { QueryClient, QueryObserver } from '@tanstack/react-query'
-import { _deferredRemovalStore as store } from './useDeferredRemoval'
+import { _deferredRemovalStore as store, rejectionMeansGone } from './useDeferredRemoval'
+import { ApiError } from './api'
 import { recordTmpId, _resetTmpIds } from './tmpIds'
 
 // The pure module store behind useDeferredRemoval — the bit that makes a deferred
@@ -74,6 +75,25 @@ describe('deferred-removal store', () => {
     recordTmpId('tmp-1-a', 'real-1')
     store.unhideIds('todos', ['tmp-1-a']) // undo/commit closures captured the tmp id
     expect(store.snapshot('todos')).toBe(store.EMPTY)
+  })
+})
+
+// What a rejected commit means (2026-10-06, « I swipe and the items always come
+// back », round four). The server's list DELETE answers 404 now instead of a vacuous
+// « ok » when the client's id matched nothing — and a 404 means the row-as-aimed-at
+// is NOT on the server (deleted elsewhere mid-undo, or a stale/tmp id), so un-hiding
+// it would resurrect exactly what the database doesn't have. Every other rejection
+// still un-hides: the delete genuinely didn't happen.
+describe('rejectionMeansGone', () => {
+  it('treats a 404 as gone — keep hiding, the refetch repaints the truth', () => {
+    expect(rejectionMeansGone(new ApiError(404, 'Ligne introuvable.'))).toBe(true)
+  })
+  it('treats every real failure as NOT gone — the row must show again', () => {
+    expect(rejectionMeansGone(new ApiError(403, 'Lecture seule.'))).toBe(false)
+    expect(rejectionMeansGone(new ApiError(500, 'Erreur 500'))).toBe(false)
+    expect(rejectionMeansGone(new ApiError(400, 'id requis.'))).toBe(false)
+    expect(rejectionMeansGone(new TypeError('Failed to fetch'))).toBe(false)
+    expect(rejectionMeansGone(undefined)).toBe(false)
   })
 })
 

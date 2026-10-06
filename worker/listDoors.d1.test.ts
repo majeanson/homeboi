@@ -75,6 +75,53 @@ describe('the doors onto the list', () => {
   })
 })
 
+// The other side of the cold-cache coin (2026-10-06): the DOORS add through a
+// matcher, but the DELETE trusted the client's id blindly — and answered a vacuous
+// « ok » when that id matched nothing. On a device holding a stale frame (rows
+// cleared/re-added elsewhere, or a persisted optimistic `tmp-…` row from a dead
+// session) every swipe-delete therefore "succeeded" while deleting NOTHING, the next
+// fresh frame repainted the same-named line, and Marc watched items « always come
+// back » — with three generations of client-side resurrection fixes unable to help,
+// because the lie was the server's. Verified against production D1: six vacuous
+// {"ok":true} writes that afternoon, zero rows gone.
+describe('a swiped line dies even when the client aimed at a stale id', () => {
+  const nowSec = () => Math.floor(Date.now() / 1000)
+
+  it('an id the server never had answers 404, not a vacuous ok', async () => {
+    const s = await household('del-stale', undefined, { empty: true })
+    await s.fetch('/api/list', { method: 'POST', body: { text: 'Couscous' } })
+    const res = await s.fetch('/api/list', { method: 'DELETE', body: { id: 'tmp-1759780000-zz' } })
+    expect(res.status, 'a delete that removed nothing must say so').toBe(404)
+    expect((await lines(s)).map((l) => l.text), 'and touch nothing').toEqual(['Couscous'])
+  })
+
+  it('…but heals onto the SAME item when the client says what it was deleting', async () => {
+    const s = await household('del-heal', undefined, { empty: true })
+    await s.fetch('/api/list', { method: 'POST', body: { text: 'Coeurs de romaine' } })
+    // The swiped row's id comes from a frame the server has since replaced — the
+    // text + the gesture's time are what still identify the user's intent.
+    const res = await s.fetch('/api/list', {
+      method: 'DELETE',
+      body: { id: 'Zstale0rowZZ', text: 'coeurs de romaine', asOf: nowSec() + 5 },
+    })
+    expect(res.status).toBe(200)
+    expect((await lines(s)).length, 'the same-named line is the one the user meant').toBe(0)
+  })
+
+  it('the heal never reaches a line added AFTER the gesture', async () => {
+    const s = await household('del-future', undefined, { empty: true })
+    // The row exists NOW; the delete claims it was gestured a minute AGO — a queued
+    // offline delete replaying late must not eat a line someone re-added meanwhile.
+    await s.fetch('/api/list', { method: 'POST', body: { text: 'Lait' } })
+    const res = await s.fetch('/api/list', {
+      method: 'DELETE',
+      body: { id: 'Zstale0rowZZ', text: 'Lait', asOf: nowSec() - 60 },
+    })
+    expect(res.status, 'nothing safe to delete → say so').toBe(404)
+    expect((await lines(s)).map((l) => l.text), 'the newer line survives').toEqual(['Lait'])
+  })
+})
+
 describe('a fridge note cannot go blank', () => {
   it('refuses an edit to no words on a text note, allows it on a memo', async () => {
     const s = await household('note-blank', undefined, { empty: true })

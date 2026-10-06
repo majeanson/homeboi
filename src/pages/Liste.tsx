@@ -595,10 +595,18 @@ export function Liste() {
   // Swipe-left delete: a plain remove from the list — NOT logged as bought (that
   // path is the check + "Clear checked"). Same deferred shape via the shared hook.
   function deleteItem(item: ListRow) {
+    // `text` + `asOf` (the gesture's time, not the commit's — the write fires ~15 s
+    // later) let the server heal a STALE id onto the same item: a frame predating a
+    // « Vider » + re-add, or a persisted tmp row from a dead session, carries ids
+    // the database no longer has, and a delete by id alone then removed nothing —
+    // the vacuous « ok » behind « I swipe and the items always come back »
+    // (2026-10-06). The server only heals onto a line that existed at `asOf`, so a
+    // queued offline delete replaying late can't eat a line re-added meanwhile.
+    const asOf = Math.floor(Date.now() / 1000)
     // No .catch here on purpose: useDeferredRemoval needs to SEE a rejection to
     // tell "deleted, refetch failed" from "the delete failed" (it owns both cases).
     removal.remove([item.id], t.undo.cleared(item.text), () =>
-      write('list', { method: 'DELETE', body: { id: item.id }, affectedKeys: [BOARD_KEY] }),
+      write('list', { method: 'DELETE', body: { id: item.id, text: item.text, asOf }, affectedKeys: [BOARD_KEY] }),
     )
   }
 
