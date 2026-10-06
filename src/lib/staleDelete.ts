@@ -13,3 +13,21 @@
 export function healingDeleteBody(id: string, text: string): { id: string; text: string; asOf: number } {
   return { id, text, asOf: Math.floor(Date.now() / 1000) }
 }
+
+// « Vider les cochés » — the batch twin of healingDeleteBody. `ids` stays what scopes the
+// clear to exactly the rows ticked at gesture time (a tick made after the undo toast was
+// scheduled is not swept up); `items` + `asOf` let the server stand a same-named ticked row
+// in for any id it never had, instead of clearing nothing and answering « ok ».
+export function healingClearBody(rows: { id: string; text: string }[]): {
+  clearChecked: true
+  ids: string[]
+  items: { id: string; text: string }[]
+  asOf: number
+} {
+  return {
+    clearChecked: true,
+    ids: rows.map((r) => r.id),
+    items: rows.map((r) => ({ id: r.id, text: r.text })),
+    asOf: Math.floor(Date.now() / 1000),
+  }
+}

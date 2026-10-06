@@ -113,4 +113,29 @@ test.describe('swipe-delete on La liste', () => {
     expect(deletes, 'an undone delete must never fire').toBe(0)
     await expect(page.locator(ROW)).toBeVisible()
   })
+
+  // « Vider les cochés » is the batch twin: same stale-id hole, same guard. The request must
+  // carry the ticked lines' NAMES and the gesture's time (what lets the server stand a
+  // same-named line in for an id it never had), and the cleared line must stay gone past the
+  // refetch — the mock now removes it like the server does.
+  test('« Vider les cochés » names what it clears and the line stays gone past the refetch', async ({ page }) => {
+    await expect(page.locator(ROW)).toBeVisible()
+    await page.locator(ROW + ' .list-row__toggle').click()
+    await expect(page.locator(ROW + ' .list-row__main.done')).toBeVisible()
+
+    const [req] = await Promise.all([
+      page.waitForRequest((r) => r.method() === 'PATCH' && r.url().includes('/api/list') && (r.postData() ?? '').includes('clearChecked'), {
+        timeout: 20_000,
+      }),
+      page.getByRole('button', { name: /Vider les cochés/ }).click(),
+      expect(page.locator(ROW)).toBeHidden(),
+    ])
+    const body = JSON.parse(req.postData() || '{}')
+    expect(body).toMatchObject({ clearChecked: true, ids: ['l2'], items: [{ id: 'l2', text: 'Pain' }] })
+    expect(typeof body.asOf, 'asOf = the gesture’s epoch seconds').toBe('number')
+
+    await page.waitForResponse((r) => r.url().includes('/api/board') && r.request().method() === 'GET', { timeout: 20_000 })
+    await page.waitForTimeout(500)
+    await expect(page.locator(ROW)).toHaveCount(0)
+  })
 })

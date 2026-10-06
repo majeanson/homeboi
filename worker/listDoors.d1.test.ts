@@ -156,6 +156,81 @@ describe('a deleted todo dies even when the client aimed at a stale id', () => {
   })
 })
 
+// « Vider les cochés » with a STALE snapshot — the batch twin of the swipe bug. The client
+// names the ticked rows by id; ids the database never had used to clear NOTHING and answer
+// ok, and the ticked lines repainted. Same two helpers, same three truths, for the list
+// (which also logs the buy) and for todos.
+describe('« Vider les cochés » survives a stale snapshot', () => {
+  const nowSec = () => Math.floor(Date.now() / 1000)
+  const tick = (s: Session, id: string) => s.fetch('/api/list', { method: 'PATCH', body: { id, checked: true } })
+  const mk = async (s: Session, text: string) =>
+    ((await (await s.fetch('/api/list', { method: 'POST', body: { text } })).json()) as { id: string }).id
+  const bought = async (s: Session) =>
+    (await env.DB.prepare('SELECT text FROM purchase_log WHERE household_id = ?').bind(s.householdId).all<{ text: string }>()).results.map((r) => r.text)
+
+  it('list: a stale id heals onto the same ticked line, and the buy is still logged', async () => {
+    const s = await household('clear-heal', undefined, { empty: true })
+    const id = await mk(s, 'Coeurs de romaine')
+    await tick(s, id)
+    const res = await s.fetch('/api/list', {
+      method: 'PATCH',
+      body: { clearChecked: true, ids: ['tmp-1759780000-zz'], items: [{ id: 'tmp-1759780000-zz', text: 'coeurs de romaine' }], asOf: nowSec() + 5 },
+    })
+    expect(res.status).toBe(200)
+    expect(await lines(s)).toEqual([])
+    expect(await bought(s), 'clearing still records the purchase').toEqual(['Coeurs de romaine'])
+  })
+
+  it('list: when nothing named exists any more it says 404 — not a vacuous ok', async () => {
+    const s = await household('clear-404', undefined, { empty: true })
+    await mk(s, 'Pain')
+    const res = await s.fetch('/api/list', { method: 'PATCH', body: { clearChecked: true, ids: ['tmp-1759780000-zz'] } })
+    expect(res.status).toBe(404)
+    expect((await lines(s)).map((l) => l.text), 'and touched nothing').toEqual(['Pain'])
+  })
+
+  it('list: never clears an UNTICKED line, nor one added after the gesture', async () => {
+    const s = await household('clear-safe', undefined, { empty: true })
+    await mk(s, 'Lait') // present but NOT ticked
+    const body = { clearChecked: true, ids: ['tmp-1'], items: [{ id: 'tmp-1', text: 'Lait' }] }
+    expect((await s.fetch('/api/list', { method: 'PATCH', body: { ...body, asOf: nowSec() + 5 } })).status).toBe(404)
+    const id2 = await mk(s, 'Oeufs')
+    await tick(s, id2)
+    const late = { clearChecked: true, ids: ['tmp-2'], items: [{ id: 'tmp-2', text: 'Oeufs' }], asOf: nowSec() - 60 }
+    expect((await s.fetch('/api/list', { method: 'PATCH', body: late })).status, 'a re-add after the gesture survives').toBe(404)
+    expect((await lines(s)).map((l) => l.text)).toEqual(['Lait', 'Oeufs'])
+  })
+
+  it('list: the plain clear (real ids) still works and a bare clear-all with nothing ticked is a no-op', async () => {
+    const s = await household('clear-plain', undefined, { empty: true })
+    const id = await mk(s, 'Pommes')
+    await tick(s, id)
+    expect((await s.fetch('/api/list', { method: 'PATCH', body: { clearChecked: true, ids: [id] } })).status).toBe(200)
+    expect(await lines(s)).toEqual([])
+    expect((await s.fetch('/api/list', { method: 'PATCH', body: { clearChecked: true } })).status).toBe(200)
+  })
+
+  it('todos: heals a stale id, 404s on nothing, and spares an undone todo', async () => {
+    const s = await household('clear-todo', undefined, { empty: true })
+    const mkTodo = async (title: string) =>
+      ((await (await s.fetch('/api/todos', { method: 'POST', body: { title } })).json()) as { id: string }).id
+    const titles = async () =>
+      (await env.DB.prepare('SELECT title FROM todos WHERE household_id = ? ORDER BY created_at').bind(s.householdId).all<{ title: string }>()).results.map((r) => r.title)
+    const done = await mkTodo('Appeler le dentiste')
+    await s.fetch('/api/todos', { method: 'PATCH', body: { id: done, done: true } })
+    await mkTodo('Payer le loyer') // not done: must survive
+    const heal = await s.fetch('/api/todos', {
+      method: 'PATCH',
+      body: { clearChecked: true, ids: ['tmp-1'], items: [{ id: 'tmp-1', text: 'appeler le dentiste' }], asOf: nowSec() + 5 },
+    })
+    expect(heal.status).toBe(200)
+    expect(await titles()).toEqual(['Payer le loyer'])
+    const gone = await s.fetch('/api/todos', { method: 'PATCH', body: { clearChecked: true, ids: ['tmp-2'] } })
+    expect(gone.status).toBe(404)
+    expect(await titles()).toEqual(['Payer le loyer'])
+  })
+})
+
 describe('a fridge note cannot go blank', () => {
   it('refuses an edit to no words on a text note, allows it on a memo', async () => {
     const s = await household('note-blank', undefined, { empty: true })

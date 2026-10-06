@@ -123,7 +123,7 @@ rows. **Then the class:** ~100 write sites wrote `.catch(() => {})`, so a refuse
 `.catch(writeFailed)` (one calm notice); `wrote()`/`writeOrNull()` where a follow-up assumes success (4 « Annuler »s
 followed FAILED deletes); 10 removal commits stopped swallowing; Board's five hand-rolled hold/refetch/un-hide
 copies now use `useDeferredRemoval`. Guards, run red first: d1, unit, `swallow-rule`, `e2e/liste-swipe-delete` (the mock
-used to KEEP ok-deleted rows). **Open:** why the frame held dead ids; a stale-frame « Vider » has the same hole.
+used to KEEP ok-deleted rows). « Vider les cochés » heals the same way (`healClear`, list + todos; 404 when nothing is left). **Open:** why the frame held dead ids.
 
 ## 4. What still needs improvement — consolidated and ranked
 

@@ -34,7 +34,7 @@ import { cashierPicksFrom, pickListFrom, useTillHiddenStores, parseDeal, parseTe
 import { useFlippImport } from '../lib/flippImport'
 import { pictoFor } from '../lib/picto'
 import { useSwipeToDelete } from '../lib/useSwipeToDelete'
-import { healingDeleteBody } from '../lib/staleDelete'
+import { healingClearBody, healingDeleteBody } from '../lib/staleDelete'
 import { usePointerDnd, DragGhost, DND_HOLD_MS, dropCueOf, dropEdgeClass } from '../lib/dnd'
 import { BOARD_KEY, GHOSTS_KEY, HISTORY_KEY, HOUSEHOLD_KEY } from '../lib/queryKeys'
 import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
@@ -563,10 +563,14 @@ export function Liste() {
   // costs nothing. Pass the exact ids so a check made AFTER scheduling isn't swept
   // up. Committing logs the buys (→ predictions shift, refresh the ghosts).
   function clearChecked(ids: string[]) {
+    // Names + the gesture's time ride along so the server can heal a STALE id onto the
+    // same ticked line instead of clearing nothing and answering ok (lib/staleDelete).
+    const named = new Set(ids)
+    const body = healingClearBody((board?.list ?? []).filter((i) => named.has(i.id)))
     removal.remove(ids, t.undo.clearedN(ids.length), () =>
       write('list', {
         method: 'PATCH',
-        body: { clearChecked: true, ids },
+        body,
         affectedKeys: [BOARD_KEY, GHOSTS_KEY, HISTORY_KEY],
       }),
     )

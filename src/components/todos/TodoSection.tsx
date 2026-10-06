@@ -1,4 +1,4 @@
-import { healingDeleteBody } from '../../lib/staleDelete'
+import { healingClearBody, healingDeleteBody } from '../../lib/staleDelete'
 import { useState, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { EmptyState } from '../EmptyState'
@@ -277,8 +277,11 @@ export function TodoSection({
 
   // — "Effacer cochées" — sweep the ticked rows (deferred; pass exact ids) —
   function clearChecked(ids: string[]) {
+    // Titles + the gesture's time let the server heal a stale id (lib/staleDelete).
+    const named = new Set(ids)
+    const body = healingClearBody(all.filter((x) => named.has(x.id)).map((x) => ({ id: x.id, text: x.title })))
     removal.remove(ids, t.todos.clearedN(ids.length), () =>
-      write('todos', { method: 'PATCH', body: { clearChecked: true, ids }, affectedKeys: [TODOS_KEY, MONTH_KEY] }),
+      write('todos', { method: 'PATCH', body, affectedKeys: [TODOS_KEY, MONTH_KEY] }),
     )
   }
 

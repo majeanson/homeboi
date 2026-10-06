@@ -66,3 +66,38 @@ export async function deleteHealing(
   console.warn(`${table} DELETE matched 0 rows (id ${id}${key ? ', no same-item row to heal onto' : ', no text sent'})`)
   return { outcome: 'missing' }
 }
+
+// « Vider les cochés » — the BATCH twin of deleteHealing. The client names the rows it
+// ticked by id (a snapshot, so a tick made after the undo toast was scheduled is not swept
+// up); an id the database does not have — a persisted optimistic `tmp-…` row, a frame that
+// predates a re-add — used to match nothing, clear NOTHING and answer « ok », and the
+// still-ticked same-named line repainted (the swipe bug's batch cousin, 2026-10-06).
+//
+// Given the household's ELIGIBLE rows (the ticked ones), the ids the client named, what it
+// called them and when it ticked, return the rows that stand in for the stale ids: each
+// stale name is matched, once, to a ticked row of the same normalized name that already
+// existed at `asOf`. Eligible = ticked on purpose: an unticked line is never cleared by a
+// stand-in, whatever its name. Pure, so the rules are pinned without a database.
+export function healClear<R extends { id: string; created_at: number }>(
+  eligible: (R & { text: string })[],
+  wanted: unknown,
+  asOf: unknown,
+  matchedIds: ReadonlySet<string>,
+): (R & { text: string })[] {
+  const at = typeof asOf === 'number' && Number.isFinite(asOf) ? Math.floor(asOf) : null
+  if (!at || !Array.isArray(wanted)) return []
+  const used = new Set(matchedIds)
+  const healed: (R & { text: string })[] = []
+  for (const w of wanted as { id?: unknown; text?: unknown }[]) {
+    if (!w || typeof w.id !== 'string' || typeof w.text !== 'string') continue
+    if (matchedIds.has(w.id)) continue
+    const key = normalizeItem(w.text)
+    if (!key) continue
+    const hit = eligible.find((r) => !used.has(r.id) && r.created_at <= at && normalizeItem(r.text) === key)
+    if (!hit) continue
+    used.add(hit.id)
+    healed.push(hit)
+    console.warn(`clear-checked healed a stale id onto the same item: ${w.id} → ${hit.id}`)
+  }
+  return healed
+}

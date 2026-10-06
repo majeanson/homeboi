@@ -2,7 +2,7 @@ import { badRequest, notFound, ok, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec, localDayStart } from '../_lib/ids'
 import { profileMemberId } from '../_lib/profile'
-import { deleteHealing } from '../_lib/staleDelete'
+import { deleteHealing, healClear } from '../_lib/staleDelete'
 
 // À cocher — standalone check-off lists (todos), separate from the loose-chore
 // "À faire" board section (`tasks` table + the board payload's `todos` field). A
@@ -195,7 +195,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
 })
 
 export const onRequestPatch = authed(async (ctx, actor) => {
-  const body = await readJson<{ id?: string; done?: boolean; title?: string; clearChecked?: boolean; ids?: unknown }>(
+  const body = await readJson<{ id?: string; done?: boolean; title?: string; clearChecked?: boolean; ids?: unknown; items?: unknown; asOf?: unknown }>(
     ctx.request,
   )
 
@@ -206,9 +206,36 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     const today = localDayStart(new Date())
     const ids = Array.isArray(body.ids) ? body.ids.filter((x): x is string => typeof x === 'string') : null
     if (ids && ids.length > 0) {
-      const ph = ids.map(() => '?').join(',')
+      // The named ids, plus a stand-in for each one the database never had (a persisted
+      // optimistic tmp- row, a frame older than a re-add): the DONE todo of the same name
+      // that already existed when the client ticked it (_lib/staleDelete.healClear). A stale
+      // snapshot used to delete nothing and answer « ok »; if NOTHING is left to clear it is
+      // a 404 now, so the client never trusts a deletion that did not happen.
+      const { results: rows } = await ctx.env.DB.prepare(
+        'SELECT id, title AS text, done_at, created_at FROM todos WHERE household_id = ?',
+      )
+        .bind(actor.householdId)
+        .all<{ id: string; text: string; done_at: number | null; created_at: number }>()
+      const named = new Set(ids)
+      const matched = rows.filter((r) => named.has(r.id))
+      const healed = healClear(
+        rows.filter((r) => r.done_at !== null),
+        body.items,
+        body.asOf,
+        new Set(matched.map((r) => r.id)),
+      )
+      const doomed = [...matched, ...healed].map((r) => r.id)
+      if (doomed.length === 0) return notFound('Aucune tâche à effacer.')
+      // D1 caps bound variables per statement — delete in slices instead of one huge IN (…).
+      const slices: string[][] = []
+      for (let i = 0; i < doomed.length; i += 50) slices.push(doomed.slice(i, i + 50))
       await ctx.env.DB.batch([
-        ctx.env.DB.prepare(`DELETE FROM todos WHERE household_id = ? AND id IN (${ph})`).bind(actor.householdId, ...ids),
+        ...slices.map((slice) =>
+          ctx.env.DB.prepare(`DELETE FROM todos WHERE household_id = ? AND id IN (${slice.map(() => '?').join(',')})`).bind(
+            actor.householdId,
+            ...slice,
+          ),
+        ),
         sweepStale(ctx.env.DB, actor.householdId, today),
       ])
     } else if (!ids) {

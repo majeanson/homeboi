@@ -4,7 +4,7 @@ import { newId, nowSec } from '../_lib/ids'
 import { normalizeItem } from '../_lib/normalize'
 import { lineMatches, normTerms } from '../_lib/listMatch'
 import { profileMemberId } from '../_lib/profile'
-import { deleteHealing } from '../_lib/staleDelete'
+import { deleteHealing, healClear } from '../_lib/staleDelete'
 
 // Shared list: ONE active list. Read, add, toggle a check (a mark — the item
 // stays put), clear the checked ones (logs the buy + deletes), delete a line.
@@ -193,6 +193,8 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     search_terms?: unknown
     clearChecked?: boolean
     ids?: unknown
+    items?: unknown // [{ id, text }] of the ticked lines — lets a stale id heal (healClear)
+    asOf?: unknown // epoch seconds of the gesture
     reorder?: unknown // a full ordered array of list_item ids (drag-and-drop)
     historyKey?: string // a purchase_log item_key to rename (Réglages cleanup)
     renameTo?: string // the generic name to fold that key into
@@ -242,12 +244,23 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   if (body?.clearChecked) {
     const restrict = Array.isArray(body.ids) ? new Set(body.ids.map((x) => String(x))) : null
     const { results: all } = await ctx.env.DB.prepare(
-      'SELECT id, text, search_terms FROM list_items WHERE household_id = ? AND checked_at IS NOT NULL',
+      'SELECT id, text, search_terms, created_at FROM list_items WHERE household_id = ? AND checked_at IS NOT NULL',
     )
       .bind(actor.householdId)
-      .all<{ id: string; text: string; search_terms: string | null }>()
-    const results = restrict ? all.filter((r) => restrict.has(r.id)) : all
-    if (results.length === 0) return ok({ ok: true, cleared: 0 })
+      .all<{ id: string; text: string; search_terms: string | null; created_at: number }>()
+    const byId = restrict ? all.filter((r) => restrict.has(r.id)) : all
+    // Ids the database never had heal onto the same-named ticked line that existed when the
+    // client ticked it (see _lib/staleDelete.healClear) — a stale snapshot used to clear
+    // NOTHING and answer « ok », and the ticked lines repainted.
+    const healed = restrict ? healClear(all, body.items, body.asOf, new Set(byId.map((r) => r.id))) : []
+    const results = [...byId, ...healed]
+    if (results.length === 0) {
+      // Asked to clear named lines and none of them exist (or are ticked) any more: say so
+      // rather than a vacuous ok the client would trust. A bare « clear everything ticked »
+      // with nothing ticked is still a plain no-op.
+      if (restrict && restrict.size > 0) return notFound('Aucune ligne cochée à vider.')
+      return ok({ ok: true, cleared: 0 })
+    }
     const ts = nowSec()
     const writes = []
     for (const row of results) {
