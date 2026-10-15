@@ -28,7 +28,9 @@ describe('security headers', () => {
       const csp = res.headers.get('content-security-policy') ?? ''
       expect(csp, path).toContain("default-src 'self'")
       expect(csp, path).toContain("object-src 'none'")
-      expect(csp, path).toContain("frame-ancestors 'self'")
+      expect(csp, path).toContain("frame-ancestors 'self' https://marcportal.com https://*.marcportal.com")
+      // XFO cannot express the allowlist and would veto the portfolio embed.
+      expect(res.headers.get('x-frame-options'), path).toBeNull()
       expect(csp, path).toContain("script-src 'self' https://cdn.jsdelivr.net https://static.cloudflareinsights.com 'unsafe-inline'")
       // No report-only twin any more (2026-09-25): its only findings were the edge's own
       // scripts, and it cost two POSTs per visitor. Red against its return.

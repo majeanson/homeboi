@@ -42,7 +42,8 @@ describe('security headers', () => {
     expect(enforced).toBe(ENFORCED_CSP)
     expect(enforced).toContain("default-src 'self'")
     expect(enforced).toContain("object-src 'none'")
-    expect(enforced).toContain("frame-ancestors 'self'")
+    expect(enforced).toContain("frame-ancestors 'self' https://marcportal.com https://*.marcportal.com")
+    expect(ENFORCED.some(([n]) => n.toLowerCase() === 'x-frame-options')).toBe(false)
     // The ONE deliberate concession: the edge injects inline scripts into the door, so a
     // strict script-src would break it intermittently in production while passing every
     // test here. A remote script from an origin nobody allowed still cannot load.

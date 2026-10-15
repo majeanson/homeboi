@@ -17,7 +17,7 @@
 //   · one cross-origin frame (FlippPager frames flipp.com) and same-origin frames
 //     (CarnetDocs frames /api/img PDFs);
 //   · the realtime socket on the same origin (wss:).
-// frame-ancestors is ENFORCED (nothing legitimate frames us from another origin; /cast
+// frame-ancestors is ENFORCED (only ourselves and marcportal.com may frame us; /cast
 // and /tv/<code> are opened directly). A 101 (the WebSocket upgrade) is returned
 // untouched: an upgrade Response cannot be re-wrapped.
 
@@ -68,11 +68,17 @@ const CSP_DIRECTIVES = [
 // a remote script from an origin nobody allowed still cannot load, which is the vector
 // that matters for a stolen-CDN or a compromised-dependency attack.
 //
+// Who may frame us: ourselves, plus the portfolio site that embeds the public door as a
+// scaled-down preview (marcportal.com/projects). There is NO X-Frame-Options header on
+// purpose — XFO cannot express a multi-origin allowlist, and `frame-ancestors` supersedes
+// it in every browser that matters. Never add XFO back; it would veto the portfolio embed.
+const FRAME_ANCESTORS = "frame-ancestors 'self' https://marcportal.com https://*.marcportal.com"
+
 export const ENFORCED_CSP = [
   ...CSP_DIRECTIVES.split('; ').map((d) =>
     d.startsWith('script-src ') ? `${d} 'unsafe-inline'` : d,
   ),
-  "frame-ancestors 'self'",
+  FRAME_ANCESTORS,
 ].join('; ')
 
 export const ENFORCED: ReadonlyArray<readonly [name: string, value: string]> = [
