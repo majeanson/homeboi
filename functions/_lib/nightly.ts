@@ -74,7 +74,18 @@ export function realDeps(env: Env, now: number): NightlyDeps {
     backup: async (id, date) => {
       if (!bucket) return
       const dump = await dumpHousehold(env, id, await getPlan())
-      await bucket.put(`backup/${id}/${date}.json`, JSON.stringify(dump))
+      const body = JSON.stringify(dump)
+      // R2 answers « internal error (10001) » now and then (cron 2026-10-15: one household
+      // of six lost its night to it). It says « try again » and means it — so we do, twice.
+      for (let attempt = 1; ; attempt++) {
+        try {
+          await bucket.put(`backup/${id}/${date}.json`, body)
+          break
+        } catch (e) {
+          if (attempt >= 3) throw e
+          await new Promise((r) => setTimeout(r, 500 * attempt))
+        }
+      }
       // Prune beyond the newest KEEP (keys are date-named → lexicographic = chronological).
       const listed = await bucket.list({ prefix: `backup/${id}/` })
       const keys = listed.objects.map((o) => o.key).sort()
