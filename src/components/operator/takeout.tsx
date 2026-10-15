@@ -196,9 +196,19 @@ export function TakeoutSection({ help }: { help?: HelpMode }) {
           content-disposition makes it a straight download. Online-only (there is
           no offline dump to give). */}
       {online ? (
-        <a className="btn" href="/api/takeout" download>
-          <InlineIcon name="download-simple-bold" /> {o.takeoutBtn}
-        </a>
+        <>
+          <Cluster>
+            <a className="btn" href="/api/takeout" download>
+              <InlineIcon name="download-simple-bold" /> {o.takeoutBtn}
+            </a>
+            {/* The readable twin of the same dump (_lib/takeoutMarkdown): lang rides the query
+                because a download link cannot carry the X-Lang header. */}
+            <a className="btn btn--ghost" href={`/api/takeout?format=md&lang=${lang}`} download>
+              <InlineIcon name="file-text-bold" /> {o.takeoutReadableBtn}
+            </a>
+          </Cluster>
+          <p className="operator__hint">{o.takeoutReadableHint}</p>
+        </>
       ) : (
         <p className="operator__hint mono">{t.offline.unavailable}</p>
       )}

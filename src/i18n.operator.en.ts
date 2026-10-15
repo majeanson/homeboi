@@ -525,6 +525,8 @@ export const EN_OPERATOR: typeof FR_OPERATOR = {
   householdTz: 'Time zone',
   householdTzHint: 'Where the household’s day starts. Everything with a date is bucketed there — on the board, on every phone. A phone away from home keeps the household’s day.',
   takeoutBtn: 'Download my data (JSON)',
+  takeoutReadableBtn: 'Readable version (Markdown)',
+  takeoutReadableHint: 'Your recipes, the list, supper, people and notes in a text file you can read, print or keep elsewhere. The JSON stays the faithful copy — the one you can restore.',
   restoreTitle: 'Restore a copy',
   restoreHint: 'A nightly copy, or the file above. The household’s content is replaced; paired devices and accounts stay.',
   restoreGo: 'Restore',

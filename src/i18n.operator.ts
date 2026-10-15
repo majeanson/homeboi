@@ -599,6 +599,8 @@ export const FR_OPERATOR = {
   householdTz: 'Fuseau horaire',
   householdTzHint: 'Où commence la journée de la maisonnée. Tout ce qui a une date s’y range — sur le babillard, sur les téléphones, partout. Un téléphone en voyage garde la journée de la maison.',
   takeoutBtn: 'Télécharger mes données (JSON)',
+  takeoutReadableBtn: 'Version lisible (Markdown)',
+  takeoutReadableHint: 'Tes recettes, la liste, le souper, les gens et les notes dans un fichier texte qu’on peut lire, imprimer ou garder ailleurs. Le JSON reste la copie fidèle, celle qu’on peut restaurer.',
   // « Restaurer une copie » (STATE §4-L L8) — la sauvegarde de nuit avait tourné
   // pendant des mois sans que rien ne puisse la relire.
   restoreTitle: 'Restaurer une copie',

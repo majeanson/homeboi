@@ -113,31 +113,20 @@ now, so the repo-wide count is honest for the first time.
 
 ## 3. What just shipped
 
-### Le babillard dans une vitrine — framed by marcportal.com, the door shows the product — 2026-10-15
-`frame-ancestors 'self' https://marcportal.com https://*.marcportal.com`, **no `X-Frame-Options`** (it cannot express an
-allowlist and would veto the embed — one constant in `securityHeaders.ts`, both delivery paths, pinned by two tests).
-Then the first visit, read cold at 1280×800 on production: **(1)** `lib/embedded.ts` + `<html data-embedded>` (stamped by
-`theme-bootstrap.js` before paint) — a framed page skips the auto-tour and trims its padding; **(2)** the ~1 s blank sheet
-before the JS arrives is now a wordmark splash in `index.html` (only on `/`, fades in after 150 ms, deliberately not the hero
-copy); **(3)** baseline link card (`og:image` → `public/og.jpg`, `summary_large_image`) — and `injectShareOg` now REMOVES
-the baseline before appending a share's own tags (crawlers read the first `og:`, so every share was unfurling as the generic
-app; d1-pinned); **(4)** the door shows a real frame of the demo board (`public/showcase/*`, FR/EN, tablet + phone, from the
-on-demand `scripts/capture-showcase.mjs`); **(5)** found by looking: a sandbox's first screen was tour modal over welcome
-card over board — the tour no longer auto-launches in a sandbox or a frame, and the try-this list is a row of link chips
-(card ~560 → ~370 px, feature map dropped there). Guard: `e2e/embedded-door.spec.ts` (planted red on the tour).
-**Not a new feature:** « Emporter mes données » (JSON) already existed.
+### Le babillard dans une vitrine — framed by marcportal.com, a door that shows the product — 2026-10-15
+`frame-ancestors 'self' https://marcportal.com https://*.marcportal.com`, **no `X-Frame-Options`** (cannot express an
+allowlist; one constant in `securityHeaders.ts`, pinned twice). Read cold at 1280×800 on production: `lib/embedded.ts` +
+`<html data-embedded>` (a frame skips the auto-tour); a wordmark splash in `index.html` for the ~1 s blank (only on `/`);
+a baseline link card (`public/og.jpg`) — and `injectShareOg` now REMOVES it before appending a share's own tags (crawlers
+read the first `og:`; d1-pinned); the door shows a real board frame (`public/showcase/*`, FR/EN, tablet + phone, from the
+on-demand `scripts/capture-showcase.mjs`); a sandbox no longer opens on tour-over-card-over-board (try-this = link chips,
+card ~560 → ~370 px; `e2e/embedded-door.spec.ts`, planted red). **« Emporter mes données »** gained a readable twin:
+`/api/takeout?format=md` (`_lib/takeoutMarkdown`: recipes, list, supper, people, notes, routines — derived from the dump).
 
-### « Je glisse pour supprimer et l'item revient » — rond QUATRE : le menteur était le serveur — 2026-10-06
-Diagnosed against PRODUCTION (§5): D1 + the idempotency ledger + `wrangler tail` during Marc's repro showed his
-swipes committed (six « ok » DELETEs) and deleted ZERO rows — `DELETE /api/list` answered a vacuous « ok » on an id
-the DB didn't have (stale frame, a dead session's `tmp-…` row), so the next frame repainted the line. Now the delete
-sends **text + `asOf`**; a stale id **heals onto the same item** (never one created after `asOf`) else **404 +
-`console.warn`** — one helper (`_lib/staleDelete`) for the list AND todos, the only resources with optimistic `tmp-`
-rows. **Then the class:** ~100 write sites wrote `.catch(() => {})`, so a refused write reverted its row unexplained →
-`.catch(writeFailed)` (one calm notice); `wrote()`/`writeOrNull()` where a follow-up assumes success (4 « Annuler »s
-followed FAILED deletes); 10 removal commits stopped swallowing; Board's five hand-rolled hold/refetch/un-hide
-copies now use `useDeferredRemoval`. Guards, run red first: d1, unit, `swallow-rule`, `e2e/liste-swipe-delete` (the mock
-used to KEEP ok-deleted rows). « Vider les cochés » heals the same way (`healClear`, list + todos; 404 when nothing is left). **Open:** why the frame held dead ids.
+### Rond QUATRE de la liste — 2026-10-06 (le menteur était le serveur)
+`DELETE /api/list` answered a vacuous « ok » on stale ids → now text + `asOf` healing (`_lib/staleDelete`) else 404; ~100
+`.catch(() => {})` became `writeFailed`/`wrote`/`writeOrNull`; Board's hold/refetch copies use `useDeferredRemoval`.
+Guards: d1, unit, `swallow-rule`, `e2e/liste-swipe-delete`. **Open:** why the frame held dead ids.
 
 ## 4. What still needs improvement — consolidated and ranked
 
@@ -159,18 +148,9 @@ used to KEEP ok-deleted rows). « Vider les cochés » heals the same way (`heal
 | **G · H · I · J** | Four passes that LOOKED: the 100-screenshot review, what the sweep could not see, the frames re-read, and fresh eyes on the a11y census | ✅ all closed; `color-contrast` went 78 states → 0, and the sweep learned to prune, shoot below the fold, and rebase its fixtures |
 | **L** | The public-app hardening pass — thirteen items, 2026-09-16/17 | ✅ 31 boxes closed, 1 parked. Sessions, rate limits, a real-D1 harness, the door's eager graph, password-gated doors, security headers, nightly alerts, a restore door, the weekly stranger walk, the household timezone, Dependabot |
 
-**§L's last thread, closed on time rather than on work:**
-- [x] **Enforce the Content-Security-Policy — DONE 2026-09-22, the second of the two
-      options it named.** The week of report-only came back with exactly one finding, and
-      it is not ours: the edge injects inline scripts into the marketing door (two on one
-      run, none on the next — the RUM beacon and the challenge machinery). So `script-src`
-      keeps `'unsafe-inline'` and **every other directive is now ENFORCED** — `default-src
-      'self'`, `object-src 'none'`, `base-uri`, `form-action`, the allow-lists and
-      `frame-ancestors`. What survives the concession is worth naming: a remote script
-      from an origin nobody allowed still cannot load. Verified on production after the
-      deploy. **The report-only twin was DROPPED 2026-09-25**: two weeks of reports were
-      only ever the edge's own scripts, and it cost two POSTs per visitor to the door; its
-      report endpoint went with it (`csrfExempt` ratchets down by one).
+**§L's last thread — the CSP is ENFORCED (2026-09-22), the report-only twin dropped 2026-09-25.** The week of reports found one
+thing, and not ours: the edge injects inline scripts into the door, so `script-src` keeps `'unsafe-inline'` and every other
+directive is enforced (`securityHeaders.ts` carries the why). `frame-ancestors` now also admits marcportal.com (2026-10-15).
 
 ### K. Towards a public app — the plan, written 2026-09-16 (start here)
 
