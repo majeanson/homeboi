@@ -1,10 +1,11 @@
-import { type ReactNode, useMemo, useState } from 'react'
+import { type ReactNode, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { HeartButton } from '../HeartButton'
 import { useLoves } from '../../lib/loves'
+import { useKept } from '../../lib/useKept'
 import { type Recipe, type RecipeTagsData, RECIPE_TAGS_KEY, recipeImg, allTags, orderTags, tagOptions, recipeTotalMin, tagColor } from '../../lib/recipes'
 import { type Pill, type BuiltinKey, DEFAULT_PILLS, isBuiltinPill, isSortKey, pillKey, matchesCustom } from '../../lib/recipePills'
 import { wash, tintInk, edge } from '../../lib/colors'
@@ -62,27 +63,27 @@ export function RecipesTab({
 }) {
   const t = useT()
   const nav = useNavigate()
-  const [recipeQuery, setRecipeQuery] = useState('')
+  const [recipeQuery, setRecipeQuery] = useKept('recipes.query', '')
   // #11 "Collections": flat alphabetical list ("Aa") vs grouped-by-collection.
   // A presentation toggle only — it never filters the set.
-  const [groupView, setGroupView] = useState(false)
+  const [groupView, setGroupView] = useKept('recipes.group', false)
   // Active tag filters, as lowercase keys. Empty = "Toutes" (no constraint).
   // Multi-select with AND semantics: a recipe must carry EVERY selected tag.
-  const [tagFilter, setTagFilter] = useState<string[]>([])
+  const [tagFilter, setTagFilter] = useKept<string[]>('recipes.tags', [])
   const toggleTag = (tg: string) => {
     const key = tg.toLowerCase()
     setTagFilter((f) => (f.includes(key) ? f.filter((k) => k !== key) : [...f, key]))
   }
   // The active SORT pill (mutually exclusive — one orders the grid) and the set of
   // active FILTER pills (≤30 min / Favoris / custom — they stack, AND).
-  const [sort, setSort] = useState<string | null>(null)
-  const [filters, setFilters] = useState<Set<string>>(() => new Set())
+  const [sort, setSort] = useKept<string | null>('recipes.sort', null)
+  const [filters, setFilters] = useKept<Set<string>>('recipes.filters', () => new Set())
   // The pills + tag chips used to sit permanently under the search, two wrapping
   // rows of chrome above the very recipes you came to look at. They're behind a
   // « Filtrer » button now: closed by default (NFR-CALM-1 — nothing populates the
   // page until you ask), and the button carries the count of what's active so a
   // narrowed list never looks unexplained while the panel is shut.
-  const [filtersOpen, setFiltersOpen] = useState(false)
+  const [filtersOpen, setFiltersOpen] = useKept('recipes.filtersOpen', false)
   const { lovedSet: loved } = useLoves()
 
   const canFastFilter = useMemo(() => recipes.some((r) => recipeTotalMin(r) != null), [recipes])
