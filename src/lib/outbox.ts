@@ -94,6 +94,12 @@ async function allEntries(): Promise<OutboxEntry[]> {
   return (r ?? []).sort((a, b) => a.createdAt - b.createdAt)
 }
 
+// The tmp ids whose CREATE is still queued — the only optimistic rows worth persisting
+// (lib/tmpIds stripOrphanTmpRows).
+export async function pendingTmpIds(): Promise<Set<string>> {
+  return new Set((await allEntries()).flatMap((e) => (e.tmpId ? [e.tmpId] : [])))
+}
+
 export async function outboxCount(): Promise<number> {
   return (await allEntries()).length
 }

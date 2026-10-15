@@ -65,6 +65,43 @@ export function resolveTmpIdsInBody(body: unknown): unknown {
   return r === s ? body : (JSON.parse(r) as unknown)
 }
 
+// A `tmp-…` row only means something while its create is still alive: in flight this
+// session, or queued in the outbox (which carries `tmpId`). Persisted to the offline
+// snapshot with neither, it is a phantom the next boot paints as a real line — and a
+// swipe on it DELETEs an id the server never had (« the items always come back »,
+// 2026-10-06). So the snapshot is written WITHOUT every array element shaped
+// `{id: 'tmp-…'}` whose id is not in `keep` (the outbox's pending tmp ids). Pure; walks
+// plain JSON (a dehydrated query state) and returns the input untouched when nothing
+// matched, so an ordinary snapshot costs one pass and no copies.
+export function stripOrphanTmpRows<T>(value: T, keep: ReadonlySet<string>): T {
+  if (Array.isArray(value)) {
+    let changed = false
+    const out: unknown[] = []
+    for (const el of value) {
+      const id = el && typeof el === 'object' ? (el as { id?: unknown }).id : undefined
+      if (typeof id === 'string' && isTmpId(id) && !keep.has(id)) {
+        changed = true
+        continue
+      }
+      const next = stripOrphanTmpRows(el, keep)
+      if (next !== el) changed = true
+      out.push(next)
+    }
+    return (changed ? out : value) as T
+  }
+  if (value && typeof value === 'object') {
+    let changed = false
+    const out: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      const next = stripOrphanTmpRows(v, keep)
+      if (next !== v) changed = true
+      out[k] = next
+    }
+    return (changed ? out : value) as T
+  }
+  return value
+}
+
 // Unit-test door: the registry is module-level state, so tests reset it between cases.
 export function _resetTmpIds(): void {
   map.clear()

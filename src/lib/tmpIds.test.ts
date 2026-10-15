@@ -6,8 +6,26 @@ import {
   resolveTmpIdsIn,
   resolveTmpIdsInBody,
   onTmpIdResolved,
+  stripOrphanTmpRows,
   _resetTmpIds,
 } from './tmpIds'
+
+describe('stripOrphanTmpRows (the offline snapshot)', () => {
+  const frame = { board: { list: [{ id: 'a1' }, { id: 'tmp-1-x' }, { id: 'tmp-2-y' }] }, todos: [{ id: 'tmp-3-z' }] }
+
+  it('drops tmp rows with no queued create, at any depth', () => {
+    expect(stripOrphanTmpRows(frame, new Set())).toEqual({ board: { list: [{ id: 'a1' }] }, todos: [] })
+  })
+
+  it('keeps the tmp rows whose create is still queued', () => {
+    expect(stripOrphanTmpRows(frame, new Set(['tmp-2-y'])).board.list).toEqual([{ id: 'a1' }, { id: 'tmp-2-y' }])
+  })
+
+  it('returns the same object when nothing matched', () => {
+    const clean = { list: [{ id: 'a1' }], n: 3, s: null }
+    expect(stripOrphanTmpRows(clean, new Set())).toBe(clean)
+  })
+})
 
 // The session tmp→real id registry (E-41's online half). The bug it exists for:
 // swipe-delete a row while its optimistic create is still reconciling → the

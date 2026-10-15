@@ -8,6 +8,8 @@
 // at boot, before first paint. Cleared on auth-loss so a revoked device keeps no
 // household snapshot on disk.
 import { dehydrate, hydrate, type QueryClient } from '@tanstack/react-query'
+import { pendingTmpIds } from './outbox'
+import { stripOrphanTmpRows } from './tmpIds'
 
 const DB = 'babillard'
 const STORE = 'cache'
@@ -120,7 +122,18 @@ export function startPersistingCache(qc: QueryClient): void {
     timer = null
     try {
       const state = dehydrate(qc, { shouldDehydrateQuery: (q) => q.state.data !== undefined })
-      void idbSet({ at: Date.now(), state })
+      // Optimistic `tmp-…` rows with no queued create behind them are phantoms on the
+      // next boot — leave them out (tmpIds.stripOrphanTmpRows). If the outbox can't be
+      // read, keep the old behaviour rather than lose the snapshot.
+      void (async () => {
+        let keep: Set<string> | null = null
+        try {
+          keep = await pendingTmpIds()
+        } catch {
+          /* unreadable outbox — save unfiltered */
+        }
+        await idbSet({ at: Date.now(), state: keep ? stripOrphanTmpRows(state, keep) : state })
+      })()
     } catch {
       /* noop */
     }
