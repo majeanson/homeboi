@@ -257,6 +257,7 @@ export const EN: typeof FR = {
     // back to the read-only shared demo when the sandbox cap is hit).
     ctaDemo: 'Try it for real',
     demoHint: 'No sign-up — a trial household, wiped after 24 hours.',
+    shotAlt: 'The board on a tablet: tonight’s supper, the notes on the fridge and the day’s agenda.',
     demoOpening: 'Setting up your trial household…',
     demoError: 'The demo isn’t available right now — try again in a bit.',
     login: 'Log in',

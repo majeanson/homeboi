@@ -321,6 +321,7 @@ export const FR = {
     // The one line that removes the hesitation before the demo: nothing to fill, and
     // it costs the visitor nothing — the same 24-hour truth the sandbox board tells.
     demoHint: 'Sans inscription — une maisonnée d’essai, effacée après 24 heures.',
+    shotAlt: 'Le babillard sur une tablette : le souper de ce soir, les mots sur le frigo et l’agenda de la journée.',
     demoOpening: 'On prépare ta maisonnée d’essai…',
     demoError: 'La démo n’est pas disponible pour le moment — réessaie tantôt.',
     login: 'Se connecter',

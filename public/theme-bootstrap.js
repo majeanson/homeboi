@@ -2,6 +2,17 @@
 // OS preference. Inline-fast so a wall tablet reload never flashes the wrong
 // surface. Same trick as the portal.
 ;(function () {
+  // Framed by another page (the portfolio preview)? Stamp it for CSS before first paint.
+  // Mirrors isEmbedded() in src/lib/embedded.ts. And mark the bare door so index.html's
+  // boot splash (which exists only for "/") shows there and nowhere else.
+  try {
+    if (window.self !== window.top) document.documentElement.setAttribute('data-embedded', '')
+  } catch (e) {
+    document.documentElement.setAttribute('data-embedded', '')
+  }
+  if (location.pathname === '/') document.documentElement.setAttribute('data-boot', '')
+})()
+;(function () {
   try {
     var saved = localStorage.getItem('babillard-theme')
     var theme =

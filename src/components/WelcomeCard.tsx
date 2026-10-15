@@ -14,6 +14,7 @@ import { useMeals } from '../lib/queryHooks'
 import { DEVICES_KEY } from '../lib/queryKeys'
 import { Icon, type IconName } from './Icon'
 import { Cluster } from './Layout'
+import { Chip } from './Chip'
 import { FeatureMap } from './FeatureMap'
 import { featureMapRoute } from '../lib/guideContent'
 
@@ -145,7 +146,7 @@ export function WelcomeCard({ members }: { members: { id: string }[] }) {
       (id === 'pair' && pairedDevices > 0))
   if (!sandbox && STEPS.every((s) => isDone(s.id))) return null
 
-  const steps = sandbox ? DEMO_STEPS : STEPS
+  const steps = STEPS
 
   const dismiss = () => {
     setState((s) => {
@@ -178,6 +179,21 @@ export function WelcomeCard({ members }: { members: { id: string }[] }) {
         </button>
       </div>
       <p className="welcome-card__intro">{sandbox ? t.welcome.demoIntro : t.welcome.intro}</p>
+      {/* The sandbox's try-this list is INVITATIONS, not a checklist — a row of link chips,
+          so the card stays a strip and the board (what the visitor came to see) is on
+          screen under it. It was five full-width rows plus the feature map: on a 1280×800
+          first screen the card alone ran past the fold (2026-10-15). The feature map is
+          dropped here too — the nav beside/below the board is already that map. */}
+      {sandbox && (
+        <Cluster>
+          {DEMO_STEPS.map((s) => (
+            <Chip key={s.id} to={s.to} icon={s.icon}>
+              {t.welcome[s.id]}
+            </Chip>
+          ))}
+        </Cluster>
+      )}
+      {!sandbox && (
       <ol className="welcome-card__steps">
         {steps.map((s) => {
           const done = isDone(s.id)
@@ -194,6 +210,7 @@ export function WelcomeCard({ members }: { members: { id: string }[] }) {
           )
         })}
       </ol>
+      )}
       {/* The sandbox's ONE card carries the claim too. The demo board used to open on
           TWO stacked banners — this try-this card AND the claim strip — so a visitor
           who came to SEE the app got a screen and a half of chrome about the demo and
@@ -209,10 +226,14 @@ export function WelcomeCard({ members }: { members: { id: string }[] }) {
           </Link>
         </div>
       )}
+      {!sandbox && (
+        <>
       <h3 className="welcome-card__discover">{t.welcome.discover}</h3>
       {/* Tiles open the LIVE section, not the Guide — discovery by doing. The Guide
           stays the explanation layer (each section's "?" + Réglages ▸ Guide). */}
       <FeatureMap onSelect={(k) => nav(featureMapRoute(k))} label={t.welcome.discover} />
+        </>
+      )}
       <Cluster>
         {/* A VISIBLE way back to the guided tour: skipping it is one tap, and the only
             other recovery is buried in Réglages ▸ Guide. This keeps it a tap away while

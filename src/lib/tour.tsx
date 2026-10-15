@@ -8,6 +8,8 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useAudience } from './audience'
 import { useAuth } from './auth'
+import { useSandbox } from './demo'
+import { isEmbedded } from './embedded'
 import { isGuest, isPaired } from './device'
 import { useSurface } from './surface'
 import type { Tour } from './tourContent'
@@ -134,6 +136,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
   const { pathname } = useLocation()
   const { audience } = useAudience()
   const { signedIn } = useAuth()
+  const sandbox = useSandbox()
   const { surface } = useSurface()
   const [activeTour, setActiveTour] = useState<Tour | null>(null)
   const [stepIndex, setStepIndex] = useState(0)
@@ -250,9 +253,17 @@ export function TourProvider({ children }: { children: ReactNode }) {
     // page, a bookmark) was pulled to the board mid-load. Not marked tried here either:
     // `pathname` is a dep, so the first visit to the board is where it begins.
     if (pathname !== ESSENTIALS_START) return
+    // A demo sandbox opens on the BOARD, with the welcome card's try-this list as its one
+    // piece of guidance (WelcomeCard) — a spotlight tour stacked over that card hid the very
+    // thing the visitor came to see (first screen, 2026-10-15: modal over card over board).
+    // The tour stays one tap away there (« Revoir la visite guidée »). Same for a preview
+    // framed by another page: it is a window onto the board, not an onboarding. Neither
+    // sets autoTried, and neither marks the tour seen — so a real session on this device
+    // (the claimed household, a signup) still gets its welcome.
+    if (sandbox || isEmbedded()) return
     autoTried.current = true
     if (!hasTourSeen('essentials')) start('essentials')
-  }, [audience, signedIn, surface, start, pathname])
+  }, [audience, signedIn, surface, start, pathname, sandbox])
 
   const value: TourValue = {
     activeTour,

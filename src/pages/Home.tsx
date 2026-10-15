@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { TopBar } from '../components/TopBar'
 import { Icon, type IconName } from '../components/Icon'
-import { useT } from '../i18n'
+import { useLang, useT } from '../i18n'
 import { api } from '../lib/api'
 
 // The marketing front door — shown to first-time visitors only (the `/` smart
@@ -40,6 +40,7 @@ const PROMISES = ['promise1', 'promise2', 'promise3', 'promise4'] as const
 
 export function Home() {
   const t = useT()
+  const { lang } = useLang()
   // « Essaie pour vrai » (bmad/08 A-8, interactive stage): POST /api/demo now
   // mints a per-visitor throwaway SANDBOX household with a real operator session
   // (cookies set by the response) — the visitor lands on /board able to actually
@@ -74,6 +75,7 @@ export function Home() {
       </TopBar>
       <main className="home">
         <section className="home__hero">
+          <div className="home__hero-text">
           <p className="home__wordmark">
             <Icon name="sun-bold" size={24} color="var(--marigold-deep)" />
             {t.appName}
@@ -108,6 +110,26 @@ export function Home() {
               in, and nothing to regret (the same 24-hour truth the sandbox board tells). */}
           <p className="home__demo-hint">{t.home.demoHint}</p>
           {demoErr && <p className="home__privacy">{t.home.demoError}</p>}
+          </div>
+          {/* The product itself — a real frame of the demo board (public/showcase, made by
+              scripts/capture-showcase.mjs), because a landing that only DESCRIBES a wall
+              tablet asks a stranger to imagine it. Phone-shaped under 700px, tablet-shaped
+              above; both size-reserved (width/height) so nothing jumps, and low fetch
+              priority so the words and buttons paint first. The words in the picture follow
+              the language the door is read in. */}
+          <figure className="home__shot">
+            <picture>
+              <source media="(max-width: 699px)" srcSet={`/showcase/board-phone-${lang}.webp`} width="780" height="1688" />
+              <img
+                src={`/showcase/board-wide-${lang}.webp`}
+                width="1280"
+                height="800"
+                alt={t.home.shotAlt}
+                decoding="async"
+                fetchPriority="low"
+              />
+            </picture>
+          </figure>
         </section>
 
         {/* Everything it does — themed feature cards (same taxonomy as the Guide),

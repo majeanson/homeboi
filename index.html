@@ -42,7 +42,7 @@
     <meta name="theme-color" content="#FBF3E4" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#1b1712" media="(prefers-color-scheme: dark)" />
     <meta name="theme-color" content="#FBF3E4" />
-    <meta name="description" content="Babillard — un planificateur familial calme pour une tablette murale." />
+    <meta name="description" content="Babillard — un planificateur familial calme pour une tablette murale. Le souper, l’agenda, la liste d’épicerie et les routines des enfants, sans points ni notifications." />
     <title>Babillard</title>
     <!-- Baseline Open Graph / Twitter card, so ANY link unfurls sensibly. A shared
          /partage/<id> link gets these REPLACED per-share at the edge (worker/index.ts
@@ -52,7 +52,14 @@
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Babillard" />
     <meta property="og:locale" content="fr_CA" />
-    <meta name="twitter:card" content="summary" />
+    <meta property="og:url" content="https://babillard.marcportal.com/" />
+    <meta property="og:image" content="https://babillard.marcportal.com/og.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Le babillard : l’agenda, le souper de ce soir et les mots sur le frigo, sur une tablette." />
+    <meta property="og:locale:alternate" content="en_CA" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://babillard.marcportal.com/og.jpg" />
     <!-- PWA: installable on the wall tablet / iPad (Partager ▸ Sur l'écran
          d'accueil) — standalone chrome, sun icon (Pip marigold on cream, see
          scripts/make-icons.mjs), offline app shell via /sw.js (registered in
@@ -81,9 +88,33 @@
     <!-- Set the theme before React mounts so a reload never flashes the wrong
          surface. Day/night from localStorage, falling back to the OS setting. -->
     <script src="/theme-bootstrap.js"></script>
+    <!-- BOOT SPLASH — first paint only, and only on the bare door (theme-bootstrap.js
+         stamps <html data-boot> when the path is "/"). Until the app's JS arrives #root is
+         empty and the page read as a blank sheet for about a second on a cold visit (measured
+         2026-10-15, 1280×800 — the same second a portfolio preview shows a stranger).
+         It is deliberately NOT the hero copy: a returning kiosk is redirected from "/" to
+         /board, and a French sentence flashing before an English or signed-in screen would be
+         worse than the blank. A wordmark is true on every outcome. It fades in after 150 ms,
+         so a warm load never sees it at all, and React's first render replaces it (createRoot
+         clears the container). Colours are literals because the stylesheet carrying the
+         tokens has not arrived — they are the day/night papers of core.css. -->
+    <style>
+      html { background: #fbf3e4; }
+      html[data-theme='night'], html[data-theme='deep-twilight'] { background: #1b1712; }
+      .boot { display: none; }
+      html[data-boot] .boot {
+        display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+        min-height: 100vh; min-height: 100dvh; opacity: 0;
+        font: 700 1.25rem/1 'Baloo 2', 'Hanken Grotesk', system-ui, sans-serif;
+        color: #2b2118; animation: boot-in 0s linear 150ms forwards;
+      }
+      html[data-theme='night'] .boot, html[data-theme='deep-twilight'] .boot { color: #f3e9d8; }
+      .boot i { width: 1.4rem; height: 1.4rem; border-radius: 50%; background: #f2a03d; }
+      @keyframes boot-in { to { opacity: 1; } }
+    </style>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"><div class="boot" aria-hidden="true"><i></i>Babillard</div></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

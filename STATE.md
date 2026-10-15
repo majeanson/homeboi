@@ -113,6 +113,20 @@ now, so the repo-wide count is honest for the first time.
 
 ## 3. What just shipped
 
+### Le babillard dans une vitrine — framed by marcportal.com, the door shows the product — 2026-10-15
+`frame-ancestors 'self' https://marcportal.com https://*.marcportal.com`, **no `X-Frame-Options`** (it cannot express an
+allowlist and would veto the embed — one constant in `securityHeaders.ts`, both delivery paths, pinned by two tests).
+Then the first visit, read cold at 1280×800 on production: **(1)** `lib/embedded.ts` + `<html data-embedded>` (stamped by
+`theme-bootstrap.js` before paint) — a framed page skips the auto-tour and trims its padding; **(2)** the ~1 s blank sheet
+before the JS arrives is now a wordmark splash in `index.html` (only on `/`, fades in after 150 ms, deliberately not the hero
+copy); **(3)** baseline link card (`og:image` → `public/og.jpg`, `summary_large_image`) — and `injectShareOg` now REMOVES
+the baseline before appending a share's own tags (crawlers read the first `og:`, so every share was unfurling as the generic
+app; d1-pinned); **(4)** the door shows a real frame of the demo board (`public/showcase/*`, FR/EN, tablet + phone, from the
+on-demand `scripts/capture-showcase.mjs`); **(5)** found by looking: a sandbox's first screen was tour modal over welcome
+card over board — the tour no longer auto-launches in a sandbox or a frame, and the try-this list is a row of link chips
+(card ~560 → ~370 px, feature map dropped there). Guard: `e2e/embedded-door.spec.ts` (planted red on the tour).
+**Not a new feature:** « Emporter mes données » (JSON) already existed.
+
 ### « Je glisse pour supprimer et l'item revient » — rond QUATRE : le menteur était le serveur — 2026-10-06
 Diagnosed against PRODUCTION (§5): D1 + the idempotency ledger + `wrangler tail` during Marc's repro showed his
 swipes committed (six « ok » DELETEs) and deleted ZERO rows — `DELETE /api/list` answered a vacuous « ok » on an id

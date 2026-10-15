@@ -1000,6 +1000,46 @@ textarea.input {
   color: var(--ink-faint);
   max-width: 52ch;
 }
+/* The hero's picture — a real frame of the demo board (public/showcase). Under the words on
+   a phone (the tall shot, kept to a phone's own width), beside them from 1000px up, where
+   a laptop — or a portfolio's 1280×800 preview frame — gets the whole pitch above the fold. */
+.home__hero {
+  display: grid;
+  gap: 1.75rem;
+}
+.home__shot {
+  margin: 0;
+}
+.home__shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line);
+  box-shadow: 0 14px 36px -18px rgb(43 33 24 / 0.35);
+}
+@media (max-width: 699px) {
+  .home__shot {
+    max-width: 17rem;
+    margin-inline: auto;
+  }
+}
+@media (min-width: 1000px) {
+  .home {
+    max-width: 72rem;
+  }
+  .home__hero {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+    align-items: center;
+    gap: 2.5rem;
+  }
+}
+/* Framed by another page (the portfolio preview — lib/embedded.ts): the frame is small and
+   scaled down, so spend it on the product, not on the page's own breathing room. */
+html[data-embedded] .home {
+  padding-top: 1.25rem;
+  padding-bottom: 2rem;
+}
 .home__values {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));

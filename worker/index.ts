@@ -129,6 +129,9 @@ async function injectShareOg(
     const shell = await env.ASSETS.fetch(request)
     if (!(shell.headers.get('content-type') ?? '').includes('text/html')) return null
     const shareUrl = `${origin}/partage/${id}`
+    // The share's own photo when it has one, else the app's card (public/og.jpg) — a link
+    // with no picture of its own should still unfurl as Babillard, not as a bare title.
+    const image = meta.image ?? `${origin}/og.jpg`
     const ogTags =
       `<meta property="og:title" content="${escAttr(meta.title)}">` +
       `<meta property="og:description" content="${escAttr(meta.description)}">` +
@@ -136,12 +139,18 @@ async function injectShareOg(
       `<meta property="og:site_name" content="Babillard">` +
       `<meta property="og:url" content="${escAttr(shareUrl)}">` +
       `<meta property="og:locale" content="fr_CA">` +
-      `<meta name="twitter:card" content="${meta.image ? 'summary_large_image' : 'summary'}">` +
-      (meta.image
-        ? `<meta property="og:image" content="${escAttr(meta.image)}">` +
-          `<meta name="twitter:image" content="${escAttr(meta.image)}">`
-        : '')
+      `<meta name="twitter:card" content="summary_large_image">` +
+      `<meta property="og:image" content="${escAttr(image)}">` +
+      `<meta name="twitter:image" content="${escAttr(image)}">`
     return new HTMLRewriter()
+      // The shell carries a BASELINE card (index.html). Crawlers read the FIRST og: tag, so
+      // appending the per-share ones after it left every share unfurling as the generic
+      // app; drop the baseline and let the appended set be the only one.
+      .on('meta[property^="og:"], meta[name^="twitter:"]', {
+        element(el) {
+          el.remove()
+        },
+      })
       .on('title', {
         element(el) {
           el.setInnerContent(meta.title)

@@ -14,6 +14,7 @@
   ],
   "ignoreExportsUsedInFile": true,
   "ignoreDependencies": [
-    "cloudflare"
+    "cloudflare",
+    "sharp"
   ]
 }
