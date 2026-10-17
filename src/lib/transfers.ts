@@ -258,27 +258,16 @@ export function trackingStart(transfers: readonly Transfer[], planId: string): n
 // year; the rest is « Une autre date ».
 export const UPCOMING_OFFERED = 3
 
-// Every due date the composer puts on screen for one agreement: what is still owed
-// since the household started tracking, plus the next few ahead, plus anything the
-// reader added by hand (which must survive even though it sits outside both).
-export function offeredDueDates(
-  plan: TransferPlan,
-  transfers: readonly Transfer[],
-  today: number,
-  alsoInclude: readonly number[] = [],
-): number[] {
-  const floor = trackingStart(transfers, plan.id)
-  const past = plan.due.filter((at) => at <= today && (floor == null || at >= floor))
-  const ahead = plan.due.filter((at) => at > today).slice(0, UPCOMING_OFFERED)
-  return [...new Set([...past, ...ahead, ...alsoInclude])].sort((a, b) => a - b)
-}
+// How many owed-and-unsent dates reach the screen when the household has recorded
+// nothing for the agreement yet (no tracking floor). An entente can start years back;
+// answering « what do I owe » with its whole 120-day history put a screenful of stale
+// fortnights in front of a first-time sender. The most recent few are the ones anyone
+// is plausibly catching up on; older ones are « Une autre date ».
+export const UNTRACKED_PAST_OFFERED = 3
 
-// The due dates a face still owes: everything on or before today, back to the day
-// this household started tracking, that nothing has covered. This is what the
-// composer pre-ticks — the question « which ones have I not sent for yet » is the
-// reason the screen exists, and before the floor existed it answered with six
-// fortnights from before anyone was keeping the book.
-export function uncoveredDueDates(
+// What a face OWES: due on or before today, nothing sent for it, and not older than
+// the tracking floor. With no floor yet, only the most recent few.
+function owedDates(
   plan: TransferPlan,
   transfers: readonly Transfer[],
   memberId: string | null,
@@ -287,7 +276,47 @@ export function uncoveredDueDates(
 ): number[] {
   const covered = coveredDueDates(transfers, plan.id, memberId, exceptTransferId)
   const floor = trackingStart(transfers, plan.id)
-  return plan.due.filter((at) => at <= today && (floor == null || at >= floor) && !covered.has(at))
+  const owed = plan.due.filter((at) => at <= today && (floor == null || at >= floor) && !covered.has(at))
+  return floor == null ? owed.slice(-UNTRACKED_PAST_OFFERED) : owed
+}
+
+// The due dates the composer puts on screen for one agreement, in two groups:
+//   owed  — past and not yet sent by this face (the thing to act on)
+//   ahead — the next few, for paying early
+// Dates this face has ALREADY sent for are not offered (they used to pile up as
+// greyed chips, one more per fortnight, until the row was mostly history). A date the
+// reader ticked or added by hand stays (`alsoInclude`) — which is also how an edited
+// transfer keeps showing the dates it carries.
+export function offeredDueGroups(
+  plan: TransferPlan,
+  transfers: readonly Transfer[],
+  memberId: string | null,
+  today: number,
+  alsoInclude: readonly number[] = [],
+  exceptTransferId?: string,
+): { owed: number[]; ahead: number[] } {
+  const owed = owedDates(plan, transfers, memberId, today, exceptTransferId)
+  const ahead = plan.due.filter((at) => at > today).slice(0, UPCOMING_OFFERED)
+  const shown = new Set([...owed, ...ahead])
+  for (const at of alsoInclude) {
+    if (shown.has(at)) continue
+    shown.add(at)
+    ;(at > today ? ahead : owed).push(at)
+  }
+  const byDay = (a: number, b: number) => a - b
+  return { owed: owed.sort(byDay), ahead: ahead.sort(byDay) }
+}
+
+// The due dates a face still owes — what the composer pre-ticks. The question « which
+// ones have I not sent for yet » is the reason the screen exists.
+export function uncoveredDueDates(
+  plan: TransferPlan,
+  transfers: readonly Transfer[],
+  memberId: string | null,
+  today: number,
+  exceptTransferId?: string,
+): number[] {
+  return owedDates(plan, transfers, memberId, today, exceptTransferId)
 }
 
 // ---- The bank message -------------------------------------------------------

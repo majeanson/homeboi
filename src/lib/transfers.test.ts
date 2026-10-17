@@ -5,7 +5,7 @@ import {
   coveredDueDates,
   extraKey,
   extrasOf,
-  offeredDueDates,
+  offeredDueGroups,
   rememberedExtras,
   summariseYear,
   trackingStart,
@@ -561,36 +561,34 @@ describe('the tracking floor', () => {
     expect(uncoveredDueDates(long, [recorded], 'marc', today)).toEqual([d(2026, 7, 27), d(2026, 8, 10)])
   })
 
-  it('a household that has recorded nothing yet still gets its whole history offered', () => {
-    // Nothing to floor against — a brand-new agreement must not hide its own dates.
-    expect(uncoveredDueDates(long, [], 'marc', today)).toEqual([
-      d(2026, 4, 21),
-      d(2026, 5, 4),
-      d(2026, 6, 2),
-      d(2026, 7, 13),
-      d(2026, 7, 27),
-      d(2026, 8, 10),
-    ])
+  it('a household that has recorded nothing yet gets only its most recent owed dates', () => {
+    // No floor to anchor on, but a whole year of fortnights is not an answer either.
+    expect(uncoveredDueDates(long, [], 'marc', today)).toEqual([d(2026, 7, 13), d(2026, 7, 27), d(2026, 8, 10)])
   })
 
-  it('offers what is owed since the floor, plus the next three ahead', () => {
-    expect(offeredDueDates(long, [recorded], today)).toEqual([
-      d(2026, 7, 13),
-      d(2026, 7, 27),
-      d(2026, 8, 10),
-      d(2026, 8, 24),
-    ])
+  it('offers what is owed and the next three ahead, split into two groups', () => {
+    expect(offeredDueGroups(long, [recorded], 'marc', today)).toEqual({
+      owed: [d(2026, 7, 27), d(2026, 8, 10)],
+      ahead: [d(2026, 8, 24)],
+    })
+  })
+
+  it('does not offer a date this face has already sent for, but keeps one it carries', () => {
+    const sent = transfer({ id: 'old', memberId: 'marc', lines: [planLine(d(2026, 7, 13)), planLine(d(2026, 7, 27))] })
+    expect(offeredDueGroups(long, [sent], 'marc', today).owed).toEqual([d(2026, 8, 10)])
+    // Editing that transfer: its own dates are not 'covered', so they stay on screen.
+    expect(offeredDueGroups(long, [sent], 'marc', today, [d(2026, 7, 13)], 'old').owed).toContain(d(2026, 7, 13))
   })
 
   // « Une autre date » is the way back to everything the floor hides — so a date the
   // reader picked by hand must survive, even from before the book opened.
   it('keeps a date added by hand, however far back it is', () => {
     const picked = d(2026, 4, 21)
-    expect(offeredDueDates(long, [recorded], today, [picked])).toContain(picked)
+    expect(offeredDueGroups(long, [recorded], 'marc', today, [picked]).owed).toContain(picked)
   })
 
   it('never offers more than three dates ahead', () => {
     const far = plan({ due: [d(2026, 8, 24), d(2026, 9, 7), d(2026, 9, 21), d(2026, 10, 5), d(2026, 10, 19)] })
-    expect(offeredDueDates(far, [], today)).toHaveLength(UPCOMING_OFFERED)
+    expect(offeredDueGroups(far, [], 'marc', today).ahead).toHaveLength(UPCOMING_OFFERED)
   })
 })

@@ -10,7 +10,7 @@ import {
   coveredDueDates,
   extraKey,
   extrasOf,
-  offeredDueDates,
+  offeredDueGroups,
   rememberedExtras,
   transferTotal,
   uncoveredDueDates,
@@ -247,35 +247,44 @@ export function TransferForm({
           wears a check and reads as « déjà envoyé » so nobody pays it twice. */}
       {plans.map((p) => {
         const covered = coveredDueDates(transfers, p.id, sender, value?.id)
-        // Everything still owed, plus the next few ahead — enough to pay early
-        // without scrolling a year of dates.
         const list = ticked[p.id] ?? []
-        // Everything still owed since this household started tracking, plus the next
-        // few ahead — enough to pay early without scrolling a year of dates. A date
-        // added BY HAND joins the row even though it sits outside both, or it would
-        // vanish the moment it was picked.
-        const offer = offeredDueDates(p, transfers, today, list)
+        // Two groups, nearest to the action first: what this face still OWES (past,
+        // unsent) and the next few AHEAD. Dates already sent are not offered — they
+        // piled up as greyed chips until the row was mostly history. A date ticked or
+        // added BY HAND stays in its group, or it would vanish the moment it was picked.
+        const { owed, ahead } = offeredDueGroups(p, transfers, sender, today, list, value?.id)
+        const chip = (at: number) => {
+          const isCovered = covered.has(at)
+          return (
+            <Chip
+              key={at}
+              selected={list.includes(at)}
+              onClick={() => toggleDate(p.id, at)}
+              title={isCovered ? v.dueCovered : undefined}
+              icon={isCovered ? 'check-bold' : undefined}
+            >
+              {formatDay(at, lang)}
+            </Chip>
+          )
+        }
         return (
           <fieldset key={p.id}>
             <legend className="mono">
               {p.title} — {v.dueDates}
             </legend>
-            <Cluster>
-              {offer.map((at) => {
-                const isCovered = covered.has(at)
-                return (
-                  <Chip
-                    key={at}
-                    selected={list.includes(at)}
-                    onClick={() => toggleDate(p.id, at)}
-                    title={isCovered ? v.dueCovered : undefined}
-                    icon={isCovered ? 'check-bold' : undefined}
-                  >
-                    {formatDay(at, lang)}
-                  </Chip>
-                )
-              })}
-            </Cluster>
+            {owed.length > 0 && (
+              <>
+                <p className="operator__seg-hint mono">{v.dueOwed}</p>
+                <Cluster>{owed.map(chip)}</Cluster>
+              </>
+            )}
+            {owed.length === 0 && <p className="operator__seg-hint mono">{v.dueNothingOwed}</p>}
+            {ahead.length > 0 && (
+              <>
+                <p className="operator__seg-hint mono">{v.dueAhead}</p>
+                <Cluster>{ahead.map(chip)}</Cluster>
+              </>
+            )}
             <p className="operator__seg-hint mono">{v.dueDatesHint}</p>
             {/* ANY OTHER DATE. The offered row starts at the entente's first date, so a
                 payment made BEFORE the household wrote the entente down had no chip at
