@@ -3,6 +3,7 @@ import {
   buildMemo,
   catchupSeries,
   coveredDueDates,
+  lastPlanPayment,
   extraKey,
   extrasOf,
   offeredDueGroups,
@@ -120,6 +121,20 @@ describe('coverage (no date math — just the recorded lines)', () => {
   })
 })
 
+describe('lastPlanPayment', () => {
+  it('is the most recently sent transfer that paid this agreement', () => {
+    const older = transfer({ id: 'a', sentAt: d(2026, 7, 14), lines: [planLine(d(2026, 7, 13))] })
+    const newer = transfer({ id: 'b', sentAt: d(2026, 8, 11), lines: [planLine(d(2026, 7, 27)), planLine(d(2026, 8, 10))] })
+    const last = lastPlanPayment([newer, older], 'p1')
+    expect(last?.transfer.id).toBe('b')
+    expect(last?.coveredUntil).toBe(d(2026, 8, 10))
+    expect(last?.cents).toBe(111282)
+  })
+  it('is null when nothing was sent for it', () => {
+    expect(lastPlanPayment([transfer({ lines: [{ kind: 'topup', amountCents: 100 }] })], 'p1')).toBeNull()
+  })
+})
+
 describe('foldAscii', () => {
   it('strips accents rather than letting a bank mangle them', () => {
     expect(foldAscii('Hypothèque')).toBe('Hypotheque')
@@ -151,17 +166,17 @@ describe('buildMemo', () => {
       planLine(d(2026, 7, 27)),
       { kind: 'topup', amountCents: 200000 },
     ]
-    expect(buildMemo(lines, [plan()])).toBe('Hypotheque 13 27 aout renflou 2000')
+    expect(buildMemo(lines, [plan()])).toBe('Hypotheque 13 27 aout 1112.82 renflou 2000')
   })
 
   it('groups day numbers by month when a send spans the boundary', () => {
     const lines: TransferLine[] = [planLine(d(2026, 7, 27)), planLine(d(2026, 8, 10))]
-    expect(buildMemo(lines, [plan()])).toBe('Hypotheque 27 aout 10 sept')
+    expect(buildMemo(lines, [plan()])).toBe('Hypotheque 27 aout 10 sept 1112.82')
   })
 
   it('sorts the dates even when the ticks came out of order', () => {
     const lines: TransferLine[] = [planLine(d(2026, 7, 27)), planLine(d(2026, 7, 13))]
-    expect(buildMemo(lines, [plan()])).toBe('Hypotheque 13 27 aout')
+    expect(buildMemo(lines, [plan()])).toBe('Hypotheque 13 27 aout 1112.82')
   })
 
   it('sums several top-ups into one word', () => {
@@ -191,7 +206,7 @@ describe('buildMemo', () => {
       { kind: 'other', label: 'Renflouement', amountCents: 200000 },
       { kind: 'other', label: 'Frais de maman', amountCents: 20000 },
     ]
-    expect(buildMemo(lines, [plan()])).toBe('Hypotheque 13 aout Renflouement 2000 Frais de maman 200')
+    expect(buildMemo(lines, [plan()])).toBe('Hypotheque 13 aout 556.41 Renflouement 2000 Frais de maman 200')
   })
 
   it('falls back to the bare amount when a free line has no label', () => {
@@ -204,12 +219,12 @@ describe('buildMemo', () => {
       { kind: 'plan', planId: 'p2', dueAt: d(2026, 7, 20), amountCents: 10000 },
       planLine(d(2026, 7, 13)),
     ]
-    expect(buildMemo(lines, [plan(), garderie])).toBe('Hypotheque 13 aout Garderie 20 aout')
+    expect(buildMemo(lines, [plan(), garderie])).toBe('Hypotheque 13 aout 556.41 Garderie 20 aout 100')
   })
 
   it('writes an English memo when the app is in English', () => {
     const lines: TransferLine[] = [planLine(d(2026, 7, 13)), { kind: 'topup', amountCents: 200000 }]
-    expect(buildMemo(lines, [plan()], 'en')).toBe('Hypotheque 13 aug topup 2000')
+    expect(buildMemo(lines, [plan()], 'en')).toBe('Hypotheque 13 aug 556.41 topup 2000')
   })
 
   it('is empty for an empty draft', () => {

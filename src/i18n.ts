@@ -3014,6 +3014,9 @@ export const FR = {
     // pour le renflouement seulement ; ça marche pour n'importe quel nom maintenant.
     extrasRecent: 'Déjà envoyés — un tap pour remettre :',
     extraLikeLast: (label: string, amount: string) => `${label} — ${amount}`,
+    lastSent: (sent: string, who: string | null, amount: string, until: string) =>
+      `Dernier envoi : ${sent}${who ? ` par ${who}` : ''} — ${amount}, jusqu’au ${until}.`,
+    lastSentNone: 'Aucun envoi noté pour cette entente.',
     amount: 'Montant',
     addLine: 'Ajouter une ligne',
     total: 'Total',

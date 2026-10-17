@@ -10,6 +10,7 @@ import {
   coveredDueDates,
   extraKey,
   extrasOf,
+  lastPlanPayment,
   offeredDueGroups,
   rememberedExtras,
   transferTotal,
@@ -253,6 +254,11 @@ export function TransferForm({
         // piled up as greyed chips until the row was mostly history. A date ticked or
         // added BY HAND stays in its group, or it would vanish the moment it was picked.
         const { owed, ahead } = offeredDueGroups(p, transfers, sender, today, list, value?.id)
+        // While editing, « last » must be the last OTHER transfer, not the one open.
+        const last = lastPlanPayment(
+          value ? transfers.filter((x) => x.id !== value.id) : transfers,
+          p.id,
+        )
         const chip = (at: number) => {
           const isCovered = covered.has(at)
           return (
@@ -272,6 +278,20 @@ export function TransferForm({
             <legend className="mono">
               {p.title} — {v.dueDates}
             </legend>
+            {/* WHERE WE ARE, on the screen that asks: the last transfer that paid this
+                agreement, so nobody opens the history to find out. Not while editing
+                that very transfer — it would describe itself. */}
+            {last && last.transfer.id !== value?.id && (
+              <p className="operator__seg-hint mono">
+                {v.lastSent(
+                  formatDay(last.transfer.sentAt, lang),
+                  members.find((m) => m.id === last.transfer.memberId)?.display_name ?? null,
+                  formatMoneyExact(last.cents, lang),
+                  formatDay(last.coveredUntil, lang),
+                )}
+              </p>
+            )}
+            {!last && <p className="operator__seg-hint mono">{v.lastSentNone}</p>}
             {owed.length > 0 && (
               <>
                 <p className="operator__seg-hint mono">{v.dueOwed}</p>

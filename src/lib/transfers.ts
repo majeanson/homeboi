@@ -228,6 +228,31 @@ export function coveredDueDates(
   return out
 }
 
+// WHERE WE ARE: the most recent transfer that paid a due date of this agreement, so
+// the composer can say what was last sent without anyone opening the history. Newest
+// by the day it was SENT; the dates and amount are that transfer's own plan lines.
+export interface LastPlanPayment {
+  transfer: Transfer
+  /** The latest due date that transfer covered for this agreement. */
+  coveredUntil: number
+  /** What that transfer put into this agreement (its plan lines only, not extras). */
+  cents: number
+}
+export function lastPlanPayment(transfers: readonly Transfer[], planId: string): LastPlanPayment | null {
+  let best: LastPlanPayment | null = null
+  for (const t of transfers) {
+    const mine = t.lines.filter((l): l is Extract<TransferLine, { kind: 'plan' }> => l.kind === 'plan' && l.planId === planId)
+    if (!mine.length) continue
+    if (best && t.sentAt <= best.transfer.sentAt) continue
+    best = {
+      transfer: t,
+      coveredUntil: Math.max(...mine.map((l) => l.dueAt)),
+      cents: mine.reduce((n, l) => n + l.amountCents, 0),
+    }
+  }
+  return best
+}
+
 // THE TRACKING FLOOR: the oldest due date this household has ever recorded for an
 // agreement — the day they started keeping this particular book.
 //
@@ -391,9 +416,13 @@ export function buildMemo(
 
   // Plan lines, in the plans' own order, so the message reads the same every time.
   for (const plan of plans) {
-    const dueAts = lines.filter((l) => l.kind === 'plan' && l.planId === plan.id).map((l) => (l as { dueAt: number }).dueAt)
-    if (!dueAts.length) continue
-    parts.push(`${foldAscii(plan.title)} ${memoDates(dueAts, lang)}`)
+    const mine = lines.filter((l): l is Extract<TransferLine, { kind: 'plan' }> => l.kind === 'plan' && l.planId === plan.id)
+    if (!mine.length) continue
+    // Dates AND the sum they carry: whoever reads the bank message should not have to
+    // multiply a share by a count to know what arrived. Omitted when the share is 0.
+    const cents = mine.reduce((n, l) => n + l.amountCents, 0)
+    const head = `${foldAscii(plan.title)} ${memoDates(mine.map((l) => l.dueAt), lang)}`
+    parts.push(cents ? `${head} ${memoAmount(cents)}` : head)
   }
 
   // The extras, in the order the composer's rows carry them — so the message reads

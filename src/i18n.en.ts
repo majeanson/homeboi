@@ -2616,6 +2616,9 @@ export const EN: typeof FR = {
     extraLabel: 'What for',
     extrasRecent: 'Sent before — one tap to reuse:',
     extraLikeLast: (label: string, amount: string) => `${label} — ${amount}`,
+    lastSent: (sent: string, who: string | null, amount: string, until: string) =>
+      `Last sent: ${sent}${who ? ` by ${who}` : ''} — ${amount}, through ${until}.`,
+    lastSentNone: 'Nothing recorded yet for this agreement.',
     amount: 'Amount',
     addLine: 'Add a line',
     total: 'Total',
