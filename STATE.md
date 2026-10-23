@@ -114,24 +114,14 @@ now, so the repo-wide count is honest for the first time.
 ## 3. What just shipped
 
 ### Le passage d'un inconnu — kid routine, essai, porte — 2026-10-23
-From `research/stranger-review-2026-10-23.md`. « Recommencer » is inert for 2 s on the end screen (a child's extra tap no
-longer restarts the routine), the live region re-announces step 1, ▷ became the → of every other step. The sandbox
-checklist deep-links ONTO a recipe / the next routine's run scene, and `SectionIntro` stands down while that card is up.
-Demo seed: chores 3/3/1/1, spaghetti 20 min, two `meal_ideas` (**migration 0144** gave it `is_sample`), no wifi password.
-Door: « Essayer sans compte », « J'ai déjà un compte » is a text link, `<title>` carries the section (HubLayout).
-Trial phone board = 5 cards + « Tout voir » (`lib/curatedBoard`, a render-time lens: never saved, off when the layout was
-arranged or while editing). Wider fade on `.subtabs`. **Open (audit, nothing changed):** the board's ~170 requests are
-mostly ~140 tiny JS chunks (only 2 `advancedChunks` groups; `guideContent` rides along; `warmCalendars`), ~22 API GETs.
+From `research/stranger-review-2026-10-23.md`. « Recommencer » inert 2 s on the end screen; the sandbox checklist deep-links ONTO a
+recipe / the next routine's run; seed chores 3/3/1/1 + two `meal_ideas` (**migration 0144**); « Essayer sans compte »; `<title>` per section;
+trial phone board = 5 cards + « Tout voir » (`lib/curatedBoard`, render-time lens). **Open (audit only):** the board's ~170 requests are mostly
+~140 tiny JS chunks (2 `advancedChunks` groups; `guideContent` rides along; `warmCalendars`) + ~22 API GETs.
 
-### Le babillard dans une vitrine — framed by marcportal.com, a door that shows the product — 2026-10-15
-`frame-ancestors 'self' https://marcportal.com https://*.marcportal.com`, **no `X-Frame-Options`** (cannot express an
-allowlist; one constant in `securityHeaders.ts`, pinned twice). Read cold at 1280×800 on production: `lib/embedded.ts` +
-`<html data-embedded>` (a frame skips the auto-tour); a wordmark splash in `index.html` for the ~1 s blank (only on `/`);
-a baseline link card (`public/og.jpg`) — and `injectShareOg` now REMOVES it before appending a share's own tags (crawlers
-read the first `og:`; d1-pinned); the door shows a real board frame (`public/showcase/*`, FR/EN, tablet + phone, from the
-on-demand `scripts/capture-showcase.mjs`); a sandbox no longer opens on tour-over-card-over-board (try-this = link chips,
-card ~560 → ~370 px; `e2e/embedded-door.spec.ts`, planted red). **« Emporter mes données »** gained a readable twin:
-`/api/takeout?format=md` (`_lib/takeoutMarkdown`: recipes, list, supper, people, notes, routines — derived from the dump).
+### Le babillard dans une vitrine — framed by marcportal.com — 2026-10-15
+`frame-ancestors` admits marcportal.com (no `X-Frame-Options`; `securityHeaders.ts`); `lib/embedded.ts` skips the auto-tour in a frame; a real board
+frame on the door (`public/showcase/*`); `/api/takeout?format=md` readable twin; `e2e/embedded-door.spec.ts`, planted red.
 
 ### Rond QUATRE de la liste — 2026-10-06 (le menteur était le serveur)
 `DELETE /api/list` answered a vacuous « ok » on stale ids → now text + `asOf` healing (`_lib/staleDelete`) else 404; ~100
