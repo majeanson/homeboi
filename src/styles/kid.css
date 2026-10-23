@@ -203,6 +203,12 @@
   gap: clamp(8px, 1.6vw, 18px);
   max-width: min(60rem, 94vw);
 }
+/* On a phone the companion hovers at the right edge, mid-height — right where a wrapped
+   strip's last column lands (the 4th step sat under the fox, 2026-10-23). Keep that
+   column clear: the strip wraps a step earlier instead of running under the creature. */
+.tdl-strip--phone {
+  padding-inline-end: 4.5rem;
+}
 /* Each step is a real BUTTON now (it was an aria-hidden span): tap a done one twice
    to rewind the story to it, tap a future one to hear it. Button reset — the look is
    unchanged, only the affordance is real. */

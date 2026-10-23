@@ -16,7 +16,7 @@ import { todRank } from '../lib/routineTod'
 import { timeOfDay } from '../lib/timeofday'
 import { DEVICES_KEY, ROUTINES_KEY } from '../lib/queryKeys'
 import { Icon, type IconName } from './Icon'
-import { Cluster } from './Layout'
+import { Cluster, Rail } from './Layout'
 import { Chip } from './Chip'
 import { FeatureMap } from './FeatureMap'
 import { featureMapRoute } from '../lib/guideContent'
@@ -206,19 +206,20 @@ export function WelcomeCard({ members }: { members: { id: string }[] }) {
         </button>
       </div>
       <p className="welcome-card__intro">{sandbox ? t.welcome.demoIntro : t.welcome.intro}</p>
-      {/* The sandbox's try-this list is INVITATIONS, not a checklist — a row of link chips,
-          so the card stays a strip and the board (what the visitor came to see) is on
+      {/* The sandbox's try-this list is INVITATIONS, not a checklist — a one-line RAIL of link chips
+          (scrolls sideways with a fade on a phone, where five wrapped chips ate the first
+          screen and pushed the curated cards below the fold — 2026-10-23), so the card stays a strip and the board (what the visitor came to see) is on
           screen under it. It was five full-width rows plus the feature map: on a 1280×800
           first screen the card alone ran past the fold (2026-10-15). The feature map is
           dropped here too — the nav beside/below the board is already that map. */}
       {sandbox && (
-        <Cluster>
+        <Rail>
           {DEMO_STEPS.map((s) => (
             <Chip key={s.id} to={demoTo(s)} icon={s.icon}>
               {t.welcome[s.id]}
             </Chip>
           ))}
-        </Cluster>
+        </Rail>
       )}
       {!sandbox && (
       <ol className="welcome-card__steps">

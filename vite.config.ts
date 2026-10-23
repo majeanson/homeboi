@@ -1,6 +1,7 @@
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import { execFileSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import { headersFileSource } from './functions/_lib/securityHeaders'
 
 /**
@@ -451,6 +452,17 @@ self.addEventListener('fetch', (e) => {
 })
 `
 
+// The `lazy-shared` chunk group's membership (see its comment in advancedChunks).
+const LAZY_SHARED = new Set(
+  readFileSync('scripts/lazy-shared-modules.txt', 'utf8')
+    .split(/\r?\n/)
+    .filter(Boolean),
+)
+function lazyShared(id: string): boolean {
+  const i = id.split('\\').join('/').lastIndexOf('/src/')
+  return i >= 0 && LAZY_SHARED.has(id.split('\\').join('/').slice(i + 1))
+}
+
 export default defineConfig({
   // Stamp the build moment into the bundle so Réglages ▸ Debug can show "last
   // updated" — a proxy for the last push (CI builds + deploys on every push to
@@ -497,6 +509,20 @@ export default defineConfig({
           groups: [
             { name: 'react-vendor', test: /node_modules[\\/](react|react-dom|react-router|react-router-dom)[\\/]/ },
             { name: 'i18n', test: /[\\/]src[\\/]i18n\.ts$/ },
+            // THE LAZY-SHARED GROUP — an ENUMERATED list, not a pattern, and that is the
+            // whole point (stranger review 2026-10-23, item 6). Opening /board fetched
+            // ~114 chunks outside the door, 91 of them under 3 KB: Rolldown emits one chunk
+            // per distinct set of importers, and 152 small modules (Chip, Avatar, Modal,
+            // the query hooks…) each had their own. A catch-all group ("every shared
+            // module under src/") merged them — and dragged the door's own modules in with
+            // them, 526 → 1155 KB against a 680 KB cap (the 2026-09-22 lesson above).
+            // So the list is exactly the modules that were OUTSIDE the door's closure and
+            // under 10 KB when it was drawn: `scripts/lazy-shared-modules.txt`. A module
+            // missing from it just keeps its own chunk (harmless); a listed module the
+            // door later starts importing makes this chunk part of the door, and
+            // check-bundle's budget goes red — regenerate the list then, don't raise the cap.
+            // Cost: a lazy page that needs one of them now fetches the lot (~230 KB, off the door).
+            { name: 'lazy-shared', test: lazyShared, includeDependenciesRecursively: false },
             // THE `drawpad` GROUP USED TO BE HERE. It was removed on 2026-09-22, and
             // the reason is worth the paragraph, because the pin had turned into the
             // thing it was written to prevent.

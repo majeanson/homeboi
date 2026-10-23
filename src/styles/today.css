@@ -432,6 +432,13 @@
 .welcome-card .chip {
   font-family: var(--sans);
 }
+/* In the trial's rail each chip is a short two-line card, not one long line: a single full-width
+   chip hid the other four and gave the rail no "there is more" cue (2026-10-23). */
+.welcome-card .rail > .chip {
+  width: 13.5rem;
+  white-space: normal;
+  text-align: start;
+}
 .welcome-card__steps {
   list-style: none;
   margin: 0 0 14px;

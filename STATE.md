@@ -116,8 +116,8 @@ now, so the repo-wide count is honest for the first time.
 ### Le passage d'un inconnu — kid routine, essai, porte — 2026-10-23
 From `research/stranger-review-2026-10-23.md`. « Recommencer » inert 2 s on the end screen; the sandbox checklist deep-links ONTO a
 recipe / the next routine's run; seed chores 3/3/1/1 + two `meal_ideas` (**migration 0144**); « Essayer sans compte »; `<title>` per section;
-trial phone board = 5 cards + « Tout voir » (`lib/curatedBoard`, render-time lens). **Open (audit only):** the board's ~170 requests are mostly
-~140 tiny JS chunks (2 `advancedChunks` groups; `guideContent` rides along; `warmCalendars`) + ~22 API GETs.
+trial phone board = 5 cards + « Tout voir » (`lib/curatedBoard`, render-time lens), its try-this chips a one-line Rail. **Chunks:** the board's ~114
+small JS chunks → 11 via the enumerated `lazy-shared` group (`scripts/lazy-shared-modules.txt`; door 526 → 519 KB; a catch-all group blows the door). **Open:** `guideContent` (137 KB) still rides /board — help registries read it at module load; ~22 API GETs.
 
 ### Le babillard dans une vitrine — framed by marcportal.com — 2026-10-15
 `frame-ancestors` admits marcportal.com (no `X-Frame-Options`; `securityHeaders.ts`); `lib/embedded.ts` skips the auto-tour in a frame; a real board

@@ -610,7 +610,7 @@ export function RoutinePlayer({
                   FUTURE step only speaks itself (a preview, never a jump — a wandering
                   finger must not tick steps nobody did); the current one speaks itself
                   like the hero. Pictures + audio carry it; no reading required. */}
-              <div className="tdl-strip">
+              <div className={'tdl-strip' + (onPhone ? ' tdl-strip--phone' : '')}>
                 {routine.cards.map((c, k) => {
                   const done = routine.doneIdx.includes(k)
                   const state = done ? 'done' : k === curIdx ? 'on' : 'wait'
