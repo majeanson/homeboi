@@ -90,7 +90,17 @@ test('the sandbox welcome card lists try-this deep links (never the setup checkl
   await bootSandbox(page)
   const card = page.locator('.welcome-card')
   await expect(card).toBeVisible()
-  await expect(card).toContainText('Essaie-le pour vrai')
+  await expect(card).toContainText('Essaie sans compte')
+  // The first two land ON their target once the seeded rows load (stranger review
+  // 2026-10-23): a recipe, and a routine's run scene — not the bare tab.
+  await expect(card.getByRole('link', { name: 'Ouvre une recette, pars le mode cuisson' })).toHaveAttribute(
+    'href',
+    '/kitchen/recipe/rc1',
+  )
+  await expect(card.getByRole('link', { name: 'Fais une routine d’enfant, étape par étape' })).toHaveAttribute(
+    'href',
+    new RegExp('^/routine/[^/]+/run$'),
+  )
   // Deep links ride the existing URL grammar (DISCOVERY.md): ?plus= / ?edit=1.
   await expect(card.getByRole('link', { name: 'Ajoute quelque chose à la liste' })).toHaveAttribute(
     'href',
@@ -112,4 +122,15 @@ test('a regular (non-sandbox) session sees no claim banner and /garder bounces h
   await page.goto('/garder')
   await page.waitForURL('**/board')
   await expect(page.locator('.sample-banner').getByRole('link', { name: 'Garder ma maisonnée' })).toHaveCount(0)
+})
+
+test('the trial phone board is a short curated glance, with « Tout voir » for the rest', async ({ page }) => {
+  await bootSandbox(page)
+  const cards = page.locator('.board-band > *, .board-grid > *')
+  await expect(page.getByRole('button', { name: 'Tout voir' })).toBeVisible()
+  const before = await cards.count()
+  expect(before).toBeLessThanOrEqual(5)
+  await page.getByRole('button', { name: 'Tout voir' }).click()
+  await expect(page.getByRole('button', { name: 'Voir moins' })).toBeVisible()
+  expect(await cards.count()).toBeGreaterThan(before)
 })

@@ -3,7 +3,7 @@ import { BASE_URL } from './stranger.config'
 
 // THE STRANGER'S WALK, against the deployed app (`npm run e2e:stranger`, weekly).
 //
-// A first-time visitor: the marketing door, « Essayer pour vrai », the six tabs, one
+// A first-time visitor: the marketing door, « Essayer sans compte », the six tabs, one
 // real write, the ＋ sheet, the claim form — and, since signup opened (2026-09-24), the
 // OTHER door: /signup in FR and EN, which creates a real household and deletes it again
 // through the leave door (the signup tests below). No stubs — this is the only harness that
@@ -94,7 +94,7 @@ test('a stranger can open the door, try the demo, walk every tab, write once, an
 
   times.demo = await step(
     page,
-    '« Essayer pour vrai » → the board',
+    '« Essayer sans compte » → the board',
     async () => {
       await page.locator('.home__cta-demo').click()
       await page.waitForURL(/\/board/, { timeout: 60_000 })

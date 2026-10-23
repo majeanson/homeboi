@@ -113,6 +113,16 @@ now, so the repo-wide count is honest for the first time.
 
 ## 3. What just shipped
 
+### Le passage d'un inconnu — kid routine, essai, porte — 2026-10-23
+From `research/stranger-review-2026-10-23.md`. « Recommencer » is inert for 2 s on the end screen (a child's extra tap no
+longer restarts the routine), the live region re-announces step 1, ▷ became the → of every other step. The sandbox
+checklist deep-links ONTO a recipe / the next routine's run scene, and `SectionIntro` stands down while that card is up.
+Demo seed: chores 3/3/1/1, spaghetti 20 min, two `meal_ideas` (**migration 0144** gave it `is_sample`), no wifi password.
+Door: « Essayer sans compte », « J'ai déjà un compte » is a text link, `<title>` carries the section (HubLayout).
+Trial phone board = 5 cards + « Tout voir » (`lib/curatedBoard`, a render-time lens: never saved, off when the layout was
+arranged or while editing). Wider fade on `.subtabs`. **Open (audit, nothing changed):** the board's ~170 requests are
+mostly ~140 tiny JS chunks (only 2 `advancedChunks` groups; `guideContent` rides along; `warmCalendars`), ~22 API GETs.
+
 ### Le babillard dans une vitrine — framed by marcportal.com, a door that shows the product — 2026-10-15
 `frame-ancestors 'self' https://marcportal.com https://*.marcportal.com`, **no `X-Frame-Options`** (cannot express an
 allowlist; one constant in `securityHeaders.ts`, pinned twice). Read cold at 1280×800 on production: `lib/embedded.ts` +

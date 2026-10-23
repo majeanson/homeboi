@@ -255,7 +255,7 @@ export const EN: typeof FR = {
     ctaSignup: 'Create my household',
     // « Essaie pour vrai » (bmad/08 A-8) — the per-visitor sandbox demo (falls
     // back to the read-only shared demo when the sandbox cap is hit).
-    ctaDemo: 'Try it for real',
+    ctaDemo: 'Try it without an account',
     demoHint: 'No sign-up — a trial household, wiped after 24 hours.',
     shotAlt: 'The board on a tablet: tonight’s supper, the notes on the fridge and the day’s agenda.',
     demoOpening: 'Setting up your trial household…',
@@ -295,7 +295,7 @@ export const EN: typeof FR = {
     replayTour: 'Replay the guided tour',
     replayIntros: 'Show the first-visit cards again',
     // The demo-sandbox try-this face (lib/demo.ts) — invitations, never a checklist.
-    demoTitle: 'Welcome! Try it for real',
+    demoTitle: 'Welcome! Try it without an account',
     demoIntro: 'We filled the board for you. A few ideas to feel it live:',
     demoCook: 'Open a recipe, start cook mode',
     demoRoutine: 'Run a kid routine, step by step',
@@ -658,6 +658,8 @@ export const EN: typeof FR = {
     moreN: (n: number) => `+${n} more`,
     editDiscover: 'Hold a card to rearrange the board.',
     editEnter: 'Arrange the board',
+    seeAll: 'See everything',
+    seeLess: 'See less',
     // The parent « all-clear » hero (empty day).
     allClearTitle: 'All calm',
     cardEmpty: 'Nothing right now.',

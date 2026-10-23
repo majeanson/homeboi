@@ -10,8 +10,11 @@ import { useSandbox } from '../lib/demo'
 import { useSampleStatus, useSampleWrite } from '../lib/sample'
 import { api } from '../lib/api'
 import { useOnline } from '../lib/online'
-import { useMeals } from '../lib/queryHooks'
-import { DEVICES_KEY } from '../lib/queryKeys'
+import { useMeals, useRecipes } from '../lib/queryHooks'
+import { live } from '../lib/query'
+import { todRank } from '../lib/routineTod'
+import { timeOfDay } from '../lib/timeofday'
+import { DEVICES_KEY, ROUTINES_KEY } from '../lib/queryKeys'
 import { Icon, type IconName } from './Icon'
 import { Cluster } from './Layout'
 import { Chip } from './Chip'
@@ -88,6 +91,8 @@ const STEPS: { id: 'members' | 'meals' | 'pair'; to: string; icon: IconName }[] 
 // The sandbox try-this list — tuned to the SEEDED data, every target a link the
 // guide already uses (?plus= opens the ＋ sheet, ?edit=1 the board edit mode), so
 // a mouse user gets the same door a touch gesture would (desktop reachability).
+// The first two land ON their target — a recipe, a routine's run scene — once the seeded
+// rows have loaded; until then (or if a household cleared them) they fall back to the tab.
 const DEMO_STEPS: { id: 'demoCook' | 'demoRoutine' | 'demoListe' | 'demoRearrange' | 'demoMot'; to: string; icon: IconName }[] = [
   { id: 'demoCook', to: '/kitchen', icon: 'cooking-pot-bold' },
   { id: 'demoRoutine', to: '/maison', icon: 'smiley-bold' },
@@ -120,6 +125,28 @@ export function WelcomeCard({ members }: { members: { id: string }[] }) {
       queryFn: () => api<{ devices: { id: string }[] }>('pair/devices'),
       enabled: signedIn,
     }).data?.devices.length ?? 0
+
+  // Where the first two try-this chips land (sandbox only — nothing is fetched otherwise).
+  // The recipe is the spaghetti when the seed has it, else the first; the routine is the
+  // one whose moment of day is NEXT (the same todRank the Maison tab and the kid picker use).
+  const recipes = useRecipes({ enabled: sandbox }).data?.recipes
+  const routines = useQuery({
+    queryKey: ROUTINES_KEY,
+    queryFn: () => api<{ routines: { id: string; timeOfDay: string | null }[] }>('routines'),
+    enabled: sandbox,
+    ...live,
+  }).data?.routines
+  const cookTo = (() => {
+    const r = recipes?.find((x) => /spag/i.test(x.title)) ?? recipes?.[0]
+    return r ? `/kitchen/recipe/${r.id}` : '/kitchen'
+  })()
+  const routineTo = (() => {
+    const now = timeOfDay(Date.now())
+    const rank = (tod: string | null) => todRank(now, tod)
+    const r = routines && [...routines].sort((a, b) => rank(a.timeOfDay) - rank(b.timeOfDay))[0]
+    return r ? `/routine/${r.id}/run` : '/maison'
+  })()
+  const demoTo = (s: (typeof DEMO_STEPS)[number]) => (s.id === 'demoCook' ? cookTo : s.id === 'demoRoutine' ? routineTo : s.to)
 
   // Operator-only: this is the household SETUP checklist, and every step + link
   // targets Réglages (operator surface). A kiosk (device token, not signed in)
@@ -187,7 +214,7 @@ export function WelcomeCard({ members }: { members: { id: string }[] }) {
       {sandbox && (
         <Cluster>
           {DEMO_STEPS.map((s) => (
-            <Chip key={s.id} to={s.to} icon={s.icon}>
+            <Chip key={s.id} to={demoTo(s)} icon={s.icon}>
               {t.welcome[s.id]}
             </Chip>
           ))}

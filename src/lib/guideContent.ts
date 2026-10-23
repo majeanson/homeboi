@@ -340,8 +340,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Des exemples pour explorer', en: 'Sample data to explore' },
         detail: {
-          fr: 'Un nouveau compte part vide, pour ta vraie famille — la famille de démo vit dans « Essayer pour vrai », une maisonnée d’essai que « Garder ma maisonnée » rend tienne. « Charger des exemples » (l’accueil du babillard, ou ici) la met chez toi quand même, et « Vider les exemples » n’efface jamais ce que tu ajoutes toi-même.',
-          en: 'A new account starts empty, for your real family — the demo family lives in “Try it for real”, a trial household that “Keep my household” makes yours. “Load sample data” (the board’s welcome card, or right here) brings it home anyway, and “Clear the examples” never removes anything you add yourself.',
+          fr: 'Un nouveau compte part vide, pour ta vraie famille — la famille de démo vit dans « Essayer sans compte », une maisonnée d’essai que « Garder ma maisonnée » rend tienne. « Charger des exemples » (l’accueil du babillard, ou ici) la met chez toi quand même, et « Vider les exemples » n’efface jamais ce que tu ajoutes toi-même.',
+          en: 'A new account starts empty, for your real family — the demo family lives in “Try it without an account”, a trial household that “Keep my household” makes yours. “Load sample data” (the board’s welcome card, or right here) brings it home anyway, and “Clear the examples” never removes anything you add yourself.',
         },
         why: {
           fr: 'Les exemples, on les invite — on n’a pas à les pelleter dehors avant de commencer.',

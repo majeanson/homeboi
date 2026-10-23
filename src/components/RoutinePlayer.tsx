@@ -79,6 +79,8 @@ export interface PlayerRoutine {
 // surfaces behave identically (hear-first, two taps, no wandering finger commits).
 const ARM_MS = 6000
 const SPEAK_FLASH_MAX_MS = 4000
+// How long the end screen ignores « Recommencer » after the last step is ticked.
+const AGAIN_LOCK_MS = 2000
 
 // A running/just-finished timer is { endsAt } (the unix second it reaches zero);
 // a paused one is { left } (banked seconds). The player derives remaining from the
@@ -327,6 +329,9 @@ export function RoutinePlayer({
     if (ro) return
     resetRun.mutate({ routineId: routine.id })
     setRunning(false)
+    // The live region still held the LAST step (« étape 3 de 3 · on est ici ») while the
+    // screen is back on the first — say where the story actually is now.
+    setAnnounce(stepLabel(0, t.kid.stepNow))
   }
 
   const tint = colourFor('routine', routine.color)
@@ -336,6 +341,17 @@ export function RoutinePlayer({
   // two code paths saying the same thing badly. Calm now gates exactly ONE thing:
   // the sticker offer below.
   const allDone = routine.cards.length > 0 && routine.doneIdx.length >= routine.cards.length
+  // « Recommencer » shows up where the big → / ✓ button just was, so a child's one extra
+  // tap on it skipped the celebration and landed back on step 1. For the first couple of
+  // seconds of the end screen the button is inert (a real `disabled`, so it reads as
+  // resting and a test's click waits for it) — a deliberate redo is still one tap away.
+  const [againLocked, setAgainLocked] = useState(false)
+  useEffect(() => {
+    if (!allDone) return
+    setAgainLocked(true)
+    const id = setTimeout(() => setAgainLocked(false), AGAIN_LOCK_MS)
+    return () => clearTimeout(id)
+  }, [allDone])
 
   // The story position: the first not-yet-done card (else the last).
   const firstUndone = routine.cards.findIndex((_, i) => !routine.doneIdx.includes(i))
@@ -531,7 +547,13 @@ export function RoutinePlayer({
               {/* A gentle, deliberate "do it again" — not a streak hook, just the
                   choice the calm STOP leaves open. A guest can't commit progress. */}
               {!ro && (
-                <button type="button" className="tdl-again" onClick={restart} style={{ color: tintInk(tint) }}>
+                <button
+                  type="button"
+                  className="tdl-again"
+                  onClick={restart}
+                  disabled={againLocked}
+                  style={{ color: tintInk(tint) }}
+                >
                   <InlineIcon name="play-bold" /> {t.kid.again}
                 </button>
               )}
@@ -672,7 +694,7 @@ export function RoutinePlayer({
                       aria-label={resuming ? t.kid.resume : t.kid.start}
                       title={resuming ? t.kid.resume : t.kid.start}
                     >
-                      <Icon name="play-bold" size={22} />
+                      <Icon name="arrow-right-bold" size={34} />
                     </button>
                   )}
                 </div>

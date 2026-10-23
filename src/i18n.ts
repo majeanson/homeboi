@@ -317,7 +317,7 @@ export const FR = {
     ctaSignup: 'Créer ma maisonnée',
     // « Essaie pour vrai » (bmad/08 A-8) — the per-visitor sandbox demo (falls
     // back to the read-only shared démo when the sandbox cap is hit).
-    ctaDemo: 'Essayer pour vrai',
+    ctaDemo: 'Essayer sans compte',
     // The one line that removes the hesitation before the demo: nothing to fill, and
     // it costs the visitor nothing — the same 24-hour truth the sandbox board tells.
     demoHint: 'Sans inscription — une maisonnée d’essai, effacée après 24 heures.',
@@ -359,7 +359,7 @@ export const FR = {
     replayTour: 'Revoir la visite guidée',
     replayIntros: 'Revoir les cartes de première visite',
     // The demo-sandbox try-this face (lib/demo.ts) — invitations, never a checklist.
-    demoTitle: 'Bienvenue ! Essaie-le pour vrai',
+    demoTitle: 'Bienvenue ! Essaie sans compte',
     demoIntro: 'On a rempli le babillard pour toi. Quelques idées pour le sentir vivre :',
     demoCook: 'Ouvre une recette, pars le mode cuisson',
     demoRoutine: 'Fais une routine d’enfant, étape par étape',
@@ -787,6 +787,9 @@ export const FR = {
     // La porte permanente au pied du babillard une fois l'indice retiré — le miroir
     // clavier/souris du maintien (ACTIONS.md Wave C).
     editEnter: 'Organiser le babillard',
+    // The trial phone's short board and its door to the rest (lib/curatedBoard).
+    seeAll: 'Tout voir',
+    seeLess: 'Voir moins',
     // The parent « all-clear » hero (empty day).
     allClearTitle: 'Tout est calme',
     // Shown inside a card the device asked to keep visible even when it has nothing

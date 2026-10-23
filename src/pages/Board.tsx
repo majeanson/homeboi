@@ -129,6 +129,8 @@ import {
   type BoardCardId,
   type BoardCardPrefs,
 } from '../lib/boardCards'
+import { curateForTrial, usePhoneWidth } from '../lib/curatedBoard'
+import { useSandbox } from '../lib/demo'
 import { WidgetGrid } from '../components/board/WidgetGrid'
 import { CardSlot } from '../components/board/CardSlot'
 import { usePointerDnd, DragGhost } from '../lib/dnd'
@@ -231,6 +233,11 @@ export function Board() {
   // Which Grille cards this device shows + their order (Réglages ▸ Affichage ▸
   // Disposition). Per-device, live via useSyncExternalStore (lib/boardCards).
   const boardCards = useBoardCards()
+  // The trial on a phone: five cards and « Tout voir » (lib/curatedBoard) — a lens at render
+  // only; the stored layout, the edit mode and Réglages never see it.
+  const sandbox = useSandbox()
+  const phoneWidth = usePhoneWidth()
+  const [seeAll, setSeeAll] = useState(false)
   // Contextual "?" help for the view toggle (lib/helpMode): arm it, tap a view to
   // learn what it shows instead of switching. Label = the view's own name.
   const help = useHelpMode(BOARD_HELP, (k) => {
@@ -537,6 +544,9 @@ export function Board() {
   const canEdit = !isDisplay() && audience === 'parent'
   const editing = canEdit && editParam === '1'
   const exitEdit = useCallback(() => setEditParam('0'), [setEditParam])
+  // Editing always shows the whole board — you cannot arrange cards you cannot see.
+  const curated = sandbox && phoneWidth && !seeAll && !editing && audience === 'parent'
+  const shownCards = curated ? curateForTrial(boardCards) : boardCards
 
   // « Annuler » — edit mode is otherwise apply-as-you-go (every drag / ✕ / resize
   // writes the device store immediately), so the only way out WITHOUT keeping the
@@ -1867,7 +1877,7 @@ export function Board() {
             onCollapse={collapseCard}
             data-tour="board-cards"
           >
-            {visibleCards(boardCards, 'band').map((id) => (
+            {visibleCards(shownCards, 'band').map((id) => (
               <CardSlot key={id} id={id} zone="band" empty={slotEmpty(nodes[id])}>
                 {nodes[id]}
               </CardSlot>
@@ -1903,12 +1913,23 @@ export function Board() {
                 the per-device order with hidden ones dropped (lib/boardCards, set in
                 Réglages ▸ Affichage or by long-pressing a card). The card JSX is
                 unchanged — just addressable. */}
-            {visibleCards(boardCards, 'grid').map((id) => (
+            {visibleCards(shownCards, 'grid').map((id) => (
               <CardSlot key={id} id={id} zone="grid" empty={slotEmpty(nodes[id])}>
                 {nodes[id]}
               </CardSlot>
             ))}
           </WidgetGrid>
+
+          {/* « Tout voir » — the trial phone shows five cards; this is the door to the rest, and
+              (once open) back to the short board. A plain Chip-weight control at the foot of
+              the grid, where the eye lands when it reaches the end of the five. */}
+          {sandbox && phoneWidth && !editing && audience === 'parent' && (
+            <div className="board-edit-hint board-edit-hint--door">
+              <button type="button" className="btn btn--ghost btn--sm" onClick={() => setSeeAll((v) => !v)} aria-expanded={seeAll}>
+                <InlineIcon name={seeAll ? 'caret-up-bold' : 'caret-down-bold'} size={14} /> {seeAll ? t.board.seeLess : t.board.seeAll}
+              </button>
+            </div>
+          )}
 
           {/* One-time discoverability line for the unhinted long-press door into edit
               mode. Dismissed (or edit mode entered by any door) → retired for this

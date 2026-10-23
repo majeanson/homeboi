@@ -993,6 +993,22 @@ textarea.input {
 .home__cta-demo:focus-visible {
   background: color-mix(in srgb, var(--accent) 12%, var(--card));
 }
+/* « J'ai déjà un compte » — a text link beside the two buttons, not a third button. The
+   padding keeps the tap target button-sized without drawing a box. */
+.home__cta-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 0.5rem;
+  color: var(--ink-soft);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+.home__cta-link:hover,
+.home__cta-link:focus-visible {
+  color: var(--ink);
+}
 /* The line that makes it pressable: no sign-up, nothing to regret. */
 .home__demo-hint {
   margin: 0.7rem 0 0;
@@ -1689,6 +1705,13 @@ html[data-embedded] .home {
   --hs-r: var(--hs-fade); /* …and/or to the RIGHT */
 }
 
+/* A pill row's own background (paper-deep on cream) is so close to the page that a 28px
+   fade at its edge reads as « the pill just ends » — Maison's fifth tab (« Carnets »)
+   sat off-screen at 375px with nothing to say so (stranger review 2026-10-23). Wider,
+   so the last visible label is visibly half-eaten: the unmistakable « there is more ». */
+.subtabs[data-hs] {
+  --hs-fade: 48px;
+}
 .kitchen__day-empty {
   font-size: var(--text-md);
   opacity: 0.7;

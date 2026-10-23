@@ -34,6 +34,7 @@ const SAMPLE_TABLES = [
   // extended (migration 0114 gave these is_sample). habit_days is NOT swept here — it
   // has no household_id column and the seed creates none (see the migration comment).
   'meal_leftovers', // → households only (recipe/source not FK)
+  'meal_ideas', // → households only (recipe_id/suggested_by are soft refs; mig 0144 gave it is_sample)
   'schedule_blocks', // → members
   'habits', // → members (habit_days would come first, but none are seeded)
   'family_notes', // → members (member_id + author_member_id)
@@ -265,7 +266,7 @@ export async function seedSampleData(env: Env, householdId: string, ts = nowSec(
       JSON.stringify(spagSteps),
       4,
       15,
-      30,
+      20, // matches step 3 (« laisser mijoter 20 min »)
       'Ajoute du parmesan au service.',
       JSON.stringify(['rapide', 'préféré']),
       ts,
@@ -449,16 +450,18 @@ export async function seedSampleData(env: Env, householdId: string, ts = nowSec(
 
     // tasks (chores) with a fair rotation (faces, never counts). A household's real
     // weekly chore board — parents share the heavy ones, the kids own a light one each.
+    // `idx` is whose turn it is NOW, and « À faire » shows exactly that — so it is set so the
+    // board reads fair at a glance: Maman 3, Papa 3, Léa 1, Noah 1 (a stranger counts).
     ...(
       [
         ['Sortir les poubelles', [maman, papa], 0, '#88A36F'],
-        ['Vaisselle', [papa, maman], 1, '#7BB0C9'],
+        ['Vaisselle', [papa, maman], 0, '#7BB0C9'],
         ['Lessive', [maman, papa], 0, '#B06A93'],
-        ['Passer l’aspirateur', [papa, maman], 1, '#5891AC'],
+        ['Passer l’aspirateur', [papa, maman], 0, '#5891AC'],
         ['Nettoyer la salle de bain', [maman, papa], 0, '#88A36F'],
         ['Tondre la pelouse', [papa], 0, '#88A36F'],
         ['Litière du chat', [lea, noah], 0, '#F2A03D'],
-        ['Nourrir le chien', [noah, lea], 1, '#F2A03D'],
+        ['Nourrir le chien', [noah, lea], 0, '#F2A03D'],
       ] as [string, string[], number, string][]
     ).map(([title, rotation, idx, colour]) =>
       P(
@@ -705,6 +708,20 @@ export async function seedSampleData(env: Env, householdId: string, ts = nowSec(
       ).bind(newId(), h, title, dest, startAt, endAt, JSON.stringify(mem), colour, pos, ts, S),
     ),
 
+    // « Idées de repas » — the undated pool a household builds up. Two, so the pool isn't the
+    // one empty room in an otherwise full trial: a free-text idea and a recipe shortcut
+    // (a kid's pick, to show whose idea it was).
+    ...(
+      [
+        ['Soupe aux pois', null, null],
+        ['Muffins aux bananes', rMuffins, lea],
+      ] as [string, string | null, string | null][]
+    ).map(([title, recipe, by]) =>
+      P(
+        `INSERT INTO meal_ideas (id, household_id, title, recipe_id, suggested_by, created_at, is_sample) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      ).bind(newId(), h, title, recipe, by, ts, S),
+    ),
+
     // undated leftovers (« À finir ») — dishes to eat first, no day chosen. No quantity
     // (calm) — dish names only.
     ...['Pâté chinois', 'Soupe aux légumes', 'Poulet à la grecque'].map((title) =>
@@ -748,7 +765,7 @@ export async function seedSampleData(env: Env, householdId: string, ts = nowSec(
     ...(
       [
         ['Gardienne', 'Numéro de la gardienne : 514-555-0176.\nCoucher des enfants à 19 h 30.', maman],
-        ['Wifi', 'Réseau : **Maison-Tremblay**\nMot de passe : `pommeverte2024`', papa],
+        ['Wifi', 'Réseau : **Maison-Tremblay**\nMot de passe : sur l’étiquette du routeur', papa],
         ['Numéros d’urgence', '- Poison : 1-800-463-5060\n- Voisine (Julie) : 514-555-0161\n- Mamie & Papi : 514-555-0134', maman],
       ] as [string, string, string][]
     ).map(([title, text, author]) =>

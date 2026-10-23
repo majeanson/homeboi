@@ -100,9 +100,9 @@ export function Home() {
             </button>
             {/* Returning user / setting up a second device: the device-role fork
                 (→ /setup → login or pair) stays one tap away as the quiet path. Labelled
-                "J'ai déjà un compte" so it reads as the path for someone who's NOT new,
-                rather than a second "start" competing with the primary create CTA. */}
-            <Link to="/setup" className="btn btn--ghost">
+                "J'ai déjà un compte" and drawn as a plain text link, not a third button: two
+                buttons are the choice a stranger makes, this is for someone who is NOT new. */}
+            <Link to="/setup" className="home__cta-link">
               {t.home.ctaReturning}
             </Link>
           </div>

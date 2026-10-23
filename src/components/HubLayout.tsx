@@ -295,6 +295,17 @@ export function HubLayout() {
     announcePresence(tab ? tab.key : null, profileId)
   }, [loc.pathname, profileId])
   useEffect(() => () => announcePresence(null, null), [])
+  // The tab/bookmark/history name: « La cuisine · Babillard », not a bare « Babillard » on
+  // every tab. Keyed on the section only (a sub-tab or ?query doesn't rename the page), and
+  // put back when the hub shell unmounts — a full-screen scene is not « La cuisine ».
+  const titleKey = TABS.find((x) => loc.pathname === x.to || loc.pathname.startsWith(x.to + '/'))?.key
+  useEffect(() => {
+    document.title = titleKey ? `${t.nav[titleKey]} · ${t.appName}` : t.appName
+  }, [titleKey, t])
+  useEffect(() => () => {
+    document.title = t.appName
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   const presenceByView = usePresenceMap()
   const ambient = useAmbient()
   const [idleWarn, setIdleWarn] = useState(false)

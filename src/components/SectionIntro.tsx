@@ -9,6 +9,8 @@ import { GUIDE } from '../lib/guideContent'
 import { renderRich } from '../lib/richText'
 import { Icon } from './Icon'
 import { guideHref } from '../lib/settingsNav'
+import { useSandbox } from '../lib/demo'
+import { welcomeDismissed } from './WelcomeCard'
 
 // A calm, once-per-section welcome card shown the FIRST time a parent opens a
 // themed tab — the progressive, in-context half of onboarding (the guided tour
@@ -72,7 +74,12 @@ export function SectionIntro({ card }: { card: string }) {
   // #32 — this section has its own short guided tour when a Tour shares its id.
   const hasTour = TOURS.some((tr) => tr.id === card)
 
-  if (!tutorial || audience === 'toddler' || isActive || seen) return null
+  // One help surface at a time: in the trial, the board's try-this card is already
+  // telling the visitor where to go and what to do, so the checklist's own landing pages
+  // (the list, Maison…) don't stack a section card on top of it. It returns once the
+  // visitor puts that card away ("Plus tard").
+  const sandbox = useSandbox()
+  if (!tutorial || audience === 'toddler' || isActive || seen || (sandbox && !welcomeDismissed())) return null
   const entry = GUIDE.find((e) => e.id === card)
   if (!entry) return null
 

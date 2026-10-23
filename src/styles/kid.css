@@ -582,7 +582,11 @@
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
-.tdl-again:active {
+.tdl-again:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.tdl-again:active:not(:disabled) {
   background: color-mix(in srgb, currentColor 20%, transparent);
 }
 /* A per-step tap-to-start countdown (e.g. 2 min to brush teeth). A calm donut ring
