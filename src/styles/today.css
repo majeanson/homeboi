@@ -427,6 +427,11 @@
   font-size: var(--text-md);
   line-height: 1.4;
 }
+/* The trial's try-this chips are INVITATIONS to read, not tags: the app's mono pill face read
+   as a fallback font on desktop (stranger review 2026-10-23). Sans here, the pill unchanged. */
+.welcome-card .chip {
+  font-family: var(--sans);
+}
 .welcome-card__steps {
   list-style: none;
   margin: 0 0 14px;

@@ -237,7 +237,7 @@ test('the composer arrives with the unpaid dates ALREADY ticked, and writes the 
   // under ITS OWN NAME — the shape this household types by hand, and the shape the
   // next household gets for « Frais de maman » without the app knowing the word.
   const memo = form.locator('textarea').first()
-  await expect(memo).toHaveValue('Hypotheque 25 mai 8 juin Renflouement 2000')
+  await expect(memo).toHaveValue('Hypotheque 25 mai 8 juin 1112.82 Renflouement 2000')
 })
 
 test('copying the message leaves the word « Copié ! » standing — a toast would be gone', async ({ page, context }) => {
@@ -279,7 +279,7 @@ test('saving posts the lines, the memo and the reference', async ({ page }) => {
   }
   expect(body.memberId).toBe('m2')
   expect(body.reference).toBe('CArR4A3Q')
-  expect(body.memo).toBe('Hypotheque 25 mai 8 juin Renflouement 2000')
+  expect(body.memo).toBe('Hypotheque 25 mai 8 juin 1112.82 Renflouement 2000')
   // Two plan lines at Papa's share + the extra. The TOTAL is not sent: it is summed
   // from these, so there is no second number that can disagree.
   expect(body.lines.filter((l) => l.kind === 'plan')).toHaveLength(2)
@@ -585,7 +585,7 @@ test('« Une autre date » logs a transfer made before the entente was written d
   const chip = form.getByRole('button', { name: /8 mai/ })
   await expect(chip).toHaveAttribute('aria-pressed', 'true')
   await expect(form.locator('.virements__total')).toContainText('556,41')
-  await expect(form.locator('textarea').first()).toHaveValue('Hypotheque 8 mai')
+  await expect(form.locator('textarea').first()).toHaveValue('Hypotheque 8 mai 556.41')
 })
 
 // « propose to me the next sensible thing i would do » (Marc, 2026-09-12). The dates
@@ -618,7 +618,7 @@ test('a new transfer offers what this face added last time — by name, one tap,
   // Two due dates already ticked + the offered extra = Marc's real 14 août transfer,
   // composed without typing a number: 2 × 556,41 + 2 000.
   await expect(form.locator('.virements__total')).toContainText('3 112,82')
-  await expect(form.locator('textarea').first()).toHaveValue('Hypotheque 25 mai 8 juin Renflouement 2000')
+  await expect(form.locator('textarea').first()).toHaveValue('Hypotheque 25 mai 8 juin 1112.82 Renflouement 2000')
   // …and the offer retires once it has been taken.
   await expect(form.getByRole('button', { name: /Renflouement — / })).toHaveCount(0)
 })
@@ -653,7 +653,7 @@ test('any name you have used before comes back — « Frais de maman » exactly 
   await form.getByRole('button', { name: /Renflouement/ }).click()
   await expect(form.locator('.virements__extra')).toHaveCount(2)
   await expect(form.locator('textarea').first()).toHaveValue(
-    'Hypotheque 25 mai 8 juin Frais de maman 200 Renflouement 2000',
+    'Hypotheque 25 mai 8 juin 1112.82 Frais de maman 200 Renflouement 2000',
   )
 })
 

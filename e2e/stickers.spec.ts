@@ -116,3 +116,17 @@ test('the sticker wall removes one behind the undo toast, and undo restores it',
   await expect(glyphs).toHaveCount(2)
   expect(deleted).toBe(false)
 })
+
+// A child's extra tap on the big button must not restart the routine: « Recommencer » takes
+// its place on the end screen, and rests (disabled) for the first couple of seconds.
+test('« Recommencer » rests for 2 s after the last step, then restarts', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await mockApi(page)
+  await finishedRoutine(page)
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile', calm: true })
+  await page.goto('/routine/r1/run')
+  const again = page.locator('.tdl-again')
+  await expect(again).toBeVisible()
+  await expect(again).toBeDisabled()
+  await expect(again).toBeEnabled({ timeout: 4000 })
+})
