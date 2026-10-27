@@ -113,20 +113,20 @@ now, so the repo-wide count is honest for the first time.
 
 ## 3. What just shipped
 
+### Le corpus réel de recettes — 2026-10-27
+12 real pages (recettes.qc.ca + Zeste captured with Playwright — a Worker is refused) scored EXACTLY by `recipeCorpus.test.ts` through ONE seam, `_lib/recipeImportPage`; `scripts/recipe-corpus.mjs capture|score|debug`. It found: bare JSON-LD
+ingredient names, microdata cut at the first `</div>`, menu « Ingrédients » anchors, `&Eacute;` → é, notes dropped. `{ page }` input (bookmarklet).
+
 ### L'import d'une recette par lien, fidèle — 2026-10-27
 « Les étapes arrêtent avant la fin… une étape par phrase » : steps > 400 chars cut per sentence, caps 30/40, the footer repair ate a real last step on
 JSON-LD, AI window 6000 + a cut reply = read lost. Now: the source's boundaries, `MAX_STEPS` 60, `salvageTruncatedJson`, a provenance line, AI reads →
 `RecipeReadReview` (page text) + « Guider l'IA ». Same day: a re-run of « Remplir vite » replaces its own last result (never a cook-edited line), and a whole-page paste drops the date/byline head + « Catégories / Mots-clés » tail. Guards: real-site fixtures, `e2e/recipe-url-import`. **Open:** grow the corpus; AI path verified on prod only.
 
 ### Le passage d'un inconnu — kid routine, essai, porte — 2026-10-23
-From `research/stranger-review-2026-10-23.md`. « Recommencer » inert 2 s on the end screen; the sandbox checklist deep-links ONTO a
-recipe / the next routine's run; seed chores 3/3/1/1 + two `meal_ideas` (**migration 0144**); « Essayer sans compte »; `<title>` per section;
+From `research/stranger-review-2026-10-23.md`. « Recommencer » inert 2 s on the end screen; the sandbox checklist deep-links ONTO a recipe / the next routine's run; seed chores 3/3/1/1 + two `meal_ideas` (**migration 0144**); « Essayer sans compte »; `<title>` per section;
 trial phone board = 5 cards + « Tout voir » (`lib/curatedBoard`, render-time lens), its try-this chips a one-line Rail. **Chunks:** the board's ~114
 small JS chunks → 11 via the enumerated `lazy-shared` group (`scripts/lazy-shared-modules.txt`; door 526 → 519 KB; a catch-all group blows the door). **Open:** `guideContent` (137 KB) still rides /board — help registries read it at module load; ~22 API GETs.
 
-### Le babillard dans une vitrine — framed by marcportal.com — 2026-10-15
-`frame-ancestors` admits marcportal.com (no `X-Frame-Options`; `securityHeaders.ts`); `lib/embedded.ts` skips the auto-tour in a frame; a real board
-frame on the door (`public/showcase/*`); `/api/takeout?format=md` readable twin; `e2e/embedded-door.spec.ts`, planted red.
 
 ## 4. What still needs improvement — consolidated and ranked
 

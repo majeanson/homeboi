@@ -1,0 +1,7 @@
+{
+  "url": "https://www.zeste.ca/recettes/boulettes-italiennes",
+  "capturedAt": "2026-10-27",
+  "reach": "blocked",
+  "via": "playwright",
+  "notes": "Verified by reading 2026-10-27 (Playwright; a Worker is refused). The JSON-LD names ingredients without amounts (« boeuf »): the printed list wins. « Bon à savoir ! » is the note. The « AU SERVICE » part heads the last step on the page and is kept. (worker fetch: fetch failed)"
+}

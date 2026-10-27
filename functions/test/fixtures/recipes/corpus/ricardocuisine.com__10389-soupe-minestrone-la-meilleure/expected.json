@@ -1,0 +1,38 @@
+{
+  "title": "Soupe minestrone (la meilleure)",
+  "servings": 6,
+  "servingsUnit": null,
+  "times": {
+    "prep": 35,
+    "cook": 75,
+    "total": 110
+  },
+  "ingredients": [
+    "1 oignon, coupé en dés",
+    "1 carotte, coupée en dés",
+    "1 branche de céleri, coupée en dés",
+    "45 ml (3 c. à soupe) d’huile d’olive, et plus pour le service",
+    "1 courgette, coupée en dés",
+    "4 gousses d’ail, hachées finement",
+    "1 litre (4 tasses) de bouillon de poulet",
+    "500 ml (2 tasses) d’eau",
+    "225 g (1/2 lb) de haricots verts, parés et coupés en tronçons de 1 cm (1/2 po) de longueur",
+    "170 g (2 tasses) de chou de Savoie émincé",
+    "160 g (1 tasse) de pomme de terre pelée et coupée en dés",
+    "1 boîte de 540 ml (19 oz) de haricots blancs, rincés et égouttés",
+    "1 boîte de 398 ml (14 oz) de tomates en dés",
+    "2 feuilles de laurier",
+    "1 croûte de fromage parmesan",
+    "105 g (3/4 tasse) de petites coquilles",
+    "Fromage parmesan frais râpé, pour le service"
+  ],
+  "steps": [
+    "Dans une casserole à feu moyen-élevé, cuire l’oignon, la carotte et le céleri dans l’huile 8 minutes ou jusqu’à ce qu’ils soient translucides. Saler.",
+    "Ajouter la courgette et l’ail. Poursuivre la cuisson 5 minutes ou jusqu’à ce que la courgette soit légèrement dorée. Ajouter le reste des ingrédients, sauf les pâtes et le parmesan râpé. Saler et poivrer. Porter à ébullition. Laisser mijoter 45 minutes ou jusqu’à ce que les légumes soient tendres et que le bouillon ait légèrement épaissi.",
+    "Entre-temps, dans une deuxième casserole d’eau bouillante salée, cuire les pâtes jusqu’à ce qu’elles soient tendres (voir note). Égoutter.",
+    "Ajouter les pâtes à la soupe. Retirer les feuilles de laurier et la croûte de parmesan, et les composter. Rectifier l’assaisonnement.",
+    "Dans des bols, répartir la soupe. Arroser d’un filet d’huile et parsemer de parmesan. Accompagner de pesto de basilic ou de pain, si désiré."
+  ],
+  "notes": "Vous souhaitez gagner du temps en préparant cette recette? Trouvez le bouillon de poulet RICARDO, dans les épiceries IGA.\nPour une soupe avec beaucoup de bouillon, il faut cuire les pâtes plus longtemps que pour une cuisson al dente, c’est-à-dire celle qui est habituellement suggérée pour un plat de pâtes. Sinon, les pâtes absorberaient trop le liquide de la soupe.",
+  "structuring": "jsonld"
+}

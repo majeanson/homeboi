@@ -1,0 +1,48 @@
+{
+  "title": "Gâteau aux carottes d’Isabelle",
+  "servings": 16,
+  "servingsUnit": null,
+  "times": {
+    "prep": 60,
+    "cook": 50,
+    "total": 110
+  },
+  "ingredients": [
+    "## Gâteau",
+    "375 g (2 1/2 tasses) de farine tout usage non blanchie",
+    "10 ml (2 c. à thé) de poudre à pâte",
+    "5 ml (1 c. à thé) de bicarbonate de soude",
+    "10 ml (2 c. à thé) de cannelle moulue",
+    "5 ml (1 c. à thé) de cardamome moulue",
+    "2,5 ml (1/2 c. à thé) de muscade moulue",
+    "2,5 ml (1/2 c. à thé) de sel",
+    "250 ml (1 tasse) d'huile végétale",
+    "160 g (3/4 tasse) de sucre",
+    "160 g (3/4 tasse) de cassonade",
+    "4 œufs",
+    "330 g (3 tasses) de carottes râpées",
+    "250 ml (1 tasse) d'ananas broyé, égoutté",
+    "150 g (1 1/2 tasse) de pacanes grillées, hachées",
+    "90 g (1 tasse) de noix de coco non sucrée râpée",
+    "## Glaçage",
+    "375 g (1 1/2 bloc) de fromage à la crème, ramolli",
+    "170 g (3/4 tasse) de beurre non salé, ramolli",
+    "685 g (5 1/4 tasses) de sucre à glacer",
+    "10 ml (2 c. à thé) d’extrait de vanille",
+    "Pétales de fleurs comestibles (facultatif)"
+  ],
+  "steps": [
+    "## Gâteau",
+    "Placer la grille au centre du four. Préchauffer le four à 180 °C (350 °F). Beurrer les parois de deux moules à charnière de 20 cm (8 po) de diamètre et tapisser le fond de de papier parchemin.",
+    "Dans un bol, mélanger la farine, la poudre à pâte, le bicarbonate, les épices et le sel.",
+    "Dans un autre bol, mélanger l'huile, le sucre, la cassonade et les œufs au batteur électrique jusqu'à ce que le mélange soit homogène. Ajouter les carottes, l’ananas, les pacanes et la noix de coco. Mélanger. Incorporer le mélange de farine. Répartir la pâte dans les moules.",
+    "Cuire au four 50 minutes ou jusqu'à ce qu'un cure-dents inséré au centre d’un gâteau en ressorte propre. Laisser refroidir complètement dans les moules sur une grille, soit environ 3 heures.",
+    "## Glaçage",
+    "Dans un bol, crémer le fromage à la crème avec le beurre au batteur électrique. À basse vitesse, incorporer graduellement le sucre à glacer et la vanille. Fouetter 5 minutes ou jusqu’à ce que le glaçage forme des pics fermes, blanchisse et soit onctueux.",
+    "Passer une fine lame entre les gâteaux et les moules. Démouler. Couper et retirer la calotte des gâteaux pour les rendre plats. Couper chaque gâteau en deux à l’horizontale afin d’obtenir quatre tranches.",
+    "Sur une assiette de service, déposer une tranche de gâteau. Garnir avec 125 ml (½ tasse) du glaçage. Répéter cette étape avec deux autres tranches de gâteau et terminer en empilant la dernière tranche sans glaçage. Recouvrir complètement le gâteau d’une fine couche de glaçage et le lisser à l’aide d’une spatule coudée. Cela aidera à emprisonner les miettes du gâteau. Réfrigérer le gâteau et le glaçage 30 minutes.",
+    "Recouvrir à nouveau complètement le gâteau avec le reste du glaçage et le lisser à l’aide d’une spatule coudée. Décorer de pétales de fleurs. Le gâteau se conserve 3 jours sous cloche à la température ambiante."
+  ],
+  "notes": null,
+  "structuring": "jsonld"
+}

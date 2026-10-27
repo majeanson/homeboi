@@ -1,0 +1,30 @@
+{
+  "title": "Poulet au beurre",
+  "servings": null,
+  "servingsUnit": null,
+  "times": {
+    "prep": null,
+    "cook": null,
+    "total": null
+  },
+  "ingredients": [
+    "Hauts de cuisses de poulet 12, désossé",
+    "Gingembre 15 ml (1 c. à soupe), haché",
+    "Garam masala 15 ml (1 c. à soupe)",
+    "Tomates en dés 250 ml (1 tasse)",
+    "Yogourt nature 180 ml (3/4 de tasse)",
+    "## Prévoir aussi",
+    "60 ml (1/4 de tasse) de beurre",
+    "1, haché oignon"
+  ],
+  "steps": [
+    "Mélanger les hauts de cuisses avec le gingembre et le garam masala.",
+    "Dans une casserole, faire fondre le beurre à feu moyen. Cuire le poulet de 2 à 3 minutes. Ajouter l’oignon et cuire 1 minute.",
+    "Ajouter les tomates. Couvrir et cuire 18 minutes à feu doux-moyen. Transférer les hauts de cuisses dans une assiette.",
+    "Ajouter le yogourt dans la casserole et cuire de 1 à 2 minutes.",
+    "Verser la sauce dans le contenant du mélangeur et émulsionner de 10 à 15 secondes.",
+    "Napper les hauts de cuisses de sauce."
+  ],
+  "notes": "Pain naan au cari\nMélanger 30 ml (2 c. à soupe) d’huile de canola avec 5 ml (1 c. à thé) de cari et 1,25 ml (1/4 de c. à thé) de piment thaï haché. Badigeonner les deux côtés de 3 pains naan avec la préparation. Couper en morceaux. Cuire au four de 5 à 8 minutes à 205 °C (400 °F).",
+  "structuring": "microdata"
+}

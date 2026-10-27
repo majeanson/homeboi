@@ -1,0 +1,50 @@
+{
+  "title": "LASAGNE CLASSIQUE",
+  "servings": 6,
+  "servingsUnit": null,
+  "times": {
+    "prep": 30,
+    "cook": 45,
+    "total": null
+  },
+  "ingredients": [
+    "## POUR LA SAUCE",
+    "3 c. à soupe d’huile d’olive",
+    "700 g de chair à saucisse",
+    "1 oignon jaune, haché",
+    "5 gousses d’ail, hachées finement",
+    "¾ de tasse de vin rouge ou de bouillon de boeuf",
+    "1 boîte (796 ml) de tomates broyées",
+    "½ tasse de crème 35% (optionnel)",
+    "3 c. à soupe de cassonade",
+    "1 ½ c. à thé de thym séché ou frais",
+    "Sel et poivre, au goût",
+    "## POUR LA RICOTTA",
+    "2 tasses de ricotta",
+    "½ tasse de fromage à la crème",
+    "1 oeuf",
+    "1 gousse d’ail, hachée",
+    "¾ de tasse de parmesan frais râpé",
+    "½ tasse de basilic frais, haché",
+    "Sel et poivre, au goût",
+    "## POUR L’ASSEMBLAGE",
+    "12 pâtes à lasagne cuites",
+    "2 tasses de mozzarella râpée",
+    "¼ de tasse de parmesan frais râpé"
+  ],
+  "steps": [
+    "Dans une casserole, faire chauffer 2 c. à soupe d’huile d’olive à feu moyen-vif. Cuire la chair à saucisse pendant environ 5 minutes, en la défaisant en petits morceaux à l’aide d’une cuillère de bois. À l’aide d’un écumoire, transférer la chair cuite dans un bol et réserver.",
+    "Ajouter 1 c. à soupe d’huile d’olive puis réduire le feu à moyen. Cuire l’oignon et l’ail jusqu’à ce qu’ils deviennent translucides, pendant environ 5 minutes, en brassant régulièrement. Ajouter le vin ou le bouillon de bœuf et poursuivre la cuisson jusqu’à ce que le liquide soit complètement évaporé et absorbé par l’oignon et l’ail.",
+    "Ajouter le reste des ingrédients « pour la sauce »,réduire le feu, couvrir, puis laisser mijoter pendant 20 minutes. Pendant ce temps, hacher la chair à saucisse cuite et l’ajouter à la sauce, poursuivre la cuisson 10 minutes. Réserver.",
+    "Dans une grande casserole d’eau bouillante salée, cuire les pâtes à lasagne selon les instructions de l’emballage.",
+    "Dans un robot culinaire, broyer tous les ingrédients « pour la ricotta ». Réserver.",
+    "## POUR L’ASSEMBLAGE",
+    "Préchauffer le four à 375 F.",
+    "Verser environ 1 ½ tasse de sauce au fond d’un plat de cuisson de 13 po x 9 po. Déposer trois premières pâtes à lasagne puis couvrir de ⅓ du mélange de ricotta. Saupoudrer ½ tasse de mozzarella. Répéter ces étapes 2 autres fois.",
+    "Terminer l’assemblage avec trois pâtes de lasagne, le reste de la sauce et du fromage mozzarella.",
+    "Recouvrir de parmesan pour terminer.",
+    "Badigeonner une feuille de papier d’aluminium d’huile, puis recouvrir le plat de cuisson (côté huilé vers le bas). Enfourner pendant 40 minutes. Retirer délicatement le papier d’aluminium, augmenter la température du four à 400F puis poursuivre la cuisson pendant 20 minutes. Retirer du four et laisser reposer pendant 15 minutes avant de servir."
+  ],
+  "notes": null,
+  "structuring": "microdata"
+}

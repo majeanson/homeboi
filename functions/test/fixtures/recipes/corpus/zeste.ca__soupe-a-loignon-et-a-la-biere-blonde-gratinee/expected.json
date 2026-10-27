@@ -1,0 +1,40 @@
+{
+  "title": "Soupe à l'oignon à la bière",
+  "servings": 12,
+  "servingsUnit": null,
+  "times": {
+    "prep": 15,
+    "cook": 60,
+    "total": 75
+  },
+  "ingredients": [
+    "2 gros oignons espagnols",
+    "2 gros oignons rouges",
+    "2 gros oignons blancs",
+    "45 ml (3 c. à soupe) de gras de canard ou d'huile d'olive",
+    "30 ml (2 c. à soupe) de sauce Worcestershire",
+    "30 ml (2 c. à soupe) de vinaigre de cidre de pomme",
+    "150 ml de consommé de boeuf",
+    "355 ml de bière blonde",
+    "2,5 L (10 tasses) d'eau",
+    "Sel et poivre, au goût",
+    "1 pain baguette",
+    "600 g de fromage à raclette"
+  ],
+  "steps": [
+    "Peler et couper les oignons en deux puis en rondelles.",
+    "Dans un grand chaudron, faire chauffer le gras de canard (ou l'huile d'olive) à feu moyen-doux. Ajouter les oignons et assaisonner. Brasser puis ajouter le couvercle pour faire suer les oignons.",
+    "Continuer la cuisson pendant environ 10 à 15 minutes en brassant aux deux à trois minutes ou jusqu'à ce que les oignons soient mous et translucides.",
+    "Ajouter le vinaigre de cidre, la sauce Worcestershire et le consommé de boeuf. Poursuivre la cuisson avec le couvercle pendant 5 minutes en brassant à l'occasion.",
+    "Ajouter la bière et l'eau.",
+    "Remettre le couvercle et laisser mijoter de 45 minutes à 1 heure ou jusqu'à ce que les oignons soient bien tendres.",
+    "Préchauffer le four à 325°F.",
+    "Couper la baguette en rondelles d'environ 1 pouce d'épaisseur. Faire chauffer les rondelles de pain au milieu du four sur une plaque à cuisson pendant environ 10 minutes ou jusqu'à ce que le pain soit croustillant. Retirer le pain du four.",
+    "Monter la température du four à 425°F.",
+    "Disposer les bols à soupe à l'oignon sur une plaque à cuisson. Remplir les bols de soupe au deux tiers. Disposer les croûtons de baguette à plat sur la soupe. Garnir de fromage à raclette pour bien couvrir les croûtons.",
+    "Mettre au four sur la grille du haut pendant environ 5 minutes ou jusqu'à ce que le fromage soit fondu et doré.",
+    "Laisser reposer 5 minutes avant de servir. Faire attention, les bols vont être très chaud."
+  ],
+  "notes": "La soupe se congèle très bien tel quel sans le fromage. Congeler par portion et dégeler dans un petit chaudron. Répéter les étapes 7 à 12 (croûtons et gratiner la soupe) pour servir.",
+  "structuring": "jsonld"
+}

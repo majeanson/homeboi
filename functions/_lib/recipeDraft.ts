@@ -27,6 +27,10 @@ export interface DraftOut {
   // Auto-detected reading language ('fr' | 'en' | null = couldn't tell → the form
   // leaves its language on "Auto"). Set here so every import path fills it.
   lang: 'fr' | 'en' | null
+  // The recipe's own notes (« Notes », « Conseils », « Astuces » — the lines under that
+  // heading, word for word). Never a model's: the site path harvests them from the page
+  // text, the paste path from the paste. Capped at the save cap (2000).
+  notes?: string | null
   // HOW this draft was structured, for the photo-read report (RecipeReadReview's
   // « Rapport » tab): 'headings' = the deterministic no-AI parser (real section
   // headings found), 'ai' = the generative structuring model (named in `model`),
@@ -125,39 +129,8 @@ export async function draftByModel(
 // `hint` = the cook's optional note for the model (« c'est la 2e recette de la page »);
 // it only reaches the prompt when the model actually runs.
 export async function draftFromText(env: Env, raw: string, lang: Lang, aiOn: boolean, hint?: string): Promise<DraftOut> {
-  // A reply that is JSON, or the broken remains of one, reads as text first; a label a
-  // model put before the text it copied (« Transcription… », « Texte ») is not recipe.
-  const text = stripTranscriptPreamble(jsonFragmentsToText(raw.trim()))
-  // Format first: a recipe with its real headings (Ingrédients / Préparation) parses
-  // deterministically — no AI, nothing invented. Markdown-shaped text (the cloud OCR
-  // reader answers in markdown) flattens first so its headings hit the same parser.
-  const heuristic = parseRecipeText(text)
-  if (heuristic.confident) {
-    return draft({
-      title: heuristic.title,
-      ingredients: heuristic.ingredients,
-      steps: heuristic.steps,
-      servings: heuristic.servings,
-      servingsUnit: heuristic.servingsUnit,
-      times: heuristic.times,
-      structuring: 'headings',
-    })
-  }
-  // A PARAGRAPH card the shape heuristic already read well needs no model: title, a
-  // lifted ingredient list and sentence-steps that all close on punctuation. Taking it
-  // as is saves the second model call (5–10 s on a phone) AND keeps the printed words
-  // — the model rephrased a step on the very card this was measured on. Garbled OCR
-  // (sentences that do not close) still goes to the model below.
-  const plain = draft({
-    title: heuristic.title,
-    ingredients: heuristic.ingredients,
-    steps: heuristic.steps,
-    servings: heuristic.servings,
-    servingsUnit: heuristic.servingsUnit,
-    times: heuristic.times,
-    structuring: 'heuristic',
-  })
-  if (heuristicIsGood(plain)) return plain
+  const r = readText(raw)
+  if (r.read) return r.read
   // Free-form text → AI structuring; its steps still go through the shared refinement
   // (models love returning one packed paragraph). Every number the model emits is
   // cross-checked against the source text — a line carrying a number the text never
@@ -165,20 +138,55 @@ export async function draftFromText(env: Env, raw: string, lang: Lang, aiOn: boo
   // come from the TEXT (explicit lines only), never from the model: the vision read
   // used to turn « cuire 5 minutes » into a prep time.
   if (aiOn) {
-    const byModel = await draftByModel(env, text, lang, heuristic, hint)
-    if (byModel) return byModel
+    const byModel = await draftByModel(env, r.text, lang, r.known, hint)
+    if (byModel) return { ...byModel, notes: r.known.notes ?? null }
   }
   // AI unbound or empty-handed — the heuristic's best effort still beats nothing.
-  if (heuristic.ingredients.length || heuristic.steps.length) {
-    return draft({
-      title: heuristic.title,
-      ingredients: heuristic.ingredients,
-      steps: heuristic.steps,
-      servings: heuristic.servings,
-      servingsUnit: heuristic.servingsUnit,
-      times: heuristic.times,
-      structuring: 'heuristic',
-    })
+  return r.fallback
+}
+
+// The NO-MODEL half of draftFromText, synchronous: `read` is a draft good enough to
+// ship without the model (real headings, or a paragraph card the shape heuristic read
+// well), else null; `fallback` is the heuristic's best effort (or an empty draft) for
+// when the model is off or empty-handed. `text` is the cleaned text the model would get.
+// `known` is the heuristic's own read, empty or not — the title, servings and times a
+// model read takes from the TEXT, never from the model.
+export interface TextRead {
+  text: string
+  read: DraftOut | null
+  fallback: DraftOut
+  known: DraftOut
+}
+export function readText(raw: string): TextRead {
+  // A reply that is JSON, or the broken remains of one, reads as text first; a label a
+  // model put before the text it copied (« Transcription… », « Texte ») is not recipe.
+  const text = stripTranscriptPreamble(jsonFragmentsToText(raw.trim()))
+  // Format first: a recipe with its real headings (Ingrédients / Préparation) parses
+  // deterministically — no AI, nothing invented. Markdown-shaped text (the cloud OCR
+  // reader answers in markdown) flattens first so its headings hit the same parser.
+  const heuristic = parseRecipeText(text)
+  const fields = {
+    title: heuristic.title,
+    ingredients: heuristic.ingredients,
+    steps: heuristic.steps,
+    servings: heuristic.servings,
+    servingsUnit: heuristic.servingsUnit,
+    times: heuristic.times,
+    notes: heuristic.notes,
   }
-  return draft({ title: heuristic.title, empty: true })
+  if (heuristic.confident) {
+    const read = draft({ ...fields, structuring: 'headings' })
+    return { text, read, fallback: read, known: read }
+  }
+  // A PARAGRAPH card the shape heuristic already read well needs no model: title, a
+  // lifted ingredient list and sentence-steps that all close on punctuation. Taking it
+  // as is saves the second model call (5–10 s on a phone) AND keeps the printed words
+  // — the model rephrased a step on the very card this was measured on. Garbled OCR
+  // (sentences that do not close) still goes to the model below.
+  const plain = draft({ ...fields, structuring: 'heuristic' })
+  const fallback =
+    heuristic.ingredients.length || heuristic.steps.length
+      ? plain
+      : draft({ title: heuristic.title, empty: true })
+  return { text, read: heuristicIsGood(plain) ? plain : null, fallback, known: plain }
 }

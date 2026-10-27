@@ -1,0 +1,7 @@
+{
+  "url": "https://www.troisfoisparjour.com/fr/recettes/plats-principaux/pates/lasagne-classique/",
+  "capturedAt": "2026-10-27",
+  "reach": "direct",
+  "via": "playwright",
+  "notes": "Verified by reading 2026-10-27. The microdata marks up the steps but no ingredient: the list comes from the printed « INGRÉDIENTS » block (sections as printed, in capitals). AMBIGUOUS: the page prints CUISSON « 1 heure 45 min » while its own cookTime says PT45M — the expectation follows the site's structured data (45); the printed value disagrees. (worker fetch: 200)"
+}

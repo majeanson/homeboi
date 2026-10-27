@@ -31,6 +31,8 @@ const SITE_DRAFT = {
   source: 'https://www.example.test/lasagne',
   lang: 'fr',
   structuring: 'jsonld',
+  // The page's own « Notes » block, word for word (2026-10-27: it used to be dropped).
+  notes: 'Meilleure le lendemain.',
 }
 
 const TRANSCRIPT =
@@ -77,6 +79,7 @@ test('link import, site data: every step lands — the heading and the last frid
   await expect(steps.locator('.recipe-step')).toHaveCount(34)
   await expect(steps.locator('.recipe-line--sec')).toHaveCount(1)
   await expect(steps.locator('.recipe-step').last()).toContainText('Conserver au réfrigérateur 3 jours.')
+  await expect(page.locator('textarea[placeholder]').last()).toHaveValue('Meilleure le lendemain.')
   // No verify panel: the site delimited the steps itself, nothing was organised by a model.
   await expect(page.locator('.read-review')).toHaveCount(0)
   expect(errors, 'pageerror during link import').toEqual([])

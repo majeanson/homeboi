@@ -1,0 +1,7 @@
+{
+  "url": "https://www.recipetineats.com/beef-stroganoff/",
+  "capturedAt": "2026-10-27",
+  "reach": "direct",
+  "via": "playwright",
+  "notes": "Verified by reading 2026-10-27. WPRM: JSON-LD lines unwrap their « ((Note 1)) » / « (, divided) » notes as the page prints them. Notes = « Recipe Notes: » 1–6. Step text keeps the JSON-LD hyphen (« Pound and slice - Use ») where the page renders an en dash. (worker fetch: 200)"
+}

@@ -33,6 +33,7 @@ export interface ReadReviewDraft {
   times?: { prep: number | null; cook: number | null; total: number | null }
   lang?: 'fr' | 'en' | null
   source?: string | null
+  notes?: string | null
 }
 
 // What the pipeline actually DID with this photo, shown to the cook under the

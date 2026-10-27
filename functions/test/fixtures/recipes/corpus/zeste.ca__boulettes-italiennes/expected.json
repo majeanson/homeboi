@@ -1,0 +1,38 @@
+{
+  "title": "Boulettes italiennes",
+  "servings": 20,
+  "servingsUnit": "boulettes",
+  "times": {
+    "prep": 25,
+    "cook": 30,
+    "total": 55
+  },
+  "ingredients": [
+    "## Boulettes italiennes",
+    "900 g (2 lb) de mélange de boeuf, veau et porc haché",
+    "60 g (1 tasse) de parmesan, râpé finement",
+    "40 g (1/2 tasse) de pecorinos, râpé finement",
+    "70 g (1/2 tasse) de chapelure nature",
+    "160 ml (2/3 tasse) de lait",
+    "1/2 tasse de persil frais, haché",
+    "2 c. à thé de sel fin",
+    "2 gros oeufs, légèrement battus",
+    "2 gousses d'ail, émincées",
+    "Poivre du moulin, au goût",
+    "Une bonne pincée d'origan séché",
+    "2 c. à soupe d'huile d'olive (pour la cuisson)",
+    "## Pour le service",
+    "Persil fais, haché",
+    "Parmesan, fraîchement râpé",
+    "Sauce tomate (facultatif)"
+  ],
+  "steps": [
+    "Préchauffer le four à 325 °F (160 °C). Tapisser une plaque de cuisson de papier parchemin, puis saupoudrer d’une fine couche de farine",
+    "Dans un grand bol, mélanger tous les ingrédients pour les boulettes, sauf l’huile pour la cuisson, jusqu’à ce que les ingrédients soient bien incorporés. Diviser le mélange en 20 portions égales (j’utilise une petite cuillère à crème glacée pour cela), en plaçant chaque portion sur la plaque de cuisson au fur et à mesure. Le mélange devrait permettre de réaliser environ 20 portions. Avec un peu de farine sur les mains, prendre chaque portion entre les paumes et façonner les boulettes une à la fois. Elles doivent être bien rondes. Remettre les boulettes sur la plaque.",
+    "Chauffer une grande poêle allant au four à feu moyen-vif et ajouter l’huile pour la cuisson. Quand l’huile est très chaude, ajouter les boulettes de viande. Faire cuire jusqu’à ce que les boulettes soient uniformément dorées. Placer la poêle directement au four et faire cuire environ 5 minutes de plus, jusqu’à ce que le centre des boulettes soit bien cuit.",
+    "## Au service",
+    "Servir les boulettes chaudes et parsemer généreusement de persil haché et de parmesan. Si désiré, accompagner les boulettes de sauce tomate."
+  ],
+  "notes": "Pour un spaghetti aux boulettes, mélangez les boulettes dans votre casserole de sauce tomate, et versez le tout sur 1 lb (450 g) de spaghettis al dente.",
+  "structuring": "jsonld"
+}

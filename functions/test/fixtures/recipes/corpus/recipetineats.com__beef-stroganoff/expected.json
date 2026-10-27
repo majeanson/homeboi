@@ -1,0 +1,43 @@
+{
+  "title": "Beef Stroganoff",
+  "servings": 4,
+  "servingsUnit": null,
+  "times": {
+    "prep": 15,
+    "cook": 15,
+    "total": 30
+  },
+  "ingredients": [
+    "## Beef",
+    "600 g / 1.2 lb scotch fillet steak / boneless rib eye (Note 1)",
+    "1/2 tsp cooking salt / kosher salt (halve for table salt, +50% for flakes)",
+    "1/4 tsp black pepper",
+    "## To cook",
+    "2 tbsp vegetable oil, divided",
+    "1 large onion (or 2 small onions), sliced",
+    "300 g / 10 oz mushrooms, sliced (not too thin)",
+    "50 g / 3 tbsp butter",
+    "2 tbsp flour (Note 2)",
+    "2 cups beef broth, preferably salt reduced",
+    "1 tbsp Dijon mustard",
+    "2/3 cup sour cream",
+    "Salt and pepper, to taste",
+    "## Serving",
+    "250 - 300 g / 8 - 10 oz pasta or egg noodles of choice (Note 3)",
+    "Chopped chives, for garnish (optional)"
+  ],
+  "steps": [
+    "Pound and slice - Use your fist (or rolling pin or mallet) to flatten the steaks to about 3/4cm / 1/3\" thick. Slice into 5mm / 1/5\" strips (cut long ones in half), discarding excess fat.",
+    "Sprinkle beef with the salt and pepper",
+    "30 second sear - Heat 1 tablespoon of the oil in a large skillet over high heat. Scatter half the beef in the skillet, QUICKLY spread it with tongs. Leave untouched for 30 seconds until browned. Turn beef quickly (as best you can!). Leave untouched for 30 seconds to brown. Immediately remove onto a plate. Don't worry about pink bits and that it will be raw inside.",
+    "Repeat - Add remaining 1 tablespoon of oil and repeat with remaining beef, removing onto the same plate once cooked.",
+    "Sauté onion and mushrooms - Turn heat down to medium high. Using the same pan, add butter and melt. Then add onions, cook for 1 minute, then add mushrooms. Cook mushrooms until golden. Scrape bottom of fry pan to get all the golden bits off (this is flavour!).",
+    "Add flour and cook, stirring, for 1 minute.",
+    "Add stock/broth - Add half the broth while stirring. Once incorporated into the flour mixture, add remaining broth.",
+    "Make sauce - Stir, then add sour cream and mustard. Stir until incorporated (don't worry if it looks split, sour cream will \"melt\" as it heats). Bring to simmer ,then reduce heat to medium low. Once it thickens to the consistency of pouring cream (3 - 5 minutes), have a taste and add more salt and pepper to taste.",
+    "Warm beef - Add beef back in (including plate juices). Simmer for 1 minute, then remove from stove immediately. (Note 4)",
+    "Serve over pasta or egg noodles, sprinkled with chives if desired."
+  ],
+  "notes": "1. Best cut of beef for stroganoff – use decent to good quality quick cooking cut of beef such as:\nboneless rib eye (aka scotch fillet)\nboneless sirloin, sirloin steak tips\nbeef tenderloin\nI don’t recommend: beef round steak (aka topside), skirt, flat iron, hanger.\nPork can also be used – pork stroganoff is found in Russia too.\nTenderise ECONOMICAL BEEF – if you do not have a good quality steak, highly recommend tenderising it using this easy Chinese method called “velveting”. It’s life changing! Reader the user feedback in that recipe for validation 🙂\n2. Flour – any is fine here, I use plain white flour (all purpose). Or use 1 tbsp cornstarch / cornflour (for Gluten free stroganoff sauce)\n3. Serving – I like serving this with short pastas, rather than long pastas. Easier to eat. It’s also great with mashed potato, rice, polenta – anything that’s suitable to slop up all that gravy!\n4. Sauce thickness: You can make sauce thinner with touch of water if you want, but DO NOT keep simmering to thicken once the beef is added, it will overcook the beef.\n5. Storage – 3 to 4 days in the fridge, also freezes fine. Thaw fully then reheat carefully, being sure not to overcook the beef!\n6. Nutrition per serving, assuming 5 servings (serves 4 hearty servings or 5 sensible servings), excludes pasta.",
+  "structuring": "jsonld"
+}

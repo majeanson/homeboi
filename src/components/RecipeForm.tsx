@@ -329,6 +329,8 @@ export function RecipeForm({
     source?: string | null
     // Auto-detected reading language from the import ('fr'|'en'|null = undetected).
     lang?: 'fr' | 'en' | null
+    // The recipe's own notes, word for word (the page's « Notes » block, a paste's).
+    notes?: string | null
     // R2 key of the photo this was READ from (photo-import path) — stashed into the
     // original snapshot so the sheet can show the source card later.
     sourceImage?: string | null
@@ -353,6 +355,7 @@ export function RecipeForm({
       // all-empty array so it can't drift past the new step count (feature #17 B).
       setStepImages(alignSide(undefined, d.steps.length))
     }
+    if (d.notes && free(notes, last?.notes)) setNotes(d.notes)
     if (d.servings && free(servings, last?.servings)) setServings(String(d.servings))
     if (d.servingsUnit && free(servingsUnit, last?.servingsUnit)) setServingsUnit(d.servingsUnit)
     // Prep/cook/total land in their REAL fields now (editable like the rest).
@@ -383,6 +386,7 @@ export function RecipeForm({
     servingsUnit: string | null
     times: { prep: number | null; cook: number | null; total: number | null }
     lang: 'fr' | 'en' | null
+    notes?: string | null
     // Report fields (recipe-import / recipe-vision): how the text was structured,
     // by which model, and which lines carry numbers the source never printed.
     structuring?: 'headings' | 'ai' | 'heuristic' | 'jsonld' | 'microdata'

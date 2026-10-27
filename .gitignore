@@ -37,3 +37,8 @@ test-results/
 # a *.code-workspace is a per-machine editor stub (it just names a folder to open)
 # — VS Code's "Save workspace as" drops one wherever the dialog happens to point.
 *.code-workspace
+
+# recipe corpus — the capture tool's reading aids (scripts/recipe-corpus.mjs); only
+# page.html.gz + meta.json + the hand-verified expected.json are the corpus
+functions/test/fixtures/recipes/corpus/*/proposed.txt
+functions/test/fixtures/recipes/corpus/*/expected.proposed.json

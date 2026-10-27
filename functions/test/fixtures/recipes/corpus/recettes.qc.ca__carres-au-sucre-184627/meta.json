@@ -1,0 +1,7 @@
+{
+  "url": "https://www.recettes.qc.ca/recettes/recette/carres-au-sucre-184627",
+  "capturedAt": "2026-10-27",
+  "reach": "blocked",
+  "via": "playwright",
+  "notes": "Verified by reading 2026-10-27 (Playwright; Akamai refuses a Worker). No structured recipe: the printed headings, the « Pâte : » / « Sirop : » parts kept. The title is the page's h1, not its « Recette de … | Recettes du Québec » share title. (worker fetch: fetch failed)"
+}

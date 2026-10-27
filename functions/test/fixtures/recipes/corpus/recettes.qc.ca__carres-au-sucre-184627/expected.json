@@ -1,0 +1,33 @@
+{
+  "title": "Carrés au sucre",
+  "servings": 8,
+  "servingsUnit": null,
+  "times": {
+    "prep": 20,
+    "cook": 15,
+    "total": 35
+  },
+  "ingredients": [
+    "## Pâte",
+    "1/2 tasse beurre",
+    "2 tasses gruau",
+    "1/2 cuillère à thé bicarbonate de soude",
+    "1 tasse cassonade",
+    "1 tasse farine",
+    "1 pincée sel",
+    "## Sirop",
+    "2 1/2 tasses cassonade",
+    "2 tasses lait",
+    "1 cuillère à table beurre",
+    "2 cuillères à table fécule de maïs",
+    "1/2 tasse eau"
+  ],
+  "steps": [
+    "Sirop: mélanger la cassonade, le lait et le beurre et faire bouillir 15 minutes. Brasser constamment.",
+    "Épaissir avec la fécule de mais et cuire 8 à 10 minutes.",
+    "Pâte: mélanger le tout et mettre la moitié dans le fond d'un moule graisser 9x9.",
+    "Ajouter le sirop et couvrir de l'autre moitié de la pâte. Cuire 12 à 15 minutes."
+  ],
+  "notes": "Faire une journée d'avance.",
+  "structuring": "headings"
+}

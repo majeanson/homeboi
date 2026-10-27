@@ -1,0 +1,42 @@
+{
+  "title": "Chili con carne",
+  "servings": 8,
+  "servingsUnit": null,
+  "times": {
+    "prep": 30,
+    "cook": 450,
+    "total": 480
+  },
+  "ingredients": [
+    "1 kg viande hachée maigre",
+    "2 tranches bacon",
+    "2 oignons émincés",
+    "3 ou 4 gousses d'ail émincées",
+    "2 branches céleris émincées",
+    "2 boîtes de 19 onces haricots rouges",
+    "1 boîte de 28 onces tomate broyées",
+    "1 boîte de 28 onces tomates en dés",
+    "4 cuillères à table assaisonnement au chili",
+    "1 cuillère à table cumin moulu",
+    "1 cuillère à thé assaisonnement à la cajun",
+    "1 cuillère à thé cannelle",
+    "2 ou 3 feuilles de laurier",
+    "1 cuillère à thé miel",
+    "sel et poivre",
+    "huile d'olive"
+  ],
+  "steps": [
+    "Couper le bacon en petits lardons.",
+    "Dans une poêle chaude, faire cuire le bacon jusqu'à ce qu'il soit croustillant. Réserver.",
+    "Faire brunir la viande hachée dans la poêle ayant servi à cuire le bacon. Réserver.",
+    "Toujours dans la même poêle, faire revenir l'oignon jusqu'à ce qu'il soit légèrement transparent.",
+    "Ajouter l'ail et le céleri aux oignons, puis laisser revenir pour quelques minutes.",
+    "Dans une mijoteuse de 5-6 litres, ajouter le bacon, la viande, les tomates et les légumes sautés. Bien mélanger.",
+    "Ajouter les épices. Ajuster la quantité d'épices cajun au goût, environ 1 c. à thé. Bien mélanger.",
+    "Ajouter le miel et les fèves rouges. Bien mélanger.",
+    "Ajouter les feuilles de laurier.",
+    "Laisser mijoter à basse température pour 7-8 heures."
+  ],
+  "notes": "Servir chaud avec un peu de fromage râpé et des croustilles de tortillas.",
+  "structuring": "headings"
+}

@@ -37,6 +37,32 @@ export interface ParsedRecipe {
   // "biscuits") — the UI then says "24 biscuits" instead of "24 portions".
   servingsUnit: string | null
   times: RecipeTimes
+  // Notes the structured data itself carries (a notes block inside the microdata
+  // method); schema.org JSON-LD has none — the page text supplies them then.
+  notes?: string | null
+}
+
+// One JSON-LD block's raw text → its parsed JSON, or undefined. Lenient: some sites
+// concatenate objects or leave trailing commas, so a failed parse retries on the first
+// balanced-looking object. Shared by the HTML path and the captured-page path (the
+// bookmarklet sends each block's raw text, already pulled out of the page).
+export function parseJsonLdText(raw: string): unknown {
+  const s = raw.trim()
+  if (!s) return undefined
+  try {
+    return JSON.parse(s)
+  } catch {
+    const start = s.indexOf('{')
+    const end = s.lastIndexOf('}')
+    if (start >= 0 && end > start) {
+      try {
+        return JSON.parse(s.slice(start, end + 1))
+      } catch {
+        /* give up on this block */
+      }
+    }
+    return undefined
+  }
 }
 
 // Grab every JSON-LD <script> block's parsed JSON (objects or arrays). Tolerates
@@ -46,23 +72,8 @@ export function extractJsonLdBlocks(html: string): unknown[] {
   const re = /<script\b[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi
   let m: RegExpExecArray | null
   while ((m = re.exec(html))) {
-    const raw = m[1].trim()
-    if (!raw) continue
-    try {
-      out.push(JSON.parse(raw))
-    } catch {
-      // Some sites concatenate multiple objects or leave trailing commas; try a
-      // lenient grab of the first balanced object.
-      const start = raw.indexOf('{')
-      const end = raw.lastIndexOf('}')
-      if (start >= 0 && end > start) {
-        try {
-          out.push(JSON.parse(raw.slice(start, end + 1)))
-        } catch {
-          /* give up on this block */
-        }
-      }
-    }
+    const v = parseJsonLdText(m[1])
+    if (v !== undefined) out.push(v)
   }
   return out
 }
@@ -92,37 +103,47 @@ export function findRecipeNode(value: unknown): Record<string, unknown> | null {
   return null
 }
 
-// Decode the HTML entities that survive in JSON-LD / microdata text. Named map
-// for the common French + fraction ones, then numeric (&#233; / &#xE9;) for the
-// long tail older sites still emit.
+// Decode the HTML entities that survive in JSON-LD / microdata text: named, then
+// numeric (&#233; / &#xE9;) for the long tail older sites still emit.
+// The HTML 4 Latin-1 set in code-point order (U+00A0…U+00FF), so every accented capital
+// decodes as itself — the old table was lowercase-only and matched case-insensitively, so
+// « &Eacute;tapes » came out « étapes » — plus the typographic ones recipe sites use.
+const LATIN1 =
+  'nbsp iexcl cent pound curren yen brvbar sect uml copy ordf laquo not shy reg macr deg plusmn sup2 sup3 acute ' +
+  'micro para middot cedil sup1 ordm raquo frac14 frac12 frac34 iquest Agrave Aacute Acirc Atilde Auml Aring AElig ' +
+  'Ccedil Egrave Eacute Ecirc Euml Igrave Iacute Icirc Iuml ETH Ntilde Ograve Oacute Ocirc Otilde Ouml times Oslash ' +
+  'Ugrave Uacute Ucirc Uuml Yacute THORN szlig agrave aacute acirc atilde auml aring aelig ccedil egrave eacute ecirc ' +
+  'euml igrave iacute icirc iuml eth ntilde ograve oacute ocirc otilde ouml divide oslash ugrave uacute ucirc uuml ' +
+  'yacute thorn yuml'
 const NAMED_ENTITIES: Record<string, string> = {
-  nbsp: ' ',
+  ...Object.fromEntries(LATIN1.split(' ').map((n, i) => [n, String.fromCharCode(0xa0 + i)])),
   amp: '&',
-  apos: "'",
-  quot: '"',
   lt: '<',
   gt: '>',
-  eacute: 'é',
-  egrave: 'è',
-  ecirc: 'ê',
-  agrave: 'à',
-  acirc: 'â',
-  icirc: 'î',
-  ocirc: 'ô',
-  ucirc: 'û',
-  ugrave: 'ù',
-  ccedil: 'ç',
-  deg: '°',
-  frac12: '½',
-  frac14: '¼',
-  frac34: '¾',
+  quot: '"',
+  apos: "'",
+  OElig: 'Œ',
+  oelig: 'œ',
   rsquo: '’',
   lsquo: '‘',
   ldquo: '“',
   rdquo: '”',
+  sbquo: '‚',
+  bdquo: '„',
   hellip: '…',
   ndash: '–',
   mdash: '—',
+  bull: '•',
+  euro: '€',
+  trade: '™',
+  frac13: '⅓',
+  frac23: '⅔',
+  frac18: '⅛',
+  thinsp: ' ',
+  ensp: ' ',
+  emsp: ' ',
+  zwj: '',
+  zwnj: '',
 }
 const decodeEntities = (s: string): string =>
   s
@@ -134,18 +155,45 @@ const decodeEntities = (s: string): string =>
       const code = +dec
       return code > 0 && code < 0x110000 ? String.fromCodePoint(code) : ''
     })
-    .replace(/&([a-z0-9]+);/gi, (whole, name: string) => NAMED_ENTITIES[name.toLowerCase()] ?? whole)
-    .replace(/&#39;/g, "'")
+    // Case matters (« &Eacute; » is É); an all-caps spelling of a lowercase-only name
+    // (« &NBSP; ») still resolves.
+    .replace(/&([a-z0-9]+);/gi, (whole, name: string) => NAMED_ENTITIES[name] ?? NAMED_ENTITIES[name.toLowerCase()] ?? whole)
 
 // Many sites embed inline HTML inside JSON-LD instruction/ingredient text —
 // Ricardo wraps words in <a href> links, others use <strong>/<em>/<br>. Strip
 // tags first (keeping the inner words), then decode entities, then collapse
 // whitespace, so a step reads "Chauffer une poêle…" not "Chauffer une <a
 // href=…>poêle</a>…".
+// Invisible characters a site leaves in its text: the soft hyphen (« la [soft hyphen]cassonade »,
+// Ricardo's JSON-LD) and the zero-width ones. A cook never typed them, and a line that
+// carries one no longer matches the same words on the page.
+const INVISIBLE = new RegExp('[' + String.fromCharCode(0xad, 0x200b) + '-' + String.fromCharCode(0x200d, 0x2060, 0xfeff) + ']', 'g')
 const clean = (s: string): string =>
   decodeEntities(s.replace(/<[^>]+>/g, ' '))
+    .replace(INVISIBLE, '')
     .replace(/\s+/g, ' ')
     .trim()
+
+// WP Recipe Maker composes a JSON-LD ingredient as « amount unit name (notes) », and its
+// notes field often carries its own punctuation: the page prints « 1 large onion (or 2
+// small onions), sliced » and « 2 tbsp vegetable oil, divided », the JSON-LD says « 1
+// large onion ((or 2 small onions), sliced) » and « 2 tbsp vegetable oil (, divided) ».
+// A trailing group that opens on « ( » or « , » is that wrapper: unwrap it, as printed.
+export function tidyIngredientLine(s: string): string {
+  if (!s.endsWith(')')) return s
+  let depth = 0
+  for (let i = s.length - 1; i >= 0; i--) {
+    if (s[i] === ')') depth++
+    else if (s[i] === '(' && --depth === 0) {
+      const inner = s.slice(i + 1, -1).trim()
+      const head = s.slice(0, i).trimEnd()
+      if (inner.startsWith(',')) return `${head}${inner}`
+      if (inner.startsWith('(')) return `${head} ${inner}`
+      return s
+    }
+  }
+  return s
+}
 
 function asStringList(value: unknown, max: number): string[] {
   if (!value) return []
@@ -479,11 +527,19 @@ export function pageMeta(html: string): { title: string | null; image: string | 
     const b = a ?? html.match(new RegExp(`<meta\\b[^>]*\\bcontent=["']([^"']*)["'][^>]*\\bproperty=["']og:${prop}["']`, 'i'))
     return b ? clean(b[1]) || null : null
   }
-  let title = og('title')
+  // The page's ONE <h1> is its name as printed (« Carrés au sucre »); og:title and
+  // <title> are written for a share card or a tab (« Recette de carrés au sucre |
+  // Recettes du Québec ») — they lose their « | Site » tail and serve only without an h1.
+  const tail = (t: string) => t.replace(/\s+[|–—-]\s+[^|–—-]{1,60}$/, '').trim() || null
+  const h1s = [...html.matchAll(/<h1\b[^>]*>([\s\S]*?)<\/h1>/gi)].map((m) => clean(m[1])).filter((t) => t.length >= 2 && t.length <= 120)
+  let title = h1s.length === 1 ? h1s[0] : null
+  if (!title) {
+    const o = og('title')
+    title = o ? tail(o) : null
+  }
   if (!title) {
     const t = html.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i)
-    const whole = t ? clean(t[1]) : ''
-    title = whole.replace(/\s+[|–—-]\s+[^|–—-]{1,60}$/, '').trim() || null
+    title = t ? tail(clean(t[1])) : null
   }
   return { title: title ? title.slice(0, 200) : null, image: normalizeImage(og('image')) }
 }
@@ -594,11 +650,17 @@ export function normalizeImage(value: unknown): string | null {
 // Parse a Recipe out of fetched page HTML via JSON-LD. Returns null when no
 // Recipe block is present (caller then tries microdata, then the AI fallback).
 export function parseRecipeJsonLd(html: string): ParsedRecipe | null {
-  for (const block of extractJsonLdBlocks(html)) {
+  return parseRecipeJsonLdBlocks(extractJsonLdBlocks(html))
+}
+
+// The same read over blocks already parsed — the HTML path extracts them from the
+// page; a captured page (the bookmarklet) sends their raw text.
+export function parseRecipeJsonLdBlocks(blocks: unknown[]): ParsedRecipe | null {
+  for (const block of blocks) {
     const node = findRecipeNode(block)
     if (!node) continue
     const title = typeof node.name === 'string' ? clean(node.name).slice(0, 200) : null
-    const ingredients = asStringList(node.recipeIngredient ?? node.ingredients, MAX_INGREDIENTS)
+    const ingredients = asStringList(node.recipeIngredient ?? node.ingredients, MAX_INGREDIENTS).map(tidyIngredientLine)
     const steps = normalizeInstructions(node.recipeInstructions)
     // A node with a name but neither ingredients nor steps isn't a usable recipe.
     if (!title && ingredients.length === 0 && steps.length === 0) continue
@@ -622,19 +684,50 @@ export function parseRecipeJsonLd(html: string): ParsedRecipe | null {
 // Microdata fallback for older sites with no JSON-LD: scan for itemprop
 // elements at the regex level. Coarse but safe — anything it can't see just
 // stays empty and the AI fallback takes over.
+const VOID_TAGS = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'source', 'track', 'wbr'])
+
 export function parseRecipeMicrodata(html: string): ParsedRecipe | null {
-  const inner = (prop: string): string[] => {
-    const out: string[] = []
-    const re = new RegExp(
-      `<([a-z][a-z0-9]*)\\b[^>]*\\bitemprop=["'](?:${prop})["'][^>]*>([\\s\\S]*?)<\\/\\1>`,
-      'gi',
-    )
+  // Every element carrying itemprop=<prop>, with its WHOLE content: the closing tag is
+  // found by depth, not by the first « </div> » (a container of nested <div> steps —
+  // 5 ingrédients 15 minutes — used to read as its first step only). A value carried in
+  // an attribute (<meta content>, <span content>, <time datetime>) is collected apart:
+  // the author's <meta itemprop=name> must not become the recipe's title.
+  const collect = (prop: string): { text: string[]; attr: string[] } => {
+    const text: string[] = []
+    const attr: string[] = []
+    const out = text
+    const wants = new RegExp(`itemprop=["'](?:${prop})["']`, 'i')
+    const open = /<([a-z][a-z0-9]*)\b([^>]*)>/gi
     let m: RegExpExecArray | null
-    while ((m = re.exec(html)) && out.length < 80) out.push(m[2])
-    // <meta itemprop="…" content="…"> variants (self-closing, no inner text).
-    const metaRe = new RegExp(`<meta\\b[^>]*\\bitemprop=["'](?:${prop})["'][^>]*\\bcontent=["']([^"']*)["']`, 'gi')
-    while ((m = metaRe.exec(html)) && out.length < 80) out.push(m[1])
-    return out
+    while ((m = open.exec(html)) && out.length < 80) {
+      if (!wants.test(m[2])) continue
+      const tag = m[1].toLowerCase()
+      const c = m[2].match(/\b(?:content|datetime)=["']([^"']*)["']/i)
+      if (c) {
+        attr.push(c[1])
+        continue
+      }
+      if (m[2].endsWith('/') || VOID_TAGS.has(tag)) continue
+      const start = m.index + m[0].length
+      const any = /<(\/?)([a-z][a-z0-9]*)\b[^>]*>/gi
+      any.lastIndex = start
+      let depth = 1
+      let t: RegExpExecArray | null
+      while ((t = any.exec(html))) {
+        if (t[2].toLowerCase() !== tag || t[0].endsWith('/>')) continue
+        depth += t[1] ? -1 : 1
+        if (depth === 0) {
+          out.push(html.slice(start, t.index))
+          break
+        }
+      }
+    }
+    return { text, attr }
+  }
+  const inner = (prop: string): string[] => collect(prop).text
+  const attrOrText = (prop: string): string | null => {
+    const c = collect(prop)
+    return [...c.attr, ...c.text].map((s) => clean(s)).find(Boolean) ?? null
   }
 
   const ingredients = inner('recipeIngredient|ingredients')
@@ -647,19 +740,37 @@ export function parseRecipeMicrodata(html: string): ParsedRecipe | null {
   // <hN> INSIDE the container is a section heading ("Glaçage") — keep it as a
   // "## " marker instead of letting it leak as a junk step; a bare label line
   // ("Glaçage :") gets the same treatment. (htmlBlocksToLines — shared with a
-  // JSON-LD instructions string that carries the same HTML.)
-  const stepLines = inner('recipeInstructions').flatMap(htmlBlocksToLines)
+  // JSON-LD instructions string that carries the same HTML.) A heading that is the
+  // method's own title (« Préparation », « Étapes ») heads the whole list: not a part.
+  const allLines = inner('recipeInstructions')
+    .flatMap(htmlBlocksToLines)
+    .filter((l) => !(isSectionHeading(l) && STEP_HEADING.test(l.replace(/^##\s*/, ''))))
+  // A notes block inside the method's container (« Idée pour accompagner : », « Notes »)
+  // ends the method: what follows is the recipe's notes, not more steps.
+  const noteAt = allLines.findIndex((l) => NOTE_HEADING.test(l.replace(/^##\s*/, '')))
+  const stepLines = noteAt >= 0 ? allLines.slice(0, noteAt) : allLines
+  const notes = noteAt >= 0 ? allLines.slice(noteAt + 1).map((l) => l.replace(/^##\s*/, '')).join('\n').slice(0, 2000) || null : null
   const steps = dropDanglingHeadings(refineSteps(stepLines))
 
   if (ingredients.length < 2 && steps.length === 0) return null
 
   const page = pageMeta(html)
+  // The Recipe's own name: the first itemprop=name with PRINTED text (an author's or a
+  // publisher's name rides in a <meta content>), else the page's own title.
   const title = inner('name').map((s) => clean(s)).find(Boolean)?.slice(0, 200) ?? page.title
   const image = page.image
-  const servings = parseYield(inner('recipeYield')[0] ?? null)
-  const servingsUnit = parseYieldUnit(inner('recipeYield')[0] ?? null)
-
-  return { title, ingredients, steps, image, servings, servingsUnit, times: NO_TIMES }
+  const yieldRaw = attrOrText('recipeYield')
+  const time = (prop: string) => isoToMinutes(attrOrText(prop))
+  return {
+    title,
+    ingredients,
+    steps,
+    image,
+    servings: parseYield(yieldRaw),
+    servingsUnit: parseYieldUnit(yieldRaw),
+    times: { prep: time('prepTime'), cook: time('cookTime'), total: time('totalTime') },
+    notes,
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -673,7 +784,7 @@ export function parseRecipeMicrodata(html: string): ParsedRecipe | null {
 // "## " marker. All-or-nothing: if any ingredient can't be located verbatim,
 // return the flat list untouched — a wrong grouping is worse than none.
 
-const normLoose = (s: string): string =>
+export const normLoose = (s: string): string =>
   s
     .toLowerCase()
     .normalize('NFD')
@@ -700,8 +811,14 @@ function groupLabel(line: string): string | null {
 }
 
 export function regroupIngredients(html: string, ingredients: string[]): string[] {
+  return regroupIngredientsInText(htmlToText(html, 60000), ingredients)
+}
+
+// The same recovery over the page's TEXT (a captured page sends its innerText).
+export function regroupIngredientsInText(text: string, ingredients: string[]): string[] {
   if (ingredients.length < 4 || ingredients.some((l) => isSectionHeading(l))) return ingredients
-  const lines = htmlToText(html, 60000)
+  const lines = text
+    .slice(0, 60000)
     .split('\n')
     .map((l) => l.trim())
     .filter(Boolean)
@@ -774,7 +891,11 @@ export interface PastedRecipe {
 const ING_HEADING = /^(?:les\s+)?ingr[ée]dients?\b\s*([^.!?]{0,30}?)\s*:?$/i
 const STEP_HEADING =
   /^(?:pr[ée]paration|instructions?|m[ée]thode|method|directions?|[ée]tapes?(?!\s*\d)|steps?(?!\s*\d)|marche\s+[àa]\s+suivre|mode\s+d['’]emploi)\b\s*([^.!?]{0,30}?)\s*:?$/i
-const NOTE_HEADING = /^(?:notes?|remarques?|conseils?|astuces?|tips?|variantes?)\b[^.!?]{0,10}:?$/i
+// A notes heading may carry a short qualifier — « Note de l'équipe Ricardo », « Recipe
+// Notes: », « Conseils du chef » — but never a colon mid-line: « Note : bien mélanger » is
+// a line of the recipe, not a heading.
+const NOTE_HEADING =
+  /^(?:(?:recipe|chef['’]?s?|cook['’]?s?)\s+)?(?:notes?|remarques?|conseils?|astuces?|tips?|variantes?|bon\s+[àa]\s+savoir|id[ée]es?\s+pour\s+accompagner|pour\s+accompagner|suggestions?\s+d['’]accompagnement|serving\s+suggestions?)\b[^.!?:]{0,30}[:!]?$/i
 
 // "Préparation : 20 min", "Cuisson 1 h 30", "Total time: 45 minutes" — the time
 // block most printed recipes start with. Must be checked BEFORE the step
@@ -806,6 +927,7 @@ const splitStrip = (l: string): string[] => {
 const isNavStrip = (frags: string[]): boolean => frags.length >= 3 && frags.every((f) => f.length <= 20 && !/\d/.test(f))
 // A star rating (« ★★★★☆ 128 avis ») — stars with, at most, a count and a word.
 const isRating = (l: string): boolean => /[★☆✩✭✮⭐]/.test(l) && /^[★☆✩✭✮⭐\s\d.,/()]+(?:avis|reviews?|notes?|votes?|[ée]valuations?)?\s*$/i.test(l)
+const INLINE_NOTE = /^(?:notes?|remarques?|conseils?|astuces?|tips?|bon\s+[àa]\s+savoir)\s*[:!]\s+(\S.{8,})$/i
 // Where a website's chrome resumes AFTER the recipe body — everything from here on is
 // other recipes, ads and buttons. Only honoured once the body has started; before it,
 // the same line is merely skipped (a share bar above a recipe must not eat the recipe).
@@ -813,7 +935,7 @@ const isRating = (l: string): boolean => /[★☆✩✭✮⭐]/.test(l) && /^[�
 // on recettes.qc.ca and most blogs — pasted whole, its four lines became steps 7–10
 // (Marc, 2026-10-27). Whole-word (a letter lookahead, since JS \b dies after an é).
 export const NOISE_END =
-  /^(?:recettes?\s+(?:populaires?|similaires?|sugg[ée]r[ée]es?|du\s+moment)|popular\s+recipes?|related\s+recipes?|more\s+recipes?|vous\s+aimerez|you\s+(?:may|might)\s+also\s+like|[àa]\s+lire\s+aussi|voir\s+aussi|see\s+also|commentaires?\b|comments?\b|abonnez|newsletter|s['’]abonner|subscribe|tous\s+droits|all\s+rights|©|(?:cat[ée]gories?|mots?[- ]cl[ée]s?|[ée]tiquettes?|tags?|keywords?)\s*:?\s*$)/i
+  /^(?:recettes?\s+(?:populaires?|similaires?|sugg[ée]r[ée]es?|du\s+moment)|popular\s+recipes?|related\s+recipes?|more\s+recipes?|vous\s+aimerez|you\s+(?:may|might)\s+also\s+like|[àa]\s+lire\s+aussi|voir\s+aussi|see\s+also|commentaires?\b|comments?\b|abonnez|newsletter|s['’]abonner|subscribe|tous\s+droits|all\s+rights|©|(?:cat[ée]gories?|mots?[- ]cl[ée]s?|[ée]tiquettes?|tags?|keywords?)\s*:?\s*$|keywords?\s*:|note\s+personnelle|cr[ée]er\s+une\s+note|nutrition(?:\s+(?:information|facts))?\s*:?\s*$|valeurs?\s+nutritives?|informations?\s+nutritionnelles?)/i
 // The page HEAD a whole-page paste carries above the recipe's name: a publication
 // date, a byline, a share button, a photo credit. None of these is the title.
 const PRE_JUNK =
@@ -823,6 +945,12 @@ const PRE_JUNK =
 // skipped wherever it appears.
 // (No `\b` after « publicité »: JS \b is ASCII-only, so it never fires after an é.)
 const NOISE_SKIP = /^(?:publicit[ée]s?|advertisements?|sponsored)(?![a-zà-öœ])/i
+// The page's BUTTONS, as innerText/htmlToText reads them: « Ajouter à ma liste
+// d'épicerie », « Sélectionner tous les ingrédients », « Passer en mode cuisine », a unit
+// toggle (« Metric », « US », « Cups »), WPRM's checkbox glyph. Whole lines only — never
+// recipe, skipped wherever they sit (under « Ingrédients » they became ingredients).
+const UI_CHROME =
+  /^(?:ajouter\s+[àa]\s+(?:ma|mon|mes)\s.{0,40}|s[ée]lectionner\s+tous\s.{0,40}|passer\s+en\s+mode\s+cuisine|mode\s+cuisine|cook\s+mode|prevent\s+screen\s+from\s+sleeping|skip\s+ad|imprimer(?:\s+la\s+recette)?|print(?:\s+recipe)?|jump\s+to\s+recipe|save\s+recipe|metric|us|cups|imp[ée]rial|m[ée]trique|▢|☐)$/i
 // A bare part label inside the ingredient or method block (« Sauce », « Garniture »,
 // « Poisson »): one to three capitalised words, no digits, no punctuation.
 const isBareLabel = (l: string): boolean => /^[A-ZÀ-ÖŒ][^\d.!?:;,()]{0,30}$/.test(l) && l.split(/\s+/).length <= 3
@@ -978,7 +1106,7 @@ export function parsePastedRecipe(text: string): PastedRecipe {
       continue
     }
     if (consumeMeta(line)) continue
-    if (NOISE_SKIP.test(line)) {
+    if (NOISE_SKIP.test(line) || UI_CHROME.test(line)) {
       junk.add(li) // an ad slot, wherever it sits — never the recipe, never its end
       continue
     }
@@ -1008,6 +1136,14 @@ export function parsePastedRecipe(text: string): PastedRecipe {
     }
     if (NOTE_HEADING.test(line)) {
       mode = 'notes'
+      continue
+    }
+    // A note label that opens its own line (« Bon à savoir ! Pour un spaghetti… »), under
+    // the ingredients: the rest of the line is the note, and what follows it too.
+    const inlineNote = mode !== 'steps' ? line.match(INLINE_NOTE) : null
+    if (inlineNote) {
+      mode = 'notes'
+      noteLines.push(inlineNote[1])
       continue
     }
 
@@ -1118,7 +1254,9 @@ export function parsePastedRecipe(text: string): PastedRecipe {
     ? merged.flatMap((l) => (isSectionHeading(l) ? [l] : l.split(SENTENCE_SPLIT).filter(Boolean)))
     : merged
   const steps = dropDanglingHeadings(refineSteps(blobs, { blob: 'auto' }))
-  const notes = noteLines.join(' ').trim().slice(0, 2000) || null
+  // One note per printed line: a numbered « 1. … 2. … » list or two paragraphs stay apart.
+  // A line printed twice (a page that shows its notes in two layouts) is kept once.
+  const notes = [...new Set(noteLines)].join('\n').trim().slice(0, 2000) || null
 
   const ingredients = dropDanglingHeadings(ings.slice(0, MAX_INGREDIENTS))
   const realIngs = ingredients.filter((l) => !isSectionHeading(l))
@@ -1247,13 +1385,34 @@ export function pageIngredientsPlausible(lines: string[]): boolean {
 // window, so the budget is not spent on other recipes.
 const END_ANCHOR = new RegExp(NOISE_END.source, 'im')
 
+// The ingredients heading that IS the recipe's: a site menu has an « Ingrédients » entry
+// too (Ricardo's, above the recipe), so the heading followed by quantity lines wins; the
+// first one only when none is.
+function ingredientsAnchor(text: string): number | undefined {
+  let first: number | undefined
+  for (const m of text.matchAll(new RegExp(HEADING_ANCHORS[0].source, 'gim'))) {
+    first ??= m.index
+    const after = text
+      .slice(m.index + m[0].length, m.index + m[0].length + 1200)
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean)
+      .slice(0, 6)
+    if (after.filter((l) => ING_LIKE.test(l)).length >= 2) return m.index
+  }
+  return first
+}
+
 export function recipeTextWindow(text: string, max = 16_000): string {
   const hit =
-    HEADING_ANCHORS.map((re) => re.exec(text)?.index).find((i) => i !== undefined) ??
+    ingredientsAnchor(text) ??
+    HEADING_ANCHORS.slice(1).map((re) => re.exec(text)?.index).find((i) => i !== undefined) ??
     LOOSE_ANCHORS.map((re) => re.exec(text)?.index).find((i) => i !== undefined)
   const lead = Math.min(600, Math.floor(max * 0.1))
-  // No anchor and too long — the head slice is all we've got.
-  const start = text.length <= max || hit === undefined ? 0 : Math.max(0, hit - lead)
+  // No anchor — the head slice is all we've got. With one, the window starts there even
+  // on a SHORT page: a page's head is its menu, and recettes.qc.ca's menu has an
+  // « Ingrédient principal » that read as the ingredients heading (2026-10-27).
+  const start = hit === undefined ? 0 : Math.max(0, hit - lead)
   let end = Math.min(text.length, start + max)
   // Only AFTER the method heading: before it, the same words are navigation.
   const steps = HEADING_ANCHORS[1].exec(text.slice(start))
@@ -1339,15 +1498,30 @@ export function linesWithForeignNumbers(source: string, lines: string[]): string
 export function htmlToText(html: string, max = 6000): string {
   return decodeEntities(
     html
-      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<!--[\s\S]*?-->/g, ' ')
+      .replace(/<(script|style|noscript|template|svg)\b[\s\S]*?<\/\1>/gi, ' ')
       // Source whitespace is insignificant in HTML — structure comes from tags.
       .replace(/\s+/g, ' ')
       .replace(/<\/(?:p|li|div|h[1-6]|tr|section|article)>|<br\s*\/?>/gi, '\n')
-      .replace(/<[^>]+>/g, ' '),
+      // A block OPENS a line as well as closing one: « <a>Sélectionner tous</a> <div>
+      // <button>Ajouter à ma liste</button> » is two lines, not one (5 ingrédients). An
+      // opener only BREAKS a line (\x01, resolved below) — it never adds a blank one,
+      // which the paste parser reads as a paragraph break.
+      .replace(/<(?:p|li|div|h[1-6]|tr|section|article|ul|ol|table|header|footer|nav|figure|figcaption|button|dd|dt)\b(?:[^>"']|"[^"]*"|'[^']*')*>/gi, '\x01')
+      // A table cell is a column of the SAME row: « 250 ml | de farine » stays one line.
+      .replace(/<\/t[dh]>/gi, ' ')
+      // A tag's attributes may hold « > » inside quotes (an <input value="<span>…">):
+      // strip whole tags, quotes and all, or the attribute's tail leaks into the text.
+      .replace(/<(?:[^>"']|"[^"]*"|'[^']*')*>/g, ' '),
   )
+    .replace(INVISIBLE, '')
+    .replace(/(^|\n)[\x01 ]+/g, '$1')
+    .replace(/[\x01 ]+(?=\n|$)/g, '')
+    .replace(/ *\x01[\x01 ]*/g, '\n')
     .split('\n')
-    .map((l) => l.replace(/[ \t]+/g, ' ').trim())
+    // An inline tag left a space before the punctuation that closed it (« <a>velveting</a>. »
+    // → « velveting . »). French sets a space before « : ! ? ; », never before « . , ) ».
+    .map((l) => l.replace(/[ \t]+/g, ' ').replace(/ +(?=[.,)](?:\s|$))/g, '').trim())
     .join('\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim()

@@ -1,0 +1,29 @@
+{
+  "title": "Boulettes de porc à la courge et à la crème",
+  "servings": 4,
+  "servingsUnit": null,
+  "times": {
+    "prep": 20,
+    "cook": 50,
+    "total": 70
+  },
+  "ingredients": [
+    "1 courge Butternut d’environ 1,4 kg (3 lb), pelée, les graines retirées et coupée en cubes",
+    "1 oignon, haché finement",
+    "15 ml (1 c. à soupe) d'huile végétale",
+    "15 ml (1 c. à soupe) de fécule de maïs",
+    "1 boîte de 284 ml (10 oz) de bouillon de poulet concentré",
+    "60 ml (1/4 tasse) de crème 35 %",
+    "1/2 recette de boulettes de porc extra moelleuses, cuites et chaudes",
+    "45 ml (3 c. à soupe) de feuilles de persil plat",
+    "45 ml (3 c. à soupe) de fromage parmesan frais râpé"
+  ],
+  "steps": [
+    "Placer la grille dans le bas du four. Préchauffer le four à 220 °C (425 °F).",
+    "Dans un plat de cuisson de 33 x 23 cm (13 x 9 po), mélanger la courge, l’oignon et l’huile. Saler et poivrer. Cuire au four 40 minutes.",
+    "Entre-temps, dans un bol, délayer la fécule dans le bouillon et la crème.",
+    "Répartir les boulettes sur la courge. Verser le mélange de bouillon sur les boulettes et les légumes chauds. Poursuivre la cuisson au four 10 minutes ou jusqu’à ce que la sauce épaississe. Rectifier l’assaisonnement. Parsemer du persil et du parmesan."
+  ],
+  "notes": null,
+  "structuring": "jsonld"
+}
