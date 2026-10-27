@@ -13,14 +13,17 @@
 // What it collects: the address, the title, og:image, every `application/ld+json`
 // block's RAW text (parsed server-side, never here), Ricardo's `data-react-app-props`
 // (its ingredient/step groups) and WPRM's group names when present, and as the text
-// fallback the WHOLE page's innerText (document.body), capped at 120 KB — the server
-// windows it onto the recipe (recipeTextWindow), exactly as it windows a fetched page's
-// htmlToText, which is what the corpus proves readable for every blocked site. It used
-// to send `main` / `article` / the instructions block instead: on Marc's iPhone the live
-// recettes.qc.ca page answered « Rien trouvé » (2026-10-27) while the same page's full
-// text parses to 16 ingredients + 10 steps — a container the site adds by script is not
-// the recipe, and guessing one is how a capture comes home empty. Over ~200 KB the text
-// goes first. No cookie, no request to Babillard from their page: it only navigates.
+// fallback the WHOLE page's text — every text node under <body>, visible OR NOT, with a
+// line break at each block element (the server's htmlToText, done on the live DOM),
+// capped at 120 KB; the server windows it onto the recipe (recipeTextWindow), exactly as
+// it windows a fetched page, which is what the corpus proves readable for every blocked
+// site. NOT innerText, twice over (Marc's iPhone, 2026-10-27): innerText follows the
+// CSS, so on a phone recettes.qc.ca's « Préparation » lives behind a tab (display:none)
+// and came home EMPTY — 16 ingredients, zero steps — and a heading set in uppercase by
+// text-transform arrived as « INGRÉDIENTS ». Raw text nodes have neither problem. Nor a
+// guessed container (`main` / `article`): one the site adds by script is not the recipe.
+// Over ~200 KB the text goes first. No cookie, no request to Babillard from their page:
+// it only navigates.
 //
 // WHY THE BODY IS IN THE BOOKMARK ITSELF, not a loader like Flipp's: Flipp's body grew
 // past ~3 KB and iOS Safari stopped running it as an address, so it loads
@@ -41,9 +44,11 @@ export const RECIPE_BOOKMARKLET_BODY =
   'var g=function(c){var a=[],n=d.querySelectorAll(c),k;for(k=0;k<n.length;k++){a.push(String(n[k].textContent||"").trim())}return a};' +
   'var wi=g(".wprm-recipe-ingredient-group-name"),ws=g(".wprm-recipe-instruction-group-name");if(wi.length||ws.length){ex.wprm={ingredients:wi,steps:ws}}' +
   'if(ex.ricardo||ex.wprm){p.extras=ex}' +
-  'p.text=cap(d.body&&d.body.innerText,120000);' +
+  'var NL=String.fromCharCode(10),BK={P:1,DIV:1,LI:1,UL:1,OL:1,H1:1,H2:1,H3:1,H4:1,H5:1,H6:1,TR:1,BR:1,SECTION:1,ARTICLE:1},SK={SCRIPT:1,STYLE:1,NOSCRIPT:1,SVG:1},o=[];' +
+  'var walk=function(n){var i,c,t;if(n.nodeType===3){o.push(String(n.nodeValue||"").split(NL).join(" "));return}if(n.nodeType!==1){return}t=String(n.tagName||"").toUpperCase();if(SK[t]){return}if(BK[t]){o.push(NL)}for(i=0,c=n.childNodes;i<c.length;i++){walk(c[i])}if(BK[t]){o.push(NL)}};' +
+  'if(d.body){walk(d.body)}p.text=cap(o.join(""),120000);' +
   'var enc=function(o){var b=btoa(unescape(encodeURIComponent(JSON.stringify(o))));b=b.split("+").join("-").split("/").join("_");while(b.charAt(b.length-1)==="="){b=b.slice(0,-1)}return b};' +
-  'var e=enc(p);if(e.length>200000){p.text="";e=enc(p)}if(e.length>200000){delete p.extras;e=enc(p)}' +
+  'var e=enc(p);if(e.length>200000){p.text=cap(p.text,60000);e=enc(p)}if(e.length>200000){p.text="";e=enc(p)}if(e.length>200000){delete p.extras;e=enc(p)}' +
   'l.href=B+"/kitchen/recipe/new#import="+e})'
 
 /** What the bookmark captures — the server's `{ page }` input (functions/_lib/recipeImportPage). */

@@ -1104,7 +1104,10 @@ const titleContinues = (title: string, line: string): boolean =>
 // (quantity-leading lines = ingredients, prose after = steps). The result's
 // `confident` says whether the structure was explicit.
 export function parsePastedRecipe(text: string): PastedRecipe {
-  const lines = text.split(/\r?\n/).map((l) => l.replace(/\s+/g, ' ').trim())
+  // NFC first: a decomposed « É » (E + combining acute) never matches `[ée]`, and an
+  // « INGRÉDIENTS » heading that misses ING_HEADING falls through to the bare-label
+  // rule and comes out as a « ## » section (seen on a live capture, 2026-10-27).
+  const lines = text.normalize('NFC').split(/\r?\n/).map((l) => l.replace(/\s+/g, ' ').trim())
   let mode: 'pre' | 'ing' | 'steps' | 'notes' | 'aside' = 'pre'
   let title: string | null = null
   // How many printed lines the title took (1, or 2 when wrapped) — the no-headings

@@ -295,7 +295,7 @@ export const EN_OPERATOR: typeof FR_OPERATOR = {
   recipeBookmarkletTitle: '“Send to Babillard” bookmark',
   recipeBookmarkletIntro: 'Some sites refuse to let their recipes be read from afar (Recettes du Québec, Zeste). Your own browser sees them: this bookmark sends the open page to Babillard. On iPhone, sign in once in Safari too: the home-screen app and Safari do not share a sign-in.',
   recipeBookmarklet1: 'Tap “Copy the bookmark”.',
-  recipeBookmarklet2: 'In your browser, bookmark any page, name it “Send to Babillard” and replace its address with what you copied.',
+  recipeBookmarklet2: 'In your browser, bookmark any page, name it “Send to Babillard” and replace its address with what you copied. On a recipe page, run it from the ⋯ menu ▸ Bookmarks (iOS 26), or keep it in your Favourites and tap the address bar.',
   recipeBookmarklet3: 'On a recipe’s page, run the bookmark: Babillard opens with the recipe filled in.',
   storeFilterNoPostal: 'Set your postal code above first to see nearby stores.',
   storeFilterError: 'Flyer service unavailable — try again later.',

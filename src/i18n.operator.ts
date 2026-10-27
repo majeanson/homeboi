@@ -353,7 +353,7 @@ export const FR_OPERATOR = {
   recipeBookmarkletTitle: 'Signet « Envoyer à Babillard »',
   recipeBookmarkletIntro: 'Certains sites refusent qu’on lise leurs recettes à distance (Recettes du Québec, Zeste). Ton navigateur, lui, les voit : ce signet envoie la page ouverte dans Babillard. Sur iPhone, connecte-toi une fois dans Safari aussi : l’app de l’écran d’accueil et Safari ne partagent pas la connexion.',
   recipeBookmarklet1: 'Touche « Copier le signet ».',
-  recipeBookmarklet2: 'Dans ton navigateur, ajoute un signet à n’importe quelle page, nomme-le « Envoyer à Babillard » et remplace son adresse par ce que tu as copié.',
+  recipeBookmarklet2: 'Dans ton navigateur, ajoute un signet à n’importe quelle page, nomme-le « Envoyer à Babillard » et remplace son adresse par ce que tu as copié. Sur une page de recette, lance-le depuis le menu ⋯ ▸ Signets (iOS 26), ou mets-le dans tes Favoris et touche la barre d’adresse.',
   recipeBookmarklet3: 'Sur la page d’une recette, lance le signet : Babillard s’ouvre avec la recette remplie.',
   storeFilterNoPostal: 'Règle d’abord ton code postal ci-dessus pour voir les magasins du coin.',
   storeFilterError: 'Service de circulaires indisponible — réessaie plus tard.',

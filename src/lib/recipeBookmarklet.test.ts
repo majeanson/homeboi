@@ -8,30 +8,27 @@ import { RECIPE_BOOKMARKLET_BODY, encodeRecipePage, parseRecipeHash, recipeBookm
 interface FakeEl {
   type?: string
   textContent?: string
-  innerText?: string
   attrs?: Record<string, string>
 }
-const el = (e: FakeEl) => ({ ...e, getAttribute: (k: string) => e.attrs?.[k] ?? null })
 
-function fakePage(opts: { origin?: string; text?: string; scripts?: FakeEl[]; metas?: FakeEl[]; props?: FakeEl[]; wprm?: string[] } = {}) {
+// A REAL document (happy-dom), because the body walks the DOM: `body` is the page's
+// HTML, scripts/metas/props are elements in it. `text` is a shorthand for a body made of
+// one block per line.
+function fakePage(opts: { origin?: string; text?: string; body?: string; scripts?: FakeEl[]; metas?: FakeEl[]; props?: FakeEl[]; wprm?: string[] } = {}) {
   const loc = { origin: opts.origin ?? 'https://www.recettes.qc.ca', href: 'https://www.recettes.qc.ca/recettes/recette/chili-con-carne-167900' }
-  // The WHOLE page's text is what goes home — a `main` / `article` the site adds by
-  // script is not the recipe (the live recettes.qc.ca page came home empty that way).
-  const main = el({ innerText: 'NOT THIS — a sidebar article' })
-  const doc = {
-    title: 'Chili con carne | Recettes du Québec',
-    body: el({ innerText: opts.text ?? 'Chili con carne\nIngrédients\n1 kg viande hachée' }),
-    getElementsByTagName: (t: string) => (t === 'script' ? opts.scripts ?? [] : t === 'meta' ? opts.metas ?? [] : []).map(el),
-    querySelector: (q: string) => (q.startsWith('main') ? main : null),
-    querySelectorAll: (q: string) =>
-      q === '[data-react-app-props]'
-        ? (opts.props ?? []).map(el)
-        : q === '.wprm-recipe-ingredient-group-name'
-          ? (opts.wprm ?? []).map((t) => el({ textContent: ` ${t} ` }))
-          : [],
-  }
+  const attrs = (e: FakeEl) =>
+    Object.entries(e.attrs ?? {})
+      .map(([k, v]) => ` ${k}="${v.replace(/"/g, '&quot;')}"`)
+      .join('')
+  const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;')
+  document.head.innerHTML = '<title>Chili con carne | Recettes du Québec</title>' + (opts.metas ?? []).map((m) => `<meta${attrs(m)}>`).join('')
+  document.body.innerHTML =
+    (opts.scripts ?? []).map((s) => `<script type="${s.type ?? ''}">${esc(s.textContent ?? '')}</script>`).join('') +
+    (opts.props ?? []).map((p) => `<div${attrs(p)}></div>`).join('') +
+    (opts.wprm ?? []).map((t) => `<span class="wprm-recipe-ingredient-group-name"> ${esc(t)} </span>`).join('') +
+    (opts.body ?? (opts.text ?? 'Chili con carne\nIngrédients\n1 kg viande hachée').split('\n').map((l) => `<p>${esc(l)}</p>`).join(''))
   const alert = vi.fn()
-  const run = new Function('document', 'location', 'alert', `return ${RECIPE_BOOKMARKLET_BODY}`)(doc, loc, alert) as (b: string) => void
+  const run = new Function('document', 'location', 'alert', `return ${RECIPE_BOOKMARKLET_BODY}`)(document, loc, alert) as (b: string) => void
   return { loc, alert, run }
 }
 
@@ -57,7 +54,8 @@ describe('the « Envoyer à Babillard » bookmark, run on a fake page', () => {
     expect(page.image).toBe('https://img.test/chili.jpg')
     expect(page.title).toBe('Chili con carne | Recettes du Québec')
     expect(page.url).toBe('https://www.recettes.qc.ca/recettes/recette/chili-con-carne-167900')
-    expect(page.text).toBe('Chili con carne\nIngrédients\n1 kg viande hachée')
+    // One line per block (blank lines between blocks are the server's to tidy).
+    expect(page.text.split('\n').map((l) => l.trim()).filter(Boolean)).toEqual(['Chili con carne', 'Ingrédients', '1 kg viande hachée'])
     expect(page.extras).toBeUndefined()
   })
 
@@ -80,6 +78,28 @@ describe('the « Envoyer à Babillard » bookmark, run on a fake page', () => {
     const page = sent(huge.loc.href)
     expect(page.text).toBe('')
     expect(page.jsonld).toHaveLength(1)
+  })
+
+  it('reads text nodes, not what the CSS shows: a tab hidden on phones and an uppercased heading come home as written', () => {
+    // Marc's iPhone, 2026-10-27: recettes.qc.ca keeps « Préparation » behind a tab on a
+    // phone (display:none) — innerText sent 16 ingredients and ZERO steps — and its
+    // heading was uppercased by text-transform. Script and style text never count.
+    const p = fakePage({
+      body:
+        '<style>.x{display:none}</style><script>var hidden = 1</script>' +
+        '<h4 style="text-transform:uppercase">Ingrédients</h4><ul><li><input type="checkbox"><label>1 kg\n      viande hachée</label></li></ul>' +
+        '<div class="x" style="display:none"><h4>Préparation</h4><p>Étape 1</p><p>Couper le bacon.</p></div>',
+    })
+    p.run('https://babillard.marcportal.com')
+    const text = sent(p.loc.href).text
+    expect(text).toContain('Ingrédients')
+    expect(text).not.toContain('INGRÉDIENTS')
+    expect(text).toMatch(/1 kg\s+viande hachée/)
+    expect(text).toContain('Couper le bacon.')
+    expect(text).not.toContain('display:none')
+    expect(text).not.toContain('var hidden')
+    // One line per block: the hidden step is its own line, not glued to the heading.
+    expect(text.split('\n').map((l) => l.trim()).filter(Boolean)).toEqual(['Ingrédients', '1 kg       viande hachée', 'Préparation', 'Étape 1', 'Couper le bacon.'])
   })
 
   it('refuses to run on Babillard itself — says so, goes nowhere', () => {

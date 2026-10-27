@@ -34,6 +34,23 @@ describe('a page the cook’s browser captured reads like the page we fetched', 
     expect(r.draft?.title).toBe('Chili con carne')
   })
 
+  it('a captured DOM walk is tidied like a fetched page: indentation runs collapse, a decomposed « É » heading is the heading', () => {
+    // The bookmark's text nodes keep the source's indentation; and a site may ship a
+    // decomposed É (E + U+0301) — un-normalized, « INGRÉDIENTS » missed ING_HEADING and
+    // came home as a « ## INGRÉDIENTS » section (Marc's save, 2026-10-27).
+    const E = 'É'
+    const r = readPage(
+      sourceFromCapture({
+        url: 'https://www.recettes.qc.ca/r',
+        title: 'Chili',
+        jsonld: [],
+        text: `\n\n   INGR${E}DIENTS   \n\n      1 kg        viande hachée      maigre   \n   2 oignons\n\n\n\n   PR${E}PARATION\n   Couper le bacon.\n   Cuire.\n`,
+      }),
+    )
+    expect(r.draft?.ingredients).toEqual(['1 kg viande hachée maigre', '2 oignons'])
+    expect(r.draft?.steps).toEqual(['Couper le bacon.', 'Cuire.'])
+  })
+
   it('a captured page with no recipe block falls to its printed headings', () => {
     const r = readPage(
       sourceFromCapture({

@@ -60,7 +60,19 @@ export function sourceFromCapture(p: CapturedPage): PageSource {
     .slice(0, 30)
     .map((b) => parseJsonLdText(b.slice(0, 500_000)))
     .filter((v) => v !== undefined)
-  const text = (typeof p.text === 'string' ? p.text : '').replace(/\r\n?/g, '\n').slice(0, CAP_TEXT)
+  // The bookmark's DOM walk keeps the source's indentation and blank runs; tidy it the
+  // way htmlToText tidies a fetched page (trimmed lines, at most one blank line), and
+  // NFC: a site's decomposed « É » must read as the heading « Ingrédients », not as a
+  // bare label that becomes a « ## » section (the « ## INGRÉDIENTS » of 2026-10-27).
+  const text = (typeof p.text === 'string' ? p.text : '')
+    .slice(0, CAP_TEXT)
+    .normalize('NFC')
+    .replace(/\r\n?/g, '\n')
+    .split('\n')
+    .map((l) => l.replace(/[ \t ]+/g, ' ').trim())
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
   // document.title is a TAB title (« Chili con carne | Recettes du Québec ») — same tail
   // rule as a fetched page's <title>.
   const title = typeof p.title === 'string' ? stripTitleTail(p.title.replace(/\s+/g, ' ').trim())?.slice(0, 200) ?? null : null
