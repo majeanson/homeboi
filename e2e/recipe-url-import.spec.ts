@@ -346,3 +346,38 @@ test('the bookmark lands in a browser with no session (iPhone: Safari ≠ the ho
   expect(calls).toBe(2)
   expect(await page.evaluate(() => sessionStorage.getItem('babillard-pending-import'))).toBeNull()
 })
+
+test('saving a NEW recipe already in the book asks: « Remplacer » overwrites in place, « Garder les deux » creates the copy', async ({ page }) => {
+  // Marc, 2026-10-27: the same chili landed twice. By link OR by name.
+  await openImport(page, 430)
+  await page.route('**/api/recipe-import', (r) => r.fulfill(json({ ...SITE_DRAFT, source: 'https://www.exemple.ca/tacos/?utm_source=x' })))
+  const writes: { method: string; body: Record<string, unknown> }[] = []
+  await page.route('**/api/recipes', (r) => {
+    if (r.request().method() === 'GET') return r.fallback()
+    writes.push({ method: r.request().method(), body: r.request().postDataJSON() as Record<string, unknown> })
+    return r.fulfill(json({ ok: true, id: 'rc2' }))
+  })
+  await page.getByRole('button', { name: 'Importer', exact: true }).click()
+  await expect(page.locator('.recipe-title-input')).toHaveValue('Lasagne du dimanche')
+
+  // Same LINK as « Tacos au poulet » (rc2) → the question, then « Remplacer » = a PATCH on rc2.
+  await page.getByRole('button', { name: 'Enregistrer la recette' }).click()
+  const dialog = page.locator('.confirm')
+  await expect(dialog).toContainText('Remplacer « Tacos au poulet », déjà dans le livre ?')
+  await dialog.getByRole('button', { name: 'Remplacer' }).click()
+  await expect.poll(() => writes.length).toBe(1)
+  expect(writes[0].method).toBe('PATCH')
+  expect(writes[0].body.id).toBe('rc2')
+  expect(writes[0].body.title).toBe('Lasagne du dimanche')
+
+  // Same NAME, no link: « Garder les deux » = a POST, a deliberate copy.
+  await page.goto('/kitchen/recipe/new')
+  await expect(page.locator('.recipe-title-input')).toBeVisible({ timeout: 15_000 })
+  await page.locator('.recipe-title-input').fill('tacos au POULET')
+  await page.getByRole('button', { name: 'Enregistrer la recette' }).click()
+  await expect(page.locator('.confirm')).toContainText('Remplacer « Tacos au poulet »')
+  await page.locator('.confirm').getByRole('button', { name: 'Garder les deux' }).click()
+  await expect.poll(() => writes.length).toBe(2)
+  expect(writes[1].method).toBe('POST')
+  expect(writes[1].body.id).toBeUndefined()
+})

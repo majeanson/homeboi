@@ -37,6 +37,7 @@ import { writeFailed } from '../lib/writeFailed'
 import { Link, useNavigate } from 'react-router-dom'
 import { useRecipes } from '../lib/queryHooks'
 import { sameSource } from '../lib/recipes'
+import { fold } from '../lib/normalize'
 import { stashPendingImport, type CapturedRecipePage } from '../lib/recipeBookmarklet'
 
 // In the EDITOR a row is a section row as soon as it carries the "## " marker —
@@ -815,6 +816,23 @@ export function RecipeForm({
   async function save(e: React.FormEvent) {
     e.preventDefault()
     if (!title.trim() || busy) return
+    // NO DUPLICATES (Marc, 2026-10-27, after the same chili landed twice): a NEW recipe
+    // whose link, or whose name, is already in the book asks first — « Remplacer »
+    // overwrites that recipe in place (same id, same photos/hearts/plans pointing at
+    // it), « Garder les deux » creates the copy on purpose. An edit never asks.
+    let replaceId: string | null = null
+    if (!value) {
+      const same = recipesQ.data?.recipes.find((r) => sameSource(r.source, source) || fold(r.title).trim() === fold(title).trim())
+      if (same) {
+        const replace = await confirm({
+          message: t.recipes.replaceConfirm(same.title),
+          confirmLabel: t.recipes.replaceBtn,
+          cancelLabel: t.recipes.keepBothBtn,
+          tone: 'default',
+        })
+        if (replace) replaceId = same.id
+      }
+    }
     setBusy(true)
     // A section row with no title ("## ") and a heading with nothing under it
     // are editing leftovers, not content — both drop here.
@@ -868,9 +886,10 @@ export function RecipeForm({
       // recipe's ingredients feed the « À régler » meal-low scan, so the card
       // refreshes instead of waiting its 5-min poll (write.ts adds it for the
       // `recipes` path anyway; listed here so the intent is visible).
+      const overwrite = value?.id ?? replaceId
       await write('recipes', {
-        method: value ? 'PATCH' : 'POST',
-        body: value ? { id: value.id, ...fields } : fields,
+        method: overwrite ? 'PATCH' : 'POST',
+        body: overwrite ? { id: overwrite, ...fields } : fields,
         affectedKeys: [RECIPES_KEY, RECIPE_TAGS_KEY, A_REGLER_KEY],
       })
       onSaved()

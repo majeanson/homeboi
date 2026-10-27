@@ -1528,6 +1528,11 @@ export const FR = {
     // must not silently discard the work.
     discardConfirm: 'Fermer sans enregistrer ? Tes changements seront perdus.',
     discardBtn: 'Fermer sans enregistrer',
+    // Une NOUVELLE recette dont le lien ou le nom est déjà dans le livre : remplacer
+    // l'existante (même fiche, mêmes cœurs et repas qui y pointent), ou garder une copie.
+    replaceConfirm: (title: string) => `Remplacer « ${title} », déjà dans le livre ? Son ancienne version sera écrasée ; « Garder les deux » crée une copie.`,
+    replaceBtn: 'Remplacer',
+    keepBothBtn: 'Garder les deux',
     count: (n: number) => `${n} ingrédient${n > 1 ? 's' : ''}`,
     save: 'Enregistrer la recette',
     search: 'Chercher une recette…',
