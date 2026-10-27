@@ -1,6 +1,7 @@
-import { badRequest, ok, serviceUnavailable } from '../_lib/json'
+import { badRequest, ok, serviceUnavailable, withAiError } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { MISTRAL_OCR_MODEL, mistralOcr } from '../_lib/mistralOcr'
+import type { AiReport } from '../_lib/ai'
 import { householdAiEnabled } from '../_lib/aiPref'
 
 // Read a recipe photo with the OPTIONAL high-accuracy CLOUD OCR (Mistral). The client
@@ -20,7 +21,10 @@ export const onRequestPost = authed(async (ctx, actor) => {
   if (!type.startsWith('image/')) return badRequest('Image requise.')
   const buf = await ctx.request.arrayBuffer()
   if (buf.byteLength === 0 || buf.byteLength > MAX_BYTES) return badRequest('Image vide ou trop grande.')
-  const text = await mistralOcr(ctx.env, new Uint8Array(buf))
+  // A failed cloud read says why (X-AI-Error → the toast + the ai_errors journal) —
+  // an empty `text` with a plain 200 hid a broken reader for a whole afternoon.
+  const report: AiReport = { error: null }
+  const text = await mistralOcr(ctx.env, new Uint8Array(buf), report)
   // `model` feeds the read report (which reader produced this transcript).
-  return ok({ text, model: MISTRAL_OCR_MODEL })
+  return withAiError(ok({ text, model: MISTRAL_OCR_MODEL }), report)
 })

@@ -1,4 +1,5 @@
 import type { Env } from './env'
+import { logAi, type AiReport } from './ai'
 
 // Mistral OCR — an OPTIONAL, high-accuracy CLOUD reader for recipe photos. It's a
 // real OCR service (not a generative model), markedly better than the on-device
@@ -30,8 +31,12 @@ function toBase64(bytes: Uint8Array): string {
 
 // Read a recipe photo with Mistral OCR → the joined page markdown. Returns '' on
 // key-unset / any failure (network, non-200, bad shape) so the caller degrades to
-// the on-device read — the same "never block the flow" posture as ocrImage.
-export async function mistralOcr(env: Env, bytes: Uint8Array): Promise<string> {
+// the on-device read — the same "never block the flow" posture as ocrImage. BUT the
+// failure is no longer silent: `report.error` carries the HTTP status and the start of
+// Mistral's answer (→ the X-AI-Error toast + the ai_errors journal). Prod, 2026-10-27:
+// a clean rendered card came back `{text: ""}` with a 200 from recipe-ocr, and nothing
+// anywhere said why — the phone then fell to the device reader and timed out.
+export async function mistralOcr(env: Env, bytes: Uint8Array, report?: AiReport): Promise<string> {
   if (!env.MISTRAL_API_KEY || bytes.length === 0) return ''
   try {
     const res = await fetch(ENDPOINT, {
@@ -46,15 +51,22 @@ export async function mistralOcr(env: Env, bytes: Uint8Array): Promise<string> {
         document: { type: 'image_url', image_url: `data:image/jpeg;base64,${toBase64(bytes)}` },
       }),
     })
-    if (!res.ok) return ''
+    if (!res.ok) {
+      const body = (await res.text().catch(() => '')).replace(/\s+/g, ' ').slice(0, 200)
+      if (report) report.error = logAi('mistralOcr', new Error(`HTTP ${res.status} ${body}`))
+      return ''
+    }
     const data = (await res.json()) as { pages?: { markdown?: unknown }[] }
     const pages = Array.isArray(data.pages) ? data.pages : []
-    return pages
+    const text = pages
       .map((p) => (typeof p?.markdown === 'string' ? p.markdown : ''))
       .filter(Boolean)
       .join('\n\n')
       .trim()
-  } catch {
+    if (!text && report) report.error = logAi('mistralOcr', new Error(`200 but no page text (${pages.length} page(s))`))
+    return text
+  } catch (err) {
+    if (report) report.error = logAi('mistralOcr', err)
     return ''
   }
 }

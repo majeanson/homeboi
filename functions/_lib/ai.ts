@@ -137,7 +137,7 @@ export interface AiReport {
 // and returns the human message so the caller can also stash it on an AiReport.
 // (This exists because '@cf/meta/llama-3.1-8b-instruct' was retired 2026-05-30 and
 // every feature failed quietly — see the MODEL note above.)
-function logAi(where: string, err: unknown): string {
+export function logAi(where: string, err: unknown): string {
   const msg = err instanceof Error ? err.message : String(err)
   console.error(`[ai] ${where} failed:`, msg)
   return msg
