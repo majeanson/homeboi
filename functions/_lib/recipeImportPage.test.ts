@@ -29,6 +29,11 @@ describe('a page the cook’s browser captured reads like the page we fetched', 
     })
   }
 
+  it('a captured tab title loses its « | Site » tail (prod, 2026-10-27: the audit flagged it as junk)', () => {
+    const r = readPage(sourceFromCapture({ url: 'https://www.recettes.qc.ca/r', title: 'Chili con carne | Recettes du Québec', jsonld: [], text: 'Ingrédients\n1 kg viande hachée\n2 oignons\nPréparation\nCuire.' }))
+    expect(r.draft?.title).toBe('Chili con carne')
+  })
+
   it('a captured page with no recipe block falls to its printed headings', () => {
     const r = readPage(
       sourceFromCapture({

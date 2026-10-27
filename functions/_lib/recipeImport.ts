@@ -571,6 +571,10 @@ export function htmlBlocksToLines(blockHtml: string): string[] {
 // The page's own name and picture, for a draft read from its TEXT (no structured
 // data to name it): og:title, else <title> without its « | Site » / « - Site » tail;
 // og:image. Attribute order varies by site — both orders are read.
+// A tab title's « | Site » / « – Site » tail, off — shared by pageMeta and the captured
+// page (document.title is a tab title too; left on, the audit flagged it as junk).
+export const stripTitleTail = (t: string): string | null => t.replace(/\s+[|–—-]\s+[^|–—-]{1,60}$/, '').trim() || null
+
 export function pageMeta(html: string): { title: string | null; image: string | null } {
   const og = (prop: string): string | null => {
     const a = html.match(new RegExp(`<meta\\b[^>]*\\bproperty=["']og:${prop}["'][^>]*\\bcontent=["']([^"']*)["']`, 'i'))
@@ -580,16 +584,15 @@ export function pageMeta(html: string): { title: string | null; image: string | 
   // The page's ONE <h1> is its name as printed (« Carrés au sucre »); og:title and
   // <title> are written for a share card or a tab (« Recette de carrés au sucre |
   // Recettes du Québec ») — they lose their « | Site » tail and serve only without an h1.
-  const tail = (t: string) => t.replace(/\s+[|–—-]\s+[^|–—-]{1,60}$/, '').trim() || null
   const h1s = [...html.matchAll(/<h1\b[^>]*>([\s\S]*?)<\/h1>/gi)].map((m) => clean(m[1])).filter((t) => t.length >= 2 && t.length <= 120)
   let title = h1s.length === 1 ? h1s[0] : null
   if (!title) {
     const o = og('title')
-    title = o ? tail(o) : null
+    title = o ? stripTitleTail(o) : null
   }
   if (!title) {
     const t = html.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i)
-    title = t ? tail(clean(t[1])) : null
+    title = t ? stripTitleTail(clean(t[1])) : null
   }
   return { title: title ? title.slice(0, 200) : null, image: normalizeImage(og('image')) }
 }

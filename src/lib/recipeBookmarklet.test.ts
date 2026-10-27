@@ -15,10 +15,12 @@ const el = (e: FakeEl) => ({ ...e, getAttribute: (k: string) => e.attrs?.[k] ?? 
 
 function fakePage(opts: { origin?: string; text?: string; scripts?: FakeEl[]; metas?: FakeEl[]; props?: FakeEl[]; wprm?: string[] } = {}) {
   const loc = { origin: opts.origin ?? 'https://www.recettes.qc.ca', href: 'https://www.recettes.qc.ca/recettes/recette/chili-con-carne-167900' }
-  const main = el({ innerText: opts.text ?? 'Chili con carne\nIngrédients\n1 kg viande hachée' })
+  // The WHOLE page's text is what goes home — a `main` / `article` the site adds by
+  // script is not the recipe (the live recettes.qc.ca page came home empty that way).
+  const main = el({ innerText: 'NOT THIS — a sidebar article' })
   const doc = {
     title: 'Chili con carne | Recettes du Québec',
-    body: el({ innerText: 'BODY' }),
+    body: el({ innerText: opts.text ?? 'Chili con carne\nIngrédients\n1 kg viande hachée' }),
     getElementsByTagName: (t: string) => (t === 'script' ? opts.scripts ?? [] : t === 'meta' ? opts.metas ?? [] : []).map(el),
     querySelector: (q: string) => (q.startsWith('main') ? main : null),
     querySelectorAll: (q: string) =>
@@ -69,10 +71,10 @@ describe('the « Envoyer à Babillard » bookmark, run on a fake page', () => {
     expect(sent(p.loc.href).extras).toEqual({ ricardo: props, wprm: { ingredients: ['Beef', 'To cook'], steps: [] } })
   })
 
-  it('caps the text at 60 KB, and drops it first when the whole would pass ~200 KB', () => {
-    const big = fakePage({ text: 'é'.repeat(70_000) })
+  it('caps the text at 120 KB, and drops it first when the whole would pass ~200 KB', () => {
+    const big = fakePage({ text: 'x'.repeat(130_000) })
     big.run('https://babillard.marcportal.com')
-    expect(sent(big.loc.href).text).toHaveLength(60_000)
+    expect(sent(big.loc.href).text).toHaveLength(120_000)
     const huge = fakePage({ text: 'x'.repeat(50_000), scripts: [{ type: 'application/ld+json', textContent: '{"@type":"Recipe","name":"' + 'y'.repeat(149_000) + '"}' }] })
     huge.run('https://babillard.marcportal.com')
     const page = sent(huge.loc.href)

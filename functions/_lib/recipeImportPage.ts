@@ -13,6 +13,7 @@ import {
   parseRecipeMicrodata,
   recipeTextWindow,
   regroupIngredientsInText,
+  stripTitleTail,
 } from './recipeImport'
 
 // THE PAGE → DRAFT SEAM (2026-10-27). Everything the URL import does to a page once it
@@ -60,7 +61,9 @@ export function sourceFromCapture(p: CapturedPage): PageSource {
     .map((b) => parseJsonLdText(b.slice(0, 500_000)))
     .filter((v) => v !== undefined)
   const text = (typeof p.text === 'string' ? p.text : '').replace(/\r\n?/g, '\n').slice(0, CAP_TEXT)
-  const title = typeof p.title === 'string' ? p.title.replace(/\s+/g, ' ').trim().slice(0, 200) || null : null
+  // document.title is a TAB title (« Chili con carne | Recettes du Québec ») — same tail
+  // rule as a fetched page's <title>.
+  const title = typeof p.title === 'string' ? stripTitleTail(p.title.replace(/\s+/g, ' ').trim())?.slice(0, 200) ?? null : null
   const extras = p.extras && typeof p.extras === 'object' && typeof p.extras.ricardo === 'string' ? { ricardo: p.extras.ricardo.slice(0, 200_000) } : null
   return { url: p.url, html: null, blocks, text, meta: { title, image: normalizeImage(p.image) }, extras }
 }

@@ -13,9 +13,14 @@
 // What it collects: the address, the title, og:image, every `application/ld+json`
 // block's RAW text (parsed server-side, never here), Ricardo's `data-react-app-props`
 // (its ingredient/step groups) and WPRM's group names when present, and as the text
-// fallback the page's innerText (main / article / the instructions, else the body),
-// capped at 60 KB. Over ~200 KB the text goes first. No cookie, no request to Babillard
-// from their page: it only navigates.
+// fallback the WHOLE page's innerText (document.body), capped at 120 KB — the server
+// windows it onto the recipe (recipeTextWindow), exactly as it windows a fetched page's
+// htmlToText, which is what the corpus proves readable for every blocked site. It used
+// to send `main` / `article` / the instructions block instead: on Marc's iPhone the live
+// recettes.qc.ca page answered « Rien trouvé » (2026-10-27) while the same page's full
+// text parses to 16 ingredients + 10 steps — a container the site adds by script is not
+// the recipe, and guessing one is how a capture comes home empty. Over ~200 KB the text
+// goes first. No cookie, no request to Babillard from their page: it only navigates.
 //
 // WHY THE BODY IS IN THE BOOKMARK ITSELF, not a loader like Flipp's: Flipp's body grew
 // past ~3 KB and iOS Safari stopped running it as an address, so it loads
@@ -36,7 +41,7 @@ export const RECIPE_BOOKMARKLET_BODY =
   'var g=function(c){var a=[],n=d.querySelectorAll(c),k;for(k=0;k<n.length;k++){a.push(String(n[k].textContent||"").trim())}return a};' +
   'var wi=g(".wprm-recipe-ingredient-group-name"),ws=g(".wprm-recipe-instruction-group-name");if(wi.length||ws.length){ex.wprm={ingredients:wi,steps:ws}}' +
   'if(ex.ricardo||ex.wprm){p.extras=ex}' +
-  'var r=d.querySelector("main, article, [itemprop=recipeInstructions]")||d.body;p.text=cap(r&&r.innerText,60000);' +
+  'p.text=cap(d.body&&d.body.innerText,120000);' +
   'var enc=function(o){var b=btoa(unescape(encodeURIComponent(JSON.stringify(o))));b=b.split("+").join("-").split("/").join("_");while(b.charAt(b.length-1)==="="){b=b.slice(0,-1)}return b};' +
   'var e=enc(p);if(e.length>200000){p.text="";e=enc(p)}if(e.length>200000){delete p.extras;e=enc(p)}' +
   'l.href=B+"/kitchen/recipe/new#import="+e})'

@@ -186,5 +186,12 @@ export const onRequestPost = authed(async (ctx, actor) => {
   // We read the page fine, there was just no recipe in it (an article or a listicle
   // — /recettes/article/… rather than /recettes/recette/… — lands here). Let the UI
   // tell the user to paste instead.
-  return ok({ ...draft({ title: r.title, image: r.image, source: src.url, empty: true, reason: 'no-recipe' }), fetched })
+  // A captured page that read as nothing says what arrived (blocks, characters): the
+  // one clue a cook can give back when their phone's capture differs from ours
+  // (2026-10-27: « Rien trouvé » on iPhone, with no way to tell what the bookmark sent).
+  return ok({
+    ...draft({ title: r.title, image: r.image, source: src.url, empty: true, reason: 'no-recipe' }),
+    fetched,
+    ...(fetched === 'bookmarklet' ? { received: { blocks: src.blocks.length, chars: src.text.length } } : {}),
+  })
 })

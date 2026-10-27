@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../i18n'
-import { api, isStatus } from '../lib/api'
+import { api, ApiError, isStatus } from '../lib/api'
 import { useWrite } from '../lib/write'
 import { useConfirm } from '../lib/confirm'
 import { StatusMessage } from './StatusMessage'
@@ -695,6 +695,8 @@ export function RecipeForm({
           reason?: 'blocked' | 'no-recipe'
           transcript?: string
           fetched?: 'direct' | 'browser' | 'reader' | 'bookmarklet'
+          // What a bookmark capture amounted to when it read as nothing (diagnostic).
+          received?: { blocks: number; chars: number }
         }
       >('recipe-import', {
         method: 'POST',
@@ -706,7 +708,10 @@ export function RecipeForm({
       if (r.empty || (!r.ingredients.length && !r.steps.length && !r.title)) {
         // A site that refuses us is not the same failure as a page with no recipe on
         // it — and neither is the AI being off. Say which one it was.
-        setImportMsg(r.reason === 'blocked' ? t.recipes.importBlocked : t.recipes.importFail)
+        // A bookmark capture that came home empty says what it carried — the clue that
+        // tells a wrong capture from a page with no recipe on it.
+        const detail = r.fetched === 'bookmarklet' && r.received ? ` ${t.recipes.importReceived(r.received.blocks, r.received.chars)}` : ''
+        setImportMsg((r.reason === 'blocked' ? t.recipes.importBlocked : t.recipes.importFail) + detail)
         setImportBlockedHere(r.reason === 'blocked')
         setShowImport(true)
         closeReadReview()
@@ -749,7 +754,10 @@ export function RecipeForm({
         setShowImport(false)
       }
     } catch (e) {
-      setImportMsg(isStatus(e, 503) ? t.recipes.aiOff : t.recipes.importFail)
+      // A refused request is not « nothing found »: the status is the clue (a 400 on a
+      // capture, a 413, a 429 budget) — shown small, so a report can name it.
+      const status = e instanceof ApiError ? ` (${e.status})` : ''
+      setImportMsg(isStatus(e, 503) ? t.recipes.aiOff : t.recipes.importFail + status)
       closeReadReview()
     } finally {
       setImporting(false)

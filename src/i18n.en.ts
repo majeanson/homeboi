@@ -1275,6 +1275,7 @@ export const EN: typeof FR = {
     importFail: 'Nothing found — try pasting the text.',
     importBlocked: 'This site blocks importing. Copy the recipe text and paste it here.',
     importBlockedBookmarklet: 'Or install the “Send to Babillard” bookmark.',
+    importReceived: (blocks: number, chars: number) => `Bookmark: ${blocks} block${blocks === 1 ? '' : 's'}, ${chars} characters received.`,
     importDoorBrowser: 'Page opened by a remote browser.',
     importDoorBookmarklet: 'Page sent by your bookmark.',
     importDuplicate: (title: string) => `Already in the book: ${title}`,

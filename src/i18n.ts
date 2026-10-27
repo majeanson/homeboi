@@ -1485,6 +1485,8 @@ export const FR = {
     importBlocked: 'Ce site bloque l’importation. Copie le texte de la recette et colle-le ici.',
     // …ou la porte qui marche toujours : le navigateur de la personne (lib/recipeBookmarklet).
     importBlockedBookmarklet: 'Ou installe le signet « Envoyer à Babillard ».',
+    // Ce que le signet a rapporté quand la page s'est lue comme rien — l'indice à redonner.
+    importReceived: (blocks: number, chars: number) => `Signet : ${blocks} bloc${blocks === 1 ? '' : 's'}, ${chars} caractères reçus.`,
     // Par où la page est venue, quand ce n'est pas notre simple lecture.
     importDoorBrowser: 'Page ouverte par un navigateur à distance.',
     importDoorBookmarklet: 'Page envoyée par ton signet.',
