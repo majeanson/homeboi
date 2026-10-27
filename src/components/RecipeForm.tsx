@@ -756,7 +756,7 @@ export function RecipeForm({
     } catch (e) {
       // A refused request is not « nothing found »: the status is the clue (a 400 on a
       // capture, a 413, a 429 budget) — shown small, so a report can name it.
-      const status = e instanceof ApiError ? ` (${e.status})` : ''
+      const status = e instanceof ApiError ? ` (${e.status}${e.message ? ` : ${e.message.slice(0, 80)}` : ''})` : ''
       setImportMsg(isStatus(e, 503) ? t.recipes.aiOff : t.recipes.importFail + status)
       closeReadReview()
     } finally {
