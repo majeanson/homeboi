@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../i18n'
-import { api, ApiError, isStatus } from '../lib/api'
+import { api, ApiError, hasSessionCookie, isStatus } from '../lib/api'
 import { useWrite } from '../lib/write'
 import { useConfirm } from '../lib/confirm'
 import { StatusMessage } from './StatusMessage'
@@ -34,10 +34,10 @@ import { EntityCombobox, type ComboOption } from './EntityCombobox'
 import { ZoomableImg } from './ZoomableImg'
 import { useModal } from '../lib/useModal'
 import { writeFailed } from '../lib/writeFailed'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useRecipes } from '../lib/queryHooks'
 import { sameSource } from '../lib/recipes'
-import type { CapturedRecipePage } from '../lib/recipeBookmarklet'
+import { stashPendingImport, type CapturedRecipePage } from '../lib/recipeBookmarklet'
 
 // In the EDITOR a row is a section row as soon as it carries the "## " marker —
 // even with the title still empty ("## "), so typing the name doesn't flip the
@@ -71,6 +71,7 @@ export function RecipeForm({
   autoImport?: AutoImport | null
 }) {
   const t = useT()
+  const nav = useNavigate()
   const write = useWrite()
   const confirm = useConfirm()
   // "Read a photo" is pure vision AI — hide it when AI is off. Import stays: it
@@ -754,6 +755,14 @@ export function RecipeForm({
         setShowImport(false)
       }
     } catch (e) {
+      // The bookmark's capture met a browser with NO session — on iOS, Safari and the
+      // home-screen app keep separate sign-ins (prod, 2026-10-27: a 403 with no CSRF
+      // cookie, read as « Rien trouvé »). Park the capture, sign in once here, come back.
+      if (page && (isStatus(e, 401) || (isStatus(e, 403) && !hasSessionCookie()))) {
+        stashPendingImport(page)
+        nav(`/login?next=${encodeURIComponent('/kitchen/recipe/new')}`, { replace: true })
+        return
+      }
       // A refused request is not « nothing found »: the status is the clue (a 400 on a
       // capture, a 413, a 429 budget) — shown small, so a report can name it.
       const status = e instanceof ApiError ? ` (${e.status}${e.message ? ` : ${e.message.slice(0, 80)}` : ''})` : ''

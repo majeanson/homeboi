@@ -1900,6 +1900,7 @@ export const EN: typeof FR = {
     submit: 'Enter',
     error: 'Sign-in failed — check the email and password.',
     nextStep: 'You’ll land on the board.',
+    importPending: 'Your bookmark sent a recipe. Sign in once here too — on iPhone, Safari and the home-screen app each keep their own sign-in.',
     noAccount: 'First time here?',
     gotoSignup: 'Create my household',
   },

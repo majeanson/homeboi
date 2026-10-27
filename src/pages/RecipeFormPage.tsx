@@ -7,7 +7,7 @@ import { Loading } from '../components/Fallback'
 import { isGuest } from '../lib/device'
 import { useRecipes } from '../lib/queryHooks'
 import { useSceneClose } from '../lib/sceneNav'
-import { parseRecipeHash } from '../lib/recipeBookmarklet'
+import { parseRecipeHash, takePendingImport } from '../lib/recipeBookmarklet'
 
 // /kitchen/recipe/new and /kitchen/recipe/:id/edit — the recipe builder as a
 // full-screen route. No :id ⇒ a blank create form; with :id ⇒ prefilled from the
@@ -32,7 +32,11 @@ export function RecipeFormPage() {
     const page = parseRecipeHash(loc.hash)
     if (page) return { page }
     const url = new URLSearchParams(loc.search).get('import')?.trim()
-    return url && /^https?:\/\//i.test(url) ? { url } : null
+    if (url && /^https?:\/\//i.test(url)) return { url }
+    // The way back from a sign-in the bookmark's capture had to wait for
+    // (lib/recipeBookmarklet, stashPendingImport) — read once, cleared by the read.
+    const pending = takePendingImport()
+    return pending ? { page: pending } : null
   })
   useEffect(() => {
     if (!loc.hash.startsWith('#import=') && !new URLSearchParams(loc.search).has('import')) return

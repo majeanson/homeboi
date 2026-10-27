@@ -75,18 +75,56 @@ export function parseRecipeHash(hash: string): CapturedRecipePage | null {
   const m = /^#import=([A-Za-z0-9\-_]+)$/.exec(hash || '')
   if (!m) return null
   try {
-    const json = decodeURIComponent(escape(atob(m[1].replace(/-/g, '+').replace(/_/g, '/'))))
-    const d = JSON.parse(json) as Partial<CapturedRecipePage>
-    if (!d || d.v !== 1 || typeof d.url !== 'string' || !/^https?:\/\//i.test(d.url)) return null
-    return {
-      v: 1,
-      url: d.url,
-      title: typeof d.title === 'string' ? d.title : '',
-      image: typeof d.image === 'string' ? d.image : '',
-      jsonld: Array.isArray(d.jsonld) ? d.jsonld.filter((x): x is string => typeof x === 'string') : [],
-      text: typeof d.text === 'string' ? d.text : '',
-      ...(d.extras && typeof d.extras === 'object' ? { extras: d.extras } : {}),
-    }
+    return coerceCapturedPage(JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g, '+').replace(/_/g, '/'))))))
+  } catch {
+    return null
+  }
+}
+
+/** A captured page out of untrusted JSON (the hash, the parked copy), or null. */
+function coerceCapturedPage(v: unknown): CapturedRecipePage | null {
+  const d = v as Partial<CapturedRecipePage> | null
+  if (!d || typeof d !== 'object' || d.v !== 1 || typeof d.url !== 'string' || !/^https?:\/\//i.test(d.url)) return null
+  return {
+    v: 1,
+    url: d.url,
+    title: typeof d.title === 'string' ? d.title : '',
+    image: typeof d.image === 'string' ? d.image : '',
+    jsonld: Array.isArray(d.jsonld) ? d.jsonld.filter((x): x is string => typeof x === 'string') : [],
+    text: typeof d.text === 'string' ? d.text : '',
+    ...(d.extras && typeof d.extras === 'object' ? { extras: d.extras } : {}),
+  }
+}
+
+// THE CAPTURE, PARKED ACROSS A SIGN-IN. On iOS the home-screen app and Safari keep
+// SEPARATE cookie jars: Marc was signed in on the app, the bookmark ran in Safari, and
+// the page it sent home met a Safari that had never signed in — a 403 (no CSRF cookie)
+// dressed as « Rien trouvé » (prod, 2026-10-27). So a capture that hits a signed-out
+// browser is parked here, the person signs in ONCE in that browser (/login?next=), and
+// the recipe form picks it up on the way back. sessionStorage: this tab, this hop,
+// nothing older; private mode without storage just needs a second tap of the bookmark.
+const PENDING_KEY = 'babillard-pending-import'
+export function stashPendingImport(page: CapturedRecipePage): void {
+  try {
+    sessionStorage.setItem(PENDING_KEY, JSON.stringify(page))
+  } catch {
+    /* no storage (private mode) — the bookmark can simply be tapped again after signing in */
+  }
+}
+export function hasPendingImport(): boolean {
+  try {
+    return sessionStorage.getItem(PENDING_KEY) !== null
+  } catch {
+    return false
+  }
+}
+/** The parked capture, once — reading it clears it. */
+export function takePendingImport(): CapturedRecipePage | null {
+  try {
+    const raw = sessionStorage.getItem(PENDING_KEY)
+    if (raw === null) return null
+    sessionStorage.removeItem(PENDING_KEY)
+    return coerceCapturedPage(JSON.parse(raw))
   } catch {
     return null
   }

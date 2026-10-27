@@ -313,3 +313,36 @@ test('a page with several recipes: chips name them, a tap reads the other one', 
   await expect(page.locator('.recipe-title-input')).toHaveValue('Sauce au caramel')
   expect(picks).toEqual([0, 1])
 })
+
+test('the bookmark lands in a browser with no session (iPhone: Safari ≠ the home-screen app): sign in once, the capture follows', async ({ page }) => {
+  // Prod, 2026-10-27: signed in on the home-screen app, the bookmark ran in Safari, whose
+  // cookie jar had never signed in — a 403 (no CSRF cookie) read as « Rien trouvé ».
+  const captured = { v: 1, url: 'https://www.recettes.qc.ca/recettes/recette/chili-con-carne-167900', title: 'Chili con carne', image: '', jsonld: [], text: 'Ingrédients\n1 kg viande hachée\nPréparation\nCuire.' }
+  const hash = Buffer.from(JSON.stringify(captured), 'utf8').toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+  await page.setViewportSize({ width: 430, height: 1000 })
+  await mockApi(page)
+  let calls = 0
+  await page.route('**/api/recipe-import', (r) => {
+    calls++
+    // No session in THIS browser: the Worker's CSRF gate answers first.
+    if (calls === 1) return r.fulfill({ status: 403, contentType: 'application/json', body: JSON.stringify({ error: 'Bad or missing CSRF token.' }) })
+    return r.fulfill(json({ ...SITE_DRAFT, title: 'Chili con carne', source: captured.url, fetched: 'bookmarklet' }))
+  })
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+  await page.goto(`/kitchen/recipe/new#import=${hash}`)
+
+  // Parked, and sent to sign in — with the reason on the login page, nothing lost.
+  await expect(page).toHaveURL(/\/login\?next=%2Fkitchen%2Frecipe%2Fnew$/, { timeout: 15_000 })
+  await expect(page.locator('.auth__hint').first()).toContainText('signet')
+  expect(await page.evaluate(() => sessionStorage.getItem('babillard-pending-import'))).not.toBeNull()
+
+  await page.locator('input[type="email"]').fill('marc@example.test')
+  await page.locator('input[type="password"]').fill('x')
+  await page.getByRole('button', { name: 'Entrer' }).click()
+
+  // Back on the form: the parked capture runs by itself and lands.
+  await expect(page.locator('.recipe-title-input')).toHaveValue('Chili con carne', { timeout: 15_000 })
+  await expect(page.getByTestId('import-via')).toContainText('Page envoyée par ton signet.')
+  expect(calls).toBe(2)
+  expect(await page.evaluate(() => sessionStorage.getItem('babillard-pending-import'))).toBeNull()
+})

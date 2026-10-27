@@ -116,3 +116,24 @@ describe('parseRecipeHash', () => {
     expect(parseRecipeHash('#import=' + encodeRecipePage({ ...page, url: 'javascript:alert(1)' }))).toBeNull()
   })
 })
+
+describe('the capture parked across a sign-in (iPhone: Safari ≠ the home-screen app)', () => {
+  const page: CapturedRecipePage = { v: 1, url: 'https://www.zeste.ca/recettes/x', title: 'X', image: '', jsonld: [], text: 'Ingrédients\n1 oeuf' }
+  it('stash → has → take, and the take clears it', async () => {
+    const m = await import('./recipeBookmarklet')
+    sessionStorage.clear()
+    expect(m.hasPendingImport()).toBe(false)
+    m.stashPendingImport(page)
+    expect(m.hasPendingImport()).toBe(true)
+    expect(m.takePendingImport()).toEqual(page)
+    expect(m.hasPendingImport()).toBe(false)
+    expect(m.takePendingImport()).toBeNull()
+  })
+  it('junk in storage reads as nothing', async () => {
+    const m = await import('./recipeBookmarklet')
+    sessionStorage.setItem('babillard-pending-import', '{"v":2}')
+    expect(m.takePendingImport()).toBeNull()
+    sessionStorage.setItem('babillard-pending-import', 'not json')
+    expect(m.takePendingImport()).toBeNull()
+  })
+})

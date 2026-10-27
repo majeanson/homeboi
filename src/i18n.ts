@@ -2168,6 +2168,9 @@ export const FR = {
     submit: 'Entrer',
     error: 'Connexion impossible — vérifie le courriel et le mot de passe.',
     nextStep: 'Tu atterriras sur le babillard.',
+    // Le signet a envoyé une recette à un navigateur pas connecté (iPhone : Safari et
+    // l'app de l'écran d'accueil ont chacun leur connexion). Rien n'est perdu.
+    importPending: 'Ton signet a envoyé une recette. Connecte-toi une fois ici aussi — sur iPhone, Safari et l’app de l’écran d’accueil ont chacun leur connexion.',
     noAccount: 'Première fois ?',
     gotoSignup: 'Créer ma maisonnée',
   },

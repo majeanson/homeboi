@@ -39,6 +39,10 @@ function readCsrfCookie(): string | null {
   const m = document.cookie.match(/(?:^|;\s*)bb_csrf=([^;]+)/)
   return m ? decodeURIComponent(m[1]) : null
 }
+/** Does THIS browser hold a session at all? (The CSRF cookie is the readable half of
+ *  it.) On iOS, Safari and the home-screen app keep separate cookie jars — a page that
+ *  arrives in Safari from a bookmark may be signed out there while the app is not. */
+export const hasSessionCookie = (): boolean => readCsrfCookie() !== null
 
 // The UI's active locale, persisted by main.tsx. Sent so server-side AI
 // (capture router, meal suggestion) answers in the language the user sees.

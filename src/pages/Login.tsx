@@ -8,6 +8,7 @@ import { api, isStatus } from '../lib/api'
 import { HEALTH_KEY } from '../lib/queryKeys'
 import { useAuth } from '../lib/auth'
 import { useSurface } from '../lib/surface'
+import { hasPendingImport } from '../lib/recipeBookmarklet'
 
 export function Login() {
   const t = useT()
@@ -24,6 +25,7 @@ export function Login() {
   // Unknown (still loading) reads as yes — the door is a Link, not a promise.
   const health = useQuery({ queryKey: HEALTH_KEY, queryFn: () => api<{ mail?: boolean }>('health') })
   const canReset = health.data?.mail !== false
+  const pendingRecipe = (params.get('next') ?? '').startsWith('/kitchen/recipe/new') && hasPendingImport()
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -55,6 +57,9 @@ export function Login() {
       <main className="narrow auth">
         <h1>{t.login.title}</h1>
         <p className="lead">{t.login.lead}</p>
+        {/* A recipe the bookmark captured is waiting for this browser to sign in (iOS:
+            Safari ≠ the home-screen app) — say why we are here, and that nothing is lost. */}
+        {pendingRecipe && <p className="auth__hint mono">{t.login.importPending}</p>}
         <form className="form auth__card" onSubmit={submit}>
           <label className="field">
             <span className="field__label">{t.login.email}</span>
