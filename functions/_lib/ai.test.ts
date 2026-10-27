@@ -251,7 +251,30 @@ describe('transcribeImage — primary vision model, Llama fallback', () => {
     expect(t).toBe('Crêpes\n250 ml de farine')
     expect(report.visionModel).toBe(VISION_PRIMARY_ID)
     expect(run.mock.calls[0][0]).toBe(VISION_PRIMARY_ID)
-    expect((run.mock.calls[0][1] as unknown as { image: string }).image).toMatch(/^data:image\/jpeg;base64,/)
+    // The VERIFIED image shape (Workers AI REST, 2026-10-27): OpenAI content parts with
+    // `image_url: { url: data:… }` — a top-level `image` made the model answer « Je ne
+    // peux pas voir d'images » and, on prod, transcribe a story for a biscuit card.
+    const input = run.mock.calls[0][1] as unknown as { messages: { content: { type: string; image_url?: { url: string } }[] }[]; image?: unknown }
+    expect(input.image).toBeUndefined()
+    expect(input.messages[0].content.map((c) => c.type)).toEqual(['text', 'image_url'])
+    expect(input.messages[0].content[1].image_url?.url).toMatch(/^data:image\/jpeg;base64,/)
+  })
+  it('the primary answers in the OpenAI shape (choices[0].message.content) → read as text', async () => {
+    const run = vi.fn(async () => ({ choices: [{ message: { content: 'Biscuits\n2 œufs' } }] }))
+    const report = { error: null as string | null, visionModel: null as string | null }
+    expect(await transcribeImage({ DB: {}, AI: { run } } as unknown as Env, bytes, 'fr', report)).toBe('Biscuits\n2 œufs')
+    expect(report.visionModel).toBe(VISION_PRIMARY_ID)
+    expect(run).toHaveBeenCalledTimes(1)
+  })
+  it('a primary that says it sees no image is NOT a transcript → the Llama read', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const run = vi
+      .fn()
+      .mockResolvedValueOnce({ choices: [{ message: { content: "Je ne peux pas voir d'images, mais je peux vous aider à transcrire du texte." } }] })
+      .mockResolvedValueOnce({ response: 'Crêpes' })
+    const report = { error: null as string | null, visionModel: null as string | null }
+    expect(await transcribeImage({ DB: {}, AI: { run } } as unknown as Env, bytes, 'fr', report)).toBe('Crêpes')
+    expect(report.visionModel).toBe(VISION_MODEL_ID)
   })
   it('the primary throws (or answers nothing) → the Llama read, named', async () => {
     for (const first of [() => Promise.reject(new Error('5006: bad input')), () => Promise.resolve({ response: '' })]) {

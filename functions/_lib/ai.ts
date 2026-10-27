@@ -599,17 +599,34 @@ export async function transcribeImage(
       .trim()
   // The stronger model first (see VISION_PRIMARY_ID); any error or an empty reply → the
   // Llama read below, unchanged.
+  //
+  // THE IMAGE SHAPE IS VERIFIED (2026-10-27, against the account's Workers AI REST
+  // endpoint with a rendered card): Mistral Small wants the OpenAI content PARTS —
+  // `content: [{type:'text', text}, {type:'image_url', image_url:{url:'data:…'}}]` — and
+  // answers `choices[0].message.content`. The first shipped shape (`messages` + a
+  // top-level `image`) made it answer « Je ne peux pas voir d'images » — and on prod,
+  // with no image in sight, it TRANSCRIBED A STORY (« Les 1001 nuits… », 46 steps) for
+  // a biscuit card, without an error, so the Llama fallback never ran. A model that
+  // says it sees no image is treated as no read, not as text.
   try {
     const res = (await runModel(env, VISION_PRIMARY_ID, {
-      messages: [{ role: 'user', content: prompt }],
-      image: dataUrl(bytes),
+      messages: [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: prompt },
+            { type: 'image_url', image_url: { url: dataUrl(bytes) } },
+          ],
+        },
+      ],
       max_tokens: 2000,
-    })) as { response?: unknown }
-    const text = clean(res.response)
-    if (text) {
+    })) as VisionReply
+    const text = clean(visionText(res))
+    if (text && !BLIND_REPLY.test(text)) {
       if (report) report.visionModel = VISION_PRIMARY_ID
       return text
     }
+    logAi('transcribeImage (primary)', new Error(`no usable read: ${visionSnippet(visionText(res))}`))
   } catch (err) {
     logAi('transcribeImage (primary)', err)
   }
@@ -633,6 +650,19 @@ export async function transcribeImage(
     return ''
   }
 }
+
+// A vision reply, in either shape Workers AI uses: the classic `response` string, or
+// the OpenAI-compatible `choices[0].message.content` that the `messages` input gets.
+type VisionReply = { response?: unknown; choices?: { message?: { content?: unknown } }[] }
+export function visionText(res: VisionReply | null | undefined): string {
+  if (!res) return ''
+  if (typeof res.response === 'string') return res.response
+  const c = res.choices?.[0]?.message?.content
+  return typeof c === 'string' ? c : ''
+}
+// A text model answering a vision prompt WITHOUT the image says so, in its own words —
+// that line is a refusal, never a transcript (seen live, 2026-10-27).
+const BLIND_REPLY = /ne peux pas voir|cannot see (the|an|any) image|can't see (the|an|any) image|no image (was )?(provided|attached)|aucune image/i
 
 // A short, log-safe peek at what the vision model actually returned, so an empty
 // read carries a clue (prose? a refusal? blank?) instead of a bare "no JSON".
@@ -692,12 +722,24 @@ export async function pingVisionModel(env: Env, model: string = VISION_MODEL): P
   if (!env.AI) return { ok: false, ms: 0, model, detail: 'AI binding not configured' }
   try {
     const bytes = Uint8Array.from(atob(PING_PNG), (c) => c.charCodeAt(0))
+    // Same shapes as transcribeImage — the ping must exercise the call that reads.
     const input =
       model === VISION_PRIMARY_ID
-        ? { messages: [{ role: 'user', content: 'Reply with the single word: OK.' }], image: dataUrl(bytes), max_tokens: 5 }
+        ? {
+            messages: [
+              {
+                role: 'user',
+                content: [
+                  { type: 'text', text: 'Reply with the single word: OK.' },
+                  { type: 'image_url', image_url: { url: dataUrl(bytes) } },
+                ],
+              },
+            ],
+            max_tokens: 5,
+          }
         : { image: [...bytes], prompt: 'Reply with the single word: OK.', max_tokens: 5 }
-    const res = (await runModel(env, model, input)) as { response?: unknown }
-    return { ok: true, ms: Date.now() - t0, model, detail: pingDetail(res) || '(ran)' }
+    const res = (await runModel(env, model, input)) as VisionReply
+    return { ok: true, ms: Date.now() - t0, model, detail: pingDetail({ response: visionText(res) }) || '(ran)' }
   } catch (err) {
     return { ok: false, ms: Date.now() - t0, model, detail: logAi('pingVisionModel', err) }
   }
