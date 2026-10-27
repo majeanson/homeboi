@@ -60,3 +60,19 @@ test('a shared non-Maps text gets no business button — capture stays the one p
   await expect(page.getByRole('button', { name: 'Ajouter' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Ajouter un commerce' })).toHaveCount(0)
 })
+
+// A shared web link that is not a Maps place may be a recipe (2026-10-27): a second door
+// into the recipe import, opened on that link; the capture stays the default.
+test('sharing a web link offers « Importer comme recette » → the recipe import opens on it', async ({ page }) => {
+  const url = 'https://www.ricardocuisine.com/recettes/4530-tarte-au-sucre-2'
+  await page.goto(`/share?text=${encodeURIComponent('Regarde ça ' + url)}`)
+  await expect(page.getByRole('button', { name: 'Ajouter un commerce' })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Importer comme recette' }).click()
+  await expect(page).toHaveURL(/\/kitchen\/recipe\/new/)
+})
+
+test('plain shared text offers no recipe import', async ({ page }) => {
+  await page.goto(`/share?text=${encodeURIComponent('acheter du lait demain')}`)
+  await expect(page.getByRole('button', { name: 'Ajouter' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Importer comme recette' })).toHaveCount(0)
+})

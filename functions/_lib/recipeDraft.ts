@@ -1,8 +1,9 @@
 import type { Env } from './env'
-import { TEXT_MODEL, structureRecipe, type Lang } from './ai'
+import { SELECTION_MODEL, type LineSelection, type Lang, selectRecipeLines, selectionLines } from './ai'
 import { detectLang } from './langDetect'
-import { MAX_STEPS, NO_TIMES, type RecipeTimes, linesWithForeignNumbers, parseRecipeText, refineSteps } from './recipeImport'
+import { MAX_STEPS, NO_TIMES, type RecipeTimes, parseRecipeText, parseYield, refineSteps, textToMinutes } from './recipeImport'
 import { jsonFragmentsToText, repairRecipeRead, stripTranscriptPreamble } from './recipeRepair'
+import { dropDanglingHeadings, makeSectionHeading } from './recipeSections'
 
 // THE ONE text → draft path (2026-09-24). It lived inline in api/recipe-import's paste
 // branch, and api/recipe-vision had its own: the vision model was asked to read AND
@@ -33,17 +34,15 @@ export interface DraftOut {
   notes?: string | null
   // HOW this draft was structured, for the photo-read report (RecipeReadReview's
   // « Rapport » tab): 'headings' = the deterministic no-AI parser (real section
-  // headings found), 'ai' = the generative structuring model (named in `model`),
+  // headings found), 'ai' = the text model CHOSE the lines (named in `model`; every word
+  // is still the source's — it picks line numbers, never writes),
   // 'heuristic' = the shape-based best effort (no AI available or AI empty-handed),
   // 'jsonld' / 'microdata' = the page's own structured data (URL import, no AI).
   structuring?: 'headings' | 'ai' | 'heuristic' | 'jsonld' | 'microdata'
   model?: string | null
-  // Lines whose numbers do NOT appear in the source text — the structuring model
-  // changed or invented them (linesWithForeignNumbers). Only ever set with
-  // structuring 'ai'; the verify panel flags these lines "à confirmer".
-  suspect?: string[]
-  // The text the model organised (structuring 'ai' only, capped) — the verify panel
-  // shows it beside the lines, the way the photo read shows the photo.
+  // The source the model chose from, NUMBERED as the model saw it (structuring 'ai'
+  // only, capped) — the verify panel shows it beside the lines, the way the photo read
+  // shows the photo.
   transcript?: string
   empty?: boolean
   // Why we came back empty-handed, so the UI can say something true instead of one
@@ -91,35 +90,63 @@ export function heuristicIsGood(d: DraftOut): boolean {
   return closed * 10 >= steps.length * 8
 }
 
-// The text model organises `text` (one call, behind runModel's budget). Null when it
-// came back empty-handed. Servings, times and the title come from the TEXT's own
-// read (`known` — explicit lines only), never from the model.
-export async function draftByModel(
-  env: Env,
-  text: string,
-  lang: Lang,
-  known: Pick<DraftOut, 'title' | 'servings' | 'servingsUnit' | 'times'>,
-  hint?: string,
-): Promise<DraftOut | null> {
-  const r = await structureRecipe(env, text, lang, hint)
-  if (!r.ingredients.length && !r.steps.length) return null
-  const steps = refineSteps(r.steps)
+type Known = Pick<DraftOut, 'title' | 'servings' | 'servingsUnit' | 'times'> & { notes?: string | null }
+
+// The text model CHOOSES the lines of `text` (one call, behind runModel's budget —
+// _lib/ai selectRecipeLines); the draft is then built from the source by index, so no
+// word in it was written by a model. Null when the model came back empty-handed.
+// Servings, times and the title come from the TEXT's own read (`known`) first; the lines
+// the model pointed at only fill what that read left empty.
+export async function draftByModel(env: Env, text: string, lang: Lang, known: Known, hint?: string): Promise<DraftOut | null> {
+  const lines = selectionLines(text)
+  const sel = await selectRecipeLines(env, lines, lang, hint)
+  if (!sel) return null
+  const d = draftFromSelection(lines, sel, known)
+  if (!d) return null
   return draft({
-    // The transcript's own title first — it is the printed one. The model's is a
-    // fallback: asked to organise, it titled an English recipe « Recette de
-    // crevettes » (corpus, 2026-09-24).
-    title: known.title ?? r.title,
-    ingredients: r.ingredients,
-    steps,
-    servings: known.servings,
-    servingsUnit: known.servingsUnit,
-    times: known.times,
+    ...d,
     structuring: 'ai',
-    model: TEXT_MODEL,
-    suspect: linesWithForeignNumbers(text, [...r.ingredients, ...steps]),
-    // The source the verify panel shows beside the lines.
-    transcript: text.slice(0, 16_000),
+    model: SELECTION_MODEL,
+    // The source the verify panel shows beside the lines — numbered, as the model saw it.
+    transcript: lines.map((l, i) => `${i}: ${l}`).join('\n').slice(0, 16_000),
   })
+}
+
+// A selection → the draft's fields, every line VERBATIM from `lines` (only a list
+// bullet is dropped, and a label's closing colon). A part label becomes a « ## » line
+// before the first selected line of its part.
+export function draftFromSelection(lines: string[], sel: LineSelection, known: Known): Omit<DraftOut, 'image' | 'source' | 'lang'> | null {
+  const bare = (i: number) => lines[i].replace(/^[-•·▪◦‣*–—]+\s*/, '').trim()
+  const label = (i: number) => bare(i).replace(/\s*:\s*$/, '')
+  const withParts = (items: number[], parts: { line: number; before: number }[]): string[] => {
+    const pending = [...parts].sort((a, b) => a.before - b.before)
+    const out: string[] = []
+    for (const i of items) {
+      while (pending.length && pending[0].before <= i) out.push(makeSectionHeading(label(pending.shift()!.line)))
+      out.push(bare(i))
+    }
+    return dropDanglingHeadings(out)
+  }
+  const ingredients = withParts(sel.ingredients, sel.ingredientSections)
+  // The method's lines as printed — one line, one step; refineSteps only strips a
+  // « 1. » the editor numbers itself and splits a run-on past the step cap.
+  const steps = dropDanglingHeadings(refineSteps(withParts(sel.steps, sel.stepSections), { blob: 'keep' }))
+  if (!ingredients.length && !steps.length) return null
+  const at = (i: number | null) => (i == null ? null : lines[i])
+  const notes = sel.notes.map(bare).join('\n').slice(0, 2000) || null
+  return {
+    title: known.title ?? (sel.title != null ? bare(sel.title).slice(0, 200) : null),
+    ingredients,
+    steps,
+    servings: known.servings ?? parseYield(at(sel.servings)),
+    servingsUnit: known.servingsUnit,
+    times: {
+      prep: known.times.prep ?? (at(sel.prep) ? textToMinutes(at(sel.prep)!) : null),
+      cook: known.times.cook ?? (at(sel.cook) ? textToMinutes(at(sel.cook)!) : null),
+      total: known.times.total,
+    },
+    notes: notes ?? known.notes ?? null,
+  }
 }
 
 // Free text (a paste, an OCR transcript, the vision model's transcription) → a draft.
@@ -131,15 +158,12 @@ export async function draftByModel(
 export async function draftFromText(env: Env, raw: string, lang: Lang, aiOn: boolean, hint?: string): Promise<DraftOut> {
   const r = readText(raw)
   if (r.read) return r.read
-  // Free-form text → AI structuring; its steps still go through the shared refinement
-  // (models love returning one packed paragraph). Every number the model emits is
-  // cross-checked against the source text — a line carrying a number the text never
-  // printed is returned in `suspect` for the verify panel to flag. Servings and times
-  // come from the TEXT (explicit lines only), never from the model: the vision read
+  // Free-form text → the model picks which LINES are what (draftByModel); the words
+  // stay the source's. Servings and times come from the TEXT first: the vision read
   // used to turn « cuire 5 minutes » into a prep time.
   if (aiOn) {
     const byModel = await draftByModel(env, r.text, lang, r.known, hint)
-    if (byModel) return { ...byModel, notes: r.known.notes ?? null }
+    if (byModel) return byModel
   }
   // AI unbound or empty-handed — the heuristic's best effort still beats nothing.
   return r.fallback

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { env } from 'cloudflare:workers'
 import { household } from '../functions/test/d1'
-import { AI_CALLS_PER_DAY, STRANGER_POOL_PER_DAY, UPLOAD_BYTES_PER_DAY, charge, strangerSpend, usageToday } from '../functions/_lib/usage'
+import { AI_CALLS_PER_DAY, BROWSER_RENDERS_PER_DAY, STRANGER_POOL_PER_DAY, UPLOAD_BYTES_PER_DAY, charge, strangerSpend, usageToday } from '../functions/_lib/usage'
 import { runWithRequest } from '../functions/_lib/tz'
 import { nowSec } from '../functions/_lib/ids'
 
@@ -47,6 +47,21 @@ describe('le budget quotidien', () => {
 
     expect(await usageToday(env, a.householdId)).toEqual({ ai: 3, bytes: 1_000 })
     expect(await usageToday(env, b.householdId)).toEqual({ ai: 1, bytes: 0 })
+  })
+
+  it('Browser Run renders have their own meter (0145): 20 a day for a family, 5 for a sandbox', async () => {
+    // The account's browser-minutes are shared by every household; one cannot drain them.
+    await clearStrangerSpend()
+    const fam = await household('use-browser', undefined, { empty: true })
+    const box = await household('use-browser-box', undefined, { empty: true })
+    await asSandbox(box.householdId)
+    const at = await spend(fam.householdId, () => charge(env, 'browser', BROWSER_RENDERS_PER_DAY.household))
+    expect(at).toMatchObject({ allowed: true, used: BROWSER_RENDERS_PER_DAY.household, trust: 'household' })
+    expect((await spend(fam.householdId, () => charge(env, 'browser', 1))).allowed).toBe(false)
+    // Its AI and upload counters are untouched by renders.
+    expect(await usageToday(env, fam.householdId)).toEqual({ ai: 0, bytes: 0 })
+    expect((await spend(box.householdId, () => charge(env, 'browser', BROWSER_RENDERS_PER_DAY.sandbox))).allowed).toBe(true)
+    expect((await spend(box.householdId, () => charge(env, 'browser', 1))).allowed).toBe(false)
   })
 
   it('refuses past the cap, and a SANDBOX hits its own much sooner', async () => {

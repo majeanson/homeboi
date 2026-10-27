@@ -7,7 +7,6 @@ import {
   parseMarkdownRecipe,
   parseRecipeText,
   looksLikeMarkdown,
-  linesWithForeignNumbers,
   stripAiCommentary,
   extractJsonLdBlocks,
   findRecipeNode,
@@ -866,29 +865,6 @@ describe('parseRecipeText — markdown-shaped transcripts take the no-AI path', 
     const plain = 'Tarte\nIngrédients\n2 pommes\n1 pâte\nPréparation\nCuire 40 minutes.'
     expect(looksLikeMarkdown(plain)).toBe(false)
     expect(parseRecipeText(plain).confident).toBe(true)
-  })
-})
-
-describe('linesWithForeignNumbers — did the AI change a number?', () => {
-  const source = 'Ingrédients\n225 g (1/2 lb) de ramens\n¾ tasse de farine\n2 œufs\nCuire 12 minutes.'
-
-  it('passes lines whose numbers all come from the source (vulgar glyphs vouch for ascii)', () => {
-    expect(
-      linesWithForeignNumbers(source, ['225 g (1/2 lb) de ramens', '3/4 tasse de farine', 'Cuire 12 minutes.']),
-    ).toEqual([])
-  })
-
-  it('flags a flipped fraction the source never printed', () => {
-    expect(linesWithForeignNumbers(source, ['1/3 tasse de farine'])).toEqual(['1/3 tasse de farine'])
-  })
-
-  it('flags an invented unit conversion even when the bare number exists elsewhere', () => {
-    // "2" exists in the source ("2 œufs") — the PAIR "2 tasses" does not.
-    expect(linesWithForeignNumbers(source, ['225 g (2 tasses) de ramens'])).toEqual(['225 g (2 tasses) de ramens'])
-  })
-
-  it('skips section headings and tolerates decimal-comma vs dot', () => {
-    expect(linesWithForeignNumbers('1,5 litre d’eau', ['## Sauce', '1.5 litre d’eau'])).toEqual([])
   })
 })
 

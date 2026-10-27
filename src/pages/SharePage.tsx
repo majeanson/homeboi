@@ -30,6 +30,8 @@ const SHARE_CACHE = 'babillard-share'
 // « Ajouter un business » → the cercle BusinessForm with ?import=<link>, whose
 // place-import pre-fills name + address server-side. Client-side detection only —
 // the SSRF allowlist lives server-side (functions/_lib/placeImport googleMapsUrl).
+// A web address inside the shared text, trailing punctuation left out.
+const WEB_LINK = /https?:\/\/[^\s<>"«»]+[^\s<>"«».,;:!?)]/i
 const MAPS_LINK = /https?:\/\/(?:maps\.app\.goo\.gl|goo\.gl\/maps|g\.co\/kgs|(?:www\.|maps\.)?google\.[a-z.]+\/maps)\S*/i
 
 export function SharePage() {
@@ -130,6 +132,10 @@ export function SharePage() {
   }
 
   const mapsLink = text.match(MAPS_LINK)?.[0] ?? null
+  // Any OTHER web link might be a recipe (2026-10-27): a second door straight into the
+  // recipe import, opened on that link. The capture stays the default button — a shared
+  // article is as likely a note as a recipe, and the cook decides, not a guess.
+  const webLink = mapsLink ? null : (text.match(WEB_LINK)?.[0] ?? null)
 
   if (!ready) {
     return (
@@ -191,6 +197,15 @@ export function SharePage() {
                 onClick={() => nav(`/maison?add=business&import=${encodeURIComponent(mapsLink)}`, { replace: true })}
               >
                 <Icon name="storefront-bold" size={18} /> {t.cercle.business.add}
+              </button>
+            )}
+            {!imageBlob && !added && webLink && (
+              <button
+                type="button"
+                className="btn btn--ghost"
+                onClick={() => nav(`/kitchen/recipe/new?import=${encodeURIComponent(webLink)}`, { replace: true })}
+              >
+                <Icon name="cooking-pot-bold" size={18} /> {t.share.importRecipe}
               </button>
             )}
             {imageBlob && (

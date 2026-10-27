@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { answerQuestion, classifyCapture, decodeStrayEscapes, suggestMeals, resolveLang, extractSizes, salvageTruncatedJson, structureRecipe } from './ai'
+import { answerQuestion, classifyCapture, decodeStrayEscapes, suggestMeals, resolveLang, extractSizes, salvageTruncatedJson, selectRecipeLines, toSelection } from './ai'
 import type { Env } from './env'
 
 // A fake Workers AI binding that returns a canned `response`, so we can test the
@@ -171,9 +171,9 @@ describe('answerQuestion', () => {
   })
 })
 
-describe('structureRecipe — a long recipe is never lost to a cut reply', () => {
-  const CUT = '{"title":"X","ingredients":["a","b"],"steps":["Do A.","Do B.","Do C'
-  it('salvageTruncatedJson keeps every COMPLETE value and closes the rest', () => {
+describe('salvageTruncatedJson — a cut reply keeps what it finished', () => {
+  it('keeps every COMPLETE value and closes the rest', () => {
+    const CUT = '{"title":"X","ingredients":["a","b"],"steps":["Do A.","Do B.","Do C'
     const fixed = salvageTruncatedJson(CUT)
     expect(fixed).not.toBeNull()
     expect(JSON.parse(fixed!)).toEqual({ title: 'X', ingredients: ['a', 'b'], steps: ['Do A.', 'Do B.'] })
@@ -181,26 +181,61 @@ describe('structureRecipe — a long recipe is never lost to a cut reply', () =>
     // Escapes and brackets inside strings never confuse the scan.
     expect(JSON.parse(salvageTruncatedJson('{"a":"x \\"]}\\" y","b":[1,2')!)).toEqual({ a: 'x "]}" y', b: [1] }) // the cut « 2 » might have been « 25 » — dropped
   })
-  it('a reply cut by max_tokens still yields the steps it finished', async () => {
-    const r = await structureRecipe(mockAiEnv(CUT), 'Ingrédients\na\nb\nPréparation\nDo A. Do B. Do C.')
-    expect(r.steps).toEqual(['Do A.', 'Do B.'])
-    expect(r.ingredients).toEqual(['a', 'b'])
-  })
-  it('the prompt keeps the source steps whole, carries the cook’s hint, and has room to answer', async () => {
-    const run = vi.fn(async (_model: string, _input: unknown) => ({ response: '{"title":null,"ingredients":[],"steps":[]}' }))
+})
+
+// B (2026-10-27): the model picks LINE NUMBERS, never text.
+describe('selectRecipeLines — the model chooses lines, it never writes them', () => {
+  const LINES = ['Pouding chômeur', 'Ingrédients', '500 ml de cassonade', 'Sauce', '500 ml d’eau', 'Préchauffer le four.', 'Cuire 40 minutes.']
+  const REPLY = { title: 0, servings: null, prep: null, cook: null, ingredients: [2, 4], steps: [5, 6], notes: [], ingredientSections: [{ line: 3, before: 4 }], stepSections: [] }
+
+  it('sends the numbered lines with a JSON schema, the hint quoted, room for indices only', async () => {
+    const run = vi.fn(async (_m: string, _i: unknown) => ({ response: REPLY }))
     const env = { DB: {} as D1Database, AI: { run } as unknown as Ai } as Env
-    const long = 'x'.repeat(15_000) + ' FIN-DU-TEXTE'
-    await structureRecipe(env, long, 'fr', '  c’est la 2e recette\nde la page  ')
-    const input = run.mock.calls[0][1] as { messages: { content: string }[]; max_tokens: number }
+    const sel = await selectRecipeLines(env, LINES, 'fr', '  la 2e recette\nde la page ')
+    const input = run.mock.calls[0][1] as { messages: { content: string }[]; response_format: { type: string; json_schema: { required: string[] } }; max_tokens: number }
+    expect(input.response_format.type).toBe('json_schema')
+    expect(input.response_format.json_schema.required).toContain('ingredientSections')
+    expect(input.max_tokens).toBe(600)
     const prompt = input.messages[0].content
-    expect(prompt).not.toMatch(/étapes courtes|20 étapes/)
-    expect(prompt).toContain('jusqu’à la DERNIÈRE étape')
-    expect(prompt).toContain('Indication du cuisinier : « c’est la 2e recette de la page »')
-    expect(prompt).toContain('FIN-DU-TEXTE')
-    expect(input.max_tokens).toBe(4000)
-    await structureRecipe(env, 'Some text', 'en')
-    const en = (run.mock.calls[1][1] as { messages: { content: string }[] }).messages[0].content
-    expect(en).not.toMatch(/short steps|20 steps/)
-    expect(en).not.toContain('Cook’s note')
+    expect(prompt).toContain('2: 500 ml de cassonade')
+    expect(prompt).toContain('NUMÉROS DE LIGNE')
+    expect(prompt).toContain('Indication du cuisinier : « la 2e recette de la page »')
+    expect(sel).toEqual(REPLY)
+  })
+
+  it('« JSON Mode couldn’t be met » → ONE retry without the schema, parsed leniently', async () => {
+    const run = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("JSON Mode couldn't be met"))
+      .mockResolvedValueOnce({ response: 'Voici : ' + JSON.stringify(REPLY) })
+    const env = { DB: {} as D1Database, AI: { run } as unknown as Ai } as Env
+    expect(await selectRecipeLines(env, LINES, 'fr')).toEqual(REPLY)
+    expect(run).toHaveBeenCalledTimes(2)
+    expect((run.mock.calls[1][1] as { response_format?: unknown }).response_format).toBeUndefined()
+  })
+
+  it('any other failure is the model not answering — no retry, null', async () => {
+    const run = vi.fn().mockRejectedValue(new Error('5016: agree'))
+    const env = { DB: {} as D1Database, AI: { run } as unknown as Ai } as Env
+    expect(await selectRecipeLines(env, LINES, 'fr')).toBeNull()
+    expect(run).toHaveBeenCalledTimes(1)
+  })
+
+  it('no AI, no lines → null without a call', async () => {
+    expect(await selectRecipeLines(noAiEnv, LINES)).toBeNull()
+  })
+
+  it('every index validated: out of range, not an integer, used twice — dropped; lists in page order', () => {
+    const sel = toSelection(
+      { title: 0, ingredients: [4, 2, 2, 99, -1, 1.5, '3'], steps: [6, 5, 0], notes: [4], ingredientSections: [{ line: 3, before: 4 }, { line: 3, before: 2 }], stepSections: [{ line: 42, before: 5 }] },
+      7,
+    )
+    expect(sel.title).toBe(0)
+    expect(sel.ingredients).toEqual([2, 4])
+    expect(sel.steps).toEqual([5, 6]) // 0 is the title
+    expect(sel.notes).toEqual([]) // 4 is an ingredient
+    expect(sel.ingredientSections).toEqual([{ line: 3, before: 4 }])
+    expect(sel.stepSections).toEqual([])
+    expect(sel.servings).toBeNull()
   })
 })

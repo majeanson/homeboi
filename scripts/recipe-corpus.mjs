@@ -1,6 +1,6 @@
 // THE RECIPE CORPUS TOOL — capture a real recipe page, score the corpus.
 //
-//   node scripts/recipe-corpus.mjs capture <url> [--slug <slug>]
+//   node scripts/recipe-corpus.mjs capture <url> [--slug <slug>] [--dir <staging dir>]
 //   node scripts/recipe-corpus.mjs score
 //   node scripts/recipe-corpus.mjs links <listing-or-sitemap-url> [<regex>]
 //
@@ -80,11 +80,11 @@ async function browse(urls, fn) {
   }
 }
 
-async function capture(url, slug) {
+async function capture(url, slug, into) {
   const seam = await load('functions/_lib/recipeImportPage.ts')
   const corpus = await load('functions/test/recipeCorpus.ts')
   const id = slug ?? slugOf(url)
-  const dir = join(corpus.CORPUS_DIR, id)
+  const dir = join(into ?? corpus.CORPUS_DIR, id)
   const reach = await workerReach(url)
   await browse([url], async (page) => {
     const res = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60_000 })
@@ -116,7 +116,7 @@ async function score() {
   const corpus = await load('functions/test/recipeCorpus.ts')
   const rows = []
   let exact = 0
-  for (const e of corpus.loadCorpus()) {
+  for (const e of corpus.loadCorpus(DIR)) {
     if (!e.expected) continue
     const got = corpus.expectedOf(seam.importFromHtml(e.html(), e.meta.url))
     const want = e.expected
@@ -147,7 +147,7 @@ async function score() {
 async function propose(id) {
   const seam = await load('functions/_lib/recipeImportPage.ts')
   const corpus = await load('functions/test/recipeCorpus.ts')
-  for (const e of corpus.loadCorpus().filter((x) => x.id.startsWith(id ?? ''))) {
+  for (const e of corpus.loadCorpus(DIR).filter((x) => x.id.startsWith(id ?? ''))) {
     const read = corpus.expectedOf(seam.importFromHtml(e.html(), e.meta.url))
     writeFileSync(join(e.dir, 'expected.proposed.json'), JSON.stringify(read, null, 2) + '\n')
     console.log(e.id)
@@ -158,7 +158,7 @@ async function propose(id) {
 async function debug(id) {
   const seam = await load('functions/_lib/recipeImportPage.ts')
   const corpus = await load('functions/test/recipeCorpus.ts')
-  const e = corpus.loadCorpus().find((x) => x.id.startsWith(id))
+  const e = corpus.loadCorpus(DIR).find((x) => x.id.startsWith(id))
   if (!e) throw new Error('no entry ' + id)
   const r = seam.readPage(seam.sourceFromHtml(e.html(), e.meta.url))
   console.log('--- window ---')
@@ -178,6 +178,7 @@ async function links(url, pattern) {
   const re = pattern ? new RegExp(pattern) : null
   await browse([url], async (page) => {
     const res = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60_000 })
+    await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {})
     const body = (await res?.text()) ?? ''
     const found = new Set()
     for (const m of body.matchAll(/<loc>\s*([^<\s]+)\s*<\/loc>/g)) found.add(m[1])
@@ -189,15 +190,19 @@ async function links(url, pattern) {
   })
 }
 
-const [cmd, arg, ...rest] = process.argv.slice(2)
+const argv = process.argv.slice(2)
+// --dir <path>: work on a staging corpus (captures not yet verified) instead of the real one.
+const dirAt = argv.indexOf('--dir')
+const DIR = dirAt >= 0 ? argv[dirAt + 1] : undefined
+const [cmd, arg, ...rest] = argv
 const flag = (name) => {
   const i = rest.indexOf(name)
   return i >= 0 ? rest[i + 1] : undefined
 }
-if (cmd === 'capture' && arg) await capture(arg, flag('--slug'))
+if (cmd === 'capture' && arg) await capture(arg, flag('--slug'), flag('--dir'))
 else if (cmd === 'score') await score()
 else if (cmd === 'debug' && arg) await debug(arg)
-else if (cmd === 'propose') await propose(arg)
+else if (cmd === 'propose') await propose(arg?.startsWith('--') ? undefined : arg)
 else if (cmd === 'links' && arg) await links(arg, rest[0])
 else {
   console.log('usage: recipe-corpus.mjs capture <url> [--slug s] | score | links <url> [regex]')

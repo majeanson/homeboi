@@ -24,16 +24,17 @@ const OCR_TEXT = 'Biscuits à l’avoine\n3/4 tasse de farine\n2 œufs\nCuire 12
 const DRAFT = {
   title: 'Biscuits à l’avoine',
   ingredients: ['3/4 tasse de farine', '2 œufs'],
-  steps: ['Préchauffer le four à 180 °C.', 'Cuire 12 minutes.'],
+  steps: ['Préchauffer le four à 180 °C.', 'Ajouter 125 ml de lait et cuire 12 minutes.'],
   servings: 24,
   servingsUnit: 'biscuits',
   times: { prep: 15, cook: 12, total: null },
   lang: 'fr',
-  // The AI-structured shape recipe-import now reports: the model + the line whose
-  // "180" the source never printed — the verify panel must flag it "à confirmer".
+  // The shape recipe-import reports: the model that CHOSE the lines, and what the
+  // audit found — the method's « 125 ml de lait », in no ingredient. The verify panel
+  // must flag that step « à vérifier ».
   structuring: 'ai',
-  model: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
-  suspect: ['Préchauffer le four à 180 °C.'],
+  model: '@cf/meta/llama-3.3-70b-instruct-fp8-fast · sélection',
+  audit: [{ kind: 'missing-ingredient', line: '125 ml de lait' }],
   empty: false,
 }
 const json = (body: unknown) => ({ contentType: 'application/json', body: JSON.stringify(body) })
@@ -77,20 +78,20 @@ test('photo import: read → verify dialog → apply draft to the form', async (
   })
 
   // The verify-against-the-photo dialog opens with the structured read, and the
-  // AI-changed line (report.suspect from recipe-import) is flagged for a second
+  // step the audit named (report.audit from recipe-import) is flagged for a second
   // look. The clean "3/4 tasse" line is calm — risky-only flagging.
   const modal = page.locator('.read-review')
   await expect(modal).toBeVisible({ timeout: 15_000 })
   await expect(modal.locator('.read-review__line.is-flagged')).toHaveCount(1)
 
   // The « Rapport » tab exposes the real pipeline: the cloud reader (with its
-  // model name), the AI structuring, and the untraceable number.
+  // model name), the line selection, and what the audit found.
   await modal.getByRole('tab', { name: 'Rapport' }).click()
   const report = modal.locator('.read-review__report')
   await expect(report).toBeVisible()
   await expect(report).toContainText('mistral-ocr-latest')
   await expect(report).toContainText('llama-3.3-70b')
-  await expect(report).toContainText('180')
+  await expect(report).toContainText('125 ml de lait')
   await modal.getByRole('tab', { name: 'Vérifier' }).click()
 
   // Confirm → the draft lands in the form behind the dialog (applyDraft).

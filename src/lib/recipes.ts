@@ -170,3 +170,22 @@ export function allTags(recipes: Recipe[]): string[] {
 // imported picture), anything else is an R2 key served by /api/img/<key>.
 export const recipeImg = (image: string | null | undefined): string | null =>
   !image ? null : /^https?:\/\//i.test(image) ? image : imgUrl(image)
+
+// THE SAME PAGE? (C5, 2026-10-27) — an import whose link is already a recipe in the book
+// says so (« Déjà dans le livre : … », RecipeForm), and still lets the import happen.
+// Two links are one page when they differ only by what a browser adds on the way: the
+// host's case and its « www. », a query (?utm_source=…), a #fragment, a trailing « / ».
+export function sameSource(a: string | null | undefined, b: string | null | undefined): boolean {
+  const key = (s: string | null | undefined): string | null => {
+    if (!s) return null
+    try {
+      const u = new URL(s.trim())
+      if (u.protocol !== 'http:' && u.protocol !== 'https:') return null
+      return `${u.hostname.toLowerCase().replace(/^www\./, '')}${u.pathname.replace(/\/+$/, '')}`
+    } catch {
+      return null
+    }
+  }
+  const ka = key(a)
+  return ka !== null && ka === key(b)
+}

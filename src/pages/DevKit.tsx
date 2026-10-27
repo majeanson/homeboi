@@ -3449,9 +3449,9 @@ export function DevKit() {
                   pages: 1,
                   columnized: false,
                   structuring: 'ai',
-                  structuringModel: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
+                  structuringModel: '@cf/meta/llama-3.3-70b-instruct-fp8-fast · sélection',
                   repairs: [],
-                  suspect: ['Verser sur la pâte et cuire 45 minutes.'],
+                  audit: [{ kind: 'step-count', line: '2/3' }],
                   shakyCount: 0,
                 }}
                 onRetry={() => setReadReviewTextOpen(false)}
@@ -3467,8 +3467,9 @@ export function DevKit() {
                   // One specimen line per flag reason (risky-only flagging): a
                   // conversion MISMATCH (80 ml ≠ ½ tasse), an unparseable NUMBER
                   // beside its unit ("A de tasse"), a SHAKY word ("cannelle"), an
-                  // AI-changed number ("1/3" — see report.suspect below) — plus
-                  // calm lines: a clean fraction ("3/4 tasse") no longer flags.
+                  // AUDIT finding (the method's « 125 ml de lait », in no ingredient —
+                  // see report.audit below) — plus calm lines: a clean fraction
+                  // ("3/4 tasse") no longer flags.
                   ingredients: [
                     '3/4 tasse de farine',
                     '80 ml (1/2 tasse) de sucre',
@@ -3480,7 +3481,7 @@ export function DevKit() {
                     '225 g (1/2 lb) de ramens secs ou 3 paquets de ramens secs de 85 g chacun (sans les sachets d’assaisonnement)',
                     '2 œufs',
                   ],
-                  steps: ['Préchauffer le four à 180 °C.', 'Mélanger le tout et cuire 12 minutes.'],
+                  steps: ['Préchauffer le four à 180 °C.', 'Ajouter 125 ml de lait, mélanger et cuire 12 minutes.'],
                   servings: 24,
                   servingsUnit: 'biscuits',
                   times: { prep: 15, cook: 12, total: null },
@@ -3493,11 +3494,11 @@ export function DevKit() {
                   pages: 2,
                   columnized: true,
                   structuring: 'ai',
-                  structuringModel: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
+                  structuringModel: '@cf/meta/llama-3.3-70b-instruct-fp8-fast · sélection',
                   repairs: [
                     { before: '60 ml (Ÿ de tasse) de beurre', after: '60 ml (1/4 de tasse) de beurre' },
                   ],
-                  suspect: ['1/3 tasse de cassonade'],
+                  audit: [{ kind: 'missing-ingredient', line: '125 ml de lait' }],
                   shakyCount: 1,
                 }}
                 onConfirm={() => setReadReviewOpen(false)}

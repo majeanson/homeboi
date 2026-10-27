@@ -2,6 +2,7 @@ import { badRequest, ok, withAiError } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { VISION_MODEL_ID, resolveLang, transcribeImage } from '../_lib/ai'
 import { draft, draftFromText } from '../_lib/recipeDraft'
+import { withAudit } from '../_lib/recipeAudit'
 
 // Read a recipe out of a PHOTO. The client sends raw image bytes (resized, same as
 // recipe-image); nothing is stored here. Any actor — a parent-mode kiosk builds
@@ -39,5 +40,5 @@ export const onRequestPost = authed(async (ctx) => {
   // The transcript rides along: when a read is wrong, the source is the only thing
   // that says whether the reader or the parser erred (a corpus run guessed at three
   // of them before this existed). Capped; the review panel may show it one day.
-  return withAiError(ok({ ...d, ...reader, transcript: transcript.slice(0, 4000) }), report)
+  return withAiError(ok({ ...withAudit(d, transcript), ...reader, transcript: d.transcript ?? transcript.slice(0, 4000) }), report)
 }, undefined, { requiresAi: true })

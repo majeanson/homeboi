@@ -132,6 +132,54 @@ describe('draftFromText — the model runs only when the plain read is not good 
   })
 })
 
+// B (2026-10-27): the model picks line NUMBERS; every word of the draft is the source's.
+describe('draftFromText — an AI read is the source’s own lines, by number', () => {
+  // A messy OCR transcript: no headings, a part label, the page footer, a stray number.
+  const OCR = [
+    'Pouding chomeur de grand-maman',
+    'pour 6',
+    '500 ml cassonade',
+    '500 ml eau bouillante',
+    'Pate',
+    '250 ml farine',
+    '1 c a the poudre a pate',
+    'melanger la cassonade et l eau dans le moule',
+    'deposer la pate par cuilleree',
+    'cuire 40 min a 350F',
+    'Bon appetit ! page 12',
+  ].join('\n')
+  // What the model says: the title, the yield line, ingredients 2-3 and 5-6 with « Pate »
+  // heading 5-6, the three method lines. Nothing else — it cannot send words.
+  const REPLY = {
+    title: 0,
+    servings: 1,
+    prep: null,
+    cook: null,
+    ingredients: [2, 3, 5, 6],
+    steps: [7, 8, 9],
+    notes: [],
+    ingredientSections: [{ line: 4, before: 5 }],
+    stepSections: [],
+  }
+  it('reproduces the exact source lines — no rephrasing is possible', async () => {
+    const run = vi.fn(async () => ({ response: REPLY }))
+    const d = await draftFromText({ DB: {}, AI: { run } } as unknown as Env, OCR, 'fr', true)
+    expect(run).toHaveBeenCalledTimes(1)
+    expect(d.structuring).toBe('ai')
+    expect(d.model).toMatch(/sélection$/)
+    expect(d.title).toBe('Pouding chomeur de grand-maman')
+    expect(d.servings).toBe(6)
+    expect(d.ingredients).toEqual(['500 ml cassonade', '500 ml eau bouillante', '## Pate', '250 ml farine', '1 c a the poudre a pate'])
+    expect(d.steps).toEqual(['melanger la cassonade et l eau dans le moule', 'deposer la pate par cuilleree', 'cuire 40 min a 350F'])
+    // Every line of the draft exists, verbatim, in the source.
+    const src = OCR.split('\n')
+    for (const l of [...d.ingredients, ...d.steps]) expect(src).toContain(l.replace(/^## /, ''))
+    // The panel shows the source numbered, as the model saw it.
+    expect(d.transcript).toContain('9: cuire 40 min a 350F')
+    expect(d).not.toHaveProperty('suspect')
+  })
+})
+
 // Transcript shapes from the eight-card corpus run against production (2026-09-24),
 // each one a miss that day. All deterministic — AI off.
 describe('draftFromText — the corpus', () => {

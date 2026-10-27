@@ -347,6 +347,12 @@ export const FR_OPERATOR = {
   flippCopyBookmarklet: 'Copier le signet',
   flippBookmarkletCopied: 'Signet copié',
   flippBookmarkletLabel: 'Adresse du signet',
+  // Réglages ▸ La cuisine ▸ Apparence ▸ « Signet : Envoyer à Babillard » (lib/recipeBookmarklet).
+  recipeBookmarkletTitle: 'Signet « Envoyer à Babillard »',
+  recipeBookmarkletIntro: 'Certains sites refusent qu’on lise leurs recettes à distance (Recettes du Québec, Zeste). Ton navigateur, lui, les voit : ce signet envoie la page ouverte dans Babillard.',
+  recipeBookmarklet1: 'Touche « Copier le signet ».',
+  recipeBookmarklet2: 'Dans ton navigateur, ajoute un signet à n’importe quelle page, nomme-le « Envoyer à Babillard » et remplace son adresse par ce que tu as copié.',
+  recipeBookmarklet3: 'Sur la page d’une recette, lance le signet : Babillard s’ouvre avec la recette remplie.',
   storeFilterNoPostal: 'Règle d’abord ton code postal ci-dessus pour voir les magasins du coin.',
   storeFilterError: 'Service de circulaires indisponible — réessaie plus tard.',
   storeFilterEmpty: 'Aucun magasin trouvé près de chez toi.',

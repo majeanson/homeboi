@@ -37,6 +37,8 @@ export const onRequestGet: PagesFunction<Env> = async (ctx) => {
     // (MISTRAL_API_KEY set). Just a presence fact, like aiAvailable — the SPA shows
     // the "lecture haute précision" toggle only when true.
     cloudOcr: !!ctx.env.MISTRAL_API_KEY,
+    // The recipe import's headless-browser door (_lib/renderPage.ts) is wired.
+    browserRun: !!ctx.env.BROWSER,
     invite: inviteRequired(ctx.env),
     sessionSecret: !!ctx.env.SESSION_SECRET && ctx.env.SESSION_SECRET.length >= 32,
     // Presence facts for the two bindings the SPA otherwise only discovers by

@@ -4,6 +4,9 @@ import { authed } from '../_lib/route'
 import { resolveLang } from '../_lib/ai'
 import { aiUsable } from '../_lib/aiPref'
 import { type CapturedPage, type PageSource, readPage, sourceFromCapture, sourceFromHtml } from '../_lib/recipeImportPage'
+import { isRefusalPage, renderPage } from '../_lib/renderPage'
+import { withAudit } from '../_lib/recipeAudit'
+import type { Env } from '../_lib/env'
 
 // Import a recipe into a DRAFT the user reviews before saving. Three inputs (plus an
 // optional `hint`: the cook's one-line note for the model, used only when it runs):
@@ -17,7 +20,7 @@ import { type CapturedPage, type PageSource, readPage, sourceFromCapture, source
 //              formatted recipe with no AI, the AI only structures free-form
 //              text (and the heuristic result still serves when AI is unbound).
 // Every draft says HOW it was read (`structuring`: jsonld / microdata / headings / ai /
-// heuristic) and, for a page, how it was REACHED (`fetched`: direct / reader /
+// heuristic) and, for a page, how it was REACHED (`fetched`: direct / browser / reader /
 // bookmarklet) — the form names it, and an 'ai' read opens the verify panel with the
 // page text (`transcript`) beside the lines.
 // Returns { title, ingredients, steps, servings, times, image, source, notes } — NOT
@@ -64,9 +67,12 @@ function publicHttpUrl(raw: string): URL | null {
 // the bookmarklet, `{ page }` above.)
 const READER = 'https://r.jina.ai/'
 
-type Fetched = 'direct' | 'reader'
+type Fetched = 'direct' | 'browser' | 'reader'
 
-async function fetchPage(url: URL, lang: 'fr' | 'en'): Promise<{ html: string; via: Fetched } | null> {
+// The doors, in order: our own fetch (15 s) → Browser Run, a real headless browser on
+// Cloudflare's side, budgeted per household (_lib/renderPage) → the public reader →
+// null (« blocked »: the UI then offers the bookmarklet and paste).
+async function fetchPage(env: Env, url: URL, lang: 'fr' | 'en'): Promise<{ html: string; via: Fetched } | null> {
   const acceptLanguage = lang === 'en' ? 'en-CA' : 'fr-CA'
   const cap = (s: string) => s.slice(0, 2_000_000) // cap a runaway page
   try {
@@ -81,10 +87,15 @@ async function fetchPage(url: URL, lang: 'fr' | 'en'): Promise<{ html: string; v
       // (45 s) — it now falls to the reader like a refusal does.
       signal: AbortSignal.timeout(15_000),
     })
-    if (res.ok) return { html: cap(await res.text()), via: 'direct' }
+    if (res.ok) {
+      const html = cap(await res.text())
+      if (!isRefusalPage(html)) return { html, via: 'direct' }
+    }
   } catch {
-    // refused, unreachable or too slow — fall through to the reader
+    // refused, unreachable or too slow — fall through to the next door
   }
+  const rendered = await renderPage(env, url.toString())
+  if (rendered) return { html: rendered, via: 'browser' }
   try {
     const res = await fetch(READER + url.toString(), {
       headers: {
@@ -97,7 +108,10 @@ async function fetchPage(url: URL, lang: 'fr' | 'en'): Promise<{ html: string; v
       redirect: 'follow',
       signal: AbortSignal.timeout(20_000),
     })
-    if (res.ok) return { html: cap(await res.text()), via: 'reader' }
+    if (res.ok) {
+      const html = cap(await res.text())
+      if (!isRefusalPage(html)) return { html, via: 'reader' }
+    }
   } catch {
     // reader down / timed out — treat as blocked
   }
@@ -121,7 +135,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   if (text) {
     const d = await draftFromText(ctx.env, text, lang, aiOn, hint)
     if (d.empty && !aiOn) return serviceUnavailable('Structuration IA indisponible ici.')
-    return ok(d)
+    return ok(withAudit(d, text))
   }
 
   // ---- Page paths -------------------------------------------------------------
@@ -140,7 +154,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
     if (!urlRaw) return badRequest('Adresse ou texte requis.')
     const url = publicHttpUrl(urlRaw)
     if (!url) return badRequest('Adresse invalide.')
-    const page = await fetchPage(url, lang)
+    const page = await fetchPage(ctx.env, url, lang)
     // Refused by the site AND by the reader — say so. This used to 503, which the
     // form rendered as "l'IA est désactivée": a blocked page has nothing to do with
     // the AI, and the wrong message sent the cook chasing a setting that was fine.
@@ -152,12 +166,12 @@ export const onRequestPost = authed(async (ctx, actor) => {
   // The no-model read (site data, then the page's printed headings) — the same seam
   // the corpus test scores (_lib/recipeImportPage).
   const r = readPage(src)
-  if (r.draft) return ok({ ...r.draft, fetched })
+  if (r.draft) return ok({ ...withAudit(r.draft, r.window), fetched })
 
   // Only the model can organise this page's text, guided by the cook's hint.
   if (aiOn) {
     const read = await draftByModel(ctx.env, r.window, lang, { ...r.known, title: null }, hint)
-    if (read) return ok({ ...read, title: r.title ?? read.title, image: r.image, source: src.url, fetched })
+    if (read) return ok({ ...withAudit({ ...read, title: r.title ?? read.title }, r.window), image: r.image, source: src.url, fetched })
   }
 
   // We read the page fine, there was just no recipe in it (an article or a listicle

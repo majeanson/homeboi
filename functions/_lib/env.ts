@@ -89,6 +89,15 @@ export interface Env {
   // respects the household AI switch. See functions/_lib/mistralOcr.ts.
   MISTRAL_API_KEY?: string
 
+  // OPTIONAL Browser Run (ex Browser Rendering, wrangler.toml `[browser]`): a real
+  // headless browser on Cloudflare's side, the recipe import's SECOND door for a page
+  // that refuses the Worker's fetch (Akamai — recettes.qc.ca, Zeste, IGA). Only ever
+  // reached through _lib/renderPage.ts, which charges the household's `browser` meter
+  // first (10 browser-minutes a day for the whole account on the Free plan). Unset (the
+  // d1 harness, a local `wrangler dev` without --remote) → the import skips this door.
+  // /api/health reports it as `browserRun`.
+  BROWSER?: import('./renderPage').BrowserRun
+
   // Plaintext vars from wrangler.toml.
   APP_NAME?: string
   DEFAULT_LANG?: string

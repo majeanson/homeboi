@@ -43,8 +43,8 @@ for (const format of [
 
     // The flag logic actually fired — risky-only now, one specimen line per
     // reason: the conversion mismatch ("80 ml (1/2 tasse)"), the unparseable
-    // amount ("A de c. à thé"), the shaky word ("cannelle"), the AI-changed
-    // number ("1/3 tasse", seeded via report.suspect). The clean "3/4 tasse de
+    // amount ("A de c. à thé"), the shaky word ("cannelle"), the step the audit
+    // named ("125 ml de lait", seeded via report.audit). The clean "3/4 tasse de
     // farine" and the consistent "225 g (1/2 lb)" ramens line stay CALM — the
     // old flag-every-fraction behaviour trained the eye to skim past warnings.
     await expect(modal.locator('.read-review__line.is-flagged')).toHaveCount(4)
@@ -60,7 +60,7 @@ for (const format of [
     await expect(reportPane).toBeVisible()
     await expect(reportPane).toContainText('Tesseract')
     await expect(reportPane).toContainText('llama-3.3-70b')
-    await expect(reportPane).toContainText('1/3 tasse de cassonade')
+    await expect(reportPane).toContainText('« 125 ml de lait » est dans les étapes')
     await expect(reportPane).toContainText('60 ml (1/4 de tasse)')
     await modal.getByRole('tab', { name: 'Vérifier' }).click()
 

@@ -78,12 +78,29 @@ describe('every metered resource has exactly one door', () => {
     ).toEqual([])
   })
 
+  it('no Browser Run quickAction() outside the renderPage seam', () => {
+    // Browser Run is metered by the ACCOUNT's daily browser-minutes (10 on the Free plan,
+    // shared by every household) — `renderPage()` charges the household's `browser`
+    // meter (_lib/usage.ts, 0145) before the browser starts. A second call site would
+    // spend minutes nothing counted, and one household could drain them for all.
+    const offenders: string[] = []
+    for (const f of sources(FUNCTIONS)) {
+      if (f.endsWith(join('_lib', 'renderPage.ts'))) continue
+      const src = code(f)
+      for (const m of src.matchAll(/\bquickAction\s*\(/g)) {
+        offenders.push(`${f.slice(ROOT.length + 1).replace(/\x5c/g, '/')} :: ${src.slice(Math.max(0, m.index - 30), m.index + 20).trim()}`)
+      }
+    }
+    expect(offenders, 'call renderPage(env, url) instead — it is what charges the browser budget (_lib/usage.ts).').toEqual([])
+  })
+
   it('the scanner still finds the seams themselves (it is not silently matching nothing)', () => {
     // The vacuous-pass guard this repo keeps re-learning: a rule that scans an empty set
     // is green forever. Both seams must be visible to the same walk that polices them.
     const all = sources(FUNCTIONS)
     expect(all.some((f) => f.endsWith(join('_lib', 'runModel.ts')))).toBe(true)
     expect(all.some((f) => f.endsWith(join('_lib', 'r2.ts')))).toBe(true)
+    expect(all.some((f) => f.endsWith(join('_lib', 'renderPage.ts')))).toBe(true)
     expect(all.length).toBeGreaterThan(50)
   })
 })

@@ -173,6 +173,14 @@ export const OPERATOR_HELP = {
       en: `Configure opt-in tracking: choose what to track, how often, and mute or remove items.`,
     },
   },
+  recipeBookmarklet: {
+    card: 'recipes',
+    point: 0,
+    body: {
+      fr: `Un signet pour les sites qui refusent qu'on lise leurs recettes à distance (Recettes du Québec, Zeste) : sur la page d'une recette, il l'envoie dans Babillard, déjà remplie. Rien ne quitte ton navigateur sauf vers ton Babillard.`,
+      en: `A bookmark for the sites that refuse to let their recipes be read from afar (Recettes du Québec, Zeste): on a recipe's page it sends it to Babillard, already filled in. Nothing leaves your browser except to your Babillard.`,
+    },
+  },
   recipePills: {
     card: 'set-recipes',
     point: 0,

@@ -8,8 +8,7 @@ import { runModel } from './runModel'
 // never lost and the UI can offer a manual type-picker.
 
 import type { Env } from './env'
-import { MAX_INGREDIENTS, MAX_STEP_ROWS, stripAiCommentary } from './recipeImport'
-import { dropDanglingHeadings } from './recipeSections'
+import { stripAiCommentary } from './recipeImport'
 
 // AI output language. Mirrors the UI locale (src/i18n.ts `Lang`). The router and
 // meal suggester pick their prompt by this so the household sees AI text in the
@@ -60,9 +59,6 @@ export interface Intent {
 // must accept both shapes — they do. Don't reintroduce a `String(res.response)`
 // assumption or every JSON-returning feature silently 503s again.
 const MODEL = '@cf/meta/llama-3.3-70b-instruct-fp8-fast'
-// Exported for the read report (Réglages-style honesty: the verify panel says
-// WHICH model structured the read, so a hallucination has a named suspect).
-export const TEXT_MODEL = MODEL
 
 // Few-shot, JSON-only, one prompt per language. The FR register hints
 // ("souper", "vidanges", "pus de") are deliberately Québécois so the router
@@ -356,79 +352,172 @@ Exemple : {"ingredients":["400 g de pâtes","1 pot de sauce tomate","500 g de b�
   }
 }
 
-// Structure PASTED recipe text (copied from a site/photo/book) into a clean
-// card. Unlike draftRecipe this does NOT invent — it organizes the text it's
-// given: a title, the ingredient lines, the steps. Used by /api/recipe-import
-// for the "paste" path (the "from URL" path parses JSON-LD with no AI). Returns
-// nulls/empties on no-AI or failure so the caller falls back to raw text.
-export interface RecipeStructured {
-  title: string | null
-  ingredients: string[]
-  steps: string[]
+// THE MODEL CHOOSES LINES, IT NEVER WRITES THEM (B, 2026-10-27). Until today the text
+// model was asked to « organise WITHOUT inventing » a pasted or OCR'd recipe and answered
+// with the recipe REWRITTEN — and a generative pass rewrites: it reordered « Dans un
+// grand poêlon, chauffer… », converted « 225 g (1/2 lb) » into « (2 tasses) », titled an
+// English recipe in French. A number check flagged some of it after the fact.
+//
+// Now the text goes to the model NUMBERED, one line per number, and the model answers
+// with line NUMBERS only: which line is the title, which are the ingredients, the steps,
+// the notes, which label line heads a part. Every word of the draft is then copied from
+// the source by index — the model has no way to change one. It is also ~50× cheaper:
+// output tokens dominate the price, and a list of integers is short.
+//
+// JSON Mode (`response_format: json_schema`) keeps the reply to that shape; the model
+// may refuse it (« JSON Mode couldn't be met »), and then ONE retry goes without it and
+// the reply is parsed leniently. Every index is validated (an integer, in range, used
+// once) before a line is taken.
+
+export const SELECTION_MODEL = `${MODEL} · sélection`
+
+export interface LineSelection {
+  title: number | null
+  servings: number | null
+  prep: number | null
+  cook: number | null
+  ingredients: number[]
+  steps: number[]
+  notes: number[]
+  // A label line (« Sauce », « Pour le glaçage : ») that heads the selected lines from
+  // `before` on — `before` is the index of the part's first line.
+  ingredientSections: { line: number; before: number }[]
+  stepSections: { line: number; before: number }[]
 }
-export async function structureRecipe(
+
+const SECTIONS_SCHEMA = {
+  type: 'array',
+  items: {
+    type: 'object',
+    properties: { line: { type: 'integer' }, before: { type: 'integer' } },
+    required: ['line', 'before'],
+  },
+}
+const INDEXES_SCHEMA = { type: 'array', items: { type: 'integer' } }
+const MAYBE_INDEX = { type: ['integer', 'null'] }
+export const SELECTION_SCHEMA = {
+  type: 'object',
+  properties: {
+    title: MAYBE_INDEX,
+    servings: MAYBE_INDEX,
+    prep: MAYBE_INDEX,
+    cook: MAYBE_INDEX,
+    ingredients: INDEXES_SCHEMA,
+    steps: INDEXES_SCHEMA,
+    notes: INDEXES_SCHEMA,
+    ingredientSections: SECTIONS_SCHEMA,
+    stepSections: SECTIONS_SCHEMA,
+  },
+  required: ['title', 'servings', 'prep', 'cook', 'ingredients', 'steps', 'notes', 'ingredientSections', 'stepSections'],
+}
+
+// The source as the model sees it: blank lines out, each line capped, at most 400 (the
+// recipe window already stops at the page's footer).
+export function selectionLines(text: string): string[] {
+  return text
+    .split(/\r?\n/)
+    .map((l) => l.replace(/\s+/g, ' ').trim())
+    .filter(Boolean)
+    .slice(0, 400)
+    .map((l) => l.slice(0, 240))
+}
+
+export async function selectRecipeLines(
   env: Env,
-  text: string,
+  lines: string[],
   lang: Lang = 'fr',
-  // The cook's optional guidance (« c'est la 2e recette de la page », « garde les
-  // étapes telles quelles ») — one short line, quoted into the prompt as THEIR note.
+  // The cook's optional guidance (« c'est la 2e recette de la page ») — one short line,
+  // quoted into the prompt as THEIR note.
   hint?: string,
-): Promise<RecipeStructured> {
-  // 16 000, not 6000: a long recipe's last steps fell past the old slice (Marc,
-  // 2026-10-27: « les étapes arrêtent avant la fin »). recipeTextWindow already
-  // spends the same budget on the recipe, not on the page's chrome.
-  const raw = text.trim().slice(0, 16_000)
-  if (!env.AI || !raw) return { title: null, ingredients: [], steps: [] }
+): Promise<LineSelection | null> {
+  if (!env.AI || !lines.length) return null
   const note = (hint ?? '').replace(/\s+/g, ' ').trim().slice(0, 200)
-  const noteLine = note ? (lang === 'en' ? `Cook’s note: "${note}"\n` : `Indication du cuisinier : « ${note} »\n`) : ''
-  // The quantity rules are the load-bearing part: this is a generative pass over
-  // text the user believes was "just OCR'd", and without an explicit ban the model
-  // "helpfully" converts units ("225 g (1/2 lb)" → "(2 tasses)") or flips a
-  // fraction — the exact hallucinations users reported. Belt: the prompt. And
-  // suspenders: recipe-import cross-checks every output number against the source
-  // (linesWithForeignNumbers) and flags what the model changed anyway.
+  const numbered = lines.map((l, i) => `${i}: ${l}`).join('\n')
   const prompt =
     lang === 'en'
-      ? `Below is pasted recipe text. Organize it WITHOUT inventing anything new.
-Reply ONLY with JSON: {"title": string, "ingredients": string[], "steps": string[]}.
-Keep ingredient lines as written (with quantities). One step per numbered step or per paragraph of the text — copy each one in full, neither split nor merge sentences, up to the LAST step.
-Copy every quantity and unit EXACTLY as written. NEVER convert between units (g, lb, ml, cups…), never round, never do arithmetic. If the text prints two units for one amount ("225 g (1/2 lb)"), keep BOTH verbatim.
-If the recipe has named parts (e.g. "Glaze", "Crust"), insert a heading line formatted exactly "## Name" in both arrays before that part's lines.
-${noteLine}Text:
-${raw}`
-      : `Voici du texte de recette collé. Organise-le SANS rien inventer.
-Réponds UNIQUEMENT avec du JSON : {"title": string, "ingredients": string[], "steps": string[]}.
-Garde les lignes d'ingrédients telles quelles (avec quantités). Une étape par étape numérotée ou par paragraphe du texte — recopie chacune en entier, ne découpe ni ne fusionne les phrases, jusqu’à la DERNIÈRE étape.
-Recopie chaque quantité et chaque unité EXACTEMENT comme écrites. Ne convertis JAMAIS entre unités (g, lb, ml, tasses…), n'arrondis pas, ne fais aucun calcul. Si le texte donne deux unités pour une même quantité (« 225 g (1/2 lb) »), garde LES DEUX telles quelles.
-Si la recette a des parties nommées (ex. « Glaçage », « Croûte »), insère une ligne d'en-tête au format exact « ## Nom » dans les deux tableaux avant les lignes de cette partie.
-${noteLine}Texte :
-${raw}`
+      ? `Below is a recipe's text, one numbered line per line ("<number>: <text>"). Pick LINE NUMBERS only — never write any text.
+Reply with JSON: {"title": n|null, "servings": n|null, "prep": n|null, "cook": n|null, "ingredients": [n…], "steps": [n…], "notes": [n…], "ingredientSections": [{"line": n, "before": n}…], "stepSections": [{"line": n, "before": n}…]}.
+- title: the recipe's name. servings / prep / cook: the line that states the yield / the prep time / the cooking time, or null.
+- ingredients: every ingredient line. steps: every line of the method, up to the LAST one. notes: tips, variations, storage notes.
+- A short label line like "Sauce" or "For the glaze:" that heads a group of ingredients or steps is a SECTION: {"line": its number, "before": the number of the first line of its group}. It is not itself an ingredient or a step.
+- Keep page order. A line may appear only once. Leave out menus, ads, comments, other recipes.
+${note ? `Cook's note: "${note}"\n` : ''}Text:
+${numbered}`
+      : `Voici le texte d'une recette, une ligne numérotée par ligne (« <numéro>: <texte> »). Choisis des NUMÉROS DE LIGNE seulement — n'écris jamais de texte.
+Réponds en JSON : {"title": n|null, "servings": n|null, "prep": n|null, "cook": n|null, "ingredients": [n…], "steps": [n…], "notes": [n…], "ingredientSections": [{"line": n, "before": n}…], "stepSections": [{"line": n, "before": n}…]}.
+- title : le nom de la recette. servings / prep / cook : la ligne qui donne le rendement / le temps de préparation / le temps de cuisson, ou null.
+- ingredients : chaque ligne d'ingrédient. steps : chaque ligne de la méthode, jusqu'à la DERNIÈRE. notes : conseils, variantes, conservation.
+- Une courte ligne d'étiquette comme « Sauce » ou « Pour le glaçage : » qui coiffe un groupe d'ingrédients ou d'étapes est une SECTION : {"line": son numéro, "before": le numéro de la première ligne de son groupe}. Elle n'est pas elle-même un ingrédient ni une étape.
+- Garde l'ordre de la page. Une ligne n'apparaît qu'une fois. Laisse de côté les menus, publicités, commentaires, autres recettes.
+${note ? `Indication du cuisinier : « ${note} »\n` : ''}Texte :
+${numbered}`
+  const messages = [{ role: 'user', content: prompt }]
+  let raw: unknown
   try {
     const res = (await runModel(env, MODEL, {
-      messages: [{ role: 'user', content: prompt }],
-      // 900 truncated long recipes mid-array; 1700 still cut a long method (Marc,
-      // 2026-10-27 — and a cut reply used to lose the WHOLE read). A recipe copied
-      // whole, up to MAX_STEPS steps, needs the room; extractJson now also salvages
-      // whatever a cut reply did finish.
-      max_tokens: 4000,
+      messages,
+      response_format: { type: 'json_schema', json_schema: SELECTION_SCHEMA },
+      max_tokens: 600,
     })) as { response?: unknown }
-    const parsed = extractJson(res.response) as
-      | { title?: unknown; ingredients?: unknown; steps?: unknown }
-      | null
-    if (!parsed) return { title: null, ingredients: [], steps: [] }
-    const title = typeof parsed.title === 'string' ? parsed.title.trim() || null : null
-    // Same net as the vision read: a model that disobeys "no commentary" leaks
-    // "Remarque…" lines into the arrays — drop them here too.
-    return {
-      title,
-      // Caps shared with every import path (headings ride on top of the step cap).
-      ingredients: dropDanglingHeadings(stripAiCommentary(cleanLines(parsed.ingredients, MAX_INGREDIENTS))),
-      steps: dropDanglingHeadings(stripAiCommentary(cleanLines(parsed.steps, MAX_STEP_ROWS))),
-    }
+    raw = res.response
   } catch (err) {
-    logAi('structureRecipe', err)
-    return { title: null, ingredients: [], steps: [] }
+    // The model could not keep to the schema — once more, free-form, parsed leniently.
+    // Any other failure (a spent budget, an outage) is the model not answering.
+    const msg = logAi('selectRecipeLines', err)
+    if (!/json mode/i.test(msg)) return null
+    try {
+      const res = (await runModel(env, MODEL, { messages, max_tokens: 600 })) as { response?: unknown }
+      raw = res.response
+    } catch (err2) {
+      logAi('selectRecipeLines (retry)', err2)
+      return null
+    }
   }
+  const parsed = extractJson(raw)
+  return parsed && typeof parsed === 'object' ? toSelection(parsed as Record<string, unknown>, lines.length) : null
+}
+
+// The reply, validated: every index an integer in range, each line used at most ONCE (a
+// title, a section label, an ingredient and a step can never be the same line), lists in
+// page order.
+export function toSelection(v: Record<string, unknown>, n: number): LineSelection {
+  const used = new Set<number>()
+  const ok = (x: unknown): x is number => typeof x === 'number' && Number.isInteger(x) && x >= 0 && x < n
+  const one = (x: unknown): number | null => {
+    if (!ok(x) || used.has(x)) return null
+    used.add(x)
+    return x
+  }
+  const title = one(v.title)
+  const sections = (x: unknown) => {
+    const out: { line: number; before: number }[] = []
+    for (const raw of Array.isArray(x) ? x : []) {
+      const s = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {}
+      if (!ok(s.line) || !ok(s.before) || used.has(s.line)) continue
+      used.add(s.line)
+      out.push({ line: s.line, before: s.before })
+    }
+    return out
+  }
+  // Labels first: a line the model ALSO listed as an ingredient stays a label.
+  const ingredientSections = sections(v.ingredientSections)
+  const stepSections = sections(v.stepSections)
+  const many = (x: unknown) => {
+    const out: number[] = []
+    for (const i of Array.isArray(x) ? x : []) {
+      if (!ok(i) || used.has(i)) continue
+      used.add(i)
+      out.push(i)
+    }
+    return out.sort((a, b) => a - b)
+  }
+  const ingredients = many(v.ingredients)
+  const steps = many(v.steps)
+  const notes = many(v.notes)
+  // Meta lines may repeat a line already taken (a « 4 portions » line is not an
+  // ingredient, but the model may say so): they are only READ, never copied.
+  const meta = (x: unknown) => (ok(x) ? x : null)
+  return { title, servings: meta(v.servings), prep: meta(v.prep), cook: meta(v.cook), ingredients, steps, notes, ingredientSections, stepSections }
 }
 
 // Vision model for READING a recipe out of a photo (a cookbook page, a hand-

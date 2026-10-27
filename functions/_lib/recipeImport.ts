@@ -976,6 +976,11 @@ const SERVINGS_LINE =
 // The number, whichever branch matched: « 4 portions », « Donne 4 », « Portions : 4 ».
 const servingsOf = (sv: RegExpMatchArray): number => +(sv[1] ?? sv[2] ?? sv[4])
 
+// A line that is ONLY an amount (+ its unit) — « 250 ml », « 1 c. à soupe », « 2 » —
+// and a line of words with no number: the two cells of one ingredient (F, 2026-10-27).
+const AMOUNT_ONLY =
+  /^(?:[\d¼½¾⅓⅔⅛.,/ ]+|une?|deux|trois)\s*(?:ml|cl|l|g|kg|lb|lbs|oz|tasses?|cups?|tbsp|tsp|c\.\s*à\s*(?:soupe|thé|café|s|c)\.?|cuill[èe]res?\s+[àa]\s+(?:soupe|thé|café|table)|pinc[ée]es?)?\s*$/i
+const WORDS_ONLY = /^[a-zà-öœ'’(][^\d]*$/i
 // An ingredient-looking line: bullet or quantity-leading, short. Used only by
 // the no-headings fallback.
 const ING_LIKE = /^[-•*–]?\s*(?:\d|[¼½¾⅓⅔⅛]|une?\b|deux\b|trois\b|quelques\b)/i
@@ -1044,9 +1049,20 @@ export function parsePastedRecipe(text: string): PastedRecipe {
   let sawStepHeading = false
 
   const nextNonEmpty = (from: number): string => lines.slice(from + 1).find((l) => l !== '') ?? ''
+  // A bare amount whose words sit on the NEXT line (a site's two cells, « 250 ml » /
+  // « de farine »): the index of that words line, or -1. Never a heading.
+  const wordsAfter = (from: number): number => {
+    if (!AMOUNT_ONLY.test(lines[from])) return -1
+    let j = from + 1
+    while (j < lines.length && lines[j] === '') j++
+    const w = lines[j] ?? ''
+    if (!WORDS_ONLY.test(w) || ING_HEADING.test(w) || STEP_HEADING.test(w) || NOTE_HEADING.test(w) || inlineSectionTitle(w)) return -1
+    return j
+  }
+  let skipTo = -1
   for (let li = 0; li < lines.length; li++) {
     const line = lines[li]
-    if (!line) continue
+    if (!line || li <= skipTo) continue
     const justAfterTitle = afterTitle
     afterTitle = false
     const justAfterIng = afterIngHeading
@@ -1185,6 +1201,12 @@ export function parsePastedRecipe(text: string): PastedRecipe {
         ings.push(makeSectionHeading(sec))
         continue
       }
+      const words = wordsAfter(li)
+      if (words >= 0) {
+        ings.push(`${stripBullet(line)} ${lines[words]}`.slice(0, 200))
+        skipTo = words
+        continue
+      }
       const ing = stripBullet(line).slice(0, 200)
       if (ing) ings.push(ing)
       continue
@@ -1201,9 +1223,10 @@ export function parsePastedRecipe(text: string): PastedRecipe {
   const paragraphCard = !sawIngHeading && !sawStepHeading && ings.length === 0 && stepLines.length === 0
   if (paragraphCard) {
     let skipped = 0
+    let pairTo = -1
     for (let li = 0; li < lines.length; li++) {
       const line = lines[li]
-      if (!line) continue
+      if (!line || li <= pairTo) continue
       if (junk.has(li)) continue // a nav bar, a rating, a « Titre » label — never recipe
       if (skipped < Math.max(1, titleLines)) {
         skipped++
@@ -1224,6 +1247,12 @@ export function parsePastedRecipe(text: string): PastedRecipe {
       // ingredient list is made of short lines, so it never looks like that.
       const prev = stepLines[stepLines.length - 1]
       const continuation = !!prev && prev.length > 40 && !/[.!?:]$/.test(prev)
+      const words = continuation ? -1 : wordsAfter(li)
+      if (words >= 0) {
+        ings.push(`${stripBullet(line)} ${lines[words]}`.slice(0, 200))
+        pairTo = words
+        continue
+      }
       if (!continuation && ING_LIKE.test(line) && line.length <= 80) ings.push(stripBullet(line).slice(0, 200))
       else stepLines.push(line)
     }
@@ -1430,71 +1459,6 @@ export function recipeTextWindow(text: string, max = 16_000): string {
 // `max` defaults to the model budget, but a caller that intends to window the
 // result (see recipeTextWindow) passes a large max so the recipe isn't already
 // truncated away before the window can find it.
-// ---------------------------------------------------------------------------
-// AI-structuring honesty check — did the model change any number?
-// ---------------------------------------------------------------------------
-// The AI structuring prompt says "organize WITHOUT inventing", but a generative
-// pass over text can still flip a fraction or "helpfully" convert a unit
-// ("225 g (1/2 lb)" → "(2 tasses)") — and no downstream check can catch a g→cup
-// invention by arithmetic. This is the STRUCTURAL guard: every number in the
-// model's output must already exist in the source transcript. Lines carrying a
-// foreign number (or a foreign number+unit pairing) are returned so the verify
-// panel flags them "à confirmer" and the read report lists them. Pure, no AI.
-
-// Vulgar-fraction glyphs → ascii, so "¾" in the source vouches for "3/4" out.
-const VULGAR_NUM: Record<string, string> = {
-  '¼': '1/4', '½': '1/2', '¾': '3/4', '⅐': '1/7', '⅑': '1/9', '⅒': '1/10',
-  '⅓': '1/3', '⅔': '2/3', '⅕': '1/5', '⅖': '2/5', '⅗': '3/5', '⅘': '4/5',
-  '⅙': '1/6', '⅚': '5/6', '⅛': '1/8', '⅜': '3/8', '⅝': '5/8', '⅞': '7/8',
-}
-const foldNumbers = (s: string): string =>
-  s.replace(/[¼½¾⅐⅑⅒⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞]/g, (g) => ` ${VULGAR_NUM[g]} `)
-
-// Every numeric token in the text, decimal comma normalized to a dot so "1,5"
-// and "1.5" vouch for each other. "1 1/2" yields "1" and "1/2".
-const NUM_TOKEN = /\d+\/\d+|\d+[.,]\d+|\d+/g
-function numberTokens(s: string): string[] {
-  return [...foldNumbers(s).matchAll(NUM_TOKEN)].map((m) => m[0].replace(',', '.'))
-}
-
-// Kitchen units worth pairing with their amount — a converted "(2 tasses)" is
-// caught by the PAIR even when a bare "2" exists elsewhere in the source (there
-// is always a "2" somewhere). Only unambiguous single-word units; the multi-word
-// spoons are covered well enough by the bare-number tier.
-const UNIT_CANON: [RegExp, string][] = [
-  [/^tasses?$/i, 'cup'], [/^cups?$/i, 'cup'],
-  [/^ml$/i, 'ml'], [/^l$/i, 'l'], [/^litres?$/i, 'l'], [/^liters?$/i, 'l'],
-  [/^g$/i, 'g'], [/^grammes?$/i, 'g'], [/^grams?$/i, 'g'], [/^kg$/i, 'kg'],
-  [/^lbs?$/i, 'lb'], [/^livres?$/i, 'lb'], [/^pounds?$/i, 'lb'], [/^oz$/i, 'oz'],
-]
-const canonUnit = (word: string): string | null => {
-  const w = word.replace(/[.,;:!?)]+$/, '')
-  for (const [re, canon] of UNIT_CANON) if (re.test(w)) return canon
-  return null
-}
-const PAIR_TOKEN = /(\d+\s+\d+\/\d+|\d+\/\d+|\d+[.,]\d+|\d+)\s*(?:de\s+|d['’]\s*)?([a-zà-öœ.]+)/gi
-function measurePairs(s: string): string[] {
-  const out: string[] = []
-  for (const m of foldNumbers(s).matchAll(PAIR_TOKEN)) {
-    const unit = canonUnit(m[2])
-    if (unit) out.push(`${m[1].replace(',', '.').replace(/\s+/g, ' ')}|${unit}`)
-  }
-  return out
-}
-
-// The subset of `lines` that carry a number (or amount+unit pairing) absent from
-// `source` — the model put it there, the page didn't. Section headings skipped.
-export function linesWithForeignNumbers(source: string, lines: string[]): string[] {
-  const nums = new Set(numberTokens(source))
-  const pairs = new Set(measurePairs(source))
-  if (!nums.size) return []
-  return lines.filter((l) => {
-    if (isSectionHeading(l)) return false
-    if (numberTokens(l).some((tok) => !nums.has(tok))) return true
-    return measurePairs(l).some((p) => !pairs.has(p))
-  })
-}
-
 export function htmlToText(html: string, max = 6000): string {
   return decodeEntities(
     html

@@ -56,7 +56,10 @@ export const SETTINGS_TREE = {
   kitchen: {
     // « Apparence » stays out of the guest's reach on purpose: it looks device-local,
     // but MeasureColorsSection PATCHes /api/household.
-    apparence: [s('recipeTags', 'household'), s('recipePills', 'household'), s('measureColors', 'household')],
+    // « Envoyer à Babillard », the recipe-import bookmark: 'household' though copying it
+    // writes nothing — what it leads to is a recipe saved to the book, which a guest
+    // cannot do (and this sub stays out of the guest's reach, see above).
+    apparence: [s('recipeTags', 'household'), s('recipePills', 'household'), s('measureColors', 'household'), s('recipeBookmarklet', 'household')],
     meals: [s('mealSlots', 'household'), s('mealWindow', 'household')],
     reserve: [s('reserveLocations', 'household')],
   },

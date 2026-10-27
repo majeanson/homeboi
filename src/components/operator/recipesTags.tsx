@@ -20,6 +20,7 @@ import { MEAL_SLOTS, type MealSlot } from '../../lib/mealSlots'
 import { RowActions } from '../RowActions'
 import { EmptyState } from '../EmptyState'
 import { OperatorSection } from './OperatorSection'
+import { recipeBookmarklet } from '../../lib/recipeBookmarklet'
 
 // A chip tinted by its tag colour (readable on cream AND dark via the theme-aware
 // helpers), so the colour you pick previews in place. No colour → undefined = the
@@ -284,6 +285,50 @@ export function RecipeTagsSection({ help }: { help?: HelpMode }) {
         />
       )}
       <DragGhost ghost={dnd.ghost} />
+    </OperatorSection>
+  )
+}
+
+// Réglages ▸ La cuisine ▸ « Signet : Envoyer à Babillard » — the recipe import's door
+// for the sites that refuse every server (lib/recipeBookmarklet). The Flipp bookmark's
+// block (operator/shopping FlippSection) in miniature: copy, the read-only address for a
+// manual copy, three steps. Stacked here, not a new pill (C-15). Copying writes nothing.
+export function RecipeBookmarkletSection({ help }: { help?: HelpMode }) {
+  const o18n = useOperatorT()
+  const [copied, setCopied] = useState(false)
+  // THIS household's Babillard: where the page lands (the bookmark's one argument).
+  const bookmarklet = recipeBookmarklet(window.location.origin)
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(bookmarklet)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      /* clipboard blocked — the address is in the field below for a manual copy */
+    }
+  }
+  return (
+    <OperatorSection title={o18n.recipeBookmarkletTitle} help={help} helpKey="recipeBookmarklet">
+      <p className="operator__hint">{o18n.recipeBookmarkletIntro}</p>
+      <ol className="operator__steps">
+        <li>
+          {o18n.recipeBookmarklet1}
+          <Cluster>
+            <button type="button" className="btn btn--primary" onClick={copy}>
+              {copied ? <Icon name="check-bold" size={16} /> : null} {copied ? o18n.flippBookmarkletCopied : o18n.flippCopyBookmarklet}
+            </button>
+          </Cluster>
+          <input
+            className="input mono flipp__bookmarklet"
+            readOnly
+            value={bookmarklet}
+            onFocus={(e) => e.target.select()}
+            aria-label={o18n.flippBookmarkletLabel}
+          />
+        </li>
+        <li>{o18n.recipeBookmarklet2}</li>
+        <li>{o18n.recipeBookmarklet3}</li>
+      </ol>
     </OperatorSection>
   )
 }

@@ -136,6 +136,7 @@ at all (❌).
 | À utiliser (use-soon) · clear / rename / add | ✅ check; ✏️ behind ⚙¹⁰ | — | — | 🔶 `SectionAdd` only, no ＋ tile¹¹ | — | deferred | ✅ (⚙) |
 | Réserve · use / to list / rename+move | ✅ check; 🛍 `onExtra` (a DO action, both faces); ✏️ behind ⚙¹⁰ | — | — | ✅ `SectionAdd` + ＋ `reserve` | kitchen▸reserve (locations) | add: compensating · use/delete: deferred | ✅ (⚙) |
 | Recipe · open / favourite / filter / create | ✅ card tap → scene (peek retired⁹); ❤ `HeartButton`; collapsible `SearchField` + filter panel | — | ➖⁹ | ＋ `recipe` / `book` / `cook` | kitchen▸apparence (tags/pills/colours) | — | ✅ |
+| Recipe · import (link / page) | « Remplir vite » ▸ link or paste in the form; **/share « Importer comme recette »** (a shared web link); **`/kitchen/recipe/new?import=<url>`**; **the « Envoyer à Babillard » bookmark** run on the recipe's own page → `#import=` (2026-10-27) | — | — | ＋ `recipe` | kitchen▸apparence (`recipeBookmarklet`) | — (a draft: nothing is saved before « Enregistrer ») | ✅ |
 | History · re-plan / day | ✅ chip → « Encore ? »; badge → day peek; pencil → editor | — | ✅ | — | liste▸history | — | ✅ |
 
 ### La liste (`pages/Liste.tsx`) — two faces via `listeMode` (⚙ = the non-touch door)

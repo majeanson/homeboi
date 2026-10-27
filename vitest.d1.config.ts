@@ -33,6 +33,8 @@ export default defineConfig(async () => {
             // Skips the force-HTTPS bounce in worker/index.ts, exactly as .dev.vars does.
             ENVIRONMENT: 'development',
             AI: '',
+            // Browser Run never starts from a test (_lib/renderPage treats '' as unbound).
+            BROWSER: '',
             MISTRAL_API_KEY: '',
             RESEND_API_KEY: '',
             NASA_APOD_KEY: '',

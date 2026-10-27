@@ -23,7 +23,7 @@ import { RoutinesSection } from '../components/operator/chores'
 import { ChoresTabPanel } from '../components/operator/homeProjects'
 import { PhotosSection, RecapSection } from '../components/operator/media'
 import { ThisWeekTogetherSection } from '../components/operator/ThisWeekTogetherSection'
-import { RecipeTagsSection } from '../components/operator/recipesTags'
+import { RecipeTagsSection, RecipeBookmarkletSection } from '../components/operator/recipesTags'
 import { RecipePillsSection } from '../components/operator/recipePills'
 import { MealSlotsSection, MealWindowSection } from '../components/operator/meals'
 import { ReserveLocationsSection } from '../components/operator/reserve'
@@ -297,6 +297,7 @@ export function Operator() {
       history: o18n.history,
       ghost: o18n.ghost,
       recipePills: o18n.pillsTitle,
+      recipeBookmarklet: o18n.recipeBookmarkletTitle,
       recap: o18n.recapTitle,
       photos: o18n.photos,
       micTest: o18n.micTestTitle,
@@ -376,6 +377,7 @@ export function Operator() {
     recipeTags: <RecipeTagsSection help={operatorHelp} />,
     recipePills: <RecipePillsSection help={operatorHelp} />,
     measureColors: <MeasureColorsSection help={operatorHelp} />,
+    recipeBookmarklet: <RecipeBookmarkletSection help={operatorHelp} />,
     mealSlots: <MealSlotsSection help={operatorHelp} />,
     mealWindow: <MealWindowSection help={operatorHelp} />,
     reserveLocations: <ReserveLocationsSection help={operatorHelp} />,

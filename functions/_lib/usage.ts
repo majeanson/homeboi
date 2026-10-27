@@ -66,12 +66,32 @@ export const UPLOAD_BYTES_PER_DAY = {
 // never draw from it, so strangers can exhaust it without a family noticing — the
 // nightly cron reports the pool and mails when it filled (_lib/nightly.ts).
 // Sized at DEMO_SANDBOX_CAP (25) full afternoons: well past a busy day of real visitors.
+/** Browser Run renders per local day (migration 0145, _lib/renderPage.ts). Unlike the two
+ *  above this one is scarce for the WHOLE account: the Workers Free plan gives 10
+ *  browser-minutes a day, shared by every household. 20 renders of ~15 s is half of it —
+ *  a family importing a recipe a day never meets it; one household cannot drain it. */
+export const BROWSER_RENDERS_PER_DAY = {
+  sandbox: 5,
+  unverified: 5,
+  household: 20,
+} as const satisfies Record<Trust, number>
+
 export const STRANGER_POOL_PER_DAY = {
   ai: 25 * AI_CALLS_PER_DAY.sandbox,
   upload: 25 * UPLOAD_BYTES_PER_DAY.sandbox,
+  // Not 25 × 5: the account's daily minutes are the real ceiling, and strangers get a
+  // slice of them, never the whole.
+  browser: 10,
 } as const
 
-export type Meter = 'ai' | 'upload'
+export type Meter = 'ai' | 'upload' | 'browser'
+
+const LIMITS: Record<Meter, Record<Trust, number>> = {
+  ai: AI_CALLS_PER_DAY,
+  upload: UPLOAD_BYTES_PER_DAY,
+  browser: BROWSER_RENDERS_PER_DAY,
+}
+const COLUMN: Record<Meter, string> = { ai: 'ai_calls', upload: 'upload_bytes', browser: 'browser_renders' }
 
 export interface UsageVerdict {
   /** False → the caller must refuse, with 429 and a calm sentence. */
@@ -116,29 +136,31 @@ const TRUST_SQL = `(SELECT CASE
  */
 export async function charge(env: Env, meter: Meter, amount = 1): Promise<UsageVerdict> {
   const who = currentHousehold()
-  const limits = meter === 'ai' ? AI_CALLS_PER_DAY : UPLOAD_BYTES_PER_DAY
+  const limits = LIMITS[meter]
   if (!who) return { allowed: true, used: 0, limit: limits.household }
 
   const now = nowSec()
   const day = localDayStart(new Date(now * 1000))
   const ai = meter === 'ai' ? amount : 0
   const bytes = meter === 'upload' ? amount : 0
+  const renders = meter === 'browser' ? amount : 0
   try {
     const row = await env.DB.prepare(
-      `INSERT INTO usage_daily (household_id, day, ai_calls, upload_bytes, trust, created_at, updated_at)
-       VALUES (?1, ?2, ?3, ?4, ${TRUST_SQL}, ?5, ?5)
+      `INSERT INTO usage_daily (household_id, day, ai_calls, upload_bytes, browser_renders, trust, created_at, updated_at)
+       VALUES (?1, ?2, ?3, ?4, ?6, ${TRUST_SQL}, ?5, ?5)
        ON CONFLICT(household_id, day) DO UPDATE SET
          ai_calls = ai_calls + excluded.ai_calls,
          upload_bytes = upload_bytes + excluded.upload_bytes,
+         browser_renders = browser_renders + excluded.browser_renders,
          trust = excluded.trust,
          updated_at = excluded.updated_at
-       RETURNING ai_calls, upload_bytes, trust`,
+       RETURNING ai_calls, upload_bytes, browser_renders, trust`,
     )
-      .bind(who.householdId, day, ai, bytes, now)
-      .first<{ ai_calls: number; upload_bytes: number; trust: Trust }>()
+      .bind(who.householdId, day, ai, bytes, now, renders)
+      .first<{ ai_calls: number; upload_bytes: number; browser_renders: number; trust: Trust }>()
     const trust: Trust = row?.trust ?? 'household'
     const limit = limits[trust] ?? limits.household
-    const used = meter === 'ai' ? (row?.ai_calls ?? 0) : (row?.upload_bytes ?? 0)
+    const used = meter === 'ai' ? (row?.ai_calls ?? 0) : meter === 'upload' ? (row?.upload_bytes ?? 0) : (row?.browser_renders ?? 0)
     if (used > limit) return { allowed: false, used, limit, trust }
     if (trust === 'household') return { allowed: true, used, limit, trust }
 
@@ -146,12 +168,12 @@ export async function charge(env: Env, meter: Meter, amount = 1): Promise<UsageV
     // zone at once is every row whose local day began in the last 24 h — each zone's
     // current day did, and its previous one did not. Includes this charge (it landed).
     const pool = await env.DB.prepare(
-      `SELECT COALESCE(SUM(${meter === 'ai' ? 'ai_calls' : 'upload_bytes'}), 0) AS n
+      `SELECT COALESCE(SUM(${COLUMN[meter]}), 0) AS n
        FROM usage_daily WHERE day > ?1 AND trust <> 'household'`,
     )
       .bind(now - 86_400)
       .first<{ n: number }>()
-    const poolLimit = meter === 'ai' ? STRANGER_POOL_PER_DAY.ai : STRANGER_POOL_PER_DAY.upload
+    const poolLimit = STRANGER_POOL_PER_DAY[meter]
     if ((pool?.n ?? 0) > poolLimit) return { allowed: false, used, limit, trust, pool: true }
     return { allowed: true, used, limit, trust }
   } catch (err) {

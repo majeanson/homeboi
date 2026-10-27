@@ -57,6 +57,12 @@ migrations_dir = "functions/db/migrations"
 [ai]
 binding = "AI"
 
+# Browser Run (ex Browser Rendering) — the recipe import's second door for a page that
+# refuses the Worker (functions/_lib/renderPage.ts, budgeted per household). Free plan:
+# 10 browser-minutes a day for the account. Does not run under local `wrangler dev`.
+[browser]
+binding = "BROWSER"
+
 # --- R2: family photos + member avatar images --------------------------------
 # Optional binding (graceful-degrade like [ai] — with it unset the photo features
 # simply hide). Create the bucket once: `wrangler r2 bucket create babillard-photos`.

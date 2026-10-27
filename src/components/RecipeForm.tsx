@@ -13,7 +13,7 @@ import { ocrImage, mergeOcrPages, disposeOcr } from '../lib/ocr'
 import { repairImperialFromMetric } from '../lib/measure'
 import { useOcrEngine, useCloudOcrAvailable } from '../lib/ocrPref'
 import { uploadMedia, MediaUnavailableError } from '../lib/uploadMedia'
-import { RecipeReadReview, type ReadReport, type ReadReviewDraft } from './RecipeReadReview'
+import { RecipeReadReview, type AuditFlagView, type ReadReport, type ReadReviewDraft } from './RecipeReadReview'
 import { alignSide, sideInsert, sideRemove, sideSwap, sideSplice, sideSet } from '../lib/parallelArray'
 import {
   type Recipe,
@@ -33,6 +33,10 @@ import { Chip } from './Chip'
 import { EntityCombobox, type ComboOption } from './EntityCombobox'
 import { ZoomableImg } from './ZoomableImg'
 import { useModal } from '../lib/useModal'
+import { Link } from 'react-router-dom'
+import { useRecipes } from '../lib/queryHooks'
+import { sameSource } from '../lib/recipes'
+import type { CapturedRecipePage } from '../lib/recipeBookmarklet'
 
 // In the EDITOR a row is a section row as soon as it carries the "## " marker —
 // even with the title still empty ("## "), so typing the name doesn't flip the
@@ -49,14 +53,21 @@ const headingTitle = (v: string): string => v.replace(/^##\s?/, '')
 // is a separate control at the top — distinct from "read a photo".
 type LineKind = 'ingredients' | 'steps'
 
+/** An import the scene was OPENED with (RecipeFormPage): a link (`?import=`, the share
+ *  page's « Importer comme recette ») or a page the cook's browser captured (`#import=`,
+ *  the « Envoyer à Babillard » bookmark). It runs once, on mount. */
+export type AutoImport = { url: string } | { page: CapturedRecipePage }
+
 export function RecipeForm({
   value,
   onSaved,
   onCancel,
+  autoImport,
 }: {
   value?: Recipe | null
   onSaved: () => void
   onCancel: () => void
+  autoImport?: AutoImport | null
 }) {
   const t = useT()
   const write = useWrite()
@@ -164,6 +175,9 @@ export function RecipeForm({
     sourceFile: File | null
     lowConfidenceWords: string[]
     report: ReadReport
+    // How the read was made, for the provenance line once confirmed (a site-data read
+    // the audit sent here is still « site », not « ai »).
+    via?: 'site' | 'headings' | 'heuristic' | 'ai'
     image?: string | null
     source?: string | null
   } | null>(null)
@@ -176,8 +190,10 @@ export function RecipeForm({
   // shared line (503 keeps its own contract: hide the controls, stay quiet).
   const [uploadErr, setUploadErr] = useState(false)
   const [readMsg, setReadMsg] = useState<string | null>(null)
-  const [showImport, setShowImport] = useState(false)
-  const [importUrl, setImportUrl] = useState('')
+  // Opened WITH an import: the « Remplir vite » panel starts open on it, so whatever
+  // the import says (blocked, nothing found) is said where the cook can act on it.
+  const [showImport, setShowImport] = useState(!!autoImport)
+  const [importUrl, setImportUrl] = useState(() => (!autoImport ? '' : 'url' in autoImport ? autoImport.url : autoImport.page.url))
   const [importText, setImportText] = useState('')
   const [importMsg, setImportMsg] = useState<string | null>(null)
   // The cook's optional note for the model (« c'est la 2e recette de la page »).
@@ -185,6 +201,30 @@ export function RecipeForm({
   // HOW the last import was read — one calm line under « Remplir vite » (site data /
   // page text / best effort / AI-checked). Cleared when the import panel reopens.
   const [importVia, setImportVia] = useState<'site' | 'headings' | 'heuristic' | 'ai' | null>(null)
+  // …and how the page was REACHED, when it was not our own plain read: a remote browser
+  // (Browser Run) or the cook's own (the bookmark). One more short sentence on that line.
+  const [importDoor, setImportDoor] = useState<'browser' | 'bookmarklet' | null>(null)
+  // The last import said « blocked »: the message grows a link to the bookmark's setup.
+  const [importBlockedHere, setImportBlockedHere] = useState(false)
+  // The link the last import came from — a recipe already in the book from the same page
+  // gets one calm line (C5); the import itself is never refused.
+  const [importedSource, setImportedSource] = useState<string | null>(null)
+  const recipesQ = useRecipes()
+  const duplicate = importedSource
+    ? recipesQ.data?.recipes.find((r) => r.id !== value?.id && sameSource(r.source, importedSource))
+    : undefined
+  // A page the bookmark captured, kept for « Guider l'IA »: a re-run must not refetch the
+  // URL — that is the very fetch the site refused.
+  const lastPage = useRef<CapturedRecipePage | null>(autoImport && 'page' in autoImport ? autoImport.page : null)
+  // The import the scene was opened with runs ONCE (a StrictMode double-mount keeps the ref).
+  const autoRan = useRef(false)
+  useEffect(() => {
+    if (!autoImport || autoRan.current) return
+    autoRan.current = true
+    void runImport('', autoImport)
+    // Mount-only on purpose: the scene was opened FOR this import, once.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   // What the LAST import put in the form — applyDraft compares against it so a re-run
   // replaces its own previous result but never a line the cook edited since.
   const lastDraft = useRef<Draft | null>(null)
@@ -387,11 +427,11 @@ export function RecipeForm({
     times: { prep: number | null; cook: number | null; total: number | null }
     lang: 'fr' | 'en' | null
     notes?: string | null
-    // Report fields (recipe-import / recipe-vision): how the text was structured,
-    // by which model, and which lines carry numbers the source never printed.
+    // Report fields (recipe-import / recipe-vision): how the text was structured, by
+    // which model, and what the server's audit found (functions/_lib/recipeAudit).
     structuring?: 'headings' | 'ai' | 'heuristic' | 'jsonld' | 'microdata'
     model?: string | null
-    suspect?: string[]
+    audit?: AuditFlagView[]
     empty?: boolean
     // recipe-vision only: which model transcribed the photo (the structuring above
     // then names how that transcript was organised, like any paste).
@@ -432,7 +472,7 @@ export function RecipeForm({
         structuring: null,
         structuringModel: null,
         repairs: [],
-        suspect: [],
+        audit: [],
         shakyCount: 0,
       }
 
@@ -508,7 +548,7 @@ export function RecipeForm({
       if (draft && draftHasContent(draft)) {
         report.structuring = draft.structuring ?? null
         report.structuringModel = draft.model ?? null
-        report.suspect = draft.suspect ?? []
+        report.audit = draft.audit ?? []
       }
       if ((!draft || draft.empty || !draftHasContent(draft)) && aiEnabled) {
         // Fallback: the generative vision read of the FIRST page (resized to the
@@ -534,7 +574,7 @@ export function RecipeForm({
             report.readerModel = v.readerModel ?? null
             report.structuring = v.structuring ?? 'ai'
             report.structuringModel = v.model ?? null
-            report.suspect = v.suspect ?? []
+            report.audit = v.audit ?? []
           }
         }
       }
@@ -590,11 +630,12 @@ export function RecipeForm({
         /* R2 off / un-shrinkable — keep the parsed recipe, just no source snapshot */
       }
     } else {
-      // The link/paste import the AI organised: its picture and link land now, and
-      // the provenance line says it was checked.
+      // The link/paste import the cook just checked: its picture and link land now,
+      // and the provenance line says how it was read.
       if (readReview.image && !image) setImage(readReview.image)
       if (readReview.source) setSource(readReview.source)
-      setImportVia('ai')
+      setImportedSource(readReview.source ?? null)
+      setImportVia(readReview.via ?? 'ai')
       setShowImport(false)
     }
     applyDraft({ ...edited, sourceImage })
@@ -609,15 +650,22 @@ export function RecipeForm({
     })
   }
 
+  // The provenance line's word for how a draft was read.
+  const viaOf = (s: ReadDraft['structuring']): 'site' | 'headings' | 'heuristic' | 'ai' | undefined =>
+    s === 'jsonld' || s === 'microdata' ? 'site' : s === 'headings' || s === 'heuristic' || s === 'ai' ? s : undefined
+
   // `hint`: the cook's note for the model — from the import panel, or from the verify
   // panel's « Guider l'IA » (then the panel stays open and takes the fresh read).
-  async function runImport(hint = importHint.trim()) {
-    const url = importUrl.trim()
-    const text = importText.trim()
-    if ((!url && !text) || importing) return
+  async function runImport(hint = importHint.trim(), input?: AutoImport) {
+    const url = input ? ('url' in input ? input.url : '') : importUrl.trim()
+    const text = input ? '' : importText.trim()
+    const page = input && 'page' in input ? input.page : !text && lastPage.current?.url === url ? lastPage.current : null
+    if ((!url && !text && !page) || importing) return
     setImporting(true)
     setImportMsg(null)
     setImportVia(null)
+    setImportDoor(null)
+    setImportBlockedHere(false)
     try {
       // Longer than api()'s 20s default: a URL import chains its own scrape fetch
       // server-side, THEN may structure the result through an AI model —
@@ -628,21 +676,27 @@ export function RecipeForm({
           source: string | null
           reason?: 'blocked' | 'no-recipe'
           transcript?: string
+          fetched?: 'direct' | 'browser' | 'reader' | 'bookmarklet'
         }
       >('recipe-import', {
         method: 'POST',
-        body: { ...(text ? { text } : { url }), ...(hint ? { hint } : {}) },
+        body: { ...(page ? { page } : text ? { text } : { url }), ...(hint ? { hint } : {}) },
         timeoutMs: 45_000,
       })
+      setImportDoor(r.fetched === 'browser' || r.fetched === 'bookmarklet' ? r.fetched : null)
       if (r.empty || (!r.ingredients.length && !r.steps.length && !r.title)) {
         // A site that refuses us is not the same failure as a page with no recipe on
         // it — and neither is the AI being off. Say which one it was.
         setImportMsg(r.reason === 'blocked' ? t.recipes.importBlocked : t.recipes.importFail)
+        setImportBlockedHere(r.reason === 'blocked')
+        setShowImport(true)
         closeReadReview()
-      } else if (r.structuring === 'ai') {
-        // The model ORGANISED the page — it can drop a step or change a number, so
-        // the read waits in the verify panel, beside the text it came from, until
-        // the cook confirms it (the same gate a photo read goes through).
+      } else if (r.structuring === 'ai' || r.audit?.length) {
+        // The model CHOSE the page's lines (it can still leave one out), or the audit
+        // found something (a step count short of the page's, a measured phrase no
+        // ingredient names…): the read waits in the verify panel, beside the text it
+        // came from, until the cook confirms it — the gate a photo read goes through.
+        // A clean read lands directly, below.
         setReadReview({
           draft: r,
           photoUrl: null,
@@ -655,12 +709,13 @@ export function RecipeForm({
             confidence: null,
             pages: 1,
             columnized: false,
-            structuring: 'ai',
+            structuring: r.structuring ?? null,
             structuringModel: r.model ?? null,
             repairs: [],
-            suspect: r.suspect ?? [],
+            audit: r.audit ?? [],
             shakyCount: 0,
           },
+          via: viaOf(r.structuring),
           image: r.image,
           source: r.source,
         })
@@ -670,13 +725,8 @@ export function RecipeForm({
         applyDraft(r)
         if (r.image && !image) setImage(r.image)
         if (r.source) setSource(r.source)
-        setImportVia(
-          r.structuring === 'jsonld' || r.structuring === 'microdata'
-            ? 'site'
-            : r.structuring === 'headings' || r.structuring === 'heuristic'
-              ? r.structuring
-              : null,
-        )
+        setImportedSource(r.source ?? null)
+        setImportVia(viaOf(r.structuring) ?? null)
         setShowImport(false)
       }
     } catch (e) {
@@ -1164,7 +1214,17 @@ export function RecipeForm({
               >
                 {importing ? t.recipes.importing : t.recipes.importBtn}
               </button>
-              {importMsg && <p className="recipe-aioff mono">{importMsg}</p>}
+              {importMsg && (
+                <p className="recipe-aioff mono" data-testid="import-msg">
+                  {importMsg}
+                  {importBlockedHere && (
+                    <>
+                      {' '}
+                      <Link to="/settings?focus=recipeBookmarklet">{t.recipes.importBlockedBookmarklet}</Link>
+                    </>
+                  )}
+                </p>
+              )}
             </div>
           )}
           </Disclosure>
@@ -1178,6 +1238,12 @@ export function RecipeForm({
                   : importVia === 'heuristic'
                     ? t.recipes.importViaHeuristic
                     : t.recipes.importViaAi}
+              {importDoor && ` ${importDoor === 'bookmarklet' ? t.recipes.importDoorBookmarklet : t.recipes.importDoorBrowser}`}
+            </p>
+          )}
+          {duplicate && (
+            <p className="recipe-aioff mono" data-testid="import-duplicate">
+              {t.recipes.importDuplicate(duplicate.title)} · <Link to={`/kitchen/recipe/${duplicate.id}`}>{t.recipes.importDuplicateOpen}</Link>
             </p>
           )}
 

@@ -1876,8 +1876,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Importer facilement', en: 'Easy import' },
         detail: {
-          fr: 'D’une photo (l’appareil lit le texte lui-même), d’un lien collé, ou à la main — sans tout retaper.',
-          en: 'From a photo (the device reads the text itself), a pasted link, or by hand — without retyping it all.',
+          fr: 'D’une photo (l’appareil lit le texte lui-même), d’un lien collé ou partagé vers Babillard, ou à la main — sans tout retaper. Pour un site qui refuse, le signet « Envoyer à Babillard » (Réglages ▸ La cuisine) l’envoie depuis ton navigateur.',
+          en: 'From a photo (the device reads the text itself), a link pasted or shared to Babillard, or by hand — without retyping it all. For a site that refuses, the “Send to Babillard” bookmark (Settings ▸ Kitchen) sends it from your browser.',
         },
         route: '/kitchen/recipe/new',
       },

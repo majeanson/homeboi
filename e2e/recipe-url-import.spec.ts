@@ -35,12 +35,15 @@ const SITE_DRAFT = {
   notes: 'Meilleure le lendemain.',
 }
 
+// The source as the selection model saw it: NUMBERED (the panel shows it beside the lines).
 const TRANSCRIPT =
-  'Pouding chômeur\n\nIngrédients\n500 ml de cassonade\n500 ml d’eau\n\nPréparation\nPréchauffer le four à 180 °C.\nCuire 40 minutes.'
+  '0: Pouding chômeur\n1: Ingrédients\n2: 500 ml de cassonade\n3: 500 ml d’eau\n4: Préparation\n5: Préchauffer le four à 180 °C.\n6: Cuire 40 minutes.'
+// The model CHOSE the lines (it writes none): here it left the last step out, and the
+// audit says the page has more — the panel must say so. Every line is the source's.
 const AI_DRAFT = {
   title: 'Pouding chômeur',
   ingredients: ['500 ml de cassonade', '500 ml d’eau'],
-  steps: ['Préchauffer le four à 180 °C.', 'Cuire 45 minutes.'],
+  steps: ['Préchauffer le four à 180 °C.'],
   servings: null,
   servingsUnit: null,
   times: { prep: null, cook: null, total: null },
@@ -48,9 +51,8 @@ const AI_DRAFT = {
   source: 'https://www.example.test/pouding',
   lang: 'fr',
   structuring: 'ai',
-  model: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
-  // « 45 » is not in the page text — the panel must flag it.
-  suspect: ['Cuire 45 minutes.'],
+  model: '@cf/meta/llama-3.3-70b-instruct-fp8-fast · sélection',
+  audit: [{ kind: 'step-count', line: '1/2' }],
   transcript: TRANSCRIPT,
 }
 
@@ -123,19 +125,20 @@ test('link import, AI-organised: verify beside the page text, guide the AI, conf
   await page.route('**/api/recipe-import', async (r: Route) => {
     const body = (r.request().postDataJSON() ?? {}) as Record<string, unknown>
     bodies.push(body)
-    // The retry, guided by the hint, comes back with the number the page printed.
+    // The retry, guided by the hint, comes back with every step the page printed.
     const retry = typeof body.hint === 'string' && body.hint.length > 0
-    await r.fulfill(json(retry ? { ...AI_DRAFT, steps: ['Préchauffer le four à 180 °C.', 'Cuire 40 minutes.'], suspect: [] } : AI_DRAFT))
+    await r.fulfill(json(retry ? { ...AI_DRAFT, steps: ['Préchauffer le four à 180 °C.', 'Cuire 40 minutes.'], audit: [] } : AI_DRAFT))
   })
 
   await page.getByRole('button', { name: 'Importer', exact: true }).click()
 
   const modal = page.locator('.read-review')
   await expect(modal).toBeVisible({ timeout: 15_000 })
-  // The source is the page text, not a photo — and the changed number is flagged.
-  await expect(modal.locator('.read-review__source')).toContainText('Cuire 40 minutes.')
+  // The source is the page text, numbered as the model saw it, not a photo — and the
+  // audit says the read is short of the page.
+  await expect(modal.locator('.read-review__source')).toContainText('6: Cuire 40 minutes.')
   await expect(modal.locator('.read-review__photo img')).toHaveCount(0)
-  await expect(modal.locator('.read-review__line.is-flagged')).toHaveCount(1)
+  await expect(modal.getByTestId('read-review-audit')).toContainText('La page compte plus d’étapes (1/2).')
 
   // « Guider l'IA » → a hint → « Réessayer »: the request carries it, the panel refreshes.
   await modal.getByRole('button', { name: 'Guider l’IA (facultatif)' }).click()
@@ -145,7 +148,7 @@ test('link import, AI-organised: verify beside the page text, guide the AI, conf
   await expect.poll(() => bodies.length).toBe(2)
   expect(bodies[1].hint).toBe('garde les étapes telles quelles')
   expect(bodies[1].url).toBe('https://www.example.test/recette')
-  await expect(modal.locator('.read-review__line.is-flagged')).toHaveCount(0)
+  await expect(modal.getByTestId('read-review-audit')).toHaveCount(0)
 
   // Confirm → the checked read lands, and the form says how it was read.
   await modal.locator('.read-review__foot .btn--primary').click()
@@ -155,6 +158,28 @@ test('link import, AI-organised: verify beside the page text, guide the AI, conf
   await expect(page.locator('.recipe-steps .recipe-step').last()).toContainText('Cuire 40 minutes.')
   await expect(page.getByTestId('import-via')).toHaveText('Organisé par l’IA — vérifié.')
   expect(errors, 'pageerror during AI link import').toEqual([])
+})
+
+test('a site-data read the audit flagged waits in the verify panel; confirmed, it says « site »', async ({ page }) => {
+  await openImport(page, 430)
+  await page.route('**/api/recipe-import', (r) =>
+    r.fulfill(
+      json({
+        ...SITE_DRAFT,
+        steps: ['Napper de 125 ml de crème et servir.'],
+        audit: [{ kind: 'missing-ingredient', line: '125 ml de crème' }],
+        transcript: 'Lasagne du dimanche\nIngrédients\n500 g de pâtes\nPréparation\nNapper de 125 ml de crème et servir.',
+      }),
+    ),
+  )
+  await page.getByRole('button', { name: 'Importer', exact: true }).click()
+  const modal = page.locator('.read-review')
+  await expect(modal).toBeVisible({ timeout: 15_000 })
+  await expect(modal.getByTestId('read-review-audit')).toContainText('« 125 ml de crème » est dans les étapes, pas dans les ingrédients.')
+  await expect(modal.locator('.read-review__line.is-flagged')).toHaveCount(1)
+  await modal.locator('.read-review__foot .btn--primary').click()
+  await expect(modal).toBeHidden()
+  await expect(page.getByTestId('import-via')).toHaveText('Lu dans les données du site — sans IA.')
 })
 
 test('390 px: the hint field and its buttons fit, in the import panel and in the verify panel', async ({ page }) => {
@@ -180,4 +205,74 @@ test('390 px: the hint field and its buttons fit, in the import panel and in the
     expect(b.x).toBeGreaterThanOrEqual(0)
     expect(b.x + b.width).toBeLessThanOrEqual(390)
   }
+})
+
+// ---- The doors (2026-10-27): a link shared to Babillard, the bookmark's captured page,
+// a blocked site, a page already in the book. The server's side is unit-tested
+// (recipeImportPage.test.ts, recipeBookmarklet.test.ts); this pins what the cook sees.
+
+// The import mock is registered AFTER mockApi (the later route wins) and BEFORE the
+// scene opens (it imports on mount).
+async function openScene(page: Page, path: string, handler: (r: Route) => unknown) {
+  await page.setViewportSize({ width: 430, height: 1000 })
+  await mockApi(page)
+  await page.route('**/api/recipe-import', handler)
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+  await page.goto(path)
+  await expect(page.locator('.recipe-title-input')).toBeVisible({ timeout: 15_000 })
+}
+
+test('?import=<url> runs the link import on open, then leaves the address clean', async ({ page }) => {
+  const bodies: unknown[] = []
+  await openScene(page, `/kitchen/recipe/new?import=${encodeURIComponent('https://www.example.test/lasagne')}`, (r) => {
+    bodies.push(r.request().postDataJSON())
+    return r.fulfill(json({ ...SITE_DRAFT, fetched: 'direct' }))
+  })
+  await expect(page.locator('.recipe-title-input')).toHaveValue('Lasagne du dimanche')
+  expect(bodies).toEqual([{ url: 'https://www.example.test/lasagne' }])
+  await expect.poll(() => new URL(page.url()).search).toBe('')
+})
+
+test('#import=<page> (the bookmark) posts the captured page, says so, and the steps land', async ({ page }) => {
+  const captured = {
+    v: 1,
+    url: 'https://www.recettes.qc.ca/recettes/recette/chili-con-carne-167900',
+    title: 'Chili con carne',
+    image: '',
+    jsonld: ['{"@type":"Recipe","name":"Chili con carne"}'],
+    text: 'Chili con carne',
+  }
+  const hash = Buffer.from(JSON.stringify(captured), 'utf8').toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+  const bodies: { page?: unknown }[] = []
+  await openScene(page, `/kitchen/recipe/new#import=${hash}`, (r) => {
+    bodies.push(r.request().postDataJSON())
+    return r.fulfill(json({ ...SITE_DRAFT, title: 'Chili con carne', source: captured.url, fetched: 'bookmarklet' }))
+  })
+  await expect(page.locator('.recipe-title-input')).toHaveValue('Chili con carne')
+  expect(bodies[0]?.page).toEqual(captured)
+  await expect(page.getByTestId('import-via')).toHaveText('Lu dans les données du site — sans IA. Page envoyée par ton signet.')
+  await expect(page.locator('.recipe-steps .recipe-step')).toHaveCount(34)
+  await expect.poll(() => new URL(page.url()).hash).toBe('')
+})
+
+test('a blocked site points at the bookmark’s setup', async ({ page }) => {
+  await openScene(page, `/kitchen/recipe/new?import=${encodeURIComponent('https://www.zeste.ca/recettes/boulettes-italiennes')}`, (r) =>
+    r.fulfill(json({ ...SITE_DRAFT, title: null, ingredients: [], steps: [], empty: true, reason: 'blocked' })),
+  )
+  const msg = page.getByTestId('import-msg')
+  await expect(msg).toContainText('Ce site bloque l’importation.')
+  await expect(msg.getByRole('link', { name: 'Ou installe le signet « Envoyer à Babillard ».' })).toHaveAttribute(
+    'href',
+    '/settings?focus=recipeBookmarklet',
+  )
+})
+
+test('a page already in the book: one calm line with « Ouvrir », the import still lands', async ({ page }) => {
+  await openImport(page, 430)
+  await page.route('**/api/recipe-import', (r) => r.fulfill(json({ ...SITE_DRAFT, source: 'https://www.exemple.ca/tacos/?utm_source=x' })))
+  await page.getByRole('button', { name: 'Importer', exact: true }).click()
+  await expect(page.locator('.recipe-title-input')).toHaveValue('Lasagne du dimanche')
+  const dup = page.getByTestId('import-duplicate')
+  await expect(dup).toContainText('Déjà dans le livre : Tacos au poulet')
+  await expect(dup.getByRole('link', { name: 'Ouvrir' })).toHaveAttribute('href', '/kitchen/recipe/rc2')
 })
