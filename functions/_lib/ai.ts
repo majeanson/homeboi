@@ -412,14 +412,42 @@ export const SELECTION_SCHEMA = {
 }
 
 // The source as the model sees it: blank lines out, each line capped, at most 400 (the
-// recipe window already stops at the page's footer).
+// recipe window already stops at the page's footer). A RUN-ON line is segmented first:
+// the model may only pick whole lines, so a paste with no line breaks (a recipe typed
+// in one go, a message, a one-line OCR) gave it ONE line to choose from and came back
+// « Rien trouvé » (prod, step 6, 2026-10-27). Segments are cut at sentence ends, before
+// an amount that opens an ingredient (« … d'eau 30 ml de beurre »), and where a
+// capitalised verb follows a lowercase word inside an amount-led segment (« de lait
+// Faire bouillir… »; « farine Robin Hood » stays, its next word is capitalised too).
 export function selectionLines(text: string): string[] {
   return text
     .split(/\r?\n/)
     .map((l) => l.replace(/\s+/g, ' ').trim())
     .filter(Boolean)
+    .flatMap((l) => (l.length > 100 ? segmentRunOn(l) : [l]))
     .slice(0, 400)
     .map((l) => l.slice(0, 240))
+}
+
+const AMOUNT_UNIT =
+  String.raw`(?:\d+(?:[.,/]\d+)?(?:\s\d\/\d)?|[¼½¾⅓⅔⅛]|une?|deux|trois|quelques)\s?(?:ml|l|g|kg|lb|oz|tasses?|t\.|c\.|cuill[èe]res?|pinc[ée]es?|gousses?|bo[îi]tes?|sachets?|tranches?|branches?|oeufs?|œufs?|oignons?|cups?|tbsp|tsp|pounds?|ounces?|cloves?|cans?|eggs?)(?![a-zà-ÿ])`
+const BEFORE_AMOUNT = new RegExp(String.raw`\s+(?=${AMOUNT_UNIT})`, 'i')
+const SENTENCE_END = /(?<=[.!?])\s+(?=[A-ZÀ-ÖŒ«"(\d])/
+const AMOUNT_LED = new RegExp(String.raw`^${AMOUNT_UNIT}`, 'i')
+const VERB_AFTER_WORD = /(?<=[a-zà-ÿ])\s+(?=[A-ZÀ-ÖŒ][a-zà-ÿ]+\s+[a-zà-ÿ])/
+export function segmentRunOn(line: string): string[] {
+  const out: string[] = []
+  for (const sentence of line.split(SENTENCE_END)) {
+    for (const piece of sentence.split(BEFORE_AMOUNT)) {
+      // Inside an ingredient-led piece, the method may start without any punctuation.
+      const parts = AMOUNT_LED.test(piece) ? piece.split(VERB_AFTER_WORD) : [piece]
+      for (const p of parts) {
+        const s = p.trim()
+        if (s.length >= 3) out.push(s)
+      }
+    }
+  }
+  return out.length ? out : [line]
 }
 
 export async function selectRecipeLines(

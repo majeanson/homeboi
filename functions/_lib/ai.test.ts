@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { answerQuestion, classifyCapture, decodeStrayEscapes, suggestMeals, resolveLang, extractSizes, salvageTruncatedJson, selectRecipeLines, toSelection, transcribeImage, VISION_MODEL_ID, VISION_PRIMARY_ID } from './ai'
+import { answerQuestion, classifyCapture, decodeStrayEscapes, suggestMeals, resolveLang, extractSizes, salvageTruncatedJson, segmentRunOn, selectionLines, selectRecipeLines, toSelection, transcribeImage, VISION_MODEL_ID, VISION_PRIMARY_ID } from './ai'
 import type { Env } from './env'
 
 // A fake Workers AI binding that returns a canned `response`, so we can test the
@@ -284,5 +284,36 @@ describe('transcribeImage — primary vision model, Llama fallback', () => {
       expect(report.visionModel).toBe(VISION_MODEL_ID)
       expect(run.mock.calls[1][0]).toBe(VISION_MODEL_ID)
     }
+  })
+})
+
+// Step 6 of the prod checks (2026-10-27): a recipe pasted WITHOUT line breaks gave the
+// selection model one line to pick from → « Rien trouvé ». Run-on lines are segmented
+// first, deterministically — the model still only picks, never writes.
+describe('selectionLines — a run-on paste is cut into pickable lines', () => {
+  const paste =
+    "Pouding chômeur de maman 500 ml de cassonade 500 ml d'eau 30 ml de beurre 250 ml de farine 5 ml de poudre à pâte 125 ml de lait Faire bouillir la cassonade, l'eau et le beurre 5 minutes. Mélanger la farine, la poudre à pâte et le lait. Verser la pâte dans un plat beurré, couvrir du sirop. Cuire 35 minutes à 180 °C."
+  it('cuts before each amount, at sentence ends, and where the method starts after the last ingredient', () => {
+    expect(selectionLines(paste)).toEqual([
+      'Pouding chômeur de maman',
+      '500 ml de cassonade',
+      "500 ml d'eau",
+      '30 ml de beurre',
+      '250 ml de farine',
+      '5 ml de poudre à pâte',
+      '125 ml de lait',
+      "Faire bouillir la cassonade, l'eau et le beurre 5 minutes.",
+      'Mélanger la farine, la poudre à pâte et le lait.',
+      'Verser la pâte dans un plat beurré, couvrir du sirop.',
+      'Cuire 35 minutes à 180 °C.',
+    ])
+  })
+  it('leaves formatted lines alone, keeps a brand with two capitals whole, never cuts « 5 minutes »', () => {
+    expect(selectionLines('Ingrédients\n250 ml de farine\nPréparation\nCuire.')).toEqual(['Ingrédients', '250 ml de farine', 'Préparation', 'Cuire.'])
+    expect(segmentRunOn('250 ml de farine Robin Hood 2 oeufs Battre les oeufs 5 minutes avec la farine, puis laisser reposer 30 minutes avant de verser.')).toEqual([
+      '250 ml de farine Robin Hood',
+      '2 oeufs',
+      'Battre les oeufs 5 minutes avec la farine, puis laisser reposer 30 minutes avant de verser.',
+    ])
   })
 })
