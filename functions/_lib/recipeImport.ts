@@ -809,8 +809,15 @@ const isRating = (l: string): boolean => /[★☆✩✭✮⭐]/.test(l) && /^[�
 // Where a website's chrome resumes AFTER the recipe body — everything from here on is
 // other recipes, ads and buttons. Only honoured once the body has started; before it,
 // the same line is merely skipped (a share bar above a recipe must not eat the recipe).
+// « Catégories » / « Mots-clés » / « Tags »: the taxonomy block that follows the method
+// on recettes.qc.ca and most blogs — pasted whole, its four lines became steps 7–10
+// (Marc, 2026-10-27). Whole-word (a letter lookahead, since JS \b dies after an é).
 export const NOISE_END =
-  /^(?:recettes?\s+(?:populaires?|similaires?|sugg[ée]r[ée]es?|du\s+moment)|popular\s+recipes?|related\s+recipes?|more\s+recipes?|vous\s+aimerez|you\s+(?:may|might)\s+also\s+like|[àa]\s+lire\s+aussi|voir\s+aussi|see\s+also|commentaires?\b|comments?\b|abonnez|newsletter|s['’]abonner|subscribe|tous\s+droits|all\s+rights|©)/i
+  /^(?:recettes?\s+(?:populaires?|similaires?|sugg[ée]r[ée]es?|du\s+moment)|popular\s+recipes?|related\s+recipes?|more\s+recipes?|vous\s+aimerez|you\s+(?:may|might)\s+also\s+like|[àa]\s+lire\s+aussi|voir\s+aussi|see\s+also|commentaires?\b|comments?\b|abonnez|newsletter|s['’]abonner|subscribe|tous\s+droits|all\s+rights|©|(?:cat[ée]gories?|mots?[- ]cl[ée]s?|[ée]tiquettes?|tags?|keywords?)\s*:?\s*$)/i
+// The page HEAD a whole-page paste carries above the recipe's name: a publication
+// date, a byline, a share button, a photo credit. None of these is the title.
+const PRE_JUNK =
+  /^(?:\d{1,2}(?:er)?\s+[a-zéû]{3,10}\.?\s+\d{4}|[a-z]{3,9}\.?\s+\d{1,2},?\s+\d{4}|\d{4}-\d{2}-\d{2}.*|(?:par|by)\s+\S+(?:\s+\S+){0,3}|partage[rz]?|share|photographe\s*:.*|photo\s*:.*|cr[ée]dits?\s+photo.*|photo\s+credits?.*)$/i
 // An ad slot's label is NOT the end of the recipe: sites drop « Publicité » between
 // two steps, and treating it as the footer cut the method in half (2026-10-27). It is
 // skipped wherever it appears.
@@ -1008,7 +1015,7 @@ export function parsePastedRecipe(text: string): PastedRecipe {
       // A « Titre » / « Title » label a transcriber writes above the name is skipped;
       // a « Titre : Crêpes » line IS the name (corpus, 2026-09-24: « Titre » became
       // the title of three recipes).
-      if (/^(?:titre|title|nom|name)\s*:?\s*$/i.test(line)) {
+      if (/^(?:titre|title|nom|name)\s*:?\s*$/i.test(line) || PRE_JUNK.test(line)) {
         junk.add(li)
         continue
       }

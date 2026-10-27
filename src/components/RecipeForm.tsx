@@ -185,6 +185,9 @@ export function RecipeForm({
   // HOW the last import was read — one calm line under « Remplir vite » (site data /
   // page text / best effort / AI-checked). Cleared when the import panel reopens.
   const [importVia, setImportVia] = useState<'site' | 'headings' | 'heuristic' | 'ai' | null>(null)
+  // What the LAST import put in the form — applyDraft compares against it so a re-run
+  // replaces its own previous result but never a line the cook edited since.
+  const lastDraft = useRef<Draft | null>(null)
   // Steps edit ONE at a time in a roomy memo (index being edited, or null). Avoids
   // a wall of always-open single-line boxes and gives space to format a step over
   // several lines.
@@ -309,9 +312,13 @@ export function RecipeForm({
     return true
   }
 
-  // Drop the draft into the form. Replaces empty-only sections; never clobbers
-  // lines the user already typed. Also stashes the untouched snapshot so the
-  // saved recipe remembers exactly what the import produced.
+  // Drop the draft into the form. A field is filled when it is empty — OR when it
+  // still holds exactly what the PREVIOUS import put there: re-running « Remplir
+  // vite » (a trimmed paste, a better link, a hint) is an explicit ask to replace
+  // the last result, and it used to do nothing because the rows were "not blank"
+  // (Marc, 2026-10-27). A line the cook edited since is never clobbered. Also
+  // stashes the untouched snapshot so the saved recipe remembers what the import
+  // produced.
   type Draft = {
     title?: string | null
     ingredients?: string[]
@@ -327,26 +334,34 @@ export function RecipeForm({
     sourceImage?: string | null
   }
   function applyDraft(d: Draft) {
-    if (d.title && !title.trim()) setTitle(d.title)
+    const last = lastDraft.current
+    // Untouched = still exactly the previous import's value (or blank).
+    const free = (cur: string, prev: string | number | null | undefined) =>
+      !cur.trim() || (prev != null && cur.trim() === String(prev))
+    const freeLines = (cur: string[], prev: string[] | undefined) =>
+      cur.every((x) => !x.trim()) || (!!prev && cur.length === prev.length && cur.every((x, i) => x === prev[i]))
+    if (d.title && free(title, last?.title)) setTitle(d.title)
     // An import that could tell its own language pre-fills the read-aloud chip,
     // unless the cook already picked one (never clobber, like the fields below).
-    if (d.lang && readLang === null) setReadLang(d.lang)
-    if (d.ingredients?.length && ingredients.every((x) => !x.trim())) setIngredients(d.ingredients)
-    if (d.steps?.length && steps.every((x) => !x.trim())) {
+    if (d.lang && (readLang === null || readLang === last?.lang)) setReadLang(d.lang)
+    if (d.ingredients?.length && freeLines(ingredients, last?.ingredients)) setIngredients(d.ingredients)
+    // Steps also need their photos untouched: a row with a photo attached since the
+    // last import is the cook's work, and replacing the rows would orphan it.
+    if (d.steps?.length && freeLines(steps, last?.steps) && stepImages.every((k) => !k)) {
       setSteps(d.steps)
-      // The imported steps are fresh rows (we only replace when the editor's steps
-      // were all blank, so no photo is lost) — reset stepImages to a same-length
+      // The imported steps are fresh rows — reset stepImages to a same-length
       // all-empty array so it can't drift past the new step count (feature #17 B).
       setStepImages(alignSide(undefined, d.steps.length))
     }
-    if (d.servings && !servings.trim()) setServings(String(d.servings))
-    if (d.servingsUnit && !servingsUnit.trim()) setServingsUnit(d.servingsUnit)
+    if (d.servings && free(servings, last?.servings)) setServings(String(d.servings))
+    if (d.servingsUnit && free(servingsUnit, last?.servingsUnit)) setServingsUnit(d.servingsUnit)
     // Prep/cook/total land in their REAL fields now (editable like the rest).
     if (d.times) {
-      if (d.times.prep && !prepMin.trim()) setPrepMin(String(d.times.prep))
-      if (d.times.cook && !cookMin.trim()) setCookMin(String(d.times.cook))
-      if (d.times.total && !totalMin.trim()) setTotalMin(String(d.times.total))
+      if (d.times.prep && free(prepMin, last?.times?.prep)) setPrepMin(String(d.times.prep))
+      if (d.times.cook && free(cookMin, last?.times?.cook)) setCookMin(String(d.times.cook))
+      if (d.times.total && free(totalMin, last?.times?.total)) setTotalMin(String(d.times.total))
     }
+    lastDraft.current = d
     if (d.ingredients?.length || d.steps?.length) {
       setOriginal({
         title: d.title ?? null,

@@ -82,6 +82,36 @@ test('link import, site data: every step lands — the heading and the last frid
   expect(errors, 'pageerror during link import').toEqual([])
 })
 
+test('re-running « Remplir vite » replaces its own previous result, never a line the cook edited', async ({ page }) => {
+  // Marc, 2026-10-27: a first import landed junk tail steps; he trimmed the paste and
+  // re-ran — nothing changed, because applyDraft only ever filled BLANK rows.
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  await openImport(page, 430)
+  let run = 0
+  await page.route('**/api/recipe-import', (r) => {
+    run++
+    const second = { ...SITE_DRAFT, title: 'Lasagne du lundi', steps: ['Cuire les pâtes.', 'Assembler.', 'Gratiner 20 minutes.'], servings: 6 }
+    return r.fulfill(json(run === 1 ? SITE_DRAFT : second))
+  })
+
+  await page.getByRole('button', { name: 'Importer', exact: true }).click()
+  await expect(page.locator('.recipe-steps .recipe-step')).toHaveCount(34)
+  await expect(page.locator('.recipe-title-input')).toHaveValue('Lasagne du dimanche')
+
+  // The cook edits the title by hand, then re-runs the import.
+  await page.locator('.recipe-title-input').fill('Lasagne de maman')
+  await page.getByRole('button', { name: 'Importer un lien' }).click()
+  await page.getByRole('button', { name: 'Importer', exact: true }).click()
+
+  // Steps + servings (untouched since the first import) follow the new read; the
+  // edited title stays the cook's.
+  await expect(page.locator('.recipe-steps .recipe-step')).toHaveCount(3)
+  await expect(page.locator('.recipe-steps .recipe-step').last()).toContainText('Gratiner 20 minutes.')
+  await expect(page.locator('.recipe-title-input')).toHaveValue('Lasagne de maman')
+  expect(errors, 'pageerror during re-import').toEqual([])
+})
+
 test('link import, AI-organised: verify beside the page text, guide the AI, confirm', async ({ page }) => {
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message))

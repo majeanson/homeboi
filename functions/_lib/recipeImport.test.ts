@@ -624,6 +624,75 @@ Couper et cuire les légumes.`)
     expect(r.ingredients).toEqual(['1 oignon', '2 carottes'])
   })
 
+  it('a recettes.qc.ca page pasted whole: the date, byline and tail chrome are not recipe (Marc, 2026-10-27)', () => {
+    // Pasted as-is from the site. The first line is a DATE, then a byline and a
+    // description, then the meta block; after the method come « Catégories » and
+    // « Mots-clés » blocks. Before: the title was « 28 janv. 2026 » and four tail
+    // lines (« Catégories », « Pâtes alimentaires », « Mots-clés », « pates
+    // alimentaires ») became steps 7–10 — Marc trimmed the paste by hand and re-ran.
+    const page = `28 janv. 2026
+Macaroni à la viande de grand-mère
+Par charclau
+Recette de macaroni à la viande de grand-mère
+
+  Photographe : Adobe Stock
+
+Partage
+
+    Préparation 15 minutes
+    Cuisson 10 minutes
+    Total 25 minutes
+    Portion(s) 4 portions
+
+Ingrédients
+
+    1 lb boeuf haché maigre
+    1 oignon émincé
+    2 gousses d'ail
+    2 boîtes soupe aux tomates
+    3 tasses macaronis non cuits
+    6 tranches fromages
+
+Préparation
+Étape 1
+
+Faire cuire les macaronis selon le temps de cuisson recommandé et égoutter.
+Étape 2
+
+Faire revenir l'oignon et l'ail dans une poêle. Ajouter la viande et faire cuire jusqu'à ce que le steak hâché soit entièrement cuit.
+Étape 3
+
+Ajouter les deux boîtes de soupe aux tomates et continuer la cuisson pendant 5 minutes ou jusqu'à ce que la préparation soit chaude.
+Étape 4
+
+Dans un plat allant au four, mélanger la préparation de viande avec les macaronis.
+Étape 5
+
+Recouvrir de tranches de fromage et faire cuire à 350 F. sans couvrir jusqu'à ce que le fromage soit fondu.
+Étape 6
+
+Faire griller à "broil" pendant quelques minutes pour rendre le fromage croustillant.
+Catégories
+
+    Pâtes alimentaires
+
+Mots-clés
+
+    pates alimentaires
+`
+    const r = parsePastedRecipe(page)
+    expect(r.confident).toBe(true)
+    expect(r.title).toBe('Macaroni à la viande de grand-mère')
+    expect(r.servings).toBe(4)
+    expect(r.times).toEqual({ prep: 15, cook: 10, total: 25 })
+    expect(r.ingredients).toHaveLength(6)
+    expect(r.ingredients[0]).toBe('1 lb boeuf haché maigre')
+    expect(r.steps).toHaveLength(6)
+    expect(r.steps[0]).toMatch(/^Faire cuire les macaronis/)
+    expect(r.steps[5]).toMatch(/^Faire griller à "broil"/)
+    expect(r.steps.join('\n')).not.toMatch(/Catégories|Mots-clés|alimentaires|Photographe|Partage/)
+  })
+
   it('falls back to shape detection when there are no headings (not confident)', () => {
     const r = parsePastedRecipe(`Salade rapide
 1 laitue

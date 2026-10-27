@@ -116,7 +116,7 @@ now, so the repo-wide count is honest for the first time.
 ### L'import d'une recette par lien, fidèle — 2026-10-27
 « Les étapes arrêtent avant la fin… une étape par phrase » : steps > 400 chars cut per sentence, caps 30/40, the footer repair ate a real last step on
 JSON-LD, AI window 6000 + a cut reply = read lost. Now: the source's boundaries, `MAX_STEPS` 60, `salvageTruncatedJson`, a provenance line, AI reads →
-`RecipeReadReview` (page text) + « Guider l'IA ». Guards: real-site fixtures, `e2e/recipe-url-import`. **Open:** grow the corpus; AI path verified on prod only.
+`RecipeReadReview` (page text) + « Guider l'IA ». Same day: a re-run of « Remplir vite » replaces its own last result (never a cook-edited line), and a whole-page paste drops the date/byline head + « Catégories / Mots-clés » tail. Guards: real-site fixtures, `e2e/recipe-url-import`. **Open:** grow the corpus; AI path verified on prod only.
 
 ### Le passage d'un inconnu — kid routine, essai, porte — 2026-10-23
 From `research/stranger-review-2026-10-23.md`. « Recommencer » inert 2 s on the end screen; the sandbox checklist deep-links ONTO a
