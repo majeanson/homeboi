@@ -28,12 +28,12 @@ export const onRequestPost = authed(async (ctx) => {
   const buf = await ctx.request.arrayBuffer()
   if (buf.byteLength === 0 || buf.byteLength > MAX_BYTES) return badRequest('Image vide ou trop grande.')
 
-  const report = { error: null as string | null }
+  const report = { error: null as string | null, visionModel: null as string | null }
   const lang = resolveLang(ctx.env, ctx.request)
   const transcript = await transcribeImage(ctx.env, new Uint8Array(buf), lang, report)
   // Which model read the photo — the verify panel's read report names it, beside
   // the structuring the draft carries (`structuring` / `model`).
-  const reader = { reader: 'vision' as const, readerModel: VISION_MODEL_ID }
+  const reader = { reader: 'vision' as const, readerModel: report.visionModel ?? VISION_MODEL_ID }
   if (!transcript) return withAiError(ok({ ...draft({ empty: true }), ...reader }), report)
   // `requiresAi` guaranteed AI is usable for this household — the text model may run.
   const d = await draftFromText(ctx.env, transcript, lang, true)

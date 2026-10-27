@@ -1,6 +1,6 @@
 import { ok, serviceUnavailable } from '../_lib/json'
 import { authed } from '../_lib/route'
-import { pingTextModel, pingVisionModel } from '../_lib/ai'
+import { VISION_PRIMARY_ID, pingTextModel, pingVisionModel } from '../_lib/ai'
 import { householdAiEnabled } from '../_lib/aiPref'
 
 // Operator-only LIVE AI check for Réglages ("does the AI actually work right
@@ -18,6 +18,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   if (!(await householdAiEnabled(ctx.env, actor.householdId)))
     return serviceUnavailable('AI is switched off for this household (Réglages ▸ IA).')
   // Both pings in parallel — each already swallows its own failure into a result.
-  const [text, vision] = await Promise.all([pingTextModel(ctx.env), pingVisionModel(ctx.env)])
-  return ok({ checks: [text, vision] })
+  // The photo reader is two models now (D2): the primary, then the Llama fallback.
+  const [text, primary, vision] = await Promise.all([pingTextModel(ctx.env), pingVisionModel(ctx.env, VISION_PRIMARY_ID), pingVisionModel(ctx.env)])
+  return ok({ checks: [text, primary, vision] })
 })

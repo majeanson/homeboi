@@ -1490,6 +1490,7 @@ export const FR = {
     importDoorBookmarklet: 'Page envoyée par ton signet.',
     importDuplicate: (title: string) => `Déjà dans le livre : ${title}`,
     importDuplicateOpen: 'Ouvrir',
+    importCandidates: (n: number) => `Cette page a ${n} recettes :`,
     // Which road read the page — one calm line under « Remplir vite » after an import.
     importViaSite: 'Lu dans les données du site — sans IA.',
     importViaHeadings: 'Lu dans le texte de la page — sans IA.',

@@ -547,6 +547,19 @@ export function toSelection(v: Record<string, unknown>, n: number): LineSelectio
 const VISION_MODEL = '@cf/meta/llama-3.2-11b-vision-instruct'
 // Exported for the read report (the verify panel names the model that read the photo).
 export const VISION_MODEL_ID = VISION_MODEL
+// D2 (2026-10-27): the stronger multimodal model goes FIRST, the Llama read stays the
+// fallback. ⚠ Its Workers AI IMAGE INPUT SHAPE IS UNDOCUMENTED: the call below uses the
+// Llama-vision chat shape (`messages` + a base64 data-URL `image`). If that shape is wrong
+// the model throws or answers empty, and the Llama read runs exactly as before — so a
+// wrong guess costs one extra call, never the photo read. VERIFIED ONLY ON PROD (no AI
+// binding locally); the read report names whichever model answered.
+export const VISION_PRIMARY_ID = '@cf/mistralai/mistral-small-3.1-24b-instruct'
+
+function dataUrl(bytes: Uint8Array): string {
+  let bin = ''
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
+  return `data:image/jpeg;base64,${btoa(bin)}`
+}
 
 // TRANSCRIBE a photo — plain text, exactly what is printed, nothing organised. The
 // structuring happens afterwards on the text, through the same path a paste takes
@@ -561,7 +574,12 @@ export const VISION_MODEL_ID = VISION_MODEL
 // model echoes example words straight back (that exact bug, with fake sections), and
 // an "organize" framing invites remarks. Returns '' on no-AI or any failure so the form
 // just opens for manual entry; `report` carries the reason to the AI error journal.
-export async function transcribeImage(env: Env, bytes: Uint8Array, lang: Lang = 'fr', report?: AiReport): Promise<string> {
+export async function transcribeImage(
+  env: Env,
+  bytes: Uint8Array,
+  lang: Lang = 'fr',
+  report?: AiReport & { visionModel?: string | null },
+): Promise<string> {
   if (!env.AI || bytes.length === 0) return ''
   const prompt =
     lang === 'en'
@@ -575,6 +593,27 @@ export async function transcribeImage(env: Env, bytes: Uint8Array, lang: Lang = 
 - Si la page est en COLONNES, transcris chaque colonne séparément, de haut en bas, une colonne à la fois. Ne joins jamais le texte de deux colonnes différentes sur une même ligne.
 - Recopie chaque nombre, fraction et unité exactement. Ne traduis pas, ne reformule pas, ne résume pas, ne corrige pas l'orthographe, ne convertis pas les unités.
 - Réponds UNIQUEMENT avec la transcription : pas de JSON, pas de markdown, pas de guillemets autour des lignes, aucun commentaire, rien sur ce qui manque ou serait illisible.`
+  const clean = (raw: unknown) =>
+    stripAiCommentary((typeof raw === 'string' ? raw : '').replace(/```[a-z]*/gi, '').split(/\r?\n/))
+      .join('\n')
+      .trim()
+  // The stronger model first (see VISION_PRIMARY_ID); any error or an empty reply → the
+  // Llama read below, unchanged.
+  try {
+    const res = (await runModel(env, VISION_PRIMARY_ID, {
+      messages: [{ role: 'user', content: prompt }],
+      image: dataUrl(bytes),
+      max_tokens: 2000,
+    })) as { response?: unknown }
+    const text = clean(res.response)
+    if (text) {
+      if (report) report.visionModel = VISION_PRIMARY_ID
+      return text
+    }
+  } catch (err) {
+    logAi('transcribeImage (primary)', err)
+  }
+  if (report) report.visionModel = VISION_MODEL
   try {
     const res = (await runModel(env, VISION_MODEL, {
       // Workers AI vision wants the image as an array of 0-255 byte values.
@@ -584,12 +623,9 @@ export async function transcribeImage(env: Env, bytes: Uint8Array, lang: Lang = 
       // a two-page spread, not a safety net — a cut transcript is still a transcript.
       max_tokens: 2000,
     })) as { response?: unknown }
-    const raw = typeof res.response === 'string' ? res.response : ''
     // Fences a model adds out of habit go; a leaked remark (« La recette n'indique
     // pas… ») is dropped line by line, the same net the structuring model gets.
-    const text = stripAiCommentary(raw.replace(/```[a-z]*/gi, '').split(/\r?\n/))
-      .join('\n')
-      .trim()
+    const text = clean(res.response)
     if (!text && report) report.error = logAi('transcribeImage', new Error(`vision read nothing legible: ${visionSnippet(res.response)}`))
     return text
   } catch (err) {
@@ -649,19 +685,21 @@ export async function pingTextModel(env: Env): Promise<AiCheck> {
 
 // Ping the VISION model (reading a recipe from a photo). Catches the one-time
 // gated-license failure (err 5016) that silently breaks photo import.
-export async function pingVisionModel(env: Env): Promise<AiCheck> {
+// Both vision models are pinged and named: the primary (shape unverified locally) and the
+// Llama fallback — a red primary with a green fallback still reads photos.
+export async function pingVisionModel(env: Env, model: string = VISION_MODEL): Promise<AiCheck> {
   const t0 = Date.now()
-  if (!env.AI) return { ok: false, ms: 0, model: VISION_MODEL, detail: 'AI binding not configured' }
+  if (!env.AI) return { ok: false, ms: 0, model, detail: 'AI binding not configured' }
   try {
     const bytes = Uint8Array.from(atob(PING_PNG), (c) => c.charCodeAt(0))
-    const res = (await runModel(env, VISION_MODEL, {
-      image: [...bytes],
-      prompt: 'Reply with the single word: OK.',
-      max_tokens: 5,
-    })) as { response?: unknown }
-    return { ok: true, ms: Date.now() - t0, model: VISION_MODEL, detail: pingDetail(res) || '(ran)' }
+    const input =
+      model === VISION_PRIMARY_ID
+        ? { messages: [{ role: 'user', content: 'Reply with the single word: OK.' }], image: dataUrl(bytes), max_tokens: 5 }
+        : { image: [...bytes], prompt: 'Reply with the single word: OK.', max_tokens: 5 }
+    const res = (await runModel(env, model, input)) as { response?: unknown }
+    return { ok: true, ms: Date.now() - t0, model, detail: pingDetail(res) || '(ran)' }
   } catch (err) {
-    return { ok: false, ms: Date.now() - t0, model: VISION_MODEL, detail: logAi('pingVisionModel', err) }
+    return { ok: false, ms: Date.now() - t0, model, detail: logAi('pingVisionModel', err) }
   }
 }
 

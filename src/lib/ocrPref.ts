@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from './api'
 import { HEALTH_KEY } from './queryKeys'
 import { createDeviceStore } from './createDeviceStore'
+import { useAi } from './ai'
 
 // Which reader to use when scanning a recipe photo, a PER-DEVICE preference:
 //   • 'device' (default) — on-device Tesseract OCR: free, private, works offline,
@@ -11,19 +12,38 @@ import { createDeviceStore } from './createDeviceStore'
 //     but the image leaves the device and it's billed per page (pennies at household
 //     scale). Only takes effect when the deployment has a key (health.cloudOcr) AND
 //     the household AI switch is on.
+//   • 'auto' (the default since 2026-10-27, D1) — the cloud reader WHEN this deployment
+//     has one and the household's AI is on, else the device. A photo read is the import
+//     most likely to come out wrong, and the cloud reader is the one that gets it right;
+//     a household that never chose should get the right one.
 // localStorage-backed + useSyncExternalStore, same idiom as lib/ambient — a wall
 // tablet and a phone can each choose, and a settings change applies without a reload.
 
 export type OcrEngine = 'device' | 'cloud'
+export type OcrChoice = OcrEngine | 'auto'
 
-const store = createDeviceStore<OcrEngine>('babillard-ocr-engine', 'device', {
-  read: (raw) => (raw === 'cloud' ? 'cloud' : 'device'),
-  write: (engine) => engine,
+const store = createDeviceStore<OcrChoice>('babillard-ocr-engine', 'auto', {
+  read: (raw) => (raw === 'cloud' || raw === 'device' ? raw : 'auto'),
+  write: (choice) => choice,
 })
 
 export const setOcrEngine = store.set
-// The chosen engine (per device). Default 'device' on the server / before hydration.
-export const useOcrEngine = store.use
+// What this device CHOSE (the Réglages switch shows it).
+export const useOcrChoice = store.use
+
+/** The engine a choice comes to, given what the deployment and the household allow. */
+export function resolveOcrEngine(choice: OcrChoice, cloudAvailable: boolean, aiEnabled: boolean): OcrEngine {
+  if (choice === 'auto') return cloudAvailable && aiEnabled ? 'cloud' : 'device'
+  return choice
+}
+
+// The engine a read will actually use on this device.
+export function useOcrEngine(): OcrEngine {
+  const choice = useOcrChoice()
+  const cloud = useCloudOcrAvailable()
+  const { enabled } = useAi()
+  return resolveOcrEngine(choice, cloud, enabled)
+}
 
 // Is the cloud reader wired on this deployment (MISTRAL_API_KEY set)? Reads the same
 // /api/health the AI flags use, so the settings toggle can offer it only when there's

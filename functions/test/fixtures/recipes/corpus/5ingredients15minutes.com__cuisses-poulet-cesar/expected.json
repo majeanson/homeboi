@@ -1,0 +1,35 @@
+{
+  "title": "Cuisses de poulet marinées à la César",
+  "servings": null,
+  "servingsUnit": null,
+  "times": {
+    "prep": null,
+    "cook": null,
+    "total": null
+  },
+  "ingredients": [
+    "4 cuisses de poulet avec la peau Super C",
+    "30 ml (2 c. à soupe) de persil frais haché",
+    "1 citron coupé en quartiers",
+    "## Pour la marinade",
+    "80 ml (1/3 de tasse) de mayonnaise légère",
+    "60 ml (1/4 de tasse) de parmesan râpé",
+    "30 ml (2 c. à soupe) de jus de citron",
+    "15 ml (1 c. à soupe) de moutarde de Dijon",
+    "15 ml (1 c. à soupe) de sauce Worcestershire",
+    "15 ml (1 c. à soupe) d’ail haché",
+    "5 ml (1 c. à thé) de poivre noir concassé",
+    "Sel au goût"
+  ],
+  "steps": [
+    "Dans un grand bol, mélanger les ingrédients de la marinade. Ajouter les cuisses de poulet et les retourner plusieurs fois afin de bien les enrober de marinade. Couvrir et laisser mariner de 2 à 8 heures au frais.",
+    "Au moment de la cuisson, préchauffer le barbecue à puissance moyenne-élevée (environ 220 °C – 425 °F).",
+    "Égoutter les cuisses de poulet et jeter la marinade.",
+    "Sur la grille chaude et huilée du barbecue, déposer les cuisses de poulet. Faire dorer de 2 à 3 minutes de chaque côté.",
+    "Éteindre les brûleurs d’un côté du barbecue. Déplacer les cuisses sur la grille audessus des brûleurs éteints pour une cuisson indirecte. Fermer le couvercle et cuire de 28 à 35 minutes en retournant les cuisses quelques fois en cours de cuisson, jusqu’à ce que la chair se détache facilement de l’os.",
+    "Déposer les cuisses de poulet dans une assiette. Couvrir d’une feuille de papier d’aluminium, sans serrer, et laisser reposer 5 minutes.",
+    "Au moment de servir, garnir de persil. Servir avec les quartiers de citron."
+  ],
+  "notes": null,
+  "structuring": "microdata"
+}

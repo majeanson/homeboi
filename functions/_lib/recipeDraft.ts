@@ -32,6 +32,11 @@ export interface DraftOut {
   // heading, word for word). Never a model's: the site path harvests them from the page
   // text, the paste path from the paste. Capped at the save cap (2000).
   notes?: string | null
+  // Several recipes on the page (C4): each one's title — the draft is candidate `pick`.
+  candidates?: { i: number; title: string | null }[]
+  // The site's own photo per step (C3), aligned to `steps`; the endpoint stores them
+  // and answers `stepImages` (R2 keys) instead.
+  stepImageUrls?: (string | null)[]
   // HOW this draft was structured, for the photo-read report (RecipeReadReview's
   // « Rapport » tab): 'headings' = the deterministic no-AI parser (real section
   // headings found), 'ai' = the text model CHOSE the lines (named in `model`; every word

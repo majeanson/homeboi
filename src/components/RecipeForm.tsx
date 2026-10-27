@@ -29,10 +29,11 @@ import { A_REGLER_KEY } from '../lib/queryKeys'
 import { wash, tintInk, edge } from '../lib/colors'
 import { SECTION_PREFIX, dropDanglingHeadings, isSectionHeading } from '../lib/recipeSections'
 import { Icon, InlineIcon } from './Icon'
-import { Chip } from './Chip'
+import { Chip, ChipGroup } from './Chip'
 import { EntityCombobox, type ComboOption } from './EntityCombobox'
 import { ZoomableImg } from './ZoomableImg'
 import { useModal } from '../lib/useModal'
+import { writeFailed } from '../lib/writeFailed'
 import { Link } from 'react-router-dom'
 import { useRecipes } from '../lib/queryHooks'
 import { sameSource } from '../lib/recipes'
@@ -139,13 +140,23 @@ export function RecipeForm({
   snapRef.current = snap
   const initialSnap = useRef<string | null>(null)
   if (initialSnap.current === null) initialSnap.current = snap()
+  // Step photos an import brought in from the site (C3) are R2 keys BEFORE the recipe
+  // exists: leaving without saving frees them (the endpoint only deletes a key no
+  // recipe references — a save that already adopted one keeps it).
+  const importedStepKeys = useRef<string[]>([])
+  const cancel = () => {
+    const keys = importedStepKeys.current
+    importedStepKeys.current = []
+    if (keys.length) void write('recipe-step-image', { method: 'DELETE', body: { keys } }).catch(writeFailed)
+    onCancel()
+  }
   const requestClose = () => {
     if (snapRef.current() === initialSnap.current) {
-      onCancel()
+      cancel()
       return
     }
     void confirm({ message: t.recipes.discardConfirm, confirmLabel: t.recipes.discardBtn, tone: 'default' }).then(
-      (ok) => ok && onCancel(),
+      (ok) => ok && cancel(),
     )
   }
   useModal(modalRef, requestClose)
@@ -206,6 +217,7 @@ export function RecipeForm({
   const [importDoor, setImportDoor] = useState<'browser' | 'bookmarklet' | null>(null)
   // The last import said « blocked »: the message grows a link to the bookmark's setup.
   const [importBlockedHere, setImportBlockedHere] = useState(false)
+  const [candidates, setCandidates] = useState<{ list: { i: number; title: string | null }[]; pick: number } | null>(null)
   // The link the last import came from — a recipe already in the book from the same page
   // gets one calm line (C5); the import itself is never refused.
   const [importedSource, setImportedSource] = useState<string | null>(null)
@@ -374,6 +386,8 @@ export function RecipeForm({
     // R2 key of the photo this was READ from (photo-import path) — stashed into the
     // original snapshot so the sheet can show the source card later.
     sourceImage?: string | null
+    // The site's step photos, already stored (R2 keys, aligned to `steps`; '' = none).
+    stepImages?: string[]
   }
   function applyDraft(d: Draft) {
     const last = lastDraft.current
@@ -391,9 +405,11 @@ export function RecipeForm({
     // last import is the cook's work, and replacing the rows would orphan it.
     if (d.steps?.length && freeLines(steps, last?.steps) && stepImages.every((k) => !k)) {
       setSteps(d.steps)
-      // The imported steps are fresh rows — reset stepImages to a same-length
-      // all-empty array so it can't drift past the new step count (feature #17 B).
-      setStepImages(alignSide(undefined, d.steps.length))
+      // The imported steps are fresh rows — their photos are the site's own when the
+      // import brought some (C3), else a same-length all-empty array so it can't drift
+      // past the new step count (feature #17 B).
+      setStepImages(alignSide(d.stepImages, d.steps.length))
+      importedStepKeys.current = [...importedStepKeys.current, ...(d.stepImages ?? []).filter(Boolean)]
     }
     if (d.notes && free(notes, last?.notes)) setNotes(d.notes)
     if (d.servings && free(servings, last?.servings)) setServings(String(d.servings))
@@ -437,6 +453,8 @@ export function RecipeForm({
     // then names how that transcript was organised, like any paste).
     reader?: 'vision'
     readerModel?: string | null
+    // Several recipes on the page (C4) — the read is candidate `pick`.
+    candidates?: { i: number; title: string | null }[]
   }
   const draftHasContent = (d: ReadDraft) => !!(d.title || d.ingredients.length || d.steps.length)
 
@@ -656,7 +674,7 @@ export function RecipeForm({
 
   // `hint`: the cook's note for the model — from the import panel, or from the verify
   // panel's « Guider l'IA » (then the panel stays open and takes the fresh read).
-  async function runImport(hint = importHint.trim(), input?: AutoImport) {
+  async function runImport(hint = importHint.trim(), input?: AutoImport, pick = 0) {
     const url = input ? ('url' in input ? input.url : '') : importUrl.trim()
     const text = input ? '' : importText.trim()
     const page = input && 'page' in input ? input.page : !text && lastPage.current?.url === url ? lastPage.current : null
@@ -680,10 +698,11 @@ export function RecipeForm({
         }
       >('recipe-import', {
         method: 'POST',
-        body: { ...(page ? { page } : text ? { text } : { url }), ...(hint ? { hint } : {}) },
+        body: { ...(page ? { page } : text ? { text } : { url }), ...(hint ? { hint } : {}), ...(pick ? { pick } : {}) },
         timeoutMs: 45_000,
       })
       setImportDoor(r.fetched === 'browser' || r.fetched === 'bookmarklet' ? r.fetched : null)
+      setCandidates(r.candidates && r.candidates.length > 1 ? { list: r.candidates, pick } : null)
       if (r.empty || (!r.ingredients.length && !r.steps.length && !r.title)) {
         // A site that refuses us is not the same failure as a page with no recipe on
         // it — and neither is the AI being off. Say which one it was.
@@ -1057,7 +1076,7 @@ export function RecipeForm({
       <form className="recipe-modal__card surface" onSubmit={save}>
         <div className="recipe-modal__bar">
           <h2>{value ? t.recipes.edit : t.recipes.new}</h2>
-          <button type="button" className="btn btn--ghost mono" onClick={onCancel} aria-label={t.common.cancel}>
+          <button type="button" className="btn btn--ghost mono" onClick={cancel} aria-label={t.common.cancel}>
             <Icon name="x-bold" size={18} />
           </button>
         </div>
@@ -1241,6 +1260,16 @@ export function RecipeForm({
               {importDoor && ` ${importDoor === 'bookmarklet' ? t.recipes.importDoorBookmarklet : t.recipes.importDoorBrowser}`}
             </p>
           )}
+          {/* Several recipes on the page (C4): the first was read; a chip reads another. */}
+          {candidates && (
+            <ChipGroup label={t.recipes.importCandidates(candidates.list.length)}>
+              {candidates.list.map((c) => (
+                <Chip key={c.i} selected={c.i === candidates.pick} onClick={() => void runImport(undefined, undefined, c.i)}>
+                  {c.title ?? `${c.i + 1}`}
+                </Chip>
+              ))}
+            </ChipGroup>
+          )}
           {duplicate && (
             <p className="recipe-aioff mono" data-testid="import-duplicate">
               {t.recipes.importDuplicate(duplicate.title)} · <Link to={`/kitchen/recipe/${duplicate.id}`}>{t.recipes.importDuplicateOpen}</Link>
@@ -1375,7 +1404,7 @@ export function RecipeForm({
 
         <div className="recipe-modal__foot">
           {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
-          <button type="button" className="btn btn--ghost mono" onClick={onCancel}>
+          <button type="button" className="btn btn--ghost mono" onClick={cancel}>
             {t.common.cancel}
           </button>
           <button type="submit" className="btn btn--primary" disabled={!title.trim() || busy}>

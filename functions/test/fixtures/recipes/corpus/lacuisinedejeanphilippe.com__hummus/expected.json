@@ -1,0 +1,30 @@
+{
+  "title": "Hummus",
+  "servings": null,
+  "servingsUnit": null,
+  "times": {
+    "prep": null,
+    "cook": null,
+    "total": null
+  },
+  "ingredients": [
+    "1 boite de conserve de pois chiches de 540ml égoutée (ou 330g de pois chiches cuits) Conserver le liquide!!",
+    "3 c à soupe de tahini de césame ou de beurre d'arachide",
+    "1 gousse d’ail hachée",
+    "1 c à café de cumin",
+    "1/8 de c à café de poivre de cayenne",
+    "2 c à soupe d’huile d’olive extra vierge + 1 c à soupe pour la présentation",
+    "1/3 de tasse d’aquafaba (jus de cuisson des pois chiches ou de boite de conserve) ou d’eau",
+    "Le jus de 1/2 citron",
+    "Sel au goût",
+    "1 pincée de paprika fumé"
+  ],
+  "steps": [
+    "Rinser et égoutter les pois chiches et les placer dans un robot culinaire (conserver le jus de la boite de conserve).",
+    "Ajouter le tahini, l’ail hachée, le cumin, le poivre de cayenne, l’huile d’olive, le jus de citron, le sel et l’aquafaba (jus de cuisson ou de la boite de conserve.",
+    "Broyer jusqu’a consistance homogène.",
+    "Transvider dans un plat à service, garnir d’un filet d’huile d’olive et d’une pincée de paprika fumé."
+  ],
+  "notes": null,
+  "structuring": "headings"
+}

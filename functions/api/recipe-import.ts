@@ -6,6 +6,7 @@ import { aiUsable } from '../_lib/aiPref'
 import { type CapturedPage, type PageSource, readPage, sourceFromCapture, sourceFromHtml } from '../_lib/recipeImportPage'
 import { isRefusalPage, renderPage } from '../_lib/renderPage'
 import { withAudit } from '../_lib/recipeAudit'
+import { importStepImages } from '../_lib/stepImageImport'
 import type { Env } from '../_lib/env'
 
 // Import a recipe into a DRAFT the user reviews before saving. Three inputs (plus an
@@ -124,8 +125,10 @@ export const onRequestPost = authed(async (ctx, actor) => {
   // paste heuristic) and only 503s if those find nothing — never reaching the model.
   const aiOn = await aiUsable(ctx.env, actor)
   const lang = resolveLang(ctx.env, ctx.request)
-  const body = await readJson<{ url?: string; text?: string; hint?: string; page?: CapturedPage }>(ctx.request)
+  const body = await readJson<{ url?: string; text?: string; hint?: string; page?: CapturedPage; pick?: number }>(ctx.request)
   const hint = typeof body?.hint === 'string' ? body.hint.slice(0, 400) : undefined
+  // Which recipe of a page that carries several (C4): the form re-runs with `pick`.
+  const pick = typeof body?.pick === 'number' && Number.isInteger(body.pick) && body.pick >= 0 && body.pick < 20 ? body.pick : 0
 
   // ---- Paste path -----------------------------------------------------------
   // The ONE text → draft path (_lib/recipeDraft): the heading parser, then the text
@@ -165,8 +168,14 @@ export const onRequestPost = authed(async (ctx, actor) => {
 
   // The no-model read (site data, then the page's printed headings) — the same seam
   // the corpus test scores (_lib/recipeImportPage).
-  const r = readPage(src)
-  if (r.draft) return ok({ ...withAudit(r.draft, r.window), fetched })
+  const r = readPage(src, pick)
+  if (r.draft) {
+    // The site's step photos (C3) are fetched once and kept, keyed like the cook's own
+    // uploads (_lib/stepImageImport); the URLs never reach the client.
+    const { stepImageUrls, ...d } = r.draft
+    const stepImages = stepImageUrls?.some(Boolean) ? await importStepImages(ctx.env, stepImageUrls) : undefined
+    return ok({ ...withAudit(d, r.window), ...(stepImages?.some(Boolean) ? { stepImages } : {}), fetched })
+  }
 
   // Only the model can organise this page's text, guided by the cook's hint.
   if (aiOn) {

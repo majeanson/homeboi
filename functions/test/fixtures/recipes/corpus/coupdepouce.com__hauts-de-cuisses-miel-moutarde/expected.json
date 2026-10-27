@@ -1,0 +1,31 @@
+{
+  "title": "Hauts de cuisses de poulet au miel et à la moutarde",
+  "servings": 4,
+  "servingsUnit": null,
+  "times": {
+    "prep": 10,
+    "cook": 20,
+    "total": 30
+  },
+  "ingredients": [
+    "1/4 tasse de moutarde de Dijon",
+    "1/4 tasse de miel",
+    "2 gousses d'ail , hachées",
+    "1 à 2 piment chilis, en tranches fines",
+    "6 hauts de cuisses de poulet , sans os, mais avec la peau",
+    "3/4 tasse de bouillon de poulet à teneur réduite en sel",
+    "sel et poivre",
+    "persil frais , pour garnir",
+    "salade de concombre épicée, pour le service (voir la recette)"
+  ],
+  "steps": [
+    "## Poulet mariné au miel et à l'ail",
+    "Préchauffer le four à 425 °F (220 °C).",
+    "Dans un bol, mélanger la moutarde de Dijon, le miel, l'ail et les piments. Saler et poivrer, puis réserver.",
+    "Déposer le poulet dans un plat de cuisson et badigeonner de la marinade. Verser le bouillon autour des morceaux de poulet. Cuire au four 20 minutes (passer sous le gril au cours des dernières minutes de cuisson, si désiré). Garnir de persil frais et servir avec la salade de concombres épicée.",
+    "## Salade de concombres épicée",
+    "Écraser de 3 à 4 concombres libanais avec le plat d'un couteau de chef. Les trancher et les déposer dans un bol. Ajouter 1 c. à soupe (15 ml) d'huile de sésame grillé, 1 c. à soupe (15 ml) de vinaigre de riz,1 c. à thé (5 ml) de graines de sésame, 1 c. à thé (5 ml) de sirop d'érable et 1 pincée de flocons de piments séchés. Bien mélanger."
+  ],
+  "notes": null,
+  "structuring": "jsonld"
+}

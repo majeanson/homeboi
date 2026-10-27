@@ -1,0 +1,42 @@
+name: Recipe live contract
+
+# The weekly check that the recipe corpus still reads the same on the LIVE sites
+# (e2e/recipe-live.spec.ts under e2e/recipe.config.ts). Two facts per page: the reach a
+# Worker gets (a site that started — or stopped — refusing it), and the exact read of the
+# production seam (a redesign that loses the steps). No browser, no account, no stubs.
+#
+# Deliberately NOT chained to pushes: nothing we commit changes their sites, and a
+# network-bound run has no place gating a deploy. A red run is the fact that moved:
+# re-capture the page (scripts/recipe-corpus.mjs capture <url>), read it, update
+# expected.json in a commit that says what changed.
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Mondays 07:15 UTC — beside the Flipp contract, same review morning.
+    - cron: '15 7 * * 1'
+
+concurrency:
+  group: recipe-contract-${{ github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  contract:
+    name: Recipe live contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 26
+          cache: npm
+      - run: npm ci
+      - run: npm run e2e:recipes 2>&1 | tee recipe-contract.log
+        shell: bash
+      - name: Upload the run's log
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: recipe-contract
+          path: recipe-contract.log
+          retention-days: 14

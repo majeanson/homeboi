@@ -1,0 +1,29 @@
+{
+  "title": "Poulet grillé de base",
+  "servings": 4,
+  "servingsUnit": null,
+  "times": {
+    "prep": 20,
+    "cook": 10,
+    "total": 30
+  },
+  "ingredients": [
+    "800 g (1 ¾ lb) de poitrines de poulet, désossées et sans la peau",
+    "6 c. à soupe d'huile d'olive",
+    "4 gousses d'ail, hachées",
+    "5 ml (1 c. à thé) de thym séché",
+    "2,5 ml (½ c. à thé) d'origan séché",
+    "6,5 ml (1 ¼ c. à thé) de sel",
+    "2,5 ml (½ c. à thé) de poivre noir fraîchement moulu",
+    "7,5 ml (1 ½ c. à thé) de zeste de citron"
+  ],
+  "steps": [
+    "Une à la fois, déposer les poitrines de poulet dans un sac refermable (de style Ziploc). À l'aide d'un maillet à viande, attendrir la viande jusqu'à une épaisseur de 1 cm (1/2 po).",
+    "Dans le même sac (ou un autre s'il n'est plus en bon état), mélanger tous les autres ingrédients.",
+    "Ajouter les poitrines de poulet et masser la viande jusqu'à ce qu'elle soit bien imprégnée de marinade.",
+    "Sceller le sac et placer dans un bol au réfrigérateur (le bol protège des éventuelles fuites). Laisser mariner le poulet pendant au moins 4 heures ou toute une nuit.",
+    "Préchauffer le barbecue à feu vif et huiler les grilles. Déposer les poitrines de poulet sur les grilles et cuire, à couvert, de 2 à 3 minutes de chaque côté. Ne pas trop cuire. Transférer le poulet dans une assiette et servir."
+  ],
+  "notes": "Comment assaisonner le poulet grillé ?\nPoitrines de poulet à l'érable: ajoutez 30 ml (2 c. à soupe) de sirop d'érable à votre marinade pour lui donner un petit goût sucré des plus agréables!\nPoulet balsamique: ajoutez 80 ml (1/3 tasse) de vinaigre balsamique à la marinade pour l'aciduler légèrement.\nMoutarde de Dijon: les poitrines de poulet au barbecue sont tendres et juteuses lorsqu'elles sont marinées avec de la moutarde de Dijon et du jus de citron.\nJus de lime: Une touche de jus de lime donnera un goût frais et subtil aux poitrines de poulet.\nMarinade dans une casserole. Mélangez des herbes, des épices et des huiles dans une casserole et laissez-les mijoter pendant quelques minutes. Badigeonnez les poitrines de poulet de cette marinade avant de les griller au barbecue.\nTemps de cuisson. Le temps de cuisson du poulet dépend de plusieurs facteurs, tels que l'épaisseur de la poitrine, la température du barbecue et le type de méthode de cuisson utilisé. En général, la poitrine de poulet doit être cuite de 6 à 8 minutes de chaque côté au barbecue préchauffé à feu moyen-élevé, soit environ 12 à 16 minutes au total.\nPour être sûr que la viande est cuite à la perfection, il est recommandé d'utiliser un thermomètre à viande: la température interne doit atteindre 75 °C (165 °F). Il est également important de laisser reposer la viande quelques minutes avant de la couper pour permettre aux jus de se répartir uniformément.\nSuivez notre méthode infaillible pour cuire de savoureuses poitrines de poulet de manière uniforme en appuyant ici: https://cuisinez.telequebec.tv/articles/224/methode-infaillible-pour-des-poitrines-de-poulet-tendres-et-juteuses.",
+  "structuring": "jsonld"
+}

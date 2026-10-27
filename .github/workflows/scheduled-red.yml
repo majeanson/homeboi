@@ -16,7 +16,7 @@ name: Scheduled red
 
 on:
   workflow_run:
-    workflows: ['State matrix (visual sweep)', 'Stranger walk', 'Flipp live contract', 'Flake hunt']
+    workflows: ['State matrix (visual sweep)', 'Stranger walk', 'Flipp live contract', 'Recipe live contract', 'Flake hunt']
     types: [completed]
 
 permissions:

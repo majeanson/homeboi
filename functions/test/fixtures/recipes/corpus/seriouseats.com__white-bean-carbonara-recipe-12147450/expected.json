@@ -1,0 +1,30 @@
+{
+  "title": "Creamy White Bean Carbonara (CarBEANara)",
+  "servings": 4,
+  "servingsUnit": null,
+  "times": {
+    "prep": 10,
+    "cook": 20,
+    "total": 30
+  },
+  "ingredients": [
+    "4 ounces (113 g) guanciale, pancetta, or bacon, cut into 1/4-inch pieces (about 3/4 cup); see notes",
+    "3 (15-ounce, 425 g each) cans cannellini beans, undrained",
+    "1/2 cup (120 ml) water, plus more as needed",
+    "3 large egg yolks",
+    "1 large egg",
+    "1 1/4 teaspoons freshly ground black pepper, plus more for garnish",
+    "1/2 teaspoon Diamond Crystal kosher salt; for table salt, use half as much by volume",
+    "4 ounces (113 g) grated Pecorino Romano cheese (about 1 cup), divided",
+    "Crusty bread, for serving"
+  ],
+  "steps": [
+    "In a large skillet, cook guanciale, pancetta, or bacon over medium-low heat, stirring occasionally, until fat is rendered and meat is browned and crisp, 8 to 10 minutes. Using a slotted spoon, transfer to a paper towel–lined plate, leaving drippings in skillet.",
+    "Meanwhile, pour beans through a fine-mesh strainer set over a large bowl; reserve bean liquid. Add beans, 1/2 cup reserved bean liquid, and 1/2 cup water to drippings in the skillet. (Discard or reserve remaining bean liquid for another use.) Bring to a simmer over medium heat. Cook, stirring occasionally, until beans are heated through and liquid is slightly thickened, 3 to 5 minutes.",
+    "While beans cook, in a medium bowl, whisk together egg yolks, egg, pepper, salt, and 3 ounces (about 3/4 cup) of the Pecorino Romano until smooth. Gradually spoon 5 tablespoons (1 tablespoon at a time) of the hot liquid from skillet into egg mixture, whisking constantly, until slightly loosened. Whisk 1/4 cup beans with their liquid into egg mixture until loosened and warmed. Remove skillet from heat.",
+    "Gradually pour egg mixture into beans in skillet, stirring constantly, until cheese is melted and sauce is smooth, glossy, and creamy, about 1 minute. If needed, stir in more water, 1 tablespoon at a time, until sauce reaches desired consistency.",
+    "Divide bean mixture evenly among 4 bowls. Sprinkle evenly with reserved crisped meat and remaining 1 ounce Pecorino Romano. Garnish with black pepper. Serve immediately with crusty bread."
+  ],
+  "notes": "Guanciale, cured pork jowl, is generally considered the most authentic choice for classic pasta carbonara; it’s fattier than pancetta or bacon and often more heavily spiced, creating a dish with pronounced spice notes and an extra-unctuous texture. Pancetta delivers the cleanest porky flavor, while American bacon, though less traditional, adds a hit of pleasant smoke. Use whichever you prefer for this bean dish.\nThis dish is best eaten right away, but leftovers can be refrigerated in an airtight container for up to 4 days.\nReheat gently in a skillet over low heat, stirring frequently and adding water 1 tablespoon at a time as needed to loosen the sauce.",
+  "structuring": "jsonld"
+}

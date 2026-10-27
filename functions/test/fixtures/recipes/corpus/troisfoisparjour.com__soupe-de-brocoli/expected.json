@@ -1,0 +1,32 @@
+{
+  "title": "SOUPE DE BROCOLI",
+  "servings": 4,
+  "servingsUnit": null,
+  "times": {
+    "prep": 10,
+    "cook": 15,
+    "total": null
+  },
+  "ingredients": [
+    "1 tasse de noix de cajou",
+    "1 oignon jaune, haché",
+    "3 branches de céleri, coupées en dés",
+    "1 gousse d’ail, haché",
+    "3 patates, pelées et coupées en dés",
+    "1 brocoli, coupé en fleurettes",
+    "3 tasses de bouillon de légumes, divisé",
+    "¼ de tasse d’aneth frais",
+    "1 boîte (398 ml) de fèves de lima",
+    "Sel et poivre, au goût",
+    "Huile épicée, pour servir"
+  ],
+  "steps": [
+    "Recouvrir les noix de cajou d’eau, puis les laisser tremper le temps de préparer les premières étapes de la recette.",
+    "Dans une grande casserole, faire revenir l’oignon, le céleri, l’ail, les patates, et le brocoli environ 5 à 10 minutes ou jusqu’à ce que les légumes soient tendres. Assaisonner, puis réserver.",
+    "Égoutter les noix, puis verser dans un robot mélangeur avec 1 tasse du bouillon, l’aneth et environ le tiers du mélange de légumes qui est dans la casserole. Réduire le tout en purée lisse, puis assaisonner.",
+    "Verser le mélange dans la casserole, puis ajouter le reste du bouillon et les fèves de lima.",
+    "Laisser mijoter 3 à 4 minutes et servir avec de l’huile épicée et de l’aneth pour décorer."
+  ],
+  "notes": null,
+  "structuring": "headings"
+}

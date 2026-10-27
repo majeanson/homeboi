@@ -1,0 +1,7 @@
+{
+  "url": "https://www.marmiton.org/recettes/recette_boeuf-bourguignon_18889.aspx",
+  "capturedAt": "2026-10-27",
+  "reach": "direct",
+  "via": "playwright",
+  "notes": "Verified by reading 2026-10-27 (FR-FR register). Title = the printed h1 (the JSON-LD name carries an SEO tail « : la meilleure recette »). Ingredients in the JSON-LD order (the page lists them in another order). Notes = « Note de l'auteur », guillemets kept. (worker fetch: 200)"
+}

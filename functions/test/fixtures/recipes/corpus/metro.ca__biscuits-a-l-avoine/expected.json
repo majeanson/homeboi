@@ -1,0 +1,29 @@
+{
+  "title": "Biscuits à l'avoine",
+  "servings": 24,
+  "servingsUnit": null,
+  "times": {
+    "prep": 15,
+    "cook": 15,
+    "total": 30
+  },
+  "ingredients": [
+    "250 ml (1 tasse) margarine molle",
+    "250 ml (1 tasse) cassonade",
+    "500 ml (2 tasses) flocons d'avoine à cuisson rapide",
+    "500 ml (2 tasses) farine à pâtisserie",
+    "60 ml (1/4 tasse) eau chaude",
+    "5 ml (1 c. à thé) bicarbonate de soude",
+    "5 ml (1 c. à thé) essence de vanille",
+    "10 ml (2 c. à thé) zeste d'orange"
+  ],
+  "steps": [
+    "Préchauffer le four à 180 °C / 350 °F.",
+    "Dans un bol, battre la margarine en crème. Y ajouter la cassonade et bien mélanger.",
+    "Ajouter le reste ingrédients et bien mélanger.",
+    "Déposer 15 ml (1 c. à soupe) de pâte par biscuit sur une plaque à biscuits beurrée. Aplatir la pâte à l'aide d'une fourchette.",
+    "Cuire au four, sur la grille du bas, à 180 °C / 350 °F environ 10 à 12 minutes."
+  ],
+  "notes": null,
+  "structuring": "microdata"
+}

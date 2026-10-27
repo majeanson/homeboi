@@ -276,3 +276,40 @@ test('a page already in the book: one calm line with « Ouvrir », the import st
   await expect(dup).toContainText('Déjà dans le livre : Tacos au poulet')
   await expect(dup.getByRole('link', { name: 'Ouvrir' })).toHaveAttribute('href', '/kitchen/recipe/rc2')
 })
+
+// ---- C3 + C4 (2026-10-27): the site's step photos land on their steps (and a cancelled
+// form frees them); a page with several recipes offers them as chips.
+
+test('the site’s step photos land with the steps; cancelling frees them', async ({ page }) => {
+  await openImport(page, 430)
+  await page.route('**/api/recipe-import', (r) =>
+    r.fulfill(json({ ...SITE_DRAFT, steps: ['Mélanger.', 'Cuire.'], stepImages: ['rsi_aaaaaaaa', ''] })),
+  )
+  await page.getByRole('button', { name: 'Importer', exact: true }).click()
+  await expect(page.locator('.recipe-steps .recipe-step')).toHaveCount(2)
+  await expect(page.locator('.recipe-steps img[src*="rsi_aaaaaaaa"]')).toHaveCount(1)
+  const freed: unknown[] = []
+  await page.route('**/api/recipe-step-image', (r) => {
+    if (r.request().method() === 'DELETE') freed.push(r.request().postDataJSON())
+    return r.fulfill(json({ freed: 1 }))
+  })
+  await page.locator('.recipe-modal__foot .btn--ghost').first().click()
+  await expect.poll(() => freed).toEqual([{ keys: ['rsi_aaaaaaaa'] }])
+})
+
+test('a page with several recipes: chips name them, a tap reads the other one', async ({ page }) => {
+  await openImport(page, 430)
+  const picks: unknown[] = []
+  await page.route('**/api/recipe-import', (r) => {
+    const body = r.request().postDataJSON() as { pick?: number }
+    picks.push(body.pick ?? 0)
+    const candidates = [{ i: 0, title: 'Pâte à crêpes' }, { i: 1, title: 'Sauce au caramel' }]
+    return r.fulfill(json({ ...SITE_DRAFT, title: body.pick === 1 ? 'Sauce au caramel' : 'Pâte à crêpes', candidates }))
+  })
+  await page.getByRole('button', { name: 'Importer', exact: true }).click()
+  await expect(page.locator('.recipe-title-input')).toHaveValue('Pâte à crêpes')
+  await expect(page.getByText('Cette page a 2 recettes :')).toBeVisible()
+  await page.getByRole('button', { name: 'Sauce au caramel' }).click()
+  await expect(page.locator('.recipe-title-input')).toHaveValue('Sauce au caramel')
+  expect(picks).toEqual([0, 1])
+})

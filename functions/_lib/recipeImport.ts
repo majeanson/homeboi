@@ -40,6 +40,10 @@ export interface ParsedRecipe {
   // Notes the structured data itself carries (a notes block inside the microdata
   // method); schema.org JSON-LD has none — the page text supplies them then.
   notes?: string | null
+  // A photo per step (HowToStep.image), aligned to `steps`; absent when none has one.
+  stepImageUrls?: (string | null)[]
+  // Several Recipe nodes on the page: each one's title, in page order.
+  candidates?: { i: number; title: string | null }[]
 }
 
 // One JSON-LD block's raw text → its parsed JSON, or undefined. Lenient: some sites
@@ -84,6 +88,17 @@ function typeIncludes(node: Record<string, unknown>, want: string): boolean {
   if (typeof t === 'string') return t.toLowerCase() === want.toLowerCase()
   if (Array.isArray(t)) return t.some((x) => typeof x === 'string' && x.toLowerCase() === want.toLowerCase())
   return false
+}
+
+// Every Recipe node in a JSON-LD value, in document order.
+export function findRecipeNodes(value: unknown): Record<string, unknown>[] {
+  if (Array.isArray(value)) return value.flatMap(findRecipeNodes)
+  if (value && typeof value === 'object') {
+    const node = value as Record<string, unknown>
+    if (typeIncludes(node, 'Recipe')) return [node]
+    if (Array.isArray(node['@graph'])) return findRecipeNodes(node['@graph'])
+  }
+  return []
 }
 
 // Walk a JSON-LD value (object / array / @graph) and return the first Recipe node.
@@ -131,6 +146,8 @@ const NAMED_ENTITIES: Record<string, string> = {
   sbquo: '‚',
   bdquo: '„',
   hellip: '…',
+  prime: '′',
+  Prime: '″',
   ndash: '–',
   mdash: '—',
   bull: '•',
@@ -431,16 +448,25 @@ export function healTruncatedSteps(steps: string[], originalSteps: string[] | un
 // when the recipe actually has several sections (one section covering
 // everything adds nothing).
 export function normalizeInstructions(value: unknown, max = MAX_STEPS): string[] {
-  type Collected = { section: string | null; text: string }
+  return normalizeInstructionsWithImages(value, max).steps
+}
+
+// …and each step's own photo (a HowToStep `image`: a URL, an ImageObject, or a list),
+// aligned to the steps — null for a heading, for the second half of a step that was
+// split, and for a step without one (C3, 2026-10-27).
+export function normalizeInstructionsWithImages(value: unknown, max = MAX_STEPS): { steps: string[]; images: (string | null)[] } {
+  type Collected = { section: string | null; text: string; image: string | null }
   const collected: Collected[] = []
   let section: string | null = null
+  let image: string | null = null
   const push = (s: string) => {
     const c = clean(s)
     if (!c || collected.length >= max * 4) return
     // A bare label line packed inside the instructions ("Glaçage :") is a
     // section marker, not a step — without this it leaks as a junk step.
     const sec = isSectionHeading(c) ? null : inlineSectionTitle(c)
-    collected.push({ section, text: sec ? makeSectionHeading(sec) : c })
+    collected.push({ section, text: sec ? makeSectionHeading(sec) : c, image: sec ? null : image })
+    image = null
   }
   const walk = (v: unknown) => {
     if (collected.length >= max * 4) return
@@ -467,7 +493,9 @@ export function normalizeInstructions(value: unknown, max = MAX_STEPS): string[]
         return
       }
       if (typeof node.text === 'string') {
+        image = normalizeImage(node.image)
         push(node.text)
+        image = null
         return
       }
       if (typeof node.name === 'string') push(node.name)
@@ -481,23 +509,43 @@ export function normalizeInstructions(value: unknown, max = MAX_STEPS): string[]
   // anything the site delimited (several HowToSteps, several blocks) stays as shipped.
   const oneBlob = collected.filter((c) => !isSectionHeading(c.text)).length === 1
   const out: string[] = []
+  const imgs: (string | null)[] = []
   let count = 0 // steps only — headings are structure and never count toward `max`
   let lastSection: string | null = null
   for (const c of collected) {
     if (count >= max) break
+    let first = true
     for (const step of refineSteps([c.text], { max: max - count, blob: oneBlob ? 'auto' : 'keep' })) {
       if (count >= max) break
       if (useSections && c.section && c.section !== lastSection) {
         out.push(makeSectionHeading(c.section).slice(0, MAX_STEP_LEN))
+        imgs.push(null)
         lastSection = c.section
       }
       const final = step.slice(0, MAX_STEP_LEN)
       if (out.includes(final)) continue
       out.push(final)
+      imgs.push(first && !isSectionHeading(final) ? c.image : null)
+      first = false
       if (!isSectionHeading(final)) count++
     }
   }
-  return dropDanglingHeadings(out)
+  // dropDanglingHeadings, keeping the photos aligned.
+  const steps: string[] = []
+  const images: (string | null)[] = []
+  out.forEach((l, i) => {
+    if (isSectionHeading(l) && steps.length && isSectionHeading(steps[steps.length - 1])) {
+      steps.pop()
+      images.pop()
+    }
+    steps.push(l)
+    images.push(imgs[i])
+  })
+  if (steps.length && isSectionHeading(steps[steps.length - 1])) {
+    steps.pop()
+    images.pop()
+  }
+  return { steps, images }
 }
 
 // One block of HTML (a JSON-LD instructions string, a microdata container) → its
@@ -508,6 +556,8 @@ export function htmlBlocksToLines(blockHtml: string): string[] {
   return blockHtml
     .replace(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/gi, (_, t: string) => `\n## ${clean(t)}\n`)
     .replace(/<\/(?:li|p|div)>|<br\s*\/?>/gi, '\n')
+    // Sibling <span>s that each hold a sentence are lines the page's CSS stacks (Metro).
+    .replace(/([.!?])\s*<\/span>\s*<span\b[^>]*>/gi, '$1\n')
     .split(/\r?\n+/)
     .map((s) => clean(s))
     .filter(Boolean)
@@ -655,30 +705,48 @@ export function parseRecipeJsonLd(html: string): ParsedRecipe | null {
 
 // The same read over blocks already parsed — the HTML path extracts them from the
 // page; a captured page (the bookmarklet) sends their raw text.
-export function parseRecipeJsonLdBlocks(blocks: unknown[]): ParsedRecipe | null {
-  for (const block of blocks) {
-    const node = findRecipeNode(block)
-    if (!node) continue
-    const title = typeof node.name === 'string' ? clean(node.name).slice(0, 200) : null
-    const ingredients = asStringList(node.recipeIngredient ?? node.ingredients, MAX_INGREDIENTS).map(tidyIngredientLine)
-    const steps = normalizeInstructions(node.recipeInstructions)
-    // A node with a name but neither ingredients nor steps isn't a usable recipe.
-    if (!title && ingredients.length === 0 && steps.length === 0) continue
-    return {
-      title,
-      ingredients,
-      steps,
-      image: normalizeImage(node.image),
-      servings: parseYield(node.recipeYield ?? node.yield),
-      servingsUnit: parseYieldUnit(node.recipeYield ?? node.yield),
-      times: {
-        prep: isoToMinutes(node.prepTime),
-        cook: isoToMinutes(node.cookTime),
-        total: isoToMinutes(node.totalTime),
-      },
-    }
+// SEVERAL RECIPES ON ONE PAGE (C4, 2026-10-27) — BBC Good Food's lasagne page carries
+// three Recipe nodes. The first is read, as always; the others are offered by title
+// (`candidates`), and `pick` reads another one.
+export function parseRecipeJsonLdBlocks(blocks: unknown[], pick = 0): ParsedRecipe | null {
+  // The same recipe twice (a page that repeats its node) is one candidate.
+  const seen = new Set<string>()
+  const usable = blocks.flatMap(findRecipeNodes).flatMap((node) => {
+    const p = parseRecipeNode(node)
+    const key = p ? `${p.title}|${p.ingredients.join('|')}|${p.steps.length}` : ''
+    if (!p || seen.has(key)) return []
+    seen.add(key)
+    return [p]
+  })
+  if (!usable.length) return null
+  const chosen = usable[Math.min(Math.max(0, Math.floor(pick) || 0), usable.length - 1)]
+  return usable.length > 1 ? { ...chosen, candidates: usable.map((u, i) => ({ i, title: u.title })) } : chosen
+}
+
+function parseRecipeNode(node: Record<string, unknown>): ParsedRecipe | null {
+  const title = typeof node.name === 'string' ? clean(node.name).slice(0, 200) : null
+  const ingredients = asStringList(node.recipeIngredient ?? node.ingredients, MAX_INGREDIENTS).map(tidyIngredientLine)
+  const { steps, images } = normalizeInstructionsWithImages(node.recipeInstructions)
+  // A node with a name but neither ingredients nor steps isn't a usable recipe.
+  if (!title && ingredients.length === 0 && steps.length === 0) return null
+  const image = normalizeImage(node.image)
+  // A « step photo » that is the recipe's own hero picture (IGA repeats it on step 1)
+  // is not a step photo.
+  const stepImageUrls = images.map((u) => (u && u !== image ? u : null))
+  return {
+    title,
+    ingredients,
+    steps,
+    image,
+    servings: parseYield(node.recipeYield ?? node.yield),
+    servingsUnit: parseYieldUnit(node.recipeYield ?? node.yield),
+    times: {
+      prep: isoToMinutes(node.prepTime),
+      cook: isoToMinutes(node.cookTime),
+      total: isoToMinutes(node.totalTime),
+    },
+    ...(stepImageUrls.some(Boolean) ? { stepImageUrls } : {}),
   }
-  return null
 }
 
 // Microdata fallback for older sites with no JSON-LD: scan for itemprop
@@ -730,10 +798,15 @@ export function parseRecipeMicrodata(html: string): ParsedRecipe | null {
     return [...c.attr, ...c.text].map((s) => clean(s)).find(Boolean) ?? null
   }
 
-  const ingredients = inner('recipeIngredient|ingredients')
-    .map((s) => clean(s).slice(0, 200))
-    .filter(Boolean)
-    .slice(0, MAX_INGREDIENTS)
+  // One element per ingredient — or ONE container holding the whole list (5 ingrédients
+  // 15 minutes: <div itemprop=ingredients><ul><li>…</li></ul><p>Pour la marinade :</p>…):
+  // split it into its printed lines, a label line becoming a « ## » part, buttons out.
+  const ingredients = dropDanglingHeadings(
+    inner('recipeIngredient|ingredients')
+      .flatMap((s) => (/<(?:li|p|div|br|ul)\b/i.test(s) ? htmlBlocksToLines(s) : [clean(s)]))
+      .filter((s) => s && !UI_CHROME.test(s))
+      .map((s) => s.slice(0, 200)),
+  ).slice(0, MAX_INGREDIENTS)
 
   // Instructions may be one element per step OR a single container; turn block
   // closers into newlines before stripping tags so the inner list splits. An
@@ -803,7 +876,7 @@ function groupLabel(line: string): string | null {
   if (s.length < 2 || s.length > 40) return null
   if (/\d/.test(s) || !/[a-zà-öœ]/i.test(s)) return null
   if (/[.!?;,]$/.test(s)) return null
-  if (s.split(/\s+/).length > 5) return null
+  if (s.split(/\s+/).length > 6) return null
   const ingH = s.match(ING_HEADING)
   if (ingH) return qualifierTitle(ingH[1])
   if (STEP_HEADING.test(s) || NOTE_HEADING.test(s) || TIME_LINE.test(s)) return null
@@ -895,7 +968,7 @@ const STEP_HEADING =
 // Notes: », « Conseils du chef » — but never a colon mid-line: « Note : bien mélanger » is
 // a line of the recipe, not a heading.
 const NOTE_HEADING =
-  /^(?:(?:recipe|chef['’]?s?|cook['’]?s?)\s+)?(?:notes?|remarques?|conseils?|astuces?|tips?|variantes?|bon\s+[àa]\s+savoir|id[ée]es?\s+pour\s+accompagner|pour\s+accompagner|suggestions?\s+d['’]accompagnement|serving\s+suggestions?)\b[^.!?:]{0,30}[:!]?$/i
+  /^(?:(?:recipe|chef['’]?s?|cook['’]?s?)\s+)?(?:notes?|remarques?|conseils?|astuces?|tips?|variantes?|bon\s+[àa]\s+savoir|id[ée]es?\s+pour\s+accompagner|pour\s+accompagner|suggestions?\s+d['’]accompagnement|serving\s+suggestions?|suggestions?\s+gourmandes?|trucs?\s+(?:de\s+pro|du\s+chef)|make[- ]ahead(?:\s+and\s+storage)?)\b[^.!?:]{0,30}[:!]?$/i
 
 // "Préparation : 20 min", "Cuisson 1 h 30", "Total time: 45 minutes" — the time
 // block most printed recipes start with. Must be checked BEFORE the step
@@ -935,7 +1008,12 @@ const INLINE_NOTE = /^(?:notes?|remarques?|conseils?|astuces?|tips?|bon\s+[àa]\
 // on recettes.qc.ca and most blogs — pasted whole, its four lines became steps 7–10
 // (Marc, 2026-10-27). Whole-word (a letter lookahead, since JS \b dies after an é).
 export const NOISE_END =
-  /^(?:recettes?\s+(?:populaires?|similaires?|sugg[ée]r[ée]es?|du\s+moment)|popular\s+recipes?|related\s+recipes?|more\s+recipes?|vous\s+aimerez|you\s+(?:may|might)\s+also\s+like|[àa]\s+lire\s+aussi|voir\s+aussi|see\s+also|commentaires?\b|comments?\b|abonnez|newsletter|s['’]abonner|subscribe|tous\s+droits|all\s+rights|©|(?:cat[ée]gories?|mots?[- ]cl[ée]s?|[ée]tiquettes?|tags?|keywords?)\s*:?\s*$|keywords?\s*:|note\s+personnelle|cr[ée]er\s+une\s+note|nutrition(?:\s+(?:information|facts))?\s*:?\s*$|valeurs?\s+nutritives?|informations?\s+nutritionnelles?)/i
+  /^(?:recettes?\s+(?:populaires?|similaires?|sugg[ée]r[ée]es?|du\s+moment)|popular\s+recipes?|related\s+recipes?|more\s+recipes?|vous\s+aimerez|you\s+(?:may|might)\s+also\s+like|[àa]\s+lire\s+aussi|voir\s+aussi|see\s+also|(?:commentaires?|comments?)(?:\s*\(\d+\)|\s*:)?\s*$|[\d,.\s]+(?:commentaires?|comments?)\s*$|(?:laisser|leave)\s+(?:un|a)\s+(?:commentaire|comment)|abonnez|newsletter|s['’]abonner|subscribe|tous\s+droits|all\s+rights|©|(?:cat[ée]gories?|mots?[- ]cl[ée]s?|[ée]tiquettes?|tags?|keywords?)\s*:?\s*$|keywords?\s*:|note\s+personnelle|personal\s+note|cr[ée]er\s+une\s+note|nutrition\s+(?:information|facts)\b|nutrition\s*:?\s*$|valeurs?\s+nutritives?|informations?\s+nutritionnelles?|recette\s+publi[ée]e|[àa]\s+voir\s+(?:[ée]galement|aussi)|d['’]autres\s+recettes|imprimer\s+cette\s+recette|avis\s+de\s+non[- ]responsabilit[ée]|disclaimer|je\s+m['’]inscris|adresse\s+(?:mail|courriel)|qu['’]est[- ]ce\s+qu['’]on\s+mange|.*\b(?:get|download)\s+the\s+app\b)/i
+// A side block that is not the recipe and not its notes — trivia, a FAQ, the gear, a
+// video: its lines are skipped until the next real heading (a « Variante » after a «
+// Saviez-vous ? » is still read). Never the end: notes often follow.
+const ASIDE_HEADING =
+  /^(?:(?:le\s+)?saviez[- ]vous|info(?:rmation)?s?\s+additionnelles?|faq\b|foire\s+aux\s+questions|questions?\s+fr[ée]quentes|ustensiles?|mat[ée]riel(?:\s+requis)?|special\s+equipment|equipment|vid[ée]o)\b[^.!]{0,70}$/i
 // The page HEAD a whole-page paste carries above the recipe's name: a publication
 // date, a byline, a share button, a photo credit. None of these is the title.
 const PRE_JUNK =
@@ -950,7 +1028,7 @@ const NOISE_SKIP = /^(?:publicit[ée]s?|advertisements?|sponsored)(?![a-zà-öœ
 // toggle (« Metric », « US », « Cups »), WPRM's checkbox glyph. Whole lines only — never
 // recipe, skipped wherever they sit (under « Ingrédients » they became ingredients).
 const UI_CHROME =
-  /^(?:ajouter\s+[àa]\s+(?:ma|mon|mes)\s.{0,40}|s[ée]lectionner\s+tous\s.{0,40}|passer\s+en\s+mode\s+cuisine|mode\s+cuisine|cook\s+mode|prevent\s+screen\s+from\s+sleeping|skip\s+ad|imprimer(?:\s+la\s+recette)?|print(?:\s+recipe)?|jump\s+to\s+recipe|save\s+recipe|metric|us|cups|imp[ée]rial|m[ée]trique|▢|☐)$/i
+  /^(?:ajouter\s+[àa]\s+(?:ma|mon|mes)\s.{0,40}|s[ée]lectionner\s+tous\s.{0,40}|passer\s+en\s+mode\s+cuisine|mode\s+cuisine|cook\s+mode|prevent\s+screen\s+from\s+sleeping|skip\s+ad|imprimer(?:\s+(?:la|ma)\s+(?:recette|s[ée]lection))?|print(?:\s+recipe)?|jump\s+to\s+recipe|save\s+recipe|metric|us|cups|imp[ée]rial|m[ée]trique|unit[ée]\s+de\s+mesure|magasiner\s+tous\s+les\s+ingr[ée]dients|\d+(?:\/\d+)?\s*x|oops!.*|▢|☐|(?:(?:pinterest|facebook|email|courriel|twitter|instagram|tiktok|youtube|whatsapp|partager|share)[\s|·•]*){2,})$/i
 // A bare part label inside the ingredient or method block (« Sauce », « Garniture »,
 // « Poisson »): one to three capitalised words, no digits, no punctuation.
 const isBareLabel = (l: string): boolean => /^[A-ZÀ-ÖŒ][^\d.!?:;,()]{0,30}$/.test(l) && l.split(/\s+/).length <= 3
@@ -983,9 +1061,9 @@ const AMOUNT_ONLY =
 const WORDS_ONLY = /^[a-zà-öœ'’(][^\d]*$/i
 // An ingredient-looking line: bullet or quantity-leading, short. Used only by
 // the no-headings fallback.
-const ING_LIKE = /^[-•*–]?\s*(?:\d|[¼½¾⅓⅔⅛]|une?\b|deux\b|trois\b|quelques\b)/i
+const ING_LIKE = /^[-•*–▢☐□]?\s*(?:\d|[¼½¾⅓⅔⅛]|une?\b|deux\b|trois\b|quelques\b)/i
 
-const stripBullet = (s: string): string => s.replace(/^[-•·▪◦‣*–—]+\s*/, '').trim()
+const stripBullet = (s: string): string => s.replace(/^[-•·▪◦‣*–—▢☐□]+\s*/, '').trim()
 
 // A heading's qualifier becomes a section title only when it's wordy, not a
 // count ("pour 4 personnes") — digits mean it's meta, not a part name.
@@ -1024,7 +1102,7 @@ const titleContinues = (title: string, line: string): boolean =>
 // `confident` says whether the structure was explicit.
 export function parsePastedRecipe(text: string): PastedRecipe {
   const lines = text.split(/\r?\n/).map((l) => l.replace(/\s+/g, ' ').trim())
-  let mode: 'pre' | 'ing' | 'steps' | 'notes' = 'pre'
+  let mode: 'pre' | 'ing' | 'steps' | 'notes' | 'aside' = 'pre'
   let title: string | null = null
   // How many printed lines the title took (1, or 2 when wrapped) — the no-headings
   // fallback below skips exactly those, so a wrapped title's second half never lands
@@ -1154,6 +1232,11 @@ export function parsePastedRecipe(text: string): PastedRecipe {
       mode = 'notes'
       continue
     }
+    if (mode !== 'pre' && ASIDE_HEADING.test(line)) {
+      mode = 'aside'
+      continue
+    }
+    if (mode === 'aside') continue
     // A note label that opens its own line (« Bon à savoir ! Pour un spaghetti… »), under
     // the ingredients: the rest of the line is the note, and what follows it too.
     const inlineNote = mode !== 'steps' ? line.match(INLINE_NOTE) : null
@@ -1207,6 +1290,9 @@ export function parsePastedRecipe(text: string): PastedRecipe {
         skipTo = words
         continue
       }
+      // A paragraph under « Ingredients » (a site's note on scaling the yield) is not
+      // an ingredient: several sentences in one long line.
+      if (line.length > 100 && (line.match(/[.!?]\s+[A-ZÀ-ÖŒ]/g) ?? []).length >= 2) continue
       const ing = stripBullet(line).slice(0, 200)
       if (ing) ings.push(ing)
       continue
@@ -1216,7 +1302,8 @@ export function parsePastedRecipe(text: string): PastedRecipe {
       stepLines.push(sec ? makeSectionHeading(sec) : line)
       continue
     }
-    noteLines.push(line)
+    // A note's own numbering (« 1 » on a line of its own, a list marker) is not a note.
+    if (!/^\d{1,2}[.)]?$/.test(line)) noteLines.push(line)
   }
 
   // No headings at all — classify by line shape instead.
@@ -1425,7 +1512,7 @@ function ingredientsAnchor(text: string): number | undefined {
       .slice(m.index + m[0].length, m.index + m[0].length + 1200)
       .split('\n')
       .map((l) => l.trim())
-      .filter(Boolean)
+      .filter((l) => l && !UI_CHROME.test(l))
       .slice(0, 6)
     if (after.filter((l) => ING_LIKE.test(l)).length >= 2) return m.index
   }
@@ -1485,7 +1572,7 @@ export function htmlToText(html: string, max = 6000): string {
     .split('\n')
     // An inline tag left a space before the punctuation that closed it (« <a>velveting</a>. »
     // → « velveting . »). French sets a space before « : ! ? ; », never before « . , ) ».
-    .map((l) => l.replace(/[ \t]+/g, ' ').replace(/ +(?=[.,)](?:\s|$))/g, '').trim())
+    .map((l) => l.replace(/[ \t]+/g, ' ').replace(/ +(?=[.,)](?:\s|$))/g, '').replace(/\( +/g, '(').trim())
     .join('\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim()

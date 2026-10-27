@@ -1,0 +1,35 @@
+{
+  "title": "Poulet marengo",
+  "servings": 4,
+  "servingsUnit": null,
+  "times": {
+    "prep": 20,
+    "cook": 60,
+    "total": 80
+  },
+  "ingredients": [
+    "1 poulet de 2kg coupé en morceaux d'une demi-portion",
+    "60 mL huile d'olive",
+    "30 g beurre",
+    "48 g farine",
+    "2 gousses d'ail finement hachées",
+    "2 échalotes françaises finement hachées",
+    "227 g champignons de Paris tranchés",
+    "2 g feuilles de laurier moulu ou 2 feuilles entières",
+    "5 g feuilles thym séché ou une branche de thym frais",
+    "165 mL bouillon de poulet",
+    "165 mL vin blanc sec",
+    "30 g pâte de tomates",
+    "sel et poivre au goût"
+  ],
+  "steps": [
+    "Après avoir morcelé le poulet, saler, poivrer et enfariner les morceaux.",
+    "Dans une cocotte allant au four, faire fondre sur la cuisinière le beurre avec 2 c. à soupe d'huile et y faire dorer les morceaux de poulet pendant 6 à 7 minutes.",
+    "Retirer le poulet et le mettre de côté.",
+    "Dans la même cocotte, mettre le reste de l'huile et y faire dorer les échalotes avec l'ail, les champignons et les fines herbes pendant 2 à 3 minutes.",
+    "Verser le vin blanc avec le bouillon de poulet et la pâte de tomates sur les légumes et bien gratter le fond de la cocotte en portant le tout à ébullition.",
+    "Remettre le poulet dans la cocotte, bien mélanger le tout, fermer le couvercle et mettre au four pendant une heure à 180°C (350°F)."
+  ],
+  "notes": null,
+  "structuring": "headings"
+}

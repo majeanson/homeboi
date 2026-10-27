@@ -26,6 +26,9 @@ export interface CorpusMeta {
   via: 'playwright' | 'curl'
   notes?: string
   pending?: string
+  // The audit flags this page SHOULD raise (recipeAudit.test) — none unless named, with
+  // the reason in notes: a corpus page is verified correct, so a flag is usually a false alarm.
+  audit?: string[]
 }
 
 // The fields a cook would check — everything the form fills from an import.

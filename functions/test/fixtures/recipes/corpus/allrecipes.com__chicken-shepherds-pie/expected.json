@@ -1,0 +1,34 @@
+{
+  "title": "Chicken Shepherd’s Pie",
+  "servings": 6,
+  "servingsUnit": null,
+  "times": {
+    "prep": 30,
+    "cook": 95,
+    "total": 125
+  },
+  "ingredients": [
+    "1 medium head garlic",
+    "olive oil, as needed",
+    "8 potatoes",
+    "¼ cup butter",
+    "⅔ cup milk",
+    "1 pound cooked, shredded chicken breast meat",
+    "1 tablespoon chopped fresh thyme",
+    "1 tablespoon chopped fresh rosemary",
+    "½ teaspoon salt",
+    "½ teaspoon freshly ground black pepper",
+    "½ cup red bell pepper, diced",
+    "1 cup fresh corn kernels",
+    "1 cup shredded Cheddar cheese, divided"
+  ],
+  "steps": [
+    "Preheat oven to 400 degrees F (200 degrees C). Cut head of garlic in half crosswise and drizzle with olive oil. Wrap in foil and bake for 45 minutes.",
+    "Reduce oven temperature to 350 degrees F (175 degrees C).",
+    "Bring a large pot of salted water to a boil. Peel the potatoes and chop into 1 1/2- to 2-inch cubes; boil until tender, about 10 to 15 minutes. Drain, then mash potatoes. Add butter, milk, and roasted garlic and mix in. Set aside.",
+    "Arrange chicken evenly in the bottom of a 9x13-inch casserole dish; sprinkle with herbs and spices. Then, layer peppers, corn, and 3/4 cup cheese over the meat. Spread mashed potatoes on top, sealing everything in. Sprinkle with remaining cheese.",
+    "Bake in preheated oven for 25 minutes, or until browned around edges."
+  ],
+  "notes": null,
+  "structuring": "jsonld"
+}

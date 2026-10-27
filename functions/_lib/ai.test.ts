@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { answerQuestion, classifyCapture, decodeStrayEscapes, suggestMeals, resolveLang, extractSizes, salvageTruncatedJson, selectRecipeLines, toSelection } from './ai'
+import { answerQuestion, classifyCapture, decodeStrayEscapes, suggestMeals, resolveLang, extractSizes, salvageTruncatedJson, selectRecipeLines, toSelection, transcribeImage, VISION_MODEL_ID, VISION_PRIMARY_ID } from './ai'
 import type { Env } from './env'
 
 // A fake Workers AI binding that returns a canned `response`, so we can test the
@@ -237,5 +237,29 @@ describe('selectRecipeLines — the model chooses lines, it never writes them', 
     expect(sel.ingredientSections).toEqual([{ line: 3, before: 4 }])
     expect(sel.stepSections).toEqual([])
     expect(sel.servings).toBeNull()
+  })
+})
+
+// D2 (2026-10-27): the stronger vision model first, the Llama read as the fallback —
+// and the report names the one that answered.
+describe('transcribeImage — primary vision model, Llama fallback', () => {
+  const bytes = new Uint8Array([1, 2, 3])
+  it('the primary answers → its text, its name', async () => {
+    const run = vi.fn(async (_m: string, _i: unknown) => ({ response: 'Crêpes\n250 ml de farine' }))
+    const report = { error: null as string | null, visionModel: null as string | null }
+    const t = await transcribeImage({ DB: {}, AI: { run } } as unknown as Env, bytes, 'fr', report)
+    expect(t).toBe('Crêpes\n250 ml de farine')
+    expect(report.visionModel).toBe(VISION_PRIMARY_ID)
+    expect(run.mock.calls[0][0]).toBe(VISION_PRIMARY_ID)
+    expect((run.mock.calls[0][1] as unknown as { image: string }).image).toMatch(/^data:image\/jpeg;base64,/)
+  })
+  it('the primary throws (or answers nothing) → the Llama read, named', async () => {
+    for (const first of [() => Promise.reject(new Error('5006: bad input')), () => Promise.resolve({ response: '' })]) {
+      const run = vi.fn().mockImplementationOnce(first).mockResolvedValueOnce({ response: 'Crêpes' })
+      const report = { error: null as string | null, visionModel: null as string | null }
+      expect(await transcribeImage({ DB: {}, AI: { run } } as unknown as Env, bytes, 'fr', report)).toBe('Crêpes')
+      expect(report.visionModel).toBe(VISION_MODEL_ID)
+      expect(run.mock.calls[1][0]).toBe(VISION_MODEL_ID)
+    }
   })
 })

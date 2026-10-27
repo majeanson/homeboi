@@ -12,7 +12,7 @@ import { useAudience } from '../../lib/audience'
 import { useApodEnabled, setApodEnabled } from '../../lib/apod'
 import { useCanvasEnabled, setCanvasEnabled } from '../../lib/canvas'
 import { useKeepAwake, setKeepAwake } from '../../lib/keepAwake'
-import { useOcrEngine, setOcrEngine, useCloudOcrAvailable } from '../../lib/ocrPref'
+import { useOcrChoice, useOcrEngine, setOcrEngine, useCloudOcrAvailable } from '../../lib/ocrPref'
 import { useCalm } from '../../lib/calm'
 import { useHelp } from '../../lib/help'
 import { isGuest } from '../../lib/device'
@@ -87,8 +87,10 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
   // Per-device Screen Wake Lock (HubLayout holds it): keep a wall tablet lit on the
   // board. Read live so the toggle engages/releases the lock without a reload.
   const keepAwake = useKeepAwake()
-  // Recipe-photo reader (per device): on-device vs the high-accuracy cloud OCR. The
-  // choice only appears when the deployment actually has a Mistral key wired.
+  // Recipe-photo reader (per device): Auto (the default — the cloud reader when it is
+  // wired and AI is on), on-device, or the high-accuracy cloud OCR. The choice only
+  // appears when the deployment actually has a Mistral key wired.
+  const ocrChoice = useOcrChoice()
   const ocrEngine = useOcrEngine()
   const cloudOcrAvailable = useCloudOcrAvailable()
   function toggleAmbient() {
@@ -218,22 +220,31 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
             <div className="audience-switch mono" role="group" aria-label={o18n.ocrLabel}>
               <button
                 type="button"
-                className={`audience-switch__opt${ocrEngine === 'device' ? ' is-active' : ''}`}
+                className={`audience-switch__opt${ocrChoice === 'auto' ? ' is-active' : ''}`}
+                onClick={() => setOcrEngine('auto')}
+                aria-pressed={ocrChoice === 'auto'}
+              >
+                <InlineIcon name="arrow-clockwise-bold" /> {o18n.ocrAuto}
+              </button>
+              <button
+                type="button"
+                className={`audience-switch__opt${ocrChoice === 'device' ? ' is-active' : ''}`}
                 onClick={() => setOcrEngine('device')}
-                aria-pressed={ocrEngine === 'device'}
+                aria-pressed={ocrChoice === 'device'}
               >
                 <InlineIcon name="camera-bold" /> {o18n.ocrDevice}
               </button>
               <button
                 type="button"
-                className={`audience-switch__opt${ocrEngine === 'cloud' ? ' is-active' : ''}`}
+                className={`audience-switch__opt${ocrChoice === 'cloud' ? ' is-active' : ''}`}
                 onClick={() => setOcrEngine('cloud')}
-                aria-pressed={ocrEngine === 'cloud'}
+                aria-pressed={ocrChoice === 'cloud'}
               >
                 <InlineIcon name="sparkle-bold" /> {o18n.ocrCloud}
               </button>
             </div>
             <p className="operator__seg-hint mono">
+              {ocrChoice === 'auto' ? `${o18n.ocrAutoHint} ` : ''}
               {ocrEngine === 'cloud' ? o18n.ocrCloudHint : o18n.ocrDeviceHint}
             </p>
           </div>

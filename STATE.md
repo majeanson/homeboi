@@ -113,7 +113,11 @@ now, so the repo-wide count is honest for the first time.
 
 ## 3. What just shipped
 
-### Atteindre la page; l'IA choisit des lignes; l'audit avant la fiche — 2026-10-27
+### Groupes et photos du site, plusieurs recettes, lecture photo auto, contrat hebdo — 2026-10-27
+Corpus 26/26 exact (14 sites); `_lib/siteAdapters` (Ricardo props, WPRM groups), HowToStep photos → R2 (`_lib/stepImageImport`, upload budget; a cancel frees them),
+`candidates` + `pick`, OCR « Auto » default, Mistral-vision first (shape unverified — Llama fallback), `e2e:recipes` weekly. **Open:** the prod-only checks in the commit body.
+
+### Atteindre la page; l'IA choisit des lignes; l'audit avant la fiche — 2026-10-27 (earlier: link import kept the site's steps, all of them)
 **Principle: no model writes recipe text.** `structureRecipe` + `linesWithForeignNumbers` are gone: `selectRecipeLines` (JSON Mode) returns line NUMBERS,
 the draft is copied from the source by index. `_lib/recipeAudit` (6 flags, corpus held at zero) opens the verify panel; « 250 ml » / « de farine » pair (F).
 Doors: Worker fetch → **Browser Run** (`_lib/renderPage`, the only `quickAction(`; `browser` meter, **migration 0145**, 20/day, 5 sandbox) → reader → the
@@ -122,10 +126,6 @@ Doors: Worker fetch → **Browser Run** (`_lib/renderPage`, the only `quickActio
 ### Le corpus réel de recettes — 2026-10-27
 12 real pages (recettes.qc.ca + Zeste captured with Playwright — a Worker is refused) scored EXACTLY by `recipeCorpus.test.ts` through ONE seam, `_lib/recipeImportPage`; `scripts/recipe-corpus.mjs capture|score|debug`. It found: bare JSON-LD
 ingredient names, microdata cut at the first `</div>`, menu « Ingrédients » anchors, `&Eacute;` → é, notes dropped. `{ page }` input (bookmarklet).
-
-### L'import d'une recette par lien, fidèle — 2026-10-27
-« Les étapes arrêtent avant la fin… une étape par phrase » : steps > 400 chars cut per sentence, caps 30/40, the footer repair ate a real last step on JSON-LD, AI window 6000 + a cut reply = read lost. Now: the source's boundaries, `MAX_STEPS` 60, `salvageTruncatedJson`, a provenance line, AI reads →
-`RecipeReadReview` (page text) + « Guider l'IA ». Same day: a re-run of « Remplir vite » replaces its own last result (never a cook-edited line), and a whole-page paste drops the date/byline head + « Catégories / Mots-clés » tail. Guards: real-site fixtures, `e2e/recipe-url-import`. **Open:** grow the corpus; AI path verified on prod only.
 
 
 ## 4. What still needs improvement — consolidated and ranked

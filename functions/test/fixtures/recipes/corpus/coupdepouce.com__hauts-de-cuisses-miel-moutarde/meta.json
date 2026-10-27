@@ -1,0 +1,10 @@
+{
+  "url": "https://www.coupdepouce.com/recette/hauts-de-cuisses-de-poulet-au-miel-et-a-la-moutarde-1728778415",
+  "capturedAt": "2026-10-27",
+  "reach": "blocked",
+  "via": "playwright",
+  "notes": "Verified by reading 2026-10-27 (Playwright; a Worker is refused). Lines like « 2 gousses d'ail , hachées » are the site's own spacing. (worker fetch: fetch failed) AUDIT: the side salad's ingredients (sesame oil, rice vinegar…) live only in its step — the missing-ingredient flag is right and expected.",
+  "audit": [
+    "missing-ingredient"
+  ]
+}

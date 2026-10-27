@@ -45,12 +45,12 @@ describe('auditDraft — one flag per thing a read can miss', () => {
   })
 })
 
-describe('the corpus — hand-verified reads raise no flag', () => {
+describe('the corpus — hand-verified reads raise no flag (unless meta.audit names one)', () => {
   for (const e of loadCorpus()) {
     it(e.id, () => {
       const r = readPage(sourceFromHtml(e.html(), e.meta.url))
       expect(r.draft).not.toBeNull()
-      expect(auditDraft(r.draft!, r.window)).toEqual([])
+      expect(auditDraft(r.draft!, r.window).map((f) => f.kind)).toEqual(e.meta.audit ?? [])
     })
   }
 })

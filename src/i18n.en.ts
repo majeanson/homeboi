@@ -1279,6 +1279,7 @@ export const EN: typeof FR = {
     importDoorBookmarklet: 'Page sent by your bookmark.',
     importDuplicate: (title: string) => `Already in the book: ${title}`,
     importDuplicateOpen: 'Open',
+    importCandidates: (n: number) => `This page has ${n} recipes:`,
     importViaSite: 'Read from the site’s data — no AI.',
     importViaHeadings: 'Read from the page text — no AI.',
     importViaHeuristic: 'Best-effort read, no AI — check the steps.',

@@ -226,6 +226,8 @@ export const FR_OPERATOR = {
   castFailed: 'La diffusion n’a pas pu démarrer. Choisis le Chromecast, ou utilise le lien ci-dessous.',
   // Lecture des recettes photo : moteur sur l’appareil vs nuage haute précision.
   ocrLabel: 'Lecture des photos de recette',
+  ocrAuto: 'Auto',
+  ocrAutoHint: 'Auto : la haute précision si elle est disponible, sinon l’appareil.',
   ocrDevice: 'Sur l’appareil',
   ocrCloud: 'Haute précision',
   ocrDeviceHint: 'Lecture gratuite et privée, directement sur l’appareil — rien n’est envoyé ailleurs. Idéal pour le texte imprimé.',

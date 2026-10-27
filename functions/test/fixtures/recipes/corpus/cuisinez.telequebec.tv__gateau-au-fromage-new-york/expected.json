@@ -1,0 +1,47 @@
+{
+  "title": "Le meilleur gâteau au fromage (New York cheesecake) et coulis de fraises",
+  "servings": 12,
+  "servingsUnit": null,
+  "times": {
+    "prep": 60,
+    "cook": null,
+    "total": 60
+  },
+  "ingredients": [
+    "## Pour la croûte aux biscuits Graham",
+    "90 g (1 tasse) de chapelure de biscuits Graham",
+    "45 g (⅓ tasse) de pacanes (noix de pécan), hachées",
+    "26 g (2 c. à soupe) de sucre",
+    "80 ml (⅓ tasse) de beurre non salé, fondu",
+    "## Pour le mélange de fromage",
+    "750 g (3 paquets) fde romage à la crème (fromage à tartiner), tempéré",
+    "200 g (1 tasse) de sucre",
+    "5 ml ( 1 c. à thé) d'extrait de vanille",
+    "3 œufs",
+    "## Pour la confiture aux fraises",
+    "450 g (3 tasses) de fraises fraîches, équeutées et coupées en 2 ou en 4",
+    "100 g (½ tasse) de sucre",
+    "15 ml (1 c. à soupe) de jus de citron"
+  ],
+  "steps": [
+    "## Pour la croûte aux biscuits Graham",
+    "Préchauffer le four à 175°C (350°F).",
+    "Dans un grand bol, mélanger la chapelure de biscuits Graham, les pacanes hachées, le sucre et le beurre fondu.",
+    "Répartir dans un moule à charnière de 20 cm (8 po) de diamètre et, du bout des doigts, bien presser le mélange au fond du moule.",
+    "Mettre au four et cuire 8 minutes, puis laisser tempérer.",
+    "## Pour la garniture",
+    "Dans un grand bol, battre le fromage à la crème et le sucre au batteur électrique",
+    "Ajouter les œufs un à la fois et bien mélanger entre chaque ajout jusqu'à l'obtention d'une consistance lisse.",
+    "Verser le mélange de fromage dans le moule, sur la croûte.",
+    "Mettre au four et cuire environ 40 minutes. Le fromage doit avoir un aspect légèrement gélatineux au centre.",
+    "Laisser refroidir complètement avant de réfrigérer pour au moins 4 heures recouvert d'un papier d'aluminium.",
+    "## Pour la confiture aux fraises",
+    "Dans une casserole, déposer les fraises avec le sucre et le jus de citron. Mélanger avec une cuillère de bois.",
+    "Cuire 10 minutes à feu moyen, puis verser dans un bol et réfrigérer.",
+    "Découper le gâteau et servir nappé de confiture aux fraises.",
+    "## Gâteau au fromage au chocolat, caramel ou framboise",
+    "Vous pouvez facilement remplacer le coulis de fraises par un coulis de chocolat, de caramel ou un coulis de fruits de votre choix."
+  ],
+  "notes": "À refaire avec un coulis de chocolat, de bleuets, de caramel, de framboises, etc.\nMême si la combinaison classique du gâteau au fromage et du coulis de fraises est incomparable, c'est permis d'essayer avec d'autres saveurs! Chez Cuisinez, on adore le coulis de bleuet, la confiture de framboise et le coulis de chocolat. Le caramel et la garniture de pommes (comme on retrouve dans la tarte aux pommes) sont aussi des choix qui semblent faire l'unanimité chez nos lectrices et lecteurs gourmands.\nDes minis gâteaux au fromage?\nC'est oui! Les minis gâteaux au fromage (ou les formats « bouchées ») sont une excellente manière de mieux calculer vos portions si vous recevez. Ils sont aussi d'excellents desserts ou collations pour la boîte à lunch ! Et c'est très simple: on procède aux mêmes étapes de préparation, sauf qu'on portionne dans de petits moules en silicone ou encore dans un moule à muffins antiadhésif.\nAttention, car les petits formats de gâteau au fromage nécessitent moins de temps de cuisson! Commencez à jeter un œil à votre cuisson après environ 20 minutes au four. Lorsque les bords sont gonflés, mais que le milieu semble encore un peu mou, il est temps de ressortir vos minis du four!",
+  "structuring": "jsonld"
+}

@@ -48,6 +48,8 @@ const contentWords = (s: string) =>
     .split(' ')
     .filter((w) => w.length >= 4 && !/^\d/.test(w) && !FILLER.has(w))
 
+const MEASURED =
+  /^\S+(?:\s+\d+\/\d+)?\s*(?:\([^)]*\)\s*)?(?:ml|cl|l|g|kg|oz|lb|lbs|tasses?|cups?|tbsp|tsp|tablespoons?|teaspoons?|c\.\s*à\s*(?:soupe|thé|café|s|c)\.?)\s*(?:\([^)]*\)\s*)?(?:de\s+|d['’]\s*|of\s+)(?!(?:la|le|les|l['’]|the|a|an)\b)\p{L}/iu
 const TITLE_JUNK =
   /^(?:recettes?|recipes?|accueil|home|menu|ingr[ée]dients?|pr[ée]paration|\d{1,2}(?:er)?\s+[a-zéû]{3,10}\.?\s+\d{4}|[a-z]{3,9}\.?\s+\d{1,2},?\s+\d{4}|\d{4}-\d{2}-\d{2})$/i
 
@@ -70,6 +72,10 @@ export function auditDraft(d: Auditable, sourceText: string | null): AuditFlag[]
     for (const lifted of ingredientsFromMethod(steps)) {
       // A phrase never runs past its sentence (« 1 c. à thé. Bien mélanger »).
       const phrase = lifted.split(/\.\s+(?=[A-ZÀ-ÖŒ])/)[0]
+      // Only a MEASURE of something: an amount, a kitchen unit, then « de / d' / of » and
+      // a word that is not an article (« 5 tablespoons of the hot liquid » is a gesture,
+      // « 400 degrees F », « 65g each », « une feuille de papier » are not ingredients).
+      if (!MEASURED.test(phrase)) continue
       const words = contentWords(phrase)
       if (words.length && !words.some(listed)) {
         flags.push({ kind: 'missing-ingredient', line: phrase })

@@ -1,0 +1,35 @@
+{
+  "title": "Côtelettes de porc, sauce aux pommes",
+  "servings": 4,
+  "servingsUnit": null,
+  "times": {
+    "prep": 20,
+    "cook": 25,
+    "total": 45
+  },
+  "ingredients": [
+    "4 côtelettes de porc désossées d’environ 2 cm (3/4 po) d’épaisseur",
+    "5 ml de sel",
+    "½ citron",
+    "30 ml d’huile d’olive",
+    "110 g de pommes Cortland non pelées, épépinées et coupées en dés",
+    "1 échalote française, hachée finement",
+    "1 gousse d’ail, râpée finement",
+    "30 ml de vinaigre de cidre",
+    "15 ml de farine tout usage non blanchie",
+    "250 ml de bouillon de poulet",
+    "15 ml de moutarde à l’ancienne",
+    "10 ml de miel"
+  ],
+  "steps": [
+    "## Côtelettes de porc",
+    "Déposer les côtelettes sur une grande assiette. Parsemer la viande de chaque côté du sel. Poivrer. Frotter les côtelettes avec la partie coupée du demi-citron pour bien les enrober de jus. Laisser macérer à la température ambiante 15 minutes.",
+    "Dans une grande poêle antiadhésive à feu élevé, dorer les côtelettes dans l’huile 2 minutes de chaque côté. Réserver sur une autre assiette.",
+    "## Sauce aux pommes",
+    "Dans la même poêle à feu moyen, attendrir les dés de pommes 1 minute dans le gras de cuisson. Ajouter de l’huile, au besoin. Ajouter l’échalote et l’ail et poursuivre la cuisson 1 minute. Déglacer avec le vinaigre. Ajouter la farine et poursuivre la cuisson 1 minute en remuant. Ajouter le bouillon en remuant constamment au fouet. Salet et poivrer. Porter à ébullition et laisser mijoter 3 minutes ou jusqu’à ce que la sauce épaississe. Retirer du feu.",
+    "Incorporer la moutarde et le miel dans la sauce. Rectifier l’assaisonnement. Remettre la viande avec le jus de cuisson accumulé dans l’assiette dans la poêle et enrober la viande de la sauce pour la réchauffer.",
+    "Servir les côtelettes nappées de la sauce aux pommes. Accompagner d’une purée de pommes de terre et d’un légume vert, si désiré."
+  ],
+  "notes": "Dans cette recette, nul besoin de faire mariner les côtelettes de porc pendant plusieurs heures pour obtenir une viande juteuse. Le fait de frotter la viande avec du sel lui confère rapidement une texture tendre et juteuse lors de la cuisson. Il suffit de la laisser reposer 15 minutes et le tour est joué !",
+  "structuring": "jsonld"
+}
