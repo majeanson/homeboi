@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { answerQuestion, classifyCapture, decodeStrayEscapes, suggestMeals, resolveLang, extractSizes, salvageTruncatedJson, segmentRunOn, selectionLines, selectRecipeLines, toSelection, transcribeImage, VISION_MODEL_ID, VISION_PRIMARY_ID } from './ai'
+import { answerQuestion, classifyCapture, decodeStrayEscapes, suggestMeals, resolveLang, extractSizes, salvageTruncatedJson, segmentRunOn, selectionLines, selectRecipeLines, toSelection, transcribeImage, VISION_MODEL_ID, VISION_PRIMARY_ID, VISION_SECOND_ID } from './ai'
 import type { Env } from './env'
 
 // A fake Workers AI binding that returns a canned `response`, so we can test the
@@ -254,10 +254,21 @@ describe('transcribeImage — primary vision model, Llama fallback', () => {
     // The VERIFIED image shape (Workers AI REST, 2026-10-27): OpenAI content parts with
     // `image_url: { url: data:… }` — a top-level `image` made the model answer « Je ne
     // peux pas voir d'images » and, on prod, transcribe a story for a biscuit card.
-    const input = run.mock.calls[0][1] as unknown as { messages: { content: { type: string; image_url?: { url: string } }[] }[]; image?: unknown }
+    const input = run.mock.calls[0][1] as unknown as { messages: { content: { type: string; image_url?: { url: string } }[] }[]; image?: unknown; reasoning_effort?: string }
     expect(input.image).toBeUndefined()
     expect(input.messages[0].content.map((c) => c.type)).toEqual(['text', 'image_url'])
     expect(input.messages[0].content[1].image_url?.url).toMatch(/^data:image\/jpeg;base64,/)
+    // Gemma 4 thinks by default and then returns NOTHING within the budget — off.
+    expect(input.reasoning_effort).toBe('none')
+  })
+  it('the primary fails → the second reader (Mistral Small, no reasoning flag) answers, named', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const run = vi.fn().mockResolvedValueOnce({ choices: [{ message: { content: '' } }] }).mockResolvedValueOnce({ choices: [{ message: { content: 'Crêpes' } }] })
+    const report = { error: null as string | null, visionModel: null as string | null }
+    expect(await transcribeImage({ DB: {}, AI: { run } } as unknown as Env, bytes, 'fr', report)).toBe('Crêpes')
+    expect(report.visionModel).toBe(VISION_SECOND_ID)
+    expect(run.mock.calls[1][0]).toBe(VISION_SECOND_ID)
+    expect((run.mock.calls[1][1] as { reasoning_effort?: string }).reasoning_effort).toBeUndefined()
   })
   it('the primary answers in the OpenAI shape (choices[0].message.content) → read as text', async () => {
     const run = vi.fn(async () => ({ choices: [{ message: { content: 'Biscuits\n2 œufs' } }] }))
@@ -271,18 +282,20 @@ describe('transcribeImage — primary vision model, Llama fallback', () => {
     const run = vi
       .fn()
       .mockResolvedValueOnce({ choices: [{ message: { content: "Je ne peux pas voir d'images, mais je peux vous aider à transcrire du texte." } }] })
+      .mockResolvedValueOnce({ choices: [{ message: { content: 'I cannot see any image in this conversation.' } }] })
       .mockResolvedValueOnce({ response: 'Crêpes' })
     const report = { error: null as string | null, visionModel: null as string | null }
     expect(await transcribeImage({ DB: {}, AI: { run } } as unknown as Env, bytes, 'fr', report)).toBe('Crêpes')
     expect(report.visionModel).toBe(VISION_MODEL_ID)
   })
-  it('the primary throws (or answers nothing) → the Llama read, named', async () => {
+  it('both stronger readers throw (or answer nothing) → the Llama read, named', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
     for (const first of [() => Promise.reject(new Error('5006: bad input')), () => Promise.resolve({ response: '' })]) {
-      const run = vi.fn().mockImplementationOnce(first).mockResolvedValueOnce({ response: 'Crêpes' })
+      const run = vi.fn().mockImplementationOnce(first).mockImplementationOnce(first).mockResolvedValueOnce({ response: 'Crêpes' })
       const report = { error: null as string | null, visionModel: null as string | null }
       expect(await transcribeImage({ DB: {}, AI: { run } } as unknown as Env, bytes, 'fr', report)).toBe('Crêpes')
       expect(report.visionModel).toBe(VISION_MODEL_ID)
-      expect(run.mock.calls[1][0]).toBe(VISION_MODEL_ID)
+      expect(run.mock.calls[2][0]).toBe(VISION_MODEL_ID)
     }
   })
 })

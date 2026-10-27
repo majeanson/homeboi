@@ -575,13 +575,27 @@ export function toSelection(v: Record<string, unknown>, n: number): LineSelectio
 const VISION_MODEL = '@cf/meta/llama-3.2-11b-vision-instruct'
 // Exported for the read report (the verify panel names the model that read the photo).
 export const VISION_MODEL_ID = VISION_MODEL
-// D2 (2026-10-27): the stronger multimodal model goes FIRST, the Llama read stays the
-// fallback. ⚠ Its Workers AI IMAGE INPUT SHAPE IS UNDOCUMENTED: the call below uses the
-// Llama-vision chat shape (`messages` + a base64 data-URL `image`). If that shape is wrong
-// the model throws or answers empty, and the Llama read runs exactly as before — so a
-// wrong guess costs one extra call, never the photo read. VERIFIED ONLY ON PROD (no AI
-// binding locally); the read report names whichever model answered.
-export const VISION_PRIMARY_ID = '@cf/mistralai/mistral-small-3.1-24b-instruct'
+// THE READER CHAIN (2026-10-27, each shape verified against the account's Workers AI
+// REST endpoint with a rendered recipe card):
+//   1. Gemma 4 26B — Google's model page lists OCR (multilingual) and handwriting among
+//      its vision skills; the cheapest vision model here ($0.10/M in) and on the Free
+//      plan; read the card EXACTLY in 2.4 s for 12 neurons. Reasoning must be OFF
+//      (`reasoning_effort: 'none'`): on, it spends the whole token budget thinking and
+//      returns an empty content.
+//   2. Mistral Small 3.1 — read the card exactly too; 3.5× the input price.
+//   3. Llama 3.2 11B vision — the original reader, its own byte-array input shape.
+// 1 and 2 take the OpenAI content PARTS (`image_url: { url: data:… }`) and answer in
+// `choices[0].message.content`. The read report names whichever model answered.
+export const VISION_PRIMARY_ID = '@cf/google/gemma-4-26b-a4b-it'
+export const VISION_SECOND_ID = '@cf/mistralai/mistral-small-3.1-24b-instruct'
+// The content-parts call the two stronger readers share.
+function partsInput(model: string, text: string, bytes: Uint8Array, max_tokens: number) {
+  return {
+    messages: [{ role: 'user', content: [{ type: 'text', text }, { type: 'image_url', image_url: { url: dataUrl(bytes) } }] }],
+    max_tokens,
+    ...(model === VISION_PRIMARY_ID ? { reasoning_effort: 'none' } : {}),
+  }
+}
 
 function dataUrl(bytes: Uint8Array): string {
   let bin = ''
@@ -625,38 +639,26 @@ export async function transcribeImage(
     stripAiCommentary((typeof raw === 'string' ? raw : '').replace(/```[a-z]*/gi, '').split(/\r?\n/))
       .join('\n')
       .trim()
-  // The stronger model first (see VISION_PRIMARY_ID); any error or an empty reply → the
-  // Llama read below, unchanged.
+  // The two stronger readers first (see the chain above); any error, an empty reply, or
+  // a reply that says it sees no image → the next one, and last the Llama read below.
   //
-  // THE IMAGE SHAPE IS VERIFIED (2026-10-27, against the account's Workers AI REST
-  // endpoint with a rendered card): Mistral Small wants the OpenAI content PARTS —
-  // `content: [{type:'text', text}, {type:'image_url', image_url:{url:'data:…'}}]` — and
-  // answers `choices[0].message.content`. The first shipped shape (`messages` + a
-  // top-level `image`) made it answer « Je ne peux pas voir d'images » — and on prod,
-  // with no image in sight, it TRANSCRIBED A STORY (« Les 1001 nuits… », 46 steps) for
-  // a biscuit card, without an error, so the Llama fallback never ran. A model that
-  // says it sees no image is treated as no read, not as text.
-  try {
-    const res = (await runModel(env, VISION_PRIMARY_ID, {
-      messages: [
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: prompt },
-            { type: 'image_url', image_url: { url: dataUrl(bytes) } },
-          ],
-        },
-      ],
-      max_tokens: 2000,
-    })) as VisionReply
-    const text = clean(visionText(res))
-    if (text && !BLIND_REPLY.test(text)) {
-      if (report) report.visionModel = VISION_PRIMARY_ID
-      return text
+  // WHY THE SHAPE MATTERS: the first shipped Mistral call used `messages` + a top-level
+  // `image` — undocumented — and the model answered « Je ne peux pas voir d'images »;
+  // on prod, with no image in sight, it TRANSCRIBED A STORY (« Les 1001 nuits… », 46
+  // steps) for a biscuit card, without an error, so the fallback never ran. A model
+  // that says it sees no image is treated as no read, not as text (BLIND_REPLY).
+  for (const model of [VISION_PRIMARY_ID, VISION_SECOND_ID]) {
+    try {
+      const res = (await runModel(env, model, partsInput(model, prompt, bytes, 2000))) as VisionReply
+      const text = clean(visionText(res))
+      if (text && !BLIND_REPLY.test(text)) {
+        if (report) report.visionModel = model
+        return text
+      }
+      logAi(`transcribeImage (${model})`, new Error(`no usable read: ${visionSnippet(visionText(res))}`))
+    } catch (err) {
+      logAi(`transcribeImage (${model})`, err)
     }
-    logAi('transcribeImage (primary)', new Error(`no usable read: ${visionSnippet(visionText(res))}`))
-  } catch (err) {
-    logAi('transcribeImage (primary)', err)
   }
   if (report) report.visionModel = VISION_MODEL
   try {
@@ -752,19 +754,8 @@ export async function pingVisionModel(env: Env, model: string = VISION_MODEL): P
     const bytes = Uint8Array.from(atob(PING_PNG), (c) => c.charCodeAt(0))
     // Same shapes as transcribeImage — the ping must exercise the call that reads.
     const input =
-      model === VISION_PRIMARY_ID
-        ? {
-            messages: [
-              {
-                role: 'user',
-                content: [
-                  { type: 'text', text: 'Reply with the single word: OK.' },
-                  { type: 'image_url', image_url: { url: dataUrl(bytes) } },
-                ],
-              },
-            ],
-            max_tokens: 5,
-          }
+      model === VISION_PRIMARY_ID || model === VISION_SECOND_ID
+        ? partsInput(model, 'Reply with the single word: OK.', bytes, 5)
         : { image: [...bytes], prompt: 'Reply with the single word: OK.', max_tokens: 5 }
     const res = (await runModel(env, model, input)) as VisionReply
     return { ok: true, ms: Date.now() - t0, model, detail: pingDetail({ response: visionText(res) }) || '(ran)' }
