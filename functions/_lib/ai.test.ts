@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { answerQuestion, classifyCapture, decodeStrayEscapes, suggestMeals, resolveLang, extractSizes } from './ai'
+import { describe, it, expect, vi } from 'vitest'
+import { answerQuestion, classifyCapture, decodeStrayEscapes, suggestMeals, resolveLang, extractSizes, salvageTruncatedJson, structureRecipe } from './ai'
 import type { Env } from './env'
 
 // A fake Workers AI binding that returns a canned `response`, so we can test the
@@ -168,5 +168,39 @@ describe('answerQuestion', () => {
     const env = mockAiEnv({ answer: 'Je ne le vois pas.', kind: 'weather' })
     expect((await answerQuestion(env, 'q', 'DATA'))?.kind).toBe('none')
     expect(await answerQuestion(noAiEnv, 'q', 'DATA')).toBeNull()
+  })
+})
+
+describe('structureRecipe — a long recipe is never lost to a cut reply', () => {
+  const CUT = '{"title":"X","ingredients":["a","b"],"steps":["Do A.","Do B.","Do C'
+  it('salvageTruncatedJson keeps every COMPLETE value and closes the rest', () => {
+    const fixed = salvageTruncatedJson(CUT)
+    expect(fixed).not.toBeNull()
+    expect(JSON.parse(fixed!)).toEqual({ title: 'X', ingredients: ['a', 'b'], steps: ['Do A.', 'Do B.'] })
+    expect(salvageTruncatedJson('no json here')).toBeNull()
+    // Escapes and brackets inside strings never confuse the scan.
+    expect(JSON.parse(salvageTruncatedJson('{"a":"x \\"]}\\" y","b":[1,2')!)).toEqual({ a: 'x "]}" y', b: [1] }) // the cut « 2 » might have been « 25 » — dropped
+  })
+  it('a reply cut by max_tokens still yields the steps it finished', async () => {
+    const r = await structureRecipe(mockAiEnv(CUT), 'Ingrédients\na\nb\nPréparation\nDo A. Do B. Do C.')
+    expect(r.steps).toEqual(['Do A.', 'Do B.'])
+    expect(r.ingredients).toEqual(['a', 'b'])
+  })
+  it('the prompt keeps the source steps whole, carries the cook’s hint, and has room to answer', async () => {
+    const run = vi.fn(async (_model: string, _input: unknown) => ({ response: '{"title":null,"ingredients":[],"steps":[]}' }))
+    const env = { DB: {} as D1Database, AI: { run } as unknown as Ai } as Env
+    const long = 'x'.repeat(15_000) + ' FIN-DU-TEXTE'
+    await structureRecipe(env, long, 'fr', '  c’est la 2e recette\nde la page  ')
+    const input = run.mock.calls[0][1] as { messages: { content: string }[]; max_tokens: number }
+    const prompt = input.messages[0].content
+    expect(prompt).not.toMatch(/étapes courtes|20 étapes/)
+    expect(prompt).toContain('jusqu’à la DERNIÈRE étape')
+    expect(prompt).toContain('Indication du cuisinier : « c’est la 2e recette de la page »')
+    expect(prompt).toContain('FIN-DU-TEXTE')
+    expect(input.max_tokens).toBe(4000)
+    await structureRecipe(env, 'Some text', 'en')
+    const en = (run.mock.calls[1][1] as { messages: { content: string }[] }).messages[0].content
+    expect(en).not.toMatch(/short steps|20 steps/)
+    expect(en).not.toContain('Cook’s note')
   })
 })

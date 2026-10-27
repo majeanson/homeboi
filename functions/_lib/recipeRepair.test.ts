@@ -177,3 +177,14 @@ describe('repairRecipeRead — the six real reads of one card', () => {
     expect(repairRecipeRead(ok)).toEqual(ok)
   })
 })
+
+describe('2b · a step that only mentions a fridge time is not a footer', () => {
+  it('« Refrigerate 4 hours before serving » is a step (hours are not a keeping duration)', () => {
+    expect(metaLine('Refrigerate 4 hours before serving.').meta).toBe(false)
+    expect(metaLine('Réfrigérer 4 heures avant de servir.').meta).toBe(false)
+  })
+  it('a real keeping note still is', () => {
+    expect(metaLine('Se conserve 4 jours au réfrigérateur.').meta).toBe(true)
+    expect(metaLine('Keeps 3 days.').meta).toBe(true)
+  })
+})

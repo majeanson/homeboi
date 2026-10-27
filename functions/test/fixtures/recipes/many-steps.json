@@ -1,0 +1,177 @@
+{
+  "_note": "HAND-WRITTEN 2026-10-27: a long two-part method (20 + 18 HowToSteps) to pin that nothing past step 30 is cut. Not captured.",
+  "@context": "https://schema.org",
+  "@type": "Recipe",
+  "name": "Cassoulet du dimanche",
+  "recipeIngredient": [
+    "500 g de haricots blancs",
+    "4 cuisses de canard confites",
+    "400 g de saucisses de Toulouse"
+  ],
+  "recipeInstructions": [
+    {
+      "@type": "HowToSection",
+      "name": "Haricots",
+      "itemListElement": [
+        {
+          "@type": "HowToStep",
+          "text": "Étape de test numéro 1 : mélanger les ingrédients prévus et poursuivre la cuisson 1 minutes."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Étape de test numéro 2 : mélanger les ingrédients prévus et poursuivre la cuisson 2 minutes."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Étape de test numéro 3 : mélanger les ingrédients prévus et poursuivre la cuisson 3 minutes."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Étape de test numéro 4 : mélanger les ingrédients prévus et poursuivre la cuisson 4 minutes."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Étape de test numéro 5 : mélanger les ingrédients prévus et poursuivre la cuisson 5 minutes."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Étape de test numéro 6 : mélanger les ingrédients prévus et poursuivre la cuisson 6 minutes."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Étape de test numéro 7 : mélanger les ingrédients prévus et poursuivre la cuisson 7 minutes."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Étape de test numéro 8 : mélanger les ingrédients prévus et poursuivre la cuisson 8 minutes."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Étape de test numéro 9 : mélanger les ingrédients prévus et poursuivre la cuisson 9 minutes."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Étape de test numéro 10 : mélanger les ingrédients prévus et poursuivre la cuisson 10 minutes."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Étape de test numéro 11 : mélanger les ingrédients prévus et poursuivre la cuisson 11 minutes."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Étape de test numéro 12 : mélanger les ingrédients prévus et poursuivre la cuisson 12 minutes."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Étape de test numéro 13 : mélanger les ingrédients prévus et poursuivre la cuisson 13 minutes."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Étape de test numéro 14 : mélanger les ingrédients prévus et poursuivre la cuisson 14 minutes."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Étape de test numéro 15 : mélanger les ingrédients prévus et poursuivre la cuisson 15 minutes."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Étape de test numéro 16 : mélanger les ingrédients prévus et poursuivre la cuisson 16 minutes."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Étape de test numéro 17 : mélanger les ingrédients prévus et poursuivre la cuisson 17 minutes."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Étape de test numéro 18 : mélanger les ingrédients prévus et poursuivre la cuisson 18 minutes."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Étape de test numéro 19 : mélanger les ingrédients prévus et poursuivre la cuisson 19 minutes."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Étape de test numéro 20 : mélanger les ingrédients prévus et poursuivre la cuisson 20 minutes."
+        }
+      ]
+    },
+    {
+      "@type": "HowToSection",
+      "name": "Montage",
+      "itemListElement": [
+        {
+          "@type": "HowToStep",
+          "text": "Étape de test numéro 21 : mélanger les ingrédients prévus et poursuivre la cuisson 21 minutes."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Étape de test numéro 22 : mélanger les ingrédients prévus et poursuivre la cuisson 22 minutes."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Étape de test numéro 23 : mélanger les ingrédients prévus et poursuivre la cuisson 23 minutes."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Étape de test numéro 24 : mélanger les ingrédients prévus et poursuivre la cuisson 24 minutes."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Étape de test numéro 25 : mélanger les ingrédients prévus et poursuivre la cuisson 25 minutes."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Étape de test numéro 26 : mélanger les ingrédients prévus et poursuivre la cuisson 26 minutes."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Étape de test numéro 27 : mélanger les ingrédients prévus et poursuivre la cuisson 27 minutes."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Étape de test numéro 28 : mélanger les ingrédients prévus et poursuivre la cuisson 28 minutes."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Étape de test numéro 29 : mélanger les ingrédients prévus et poursuivre la cuisson 29 minutes."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Étape de test numéro 30 : mélanger les ingrédients prévus et poursuivre la cuisson 30 minutes."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Étape de test numéro 31 : mélanger les ingrédients prévus et poursuivre la cuisson 31 minutes."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Étape de test numéro 32 : mélanger les ingrédients prévus et poursuivre la cuisson 32 minutes."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Étape de test numéro 33 : mélanger les ingrédients prévus et poursuivre la cuisson 33 minutes."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Étape de test numéro 34 : mélanger les ingrédients prévus et poursuivre la cuisson 34 minutes."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Étape de test numéro 35 : mélanger les ingrédients prévus et poursuivre la cuisson 35 minutes."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Étape de test numéro 36 : mélanger les ingrédients prévus et poursuivre la cuisson 36 minutes."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Étape de test numéro 37 : mélanger les ingrédients prévus et poursuivre la cuisson 37 minutes."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Réfrigérer 4 heures avant de réchauffer et servir."
+        }
+      ]
+    }
+  ]
+}

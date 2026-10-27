@@ -7,6 +7,8 @@ import { isSectionHeading, SECTION_PREFIX } from '../lib/recipeSections'
 import { Icon, InlineIcon } from './Icon'
 import { Chip } from './Chip'
 import { ZoomableImg } from './ZoomableImg'
+import { Disclosure } from './Disclosure'
+import { EditField } from './EditField'
 
 // Verify-against-the-photo gate for a recipe read (Pillar 3 of the faithful-import
 // work). No capture is 100%, so instead of dropping a read straight into the form
@@ -15,6 +17,11 @@ import { ZoomableImg } from './ZoomableImg'
 // engine itself returned with low confidence. The cook glances at the card, fixes a
 // flagged digit, and confirms. Editing here is line-in-place; the full editor (the
 // recipe form) still opens afterwards for anything bigger.
+//
+// The source is a PHOTO (the photo read) or the PAGE TEXT (a link or a paste the AI
+// had to organise, 2026-10-27): same panel, same flags — the left pane shows the
+// text instead of the picture, and `onRetry` adds « Guider l'IA » to re-run the read
+// with the cook's one-line hint.
 
 export interface ReadReviewDraft {
   title: string | null
@@ -35,14 +42,14 @@ export interface ReadReviewDraft {
 // hesitated on. Built by RecipeForm.readPhoto as the read progresses — honesty
 // about the machine, so "it hallucinated" stops being a mystery.
 export interface ReadReport {
-  reader: 'device' | 'cloud' | 'vision' | null
+  reader: 'device' | 'cloud' | 'vision' | 'page' | null
   readerModel: string | null
   /** Mean OCR page confidence 0–100 (device reader only). */
   confidence: number | null
   pages: number
   /** The multi-column un-merge ran (device reader, columnizeOcrPage). */
   columnized: boolean
-  structuring: 'headings' | 'ai' | 'heuristic' | 'vision' | null
+  structuring: 'headings' | 'ai' | 'heuristic' | 'vision' | 'jsonld' | 'microdata' | null
   structuringModel: string | null
   /** Metric→fraction rescues applied client-side (repairImperialFromMetric). */
   repairs: { before: string; after: string }[]
@@ -90,11 +97,13 @@ function flagReason(line: string, lowSet: Set<string>, aiSet: Set<string>): Flag
   }
   return null
 }
-const reasonTip = (r: FlagReason, t: ReturnType<typeof useT>): string =>
+const reasonTip = (r: FlagReason, t: ReturnType<typeof useT>, fromText: boolean): string =>
   r === 'mismatch'
     ? t.recipes.reviewCheckMismatch
     : r === 'ai'
-      ? t.recipes.reviewCheckAi
+      ? fromText
+        ? t.recipes.reviewCheckAiText
+        : t.recipes.reviewCheckAi
       : r === 'number'
         ? t.recipes.reviewCheckNumber
         : t.recipes.reviewCheckWord
@@ -135,14 +144,20 @@ function GrowingLine({
 
 export function RecipeReadReview({
   photoUrl,
+  sourceText,
   draft,
   lowConfidenceWords,
   report,
   busy,
   onConfirm,
   onCancel,
+  onRetry,
+  retrying,
 }: {
-  photoUrl: string
+  /** The photo that was read — or null when the source is page text. */
+  photoUrl?: string | null
+  /** The page text the AI organised (link / paste path), shown when there is no photo. */
+  sourceText?: string | null
   draft: ReadReviewDraft
   lowConfidenceWords: string[]
   // The pipeline honesty report (« Rapport » tab). Optional so older callers /
@@ -151,9 +166,14 @@ export function RecipeReadReview({
   busy?: boolean
   onConfirm: (d: ReadReviewDraft) => void
   onCancel: () => void
+  /** Re-run the read with the cook's hint (« Guider l'IA »). Omit → no retry offered. */
+  onRetry?: (hint: string) => void
+  retrying?: boolean
 }) {
   const t = useT()
   const [tab, setTab] = useState<'verify' | 'report'>('verify')
+  const [hint, setHint] = useState('')
+  const fromText = !photoUrl
 
   const [title, setTitle] = useState(draft.title ?? '')
   const [ingredients, setIngredients] = useState<string[]>(draft.ingredients.length ? draft.ingredients : [])
@@ -211,7 +231,7 @@ export function RecipeReadReview({
     return (
       <div key={i} className={'read-review__line' + (reason ? ' is-flagged' : '') + (sec ? ' is-sec' : '')}>
         {reason && (
-          <span className="read-review__flag" title={reasonTip(reason, t)}>
+          <span className="read-review__flag" title={reasonTip(reason, t, fromText)}>
             <Icon name="warning-bold" size={14} />
           </span>
         )}
@@ -228,7 +248,7 @@ export function RecipeReadReview({
   return (
     <Modal open onClose={onCancel} className="read-review" title={t.recipes.reviewTitle}>
         <p className="read-review__hint mono">
-          {flaggedCount > 0 ? t.recipes.reviewHint : t.recipes.reviewHintClean}
+          {fromText ? t.recipes.reviewHintText : flaggedCount > 0 ? t.recipes.reviewHint : t.recipes.reviewHintClean}
         </p>
 
         {/* Vérifier ↔ Rapport: the second face is the pipeline honesty report —
@@ -250,12 +270,20 @@ export function RecipeReadReview({
           {/* The source card — tap to zoom and read a price/fraction up close.
               Stays visible on BOTH tabs: the report's flagged lines are checked
               against the same photo. */}
-          <div className="read-review__photo">
-            <ZoomableImg src={photoUrl} alt={t.recipes.reviewPhotoAlt} />
-          </div>
+          {photoUrl ? (
+            <div className="read-review__photo">
+              <ZoomableImg src={photoUrl} alt={t.recipes.reviewPhotoAlt} />
+            </div>
+          ) : (
+            // The page text in the same sticky column — selectable, scrollable, never
+            // editable (it is the SOURCE the lines are checked against).
+            <pre className="read-review__photo read-review__source" tabIndex={0} aria-label={t.recipes.reviewSourceText}>
+              {sourceText ?? ''}
+            </pre>
+          )}
 
           {report && tab === 'report' ? (
-            <ReadReportPanel report={report} />
+            <ReadReportPanel report={report} fromText={fromText} />
           ) : (
           /* The parsed lines, editable in place against the photo. */
           <div className="read-review__fields">
@@ -325,6 +353,25 @@ export function RecipeReadReview({
           )}
         </div>
 
+        {/* « Guider l'IA » — the cook says what the model got wrong (« c'est la 2e
+            recette de la page ») and the read runs again. Folded: most reads are fine. */}
+        {onRetry && (
+          <Disclosure label={t.recipes.importHint} className="read-review__guide">
+            <EditField
+              value={hint}
+              onChange={setHint}
+              onSubmit={(v) => onRetry(v.trim())}
+              submitLabel={retrying ? t.recipes.importing : t.recipes.reviewRetryHint}
+              submitIcon={null}
+              busy={retrying || busy}
+              placeholder={t.recipes.importHintPlaceholder}
+              ariaLabel={t.recipes.importHint}
+              maxLength={200}
+              allowEmpty
+            />
+          </Disclosure>
+        )}
+
         <div className="read-review__foot">
           <button type="button" className="btn btn--ghost mono" onClick={onCancel} disabled={busy}>
             {t.recipes.reviewRetake}
@@ -340,7 +387,7 @@ export function RecipeReadReview({
 // The « Rapport » tab body: plain stacked rows, no jargon beyond the model names
 // themselves (naming the exact model IS the point — a wrong number has a named
 // suspect). Read-only; everything actionable lives under « Vérifier ».
-function ReadReportPanel({ report }: { report: ReadReport }) {
+function ReadReportPanel({ report, fromText }: { report: ReadReport; fromText: boolean }) {
   const t = useT()
   const readerLabel =
     report.reader === 'device'
@@ -349,7 +396,9 @@ function ReadReportPanel({ report }: { report: ReadReport }) {
         ? t.recipes.reportReaderCloud
         : report.reader === 'vision'
           ? t.recipes.reportReaderVision
-          : t.recipes.reportReaderNone
+          : report.reader === 'page'
+            ? t.recipes.reportReaderPage
+            : t.recipes.reportReaderNone
   const structLabel =
     report.structuring === 'headings'
       ? t.recipes.reportStructHeadings
@@ -359,7 +408,9 @@ function ReadReportPanel({ report }: { report: ReadReport }) {
           ? t.recipes.reportStructHeuristic
           : report.structuring === 'vision'
             ? t.recipes.reportStructVision
-            : null
+            : report.structuring === 'jsonld' || report.structuring === 'microdata'
+              ? t.recipes.reportStructSite
+              : null
   const row = (label: string, children: React.ReactNode) => (
     <div className="read-review__report-row">
       <div className="read-review__report-label mono">{label}</div>
@@ -369,14 +420,14 @@ function ReadReportPanel({ report }: { report: ReadReport }) {
   return (
     <div className="read-review__fields read-review__report">
       {row(
-        t.recipes.reportReader,
+        fromText ? t.recipes.reviewSourceText : t.recipes.reportReader,
         <>
           <p>{readerLabel}</p>
           <p className="mono read-review__report-meta">
             {[
               report.readerModel,
               report.confidence != null ? `${t.recipes.reportConfidence} ${Math.round(report.confidence)} %` : null,
-              t.recipes.reportPages(report.pages),
+              fromText ? null : t.recipes.reportPages(report.pages),
             ]
               .filter(Boolean)
               .join(' · ')}
@@ -416,7 +467,7 @@ function ReadReportPanel({ report }: { report: ReadReport }) {
       {/* Only meaningful when a generative model touched the text. */}
       {(report.structuring === 'ai' || report.structuring === 'vision') &&
         row(
-          t.recipes.reportSuspect,
+          fromText ? t.recipes.reportSuspectText : t.recipes.reportSuspect,
           report.suspect.length ? (
             report.suspect.map((l, i) => <p key={i}>⚠ {l}</p>)
           ) : (

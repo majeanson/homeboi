@@ -1,0 +1,15 @@
+{
+  "_note": "HAND-WRITTEN 2026-10-27, modelled on blogs that ship recipeInstructions as ONE string of HTML paragraphs (seen on older WordPress themes). Not captured.",
+  "@context": "https://schema.org",
+  "@type": "Recipe",
+  "name": "Soupe aux pois",
+  "recipeIngredient": [
+    "450 g de pois jaunes secs",
+    "1 oignon haché",
+    "2 carottes en dés",
+    "1 jarret de porc fumé",
+    "2,5 L d’eau"
+  ],
+  "recipeInstructions": "<p>Rincer les pois et les laisser tremper toute une nuit dans l’eau froide. Égoutter.</p><p>Dans une grande casserole, déposer les pois, l’oignon, les carottes et le jarret. Couvrir d’eau et porter à ébullition en écumant la surface.</p><br>Laisser mijoter à feu doux 2 h 30, en remuant de temps en temps, jusqu’à ce que les pois soient défaits.<br/><p>Retirer le jarret, l’effilocher et remettre la viande dans la soupe. Rectifier l’assaisonnement.</p><p>Se conserve 4 jours au réfrigérateur.</p>",
+  "recipeYield": "8 portions"
+}

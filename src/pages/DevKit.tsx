@@ -1002,6 +1002,8 @@ export function DevKit() {
   const [shareModalOpen, setShareModalOpen] = useState(false)
   const [drawChoiceOpen, setDrawChoiceOpen] = useState(false)
   const [readReviewOpen, setReadReviewOpen] = useState(false)
+  // The same panel with a PAGE-TEXT source (a link the AI organised) + « Guider l'IA ».
+  const [readReviewTextOpen, setReadReviewTextOpen] = useState(false)
   const [drawChoiceMode, setDrawChoiceMode] = useState<DrawEditMode | null>(null)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [askSheetOpen, setAskSheetOpen] = useState(false)
@@ -3414,13 +3416,49 @@ export function DevKit() {
       cat: 'Overlays & chrome',
       name: 'RecipeReadReview',
       file: 'components/RecipeReadReview.tsx',
-      kw: 'recipe photo ocr verify review confirm fraction measure source card lecture vérifier',
+      kw: 'recipe photo ocr verify review confirm fraction measure source card lecture vérifier lien page texte guider ia',
       render: () => (
-        <Demo label="verify a photo-read recipe against the source card (flags measures + shaky words)">
+        <Demo label="verify a read recipe against its source — a photo, or the page text an AI organised (+ « Guider l'IA »)">
           <div>
             <button className="btn" onClick={() => setReadReviewOpen(true)}>
               Ouvrir la vérification
+            </button>{' '}
+            <button className="btn btn--ghost" onClick={() => setReadReviewTextOpen(true)}>
+              Source : page web
             </button>
+            {readReviewTextOpen && (
+              <RecipeReadReview
+                photoUrl={null}
+                sourceText={
+                  'Pouding chômeur\n\nIngrédients\n500 ml de cassonade\n500 ml d’eau\n250 ml de farine\n\nPréparation\nPréchauffer le four à 180 °C.\nPorter la cassonade et l’eau à ébullition.\nVerser sur la pâte et cuire 40 minutes.\n\nVous aimerez aussi'
+                }
+                draft={{
+                  title: 'Pouding chômeur',
+                  ingredients: ['500 ml de cassonade', '500 ml d’eau', '250 ml de farine'],
+                  steps: [
+                    'Préchauffer le four à 180 °C.',
+                    'Porter la cassonade et l’eau à ébullition.',
+                    'Verser sur la pâte et cuire 45 minutes.',
+                  ],
+                }}
+                lowConfidenceWords={[]}
+                report={{
+                  reader: 'page',
+                  readerModel: null,
+                  confidence: null,
+                  pages: 1,
+                  columnized: false,
+                  structuring: 'ai',
+                  structuringModel: '@cf/meta/llama-3.3-70b-instruct-fp8-fast',
+                  repairs: [],
+                  suspect: ['Verser sur la pâte et cuire 45 minutes.'],
+                  shakyCount: 0,
+                }}
+                onRetry={() => setReadReviewTextOpen(false)}
+                onConfirm={() => setReadReviewTextOpen(false)}
+                onCancel={() => setReadReviewTextOpen(false)}
+              />
+            )}
             {readReviewOpen && (
               <RecipeReadReview
                 photoUrl={SAMPLE_RECIPE_PHOTO}

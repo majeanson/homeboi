@@ -113,6 +113,11 @@ now, so the repo-wide count is honest for the first time.
 
 ## 3. What just shipped
 
+### L'import d'une recette par lien, fidèle — 2026-10-27
+« Les étapes arrêtent avant la fin… une étape par phrase » : steps > 400 chars cut per sentence, caps 30/40, the footer repair ate a real last step on
+JSON-LD, AI window 6000 + a cut reply = read lost. Now: the source's boundaries, `MAX_STEPS` 60, `salvageTruncatedJson`, a provenance line, AI reads →
+`RecipeReadReview` (page text) + « Guider l'IA ». Guards: real-site fixtures, `e2e/recipe-url-import`. **Open:** grow the corpus; AI path verified on prod only.
+
 ### Le passage d'un inconnu — kid routine, essai, porte — 2026-10-23
 From `research/stranger-review-2026-10-23.md`. « Recommencer » inert 2 s on the end screen; the sandbox checklist deep-links ONTO a
 recipe / the next routine's run; seed chores 3/3/1/1 + two `meal_ideas` (**migration 0144**); « Essayer sans compte »; `<title>` per section;
@@ -122,11 +127,6 @@ small JS chunks → 11 via the enumerated `lazy-shared` group (`scripts/lazy-sha
 ### Le babillard dans une vitrine — framed by marcportal.com — 2026-10-15
 `frame-ancestors` admits marcportal.com (no `X-Frame-Options`; `securityHeaders.ts`); `lib/embedded.ts` skips the auto-tour in a frame; a real board
 frame on the door (`public/showcase/*`); `/api/takeout?format=md` readable twin; `e2e/embedded-door.spec.ts`, planted red.
-
-### Rond QUATRE de la liste — 2026-10-06 (le menteur était le serveur)
-`DELETE /api/list` answered a vacuous « ok » on stale ids → now text + `asOf` healing (`_lib/staleDelete`) else 404; ~100
-`.catch(() => {})` became `writeFailed`/`wrote`/`writeOrNull`; Board's hold/refetch copies use `useDeferredRemoval`.
-Guards: d1, unit, `swallow-rule`, `e2e/liste-swipe-delete`. **Open:** why the frame held dead ids.
 
 ## 4. What still needs improvement — consolidated and ranked
 

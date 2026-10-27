@@ -1,7 +1,7 @@
 import type { Env } from './env'
 import { TEXT_MODEL, structureRecipe, type Lang } from './ai'
 import { detectLang } from './langDetect'
-import { NO_TIMES, type RecipeTimes, linesWithForeignNumbers, parseRecipeText, refineSteps } from './recipeImport'
+import { MAX_STEPS, NO_TIMES, type RecipeTimes, linesWithForeignNumbers, parseRecipeText, refineSteps } from './recipeImport'
 import { jsonFragmentsToText, repairRecipeRead, stripTranscriptPreamble } from './recipeRepair'
 
 // THE ONE text → draft path (2026-09-24). It lived inline in api/recipe-import's paste
@@ -30,13 +30,17 @@ export interface DraftOut {
   // HOW this draft was structured, for the photo-read report (RecipeReadReview's
   // « Rapport » tab): 'headings' = the deterministic no-AI parser (real section
   // headings found), 'ai' = the generative structuring model (named in `model`),
-  // 'heuristic' = the shape-based best effort (no AI available or AI empty-handed).
-  structuring?: 'headings' | 'ai' | 'heuristic'
+  // 'heuristic' = the shape-based best effort (no AI available or AI empty-handed),
+  // 'jsonld' / 'microdata' = the page's own structured data (URL import, no AI).
+  structuring?: 'headings' | 'ai' | 'heuristic' | 'jsonld' | 'microdata'
   model?: string | null
   // Lines whose numbers do NOT appear in the source text — the structuring model
   // changed or invented them (linesWithForeignNumbers). Only ever set with
   // structuring 'ai'; the verify panel flags these lines "à confirmer".
   suspect?: string[]
+  // The text the model organised (structuring 'ai' only, capped) — the verify panel
+  // shows it beside the lines, the way the photo read shows the photo.
+  transcript?: string
   empty?: boolean
   // Why we came back empty-handed, so the UI can say something true instead of one
   // catch-all "rien trouvé":
@@ -46,10 +50,7 @@ export interface DraftOut {
 }
 
 export const draft = (d: Partial<DraftOut>): DraftOut => {
-  // repairRecipeRead (recipeRepair.ts): leaked JSON and field lines out, the footer
-  // out, and a paragraph recipe gets its ingredients lifted word for word from the
-  // method. An honest read passes through untouched.
-  const merged: DraftOut = repairRecipeRead({
+  const base: DraftOut = {
     title: null,
     ingredients: [],
     steps: [],
@@ -60,7 +61,14 @@ export const draft = (d: Partial<DraftOut>): DraftOut => {
     source: null,
     lang: null,
     ...d,
-  })
+  }
+  // repairRecipeRead (recipeRepair.ts): leaked JSON and field lines out, the footer
+  // out, and a paragraph recipe gets its ingredients lifted word for word from the
+  // method. An honest read passes through untouched. NOT on the site's own
+  // structured data: the site delimited every step, and the footer rule deleted a real
+  // last step there (« Conserver au réfrigérateur jusqu'au service », 2026-10-27).
+  const siteData = d.structuring === 'jsonld' || d.structuring === 'microdata'
+  const merged: DraftOut = siteData ? base : repairRecipeRead(base)
   // Detect the recipe's language from its own words (title + the lines), unless a
   // caller already supplied one. Runs on every path — incl. the no-AI JSON-LD /
   // paste ones — so the read-aloud voice matches the recipe wherever it came from.
@@ -74,16 +82,49 @@ export const draft = (d: Partial<DraftOut>): DraftOut => {
 export function heuristicIsGood(d: DraftOut): boolean {
   const steps = d.steps.filter((s) => !s.startsWith('## '))
   const ings = d.ingredients.filter((s) => !s.startsWith('## '))
-  if (!d.title || ings.length < 2 || steps.length < 2 || steps.length > 30) return false
+  if (!d.title || ings.length < 2 || steps.length < 2 || steps.length > MAX_STEPS) return false
   const closed = steps.filter((s) => /[.!?]$/.test(s)).length
   return closed * 10 >= steps.length * 8
+}
+
+// The text model organises `text` (one call, behind runModel's budget). Null when it
+// came back empty-handed. Servings, times and the title come from the TEXT's own
+// read (`known` — explicit lines only), never from the model.
+export async function draftByModel(
+  env: Env,
+  text: string,
+  lang: Lang,
+  known: Pick<DraftOut, 'title' | 'servings' | 'servingsUnit' | 'times'>,
+  hint?: string,
+): Promise<DraftOut | null> {
+  const r = await structureRecipe(env, text, lang, hint)
+  if (!r.ingredients.length && !r.steps.length) return null
+  const steps = refineSteps(r.steps)
+  return draft({
+    // The transcript's own title first — it is the printed one. The model's is a
+    // fallback: asked to organise, it titled an English recipe « Recette de
+    // crevettes » (corpus, 2026-09-24).
+    title: known.title ?? r.title,
+    ingredients: r.ingredients,
+    steps,
+    servings: known.servings,
+    servingsUnit: known.servingsUnit,
+    times: known.times,
+    structuring: 'ai',
+    model: TEXT_MODEL,
+    suspect: linesWithForeignNumbers(text, [...r.ingredients, ...steps]),
+    // The source the verify panel shows beside the lines.
+    transcript: text.slice(0, 16_000),
+  })
 }
 
 // Free text (a paste, an OCR transcript, the vision model's transcription) → a draft.
 // `aiOn` = the binding is wired AND the household has not switched AI off; when false
 // the text model is never called. The result is `empty` only when nothing at all
 // could be made of the text.
-export async function draftFromText(env: Env, raw: string, lang: Lang, aiOn: boolean): Promise<DraftOut> {
+// `hint` = the cook's optional note for the model (« c'est la 2e recette de la page »);
+// it only reaches the prompt when the model actually runs.
+export async function draftFromText(env: Env, raw: string, lang: Lang, aiOn: boolean, hint?: string): Promise<DraftOut> {
   // A reply that is JSON, or the broken remains of one, reads as text first; a label a
   // model put before the text it copied (« Transcription… », « Texte ») is not recipe.
   const text = stripTranscriptPreamble(jsonFragmentsToText(raw.trim()))
@@ -124,24 +165,8 @@ export async function draftFromText(env: Env, raw: string, lang: Lang, aiOn: boo
   // come from the TEXT (explicit lines only), never from the model: the vision read
   // used to turn « cuire 5 minutes » into a prep time.
   if (aiOn) {
-    const r = await structureRecipe(env, text, lang)
-    if (r.ingredients.length || r.steps.length) {
-      const steps = refineSteps(r.steps)
-      return draft({
-        // The transcript's own title first — it is the printed one. The model's is a
-        // fallback: asked to organise, it titled an English recipe « Recette de
-        // crevettes » (corpus, 2026-09-24).
-        title: heuristic.title ?? r.title,
-        ingredients: r.ingredients,
-        steps,
-        servings: heuristic.servings,
-        servingsUnit: heuristic.servingsUnit,
-        times: heuristic.times,
-        structuring: 'ai',
-        model: TEXT_MODEL,
-        suspect: linesWithForeignNumbers(text, [...r.ingredients, ...steps]),
-      })
-    }
+    const byModel = await draftByModel(env, text, lang, heuristic, hint)
+    if (byModel) return byModel
   }
   // AI unbound or empty-handed — the heuristic's best effort still beats nothing.
   if (heuristic.ingredients.length || heuristic.steps.length) {

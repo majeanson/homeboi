@@ -18,6 +18,9 @@ import {
   refineSteps,
   healTruncatedSteps,
   MAX_STEP_LEN,
+  MAX_STEPS,
+  pageMeta,
+  pageIngredientsPlausible,
   stripStepPrefix,
   sentenceChunks,
   parseYield,
@@ -817,5 +820,130 @@ describe('linesWithForeignNumbers — did the AI change a number?', () => {
 
   it('skips section headings and tolerates decimal-comma vs dot', () => {
     expect(linesWithForeignNumbers('1,5 litre d’eau', ['## Sauce', '1.5 litre d’eau'])).toEqual([])
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Import fidelity (Marc, 2026-10-27): « les étapes arrêtent avant la fin et parfois
+// ça rajoute des étapes pour chaque phrase ». The SOURCE's own step boundaries win on
+// every path; nothing is dropped past an arbitrary cap.
+// ---------------------------------------------------------------------------
+describe('import fidelity — the source delimits the steps', () => {
+  const longStep =
+    'Dans une grande casserole, chauffer l’huile à feu moyen et y faire revenir l’oignon, le céleri et la carotte environ 8 minutes en remuant souvent, jusqu’à ce que les légumes soient tendres et légèrement dorés sur les bords. ' +
+    'Ajouter l’ail, le thym et la feuille de laurier, puis poursuivre la cuisson une minute de plus en remuant sans arrêt pour ne pas brûler l’ail. ' +
+    'Déglacer avec le vin blanc et laisser réduire de moitié avant d’ajouter le bouillon.'
+
+  it('a 450-char three-sentence step among others stays ONE step (no per-sentence split)', () => {
+    expect(longStep.length).toBeGreaterThan(400)
+    const steps = refineSteps(['Préchauffer le four.', longStep, 'Ajouter les pâtes.', 'Cuire 10 minutes.', 'Servir.'])
+    expect(steps).toHaveLength(5)
+    expect(steps[1]).toBe(longStep)
+  })
+
+  it('35 short steps all survive (no cap at 30)', () => {
+    const raw = Array.from({ length: 35 }, (_, i) => `Faire la chose numéro ${i + 1}.`)
+    expect(refineSteps(raw)).toEqual(raw)
+  })
+
+  it('3 headings + 58 steps → every step survives; headings do not count toward the cap', () => {
+    const raw: string[] = []
+    for (let s = 0; s < 3; s++) {
+      raw.push(`## Partie ${s + 1}`)
+      for (let i = 0; i < (s < 2 ? 20 : 18); i++) raw.push(`Faire la chose ${s + 1}-${i + 1}.`)
+    }
+    const out = refineSteps(raw)
+    expect(out.filter((l) => !l.startsWith('## '))).toHaveLength(58)
+    expect(out.filter((l) => l.startsWith('## '))).toHaveLength(3)
+    expect(MAX_STEPS).toBeGreaterThanOrEqual(58)
+  })
+
+  it('ONE 850-char paragraph (the only entry) is read one sentence per step', () => {
+    const blob = Array.from(
+      { length: 8 },
+      (_, i) => `Mélanger doucement la farine numéro ${i} avec le beurre fondu et le sucre pendant deux minutes complètes.`,
+    ).join(' ')
+    expect(refineSteps([blob])).toHaveLength(8)
+  })
+
+  it('a 1300-char single piece in a multi-step set is chunked, never truncated', () => {
+    const huge = Array.from({ length: 12 }, (_, i) => `Incorporer délicatement la préparation numéro ${i + 1} aux blancs montés en neige ferme, en trois additions, sans trop travailler.`).join(' ')
+    expect(huge.length).toBeGreaterThan(1300)
+    const out = refineSteps(['Préchauffer le four.', huge, 'Servir.'])
+    const middle = out.slice(1, -1)
+    expect(middle.length).toBe(2)
+    for (const s of middle) {
+      expect(s.length).toBeLessThanOrEqual(MAX_STEP_LEN)
+      expect(/[.!?]$/.test(s)).toBe(true)
+    }
+    expect(middle.join(' ')).toBe(huge)
+  })
+
+  it('normalizeInstructions walks an itemListElement given as a single OBJECT', () => {
+    const v = [
+      { '@type': 'HowToSection', name: 'Sauce', itemListElement: { '@type': 'HowToStep', text: 'Mélanger la sauce.' } },
+      { '@type': 'HowToSection', name: 'Pâtes', itemListElement: [{ text: 'Cuire les pâtes.' }] },
+    ]
+    expect(normalizeInstructions(v)).toEqual(['## Sauce', 'Mélanger la sauce.', '## Pâtes', 'Cuire les pâtes.'])
+  })
+
+  it('normalizeInstructions splits ONE string of HTML paragraphs on its blocks', () => {
+    expect(normalizeInstructions('<p>Do A.</p><p>Do B.</p><br>Do C.')).toEqual(['Do A.', 'Do B.', 'Do C.'])
+  })
+
+  it('normalizeInstructions keeps 2 sections × 20 steps whole: 40 steps + 2 headings', () => {
+    const sec = (name: string) => ({
+      '@type': 'HowToSection',
+      name,
+      itemListElement: Array.from({ length: 20 }, (_, i) => ({ '@type': 'HowToStep', text: `${name} : geste ${i + 1}.` })),
+    })
+    const out = normalizeInstructions([sec('Pâte'), sec('Garniture')])
+    expect(out).toHaveLength(42)
+    expect(out[0]).toBe('## Pâte')
+    expect(out[21]).toBe('## Garniture')
+    expect(out[41]).toBe('Garniture : geste 20.')
+  })
+
+  it('recipeTextWindow: the default budget reaches the last step and stops at the site’s chrome', () => {
+    const nav = 'Accueil Recettes Menu Recherche Connexion '.repeat(170).slice(0, 7000)
+    const steps = Array.from({ length: 40 }, (_, i) => `Étape ${i + 1}. Faire une chose assez longue pour remplir la page ${i + 1}.`).join('\n')
+    const body = `\nIngrédients\n2 tasses de farine\n1 c. à thé de sel\n\nPréparation\n${steps}\nDernière étape : servir chaud.\n`
+    const gap = 12_000 - nav.length - body.length
+    const filler = 'Une note du chef sur la cuisson. '.repeat(Math.ceil(gap / 33)).slice(0, gap)
+    const page = nav + body + filler + '\nVous aimerez aussi\n' + 'Tarte au sucre\n'.repeat(600)
+    expect(page.indexOf('Ingrédients')).toBeGreaterThanOrEqual(7000)
+    expect(page.length).toBeGreaterThan(16_000)
+    const win = recipeTextWindow(page)
+    expect(win).toContain('2 tasses de farine')
+    expect(win).toContain('Dernière étape : servir chaud.')
+    expect(win).not.toContain('Vous aimerez aussi')
+    expect(win).not.toContain('Tarte au sucre')
+  })
+
+  it('parsePastedRecipe: an ad line between two steps is skipped, not the end of the method', () => {
+    const r = parsePastedRecipe(
+      'Crêpes\n\nIngrédients\n250 ml de farine\n2 oeufs\n\nPréparation\nMélanger la farine et les oeufs.\nAjouter le lait.\nPublicité\nCuire 2 minutes de chaque côté.',
+    )
+    expect(r.steps).toEqual(['Mélanger la farine et les oeufs.', 'Ajouter le lait.', 'Cuire 2 minutes de chaque côté.'])
+  })
+
+  it('pageMeta reads og:title / og:image, and falls back to <title> without the site suffix', () => {
+    expect(
+      pageMeta(
+        '<head><meta property="og:title" content="Tourtière du Lac"><meta content="http://x.test/t.jpg" property="og:image"><title>Autre | Site</title></head>',
+      ),
+    ).toEqual({ title: 'Tourtière du Lac', image: 'https://x.test/t.jpg' })
+    expect(pageMeta('<head><title>Soupe aux pois | Recettes du Québec</title></head>')).toEqual({ title: 'Soupe aux pois', image: null })
+    expect(pageMeta('<head><title>Pouding chômeur - Zeste</title></head>').title).toBe('Pouding chômeur')
+    expect(pageMeta('<p>rien</p>')).toEqual({ title: null, image: null })
+  })
+})
+
+describe('pageIngredientsPlausible — a page list, or its table cells?', () => {
+  it('trusts a real list', () => {
+    expect(pageIngredientsPlausible(['250 ml de farine', '2 oeufs', '## Sauce', '500 ml de lait'])).toBe(true)
+  })
+  it('refuses amounts orphaned from their words (« <div>250 ml</div><div>de farine</div> »)', () => {
+    expect(pageIngredientsPlausible(['250 ml', 'de farine', '2', 'oeufs', '500 ml', 'de lait'])).toBe(false)
   })
 })

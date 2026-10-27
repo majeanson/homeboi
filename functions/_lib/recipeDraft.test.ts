@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { draftFromText } from './recipeDraft'
+import { draft, draftFromText, heuristicIsGood } from './recipeDraft'
 import type { Env } from './env'
 
 // The one text → draft path, with AI OFF (env.AI unset), which is the strongest promise
@@ -241,5 +241,26 @@ describe('draftFromText — a reply that is JSON, or its broken remains', () => 
     expect(d.ingredients).toEqual(['1 brocoli', "15 ml (1 c. à soupe) d'huile d'olive", "2 gousses d'ail hachées finement"])
     expect(d.steps).toContain('Cuire 2 minutes.')
     expect(d.steps[0]).toBe('Défaire 1 brocoli en fleurons. Peler le pied du brocoli et couper en bâtonnets.')
+  })
+})
+
+describe('draft — the site delimited the steps (JSON-LD / microdata)', () => {
+  const steps = ['Mélanger la farine et les oeufs.', 'Cuire 2 minutes.', 'Conserver au réfrigérateur 3 jours.']
+  it('keeps a real last « Conserver au réfrigérateur » step on the JSON-LD path', () => {
+    const d = draft({ title: 'Crêpes', ingredients: ['250 ml de farine', '2 oeufs'], steps, structuring: 'jsonld' })
+    expect(d.steps).toEqual(steps)
+  })
+  it('the paste path (headings) still drops the footer line', () => {
+    const d = draft({ title: 'Crêpes', ingredients: ['250 ml de farine', '2 oeufs'], steps, structuring: 'headings' })
+    expect(d.steps).toEqual(steps.slice(0, 2))
+  })
+  it('heuristicIsGood accepts a long method (35 steps)', () => {
+    const d = draft({
+      title: 'Cassoulet',
+      ingredients: ['500 g de haricots', '4 cuisses de canard'],
+      steps: Array.from({ length: 35 }, (_, i) => `Faire la chose numéro ${i + 1}.`),
+      structuring: 'heuristic',
+    })
+    expect(heuristicIsGood(d)).toBe(true)
   })
 })

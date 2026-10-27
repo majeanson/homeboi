@@ -163,7 +163,9 @@ function oneMetaSentence(s: string): { meta: boolean; servings: number | null } 
   if (y && /\d/.test(s) && new RegExp(PORTION, 'i').test(s)) return { meta: true, servings: parseInt(y[1] ?? y[2], 10) || null }
   if (y && /^(?:donne|rendement|yield|serves?|makes)\b/i.test(s)) return { meta: true, servings: parseInt(y[1] ?? y[2], 10) || null }
   if (KEEPING_LINE.test(s)) {
-    if (/\b(?:jours?|days?|semaines?|weeks?|mois|months?|heures?|hours?|r[ée]frig[ée]rateur|cong[ée]lateur|frigo|fridge|freezer|refrigerator)\b/i.test(s))
+    // No « heures / hours »: « Refrigerate 4 hours before serving » is a STEP (a chill
+    // time), not how long it keeps — counting hours deleted real last steps (2026-10-27).
+    if (/\b(?:jours?|days?|semaines?|weeks?|mois|months?|r[ée]frig[ée]rateur|cong[ée]lateur|frigo|fridge|freezer|refrigerator)\b/i.test(s))
       return { meta: true, servings: null }
     // « Se congèle très bien. » / « Freezes well. » — the verb alone says it, when short.
     if (s.length <= 60 && /^(?:se\s+(?:conserve|garde|cong[èe]le)|peut\s+se\s+conserver|keeps?\b|will\s+keep|freezes?\s+well)/i.test(s))

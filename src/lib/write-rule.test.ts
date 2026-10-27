@@ -159,7 +159,6 @@ const ALLOWED = new Set<string>([
   'components/RecipeForm.tsx → recipe-ocr',
   'components/RecipeForm.tsx → recipe-import',
   'components/RecipeForm.tsx → recipe-vision',
-  'components/RecipeForm.tsx → ?',
   'components/cercle/BusinessForm.tsx → place-import',
   'lib/useVoiceInput.ts → transcribe',
 

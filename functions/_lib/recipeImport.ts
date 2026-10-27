@@ -247,15 +247,74 @@ export function sentenceChunks(s: string, target = 280): string[] {
   return out
 }
 
+// How many STEPS (section headings not counted) an import keeps. It was 30, and a
+// long method lost its tail silently (Marc, 2026-10-27: « les étapes arrêtent avant
+// la fin »). The save keeps MAX_STEP_ROWS — these steps plus room for their headings
+// — so a step that survives the import survives the save.
+export const MAX_STEPS = 60
+export const MAX_STEP_ROWS = MAX_STEPS + 20
+// The ingredient-line cap every import path shares (it was a bare 40 in five places).
+export const MAX_INGREDIENTS = 40
+
+// One sentence boundary: end punctuation, then whitespace and an uppercase / « /
+// digit start — so « env. 5 min » and « 1.5 L » never split.
+const SENTENCE_SPLIT = /(?<=[.!?])\s+(?=[A-ZÀ-ÖŒ«"(\d])/
+
+export interface RefineOpts {
+  /** Cap on STEPS (headings are structure and never count). Default MAX_STEPS. */
+  max?: number
+  /**
+   * How a long piece is handled.
+   *  'keep'      — the source delimited its steps (a HowToStep, a printed line): a
+   *                piece stays ONE step; only a piece over MAX_STEP_LEN is chunked
+   *                at sentences (never truncated).
+   *  'sentences' — one sentence per step: a single paragraph IS the whole method.
+   *  'auto'      — 'sentences' only when the input is ONE long paragraph (> 400
+   *                chars, no packed list inside); 'keep' otherwise. Default.
+   */
+  blob?: 'auto' | 'keep' | 'sentences'
+}
+
+// A step over MAX_STEP_LEN is CHUNKED, never truncated: at sentence boundaries
+// first (~800 chars a chunk), then — for a run-on with no sentence break at all —
+// at the last space before the cap. Every word reaches the form.
+function fitStep(s: string): string[] {
+  if (s.length <= MAX_STEP_LEN) return [s]
+  return sentenceChunks(s, 800).flatMap((c) => {
+    const out: string[] = []
+    let rest = c
+    while (rest.length > MAX_STEP_LEN) {
+      const cut = rest.lastIndexOf(' ', MAX_STEP_LEN)
+      const at = cut > MAX_STEP_LEN / 2 ? cut : MAX_STEP_LEN
+      out.push(rest.slice(0, at).trim())
+      rest = rest.slice(at).trim()
+    }
+    if (rest) out.push(rest)
+    return out
+  })
+}
+
 // The shared refinement pipeline: clean → split packed lists → strip leading
-// markers → drop junk → chunk overlong text → dedupe. Every import path (JSON-LD,
-// microdata, paste, AI, photo OCR) funnels its raw steps through here.
-export function refineSteps(raw: string[], max = 30): string[] {
+// markers → drop junk → (split a lone paragraph | chunk an overlong step) → dedupe.
+// Every import path (JSON-LD, microdata, paste, AI, photo OCR) funnels its raw steps
+// through here. It used to chunk EVERY step over 400 chars into ~280-char pieces —
+// one per sentence — so a site's 450-char paragraph came out as three steps (Marc,
+// 2026-10-27: « ça rajoute des étapes pour chaque phrase »). The source's own step
+// boundaries win now.
+export function refineSteps(raw: string[], opts: RefineOpts = {}): string[] {
+  const max = opts.max ?? MAX_STEPS
+  const cleanedAll = raw.map(clean)
+  let mode = opts.blob ?? 'auto'
+  if (mode === 'auto') {
+    const body = cleanedAll.filter((c) => c && !isSectionHeading(c))
+    const lone = body.length === 1 ? splitPacked(body[0]) : []
+    mode = lone.length === 1 && lone[0].length > 400 ? 'sentences' : 'keep'
+  }
   const out: string[] = []
   const seen = new Set<string>()
-  for (const r of raw) {
-    if (out.length >= max) break
-    const cleaned = clean(r)
+  let count = 0
+  for (const cleaned of cleanedAll) {
+    if (count >= max) break
     // A "## Section" marker is structure, not an instruction — it passes
     // through whole: never split, never stripped, never deduped against steps.
     if (isSectionHeading(cleaned)) {
@@ -265,13 +324,18 @@ export function refineSteps(raw: string[], max = 30): string[] {
     for (const piece of splitPacked(cleaned)) {
       const stripped = stripStepPrefix(piece)
       if (!isStepText(stripped)) continue
-      for (const chunk of sentenceChunks(stripped)) {
-        if (out.length >= max) break
+      const parts =
+        mode === 'sentences'
+          ? stripped.split(SENTENCE_SPLIT).filter(Boolean).flatMap(fitStep)
+          : fitStep(stripped)
+      for (const chunk of parts) {
+        if (count >= max) break
         const final = chunk.slice(0, MAX_STEP_LEN)
         const key = final.toLowerCase()
         if (seen.has(key)) continue
         seen.add(key)
         out.push(final)
+        count++
       }
     }
   }
@@ -318,23 +382,25 @@ export function healTruncatedSteps(steps: string[], originalSteps: string[] | un
 // section names ("Sauce", "Boulettes") as inline "## Section" heading lines
 // when the recipe actually has several sections (one section covering
 // everything adds nothing).
-export function normalizeInstructions(value: unknown, max = 30): string[] {
+export function normalizeInstructions(value: unknown, max = MAX_STEPS): string[] {
   type Collected = { section: string | null; text: string }
   const collected: Collected[] = []
   let section: string | null = null
   const push = (s: string) => {
     const c = clean(s)
-    if (!c || collected.length >= max * 2) return
+    if (!c || collected.length >= max * 4) return
     // A bare label line packed inside the instructions ("Glaçage :") is a
     // section marker, not a step — without this it leaks as a junk step.
-    const sec = inlineSectionTitle(c)
+    const sec = isSectionHeading(c) ? null : inlineSectionTitle(c)
     collected.push({ section, text: sec ? makeSectionHeading(sec) : c })
   }
   const walk = (v: unknown) => {
-    if (collected.length >= max * 2) return
+    if (collected.length >= max * 4) return
     if (typeof v === 'string') {
-      // A single string may pack several steps separated by newlines.
-      for (const part of v.split(/\r?\n+/)) push(part)
+      // A single string may pack several steps — separated by newlines, or by HTML
+      // blocks (« <p>…</p><p>…</p> », « <br> »): one step per block. Stripping the
+      // tags first (the old way) left ONE blob that was then cut per sentence.
+      for (const part of htmlBlocksToLines(v)) push(part)
       return
     }
     if (Array.isArray(v)) {
@@ -343,7 +409,9 @@ export function normalizeInstructions(value: unknown, max = 30): string[] {
     }
     if (v && typeof v === 'object') {
       const node = v as Record<string, unknown>
-      if (Array.isArray(node.itemListElement)) {
+      // itemListElement may be an array OR a single object (one step in a section) —
+      // `Array.isArray` alone let the section's name become a step and lost the child.
+      if (node.itemListElement != null && typeof node.itemListElement === 'object') {
         const prev = section
         if (typeIncludes(node, 'HowToSection') && typeof node.name === 'string') section = clean(node.name) || prev
         walk(node.itemListElement)
@@ -361,22 +429,63 @@ export function normalizeInstructions(value: unknown, max = 30): string[] {
 
   const sections = new Set(collected.map((c) => c.section).filter(Boolean))
   const useSections = sections.size >= 2
+  // ONE paragraph for the whole method is the only case read one sentence per step;
+  // anything the site delimited (several HowToSteps, several blocks) stays as shipped.
+  const oneBlob = collected.filter((c) => !isSectionHeading(c.text)).length === 1
   const out: string[] = []
+  let count = 0 // steps only — headings are structure and never count toward `max`
   let lastSection: string | null = null
   for (const c of collected) {
-    if (out.length >= max) break
-    for (const step of refineSteps([c.text], max)) {
-      if (out.length >= max) break
+    if (count >= max) break
+    for (const step of refineSteps([c.text], { max: max - count, blob: oneBlob ? 'auto' : 'keep' })) {
+      if (count >= max) break
       if (useSections && c.section && c.section !== lastSection) {
         out.push(makeSectionHeading(c.section).slice(0, MAX_STEP_LEN))
         lastSection = c.section
-        if (out.length >= max) break
       }
       const final = step.slice(0, MAX_STEP_LEN)
-      if (!out.includes(final)) out.push(final)
+      if (out.includes(final)) continue
+      out.push(final)
+      if (!isSectionHeading(final)) count++
     }
   }
   return dropDanglingHeadings(out)
+}
+
+// One block of HTML (a JSON-LD instructions string, a microdata container) → its
+// printed lines: block closers and <br> become line breaks BEFORE the tags are
+// stripped, an <hN> inside becomes a "## " section marker, and a bare label line
+// (« Glaçage : ») becomes one too. Plain text just splits on its newlines.
+export function htmlBlocksToLines(blockHtml: string): string[] {
+  return blockHtml
+    .replace(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/gi, (_, t: string) => `\n## ${clean(t)}\n`)
+    .replace(/<\/(?:li|p|div)>|<br\s*\/?>/gi, '\n')
+    .split(/\r?\n+/)
+    .map((s) => clean(s))
+    .filter(Boolean)
+    .map((s) => {
+      if (isSectionHeading(s)) return s
+      const sec = inlineSectionTitle(s)
+      return sec ? makeSectionHeading(sec) : s
+    })
+}
+
+// The page's own name and picture, for a draft read from its TEXT (no structured
+// data to name it): og:title, else <title> without its « | Site » / « - Site » tail;
+// og:image. Attribute order varies by site — both orders are read.
+export function pageMeta(html: string): { title: string | null; image: string | null } {
+  const og = (prop: string): string | null => {
+    const a = html.match(new RegExp(`<meta\\b[^>]*\\bproperty=["']og:${prop}["'][^>]*\\bcontent=["']([^"']*)["']`, 'i'))
+    const b = a ?? html.match(new RegExp(`<meta\\b[^>]*\\bcontent=["']([^"']*)["'][^>]*\\bproperty=["']og:${prop}["']`, 'i'))
+    return b ? clean(b[1]) || null : null
+  }
+  let title = og('title')
+  if (!title) {
+    const t = html.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i)
+    const whole = t ? clean(t[1]) : ''
+    title = whole.replace(/\s+[|–—-]\s+[^|–—-]{1,60}$/, '').trim() || null
+  }
+  return { title: title ? title.slice(0, 200) : null, image: normalizeImage(og('image')) }
 }
 
 // ---------------------------------------------------------------------------
@@ -489,8 +598,8 @@ export function parseRecipeJsonLd(html: string): ParsedRecipe | null {
     const node = findRecipeNode(block)
     if (!node) continue
     const title = typeof node.name === 'string' ? clean(node.name).slice(0, 200) : null
-    const ingredients = asStringList(node.recipeIngredient ?? node.ingredients, 40)
-    const steps = normalizeInstructions(node.recipeInstructions, 30)
+    const ingredients = asStringList(node.recipeIngredient ?? node.ingredients, MAX_INGREDIENTS)
+    const steps = normalizeInstructions(node.recipeInstructions)
     // A node with a name but neither ingredients nor steps isn't a usable recipe.
     if (!title && ingredients.length === 0 && steps.length === 0) continue
     return {
@@ -531,38 +640,22 @@ export function parseRecipeMicrodata(html: string): ParsedRecipe | null {
   const ingredients = inner('recipeIngredient|ingredients')
     .map((s) => clean(s).slice(0, 200))
     .filter(Boolean)
-    .slice(0, 40)
+    .slice(0, MAX_INGREDIENTS)
 
   // Instructions may be one element per step OR a single container; turn block
   // closers into newlines before stripping tags so the inner list splits. An
   // <hN> INSIDE the container is a section heading ("Glaçage") — keep it as a
   // "## " marker instead of letting it leak as a junk step; a bare label line
-  // ("Glaçage :") gets the same treatment.
-  const stepLines = inner('recipeInstructions').flatMap((blockHtml) =>
-    blockHtml
-      .replace(/<h[1-6][^>]*>([\s\S]*?)<\/h[1-6]>/gi, (_, t: string) => `\n## ${clean(t)}\n`)
-      .replace(/<\/(?:li|p|div)>|<br\s*\/?>/gi, '\n')
-      .split(/\n+/)
-      .map((s) => clean(s))
-      .filter(Boolean)
-      .map((s) => {
-        const sec = inlineSectionTitle(s)
-        return sec ? makeSectionHeading(sec) : s
-      }),
-  )
-  const steps = dropDanglingHeadings(refineSteps(stepLines, 30))
+  // ("Glaçage :") gets the same treatment. (htmlBlocksToLines — shared with a
+  // JSON-LD instructions string that carries the same HTML.)
+  const stepLines = inner('recipeInstructions').flatMap(htmlBlocksToLines)
+  const steps = dropDanglingHeadings(refineSteps(stepLines))
 
   if (ingredients.length < 2 && steps.length === 0) return null
 
-  const meta = (re: RegExp): string | null => {
-    const m = html.match(re)
-    return m ? clean(m[1]) || null : null
-  }
-  const title =
-    inner('name').map((s) => clean(s)).find(Boolean)?.slice(0, 200) ??
-    meta(/<meta\b[^>]*\bproperty=["']og:title["'][^>]*\bcontent=["']([^"']*)["']/i)?.slice(0, 200) ??
-    null
-  const image = normalizeImage(meta(/<meta\b[^>]*\bproperty=["']og:image["'][^>]*\bcontent=["']([^"']*)["']/i))
+  const page = pageMeta(html)
+  const title = inner('name').map((s) => clean(s)).find(Boolean)?.slice(0, 200) ?? page.title
+  const image = page.image
   const servings = parseYield(inner('recipeYield')[0] ?? null)
   const servingsUnit = parseYieldUnit(inner('recipeYield')[0] ?? null)
 
@@ -650,7 +743,7 @@ export function regroupIngredients(html: string, ingredients: string[]): string[
   // One heading covering the WHOLE list adds nothing; one mid-list makes two
   // real groups and stays.
   if (heads.length === 1 && isSectionHeading(grouped[0])) return ingredients
-  return grouped.slice(0, 40)
+  return grouped.slice(0, MAX_INGREDIENTS)
 }
 
 // ---------------------------------------------------------------------------
@@ -716,8 +809,13 @@ const isRating = (l: string): boolean => /[★☆✩✭✮⭐]/.test(l) && /^[�
 // Where a website's chrome resumes AFTER the recipe body — everything from here on is
 // other recipes, ads and buttons. Only honoured once the body has started; before it,
 // the same line is merely skipped (a share bar above a recipe must not eat the recipe).
-const NOISE_START =
-  /^(?:recettes?\s+(?:populaires?|similaires?|sugg[ée]r[ée]es?|du\s+moment)|popular\s+recipes?|related\s+recipes?|more\s+recipes?|vous\s+aimerez|you\s+(?:may|might)\s+also\s+like|[àa]\s+lire\s+aussi|voir\s+aussi|see\s+also|publicit[ée]s?|advertisement|sponsored|commentaires?\b|comments?\b|abonnez|newsletter|s['’]abonner|subscribe|tous\s+droits|all\s+rights|©)/i
+export const NOISE_END =
+  /^(?:recettes?\s+(?:populaires?|similaires?|sugg[ée]r[ée]es?|du\s+moment)|popular\s+recipes?|related\s+recipes?|more\s+recipes?|vous\s+aimerez|you\s+(?:may|might)\s+also\s+like|[àa]\s+lire\s+aussi|voir\s+aussi|see\s+also|commentaires?\b|comments?\b|abonnez|newsletter|s['’]abonner|subscribe|tous\s+droits|all\s+rights|©)/i
+// An ad slot's label is NOT the end of the recipe: sites drop « Publicité » between
+// two steps, and treating it as the footer cut the method in half (2026-10-27). It is
+// skipped wherever it appears.
+// (No `\b` after « publicité »: JS \b is ASCII-only, so it never fires after an é.)
+const NOISE_SKIP = /^(?:publicit[ée]s?|advertisements?|sponsored)(?![a-zà-öœ])/i
 // A bare part label inside the ingredient or method block (« Sauce », « Garniture »,
 // « Poisson »): one to three capitalised words, no digits, no punctuation.
 const isBareLabel = (l: string): boolean => /^[A-ZÀ-ÖŒ][^\d.!?:;,()]{0,30}$/.test(l) && l.split(/\s+/).length <= 3
@@ -873,7 +971,11 @@ export function parsePastedRecipe(text: string): PastedRecipe {
       continue
     }
     if (consumeMeta(line)) continue
-    if (NOISE_START.test(line)) {
+    if (NOISE_SKIP.test(line)) {
+      junk.add(li) // an ad slot, wherever it sits — never the recipe, never its end
+      continue
+    }
+    if (NOISE_END.test(line)) {
       if (mode !== 'pre') break // the recipe is over; what follows is the site
       junk.add(li)
       continue
@@ -971,7 +1073,7 @@ export function parsePastedRecipe(text: string): PastedRecipe {
       if (metaFrags.length > 1 && (metaFrags.filter(isMetaFrag).length >= 2 || isNavStrip(metaFrags))) continue
       if (isRating(line)) continue
       // The site's chrome after the body: the recipe is over.
-      if (NOISE_START.test(line) && stepLines.length) break
+      if (NOISE_END.test(line) && stepLines.length) break
       // A WRAPPED line of prose is a continuation, not an ingredient — even when the
       // wrap happens to fall right before a quantity (« Verser » / « 15 ml (1 c. à
       // soupe) de miel et 7,5 ml (1/2 c. à » / « soupe) de sauce soya… »). The tell is
@@ -1003,14 +1105,15 @@ export function parsePastedRecipe(text: string): PastedRecipe {
   // (the model reordered « Dans un grand poêlon, chauffer… » into « Chauffer… dans un
   // grand poêlon »). Same boundary rule as sentenceChunks: end punctuation, then an
   // uppercase / « / digit start, so « env. 5 min » and « 1.5 L » never split. A
-  // formatted recipe keeps its own step lines.
+  // formatted recipe keeps its own step lines — a long printed line is ONE step
+  // ('auto': only a method that is a single long paragraph reads per sentence).
   const blobs = paragraphCard
-    ? merged.flatMap((l) => (isSectionHeading(l) ? [l] : l.split(/(?<=[.!?])\s+(?=[A-ZÀ-ÖŒ«"(\d])/).filter(Boolean)))
+    ? merged.flatMap((l) => (isSectionHeading(l) ? [l] : l.split(SENTENCE_SPLIT).filter(Boolean)))
     : merged
-  const steps = dropDanglingHeadings(refineSteps(blobs, 30))
+  const steps = dropDanglingHeadings(refineSteps(blobs, { blob: 'auto' }))
   const notes = noteLines.join(' ').trim().slice(0, 2000) || null
 
-  const ingredients = dropDanglingHeadings(ings.slice(0, 40))
+  const ingredients = dropDanglingHeadings(ings.slice(0, MAX_INGREDIENTS))
   const realIngs = ingredients.filter((l) => !isSectionHeading(l))
   return {
     title,
@@ -1117,15 +1220,42 @@ const HEADING_ANCHORS = [
 // Loose fallback for pages that don't put the heading on its own line.
 const LOOSE_ANCHORS = [/ingr[ée]dients?/i, /pr[ée]paration|instructions?|directions?/i]
 
-export function recipeTextWindow(text: string, max = 6000): string {
-  if (text.length <= max) return text
+// Did the headings parser read a PAGE's ingredient list, or its table cells? Sites
+// lay an ingredient out as cells (« <div>250 ml</div><div>de farine</div> »), which
+// htmlToText turns into a bare « 250 ml » line and an orphan « de farine » one. A
+// real list is mostly lines that carry a word AND are not a bare amount; under 80 %
+// the read is not trusted (the model organises the page instead, when it may).
+export function pageIngredientsPlausible(lines: string[]): boolean {
+  const real = lines.filter((l) => !isSectionHeading(l))
+  if (real.length < 2) return false
+  const bareAmount = /^[\d\s.,/¼½¾⅓⅔⅛]+\s*(?:ml|cl|l|g|kg|mg|oz|lb|lbs|c\.\s*à\s*(?:soupe|thé|café)|tasses?|cups?|tbsp|tsp)?\.?$/i
+  const good = real.filter((l) => /[a-zà-öœ]{2,}/i.test(l) && !bareAmount.test(l.trim()))
+  return good.length * 10 >= real.length * 8
+}
+
+// The budget is 16 000 chars now (it was 6000, and a long recipe's last steps fell
+// past it — « les étapes arrêtent avant la fin »). Its END is anchored too: the first
+// line after the method heading where the site's chrome resumes (« Vous aimerez
+// aussi », « Commentaires » — NOISE_END, the paste parser's own list) closes the
+// window, so the budget is not spent on other recipes.
+const END_ANCHOR = new RegExp(NOISE_END.source, 'im')
+
+export function recipeTextWindow(text: string, max = 16_000): string {
   const hit =
     HEADING_ANCHORS.map((re) => re.exec(text)?.index).find((i) => i !== undefined) ??
     LOOSE_ANCHORS.map((re) => re.exec(text)?.index).find((i) => i !== undefined)
-  if (hit === undefined) return text.slice(0, max) // no anchor — head slice is all we've got
   const lead = Math.min(600, Math.floor(max * 0.1))
-  const start = Math.max(0, hit - lead)
-  return text.slice(start, start + max)
+  // No anchor and too long — the head slice is all we've got.
+  const start = text.length <= max || hit === undefined ? 0 : Math.max(0, hit - lead)
+  let end = Math.min(text.length, start + max)
+  // Only AFTER the method heading: before it, the same words are navigation.
+  const steps = HEADING_ANCHORS[1].exec(text.slice(start))
+  if (steps) {
+    const from = start + steps.index + steps[0].length
+    const tail = END_ANCHOR.exec(text.slice(from, end))
+    if (tail) end = from + tail.index
+  }
+  return text.slice(start, end).trimEnd()
 }
 
 // Crude HTML→text for the AI fallback when there's no structured data: drop

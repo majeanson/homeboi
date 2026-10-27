@@ -3,7 +3,7 @@ import { authed } from '../_lib/route'
 import { deleteR2Blob } from '../_lib/r2'
 import { newId, nowSec } from '../_lib/ids'
 import { isValidR2Key } from '../_lib/validate'
-import { MAX_STEP_LEN } from '../_lib/recipeImport'
+import { MAX_INGREDIENTS, MAX_STEP_LEN, MAX_STEP_ROWS } from '../_lib/recipeImport'
 // THE row -> wire mapping for the list read lives in one place, with the reason the
 // as-imported snapshot is not in it. Its test is the guard.
 import { recipeListItem, parseOriginal, type RecipeRow, type RecipeOriginal } from '../_lib/recipeWire'
@@ -70,7 +70,7 @@ const cleanLang = (v: unknown): string | null => (v === 'fr' || v === 'en' ? v :
 // still too tight for a dense run-on step, so steps get MAX_STEP_LEN (1000). The
 // step cap is the SAME constant the importer uses, so a step that survives the
 // import survives the save unchanged.
-function cleanList(v: unknown, max = 40, maxLen = 200): string[] {
+function cleanList(v: unknown, max = MAX_INGREDIENTS, maxLen = 200): string[] {
   if (!Array.isArray(v)) return []
   return v
     .map((x) => (isStr(x) ? x.trim() : ''))
@@ -78,7 +78,9 @@ function cleanList(v: unknown, max = 40, maxLen = 200): string[] {
     .map((s) => s.slice(0, maxLen))
     .slice(0, max)
 }
-const cleanSteps = (v: unknown): string[] => cleanList(v, 40, MAX_STEP_LEN)
+// MAX_STEP_ROWS = the importer's MAX_STEPS steps plus room for their "## " headings.
+// It was 40 rows, so a long import lost its tail AT SAVE (2026-10-27).
+const cleanSteps = (v: unknown): string[] => cleanList(v, MAX_STEP_ROWS, MAX_STEP_LEN)
 
 // The read-from photo's R2 key inside a stored original snapshot, if any — so it's
 // freed with the row (and when a re-import during edit replaces the snapshot).

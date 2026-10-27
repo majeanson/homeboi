@@ -1243,3 +1243,31 @@
   line-height: 1;
   letter-spacing: -0.02em;
 }
+
+/* The verify panel's TEXT source (a link or a paste the AI organised, 2026-10-27):
+   the page text in the photo's column — same sticky slot on a wide screen, a short
+   scrollable box above the lines on a phone. Wraps, never scrolls sideways. */
+.read-review__source {
+  margin: 0;
+  max-height: 32vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-md);
+  background: var(--paper-deep);
+  color: var(--ink-soft);
+  font-family: inherit;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+@media (min-width: 44rem) {
+  .read-review__source {
+    max-height: 60vh;
+  }
+}
+/* « Guider l'IA » above the foot — folded, inside the panel's side margin. */
+.read-review__guide {
+  margin: 0 1rem;
+}

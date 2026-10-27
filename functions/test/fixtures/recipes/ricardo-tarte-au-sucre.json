@@ -1,0 +1,63 @@
+{
+  "_note": "CAPTURED 2026-10-27 from https://www.ricardocuisine.com/recettes/4530-tarte-au-sucre-2 — the page’s schema.org/Recipe ld+json node, trimmed to the fields the importer reads (reviews, author, ratings dropped). Real data: do not hand-edit the steps.",
+  "@context": "http://schema.org",
+  "@type": "Recipe",
+  "name": "Tarte au sucre (2)",
+  "image": [
+    "https://images.ricardocuisine.com/services/recipes/1x1/4530.jpg",
+    "https://images.ricardocuisine.com/services/recipes/4x3/4530.jpg",
+    "https://images.ricardocuisine.com/services/recipes/16x9/4530.jpg"
+  ],
+  "prepTime": "PT20M",
+  "cookTime": "PT50M",
+  "totalTime": "PT1H10M",
+  "recipeYield": "8 portion(s)",
+  "recipeIngredient": [
+    "190 g (1 1/4 tasse) de farine tout usage non blanchie",
+    "1 ml (1/4 c. à thé) de sel",
+    "115 g (1/2 tasse) de beurre non salé, froid et coupé en dés",
+    "45 ml (3 c. à soupe) de lait",
+    "15 ml (1 c. à soupe) de vinaigre de cidre",
+    "15 à 30 ml (1 à 2 c. à soupe) d’eau, glacée",
+    "265 g (1 1/4 tasse) de cassonade",
+    "30 ml (2 c. à soupe) de fécule de maïs",
+    "30 ml (2 c. à soupe) de farine tout usage non blanchie",
+    "250 ml (1 tasse) de crème 35 % à fouetter",
+    "5 ml (1 c. à thé) d'extrait de vanille",
+    "1 oeuf"
+  ],
+  "recipeInstructions": [
+    {
+      "@type": "HowToSection",
+      "name": "Pâtes brisée",
+      "itemListElement": [
+        {
+          "@type": "HowToStep",
+          "text": "Au robot culinaire, mélanger la farine et sel. Ajouter le beurre et mélanger quelques secondes à la fois jusqu’à ce qu’il ait la grosseur de petits pois. Ajouter le lait, le vinaigre et l'eau. Mélanger de nouveau jusqu’à ce que la pâte commence tout juste à se former. Retirer la pâte du robot et façonner un disque avec les mains. "
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Sur un plan de travail fariné, abaisser la pâte en un disque d’environ 3 mm (1/8 po) d’épaisseur. Foncer un moule à tarte en verre de 23 cm (9 po) de diamètre. Couper l’excédent de pâte à l’extérieur du moule en laissant une bordure de 1,5 cm (1/2 po) de largeur. Rabattre la pâte pour former une double épaisseur. Festonner la bordure (avec les doigts, former une suite de courbes). Réfrigérer 30 minutes."
+        }
+      ]
+    },
+    {
+      "@type": "HowToSection",
+      "name": "Garniture",
+      "itemListElement": [
+        {
+          "@type": "HowToStep",
+          "text": "Placer la grille au centre du four. Préchauffer le four à 190 °C (375 °F)."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Dans une casserole, hors du feu, mélanger au fouet la ­cassonade, la fécule et la farine. Ajouter le reste des ingrédients et bien mélanger. Porter à ébullition à feu moyen jusqu'à ce que le mélange épaississe. Répartir la préparation dans la croûte."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Cuire au four 45 minutes. Laisser refroidir complètement sur une grille."
+        }
+      ]
+    }
+  ]
+}

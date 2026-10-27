@@ -1,0 +1,50 @@
+{
+  "_note": "CAPTURED 2026-10-27 from https://www.ricardocuisine.com/recettes/8431-boulettes-de-porc-a-la-courge-et-a-la-creme — the page’s schema.org/Recipe ld+json node, trimmed to the fields the importer reads (reviews, author, ratings dropped). Real data: do not hand-edit the steps.",
+  "@context": "http://schema.org",
+  "@type": "Recipe",
+  "name": "Boulettes de porc à la courge et à la crème",
+  "image": [
+    "https://images.ricardocuisine.com/services/recipes/1x1/8431.jpg",
+    "https://images.ricardocuisine.com/services/recipes/4x3/8431.jpg",
+    "https://images.ricardocuisine.com/services/recipes/16x9/8431.jpg"
+  ],
+  "prepTime": "PT20M",
+  "cookTime": "PT50M",
+  "totalTime": "PT1H10M",
+  "recipeYield": "4 portion(s)",
+  "recipeIngredient": [
+    "1\tcourge Butternut d’environ 1,4 kg (3 lb), pelée,  les graines retirées et coupée en cubes",
+    "1\toignon, haché finement",
+    "15 ml\t(1 c. à soupe) d'huile végétale",
+    "15 ml\t(1 c. à soupe) de fécule de maïs",
+    "1\tboîte de 284 ml (10 oz) de bouillon de poulet concentré ",
+    "60 ml\t(1/4 tasse) de crème 35 %",
+    "1/2\trecette de boulettes de porc extra moelleuses,  cuites et chaudes",
+    "45 ml\t(3 c. à soupe) de feuilles de persil plat",
+    "45 ml\t(3 c. à soupe) de fromage parmesan frais râpé"
+  ],
+  "recipeInstructions": [
+    {
+      "@type": "HowToSection",
+      "name": "Boulettes de porc à la courge et à la crème",
+      "itemListElement": [
+        {
+          "@type": "HowToStep",
+          "text": "Placer la grille dans le bas du four. Préchauffer le four à 220 °C (425 °F)."
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Dans un plat de cuisson de 33 x 23 cm (13 x 9 po), mélanger la courge, l’oignon et l’huile. Saler et poivrer. Cuire au four 40 minutes. "
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Entre-temps, dans un bol, délayer la fécule dans le bouillon et la crème. "
+        },
+        {
+          "@type": "HowToStep",
+          "text": "Répartir les boulettes sur la courge. Verser le mélange de bouillon sur les boulettes et les légumes chauds. Poursuivre la cuisson au four 10 minutes ou jusqu’à ce que la sauce épaississe. Rectifier l’assaisonnement. Parsemer du persil et du parmesan."
+        }
+      ]
+    }
+  ]
+}

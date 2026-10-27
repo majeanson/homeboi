@@ -1,25 +1,29 @@
-import { draft, draftFromText } from '../_lib/recipeDraft'
+import { draft, draftByModel, draftFromText } from '../_lib/recipeDraft'
 import { badRequest, ok, readJson, serviceUnavailable } from '../_lib/json'
 import { authed } from '../_lib/route'
-import { TEXT_MODEL, resolveLang, structureRecipe } from '../_lib/ai'
+import { resolveLang } from '../_lib/ai'
 import { aiUsable } from '../_lib/aiPref'
 import {
   htmlToText,
-  linesWithForeignNumbers,
+  pageIngredientsPlausible,
+  pageMeta,
   parseRecipeJsonLd,
   parseRecipeMicrodata,
   recipeTextWindow,
-  refineSteps,
   regroupIngredients,
 } from '../_lib/recipeImport'
 
-// Import a recipe into a DRAFT the user reviews before saving. Two inputs:
+// Import a recipe into a DRAFT the user reviews before saving. Two inputs (plus an
+// optional `hint`: the cook's one-line note for the model, used only when it runs):
 //   { url }  — fetch the page, parse schema.org/Recipe JSON-LD, then microdata,
 //              both no-AI. If neither finds a Recipe, fall back to HTML→text +
 //              AI structuring.
 //   { text } — paste from anywhere; the heading-aware parser handles a normally
 //              formatted recipe with no AI, the AI only structures free-form
 //              text (and the heuristic result still serves when AI is unbound).
+// Every draft says HOW it was read (`structuring`: jsonld / microdata / headings / ai /
+// heuristic) — the form names it, and an 'ai' read opens the verify panel with the
+// page text (`transcript`) beside the lines.
 // Returns { title, ingredients, steps, servings, times, image, source } — NOT
 // saved; the client prefills the recipe form so the cook can fix anything
 // before committing. Operator-only (it makes an outbound fetch and writes the
@@ -72,10 +76,13 @@ async function fetchPage(url: URL, lang: 'fr' | 'en'): Promise<string | null> {
         'accept-language': acceptLanguage,
       },
       redirect: 'follow',
+      // A site that never answers used to hold the request until the client gave up
+      // (45 s) — it now falls to the reader like a refusal does.
+      signal: AbortSignal.timeout(15_000),
     })
     if (res.ok) return cap(await res.text())
   } catch {
-    // fall through to the reader
+    // refused, unreachable or too slow — fall through to the reader
   }
   try {
     const res = await fetch(READER + url.toString(), {
@@ -102,7 +109,8 @@ export const onRequestPost = authed(async (ctx, actor) => {
   // paste heuristic) and only 503s if those find nothing — never reaching the model.
   const aiOn = await aiUsable(ctx.env, actor)
   const lang = resolveLang(ctx.env, ctx.request)
-  const body = await readJson<{ url?: string; text?: string }>(ctx.request)
+  const body = await readJson<{ url?: string; text?: string; hint?: string }>(ctx.request)
+  const hint = typeof body?.hint === 'string' ? body.hint.slice(0, 400) : undefined
 
   // ---- Paste path -----------------------------------------------------------
   // The ONE text → draft path (_lib/recipeDraft): the heading parser, then the text
@@ -110,7 +118,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   // transcript takes exactly this road too.
   const text = body?.text?.trim()
   if (text) {
-    const d = await draftFromText(ctx.env, text, lang, aiOn)
+    const d = await draftFromText(ctx.env, text, lang, aiOn, hint)
     if (d.empty && !aiOn) return serviceUnavailable('Structuration IA indisponible ici.')
     return ok(d)
   }
@@ -129,39 +137,43 @@ export const onRequestPost = authed(async (ctx, actor) => {
     return ok(draft({ source: url.toString(), empty: true, reason: 'blocked' }))
   }
 
-  // Structured data first — JSON-LD, then microdata. Reliable, no AI. The flat
-  // ingredient list gets its page-visible groups back ("Biscuits" / "Glaçage")
-  // when every line can be located in the rendered page.
-  const parsed = parseRecipeJsonLd(html) ?? parseRecipeMicrodata(html)
+  // Structured data first — JSON-LD, then microdata. Reliable, no AI, and the site's
+  // own step boundaries are kept as shipped. The flat ingredient list gets its
+  // page-visible groups back ("Biscuits" / "Glaçage") when every line can be located
+  // in the rendered page. A hollow JSON-LD shell (recettes.qc.ca declares
+  // recipeIngredient:[] and recipeInstructions:"") no longer hides the microdata.
+  const ld = parseRecipeJsonLd(html)
+  const ldUsable = !!ld && (ld.ingredients.length > 0 || ld.steps.length > 0)
+  const parsed = ldUsable ? ld : (parseRecipeMicrodata(html) ?? ld)
   if (parsed && (parsed.ingredients.length || parsed.steps.length)) {
     return ok(
-      draft({ ...parsed, ingredients: regroupIngredients(html, parsed.ingredients), source: url.toString() }),
+      draft({
+        ...parsed,
+        ingredients: regroupIngredients(html, parsed.ingredients),
+        source: url.toString(),
+        structuring: parsed === ld ? 'jsonld' : 'microdata',
+      }),
     )
   }
 
-  // No structured Recipe — try AI over the page text (best-effort). Some sites ship
-  // a Recipe node that's a hollow shell (recettes.qc.ca declares recipeIngredient:[]
-  // and recipeInstructions:"") and no microdata at all, so this path carries pages
-  // the parsers above can't touch. Extract the WHOLE text, then window it onto the
-  // recipe — a head slice would hand the model the nav bar and stop short of the food.
-  if (aiOn) {
-    const windowed = recipeTextWindow(htmlToText(html, 200_000))
-    const r = await structureRecipe(ctx.env, windowed, lang)
-    if (r.ingredients.length || r.steps.length) {
-      const steps = refineSteps(r.steps)
-      return ok(
-        draft({
-          title: r.title ?? parsed?.title ?? null,
-          ingredients: r.ingredients,
-          steps,
-          image: parsed?.image ?? null,
-          source: url.toString(),
-          structuring: 'ai',
-          model: TEXT_MODEL,
-          suspect: linesWithForeignNumbers(windowed, [...r.ingredients, ...steps]),
-        }),
-      )
-    }
+  // No structured Recipe — read the page TEXT. Extract all of it, then window it onto
+  // the recipe (a head slice would hand over the nav bar and stop short of the food).
+  // The page's printed headings first (no AI); then — when they are missing, or the
+  // « ingredients » they found are table cells — the model organises the text, guided
+  // by the cook's hint. A page's text through the shape heuristic is not offered: on a
+  // web page that reads the menu bar as a recipe.
+  const meta = pageMeta(html)
+  const windowed = recipeTextWindow(htmlToText(html, 200_000))
+  const plain = await draftFromText(ctx.env, windowed, lang, false)
+  let read = plain.structuring === 'headings' && pageIngredientsPlausible(plain.ingredients) ? plain : null
+  if (!read && aiOn) read = await draftByModel(ctx.env, windowed, lang, { ...plain, title: null }, hint)
+  if (read) {
+    return ok({
+      ...read,
+      title: parsed?.title ?? meta.title ?? read.title,
+      image: parsed?.image ?? meta.image,
+      source: url.toString(),
+    })
   }
 
   // We read the page fine, there was just no recipe in it (an article or a listicle
@@ -169,8 +181,8 @@ export const onRequestPost = authed(async (ctx, actor) => {
   // tell the user to paste instead.
   return ok(
     draft({
-      title: parsed?.title ?? null,
-      image: parsed?.image ?? null,
+      title: parsed?.title ?? meta.title,
+      image: parsed?.image ?? meta.image,
       source: url.toString(),
       empty: true,
       reason: 'no-recipe',

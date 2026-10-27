@@ -8,7 +8,7 @@ import { runModel } from './runModel'
 // never lost and the UI can offer a manual type-picker.
 
 import type { Env } from './env'
-import { stripAiCommentary } from './recipeImport'
+import { MAX_INGREDIENTS, MAX_STEP_ROWS, stripAiCommentary } from './recipeImport'
 import { dropDanglingHeadings } from './recipeSections'
 
 // AI output language. Mirrors the UI locale (src/i18n.ts `Lang`). The router and
@@ -186,12 +186,83 @@ function extractJson(raw: unknown): unknown {
   // balanced-looking object rather than trusting the whole string.
   const start = raw.indexOf('{')
   const end = raw.lastIndexOf('}')
-  if (start < 0 || end <= start) return null
+  if (start < 0) return null
+  if (end > start) {
+    try {
+      return JSON.parse(raw.slice(start, end + 1))
+    } catch {
+      /* cut short or malformed — try the salvage below */
+    }
+  }
+  // A reply cut by max_tokens has no closing brace: keep what it finished.
+  const fixed = salvageTruncatedJson(raw)
+  if (!fixed) return null
   try {
-    return JSON.parse(raw.slice(start, end + 1))
+    return JSON.parse(fixed)
   } catch {
     return null
   }
+}
+
+// A JSON reply cut off mid-way (max_tokens ran out) → the longest valid prefix,
+// closed. Scans from the first `{` tracking strings, escapes and the open brackets;
+// cuts after the last COMPLETE value (a half-written string or number is dropped),
+// strips a dangling `,` / `:` key, and closes every bracket still open. A long recipe
+// used to lose the WHOLE read this way (« Rien trouvé »); now it loses only the step
+// the model was writing when it stopped. Null when there's no object to salvage.
+export function salvageTruncatedJson(raw: string): string | null {
+  const start = raw.indexOf('{')
+  if (start < 0) return null
+  const stack: string[] = []
+  let inStr = false
+  let esc = false
+  let strStart = 0
+  // Where the text could be cut while staying valid, and the stack at that point.
+  let safe = -1
+  let safeStack: string[] = []
+  for (let i = start; i < raw.length; i++) {
+    const ch = raw[i]
+    if (inStr) {
+      if (esc) esc = false
+      else if (ch === '\\') esc = true
+      else if (ch === '"') {
+        inStr = false
+        // A closed string is a complete value in an array, or after a `:` in an
+        // object; anywhere else it is an object KEY, not a value on its own.
+        const isValue = stack[stack.length - 1] === ']' || /:\s*$/.test(raw.slice(start, strStart))
+        if (isValue) {
+          safe = i + 1
+          safeStack = [...stack]
+        }
+      }
+      continue
+    }
+    if (ch === '"') {
+      inStr = true
+      strStart = i
+    } else if (ch === '{' || ch === '[') {
+      stack.push(ch === '{' ? '}' : ']')
+      // An empty container is valid as soon as it opens.
+      safe = i + 1
+      safeStack = [...stack]
+    } else if (ch === '}' || ch === ']') {
+      stack.pop()
+      safe = i + 1
+      safeStack = [...stack]
+      if (!stack.length) return raw.slice(start, i + 1) // complete after all
+    } else if (/[\d.eE+\-truefalsn]/.test(ch)) {
+      // Inside a bare literal (number / true / false / null): complete only when the
+      // next char ends it — a literal cut mid-way is dropped with the rest.
+      const next = raw[i + 1]
+      if (next !== undefined && /[\s,\]}]/.test(next)) {
+        safe = i + 1
+        safeStack = [...stack]
+      }
+    }
+  }
+  if (safe < 0) return null
+  const body = raw.slice(start, safe).replace(/[\s,]+$/, '')
+  return body + safeStack.reverse().join('')
 }
 
 export async function classifyCapture(
@@ -295,9 +366,21 @@ export interface RecipeStructured {
   ingredients: string[]
   steps: string[]
 }
-export async function structureRecipe(env: Env, text: string, lang: Lang = 'fr'): Promise<RecipeStructured> {
-  const raw = text.trim().slice(0, 6000)
+export async function structureRecipe(
+  env: Env,
+  text: string,
+  lang: Lang = 'fr',
+  // The cook's optional guidance (« c'est la 2e recette de la page », « garde les
+  // étapes telles quelles ») — one short line, quoted into the prompt as THEIR note.
+  hint?: string,
+): Promise<RecipeStructured> {
+  // 16 000, not 6000: a long recipe's last steps fell past the old slice (Marc,
+  // 2026-10-27: « les étapes arrêtent avant la fin »). recipeTextWindow already
+  // spends the same budget on the recipe, not on the page's chrome.
+  const raw = text.trim().slice(0, 16_000)
   if (!env.AI || !raw) return { title: null, ingredients: [], steps: [] }
+  const note = (hint ?? '').replace(/\s+/g, ' ').trim().slice(0, 200)
+  const noteLine = note ? (lang === 'en' ? `Cook’s note: "${note}"\n` : `Indication du cuisinier : « ${note} »\n`) : ''
   // The quantity rules are the load-bearing part: this is a generative pass over
   // text the user believes was "just OCR'd", and without an explicit ban the model
   // "helpfully" converts units ("225 g (1/2 lb)" → "(2 tasses)") or flips a
@@ -308,25 +391,26 @@ export async function structureRecipe(env: Env, text: string, lang: Lang = 'fr')
     lang === 'en'
       ? `Below is pasted recipe text. Organize it WITHOUT inventing anything new.
 Reply ONLY with JSON: {"title": string, "ingredients": string[], "steps": string[]}.
-Keep ingredient lines as written (with quantities). Split instructions into short steps. At most 30 ingredients, 20 steps.
+Keep ingredient lines as written (with quantities). One step per numbered step or per paragraph of the text — copy each one in full, neither split nor merge sentences, up to the LAST step.
 Copy every quantity and unit EXACTLY as written. NEVER convert between units (g, lb, ml, cups…), never round, never do arithmetic. If the text prints two units for one amount ("225 g (1/2 lb)"), keep BOTH verbatim.
 If the recipe has named parts (e.g. "Glaze", "Crust"), insert a heading line formatted exactly "## Name" in both arrays before that part's lines.
-Text:
+${noteLine}Text:
 ${raw}`
       : `Voici du texte de recette collé. Organise-le SANS rien inventer.
 Réponds UNIQUEMENT avec du JSON : {"title": string, "ingredients": string[], "steps": string[]}.
-Garde les lignes d'ingrédients telles quelles (avec quantités). Découpe les instructions en étapes courtes. 30 ingrédients et 20 étapes au maximum.
+Garde les lignes d'ingrédients telles quelles (avec quantités). Une étape par étape numérotée ou par paragraphe du texte — recopie chacune en entier, ne découpe ni ne fusionne les phrases, jusqu’à la DERNIÈRE étape.
 Recopie chaque quantité et chaque unité EXACTEMENT comme écrites. Ne convertis JAMAIS entre unités (g, lb, ml, tasses…), n'arrondis pas, ne fais aucun calcul. Si le texte donne deux unités pour une même quantité (« 225 g (1/2 lb) »), garde LES DEUX telles quelles.
 Si la recette a des parties nommées (ex. « Glaçage », « Croûte »), insère une ligne d'en-tête au format exact « ## Nom » dans les deux tableaux avant les lignes de cette partie.
-Texte :
+${noteLine}Texte :
 ${raw}`
   try {
     const res = (await runModel(env, MODEL, {
       messages: [{ role: 'user', content: prompt }],
-      // 900 truncated long recipes mid-array → the JSON failed to parse → the read
-      // silently fell to the weak heuristic ("it doesn't resolve"). 30 ingredient
-      // lines + 20 steps at recipe verbosity need the headroom.
-      max_tokens: 1700,
+      // 900 truncated long recipes mid-array; 1700 still cut a long method (Marc,
+      // 2026-10-27 — and a cut reply used to lose the WHOLE read). A recipe copied
+      // whole, up to MAX_STEPS steps, needs the room; extractJson now also salvages
+      // whatever a cut reply did finish.
+      max_tokens: 4000,
     })) as { response?: unknown }
     const parsed = extractJson(res.response) as
       | { title?: unknown; ingredients?: unknown; steps?: unknown }
@@ -337,8 +421,9 @@ ${raw}`
     // "Remarque…" lines into the arrays — drop them here too.
     return {
       title,
-      ingredients: dropDanglingHeadings(stripAiCommentary(cleanLines(parsed.ingredients, 30))),
-      steps: dropDanglingHeadings(stripAiCommentary(cleanLines(parsed.steps, 20))),
+      // Caps shared with every import path (headings ride on top of the step cap).
+      ingredients: dropDanglingHeadings(stripAiCommentary(cleanLines(parsed.ingredients, MAX_INGREDIENTS))),
+      steps: dropDanglingHeadings(stripAiCommentary(cleanLines(parsed.steps, MAX_STEP_ROWS))),
     }
   } catch (err) {
     logAi('structureRecipe', err)
