@@ -258,8 +258,8 @@ describe('transcribeImage — primary vision model, Llama fallback', () => {
     expect(input.image).toBeUndefined()
     expect(input.messages[0].content.map((c) => c.type)).toEqual(['text', 'image_url'])
     expect(input.messages[0].content[1].image_url?.url).toMatch(/^data:image\/jpeg;base64,/)
-    // Mistral Small first (fast on a full page); no reasoning flag for it.
-    expect(input.reasoning_effort).toBeUndefined()
+    // Mistral Small first (fast on a full page); no thinking switch for it.
+    expect((input as { chat_template_kwargs?: unknown }).chat_template_kwargs).toBeUndefined()
   })
   it('the primary fails → the second reader (Gemma 4, reasoning off) answers, named', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -268,8 +268,9 @@ describe('transcribeImage — primary vision model, Llama fallback', () => {
     expect(await transcribeImage({ DB: {}, AI: { run } } as unknown as Env, bytes, 'fr', report)).toBe('Crêpes')
     expect(report.visionModel).toBe(VISION_SECOND_ID)
     expect(run.mock.calls[1][0]).toBe(VISION_SECOND_ID)
-    // Gemma 4 thinks by default and then returns NOTHING within the budget — off.
-    expect((run.mock.calls[1][1] as { reasoning_effort?: string }).reasoning_effort).toBe('none')
+    // Gemma 4 thinks by default and, on a full page, returns NOTHING within the budget;
+    // the chat template's switch is the one that holds (reasoning_effort did not).
+    expect((run.mock.calls[1][1] as { chat_template_kwargs?: { enable_thinking?: boolean } }).chat_template_kwargs).toEqual({ enable_thinking: false })
   })
   it('the primary answers in the OpenAI shape (choices[0].message.content) → read as text', async () => {
     const run = vi.fn(async () => ({ choices: [{ message: { content: 'Biscuits\n2 œufs' } }] }))

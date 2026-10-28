@@ -579,11 +579,13 @@ export const VISION_MODEL_ID = VISION_MODEL
 // REST endpoint with rendered recipe cards):
 //   1. Mistral Small 3.1 — a full 1100×1400 recipe page transcribed EXACTLY in 10 s
 //      (2 037 chars, 95 neurons ≈ 100 pages/day inside the free allowance).
-//   2. Gemma 4 26B — exact and 2.4 s on a small card, but on the full page it spent
-//      44 s and the whole 2 000-token budget REASONING (6 800 chars of thoughts, empty
-//      content, finish=length) despite `reasoning_effort: 'none'`. That is what made
-//      Marc's three-photo read « very long »: 44 s per page, then Mistral. Second now,
-//      still with the reasoning flag — it does help on small cards.
+//   2. Gemma 4 26B — exact, and with its thinking switched off THE RIGHT WAY it reads
+//      the same full page in 9 s for 18 neurons (the cheapest reader). The switch that
+//      works is the chat template's `chat_template_kwargs: { enable_thinking: false }`
+//      (measured: content 2 030 chars, reasoning 0, finish=stop). `reasoning_effort:
+//      'none'` only held on a small card — on a full page the model still spent 44 s and
+//      the whole budget reasoning and returned nothing (that was Marc's « very long »
+//      three-photo read, 2026-10-27). Second by Marc's choice; it would be first on cost.
 //   3. Llama 3.2 11B vision — the original reader, its own byte-array input shape.
 // 1 and 2 take the OpenAI content PARTS (`image_url: { url: data:… }`) and answer in
 // `choices[0].message.content`. The read report names whichever model answered.
@@ -594,7 +596,7 @@ function partsInput(model: string, text: string, bytes: Uint8Array, max_tokens: 
   return {
     messages: [{ role: 'user', content: [{ type: 'text', text }, { type: 'image_url', image_url: { url: dataUrl(bytes) } }] }],
     max_tokens,
-    ...(model === VISION_SECOND_ID ? { reasoning_effort: 'none' } : {}),
+    ...(model === VISION_SECOND_ID ? { chat_template_kwargs: { enable_thinking: false } } : {}),
   }
 }
 
