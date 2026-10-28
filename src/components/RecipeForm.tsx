@@ -456,13 +456,15 @@ export function RecipeForm({
     if (d.ingredients?.length && freeLines(ingredients, last?.ingredients)) setIngredients(d.ingredients)
     // Steps also need their photos untouched: a row with a photo attached since the
     // last import is the cook's work, and replacing the rows would orphan it.
-    if (d.steps?.length && freeLines(steps, last?.steps) && stepImages.every((k) => !k)) {
+    // (…its own photos count as untouched: re-running an import of a site with step photos
+    // must replace them with the fresh ones, like every other field.)
+    const photosFree = stepImages.every((k) => !k) || (!!last?.stepImages && stepImages.every((k, i) => k === (last.stepImages?.[i] ?? '')))
+    if (d.steps?.length && freeLines(steps, last?.steps) && photosFree) {
       setSteps(d.steps)
       // The imported steps are fresh rows — their photos are the site's own when the
       // import brought some (C3), else a same-length all-empty array so it can't drift
       // past the new step count (feature #17 B).
       setStepImages(alignSide(d.stepImages, d.steps.length))
-      importedStepKeys.current = [...importedStepKeys.current, ...(d.stepImages ?? []).filter(Boolean)]
     }
     if (d.notes && free(notes, last?.notes)) setNotes(d.notes)
     if (d.servings && free(servings, last?.servings)) setServings(String(d.servings))
@@ -508,6 +510,7 @@ export function RecipeForm({
     readerModel?: string | null
     // Several recipes on the page (C4) — the read is candidate `pick`.
     candidates?: { i: number; title: string | null }[]
+    stepImages?: string[]
   }
   const draftHasContent = (d: ReadDraft) => !!(d.title || d.ingredients.length || d.steps.length)
 
@@ -695,7 +698,9 @@ export function RecipeForm({
       const good = (d: ReadDraft | null): d is ReadDraft => !!d && !d.empty && draftHasContent(d)
       let draft: ReadDraft | null = null
       if (ocrEngine === 'vision' && aiEnabled && !texts.length) {
-        draft = await readWithVision()
+        // A vision read that throws (a cellular timeout) is as much a miss as an empty one:
+        // the device engine is the last resort either way. 503 (AI off) is handled inside.
+        draft = await readWithVision().then((d) => d, () => null)
         if (!good(draft)) {
           await readOnDevice()
           draft = await structureOcr()
@@ -765,7 +770,18 @@ export function RecipeForm({
       setImportVia(readReview.via ?? 'ai')
       setShowImport(false)
     }
-    applyDraft({ ...edited, sourceImage })
+    // The verify panel splits and drops rows freely; the site's step photos are aligned to the
+    // rows it was handed, so once the row count moved they would sit on the wrong steps.
+    // Free them instead of guessing.
+    let confirmed: Draft = { ...edited, sourceImage }
+    const handed = readReview.draft as ReadDraft
+    if (confirmed.stepImages?.some(Boolean) && confirmed.steps?.length !== handed.steps.length) {
+      const drop = confirmed.stepImages.filter(Boolean)
+      importedStepKeys.current = importedStepKeys.current.filter((k) => !drop.includes(k))
+      void write('recipe-step-image', { method: 'DELETE', body: { keys: drop } }).catch(writeFailed)
+      confirmed = { ...confirmed, stepImages: undefined }
+    }
+    applyDraft(confirmed)
     closeReadReview()
     setConfirming(false)
   }
@@ -813,6 +829,9 @@ export function RecipeForm({
         body: { ...(page ? { page } : text ? { text } : { url }), ...(hint ? { hint } : {}), ...(pick ? { pick } : {}) },
         timeoutMs: 45_000,
       })
+      // The site's step photos are stored the moment the server answers — own them NOW, so a
+      // read the cook cancels in the verify panel (or never applies) still frees them.
+      importedStepKeys.current = [...importedStepKeys.current, ...(r.stepImages ?? []).filter(Boolean)]
       setImportDoor(r.fetched === 'browser' || r.fetched === 'bookmarklet' ? r.fetched : null)
       setCandidates(r.candidates && r.candidates.length > 1 ? { list: r.candidates, pick } : null)
       if (r.empty || (!r.ingredients.length && !r.steps.length && !r.title)) {
