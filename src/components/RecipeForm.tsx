@@ -671,7 +671,9 @@ export function RecipeForm({
             return v
           }),
         )
-        report.timings.read = Date.now() - t0
+        // ADDS to a device read that ran first (an explicit « Sur l'appareil » choice):
+        // the Durée row must carry the whole wait, not the last reader's share.
+        report.timings.read = (report.timings.read ?? 0) + (Date.now() - t0)
         for (const v of pages) {
           if (v?.transcript) {
             texts.push(v.transcript)

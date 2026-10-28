@@ -195,6 +195,7 @@ export const EN_OPERATOR: typeof FR_OPERATOR = {
   ocrAuto: 'Auto',
   ocrAutoHint: 'Auto: high accuracy when available, else Cloudflare’s AI reader, else the device.',
   ocrDevice: 'On device',
+  ocrVisionHint: 'Cloudflare’s AI reader (in-network, free tier): fast and faithful on a printed page. The photo is sent to be read.',
   ocrCloud: 'High accuracy',
   ocrDeviceHint: 'Free, private reading right on the device — nothing is sent anywhere. Best for printed text.',
   ocrCloudHint: 'Cloud reading (Mistral), much better on tiny numbers. The photo is sent to be read — free to try, then under a cent per recipe.',

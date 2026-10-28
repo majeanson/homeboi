@@ -229,6 +229,7 @@ export const FR_OPERATOR = {
   ocrAuto: 'Auto',
   ocrAutoHint: 'Auto : la haute précision si elle est disponible, sinon la lecture par l’IA de Cloudflare, sinon l’appareil.',
   ocrDevice: 'Sur l’appareil',
+  ocrVisionHint: 'Lecture par l’IA de Cloudflare (en réseau, palier gratuit) : rapide et fidèle sur une page imprimée. La photo est envoyée pour être lue.',
   ocrCloud: 'Haute précision',
   ocrDeviceHint: 'Lecture gratuite et privée, directement sur l’appareil — rien n’est envoyé ailleurs. Idéal pour le texte imprimé.',
   ocrCloudHint: 'Lecture par le nuage (Mistral), bien meilleure sur les petits chiffres. La photo est envoyée pour être lue — gratuit à l’essai, puis moins d’un sou par recette.',

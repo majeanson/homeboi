@@ -13,6 +13,7 @@ import { useApodEnabled, setApodEnabled } from '../../lib/apod'
 import { useCanvasEnabled, setCanvasEnabled } from '../../lib/canvas'
 import { useKeepAwake, setKeepAwake } from '../../lib/keepAwake'
 import { useOcrChoice, useOcrEngine, setOcrEngine, useCloudOcrAvailable } from '../../lib/ocrPref'
+import { useAi } from '../../lib/ai'
 import { useCalm } from '../../lib/calm'
 import { useHelp } from '../../lib/help'
 import { isGuest } from '../../lib/device'
@@ -88,11 +89,15 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
   // board. Read live so the toggle engages/releases the lock without a reload.
   const keepAwake = useKeepAwake()
   // Recipe-photo reader (per device): Auto (the default — the cloud reader when it is
-  // wired and AI is on), on-device, or the high-accuracy cloud OCR. The choice only
-  // appears when the deployment actually has a Mistral key wired.
+  // wired and AI is on, else Cloudflare's vision reader, else the device), on-device, or
+  // the high-accuracy cloud OCR. Shown whenever there is a choice to make: a cloud key,
+  // OR AI on (vision vs device). It used to show only with a cloud key — once that key
+  // left prod, a phone that had once picked « Sur l'appareil » was stuck with it, no
+  // switch in sight, reading every photo through the slow engine (Marc, 2026-10-27).
   const ocrChoice = useOcrChoice()
   const ocrEngine = useOcrEngine()
   const cloudOcrAvailable = useCloudOcrAvailable()
+  const { enabled: aiOn } = useAi()
   function toggleAmbient() {
     const next = !ambient
     setAmbientState(next)
@@ -214,7 +219,7 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
           />
           <p className="operator__seg-hint mono">{o18n.keepAwakeHint}</p>
         </div>
-        {cloudOcrAvailable && (
+        {(cloudOcrAvailable || aiOn) && (
           <div className="operator__seg">
             <span className="operator__seg-label mono">{o18n.ocrLabel}</span>
             <div className="audience-switch mono" role="group" aria-label={o18n.ocrLabel}>
@@ -234,18 +239,20 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
               >
                 <InlineIcon name="camera-bold" /> {o18n.ocrDevice}
               </button>
-              <button
-                type="button"
-                className={`audience-switch__opt${ocrChoice === 'cloud' ? ' is-active' : ''}`}
-                onClick={() => setOcrEngine('cloud')}
-                aria-pressed={ocrChoice === 'cloud'}
-              >
-                <InlineIcon name="sparkle-bold" /> {o18n.ocrCloud}
-              </button>
+              {cloudOcrAvailable && (
+                <button
+                  type="button"
+                  className={`audience-switch__opt${ocrChoice === 'cloud' ? ' is-active' : ''}`}
+                  onClick={() => setOcrEngine('cloud')}
+                  aria-pressed={ocrChoice === 'cloud'}
+                >
+                  <InlineIcon name="sparkle-bold" /> {o18n.ocrCloud}
+                </button>
+              )}
             </div>
             <p className="operator__seg-hint mono">
               {ocrChoice === 'auto' ? `${o18n.ocrAutoHint} ` : ''}
-              {ocrEngine === 'cloud' ? o18n.ocrCloudHint : o18n.ocrDeviceHint}
+              {ocrEngine === 'cloud' ? o18n.ocrCloudHint : ocrEngine === 'vision' ? o18n.ocrVisionHint : o18n.ocrDeviceHint}
             </p>
           </div>
         )}
