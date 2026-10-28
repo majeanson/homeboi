@@ -54,7 +54,7 @@ test('photo import: read → verify dialog → apply draft to the form', async (
   await page.route('**/api/health', (r) => r.fulfill(json({ ai: true, aiAvailable: true, cloudOcr: true })))
   await page.route('**/api/recipe-ocr', (r) => r.fulfill(json({ text: OCR_TEXT, model: 'mistral-ocr-latest' })))
   await page.route('**/api/recipe-import', (r) => r.fulfill(json(DRAFT)))
-  await page.route('**/api/recipe-vision', (r) => r.fulfill(json(DRAFT)))
+  await page.route('**/api/recipe-vision**', (r) => r.fulfill(json({ reader: 'vision', readerModel: 'x', transcript: OCR_TEXT })))
 
   // Wait for the health GET to resolve so cloudOcrAvailable flips true BEFORE we
   // trigger the read — otherwise readPhoto could fall to the (slow) device reader.
@@ -125,10 +125,12 @@ test('« Auto » with no usable cloud key: the vision reader goes first, the dev
     ocrCalls++
     return r.fulfill(json({ text: '', model: 'mistral-ocr-latest' }))
   })
-  await page.route('**/api/recipe-vision', (r) => {
+  await page.route('**/api/recipe-vision**', (r) => {
     visionCalls++
-    return r.fulfill(json({ ...DRAFT, reader: 'vision', readerModel: '@cf/google/gemma-4-26b-a4b-it', structuring: 'headings', audit: [] }))
+    // One page → its transcript; the client stitches pages and structures once.
+    return r.fulfill(json({ reader: 'vision', readerModel: '@cf/google/gemma-4-26b-a4b-it', transcript: OCR_TEXT }))
   })
+  await page.route('**/api/recipe-import', (r) => r.fulfill(json({ ...DRAFT, structuring: 'headings', audit: [] })))
   // Tesseract must NOT be reached for: block its CDN (a hit would fail the test loudly).
   let cdnHits = 0
   await page.route('**/cdn.jsdelivr.net/**', (r) => {

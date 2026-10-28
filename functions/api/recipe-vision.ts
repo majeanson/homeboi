@@ -34,6 +34,14 @@ export const onRequestPost = authed(async (ctx) => {
   // Which model read the photo — the verify panel's read report names it, beside
   // the structuring the draft carries (`structuring` / `model`).
   const reader = { reader: 'vision' as const, readerModel: report.visionModel ?? VISION_MODEL_ID }
+  // `?only=transcript`: ONE PAGE of several. The client reads each photo this way,
+  // stitches the transcripts (lib/ocr mergeOcrPages — the same as the OCR readers) and
+  // structures the whole once through recipe-import {text}. Before, the vision read
+  // took the FIRST photo only and structured it alone: three photos of one long recipe
+  // came back as page one (Marc's phone, 2026-10-27).
+  if (new URL(ctx.request.url).searchParams.get('only') === 'transcript') {
+    return withAiError(ok({ ...reader, transcript: transcript.slice(0, 16_000) }), report)
+  }
   if (!transcript) return withAiError(ok({ ...draft({ empty: true }), ...reader }), report)
   // `requiresAi` guaranteed AI is usable for this household — the text model may run.
   const d = await draftFromText(ctx.env, transcript, lang, true)

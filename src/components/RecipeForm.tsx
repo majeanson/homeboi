@@ -624,29 +624,39 @@ export function RecipeForm({
         return d
       }
 
-      // The vision read of the FIRST page (resized to the upload cap, like recipe-image):
-      // Workers AI's vision chain (Gemma 4 → Mistral Small → Llama, _lib/ai) TRANSCRIBES
-      // the photo, and its transcript is structured by the same text path as a paste
-      // (recipe-vision → draftFromText). 503 = AI off → handled below as readFail.
+      // The vision read, PAGE BY PAGE: Workers AI's vision chain (Gemma 4 → Mistral
+      // Small → Llama, _lib/ai) TRANSCRIBES each photo (`?only=transcript`); the pages
+      // are then stitched and structured exactly like the OCR readers' text, once. It
+      // used to send the FIRST photo only, structured alone — three photos of one long
+      // recipe came back as page one, with no progress to show (Marc's phone,
+      // 2026-10-27). 503 = AI off → handled below as readFail.
       const readWithVision = async (): Promise<ReadDraft | null> => {
         setReadStage('look')
-        // VISION_MAX, not PHOTO_MAX: the model never sees more than ~1120 px, so the
-        // extra pixels were only upload time (lib/image.ts).
-        const small = await resizeImage(files[0], VISION_MAX)
-        if (small.size > MAX_UPLOAD_BYTES) return null
-        const v = await api<ReadDraft>('recipe-vision', { method: 'POST', body: small }).catch((e) => {
-          if (isStatus(e, 503) || isStatus(e, 400)) return null
-          throw e
-        })
-        if (v && draftHasContent(v)) {
-          // The report names both halves: the reader, and how the text was organised.
-          report.reader = 'vision'
-          report.readerModel = v.readerModel ?? null
-          report.structuring = v.structuring ?? 'ai'
-          report.structuringModel = v.model ?? null
-          report.audit = v.audit ?? []
+        setReadProgress(0)
+        for (let i = 0; i < files.length; i++) {
+          // VISION_MAX, not PHOTO_MAX: the model never sees more than ~1120 px, so the
+          // extra pixels were only upload time (lib/image.ts).
+          const small = await resizeImage(files[i], VISION_MAX)
+          if (small.size > MAX_UPLOAD_BYTES) continue
+          // A phone upload + the model: well past api()'s 20 s default on cellular.
+          const v = await api<{ transcript?: string; readerModel?: string | null }>('recipe-vision?only=transcript', {
+            method: 'POST',
+            body: small,
+            timeoutMs: 60_000,
+          }).catch((e) => {
+            if (isStatus(e, 503) || isStatus(e, 400)) return null
+            throw e
+          })
+          if (v?.transcript) {
+            texts.push(v.transcript)
+            report.reader = 'vision'
+            report.readerModel = v.readerModel ?? null
+          }
+          setReadProgress((i + 1) / files.length)
         }
-        return v
+        if (!texts.length) return null
+        meanConf = 95 // a vision transcript is a read, not a guess — structure it
+        return structureOcr()
       }
 
       // THE ORDER. « Auto » with no usable cloud key and AI on resolves to 'vision'
@@ -990,7 +1000,9 @@ export function RecipeForm({
     bookmark: t.recipes.stageBookmark,
     long: t.recipes.stageLong,
   }
-  const readPct = reading && readStage === 'read' && readProgress > 0 ? readProgress : null
+  // A measurable fraction while pages are read (device OCR, or the vision reader page
+  // by page); the structuring stage has none and sweeps.
+  const readPct = reading && readStage !== 'order' && readProgress > 0 ? readProgress : null
   const stageLine = reading
     ? readStage === 'order'
       ? t.recipes.readingOrder
