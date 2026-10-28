@@ -37,9 +37,13 @@ export const setOcrEngine = store.set
 export const useOcrChoice = store.use
 
 /** The engine a choice comes to, given what the deployment and the household allow. */
-export function resolveOcrEngine(choice: OcrChoice, cloudAvailable: boolean, aiEnabled: boolean): OcrEngine {
-  if (choice === 'auto') return cloudAvailable && aiEnabled ? 'cloud' : aiEnabled ? 'vision' : 'device'
-  return choice
+export function resolveOcrEngine(choice: OcrChoice | string | null | undefined, cloudAvailable: boolean, aiEnabled: boolean): OcrEngine {
+  // Only an explicit, known choice stands. Anything else — unset, a value an older build
+  // stored in another spelling — is « Auto ». Marc's phone (2026-10-27) held a value no
+  // button recognised (nothing highlighted) that fell through here as the ENGINE and
+  // sent every photo to the device reader first.
+  if (choice === 'device' || choice === 'cloud') return choice
+  return cloudAvailable && aiEnabled ? 'cloud' : aiEnabled ? 'vision' : 'device'
 }
 
 // A cloud reader that just answered « rate limited » is not going to answer the next

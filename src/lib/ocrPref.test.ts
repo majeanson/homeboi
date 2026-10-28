@@ -25,6 +25,10 @@ describe('resolveOcrEngine — the reader a photo read will use', () => {
     ['device', true, true, 'device'],
     ['cloud', true, true, 'cloud'],
     ['cloud', false, false, 'cloud'],
+    // Not a known choice (unset, an older build's spelling) → « Auto », never an engine name
+    // handed through as-is (Marc's phone, 2026-10-27: nothing highlighted, device read first).
+    ['', false, true, 'vision'],
+    ['bogus', true, true, 'cloud'],
   ] as const)('%s, cloud %s, AI %s → %s', (choice, cloud, ai, want) => {
     expect(resolveOcrEngine(choice, cloud, ai)).toBe(want)
   })

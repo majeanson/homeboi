@@ -225,9 +225,9 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
             <div className="audience-switch mono" role="group" aria-label={o18n.ocrLabel}>
               <button
                 type="button"
-                className={`audience-switch__opt${ocrChoice === 'auto' ? ' is-active' : ''}`}
+                className={`audience-switch__opt${ocrChoice !== 'device' && ocrChoice !== 'cloud' ? ' is-active' : ''}`}
                 onClick={() => setOcrEngine('auto')}
-                aria-pressed={ocrChoice === 'auto'}
+                aria-pressed={ocrChoice !== 'device' && ocrChoice !== 'cloud'}
               >
                 <InlineIcon name="arrow-clockwise-bold" /> {o18n.ocrAuto}
               </button>
@@ -251,7 +251,7 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
               )}
             </div>
             <p className="operator__seg-hint mono">
-              {ocrChoice === 'auto' ? `${o18n.ocrAutoHint} ` : ''}
+              {ocrChoice !== 'device' && ocrChoice !== 'cloud' ? `${o18n.ocrAutoHint} ` : ''}
               {ocrEngine === 'cloud' ? o18n.ocrCloudHint : ocrEngine === 'vision' ? o18n.ocrVisionHint : o18n.ocrDeviceHint}
             </p>
           </div>
