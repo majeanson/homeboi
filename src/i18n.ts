@@ -1424,6 +1424,7 @@ export const FR = {
     reading: 'Je lis la photo…',
     readingOrder: 'Je mets la recette en ordre…',
     readingLook: 'Je regarde la photo de plus près…',
+    readingLong: 'Ça peut prendre une minute, surtout avec plusieurs photos.',
     // The stage line under every import in flight (lib/importProgress) — what is
     // happening NOW, from the time spent; the server does it all in one request.
     stageLinkFetch: 'Je vais chercher la page…',
@@ -1447,6 +1448,9 @@ export const FR = {
     reviewHint: 'Compare avec la photo. Les nombres et les mots incertains sont surlignés.',
     reviewHintClean: 'Compare avec la photo, puis confirme.',
     reviewConfirm: 'à vérifier',
+    // Le chip se touche : vu sur la photo, c'est bon → « vérifié » (et retour).
+    reviewVerified: 'vérifié',
+    reviewVerifiedTip: 'Marqué vérifié — touche pour revenir.',
     reviewCheckNumber: 'Vérifie ce nombre (ex. ¾ et non ¼).',
     reviewCheckMismatch: 'Les deux mesures ne concordent pas (ex. 1,25 ml = ¼ c. à thé). Vérifie sur la photo.',
     reviewCheckWord: 'Mot lu avec hésitation — vérifie-le.',

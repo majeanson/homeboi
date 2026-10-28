@@ -91,3 +91,28 @@ for (const format of [
     expect(errors, 'pageerror with the read-review dialog open').toEqual([])
   })
 }
+
+test('« à vérifier » is a tap: looked at the photo, it is right → « vérifié », and back', async ({ page }) => {
+  // Marc, 2026-10-27: a flag you have checked by eye should be clearable in place.
+  await page.setViewportSize({ width: 430, height: 1000 })
+  await mockApi(page)
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'kiosk' })
+  await page.goto('/dev/kit')
+  const entry = page.locator('details.kit-entry').filter({ hasText: 'Ouvrir la vérification' })
+  await entry.locator('summary').click()
+  await entry.getByRole('button', { name: 'Ouvrir la vérification' }).click()
+  const modal = page.locator('.read-review')
+  await expect(modal).toBeVisible()
+  const flagged = modal.locator('.read-review__line.is-flagged')
+  const n = await flagged.count()
+  expect(n).toBeGreaterThan(0)
+  const chip = flagged.first().locator('.read-review__chiptag')
+  await expect(chip).toHaveText('à vérifier')
+  await chip.click()
+  await expect(flagged).toHaveCount(n - 1)
+  // The chip stays, quiet, and undoes on a second tap.
+  const checked = modal.locator('.read-review__chiptag', { hasText: 'vérifié' }).first()
+  await expect(checked).toBeVisible()
+  await checked.click()
+  await expect(flagged).toHaveCount(n)
+})

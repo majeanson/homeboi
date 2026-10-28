@@ -576,24 +576,25 @@ const VISION_MODEL = '@cf/meta/llama-3.2-11b-vision-instruct'
 // Exported for the read report (the verify panel names the model that read the photo).
 export const VISION_MODEL_ID = VISION_MODEL
 // THE READER CHAIN (2026-10-27, each shape verified against the account's Workers AI
-// REST endpoint with a rendered recipe card):
-//   1. Gemma 4 26B — Google's model page lists OCR (multilingual) and handwriting among
-//      its vision skills; the cheapest vision model here ($0.10/M in) and on the Free
-//      plan; read the card EXACTLY in 2.4 s for 12 neurons. Reasoning must be OFF
-//      (`reasoning_effort: 'none'`): on, it spends the whole token budget thinking and
-//      returns an empty content.
-//   2. Mistral Small 3.1 — read the card exactly too; 3.5× the input price.
+// REST endpoint with rendered recipe cards):
+//   1. Mistral Small 3.1 — a full 1100×1400 recipe page transcribed EXACTLY in 10 s
+//      (2 037 chars, 95 neurons ≈ 100 pages/day inside the free allowance).
+//   2. Gemma 4 26B — exact and 2.4 s on a small card, but on the full page it spent
+//      44 s and the whole 2 000-token budget REASONING (6 800 chars of thoughts, empty
+//      content, finish=length) despite `reasoning_effort: 'none'`. That is what made
+//      Marc's three-photo read « very long »: 44 s per page, then Mistral. Second now,
+//      still with the reasoning flag — it does help on small cards.
 //   3. Llama 3.2 11B vision — the original reader, its own byte-array input shape.
 // 1 and 2 take the OpenAI content PARTS (`image_url: { url: data:… }`) and answer in
 // `choices[0].message.content`. The read report names whichever model answered.
-export const VISION_PRIMARY_ID = '@cf/google/gemma-4-26b-a4b-it'
-export const VISION_SECOND_ID = '@cf/mistralai/mistral-small-3.1-24b-instruct'
+export const VISION_PRIMARY_ID = '@cf/mistralai/mistral-small-3.1-24b-instruct'
+export const VISION_SECOND_ID = '@cf/google/gemma-4-26b-a4b-it'
 // The content-parts call the two stronger readers share.
 function partsInput(model: string, text: string, bytes: Uint8Array, max_tokens: number) {
   return {
     messages: [{ role: 'user', content: [{ type: 'text', text }, { type: 'image_url', image_url: { url: dataUrl(bytes) } }] }],
     max_tokens,
-    ...(model === VISION_PRIMARY_ID ? { reasoning_effort: 'none' } : {}),
+    ...(model === VISION_SECOND_ID ? { reasoning_effort: 'none' } : {}),
   }
 }
 

@@ -258,17 +258,18 @@ describe('transcribeImage — primary vision model, Llama fallback', () => {
     expect(input.image).toBeUndefined()
     expect(input.messages[0].content.map((c) => c.type)).toEqual(['text', 'image_url'])
     expect(input.messages[0].content[1].image_url?.url).toMatch(/^data:image\/jpeg;base64,/)
-    // Gemma 4 thinks by default and then returns NOTHING within the budget — off.
-    expect(input.reasoning_effort).toBe('none')
+    // Mistral Small first (fast on a full page); no reasoning flag for it.
+    expect(input.reasoning_effort).toBeUndefined()
   })
-  it('the primary fails → the second reader (Mistral Small, no reasoning flag) answers, named', async () => {
+  it('the primary fails → the second reader (Gemma 4, reasoning off) answers, named', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     const run = vi.fn().mockResolvedValueOnce({ choices: [{ message: { content: '' } }] }).mockResolvedValueOnce({ choices: [{ message: { content: 'Crêpes' } }] })
     const report = { error: null as string | null, visionModel: null as string | null }
     expect(await transcribeImage({ DB: {}, AI: { run } } as unknown as Env, bytes, 'fr', report)).toBe('Crêpes')
     expect(report.visionModel).toBe(VISION_SECOND_ID)
     expect(run.mock.calls[1][0]).toBe(VISION_SECOND_ID)
-    expect((run.mock.calls[1][1] as { reasoning_effort?: string }).reasoning_effort).toBeUndefined()
+    // Gemma 4 thinks by default and then returns NOTHING within the budget — off.
+    expect((run.mock.calls[1][1] as { reasoning_effort?: string }).reasoning_effort).toBe('none')
   })
   it('the primary answers in the OpenAI shape (choices[0].message.content) → read as text', async () => {
     const run = vi.fn(async () => ({ choices: [{ message: { content: 'Biscuits\n2 œufs' } }] }))

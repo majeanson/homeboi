@@ -215,9 +215,23 @@ export function RecipeReadReview({
   )
   // How many lines we're asking the cook to glance at — drives the header hint so a
   // clean read ("rien à confirmer") feels calm rather than alarming.
+  // Lines the cook checked by eye and tapped « à vérifier » on (Marc, 2026-10-27): the
+  // flag goes, a quiet « vérifié » chip stays and can be tapped back. Keyed by kind +
+  // index; editing a line clears its flag anyway (the text no longer matches).
+  const [verified, setVerified] = useState<Set<string>>(() => new Set())
+  const toggleVerified = (key: string) =>
+    setVerified((s) => {
+      const n = new Set(s)
+      if (n.has(key)) n.delete(key)
+      else n.add(key)
+      return n
+    })
   const flaggedCount = useMemo(
-    () => [...ingredients, ...steps].filter((l) => !isSectionHeading(l) && flagReason(l, lowSet, auditLines)).length,
-    [ingredients, steps, lowSet, auditLines],
+    () =>
+      [...ingredients.map((l, i) => ({ l, k: `ingredients:${i}` })), ...steps.map((l, i) => ({ l, k: `steps:${i}` }))].filter(
+        ({ l, k }) => !isSectionHeading(l) && !verified.has(k) && flagReason(l, lowSet, auditLines),
+      ).length,
+    [ingredients, steps, lowSet, auditLines, verified],
   )
 
   const editLine = (set: React.Dispatch<React.SetStateAction<string[]>>, i: number, v: string) =>
@@ -249,7 +263,10 @@ export function RecipeReadReview({
     const set = kind === 'ingredients' ? setIngredients : setSteps
     const sec = isSectionHeading(value)
     const shown = sec ? value.replace(/^##\s?/, '') : value
-    const reason = sec ? null : flagReason(value, lowSet, auditLines)
+    const key = `${kind}:${i}`
+    const risky = sec ? null : flagReason(value, lowSet, auditLines)
+    const checked = !!risky && verified.has(key)
+    const reason = checked ? null : risky
     return (
       <div key={i} className={'read-review__line' + (reason ? ' is-flagged' : '') + (sec ? ' is-sec' : '')}>
         {reason && (
@@ -262,7 +279,13 @@ export function RecipeReadReview({
           onChange={(v) => editLine(set, i, sec ? SECTION_PREFIX + v : v)}
           ariaLabel={kind === 'ingredients' ? t.recipes.ingredients : t.recipes.steps}
         />
-        {reason && <Chip className="read-review__chiptag">{t.recipes.reviewConfirm}</Chip>}
+        {/* « à vérifier » is a TAP: looked at the photo, it's right → « vérifié » (and
+            back, if the eye was too quick). */}
+        {risky && (
+          <Chip className="read-review__chiptag" selected={checked} onClick={() => toggleVerified(key)} title={checked ? t.recipes.reviewVerifiedTip : reasonTip(risky, t)}>
+            {checked ? t.recipes.reviewVerified : t.recipes.reviewConfirm}
+          </Chip>
+        )}
       </div>
     )
   }

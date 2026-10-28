@@ -203,6 +203,7 @@ export function RecipeForm({
   // fetched first; a paste or the bookmark's page is already here).
   const [importKind, setImportKind] = useState<ImportKind>('url')
   const importSecs = useElapsed(importing)
+  const readSecs = useElapsed(reading)
   const [uploading, setUploading] = useState(false)
   // A photo upload (hero or step) failed for a NON-503 reason — say so once,
   // shared line (503 keeps its own contract: hide the controls, stay quiet).
@@ -1003,12 +1004,11 @@ export function RecipeForm({
   // A measurable fraction while pages are read (device OCR, or the vision reader page
   // by page); the structuring stage has none and sweeps.
   const readPct = reading && readStage !== 'order' && readProgress > 0 ? readProgress : null
+  // Past 20 s a photo read says it may take a while (three photos through a vision
+  // model on cellular do) — the same stage line, one honest clause more (Marc, 2026-10-27).
+  const readLong = readSecs >= 20 ? ` ${t.recipes.readingLong}` : ''
   const stageLine = reading
-    ? readStage === 'order'
-      ? t.recipes.readingOrder
-      : readStage === 'look'
-        ? t.recipes.readingLook
-        : t.recipes.reading
+    ? (readStage === 'order' ? t.recipes.readingOrder : readStage === 'look' ? t.recipes.readingLook : t.recipes.reading) + readLong
     : importing
       ? stageCopy[importStage(importKind, importSecs, aiEnabled)]
       : null
