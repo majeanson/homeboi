@@ -158,7 +158,9 @@ const ALLOWED = new Set<string>([
   'components/kitchen/EmptyFridgeSheet.tsx → empty-fridge',
   'components/RecipeForm.tsx → recipe-ocr',
   'components/RecipeForm.tsx → recipe-import',
-  'components/RecipeForm.tsx → recipe-vision',
+  // The per-page transcript read (?only=transcript): the same question, one photo at a
+  // time — the pages are stitched client-side and structured once (2026-10-27).
+  'components/RecipeForm.tsx → recipe-vision?only=transcript',
   'components/cercle/BusinessForm.tsx → place-import',
   'lib/useVoiceInput.ts → transcribe',
 
