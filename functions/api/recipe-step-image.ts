@@ -38,4 +38,4 @@ export const onRequestDelete = authed(async (ctx) => {
     freed++
   }
   return ok({ freed })
-})
+}, 'operator')

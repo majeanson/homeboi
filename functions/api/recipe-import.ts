@@ -5,6 +5,7 @@ import { resolveLang } from '../_lib/ai'
 import { aiUsable } from '../_lib/aiPref'
 import { type CapturedPage, type PageSource, readPage, sourceFromCapture, sourceFromHtml } from '../_lib/recipeImportPage'
 import { isRefusalPage, renderPage } from '../_lib/renderPage'
+import { fetchPublic, publicHttpUrl } from '../_lib/publicUrl'
 import { withAudit } from '../_lib/recipeAudit'
 import { importStepImages } from '../_lib/stepImageImport'
 import type { Env } from '../_lib/env'
@@ -29,32 +30,6 @@ import type { Env } from '../_lib/env'
 // before committing. Operator-only (it makes an outbound fetch and writes the
 // recipe book).
 
-// Light SSRF guard: only public http(s), and block obvious internal targets. This
-// is a private family tool, but there's no reason to let it hit localhost/metadata.
-function publicHttpUrl(raw: string): URL | null {
-  let u: URL
-  try {
-    u = new URL(raw)
-  } catch {
-    return null
-  }
-  if (u.protocol !== 'http:' && u.protocol !== 'https:') return null
-  const host = u.hostname.toLowerCase()
-  if (
-    host === 'localhost' ||
-    host === '0.0.0.0' ||
-    host.endsWith('.local') ||
-    /^127\./.test(host) ||
-    /^10\./.test(host) ||
-    /^192\.168\./.test(host) ||
-    /^169\.254\./.test(host) ||
-    /^172\.(1[6-9]|2\d|3[01])\./.test(host)
-  ) {
-    return null
-  }
-  return u
-}
-
 // Some recipe sites sit behind a bot manager (Akamai, PerimeterX…) that refuses
 // any datacenter client outright: recettes.qc.ca 403s a Worker no matter what
 // user-agent it sends, so the page never even reaches the parsers below. When the
@@ -77,13 +52,12 @@ async function fetchPage(env: Env, url: URL, lang: 'fr' | 'en'): Promise<{ html:
   const acceptLanguage = lang === 'en' ? 'en-CA' : 'fr-CA'
   const cap = (s: string) => s.slice(0, 2_000_000) // cap a runaway page
   try {
-    const res = await fetch(url.toString(), {
+    const res = await fetchPublic(url.toString(), {
       headers: {
         accept: 'text/html,application/xhtml+xml',
         'user-agent': 'Babillard/0.1 (+household planner)',
         'accept-language': acceptLanguage,
       },
-      redirect: 'follow',
       // A site that never answers used to hold the request until the client gave up
       // (45 s) — it now falls to the reader like a refusal does.
       signal: AbortSignal.timeout(15_000),

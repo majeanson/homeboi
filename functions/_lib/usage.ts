@@ -65,7 +65,6 @@ export const UPLOAD_BYTES_PER_DAY = {
 // thousand of them, and signups are limited only per address. Confirmed households
 // never draw from it, so strangers can exhaust it without a family noticing — the
 // nightly cron reports the pool and mails when it filled (_lib/nightly.ts).
-// Sized at DEMO_SANDBOX_CAP (25) full afternoons: well past a busy day of real visitors.
 /** Browser Run renders per local day (migration 0145, _lib/renderPage.ts). Unlike the two
  *  above this one is scarce for the WHOLE account: the Workers Free plan gives 10
  *  browser-minutes a day, shared by every household. 20 renders of ~15 s is half of it —
@@ -76,6 +75,7 @@ export const BROWSER_RENDERS_PER_DAY = {
   household: 20,
 } as const satisfies Record<Trust, number>
 
+// Sized at DEMO_SANDBOX_CAP (25) full afternoons: well past a busy day of real visitors.
 export const STRANGER_POOL_PER_DAY = {
   ai: 25 * AI_CALLS_PER_DAY.sandbox,
   upload: 25 * UPLOAD_BYTES_PER_DAY.sandbox,

@@ -5,8 +5,8 @@ import { createDeviceStore } from './createDeviceStore'
 import { useAi } from './ai'
 
 // Which reader to use when scanning a recipe photo, a PER-DEVICE preference:
-//   • 'device' (default) — on-device Tesseract OCR: free, private, works offline,
-//     no data leaves the tablet. The honest default.
+//   • 'device' — on-device Tesseract OCR: free, private, works offline,
+//     no data leaves the tablet. Chosen explicitly now; « Auto » is the default.
 //   • 'cloud' — the high-accuracy Mistral OCR (functions/_lib/mistralOcr.ts): far
 //     better on dense small glyphs (decimal commas, vulgar fractions, handwriting),
 //     but the image leaves the device and it's billed per page (pennies at household
@@ -20,8 +20,8 @@ import { useAi } from './ai'
 // tablet and a phone can each choose, and a settings change applies without a reload.
 
 // 'vision' is never CHOSEN, only resolved: « Auto » with no usable cloud key but AI on
-// reads with Workers AI's vision model first (Gemma 4 — exact on printed cards, free
-// tier, in-network; functions/_lib/ai transcribeImage), the device engine as the
+// reads with Workers AI's vision models first (Mistral Small, then Gemma 4 — see
+// functions/_lib/ai transcribeImage for the current order), the device engine as the
 // offline / AI-off fallback. Marc, 2026-10-27: the free Mistral key has no OCR, and the
 // device engine timed out on his phone — the vision reader was the one that worked.
 export type OcrEngine = 'device' | 'cloud' | 'vision'

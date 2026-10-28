@@ -51,7 +51,7 @@ this table fails the build, which is how « Champs & saisie » quietly grew besi
 > marker `*(no specimen: <reason>)*` at the end of its Purpose cell. `src/lib/devkitParity.test.ts`
 > fails the build on a row that has neither, in either direction.
 >
-> **Today it holds 146 rows, of which 118 have a live specimen** — both numbers are
+> **Today it holds 147 rows, of which 119 have a live specimen** — both numbers are
 > asserted from the code by `src/lib/docCounts.test.ts`, so neither can drift.
 >
 > The section used to be titled « gallery-suitable » and it was not true of its own
