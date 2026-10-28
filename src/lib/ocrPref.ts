@@ -19,8 +19,13 @@ import { useAi } from './ai'
 // localStorage-backed + useSyncExternalStore, same idiom as lib/ambient — a wall
 // tablet and a phone can each choose, and a settings change applies without a reload.
 
-export type OcrEngine = 'device' | 'cloud'
-export type OcrChoice = OcrEngine | 'auto'
+// 'vision' is never CHOSEN, only resolved: « Auto » with no usable cloud key but AI on
+// reads with Workers AI's vision model first (Gemma 4 — exact on printed cards, free
+// tier, in-network; functions/_lib/ai transcribeImage), the device engine as the
+// offline / AI-off fallback. Marc, 2026-10-27: the free Mistral key has no OCR, and the
+// device engine timed out on his phone — the vision reader was the one that worked.
+export type OcrEngine = 'device' | 'cloud' | 'vision'
+export type OcrChoice = 'device' | 'cloud' | 'auto'
 
 const store = createDeviceStore<OcrChoice>('babillard-ocr-engine', 'auto', {
   read: (raw) => (raw === 'cloud' || raw === 'device' ? raw : 'auto'),
@@ -33,8 +38,30 @@ export const useOcrChoice = store.use
 
 /** The engine a choice comes to, given what the deployment and the household allow. */
 export function resolveOcrEngine(choice: OcrChoice, cloudAvailable: boolean, aiEnabled: boolean): OcrEngine {
-  if (choice === 'auto') return cloudAvailable && aiEnabled ? 'cloud' : 'device'
+  if (choice === 'auto') return cloudAvailable && aiEnabled ? 'cloud' : aiEnabled ? 'vision' : 'device'
   return choice
+}
+
+// A cloud reader that just answered « rate limited » is not going to answer the next
+// tap either (prod, 2026-10-27: a free-plan Mistral key 429s EVERY OCR call) — remember
+// the refusal for an hour on this device, so « Auto » stops spending a round trip on it
+// and goes straight to the readers that work. sessionStorage: this tab, soon forgotten.
+const THROTTLE_KEY = 'babillard-cloud-ocr-throttled-until'
+const THROTTLE_MS = 60 * 60_000
+export function markCloudOcrThrottled(now = Date.now()): void {
+  try {
+    sessionStorage.setItem(THROTTLE_KEY, String(now + THROTTLE_MS))
+  } catch {
+    /* no storage — the next tap simply tries again */
+  }
+}
+export function cloudOcrThrottled(now = Date.now()): boolean {
+  try {
+    const until = Number(sessionStorage.getItem(THROTTLE_KEY) ?? 0)
+    return until > now
+  } catch {
+    return false
+  }
 }
 
 // The engine a read will actually use on this device.
@@ -42,7 +69,7 @@ export function useOcrEngine(): OcrEngine {
   const choice = useOcrChoice()
   const cloud = useCloudOcrAvailable()
   const { enabled } = useAi()
-  return resolveOcrEngine(choice, cloud, enabled)
+  return resolveOcrEngine(choice, cloud && !cloudOcrThrottled(), enabled)
 }
 
 // Is the cloud reader wired on this deployment (MISTRAL_API_KEY set)? Reads the same

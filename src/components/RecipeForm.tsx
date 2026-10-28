@@ -9,9 +9,9 @@ import { Disclosure } from './Disclosure'
 import { EditField } from './EditField'
 import { useAi } from '../lib/ai'
 import { resizeImage, imgUrl, OCR_MAX, VISION_MAX, MAX_UPLOAD_BYTES } from '../lib/image'
-import { ocrImage, mergeOcrPages, disposeOcr } from '../lib/ocr'
+import { ocrImage, mergeOcrPages, disposeOcr, warmOcr } from '../lib/ocr'
 import { repairImperialFromMetric } from '../lib/measure'
-import { useOcrEngine, useCloudOcrAvailable } from '../lib/ocrPref'
+import { useOcrEngine, useCloudOcrAvailable, markCloudOcrThrottled } from '../lib/ocrPref'
 import { uploadMedia, MediaUnavailableError } from '../lib/uploadMedia'
 import { RecipeReadReview, type AuditFlagView, type ReadReport, type ReadReviewDraft } from './RecipeReadReview'
 import { alignSide, sideInsert, sideRemove, sideSwap, sideSplice, sideSet } from '../lib/parallelArray'
@@ -565,14 +565,19 @@ export function RecipeForm({
         }
         setReadProgress(1)
         if (texts.length) meanConf = 95 // cloud OCR is reliable → skip the AI fallback gate
+        // A cloud reader that answered nothing (prod: a free-plan key, 429 on every
+        // call) is remembered for an hour — « Auto » then goes straight to the readers
+        // that work instead of spending a round trip on it each tap.
+        else markCloudOcrThrottled()
       }
 
-      // On-device Tesseract — the default, AND the fallback if cloud came back empty.
-      // Downscale-only to OCR_MAX (the original, "okay" read): plain shrinking reads
-      // ordinary photos more faithfully than upscaling small ones, which invented
-      // blurry pixels the engine then mis-read. Average confidence; union shaky words.
+      // On-device Tesseract — the fallback when the cloud came back empty, and the
+      // LAST resort when the vision reader did (below). Downscale-only to OCR_MAX (the
+      // original, "okay" read): plain shrinking reads ordinary photos more faithfully
+      // than upscaling small ones, which invented blurry pixels the engine then
+      // mis-read. Average confidence; union shaky words.
       let engineFailed = false
-      if (!texts.length) {
+      const readOnDevice = async () => {
         let confSum = 0
         let confN = 0
         engineFailed = true
@@ -597,55 +602,70 @@ export function RecipeForm({
         report.shakyCount = lowWords.size
       }
 
-      // Merge the pages: a wide shot + zoomed close-ups of the same recipe dedupe to
-      // one transcript (the clearer zoom replaces a fuzzy line); separate pages
+      // OCR text → the no-/low-AI text path. A near-empty or very-low-confidence read
+      // (handwriting, skew, a weak tablet) returns null and the vision reader takes over.
+      // Pages are merged first: a wide shot + zoomed close-ups of the same recipe dedupe
+      // to one transcript (the clearer zoom replaces a fuzzy line); separate pages
       // (ingredients here, steps there) just concatenate.
-      const stitched = mergeOcrPages(texts).trim()
-
-      // OCR gave usable text → structure it through the no-/low-AI text path. Only a
-      // near-empty or very-low-confidence read (handwriting, skew, a weak tablet)
-      // drops to the generative vision read as a safety net.
-      let draft: ReadDraft | null = null
-      if (stitched.length >= 25 && meanConf >= 40) {
+      const structureOcr = async (): Promise<ReadDraft | null> => {
+        const stitched = mergeOcrPages(texts).trim()
+        if (stitched.length < 25 || meanConf < 40) return null
         setReadStage('order')
         // Longer than api()'s 20s default: structuring runs through an AI model and
         // can legitimately outrun that on a slow connection.
-        draft = await api<ReadDraft>('recipe-import', { method: 'POST', body: { text: stitched }, timeoutMs: 45_000 }).catch(
+        const d = await api<ReadDraft>('recipe-import', { method: 'POST', body: { text: stitched }, timeoutMs: 45_000 }).catch(
           () => null,
         )
+        if (d && draftHasContent(d)) {
+          report.structuring = d.structuring ?? null
+          report.structuringModel = d.model ?? null
+          report.audit = d.audit ?? []
+        }
+        return d
       }
-      if (draft && draftHasContent(draft)) {
-        report.structuring = draft.structuring ?? null
-        report.structuringModel = draft.model ?? null
-        report.audit = draft.audit ?? []
-      }
-      if ((!draft || draft.empty || !draftHasContent(draft)) && aiEnabled) {
-        // Fallback: the generative vision read of the FIRST page (resized to the
-        // upload cap, like recipe-image). 503 = AI off → handled below as readFail.
+
+      // The vision read of the FIRST page (resized to the upload cap, like recipe-image):
+      // Workers AI's vision chain (Gemma 4 → Mistral Small → Llama, _lib/ai) TRANSCRIBES
+      // the photo, and its transcript is structured by the same text path as a paste
+      // (recipe-vision → draftFromText). 503 = AI off → handled below as readFail.
+      const readWithVision = async (): Promise<ReadDraft | null> => {
         setReadStage('look')
         // VISION_MAX, not PHOTO_MAX: the model never sees more than ~1120 px, so the
         // extra pixels were only upload time (lib/image.ts).
         const small = await resizeImage(files[0], VISION_MAX)
-        if (small.size <= MAX_UPLOAD_BYTES) {
-          const v = await api<ReadDraft>('recipe-vision', { method: 'POST', body: small }).catch(
-            (e) => {
-              if (isStatus(e, 503) || isStatus(e, 400)) return null
-              throw e
-            },
-          )
-          draft = v
-          if (v && draftHasContent(v)) {
-            // The vision model only TRANSCRIBES; its transcript is structured by the
-            // same text path as a paste (recipe-vision → draftFromText). So the report
-            // names both halves: the reader, and how the text was organised — with the
-            // numbers the structuring model changed cross-checked against the transcript.
-            report.reader = 'vision'
-            report.readerModel = v.readerModel ?? null
-            report.structuring = v.structuring ?? 'ai'
-            report.structuringModel = v.model ?? null
-            report.audit = v.audit ?? []
-          }
+        if (small.size > MAX_UPLOAD_BYTES) return null
+        const v = await api<ReadDraft>('recipe-vision', { method: 'POST', body: small }).catch((e) => {
+          if (isStatus(e, 503) || isStatus(e, 400)) return null
+          throw e
+        })
+        if (v && draftHasContent(v)) {
+          // The report names both halves: the reader, and how the text was organised.
+          report.reader = 'vision'
+          report.readerModel = v.readerModel ?? null
+          report.structuring = v.structuring ?? 'ai'
+          report.structuringModel = v.model ?? null
+          report.audit = v.audit ?? []
         }
+        return v
+      }
+
+      // THE ORDER. « Auto » with no usable cloud key and AI on resolves to 'vision'
+      // (lib/ocrPref): the in-network reader goes first — exact on printed cards, no
+      // 5 MB engine to download — and the device engine is the last resort. Otherwise
+      // (device chosen, or AI off): the device engine, then the vision reader as the
+      // safety net for handwriting, skew, a weak tablet.
+      const good = (d: ReadDraft | null): d is ReadDraft => !!d && !d.empty && draftHasContent(d)
+      let draft: ReadDraft | null = null
+      if (ocrEngine === 'vision' && aiEnabled && !texts.length) {
+        draft = await readWithVision()
+        if (!good(draft)) {
+          await readOnDevice()
+          draft = await structureOcr()
+        }
+      } else {
+        if (!texts.length) await readOnDevice()
+        draft = await structureOcr()
+        if (!good(draft) && aiEnabled) draft = await readWithVision()
       }
 
       if (!draft || !draftHasContent(draft)) {
@@ -1265,7 +1285,17 @@ export function RecipeForm({
               one tap away and the explainer arrives WITH the buttons it explains,
               instead of before them. Opens itself when the link/paste panel is
               already showing, so a half-finished import is never folded away. */}
-          <Disclosure label={t.recipes.fillFrom} defaultOpen={showImport} className="recipe-fill">
+          <Disclosure
+            label={t.recipes.fillFrom}
+            defaultOpen={showImport}
+            className="recipe-fill"
+            // The tap that reveals « Scanner une fiche » is the intent: when the device
+            // engine is the reader, start its ~5 MB download now, not against the read's
+            // own timeout (Marc's phone, 2026-10-27: « Le lecteur n'a pas pu se charger »).
+            onOpenChange={(open) => {
+              if (open && ocrEngine === 'device') warmOcr()
+            }}
+          >
           <div className="recipe-helpers">
             {/* Read a photo is on-device OCR now — it works with AI OFF, so it's no
                 longer gated behind aiEnabled. `multiple`: a long recipe split over

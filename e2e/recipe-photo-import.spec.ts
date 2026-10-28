@@ -107,3 +107,48 @@ test('photo import: read → verify dialog → apply draft to the form', async (
 
   expect(errors, 'pageerror during photo import').toEqual([])
 })
+
+test('« Auto » with no usable cloud key: the vision reader goes first, the device engine never loads', async ({ page }) => {
+  // Marc's phone, 2026-10-27: the free Mistral key has no OCR (429), the device engine
+  // timed out — the in-network vision reader (Gemma 4) was the one that read the card.
+  const errors: string[] = []
+  page.on('pageerror', (e) => errors.push(e.message))
+  await page.setViewportSize({ width: 430, height: 1200 })
+  await mockApi(page)
+  // No engine chosen (auto), AI on, no cloud key → 'vision'.
+  await page.addInitScript(() => localStorage.removeItem('babillard-ocr-engine'))
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+  await page.route('**/api/health', (r) => r.fulfill(json({ ai: true, aiAvailable: true, cloudOcr: false })))
+  let ocrCalls = 0
+  let visionCalls = 0
+  await page.route('**/api/recipe-ocr', (r) => {
+    ocrCalls++
+    return r.fulfill(json({ text: '', model: 'mistral-ocr-latest' }))
+  })
+  await page.route('**/api/recipe-vision', (r) => {
+    visionCalls++
+    return r.fulfill(json({ ...DRAFT, reader: 'vision', readerModel: '@cf/google/gemma-4-26b-a4b-it', structuring: 'headings', audit: [] }))
+  })
+  // Tesseract must NOT be reached for: block its CDN (a hit would fail the test loudly).
+  let cdnHits = 0
+  await page.route('**/cdn.jsdelivr.net/**', (r) => {
+    cdnHits++
+    return r.abort()
+  })
+  const healthDone = page.waitForResponse((r) => r.url().includes('/api/health') && r.request().method() === 'GET', { timeout: 10_000 }).catch(() => null)
+  await page.goto('/kitchen/recipe/new')
+  await expect(page.locator('.recipe-title-input')).toBeVisible({ timeout: 15_000 })
+  await healthDone
+  await page.waitForTimeout(150)
+  await page.getByRole('button', { name: 'Remplir vite' }).click()
+  await page.locator('.recipe-helpers input[type=file]').setInputFiles({ name: 'carte.png', mimeType: 'image/png', buffer: PNG_1x1 })
+
+  const modal = page.locator('.read-review')
+  await expect(modal).toBeVisible({ timeout: 15_000 })
+  await modal.getByRole('tab', { name: 'Rapport' }).click()
+  await expect(modal.locator('.read-review__report')).toContainText('gemma-4')
+  expect(visionCalls).toBe(1)
+  expect(ocrCalls).toBe(0)
+  expect(cdnHits, 'the device engine was never downloaded').toBe(0)
+  expect(errors).toEqual([])
+})

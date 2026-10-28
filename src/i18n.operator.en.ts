@@ -193,7 +193,7 @@ export const EN_OPERATOR: typeof FR_OPERATOR = {
   // Recipe-photo reading: on-device engine vs high-accuracy cloud.
   ocrLabel: 'Recipe photo reading',
   ocrAuto: 'Auto',
-  ocrAutoHint: 'Auto: high accuracy when available, else the device.',
+  ocrAutoHint: 'Auto: high accuracy when available, else Cloudflare’s AI reader, else the device.',
   ocrDevice: 'On device',
   ocrCloud: 'High accuracy',
   ocrDeviceHint: 'Free, private reading right on the device — nothing is sent anywhere. Best for printed text.',

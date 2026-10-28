@@ -373,6 +373,16 @@ export async function ocrImage(image: Blob, onProgress?: (fraction: number) => v
   }
 }
 
+// Start downloading the engine + models BEFORE the first read is asked for — on the
+// tap that shows « Scanner une fiche » (the Remplir vite fold), so the ~5 MB arrive
+// while the person is still choosing a photo instead of counting against the 60 s
+// read timeout (Marc's phone, 2026-10-27: « Le lecteur n'a pas pu se charger »).
+// Idempotent; getWorker never rejects (a failure resolves null and clears its cache), so
+// the read itself simply retries.
+export function warmOcr(): void {
+  void getWorker()
+}
+
 // Free the worker (and its WASM heap) — call when the recipe editor closes so a
 // cheap tablet reclaims the memory. Safe to call when no worker exists.
 export async function disposeOcr(): Promise<void> {
