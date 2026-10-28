@@ -124,11 +124,6 @@ the draft is copied from the source by index. `_lib/recipeAudit` (6 flags, corpu
 Doors: Worker fetch → **Browser Run** (`_lib/renderPage`, the only `quickAction(`; `browser` meter, **migration 0145**, 20/day, 5 sandbox) → reader → the
 **« Envoyer à Babillard » bookmark** (`lib/recipeBookmarklet`, inline ~2 KB, `#import=`) · `?import=` · /share « Importer comme recette » · « Déjà dans le livre ». **Open:** Browser Run + the bookmark on iPhone are prod-only, unverified.
 
-### Le corpus réel de recettes — 2026-10-27
-12 real pages (recettes.qc.ca + Zeste captured with Playwright — a Worker is refused) scored EXACTLY by `recipeCorpus.test.ts` through ONE seam, `_lib/recipeImportPage`; `scripts/recipe-corpus.mjs capture|score|debug`. It found: bare JSON-LD
-ingredient names, microdata cut at the first `</div>`, menu « Ingrédients » anchors, `&Eacute;` → é, notes dropped. `{ page }` input (bookmarklet).
-
-
 ## 4. What still needs improvement — consolidated and ranked
 
 > **No open box.** (2026-09-29) §K's six waves and §L are all closed; what is left is §M

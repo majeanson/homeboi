@@ -288,7 +288,7 @@ describe('the docs quote the real counts', () => {
 // file `wc -l` calls 600 measures 601 to this test. Trim to **`wc -l` ≤ MAX − 1**.
 // Deliberately not "fixed" by dropping the empty element: this number is a budget, and a
 // budget that quietly forgives one line is how the next one gets forgiven too.
-const STATE_MAX_LINES = 344 // today 343 by wc -l, 344 here (2026-10-15: §3 rotated, §L's closed CSP thread folded to three lines)
+const STATE_MAX_LINES = 340 // today 339 by wc -l, 340 here (2026-10-27: §3 rotated — the corpus entry folded, the recipe-form line added)
 const STATE_FIRST_OPEN_BOX_BY = 300 // today none — §4 says « No open box. »
 
 // CLAUDE.md is the LAW, read by every session before it writes code — and it grows the
