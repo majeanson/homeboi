@@ -60,6 +60,10 @@ export interface ReadReport {
   audit: AuditFlagView[]
   /** Distinct words the OCR engine read with low confidence (device reader). */
   shakyCount: number
+  /** Wall-clock milliseconds, as measured on the device: the read (all pages) and the
+   *  structuring pass — so a slow read says WHICH half was slow (Marc, 2026-10-27:
+   *  « about 1–2 min » for one photo, with no way to tell where the time went). */
+  timings?: { read?: number; structure?: number }
 }
 
 /** One audit finding, as the import endpoints send it (`audit` on every response). */
@@ -497,6 +501,19 @@ function ReadReportPanel({ report, fromText }: { report: ReadReport; fromText: b
               </p>
             )}
           </>,
+        )}
+      {/* Where the seconds went — the read and the structuring, measured on the device. */}
+      {(report.timings?.read != null || report.timings?.structure != null) &&
+        row(
+          t.recipes.reportTimings,
+          <p className="mono read-review__report-meta">
+            {[
+              report.timings.read != null ? `${t.recipes.reportTimingRead} ${Math.max(1, Math.round(report.timings.read / 1000))} s` : null,
+              report.timings.structure != null ? `${t.recipes.reportTimingStructure} ${Math.max(1, Math.round(report.timings.structure / 1000))} s` : null,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </p>,
         )}
       {row(
         t.recipes.reportRepairs,

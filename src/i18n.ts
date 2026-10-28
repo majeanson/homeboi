@@ -1491,6 +1491,10 @@ export const FR = {
     reportAudit: 'Relecture automatique',
     reportAuditNone: 'Rien à signaler',
     reportShaky: 'Mots lus avec hésitation',
+    // Où sont passées les secondes — mesuré sur l'appareil.
+    reportTimings: 'Durée',
+    reportTimingRead: 'lecture',
+    reportTimingStructure: 'mise en ordre',
     reportShakyNone: 'Aucun',
     reportShakyCount: (n: number) => (n === 1 ? '1 mot — surligné dans « Vérifier »' : `${n} mots — surlignés dans « Vérifier »`),
     readFailEngine: 'Le lecteur n’a pas pu se charger (connexion ?). Réessaie, ou colle le texte.',

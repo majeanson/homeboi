@@ -533,7 +533,8 @@ export function RecipeForm({
       let meanConf = 0
       // The honesty report shown under the verify panel's « Rapport » tab — filled
       // in as the pipeline actually runs, never reconstructed after the fact.
-      const report: ReadReport = {
+      //  is required here: this report WRITES them as the read runs.
+      const report: ReadReport & { timings: NonNullable<ReadReport['timings']> } = {
         reader: null,
         readerModel: null,
         confidence: null,
@@ -544,6 +545,7 @@ export function RecipeForm({
         repairs: [],
         audit: [],
         shakyCount: 0,
+        timings: {},
       }
 
       // The high-accuracy CLOUD reader (Mistral OCR), when the operator picked it and
@@ -579,6 +581,7 @@ export function RecipeForm({
       // mis-read. Average confidence; union shaky words.
       let engineFailed = false
       const readOnDevice = async () => {
+        const t0 = Date.now()
         let confSum = 0
         let confN = 0
         engineFailed = true
@@ -601,6 +604,7 @@ export function RecipeForm({
         meanConf = confN ? confSum / confN : 0
         if (confN) report.confidence = meanConf
         report.shakyCount = lowWords.size
+        report.timings.read = (report.timings.read ?? 0) + (Date.now() - t0)
       }
 
       // OCR text → the no-/low-AI text path. A near-empty or very-low-confidence read
@@ -612,6 +616,14 @@ export function RecipeForm({
         const stitched = mergeOcrPages(texts).trim()
         if (stitched.length < 25 || meanConf < 40) return null
         setReadStage('order')
+        const t0 = Date.now()
+        try {
+          return await structureText(stitched)
+        } finally {
+          report.timings.structure = Date.now() - t0
+        }
+      }
+      const structureText = async (stitched: string): Promise<ReadDraft | null> => {
         // Longer than api()'s 20s default: structuring runs through an AI model and
         // can legitimately outrun that on a slow connection.
         const d = await api<ReadDraft>('recipe-import', { method: 'POST', body: { text: stitched }, timeoutMs: 45_000 }).catch(
@@ -634,26 +646,38 @@ export function RecipeForm({
       const readWithVision = async (): Promise<ReadDraft | null> => {
         setReadStage('look')
         setReadProgress(0)
-        for (let i = 0; i < files.length; i++) {
-          // VISION_MAX, not PHOTO_MAX: the model never sees more than ~1120 px, so the
-          // extra pixels were only upload time (lib/image.ts).
-          const small = await resizeImage(files[i], VISION_MAX)
-          if (small.size > MAX_UPLOAD_BYTES) continue
-          // A phone upload + the model: well past api()'s 20 s default on cellular.
-          const v = await api<{ transcript?: string; readerModel?: string | null }>('recipe-vision?only=transcript', {
-            method: 'POST',
-            body: small,
-            timeoutMs: 60_000,
-          }).catch((e) => {
-            if (isStatus(e, 503) || isStatus(e, 400)) return null
-            throw e
-          })
+        let done = 0
+        // The pages go out TOGETHER (a read is ~12 s per page on the model's side —
+        // three in a row was the better part of a minute before the structuring even
+        // started); each one bumps the bar as it lands; the transcripts keep page order.
+        const t0 = Date.now()
+        const pages = await Promise.all(
+          files.map(async (file) => {
+            // VISION_MAX, not PHOTO_MAX: the model never sees more than ~1120 px, so the
+            // extra pixels were only upload time (lib/image.ts).
+            const small = await resizeImage(file, VISION_MAX)
+            if (small.size > MAX_UPLOAD_BYTES) return null
+            // A phone upload + the model: well past api()'s 20 s default on cellular.
+            const v = await api<{ transcript?: string; readerModel?: string | null }>('recipe-vision?only=transcript', {
+              method: 'POST',
+              body: small,
+              timeoutMs: 60_000,
+            }).catch((e) => {
+              if (isStatus(e, 503) || isStatus(e, 400)) return null
+              throw e
+            })
+            done++
+            setReadProgress(done / files.length)
+            return v
+          }),
+        )
+        report.timings.read = Date.now() - t0
+        for (const v of pages) {
           if (v?.transcript) {
             texts.push(v.transcript)
             report.reader = 'vision'
             report.readerModel = v.readerModel ?? null
           }
-          setReadProgress((i + 1) / files.length)
         }
         if (!texts.length) return null
         meanConf = 95 // a vision transcript is a read, not a guess — structure it
@@ -821,6 +845,7 @@ export function RecipeForm({
             repairs: [],
             audit: r.audit ?? [],
             shakyCount: 0,
+            timings: {},
           },
           via: viaOf(r.structuring),
           image: r.image,
