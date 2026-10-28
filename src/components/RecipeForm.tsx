@@ -533,7 +533,7 @@ export function RecipeForm({
       let meanConf = 0
       // The honesty report shown under the verify panel's « Rapport » tab — filled
       // in as the pipeline actually runs, never reconstructed after the fact.
-      //  is required here: this report WRITES them as the read runs.
+      // `timings` is required here: this report WRITES them as the read runs.
       const report: ReadReport & { timings: NonNullable<ReadReport['timings']> } = {
         reader: null,
         readerModel: null,
