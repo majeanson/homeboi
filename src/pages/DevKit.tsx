@@ -2200,17 +2200,24 @@ export function DevKit() {
       file: 'components/Disclosure.tsx',
       kw: 'disclosure expand toggle collapse repli accordéon suggestions modèles caret',
       render: () => (
-        <Demo label="collapsed-by-default — tucks a chip group away">
-          <Disclosure label="Listes prêtes" count={3}>
-            <ChipGroup>
-              {['Avant de partir', 'Chez grand-papa', 'Sac de piscine'].map((k) => (
-                <Chip key={k} icon="plus-bold">
-                  {k}
-                </Chip>
-              ))}
-            </ChipGroup>
-          </Disclosure>
-        </Demo>
+        <>
+          <Demo label="collapsed-by-default — tucks a chip group away">
+            <Disclosure label="Listes prêtes" count={3}>
+              <ChipGroup>
+                {['Avant de partir', 'Chez grand-papa', 'Sac de piscine'].map((k) => (
+                  <Chip key={k} icon="plus-bold">
+                    {k}
+                  </Chip>
+                ))}
+              </ChipGroup>
+            </Disclosure>
+          </Demo>
+          <Demo label="note — a folded group that holds answers says which (the recipe form’s « Détails »)">
+            <Disclosure label="Détails" note="4 portions · 20 + 50 min · 2 étiquettes">
+              <p className="mono">Portions, temps, notes, étiquettes…</p>
+            </Disclosure>
+          </Demo>
+        </>
       ),
     },
     {

@@ -397,12 +397,13 @@
 }
 /* Open: the summary is now the header of a revealed group — hold the emphasized
    look so it clearly pairs with the body below it. */
-.disclosure--open .disclosure__summary {
+.disclosure--open > .disclosure__summary {
   color: var(--ink);
   border-color: var(--line-strong);
 }
 /* The caret sits in its own soft disc — a recognizable "there's more here" cue that
-   flips when open. */
+   flips when open. `>` on purpose: a fold nested in an OPEN fold (« Guider l’IA »
+   inside « Remplir vite ») used to show its caret flipped while still closed. */
 .disclosure__caret {
   display: inline-grid;
   place-items: center;
@@ -415,11 +416,11 @@
 }
 .disclosure__summary:hover .disclosure__caret,
 .disclosure__summary:focus-visible .disclosure__caret,
-.disclosure--open .disclosure__caret {
+.disclosure--open > .disclosure__summary .disclosure__caret {
   background: color-mix(in srgb, var(--ink) 14%, transparent);
   color: var(--ink);
 }
-.disclosure--open .disclosure__caret {
+.disclosure--open > .disclosure__summary .disclosure__caret {
   transform: rotate(180deg);
 }
 .disclosure__count {
@@ -436,6 +437,26 @@
 }
 .disclosure__body {
   margin-top: 0.5rem;
+}
+/* The collapsed fold's « what it holds » line (Disclosure `note`). The pill may not
+   outgrow its row, and the note WRAPS rather than ellipsise: at 390px an ellipsis cut
+   « 4 portions · 15 + 30 min · not… » — the very answers the note exists to show. A
+   two-line summary trades the stadium for a rounded box so it still reads as one. */
+.disclosure__summary {
+  max-width: 100%;
+}
+.disclosure__summary:has(.disclosure__note) {
+  border-radius: var(--radius-md);
+  text-align: left;
+}
+.disclosure__label {
+  flex: none;
+}
+.disclosure__note {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--ink-faint);
+  font-weight: 500;
 }
 
 /* --- Focus-visible ring (a11y) — same treatment as core.css's tappables ---- */

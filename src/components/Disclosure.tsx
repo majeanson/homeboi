@@ -30,31 +30,44 @@ export function useSingleOpen<T extends string = string>() {
 export function Disclosure({
   label,
   count,
+  note,
   defaultOpen = false,
+  open: openProp,
+  onOpenChange,
   className,
   children,
 }: {
   label: string
   // Shown as a small badge on the summary so the count stays visible while collapsed.
   count?: number
+  // One quiet line on the summary WHILE COLLAPSED — what the fold holds (« 4 portions ·
+  // 20 + 50 min »), so folding a filled group never hides that it is filled (LEAN
+  // invariant 1). It wraps inside the summary rather than being cut.
+  note?: string
   defaultOpen?: boolean
+  // Controlled mode, for a fold whose owner must OPEN it after mount — the recipe form's
+  // « Détails » opens itself when an import fills one of its fields. Omit for the usual
+  // self-contained toggle.
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
   className?: string
   children: ReactNode
 }) {
-  const [open, setOpen] = useState(defaultOpen)
+  const [inner, setInner] = useState(defaultOpen)
+  const open = openProp ?? inner
+  const toggle = () => {
+    if (openProp === undefined) setInner(!open)
+    onOpenChange?.(!open)
+  }
   return (
     <div className={'disclosure' + (open ? ' disclosure--open' : '') + (className ? ' ' + className : '')}>
-      <button
-        type="button"
-        className="disclosure__summary"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-      >
+      <button type="button" className="disclosure__summary" onClick={toggle} aria-expanded={open}>
         <span className="disclosure__caret" aria-hidden="true">
           <Icon name="caret-down-bold" size={14} />
         </span>
         <span className="disclosure__label mono">{label}</span>
         {count != null && count > 0 ? <span className="disclosure__count mono">{count}</span> : null}
+        {!open && note ? <span className="disclosure__note mono">{note}</span> : null}
       </button>
       {open && <div className="disclosure__body">{children}</div>}
     </div>

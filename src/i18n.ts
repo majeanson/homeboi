@@ -1424,6 +1424,21 @@ export const FR = {
     reading: 'Je lis la photo…',
     readingOrder: 'Je mets la recette en ordre…',
     readingLook: 'Je regarde la photo de plus près…',
+    // The stage line under every import in flight (lib/importProgress) — what is
+    // happening NOW, from the time spent; the server does it all in one request.
+    stageLinkFetch: 'Je vais chercher la page…',
+    stageLinkRead: 'Je lis la recette…',
+    stageLinkSlow: 'Le site est lent — j’essaie une autre porte…',
+    stagePaste: 'J’organise le texte…',
+    stagePasteAi: 'L’IA choisit les lignes…',
+    stageBookmark: 'Je lis la page envoyée par ton signet…',
+    stageLong: 'Encore un instant…',
+    saving: 'Enregistrement…',
+    // « Détails » — the one fold for the optional fields; its summary says what it holds.
+    details: 'Détails',
+    detailsServings: (n: string, unit: string) => `${n} ${unit || (n === '1' ? 'portion' : 'portions')}`,
+    detailsTags: (n: number) => `${n} étiquette${n > 1 ? 's' : ''}`,
+    detailsPhoto: 'photo',
     readFail: 'Texte illisible — remplis à la main.',
     readHint: 'Recette en ligne ? Le lien donne une copie parfaite. Sinon, scanne plusieurs photos d’un coup — une vue d’ensemble + des gros plans des petits chiffres.',
     photoTooBig: 'Photo trop lourde — essaie une capture d’écran ou une photo plus petite.',

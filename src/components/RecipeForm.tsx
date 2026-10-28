@@ -39,6 +39,7 @@ import { useRecipes } from '../lib/queryHooks'
 import { sameSource } from '../lib/recipes'
 import { fold } from '../lib/normalize'
 import { stashPendingImport, type CapturedRecipePage } from '../lib/recipeBookmarklet'
+import { importStage, useElapsed, type ImportKind, type ImportStage } from '../lib/importProgress'
 
 // In the EDITOR a row is a section row as soon as it carries the "## " marker —
 // even with the title still empty ("## "), so typing the name doesn't flip the
@@ -198,6 +199,10 @@ export function RecipeForm({
   const [reviewRun, setReviewRun] = useState(0)
   const [confirming, setConfirming] = useState(false)
   const [importing, setImporting] = useState(false)
+  // What the import in flight was given — the stage line's phases differ (a link is
+  // fetched first; a paste or the bookmark's page is already here).
+  const [importKind, setImportKind] = useState<ImportKind>('url')
+  const importSecs = useElapsed(importing)
   const [uploading, setUploading] = useState(false)
   // A photo upload (hero or step) failed for a NON-503 reason — say so once,
   // shared line (503 keeps its own contract: hide the controls, stay quiet).
@@ -246,6 +251,26 @@ export function RecipeForm({
   // a wall of always-open single-line boxes and gives space to format a step over
   // several lines.
   const [editStep, setEditStep] = useState<number | null>(null)
+  // The row being edited — the ONLY row that wears its furniture (↑ ↓ ✕, a step's photo).
+  // Marc, 2026-10-27: « when you add an ingredient, THEN you see all the buttons for
+  // it ». Set when anything in the row takes focus (a tap in its field, Tab onto its
+  // buttons), so the keyboard reaches every action without hover or touch; it stays
+  // put until another row takes over. A step also counts as active while its memo is
+  // open (editStep).
+  const [activeLine, setActiveLine] = useState<{ kind: LineKind; i: number } | null>(null)
+  const isActive = (kind: LineKind, i: number) =>
+    (activeLine?.kind === kind && activeLine.i === i) || (kind === 'steps' && editStep === i)
+  // After ↑/↓ the focus follows the row that MOVED (rows are keyed by index, so the
+  // focused button would otherwise stay put and now belong to the neighbour).
+  const [focusMove, setFocusMove] = useState<{ kind: LineKind; i: number; up: boolean } | null>(null)
+  useEffect(() => {
+    if (!focusMove) return
+    const row = modalRef.current?.querySelector(`[data-row="${focusMove.kind}-${focusMove.i}"]`)
+    const [up, down] = row ? Array.from(row.querySelectorAll<HTMLButtonElement>('.recipe-line__mv')) : []
+    const want = focusMove.up ? up : down
+    ;(want && !want.disabled ? want : focusMove.up ? down : up)?.focus()
+    setFocusMove(null)
+  }, [focusMove])
 
   // Multi-row inputs (ingredients / section titles) advance like a phone "next"
   // key: Enter commits the row (state already holds it on each keystroke) and moves
@@ -259,6 +284,28 @@ export function RecipeForm({
     lineInputs.current[focusLine.kind]?.[focusLine.i]?.focus()
     setFocusLine(null)
   }, [focusLine])
+
+  // What « Détails » holds, said on its summary while folded — and whether it holds
+  // anything at all, which decides that it opens (below).
+  const timeBit = [prepMin, cookMin].map((s) => s.trim()).filter(Boolean).join(' + ') || totalMin.trim()
+  const detailBits = [
+    servings.trim() ? t.recipes.detailsServings(servings.trim(), servingsUnit.trim()) : servingsUnit.trim(),
+    timeBit ? `${timeBit} min` : '',
+    readLang ? (readLang === 'fr' ? t.recipes.readLangFr : t.recipes.readLangEn).toLowerCase() : '',
+    notes.trim() ? t.recipes.notes.toLowerCase() : '',
+    tags.length ? t.recipes.detailsTags(tags.length) : '',
+    image ? t.recipes.detailsPhoto : '',
+  ].filter(Boolean)
+  const detailsFilled = detailBits.length > 0
+  const [detailsOpen, setDetailsOpen] = useState(detailsFilled)
+  // The moment it goes from empty to holding something (an import filled the servings,
+  // the times, the notes, the picture), the fold opens itself — adjusted during render,
+  // React's pattern for state derived from a change, rather than an effect's extra pass.
+  const [wasFilled, setWasFilled] = useState(detailsFilled)
+  if (wasFilled !== detailsFilled) {
+    setWasFilled(detailsFilled)
+    if (detailsFilled) setDetailsOpen(true)
+  }
 
   // The pill offer: household presets (Réglages → Recettes) or the built-in
   // starters, plus every tag already used on a recipe — a tag typed once
@@ -304,6 +351,7 @@ export function RecipeForm({
     if (kind === 'steps') setStepImages((imgs) => sideInsert(alignSide(imgs, steps.length)))
   }
   const removeLine = (kind: LineKind, i: number) => {
+    setActiveLine(null)
     const next = lines(kind).filter((_, idx) => idx !== i)
     setLines(kind)(next.length ? next : [''])
     if (kind === 'steps')
@@ -323,6 +371,7 @@ export function RecipeForm({
     if (j < 0 || j >= arr.length) return
     ;[arr[i], arr[j]] = [arr[j], arr[i]]
     setLines(kind)(arr)
+    setActiveLine((a) => (a?.kind === kind && a.i === i ? { kind, i: j } : a))
     if (kind === 'steps') {
       setStepImages((imgs) => sideSwap(alignSide(imgs, steps.length), i, j))
       setEditStep((es) => (es === i ? j : es === j ? i : es))
@@ -681,6 +730,7 @@ export function RecipeForm({
     const text = input ? '' : importText.trim()
     const page = input && 'page' in input ? input.page : !text && lastPage.current?.url === url ? lastPage.current : null
     if ((!url && !text && !page) || importing) return
+    setImportKind(page ? 'page' : text ? 'text' : 'url')
     setImporting(true)
     setImportMsg(null)
     setImportVia(null)
@@ -904,13 +954,51 @@ export function RecipeForm({
 
   const imgSrc = recipeImg(image)
 
+  // ONE « something is happening » strip for every road in — a link, the bookmark's
+  // page, a paste, a photo — and the save (Marc, 2026-10-27: « so the user doesn't feel
+  // like it's stuck »). A link import used to change one button to « Importation… » for
+  // up to 45 s; only the photo read had a bar. Same bar now (`.recipe-read-bar`: filling
+  // while pages are transcribed, a sweep while a model or the network works) and ONE
+  // calm stage line naming what is happening now — from lib/importProgress's honest
+  // phases for an import, from the pipeline's own stage for a photo.
+  const stageCopy: Record<ImportStage, string> = {
+    linkFetch: t.recipes.stageLinkFetch,
+    linkRead: t.recipes.stageLinkRead,
+    linkSlow: t.recipes.stageLinkSlow,
+    paste: t.recipes.stagePaste,
+    pasteAi: t.recipes.stagePasteAi,
+    bookmark: t.recipes.stageBookmark,
+    long: t.recipes.stageLong,
+  }
+  const readPct = reading && readStage === 'read' && readProgress > 0 ? readProgress : null
+  const stageLine = reading
+    ? readStage === 'order'
+      ? t.recipes.readingOrder
+      : readStage === 'look'
+        ? t.recipes.readingLook
+        : t.recipes.reading
+    : importing
+      ? stageCopy[importStage(importKind, importSecs, aiEnabled)]
+      : null
+  const progress = (line: string, pct: number | null, testId: string) => (
+    <div className="recipe-progress" role="status" data-testid={testId}>
+      <div className={'recipe-read-bar' + (pct === null ? ' recipe-read-bar--sweep' : '')} aria-hidden="true">
+        <div className="recipe-read-bar__fill" style={pct === null ? undefined : { width: `${Math.round(pct * 100)}%` }} />
+      </div>
+      <p className="recipe-progress__stage mono">{line}</p>
+    </div>
+  )
+
   // The ↑/↓ pair every row gets (ingredient, step, or section) — tap-to-reorder.
   const moveButtons = (kind: LineKind, i: number) => (
     <span className="recipe-line__move">
       <button
         type="button"
         className="recipe-line__mv mono"
-        onClick={() => moveLine(kind, i, -1)}
+        onClick={() => {
+          moveLine(kind, i, -1)
+          setFocusMove({ kind, i: i - 1, up: true })
+        }}
         disabled={i === 0}
         aria-label={t.recipes.moveUp}
       >
@@ -919,11 +1007,31 @@ export function RecipeForm({
       <button
         type="button"
         className="recipe-line__mv mono"
-        onClick={() => moveLine(kind, i, 1)}
+        onClick={() => {
+          moveLine(kind, i, 1)
+          setFocusMove({ kind, i: i + 1, up: false })
+        }}
         disabled={i === lines(kind).length - 1}
         aria-label={t.recipes.moveDown}
       >
         <Icon name="caret-down-bold" size={16} />
+      </button>
+    </span>
+  )
+
+  // A row's furniture: ↑ ↓ ✕. Always in the DOM and the tab order; folded to no width
+  // while the row is quiet (`.is-quiet:not(:focus-within)`, recipes.css), so a Tab onto
+  // it opens it — never `display:none`, which would take it from the keyboard too.
+  const lineTools = (kind: LineKind, i: number) => (
+    <span className="recipe-line__tools">
+      {moveButtons(kind, i)}
+      <button
+        type="button"
+        className="recipe-line__del mono"
+        onClick={() => removeLine(kind, i)}
+        aria-label={t.recipes.removePhoto}
+      >
+        <Icon name="x-bold" size={14} />
       </button>
     </span>
   )
@@ -935,7 +1043,12 @@ export function RecipeForm({
         const sec = isHeadingRow(v)
         const shown = sec ? headingTitle(v) : v
         return (
-          <div key={i} className={'recipe-line' + (sec ? ' recipe-line--sec' : '')}>
+          <div
+            key={i}
+            data-row={`${kind}-${i}`}
+            className={'recipe-line' + (sec ? ' recipe-line--sec' : '') + (isActive(kind, i) ? '' : ' is-quiet')}
+            onFocus={() => setActiveLine({ kind, i })}
+          >
             <input
               ref={(el) => {
                 const arr = lineInputs.current[kind] ?? (lineInputs.current[kind] = [])
@@ -968,15 +1081,7 @@ export function RecipeForm({
                 if (!sec && pasteLines(kind, i, e.clipboardData.getData('text'))) e.preventDefault()
               }}
             />
-            {moveButtons(kind, i)}
-            <button
-              type="button"
-              className="recipe-line__del mono"
-              onClick={() => removeLine(kind, i)}
-              aria-label={t.recipes.removePhoto}
-            >
-              <Icon name="x-bold" size={14} />
-            </button>
+            {lineTools(kind, i)}
           </div>
         )
       })}
@@ -1004,25 +1109,27 @@ export function RecipeForm({
       {steps.map((v, i) =>
         // A section row among the steps: a plain title input, no number, no memo.
         isHeadingRow(v) ? (
-          <div key={i} className="recipe-line recipe-line--sec">
+          <div
+            key={i}
+            data-row={`steps-${i}`}
+            className={'recipe-line recipe-line--sec' + (isActive('steps', i) ? '' : ' is-quiet')}
+            onFocus={() => setActiveLine({ kind: 'steps', i })}
+          >
             <input
               className="input"
               value={headingTitle(v)}
               onChange={(e) => updateLine('steps', i, SECTION_PREFIX + e.target.value)}
               placeholder={t.recipes.sectionPlaceholder}
             />
-            {moveButtons('steps', i)}
-            <button
-              type="button"
-              className="recipe-line__del mono"
-              onClick={() => removeLine('steps', i)}
-              aria-label={t.recipes.removePhoto}
-            >
-              <Icon name="x-bold" size={14} />
-            </button>
+            {lineTools('steps', i)}
           </div>
         ) : (
-        <div key={i} className={'recipe-step' + (editStep === i ? ' is-editing' : '')}>
+        <div
+          key={i}
+          data-row={`steps-${i}`}
+          className={'recipe-step' + (editStep === i ? ' is-editing' : '') + (isActive('steps', i) ? '' : ' is-quiet')}
+          onFocus={() => setActiveLine({ kind: 'steps', i })}
+        >
           <span className="recipe-step__n mono">{steps.slice(0, i).filter((s) => !isHeadingRow(s)).length + 1}</span>
           {editStep === i ? (
             <div className="recipe-step__edit">
@@ -1045,9 +1152,19 @@ export function RecipeForm({
                 >
                   <InlineIcon name="x-bold" size={13} /> {t.recipes.removeStep}
                 </button>
-                <button type="button" className="btn btn--primary mono" onClick={() => setEditStep(null)}>
-                  {t.recipes.stepDone}
-                </button>
+                <span className="recipe-step__done">
+                  {moveButtons('steps', i)}
+                  <button
+                    type="button"
+                    className="btn btn--primary mono"
+                    onClick={() => {
+                      setEditStep(null)
+                      setActiveLine(null)
+                    }}
+                  >
+                    {t.recipes.stepDone}
+                  </button>
+                </span>
               </div>
             </div>
           ) : (
@@ -1065,19 +1182,22 @@ export function RecipeForm({
                   <InlineIcon name="pencil-simple-bold" size={13} />
                 </span>
               </button>
-              {moveButtons('steps', i)}
+              <span className="recipe-line__tools">{moveButtons('steps', i)}</span>
             </>
           )}
           {/* The step's own photo (feature #17 B): a thumbnail + add / change /
               remove, or just the add button when the step has none. Hidden whole
               when R2 photo storage is unset (the upload 503'd). Keyed by THIS
-              step's index into the parallel stepImages array. */}
-          {!stepPhotoOff && (
+              step's index into the parallel stepImages array. A quiet step keeps
+              only a photo it HAS (the thumbnail — content, not furniture); the
+              add / change / remove controls arrive with the step's turn. */}
+          {!stepPhotoOff && (isActive('steps', i) || !!stepImages[i]) && (
             <StepPhoto
               imgKey={stepImages[i] ?? ''}
               uploading={stepUploading === i}
               onPick={(f) => uploadStepPhoto(i, f)}
               onClear={() => clearStepPhoto(i)}
+              quiet={!isActive('steps', i)}
               t={t}
             />
           )}
@@ -1133,32 +1253,6 @@ export function RecipeForm({
             autoComplete="off"
           />
 
-          {/* Photo */}
-          <div className="recipe-photo">
-            {imgSrc ? (
-              <div className="recipe-photo__has">
-                <img src={imgSrc} alt="" />
-                <button type="button" className="btn btn--ghost mono" onClick={() => setImage(null)}>
-                  {t.recipes.removePhoto}
-                </button>
-              </div>
-            ) : (
-              <label className="btn btn--ghost mono recipe-photo__add">
-                <InlineIcon name="image-square-bold" /> {uploading ? '…' : t.recipes.addPhoto}
-                <input
-                  type="file"
-                  accept="image/*"
-                  hidden
-                  disabled={uploading}
-                  onChange={(e) => {
-                    const f = e.target.files?.[0]
-                    if (f) uploadPhoto(f)
-                    e.target.value = ''
-                  }}
-                />
-              </label>
-            )}
-          </div>
           {/* One shared line for a failed photo upload (hero or step) — a non-503
               failure used to eat the pick silently. 503 hides the controls instead. */}
           {uploadErr && <StatusMessage tone="error">{t.memo.uploadFailed}</StatusMessage>}
@@ -1172,31 +1266,12 @@ export function RecipeForm({
               instead of before them. Opens itself when the link/paste panel is
               already showing, so a half-finished import is never folded away. */}
           <Disclosure label={t.recipes.fillFrom} defaultOpen={showImport} className="recipe-fill">
-          {/* Something is visibly HAPPENING while a photo is read: the transcription
-              fills the bar as pages are read; the two model stages after it (order,
-              closer look) have no measurable progress, so the bar sweeps instead. The
-              button below names the stage; « 100 % » sitting still for a minute read
-              as frozen (Marc, 2026-09-24). */}
-          {reading && (
-            <div className={'recipe-read-bar' + (readStage === 'read' && readProgress > 0 ? '' : ' recipe-read-bar--sweep')} aria-hidden="true">
-              <div className="recipe-read-bar__fill" style={readStage === 'read' && readProgress > 0 ? { width: `${Math.round(readProgress * 100)}%` } : undefined} />
-            </div>
-          )}
           <div className="recipe-helpers">
             {/* Read a photo is on-device OCR now — it works with AI OFF, so it's no
                 longer gated behind aiEnabled. `multiple`: a long recipe split over
                 pages is read in one go (ingredients page + steps page → one card). */}
             <label className={'btn btn--ghost mono' + (reading ? ' is-busy' : '')}>
-              <InlineIcon name="camera-bold" />{' '}
-              {!reading
-                ? t.recipes.readPhoto
-                : readStage === 'order'
-                  ? t.recipes.readingOrder
-                  : readStage === 'look'
-                    ? t.recipes.readingLook
-                    : readProgress > 0
-                      ? `${t.recipes.reading} ${Math.round(readProgress * 100)} %`
-                      : t.recipes.reading}
+              <InlineIcon name="camera-bold" /> {t.recipes.readPhoto}
               <input
                 type="file"
                 accept="image/*"
@@ -1283,6 +1358,13 @@ export function RecipeForm({
             </div>
           )}
           </Disclosure>
+          {/* The import / photo read in flight. HERE, under the fold rather than inside
+              it: right beneath « Importer » when the panel is open, still in sight when
+              it is not (a candidate chip re-reads with the panel closed), and already on
+              screen when the scene opens with the bookmark's page. Something visibly
+              moving through every stage — « 100 % » sitting still for a minute read as
+              frozen (Marc, 2026-09-24), and so did « Importation… » (2026-10-27). */}
+          {stageLine && progress(stageLine, readPct, 'import-progress')}
           {/* Which road read the last import — honest about the AI, calm otherwise. */}
           {importVia && (
             <p className="recipe-aioff mono" data-testid="import-via">
@@ -1327,6 +1409,18 @@ export function RecipeForm({
               and hidden whole where R2 photo storage is unset. */}
           {stepsEditor}
 
+          {/* « Détails » — everything optional, in ONE fold (Marc, 2026-10-27: a new recipe
+              opened on seven open fields under its steps). LEAN invariant 1: a fold never
+              hides a filled field — it opens with a recipe that has any of them, opens
+              itself when an import fills one, and folded it still SAYS what it holds
+              (« 4 portions · 20 + 50 min · 2 étiquettes ») on its summary. */}
+          <Disclosure
+            label={t.recipes.details}
+            note={detailBits.join(' · ')}
+            open={detailsOpen}
+            onOpenChange={setDetailsOpen}
+            className="recipe-details"
+          >
           {/* Servings (+ optional unit: "24 biscuits") + times + notes */}
           <div className="recipe-meta-row">
             <label className="recipe-servings mono">
@@ -1436,10 +1530,40 @@ export function RecipeForm({
               typeaheadOnly
             />
           </div>
+
+          {/* The dish's own picture (distinct from « Scanner une fiche », which READS a
+              recipe). It used to sit between the name and everything else. */}
+          <div className="recipe-photo">
+            {imgSrc ? (
+              <div className="recipe-photo__has">
+                <img src={imgSrc} alt="" />
+                <button type="button" className="btn btn--ghost mono" onClick={() => setImage(null)}>
+                  {t.recipes.removePhoto}
+                </button>
+              </div>
+            ) : (
+              <label className="btn btn--ghost mono recipe-photo__add">
+                <InlineIcon name="image-square-bold" /> {uploading ? '…' : t.recipes.addPhoto}
+                <input
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  disabled={uploading}
+                  onChange={(e) => {
+                    const f = e.target.files?.[0]
+                    if (f) uploadPhoto(f)
+                    e.target.value = ''
+                  }}
+                />
+              </label>
+            )}
+          </div>
+          </Disclosure>
         </div>
 
         <div className="recipe-modal__foot">
           {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
+          {busy && progress(t.recipes.saving, null, 'save-progress')}
           <button type="button" className="btn btn--ghost mono" onClick={cancel}>
             {t.common.cancel}
           </button>
@@ -1480,17 +1604,22 @@ function StepPhoto({
   uploading,
   onPick,
   onClear,
+  quiet = false,
   t,
 }: {
   imgKey: string
   uploading: boolean
   onPick: (file: File) => void
   onClear: () => void
+  // The step is not the one being edited: show the photo, not its controls.
+  quiet?: boolean
   t: ReturnType<typeof useT>
 }) {
   return (
     <div className="recipe-step__photo">
-      {imgKey ? (
+      {imgKey && quiet ? (
+        <ZoomableImg src={imgUrl(imgKey)} className="recipe-step__photo-thumb" alt="" />
+      ) : imgKey ? (
         <>
           <ZoomableImg src={imgUrl(imgKey)} className="recipe-step__photo-thumb" alt="" />
           <label className="btn btn--ghost mono recipe-step__photo-btn">

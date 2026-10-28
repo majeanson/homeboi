@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test'
+import { test, expect, type Locator, type Page } from '@playwright/test'
 import { mockApi, seedState } from './mocks'
 import { boxOf } from './measure'
 
@@ -95,6 +95,77 @@ test('the recipe builder leads with the recipe’s NAME', async ({ page }) => {
   await fold.click()
   await expect(page.locator('.recipe-helpers')).toBeVisible()
   await expect(page.locator('.recipe-fill-hint')).toBeVisible()
+})
+
+// ── The recipe builder, part two (Marc, 2026-10-27) ─────────────────────────────
+// « When you add an ingredient, THEN you see all the buttons for it; same for
+// Préparation and the other options. » Every ingredient row wore ↑ ↓ ✕ at all times,
+// every step ↑ ↓ + « Ajouter une photo », and seven optional fields stood open under
+// the steps. The furniture now belongs to the row being edited, and the options wait
+// in ONE « Détails » fold that opens itself when it holds anything.
+const toolsWidth = async (row: Locator) => (await boxOf(row.locator('.recipe-line__tools').first())).width
+
+test('recipe builder: the options wait in « Détails »; a row shows its tools only while it is the one being edited', async ({ page }) => {
+  await phone(page, '/kitchen/recipe/new')
+  await expect(page.locator('.recipe-modal__body')).toBeVisible()
+
+  const details = page.getByRole('button', { name: 'Détails' })
+  await expect(details).toHaveAttribute('aria-expanded', 'false')
+  for (const folded of ['.recipe-meta-row', '.recipe-times-row', '.recipe-readlang', '.recipe-tags-edit', '.recipe-photo']) {
+    await expect(page.locator(folded), `${folded} waits in « Détails »`).toHaveCount(0)
+  }
+
+  // A quiet ingredient row: its ↑ ↓ ✕ take no room until the row is the active one.
+  const rows = page.locator('.recipe-lines .recipe-line')
+  expect(await toolsWidth(rows.nth(0)), 'quiet row: no tools').toBeLessThan(1)
+  await rows.nth(0).locator('input').click()
+  expect(await toolsWidth(rows.nth(0)), 'the row being edited shows its tools').toBeGreaterThan(40)
+  await rows.nth(0).locator('input').fill('400 g de pâtes')
+  await rows.nth(0).locator('input').press('Enter') // → a fresh row, focused
+  await expect(rows).toHaveCount(2)
+  await expect(rows.nth(1).locator('input')).toBeFocused()
+  await expect.poll(() => toolsWidth(rows.nth(0)), { message: 'the row left behind goes quiet' }).toBeLessThan(1)
+  expect(await toolsWidth(rows.nth(1))).toBeGreaterThan(40)
+
+  // Keyboard, no hover, no touch: Tab from the field reaches the row's own buttons, and
+  // moving a row keeps the focus on the row that moved.
+  await page.keyboard.press('Tab')
+  await expect(rows.nth(1).getByRole('button', { name: 'Monter' })).toBeFocused()
+  await page.keyboard.press('Enter')
+  await expect(rows.nth(0).locator('input')).toHaveValue('')
+  await expect(rows.nth(1).locator('input')).toHaveValue('400 g de pâtes')
+  await expect.poll(() => toolsWidth(rows.nth(0)), { message: 'the moved row keeps its tools' }).toBeGreaterThan(40)
+  expect(await toolsWidth(rows.nth(1))).toBeLessThan(1)
+
+  // A step at rest is its text alone; opened, it carries ↑ ↓, the photo and « Retirer ».
+  const step = page.locator('.recipe-steps .recipe-step').first()
+  expect(await toolsWidth(step), 'quiet step: no ↑ ↓').toBeLessThan(1)
+  await expect(step.locator('.recipe-step__photo')).toHaveCount(0)
+  await step.locator('.recipe-step__open').click()
+  await expect(step.locator('.recipe-step__memo')).toBeVisible()
+  await expect(step.getByRole('button', { name: 'Retirer l’étape' })).toBeVisible()
+  await expect(step.getByRole('button', { name: 'Monter' })).toBeVisible()
+  await expect(step.locator('.recipe-step__photo')).toBeVisible()
+})
+
+test('recipe builder twin: a recipe that HAS details opens with them, and folded it still says what it holds', async ({ page }) => {
+  await phone(page, '/kitchen/recipe/rc1/edit')
+  const details = page.getByRole('button', { name: /^Détails/ })
+  await expect(details).toHaveAttribute('aria-expanded', 'true')
+  await expect(page.locator('.recipe-servings input')).toHaveValue('4')
+  // Seven stored ingredients, none of them wearing furniture before one is touched.
+  const rows = page.locator('.recipe-lines .recipe-line')
+  await expect(rows).toHaveCount(7)
+  for (let i = 0; i < 7; i++) expect(await toolsWidth(rows.nth(i))).toBeLessThan(1)
+
+  await details.click()
+  await expect(details).toHaveAttribute('aria-expanded', 'false')
+  await expect(details).toContainText('4 portions · 15 + 30 min · notes · 2 étiquettes')
+  const b = await boxOf(details)
+  expect(b.x + b.width, 'the summary pill stays inside a 390 px phone').toBeLessThanOrEqual(390)
+  // …and the note is READ, not cut: an ellipsis once ended it at « · not… ».
+  const clipped = await details.locator('.disclosure__note').evaluate((el) => el.scrollWidth > el.clientWidth + 1)
+  expect(clipped, 'the whole note shows').toBe(false)
 })
 
 // ── Maison ▸ Famille ────────────────────────────────────────────────────────────

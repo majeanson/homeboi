@@ -116,6 +116,7 @@ now, so the repo-wide count is honest for the first time.
 ### Groupes et photos du site, plusieurs recettes, lecture photo auto, contrat hebdo — 2026-10-27
 Corpus 26/26 exact (14 sites); `_lib/siteAdapters` (Ricardo props, WPRM groups), HowToStep photos → R2 (`_lib/stepImageImport`, upload budget; a cancel frees them),
 `candidates` + `pick`, OCR « Auto » default, Mistral-vision first (shape unverified — Llama fallback), `e2e:recipes` weekly. **Open:** the prod-only checks in the commit body.
+**Later 2026-10-27 — the form itself:** every import in flight shows ONE strip + stage line (`lib/importProgress`: honest elapsed-time phases, link 4/16/30 s); ingredient/step furniture (↑ ↓ ✕, photo) only on the ACTIVE row (`.is-quiet`, keyboard via `:focus-within`); the seven optional fields in ONE « Détails » fold (`Disclosure` `note` + controlled `open`). Guards: `lean-forms` ×2, `recipe-url-import` ×3.
 
 ### Atteindre la page; l'IA choisit des lignes; l'audit avant la fiche — 2026-10-27 (earlier: link import kept the site's steps, all of them)
 **Principle: no model writes recipe text.** `structureRecipe` + `linesWithForeignNumbers` are gone: `selectRecipeLines` (JSON Mode) returns line NUMBERS,

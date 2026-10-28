@@ -1271,3 +1271,60 @@
 .read-review__guide {
   margin: 0 1rem;
 }
+
+/* --- Furniture on demand (Marc, 2026-10-27) --------------------------------- */
+/* « When you add an ingredient, THEN you see all the buttons for it. » A row's ↑ ↓ ✕
+   (`.recipe-line__tools`) belong to the row being edited (RecipeForm's activeLine; a
+   step's open memo). A quiet row folds them to no width so its text gets the line —
+   but they stay in the DOM and the tab order: `:focus-within` re-opens them the moment
+   a keyboard Tabs in, so no action is touch- or hover-only. Never `display:none` here. */
+.recipe-line__tools {
+  display: flex;
+  flex: none;
+  align-items: center;
+}
+.is-quiet:not(:focus-within) > .recipe-line__tools {
+  width: 0;
+  margin-left: -0.4rem; /* give the row's gap back too */
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+/* The open step's ↑ ↓ ride beside « Terminé ». */
+.recipe-step__actions {
+  flex-wrap: wrap;
+  align-items: center;
+}
+.recipe-step__done {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin-left: auto;
+}
+
+/* --- Progress you can see (every import + the save) ------------------------- */
+/* The bar is the photo read's `.recipe-read-bar` (sweep + reduced-motion still, above);
+   the line under it says what is happening now. One stack, gap-spaced. */
+.recipe-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.recipe-progress .recipe-read-bar {
+  margin: 0;
+}
+.recipe-progress__stage {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+}
+.recipe-modal__foot .recipe-progress {
+  flex: 1 1 100%;
+}
+
+/* --- « Détails » — the one fold for the optional fields ---------------------- */
+.recipe-details > .disclosure__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}

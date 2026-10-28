@@ -381,3 +381,63 @@ test('saving a NEW recipe already in the book asks: « Remplacer » overwrites i
   expect(writes[1].method).toBe('POST')
   expect(writes[1].body.id).toBeUndefined()
 })
+
+// ---- Progress you can SEE (Marc, 2026-10-27: « so the user doesn't feel like it's
+// stuck »). The import is ONE request that can run 45 s; the button used to say
+// « Importation… » and nothing else moved. Every import in flight now shows the same
+// strip as the photo read and ONE stage line, named after what is happening now.
+const held = () => {
+  let release!: () => void
+  const gate = new Promise<void>((r) => (release = r))
+  return { gate, release }
+}
+
+test('a link import in flight: the strip, and a stage line that moves on with the time spent', async ({ page }) => {
+  await openImport(page, 390)
+  const h = held()
+  await page.route('**/api/recipe-import', async (r) => {
+    await h.gate
+    await r.fulfill(json(SITE_DRAFT))
+  })
+  await page.getByRole('button', { name: 'Importer', exact: true }).click()
+  const progress = page.getByTestId('import-progress')
+  await expect(progress).toBeInViewport()
+  await expect(progress.locator('.recipe-read-bar--sweep')).toBeVisible()
+  await expect(progress).toHaveText('Je vais chercher la page…')
+  // 4 s in, the page has (honestly) been fetched or is being read.
+  await expect(progress).toHaveText('Je lis la recette…', { timeout: 8_000 })
+  h.release()
+  await expect(page.getByTestId('import-via')).toBeVisible()
+  await expect(progress).toHaveCount(0)
+})
+
+test('a paste in flight says it is organising the text', async ({ page }) => {
+  await openImport(page, 390)
+  await page.locator('input[inputmode="url"]').fill('')
+  await page.locator('.recipe-import__paste').fill('Pouding chômeur\n500 ml de cassonade\nCuire 40 minutes.')
+  const h = held()
+  await page.route('**/api/recipe-import', async (r) => {
+    await h.gate
+    await r.fulfill(json(SITE_DRAFT))
+  })
+  await page.getByRole('button', { name: 'Importer', exact: true }).click()
+  await expect(page.getByTestId('import-progress')).toHaveText('J’organise le texte…')
+  h.release()
+  await expect(page.getByTestId('import-progress')).toHaveCount(0)
+})
+
+test('the bookmark’s page: the strip is there the moment the scene opens', async ({ page }) => {
+  const captured = { v: 1, url: 'https://www.recettes.qc.ca/recettes/recette/chili', title: 'Chili', image: '', jsonld: [], text: 'Chili' }
+  const hash = Buffer.from(JSON.stringify(captured), 'utf8').toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+  const h = held()
+  await openScene(page, `/kitchen/recipe/new#import=${hash}`, async (r) => {
+    await h.gate
+    await r.fulfill(json({ ...SITE_DRAFT, title: 'Chili', fetched: 'bookmarklet' }))
+  })
+  const progress = page.getByTestId('import-progress')
+  await expect(progress).toBeInViewport()
+  await expect(progress).toHaveText('Je lis la page envoyée par ton signet…')
+  h.release()
+  await expect(page.locator('.recipe-title-input')).toHaveValue('Chili')
+  await expect(progress).toHaveCount(0)
+})
