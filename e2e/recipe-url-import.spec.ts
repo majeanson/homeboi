@@ -265,6 +265,13 @@ test('a blocked site points at the bookmark’s setup', async ({ page }) => {
     'href',
     '/settings?focus=recipeBookmarklet',
   )
+  // The way round the wall, right here: the bookmark's how-to (open by default) with
+  // its copy button and the read-only address — no trip to Réglages needed.
+  const howto = page.getByTestId('bookmarklet-howto')
+  await expect(howto).toBeVisible()
+  await expect(howto.getByRole('button', { name: 'Copier le signet' })).toBeVisible()
+  await expect(howto.getByLabel('Adresse du signet')).toHaveValue(/^javascript:/)
+  await expect(howto.getByRole('listitem')).toHaveCount(3) // desktop wording: copy + 2 steps
 })
 
 test('a page already in the book: one calm line with « Ouvrir », the import still lands', async ({ page }) => {

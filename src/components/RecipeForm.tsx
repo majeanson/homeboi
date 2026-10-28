@@ -6,6 +6,7 @@ import { useWrite } from '../lib/write'
 import { useConfirm } from '../lib/confirm'
 import { StatusMessage } from './StatusMessage'
 import { Disclosure } from './Disclosure'
+import { BookmarkletHowTo } from './BookmarkletHowTo'
 import { EditField } from './EditField'
 import { useAi } from '../lib/ai'
 import { resizeImage, imgUrl, OCR_MAX, VISION_MAX, MAX_UPLOAD_BYTES } from '../lib/image'
@@ -1423,6 +1424,15 @@ export function RecipeForm({
                     </>
                   )}
                 </p>
+              )}
+              {/* The wall just hit is the moment to show the way round it: the bookmark's
+                  how-to, worded for this device, with the copy button right here — not a
+                  trip to Réglages (Marc, 2026-10-27). Open by default: they asked. */}
+              {importBlockedHere && (
+                <Disclosure label={t.recipes.bookmarkletHow} defaultOpen className="recipe-import__howto">
+                  <BookmarkletHowTo compact />
+                  <p className="operator__hint mono">{t.recipes.bookmarkletOrPaste}</p>
+                </Disclosure>
               )}
             </div>
           )}

@@ -1508,6 +1508,32 @@ export const FR = {
     importBlocked: 'Ce site bloque l’importation. Copie le texte de la recette et colle-le ici.',
     // …ou la porte qui marche toujours : le navigateur de la personne (lib/recipeBookmarklet).
     importBlockedBookmarklet: 'Ou installe le signet « Envoyer à Babillard ».',
+    // Le signet « Envoyer à Babillard » — UN mode d'emploi (components/BookmarkletHowTo),
+    // montré dans Réglages ET sous un import bloqué, mot pour mot selon l'appareil.
+    bookmarkletHow: 'Comment faire avec le signet',
+    bookmarkletIntro: 'Certains sites refusent qu’on lise leurs recettes à distance (Recettes du Québec, Zeste, IGA). Ton navigateur, lui, les voit : ce signet envoie la page ouverte dans Babillard.',
+    bookmarkletStepCopy: 'Touche « Copier le signet ».',
+    bookmarkletCopy: 'Copier le signet',
+    bookmarkletCopied: 'Signet copié',
+    bookmarkletAddress: 'Adresse du signet',
+    bookmarkletSteps: {
+      ios: [
+        'Dans Safari, ouvre n’importe quelle page, touche Partager, puis « Ajouter un signet » ; nomme-le « Envoyer à Babillard ».',
+        'Menu ⋯ en bas ▸ « Signets » ▸ touche et maintiens « Envoyer à Babillard » ▸ « Modifier » ▸ efface l’adresse, colle ce que tu as copié, « OK ».',
+        'Ouvre la recette dans Safari, puis ⋯ ▸ « Signets » ▸ « Envoyer à Babillard » : Babillard s’ouvre avec la recette remplie.',
+      ],
+      android: [
+        'Dans Chrome, ouvre n’importe quelle page, touche ⋮ puis ☆ pour l’ajouter aux favoris.',
+        '⋮ ▸ « Favoris » ▸ ⋮ sur ce favori ▸ « Modifier » : nom « Envoyer à Babillard », adresse = ce que tu as copié.',
+        'Sur la page de la recette, tape « Envoyer à Babillard » dans la barre d’adresse et choisis le favori : Babillard s’ouvre avec la recette remplie.',
+      ],
+      desktop: [
+        'Affiche la barre de favoris (Ctrl/Cmd + Maj + B), clic droit dessus ▸ « Ajouter une page » : nom « Envoyer à Babillard », adresse = ce que tu as copié.',
+        'Sur la page de la recette, clique le favori : Babillard s’ouvre avec la recette remplie.',
+      ],
+    },
+    bookmarkletSignIn: 'Sur iPhone, Safari et l’app de l’écran d’accueil ont chacun leur connexion : la première fois, Safari te demandera de te connecter, une seule fois.',
+    bookmarkletOrPaste: 'Ou copie le texte de la recette sur le site et colle-le ci-dessus.',
     // Ce que le signet a rapporté quand la page s'est lue comme rien — l'indice à redonner.
     importReceived: (blocks: number, chars: number) => `Signet : ${blocks} bloc${blocks === 1 ? '' : 's'}, ${chars} caractères reçus.`,
     // Par où la page est venue, quand ce n'est pas notre simple lecture.

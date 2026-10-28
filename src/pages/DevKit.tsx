@@ -130,6 +130,7 @@ import { Modal } from '../components/Modal'
 import { useConfirm } from '../lib/confirm'
 import { DrawEditChoice, type DrawEditMode } from '../components/DrawEditChoice'
 import { RecipeReadReview } from '../components/RecipeReadReview'
+import { BookmarkletHowTo } from '../components/BookmarkletHowTo'
 import { RecentsPanel } from '../components/RecentsPanel'
 import { TimerRail } from '../components/cook/TimerRail'
 import { Sheet } from '../components/Sheet'
@@ -3417,6 +3418,22 @@ export function DevKit() {
             />
           </div>
         </Demo>
+      ),
+    },
+    {
+      cat: 'Overlays & chrome',
+      name: 'BookmarkletHowTo',
+      file: 'components/BookmarkletHowTo.tsx',
+      kw: 'bookmarklet signet envoyer babillard recette site bloqué blocked import how-to étapes safari chrome',
+      render: () => (
+        <>
+          <Demo label="full — the Réglages card body (intro + copy + steps worded for THIS device)">
+            <BookmarkletHowTo />
+          </Demo>
+          <Demo label="compact — under a « ce site bloque l'importation » message in the recipe form (no intro)">
+            <BookmarkletHowTo compact />
+          </Demo>
+        </>
       ),
     },
     {
