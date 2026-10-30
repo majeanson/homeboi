@@ -158,6 +158,25 @@ describe('a model selection vs the text read', () => {
     expect(bare.ingredients).toEqual(['4 pavés de saumon', '## Variante', '2 oignons'])
     expect(bare.steps).toEqual(['Cuire.', '## Variante', 'Frire.'])
   })
+  // A page that says nothing but RESTARTS its numbering at 1 for the second way (a
+  // « 1 2 3 » then « 1 2 ») is a version too (Marc, 2026-10-30, « do all »): the base
+  // ends at its last step, everything printed after — the second list and the restarted
+  // method — is « Version 2 » (a figure, never an invented word; a page that names its
+  // version keeps its own label). A single run never restarts; a run that merely
+  // continues (« 4 5 ») is not a version.
+  it('a method whose numbering restarts at 1 opens an unnamed version — « Version 2 »', () => {
+    const page = ['Saumon', '4 pavés de saumon', '1 Cuire au four.', '2 Servir.', '80 ml de mayonnaise', '1 Mélanger la sauce.', '2 Garnir.']
+    const s: LineSelection = { title: 0, servings: null, prep: null, cook: null, ingredients: [1, 4], steps: [2, 3, 5, 6], notes: [], ingredientSections: [], stepSections: [] }
+    const d = draftFromSelection(page, s, { title: null, servings: null, servingsUnit: null, times: { prep: null, cook: null, total: null } })!
+    expect(d.ingredients).toEqual(['4 pavés de saumon', '## Version 2', '80 ml de mayonnaise'])
+    expect(d.steps).toEqual(['Cuire au four.', 'Servir.', '## Version 2', 'Mélanger la sauce.', 'Garnir.'])
+    // The page names its version: no figure, the page's own label.
+    const named = draftFromSelection(['Saumon', '1 Cuire.', 'pour une version bol', '1 Mélanger.'], { ...s, ingredients: [], steps: [1, 3] }, { title: null, servings: null, servingsUnit: null, times: { prep: null, cook: null, total: null } })!
+    expect(named.steps).toEqual(['Cuire.', '## pour une version bol', 'Mélanger.'])
+    // Numbers that continue are one method.
+    const one = draftFromSelection(['Saumon', '1 Cuire.', '2 Servir.', '3 Ranger.'], { ...s, ingredients: [], steps: [1, 2, 3] }, { title: null, servings: null, servingsUnit: null, times: { prep: null, cook: null, total: null } })!
+    expect(one.steps).toEqual(['Cuire.', 'Servir.', 'Ranger.'])
+  })
   // Marc, 2026-10-30: « "Pour la sauce :" is not clear at all » — the selector had filed
   // the page's part label as an INGREDIENT, so it sat in the list with its colon, heading
   // nothing. A picked line that is a bare label (a colon, no figure, a few words) is a

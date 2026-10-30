@@ -31,6 +31,10 @@ import { Chip } from './Chip'
 // recipe PEEK it existed for was deleted under the rule in `detail/adapters.ts`
 // ("a peek that is really just a MENU of 'go to page X' is an inter-tap"), so every
 // path to a recipe now lands on `RecipeSheet`, which already carries this checklist.
+// « 30 ml de graines de sésame (facultatif) » — the parenthesis at the END of the line
+// (the same shape IngredientLine wears as a tag).
+const OPTIONAL = /\s*\(\s*(?:facultati(?:f|ve)s?|optionnel(?:le)?s?|optional)\s*\)\s*$/i
+
 export function RecipeIngredientPick({
   lines,
   onCancel,
@@ -46,18 +50,27 @@ export function RecipeIngredientPick({
 }) {
   const t = useT()
   // Buyable names, deduped case-insensitively, section markers (`## Titre`) dropped.
-  const names = useMemo(() => {
+  // An OPTIONAL line (« (facultatif) », « (optionnel) », « (optional) ») goes LAST and
+  // wears its word, so the must-haves come first and the extra is a conscious tick
+  // (Marc, 2026-10-30: « clearly indicate them somehow »).
+  const { names, optional } = useMemo(() => {
     const seen = new Set<string>()
-    const out: string[] = []
+    const must: string[] = []
+    const extra: string[] = []
+    const optional = new Set<string>()
     for (const line of withoutHeadings(lines)) {
-      const name = ingredientName(line)
+      const opt = OPTIONAL.test(line)
+      const name = ingredientName(line.replace(OPTIONAL, ''))
       const k = name.toLowerCase()
       if (name && !seen.has(k)) {
         seen.add(k)
-        out.push(name)
+        if (opt) {
+          extra.push(name)
+          optional.add(name)
+        } else must.push(name)
       }
     }
-    return out
+    return { names: [...must, ...extra], optional }
   }, [lines])
 
   const [on, setOn] = useState<Record<string, boolean>>({})
@@ -84,6 +97,7 @@ export function RecipeIngredientPick({
               </>
             )}
             {item}
+            {optional.has(item) && <span className="ing-opt mono">{t.recipes.optionalTag}</span>}
           </Chip>
         ))}
       </div>

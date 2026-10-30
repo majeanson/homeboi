@@ -1504,6 +1504,8 @@ export const FR = {
     // The version switch on a recipe that carries an alternative (« version bol ») —
     // the base recipe's chip; each version's chip is the page's own label.
     versionBase: 'Recette',
+    // The grocery checklist's tag on an optional ingredient (it sits last).
+    optionalTag: 'facultatif',
     reportReader: 'Lecture de la photo',
     reportReaderDevice: 'Sur l’appareil (Tesseract) — rien n’a quitté la maison',
     reportReaderCloud: 'Haute précision (nuage)',

@@ -156,25 +156,44 @@ export function draftFromSelection(lines: string[], sel: LineSelection, known: K
   // The client (lib/recipeSections recipeVersions) reads the matched pair back and shows
   // it behind a switch (Marc, 2026-10-30: « a full "this is another way if you want"
   // thing »). The label is structure: never a line, never a stray note.
-  const versionAt = lines.map((l, i) => (VERSION_LABEL.test(l.trim()) && !STEP_MARKED.test(l) ? i : -1)).filter((i) => i >= 0)
-  const versionSet = new Set(versionAt)
-  const versionOf = (i: number): { line: number; title: string } | null => {
-    let v: number | null = null
-    for (const a of versionAt) if (a < i) v = a
-    return v == null ? null : { line: v, title: label(v) }
+  const labelAt = lines.map((l, i) => (VERSION_LABEL.test(l.trim()) && !STEP_MARKED.test(l) ? i : -1)).filter((i) => i >= 0)
+  const versionSet = new Set(labelAt)
+  // A version OPENS at `at` (every line after it is the version's) under `title`. A
+  // page that names none but RESTARTS its numbering at 1 for the second way (« 1 2 3 »
+  // then « 1 2 ») opens one at the base's last step, as « Version 2 » — a figure, never
+  // an invented word (Marc, 2026-10-30). A page whose label already covers the restart
+  // keeps its own label.
+  type Version = { at: number; title: string }
+  const versions: Version[] = labelAt.map((i) => ({ at: i, title: label(i) }))
+  {
+    const printed = [...sel.steps].sort((a, b) => a - b).map((i) => ({ i, n: Number(/^(\d{1,2})(?!\d)/.exec(lines[i].trim())?.[1] ?? NaN) }))
+    let n = 2
+    for (let k = 1; k < printed.length; k++) {
+      const { i, n: num } = printed[k]
+      const prev = printed[k - 1]
+      if (num !== 1 || !(prev.n >= 2)) continue
+      if (versions.some((v) => v.at < i && v.at > prev.i)) continue // the page's own label opens it
+      if (versions.some((v) => v.at < i)) continue // already inside a named version
+      versions.push({ at: prev.i + 0.5, title: `Version ${n++}` })
+    }
+  }
+  const versionOf = (i: number): Version | null => {
+    let v: Version | null = null
+    for (const a of versions) if (a.at < i) v = a
+    return v
   }
   // Sections printed under a version carry its name; a version whose first lines come
-  // before any part label gets a section of its own at the label.
+  // before any part label gets a section of its own at its opening.
   const versioned = (items: number[], parts: Part[]): Part[] => {
     const out: Part[] = parts.filter((p) => !versionSet.has(p.line)).map((p) => {
       const v = versionOf(p.line)
       return v ? { ...p, title: `${v.title} — ${label(p.line)}` } : p
     })
-    for (const v of versionAt) {
-      const first = items.find((i) => i > v)
+    for (const v of versions) {
+      const first = items.find((i) => i > v.at)
       if (first == null) continue
-      const covered = out.some((p) => p.line > v && p.line < first)
-      if (!covered) out.push({ line: v, before: first, title: label(v) })
+      const covered = out.some((p) => p.line > v.at && p.line < first)
+      if (!covered) out.push({ line: v.at, before: first, title: v.title })
     }
     return out
   }

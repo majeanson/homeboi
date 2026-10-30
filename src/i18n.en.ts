@@ -1282,6 +1282,7 @@ export const EN: typeof FR = {
     reviewPhotoShortN: (n: number) => `P${n}`,
     reviewReportShort: 'R',
     versionBase: 'Recipe',
+    optionalTag: 'optional',
     reportReader: 'Photo reading',
     reportReaderDevice: 'On-device (Tesseract) — nothing left the house',
     reportReaderCloud: 'High accuracy (cloud)',

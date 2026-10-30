@@ -323,6 +323,23 @@ export async function collectMediaKeys(env: Env, householdId: string): Promise<s
     .bind(householdId)
     .all<{ v: string }>()
   for (const row of recipeImgs) if (row.v && !/^https?:\/\//i.test(row.v)) keys.add(row.v)
+  // The pages a recipe was READ from live INSIDE the as-imported snapshot's JSON
+  // (`sourceImage`, and every page as `sourceImages` since 2026-10-30) — not in any
+  // media column, so a swept sandbox's photo imports left them in R2 for ever.
+  const { results: originals } = await env.DB.prepare(
+    'SELECT original_json AS v FROM recipes WHERE household_id = ? AND original_json IS NOT NULL',
+  )
+    .bind(householdId)
+    .all<{ v: string }>()
+  for (const row of originals) {
+    try {
+      const o = JSON.parse(row.v) as { sourceImage?: unknown; sourceImages?: unknown }
+      if (typeof o?.sourceImage === 'string' && o.sourceImage) keys.add(o.sourceImage)
+      if (Array.isArray(o?.sourceImages)) for (const k of o.sourceImages) if (typeof k === 'string' && k) keys.add(k)
+    } catch {
+      /* malformed JSON — nothing to free */
+    }
+  }
   return [...keys]
 }
 
