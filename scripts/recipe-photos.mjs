@@ -160,14 +160,118 @@ async function add(slug, photos) {
 // the score is the corpus test's own measure — how many expected lines are NOT one whole
 // pickable line of the transcript (a reader miss), and whether the draft built from a
 // perfect selection is exact — side by side with the STORED (Workers AI) transcript.
-function envKey() {
+function dotenv() {
   const p = join(ROOT, '.env')
-  if (!existsSync(p)) return null
+  const out = {}
+  if (!existsSync(p)) return out
   for (const line of readFileSync(p, 'utf8').split(/\r?\n/)) {
-    const m = line.match(/^\s*(CLAUDE_API_KEY|ANTHROPIC_API_KEY)\s*=\s*"?([^"\s]+)"?\s*$/)
-    if (m) return m[2]
+    const m = line.match(/^\s*([A-Z_][A-Z0-9_]*)\s*=\s*"?([^"\s]+)"?\s*$/)
+    if (m) out[m[1]] = m[2]
   }
-  return null
+  return out
+}
+function envKey() {
+  const e = dotenv()
+  return e.CLAUDE_API_KEY ?? e.ANTHROPIC_API_KEY ?? null
+}
+
+// The corpus test's measure on any set of page transcripts — apostrophe-blind, as it is:
+// how many expected lines are NOT one whole pickable line (a reader miss), and is the
+// draft built from a perfect selection exact.
+async function makeScorer() {
+  const ai = await load('functions/_lib/ai.ts')
+  const draftMod = await load('functions/_lib/recipeDraft.ts')
+  const { mergeOcrPages } = await load('src/lib/ocrMerge.ts')
+  const corpus = await load('functions/test/recipeCorpus.ts')
+  const photos = await load('functions/test/recipePhotoCorpus.ts')
+  return (transcripts, want) => {
+    const stitched = mergeOcrPages(transcripts)
+    const lines = ai.selectionLines(stitched)
+    const { sel, missing } = photos.perfectSelection(lines, want)
+    const r = draftMod.readText(stitched)
+    const built = draftMod.draftFromSelection(lines, sel, r.known)
+    const got = built ? photos.canonExpected(corpus.expectedOf(draftMod.draft({ ...built, structuring: 'ai' }))) : null
+    const diff = got ? corpus.diffExpected(photos.canonExpected(want), got) : ['nothing built']
+    return { missing, diff }
+  }
+}
+
+// The reader bake-off table, shared by read-claude and read-cf.
+function printBakeoff(label, rows, usd) {
+  const head = ['entry', 'stored misses', 'new misses', 'stored exact', 'new exact', 'read', 'what is still missing / the first diff']
+  const w = head.map((h, i) => Math.max(h.length, ...rows.map((r) => String(r[i] ?? '').length)))
+  const line = (r) => r.map((c, i) => String(c ?? '').padEnd(w[i])).join(' | ')
+  console.log(`${label}\n` + line(head))
+  console.log(w.map((x) => '-'.repeat(x)).join('-|-'))
+  for (const r of rows) console.log(line(r))
+  console.log(`\n${rows.filter((r) => r[4] === '✓').length}/${rows.length} exact (stored: ${rows.filter((r) => r[3] === '✓').length}/${rows.length})${usd != null ? ` — ~$${usd.toFixed(2)} spent` : ''}`)
+}
+
+// read-cf: the FREE bake-off — any Workers AI vision model, called through the account's
+// REST endpoint with the production transcription prompt and the production call shape
+// (_lib/ai partsInput: content parts, a data: URL), scored like read-claude. Needs
+// CF_API_TOKEN (Workers AI read) + CF_ACCOUNT_ID in .env. Mistral answers first in prod,
+// so Gemma 4 — second in the chain — had never had a turn on a real photo (2026-10-30).
+async function readCf(id, model = '@cf/google/gemma-4-26b-a4b-it', run) {
+  const env = dotenv()
+  if (!env.CF_API_TOKEN || !env.CF_ACCOUNT_ID) throw new Error('need CF_API_TOKEN and CF_ACCOUNT_ID in .env')
+  const ai = await load('functions/_lib/ai.ts')
+  const imp = await load('functions/_lib/recipeImport.ts')
+  const score = await makeScorer()
+  const prompt = ai.transcriptionPrompt('fr')
+  const clean = (raw) => imp.stripAiCommentary(String(raw ?? '').replace(/```[a-z]*/gi, '').split(/\r?\n/)).join('\n').trim()
+  const tag = model.replace(/^@cf\//, '').replace(/[^a-z0-9.-]+/gi, '-') + (run ? `-run${run}` : '')
+  const rows = []
+  let neurons = 0
+  for (const e of await entries(id)) {
+    if (!e.expected) continue
+    const transcripts = []
+    let ms = 0
+    for (let i = 1; i <= e.meta.pages; i++) {
+      const photo = join(e.dir, `page-${i}.jpg`)
+      const saved = join(e.dir, `page-${i}.transcript.${tag}.txt`)
+      if (!existsSync(photo)) {
+        transcripts.push(e.transcripts[i - 1])
+        continue
+      }
+      if (SAVED && existsSync(saved)) {
+        transcripts.push(readFileSync(saved, 'utf8').trim())
+        continue
+      }
+      const t0 = Date.now()
+      const dataUrl = `data:image/jpeg;base64,${readFileSync(photo).toString('base64')}`
+      const body = {
+        messages: [{ role: 'user', content: [{ type: 'text', text: prompt }, { type: 'image_url', image_url: { url: dataUrl } }] }],
+        max_tokens: 4000,
+        temperature: 0,
+        // The thinking switches the chain already uses (Gemma) / the models document.
+        ...(/gemma/.test(model) ? { chat_template_kwargs: { enable_thinking: false } } : {}),
+        ...(/qwen3\.8|deepseek-v4/.test(model) ? { reasoning_effort: 'none' } : {}),
+      }
+      const r = await fetch(`https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/ai/run/${model}`, {
+        method: 'POST',
+        headers: { authorization: `Bearer ${env.CF_API_TOKEN}`, 'content-type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      const j = await r.json().catch(() => ({}))
+      ms += Date.now() - t0
+      if (!r.ok || !j.success) {
+        console.log(`${e.id} page ${i}: ${r.status} ${JSON.stringify(j.errors ?? j).slice(0, 300)}`)
+        transcripts.push('')
+        continue
+      }
+      const res = j.result ?? {}
+      const text = clean(typeof res.response === 'string' ? res.response : (res.choices?.[0]?.message?.content ?? ''))
+      neurons += res.usage?.total_tokens ?? 0
+      writeFileSync(saved, text + '\n')
+      transcripts.push(text)
+    }
+    const stored = score(e.transcripts, e.expected)
+    const fresh = score(transcripts, e.expected)
+    rows.push([e.id, `${stored.missing.length}`, `${fresh.missing.length}`, stored.diff.length ? '✗' : '✓', fresh.diff.length ? '✗' : '✓', `${(ms / 1000).toFixed(1)} s`,
+      fresh.missing.length ? fresh.missing.map((m) => `« ${m.slice(0, 60)} »`).join(' · ') : fresh.diff[0]?.split('\n')[0] ?? ''])
+  }
+  printBakeoff(`model ${model}${run ? ` run ${run}` : ''} — ${neurons} tokens`, rows)
 }
 async function readClaude(id, model = 'claude-opus-5-5', effort, run) {
   // The file tag: model, effort, and --run N so three reads of one page sit side by side
@@ -262,11 +366,12 @@ const opt = (name) => {
   return i >= 0 ? process.argv[i + 1] : undefined
 }
 if (cmd === 'read-claude') await readClaude(arg?.startsWith('--') ? undefined : arg, opt('--model'), opt('--effort'), opt('--run'))
+else if (cmd === 'read-cf') await readCf(arg?.startsWith('--') ? undefined : arg, opt('--model'), opt('--run'))
 else if (cmd === 'read') await read(arg)
 else if (cmd === 'propose') await propose(arg)
 else if (cmd === 'score') await score(arg)
 else if (cmd === 'add' && arg && rest.length) await add(arg, rest)
 else {
-  console.log('usage: recipe-photos.mjs read [id] | read-claude [id] [--model m] | propose [id] | score [id] | add <slug> <photo…>')
+  console.log('usage: recipe-photos.mjs read [id] | read-cf [id] [--model @cf/…] [--run N] [--saved] | read-claude [id] [--model m] [--effort e] [--run N] [--saved] | propose [id] | score [id] | add <slug> <photo…>')
   process.exit(1)
 }
