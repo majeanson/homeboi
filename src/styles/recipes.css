@@ -1151,7 +1151,7 @@
   position: sticky;
   top: 0;
   z-index: 1;
-  margin: -0.9rem -1rem 0;
+  margin: 0;
   padding: 0;
   background: var(--paper);
   box-shadow: 0 8px 12px -10px rgba(0, 0, 0, 0.35);
@@ -1164,14 +1164,22 @@
   -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
-  gap: 0.9rem;
-  padding: 0.9rem 1rem;
+  /* No padding and no gap on the scroller itself: the sticky block sits at its very
+     top with NO negative margin to cancel (iOS Safari offsets a sticky element by such
+     a margin — a scrolled line showed through above the loupe, Marc, 2026-10-30); the
+     lines column pads itself instead. */
+  gap: 0;
+  padding: 0;
 }
 /* Side-by-side once there's room; stacked (photo first) on a phone. */
 @media (min-width: 44rem) {
   .read-review__body {
     flex-direction: row;
     align-items: flex-start;
+  }
+  .read-review__body {
+    gap: 0.9rem;
+    padding: 0.9rem 1rem;
   }
   .read-review__photo {
     flex: 0 0 42%;
@@ -1182,6 +1190,7 @@
   .read-review__fields {
     flex: 1 1 auto;
     min-width: 0;
+    padding: 0;
   }
   .read-review__mag {
     height: 60vh;
@@ -1214,6 +1223,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
+  padding: 0.9rem 1rem; /* the column's own gutter — the scroller has none */
 }
 .read-review__title {
   font-family: var(--display);
