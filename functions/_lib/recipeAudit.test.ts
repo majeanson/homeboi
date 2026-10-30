@@ -18,7 +18,19 @@ describe('auditDraft — one flag per thing a read can miss', () => {
   it('a clean read has none', () => expect(kinds(base, 'Étape 1\nÉtape 2\nÉtape 3\nÉtape 4')).toEqual([]))
 
   it('step-count: the page printed « Étape 6 », the draft has 4', () => {
-    expect(auditDraft(base, 'Étape 1\n…\nÉtape 6\nServir.')).toEqual([{ kind: 'step-count', line: '4/6' }])
+    expect(auditDraft(base, 'Étape 1\nÉtape 2\nÉtape 3\nÉtape 4\nÉtape 5\nÉtape 6\nServir.')).toEqual([{ kind: 'step-count', line: '4/6' }])
+  })
+  // A cookbook numbers its steps with a bare figure; a reader that drops a step at a
+  // column break (the coquilles, photo corpus) leaves « 1, 2, 3, 5 » — the page says 4
+  // is missing even when the draft's count looks plausible.
+  it('step-gap: the page’s numbering skips one', () => {
+    const src = '1 Préchauffer le four à 180 °C.\n2 Mélanger la farine et les œufs.\n3 Verser l’eau et la cassonade.\n5 Cuire 40 minutes.'
+    expect(auditDraft(base, src)).toEqual([{ kind: 'step-count', line: '4/5' }, { kind: 'step-gap', line: '4' }])
+    // Contiguous bare numbers: no gap, and they count as the page's steps.
+    expect(kinds(base, '1. Préchauffer le four.\n2. Mélanger.\n3. Verser.\n4. Cuire 40 minutes.')).toEqual([])
+    // A quantity at a line start is not a step number (« 2 oeufs » has no sentence): the
+    // list above the method never counts, and never hides a gap.
+    expect(kinds(base, '2 oeufs\n4 pommes\n1 Préchauffer le four à 180 °C.\n2 Mélanger.\n3 Verser l’eau.\n4 Cuire 40 minutes.')).toEqual([])
   })
 
   it('missing-ingredient: the method pours what the list never names', () => {

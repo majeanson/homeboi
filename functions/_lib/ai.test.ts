@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { answerQuestion, classifyCapture, decodeStrayEscapes, suggestMeals, resolveLang, extractSizes, salvageTruncatedJson, segmentRunOn, selectionLines, selectRecipeLines, toSelection, transcribeImage, VISION_MODEL_ID, VISION_PRIMARY_ID, VISION_SECOND_ID } from './ai'
+import { type AiAttempt, answerQuestion, classifyCapture, decodeStrayEscapes, suggestMeals, resolveLang, extractSizes, salvageTruncatedJson, segmentRunOn, selectionLines, selectRecipeLines, toSelection, transcribeImage, VISION_MODEL_ID, VISION_PRIMARY_ID, VISION_SECOND_ID } from './ai'
 import type { Env } from './env'
 
 // A fake Workers AI binding that returns a canned `response`, so we can test the
@@ -288,6 +288,24 @@ describe('transcribeImage — primary vision model, Llama fallback', () => {
       .mockResolvedValueOnce({ response: 'Crêpes' })
     const report = { error: null as string | null, visionModel: null as string | null }
     expect(await transcribeImage({ DB: {}, AI: { run } } as unknown as Env, bytes, 'fr', report)).toBe('Crêpes')
+    expect(report.visionModel).toBe(VISION_MODEL_ID)
+  })
+  // A fallback reader is SAID, never silent (Marc, 2026-10-30): every model tried before
+  // the one that answered, with the reason — the day's budget first among them.
+  it('the readers tried and why they did not answer ride in report.attempts', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { AiBudgetError } = await import('./runModel')
+    const run = vi
+      .fn()
+      .mockRejectedValueOnce(new AiBudgetError(60, 60))
+      .mockResolvedValueOnce({ choices: [{ message: { content: '' } }] })
+      .mockResolvedValueOnce({ response: 'Crêpes' })
+    const report = { error: null as string | null, visionModel: null as string | null, attempts: [] as AiAttempt[] }
+    expect(await transcribeImage({ DB: {}, AI: { run } } as unknown as Env, bytes, 'fr', report)).toBe('Crêpes')
+    expect(report.attempts).toEqual([
+      { model: VISION_PRIMARY_ID, reason: 'budget' },
+      { model: VISION_SECOND_ID, reason: 'empty' },
+    ])
     expect(report.visionModel).toBe(VISION_MODEL_ID)
   })
   it('both stronger readers throw (or answer nothing) → the Llama read, named', async () => {

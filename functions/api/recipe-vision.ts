@@ -1,6 +1,6 @@
 import { badRequest, ok, withAiError } from '../_lib/json'
 import { authed } from '../_lib/route'
-import { VISION_MODEL_ID, resolveLang, transcribeImage } from '../_lib/ai'
+import { type AiAttempt, VISION_MODEL_ID, resolveLang, transcribeImage } from '../_lib/ai'
 import { draft, draftFromText } from '../_lib/recipeDraft'
 import { withAudit } from '../_lib/recipeAudit'
 
@@ -28,12 +28,14 @@ export const onRequestPost = authed(async (ctx) => {
   const buf = await ctx.request.arrayBuffer()
   if (buf.byteLength === 0 || buf.byteLength > MAX_BYTES) return badRequest('Image vide ou trop grande.')
 
-  const report = { error: null as string | null, visionModel: null as string | null }
+  const report = { error: null as string | null, visionModel: null as string | null, attempts: [] as AiAttempt[] }
   const lang = resolveLang(ctx.env, ctx.request)
   const transcript = await transcribeImage(ctx.env, new Uint8Array(buf), lang, report)
   // Which model read the photo — the verify panel's read report names it, beside
-  // the structuring the draft carries (`structuring` / `model`).
-  const reader = { reader: 'vision' as const, readerModel: report.visionModel ?? VISION_MODEL_ID }
+  // the structuring the draft carries (`structuring` / `model`) — and which models were
+  // tried before it and why they did not answer (`readerAttempts`): a fallback reader
+  // is told to the cook, never silent.
+  const reader = { reader: 'vision' as const, readerModel: report.visionModel ?? VISION_MODEL_ID, readerAttempts: report.attempts }
   // `?only=transcript`: ONE PAGE of several. The client reads each photo this way,
   // stitches the transcripts (lib/ocr mergeOcrPages — the same as the OCR readers) and
   // structures the whole once through recipe-import {text}. Before, the vision read

@@ -1,4 +1,4 @@
-import { runModel } from './runModel'
+import { AiBudgetError, runModel } from './runModel'
 // The one essential AI feature: classify a free-text capture into a structured
 // intent, then the handler routes it. Workers AI, in-network (Loi 25), free
 // Neuron tier. One inference per capture — never on a render loop.
@@ -503,8 +503,14 @@ export async function selectRecipeLines(
   // The cook's optional guidance (« c'est la 2e recette de la page ») — one short line,
   // quoted into the prompt as THEIR note.
   hint?: string,
+  // Why the model did not answer, when it did not (the budget, an error, nothing usable)
+  // — surfaced to the cook, who otherwise gets the shape read in silence.
+  report?: { attempts?: AiAttempt[] },
 ): Promise<LineSelection | null> {
   if (!env.AI || !lines.length) return null
+  const tried = (reason: AiAttemptReason) => {
+    if (report) (report.attempts ??= []).push({ model: MODEL, reason })
+  }
   const note = (hint ?? '').replace(/\s+/g, ' ').trim().slice(0, 200)
   const numbered = lines.map((l, i) => `${i}: ${l.slice(0, PREVIEW_CHARS)}`).join('\n')
   const prompt =
@@ -545,17 +551,23 @@ ${numbered}`
     // The model could not keep to the schema — once more, free-form, parsed leniently.
     // Any other failure (a spent budget, an outage) is the model not answering.
     const msg = logAi('selectRecipeLines', err)
-    if (!/json mode/i.test(msg)) return null
+    if (!/json mode/i.test(msg)) {
+      tried(attemptReason(err))
+      return null
+    }
     try {
       const res = (await runModel(env, MODEL, { messages, max_tokens: SELECTION_TOKENS, temperature: 0 })) as { response?: unknown }
       raw = res.response
     } catch (err2) {
+      tried(attemptReason(err2))
       logAi('selectRecipeLines (retry)', err2)
       return null
     }
   }
   const parsed = extractJson(raw)
-  return parsed && typeof parsed === 'object' ? toSelection(parsed as Record<string, unknown>, lines.length) : null
+  const sel = parsed && typeof parsed === 'object' ? toSelection(parsed as Record<string, unknown>, lines.length) : null
+  if (!sel) tried('empty')
+  return sel
 }
 
 // The reply, validated: every index an integer in range, each line used at most ONCE (a
@@ -697,14 +709,28 @@ export function transcriptionPrompt(lang: Lang): string {
 - Recopie chaque nombre, fraction et unité exactement. Ne traduis pas, ne reformule pas, ne résume pas, ne corrige pas l'orthographe, ne convertis pas les unités.
 - Réponds UNIQUEMENT avec la transcription : pas de JSON, pas de markdown, pas de guillemets autour des lignes, aucun commentaire, rien sur ce qui manque ou serait illisible.`
 }
+// A model that was TRIED and did not answer — and why, in one word the cook can read.
+// Every chain here falls through to the next model or the shape read; without this,
+// « the day's AI budget is spent » and « a weaker reader answered » were invisible, and
+// the cook trusted a worse read exactly as much as a good one (Marc, 2026-10-30).
+export type AiAttemptReason = 'budget' | 'error' | 'empty' | 'blind'
+export interface AiAttempt {
+  model: string
+  reason: AiAttemptReason
+}
+export const attemptReason = (err: unknown): AiAttemptReason => (err instanceof AiBudgetError ? 'budget' : 'error')
+
 export async function transcribeImage(
   env: Env,
   bytes: Uint8Array,
   lang: Lang = 'fr',
-  report?: AiReport & { visionModel?: string | null },
+  report?: AiReport & { visionModel?: string | null; attempts?: AiAttempt[] },
 ): Promise<string> {
   if (!env.AI || bytes.length === 0) return ''
   const prompt = transcriptionPrompt(lang)
+  const tried = (model: string, reason: AiAttemptReason) => {
+    if (report) (report.attempts ??= []).push({ model, reason })
+  }
   const clean = (raw: unknown) =>
     stripAiCommentary((typeof raw === 'string' ? raw : '').replace(/```[a-z]*/gi, '').split(/\r?\n/))
       .join('\n')
@@ -725,8 +751,10 @@ export async function transcribeImage(
         if (report) report.visionModel = model
         return text
       }
+      tried(model, text ? 'blind' : 'empty')
       logAi(`transcribeImage (${model})`, new Error(`no usable read: ${visionSnippet(visionText(res))}`))
     } catch (err) {
+      tried(model, attemptReason(err))
       logAi(`transcribeImage (${model})`, err)
     }
   }
@@ -742,9 +770,13 @@ export async function transcribeImage(
     // Fences a model adds out of habit go; a leaked remark (« La recette n'indique
     // pas… ») is dropped line by line, the same net the structuring model gets.
     const text = clean(res.response)
-    if (!text && report) report.error = logAi('transcribeImage', new Error(`vision read nothing legible: ${visionSnippet(res.response)}`))
+    if (!text) {
+      tried(VISION_MODEL, 'empty')
+      if (report) report.error = logAi('transcribeImage', new Error(`vision read nothing legible: ${visionSnippet(res.response)}`))
+    }
     return text
   } catch (err) {
+    tried(VISION_MODEL, attemptReason(err))
     if (report) report.error = logAi('transcribeImage', err)
     return ''
   }

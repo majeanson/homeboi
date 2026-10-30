@@ -81,6 +81,33 @@ export async function resizeImage(file: File, maxDim: number, quality = 0.82): P
   }
 }
 
+// The grayscale pixels of a photo at a working size — what lib/photoCheck measures
+// (blur, a shadow over the text, text at the frame's edge) before any reader runs.
+// Same decoders as resizeImage; null when nothing could decode it.
+export async function grayPixels(file: File, maxDim: number): Promise<{ gray: Uint8ClampedArray; width: number; height: number } | null> {
+  const input = await normalizeHeic(file)
+  const src = await decodeImage(input)
+  if (!src) return null
+  const { width, height, draw, done } = src
+  try {
+    const scale = Math.min(1, maxDim / Math.max(width, height))
+    const w = Math.max(1, Math.round(width * scale))
+    const h = Math.max(1, Math.round(height * scale))
+    const canvas = document.createElement('canvas')
+    canvas.width = w
+    canvas.height = h
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })
+    if (!ctx) return null
+    draw(ctx, w, h)
+    const { data } = ctx.getImageData(0, 0, w, h)
+    const gray = new Uint8ClampedArray(w * h)
+    for (let i = 0, p = 0; i < data.length; i += 4, p++) gray[p] = (data[i] * 299 + data[i + 1] * 587 + data[i + 2] * 114) / 1000
+    return { gray, width: w, height: h }
+  } finally {
+    done()
+  }
+}
+
 type DecodedImage = {
   width: number
   height: number

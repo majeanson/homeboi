@@ -14,7 +14,8 @@ import { ocrImage, mergeOcrPages, disposeOcr, warmOcr, normalizeOcrText } from '
 import { repairImperialFromMetric } from '../lib/measure'
 import { useOcrEngine, useCloudOcrAvailable, markCloudOcrThrottled } from '../lib/ocrPref'
 import { uploadMedia, MediaUnavailableError } from '../lib/uploadMedia'
-import { RecipeReadReview, type AuditFlagView, type ReadReport, type ReadReviewDraft } from './RecipeReadReview'
+import { RecipeReadReview, type AiAttemptView, type AuditFlagView, type ReadReport, type ReadReviewDraft } from './RecipeReadReview'
+import { checkPhotoFile } from '../lib/photoCheck'
 import { alignSide, sideInsert, sideRemove, sideSwap, sideSplice, sideSet } from '../lib/parallelArray'
 import {
   type Recipe,
@@ -503,6 +504,8 @@ export function RecipeForm({
     structuring?: 'headings' | 'ai' | 'heuristic' | 'jsonld' | 'microdata'
     model?: string | null
     audit?: AuditFlagView[]
+    // The structuring model tried and not answering — the draft is the shape read's.
+    attempts?: AiAttemptView[]
     empty?: boolean
     // recipe-vision only: which model transcribed the photo (the structuring above
     // then names how that transcript was organised, like any paste).
@@ -550,6 +553,20 @@ export function RecipeForm({
         audit: [],
         shakyCount: 0,
         timings: {},
+        readerAttempts: [],
+        structuringAttempts: [],
+        photoWarnings: [],
+      }
+      // What the photos look like BEFORE any reader runs (lib/photoCheck): a blurred
+      // page, a hand's shadow over the text, text at the frame's edge — each a retake
+      // the cook can make now. Never blocks the read; said at once, and again under
+      // the verify panel beside the lines it may have cost.
+      for (let i = 0; i < files.length; i++) {
+        for (const kind of await checkPhotoFile(files[i])) report.photoWarnings.push({ page: i, kind })
+      }
+      if (report.photoWarnings.length) {
+        const kinds = [...new Set(report.photoWarnings.map((w) => w.kind))]
+        setReadMsg(t.recipes.photoWarnNotice(kinds.map((k) => (k === 'blur' ? t.recipes.photoWarnBlur : k === 'shadow' ? t.recipes.photoWarnShadow : t.recipes.photoWarnEdge)).join(' · ')))
       }
 
       // The high-accuracy CLOUD reader (Mistral OCR), when the operator picked it and
@@ -637,6 +654,7 @@ export function RecipeForm({
           report.structuring = d.structuring ?? null
           report.structuringModel = d.model ?? null
           report.audit = d.audit ?? []
+          report.structuringAttempts = d.attempts ?? []
         }
         return d
       }
@@ -662,7 +680,7 @@ export function RecipeForm({
             const small = await resizeImage(file, VISION_MAX)
             if (small.size > MAX_UPLOAD_BYTES) return null
             // A phone upload + the model: well past api()'s 20 s default on cellular.
-            const v = await api<{ transcript?: string; readerModel?: string | null }>('recipe-vision?only=transcript', {
+            const v = await api<{ transcript?: string; readerModel?: string | null; readerAttempts?: AiAttemptView[] }>('recipe-vision?only=transcript', {
               method: 'POST',
               body: small,
               timeoutMs: 60_000,
@@ -686,6 +704,9 @@ export function RecipeForm({
             report.reader = 'vision'
             report.readerModel = v.readerModel ?? null
           }
+          // The readers tried before the one that answered, and why — a fallback is
+          // said in the verify panel, never silent.
+          if (v?.readerAttempts?.length) report.readerAttempts.push(...v.readerAttempts)
         }
         if (!texts.length) return null
         meanConf = 95 // a vision transcript is a read, not a guess — structure it
@@ -870,6 +891,9 @@ export function RecipeForm({
             audit: r.audit ?? [],
             shakyCount: 0,
             timings: {},
+            readerAttempts: [],
+            structuringAttempts: r.attempts ?? [],
+            photoWarnings: [],
           },
           via: viaOf(r.structuring),
           image: r.image,
@@ -1389,8 +1413,19 @@ export function RecipeForm({
             </button>
           </div>
           {/* The gold path: an online recipe imported by link is verbatim — no OCR,
-              nothing to mis-read. Gently point cooks there. */}
+              nothing to mis-read. Gently point cooks there — and, for a photo, the four
+              things that decide the read (measured on the photo corpus, 2026-10-30: the
+              next page's edge in frame, a hand's shadow and a column crop each cost
+              lines; a flat, lit, whole page read exact). */}
           <p className="recipe-fill-hint mono">{t.recipes.readHint}</p>
+          {/* Folded (LEAN.md): one closed line on the first screen, the four tips a tap away. */}
+          <Disclosure label={t.recipes.readTipsLabel} className="recipe-fill-tips">
+            <ul className="recipe-fill-tips__list mono">
+              {t.recipes.readTips.map((tip) => (
+                <li key={tip}>{tip}</li>
+              ))}
+            </ul>
+          </Disclosure>
           {readMsg && <p className="recipe-aioff mono">{readMsg}</p>}
 
           {showImport && (

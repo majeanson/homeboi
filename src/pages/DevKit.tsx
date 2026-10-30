@@ -3477,6 +3477,9 @@ export function DevKit() {
                   repairs: [],
                   audit: [{ kind: 'step-count', line: '2/3' }],
                   shakyCount: 0,
+                  readerAttempts: [],
+                  structuringAttempts: [],
+                  photoWarnings: [],
                 }}
                 onRetry={() => setReadReviewTextOpen(false)}
                 onConfirm={() => setReadReviewTextOpen(false)}
@@ -3524,6 +3527,11 @@ export function DevKit() {
                   ],
                   audit: [{ kind: 'missing-ingredient', line: '125 ml de lait' }],
                   shakyCount: 1,
+                  // The machine's confession lines (2026-10-30): a fallback reader answered
+                  // because the first hit the day's budget, the photo was blurred.
+                  readerAttempts: [{ model: '@cf/mistralai/mistral-small-3.1-24b-instruct', reason: 'budget' }],
+                  structuringAttempts: [],
+                  photoWarnings: [{ page: 0, kind: 'blur' }],
                 }}
                 onConfirm={() => setReadReviewOpen(false)}
                 onCancel={() => setReadReviewOpen(false)}

@@ -1441,8 +1441,31 @@ export const FR = {
     detailsTags: (n: number) => `${n} étiquette${n > 1 ? 's' : ''}`,
     detailsPhoto: 'photo',
     readFail: 'Texte illisible — remplis à la main.',
-    readHint: 'Recette en ligne ? Le lien donne une copie parfaite. Sinon, scanne plusieurs photos d’un coup — une vue d’ensemble + des gros plans des petits chiffres.',
+    readHint: 'Recette en ligne ? Le lien donne une copie parfaite.',
+    readTipsLabel: 'Bien photographier une page',
+    // Les quatre choses qui décident la lecture (mesurées sur le corpus photo) — pas de
+    // gros plans : un rognage de colonne a fait PIRE que la page entière.
+    readTips: [
+      'Une page à la fois, à plat, toute la page dans le cadre — sans la page d’à côté.',
+      'Pas de main ni d’ombre sur le texte.',
+      'Deux pages ? Deux photos — le livre les recolle.',
+      'Pas besoin de gros plans : une page nette suffit.',
+    ],
     photoTooBig: 'Photo trop lourde — essaie une capture d’écran ou une photo plus petite.',
+    // What the photo looked like before any reader ran (lib/photoCheck) — said at once,
+    // and again under the verify panel.
+    photoWarnNotice: (what: string) => `Photo : ${what}. La lecture continue — reprends-la si tu peux.`,
+    photoWarnBlur: 'floue',
+    photoWarnShadow: 'une ombre couvre le texte',
+    photoWarnEdge: 'quelque chose dépasse du cadre — recadre sur la page',
+    // A model tried and not answering — never silent.
+    readerFallback: (model: string) => `Lecteur de secours : ${model}`,
+    structuringFallback: 'L’IA n’a pas organisé ce texte — lecture de forme seulement',
+    aiReasonBudget: 'quota IA du jour épuisé',
+    aiReasonError: 'erreur du modèle',
+    aiReasonEmpty: 'n’a rien lu',
+    aiReasonBlind: 'n’a pas vu l’image',
+    columnsNudge: 'Page en colonnes ? Vérifie le bas de chaque colonne — c’est là qu’une étape peut manquer.',
     // Verify-against-the-photo panel
     reviewTitle: 'Vérifier la lecture',
     reviewHint: 'Compare avec la photo. Les nombres et les mots incertains sont surlignés.',
@@ -1462,6 +1485,7 @@ export const FR = {
     // L'audit avant la fiche (functions/_lib/recipeAudit) : ce qu'une lecture a pu manquer.
     reviewCheckAudit: 'La relecture signale cette ligne — vérifie-la.',
     auditStepCount: (s: string) => `La page compte plus d’étapes (${s}).`,
+    auditStepGap: (n: string) => `La numérotation de la page saute l’étape ${n} — une ligne a pu être perdue.`,
     auditMissing: (l: string) => `« ${l} » est dans les étapes, pas dans les ingrédients.`,
     auditTitle: 'Le titre ressemble à une étiquette du site.',
     auditDup: 'Une étape revient deux fois.',
@@ -1490,6 +1514,11 @@ export const FR = {
     reportRepairsWhy: 'Fraction illisible reconstruite à partir des millilitres imprimés à côté.',
     reportAudit: 'Relecture automatique',
     reportAuditNone: 'Rien à signaler',
+    reportAttempts: 'Modèles qui n’ont pas répondu',
+    reportAttemptsNone: 'Aucun — le premier lecteur a répondu',
+    reportPhoto: 'La photo',
+    reportPhotoNone: 'Nette, sans ombre, bien cadrée',
+    reportPhotoPage: (n: number) => `photo ${n}`,
     reportShaky: 'Mots lus avec hésitation',
     // Où sont passées les secondes — mesuré sur l'appareil.
     reportTimings: 'Durée',

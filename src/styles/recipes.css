@@ -1030,6 +1030,21 @@
   font-size: 0.8rem;
   line-height: 1.35;
 }
+/* The four things that decide a photo read — a compact list under the hint, same
+   voice; the cook reads it once, then photographs better. */
+.recipe-fill-tips {
+  margin: 0.15rem 0 0;
+}
+.recipe-fill-tips__list {
+  color: var(--ink-faint);
+  margin: 0.2rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+.recipe-fill-tips__list li + li {
+  margin-top: 0.1rem;
+}
 
 /* --- Verify-against-the-photo panel (RecipeReadReview) --------------------- */
 /* Sits ABOVE the recipe modal (z-index 80) so the cook checks the read against the

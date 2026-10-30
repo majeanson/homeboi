@@ -1,4 +1,4 @@
-import { normLoose } from './recipeImport'
+import { STEP_MARKED, normLoose } from './recipeImport'
 import { ingredientsFromMethod } from './recipeRepair'
 
 // THE AUDIT BEFORE THE FORM (E, 2026-10-27). A read that looks complete is not always:
@@ -12,7 +12,7 @@ import { ingredientsFromMethod } from './recipeRepair'
 // ignore the panel. `recipeCorpus.test` holds every corpus page — hand-verified correct —
 // at ZERO flags, so a rule that fires on a real good page fails the build.
 
-export type AuditKind = 'step-count' | 'missing-ingredient' | 'title-junk' | 'dup-step' | 'empty-section' | 'no-quantity'
+export type AuditKind = 'step-count' | 'step-gap' | 'missing-ingredient' | 'title-junk' | 'dup-step' | 'empty-section' | 'no-quantity'
 
 export interface AuditFlag {
   kind: AuditKind
@@ -29,12 +29,28 @@ interface Auditable {
 const isHeading = (l: string) => l.startsWith('## ')
 const real = (ls: string[]) => ls.filter((l) => !isHeading(l))
 
-// « Étape 7 » / « Step 7 » / « 7. » at the head of a line in the SOURCE: the highest
-// such number is how many steps the page printed.
-function printedStepCount(source: string): number {
-  let max = 0
-  for (const m of source.matchAll(/^[ \t]*(?:[ée]tape|step)\s*(\d{1,2})\b/gim)) max = Math.max(max, +m[1])
-  return max
+// « Étape 7 » / « Step 7 » at the head of a line in the SOURCE, or a cookbook's bare
+// step number (« 7. Déposer… », « 7 Déposer… » with a sentence behind it — STEP_MARKED):
+// the numbers the page printed, in reading order.
+function printedStepNumbers(source: string): number[] {
+  const out: number[] = []
+  for (const line of source.split(/\r?\n/)) {
+    const m = line.match(/^[ \t]*(?:[ée]tape|step)\s*(\d{1,2})\b/i) ?? (STEP_MARKED.test(line.trim()) ? line.trim().match(/^(\d{1,2})/) : null)
+    if (m) out.push(+m[1])
+  }
+  return out
+}
+// The highest number printed is how many steps the page has.
+const printedStepCount = (source: string): number => Math.max(0, ...printedStepNumbers(source))
+// A page that numbers « 1, 2, 3, 5 » lost its 4 somewhere between the photo and the
+// text — the reader dropped a step at a column break (the coquilles' step 5, photo
+// corpus 2026-10-30). The first number missing from 1..max, when the run starts at 1.
+function printedStepGap(source: string): number | null {
+  const nums = new Set(printedStepNumbers(source))
+  const max = Math.max(0, ...nums)
+  if (!nums.has(1) || max < 3) return null
+  for (let n = 2; n < max; n++) if (!nums.has(n)) return n
+  return null
 }
 
 // Words that say nothing about WHICH ingredient: units, sizes, connectors.
@@ -58,10 +74,12 @@ export function auditDraft(d: Auditable, sourceText: string | null): AuditFlag[]
   const steps = real(d.steps)
   const ings = real(d.ingredients)
 
-  // The page numbered more steps than the draft holds.
+  // The page numbered more steps than the draft holds — or skipped a number.
   if (sourceText) {
     const printed = printedStepCount(sourceText)
     if (printed >= 2 && steps.length < printed) flags.push({ kind: 'step-count', line: `${steps.length}/${printed}` })
+    const gap = printedStepGap(sourceText)
+    if (gap != null) flags.push({ kind: 'step-gap', line: String(gap) })
   }
 
   // A measured phrase in the method that no ingredient line shares a word with.

@@ -3,6 +3,7 @@ import { useT } from '../i18n'
 import { Modal } from './Modal'
 import { SubTabs } from './SubTabs'
 import { findMeasures, measuresDisagree } from '../lib/measure'
+import type { PhotoWarningKind } from '../lib/photoCheck'
 import { isSectionHeading, SECTION_PREFIX } from '../lib/recipeSections'
 import { Icon, InlineIcon } from './Icon'
 import { Chip } from './Chip'
@@ -64,18 +65,49 @@ export interface ReadReport {
    *  structuring pass — so a slow read says WHICH half was slow (Marc, 2026-10-27:
    *  « about 1–2 min » for one photo, with no way to tell where the time went). */
   timings?: { read?: number; structure?: number }
+  /** Readers TRIED before the one that answered, and why each did not (the day's AI
+   *  budget, an error, nothing usable, « I see no image ») — a fallback reader is said
+   *  out loud, never silent (Marc, 2026-10-30). */
+  readerAttempts: AiAttemptView[]
+  /** The structuring model tried and did not answer → the draft is the shape read's. */
+  structuringAttempts: AiAttemptView[]
+  /** What the photos themselves looked like before any reader ran (lib/photoCheck). */
+  photoWarnings: { page: number; kind: PhotoWarningKind }[]
+}
+
+/** One model tried and not answering, as the endpoints send it. */
+export interface AiAttemptView {
+  model: string
+  reason: 'budget' | 'error' | 'empty' | 'blind'
 }
 
 /** One audit finding, as the import endpoints send it (`audit` on every response). */
 export interface AuditFlagView {
-  kind: 'step-count' | 'missing-ingredient' | 'title-junk' | 'dup-step' | 'empty-section' | 'no-quantity'
+  kind: 'step-count' | 'step-gap' | 'missing-ingredient' | 'title-junk' | 'dup-step' | 'empty-section' | 'no-quantity'
   line?: string
 }
+
+// A model id as a cook reads it: « mistral-small-3.1-24b-instruct » → « Mistral Small 3.1 ».
+export const modelLabel = (id: string): string => {
+  const base = id.replace(/^@cf\//, '').split('/').pop() ?? id
+  const m = base.match(/^([a-z]+)(?:-([a-z]+))?(?:-?(\d+(?:\.\d+)?))?/i)
+  if (!m) return base
+  const cap = (s?: string) => (s ? s[0].toUpperCase() + s.slice(1) : '')
+  return [cap(m[1]), m[2] && !/^\d/.test(m[2]) ? cap(m[2]) : '', m[3] ?? ''].filter(Boolean).join(' ')
+}
+const reasonText = (r: AiAttemptView['reason'], t: ReturnType<typeof useT>): string =>
+  r === 'budget' ? t.recipes.aiReasonBudget : r === 'error' ? t.recipes.aiReasonError : r === 'blind' ? t.recipes.aiReasonBlind : t.recipes.aiReasonEmpty
+const attemptsText = (a: AiAttemptView[], t: ReturnType<typeof useT>): string =>
+  a.map((x) => `${modelLabel(x.model)} : ${reasonText(x.reason, t)}`).join(' · ')
+const photoWarnText = (k: PhotoWarningKind, t: ReturnType<typeof useT>): string =>
+  k === 'blur' ? t.recipes.photoWarnBlur : k === 'shadow' ? t.recipes.photoWarnShadow : t.recipes.photoWarnEdge
 
 // The audit finding, in words — the panel's hint line and the « Rapport » tab.
 const auditText = (f: AuditFlagView, t: ReturnType<typeof useT>): string =>
   f.kind === 'step-count'
     ? t.recipes.auditStepCount(f.line ?? '')
+    : f.kind === 'step-gap'
+      ? t.recipes.auditStepGap(f.line ?? '')
     : f.kind === 'missing-ingredient'
       ? t.recipes.auditMissing(f.line ?? '')
       : f.kind === 'title-junk'
@@ -305,6 +337,26 @@ export function RecipeReadReview({
             <Icon name="warning-bold" size={14} /> {report.audit.map((f) => auditText(f, t)).join(' · ')}
           </p>
         ) : null}
+        {/* The machine's own confession, before the cook trusts a line: a fallback reader
+            answered (and why the first did not), the structuring model did not answer,
+            the photo itself was blurred / shaded / cut at the edge. */}
+        {report?.readerAttempts.length ? (
+          <p className="read-review__hint read-review__audit mono" data-testid="read-review-fallback">
+            <Icon name="warning-bold" size={14} /> {t.recipes.readerFallback(report.readerModel ? modelLabel(report.readerModel) : t.recipes.reportReaderDevice)} — {attemptsText(report.readerAttempts, t)}
+          </p>
+        ) : null}
+        {report?.structuringAttempts.length ? (
+          <p className="read-review__hint read-review__audit mono" data-testid="read-review-structuring-fallback">
+            <Icon name="warning-bold" size={14} /> {t.recipes.structuringFallback} — {attemptsText(report.structuringAttempts, t)}
+          </p>
+        ) : null}
+        {report?.photoWarnings.length ? (
+          <p className="read-review__hint read-review__audit mono" data-testid="read-review-photo">
+            <Icon name="camera-bold" size={14} />{' '}
+            {[...new Set(report.photoWarnings.map((w) => w.kind))].map((k) => photoWarnText(k, t)).join(' · ')}
+          </p>
+        ) : null}
+        {report?.reader === 'vision' && !fromText ? <p className="read-review__hint mono">{t.recipes.columnsNudge}</p> : null}
 
         {/* Vérifier ↔ Rapport: the second face is the pipeline honesty report —
             what read the photo, what organized the text, what was corrected or
@@ -538,6 +590,35 @@ function ReadReportPanel({ report, fromText }: { report: ReadReport; fromText: b
           report.audit.map((f, i) => <p key={i}>⚠ {auditText(f, t)}</p>)
         ) : (
           <p>{t.recipes.reportAuditNone}</p>
+        ),
+      )}
+      {/* Which models were tried and did not answer — the budget, an error, nothing. */}
+      {row(
+        t.recipes.reportAttempts,
+        report.readerAttempts.length || report.structuringAttempts.length ? (
+          <>
+            {report.readerAttempts.map((a, i) => (
+              <p key={`r${i}`}>⚠ {modelLabel(a.model)} : {reasonText(a.reason, t)}</p>
+            ))}
+            {report.structuringAttempts.map((a, i) => (
+              <p key={`s${i}`}>⚠ {modelLabel(a.model)} : {reasonText(a.reason, t)}</p>
+            ))}
+          </>
+        ) : (
+          <p>{t.recipes.reportAttemptsNone}</p>
+        ),
+      )}
+      {row(
+        t.recipes.reportPhoto,
+        report.photoWarnings.length ? (
+          report.photoWarnings.map((w, i) => (
+            <p key={i}>
+              ⚠ {report.pages > 1 ? `${t.recipes.reportPhotoPage(w.page + 1)} — ` : ''}
+              {photoWarnText(w.kind, t)}
+            </p>
+          ))
+        ) : (
+          <p>{t.recipes.reportPhotoNone}</p>
         ),
       )}
       {report.reader === 'device' &&

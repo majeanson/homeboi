@@ -1,5 +1,5 @@
 import type { Env } from './env'
-import { SELECTION_MODEL, type LineSelection, type Lang, selectRecipeLines, selectionLines } from './ai'
+import { type AiAttempt, SELECTION_MODEL, type LineSelection, type Lang, selectRecipeLines, selectionLines } from './ai'
 import { detectLang } from './langDetect'
 import { MAX_NOTES_LEN, MAX_STEPS, NO_TIMES, NOTE_HEADING, type RecipeTimes, STEP_MARKED, parseRecipeText, parseYield, refineSteps, textToMinutes } from './recipeImport'
 import { jsonFragmentsToText, repairRecipeRead, stripTranscriptPreamble } from './recipeRepair'
@@ -49,6 +49,9 @@ export interface DraftOut {
   // only, capped) — the verify panel shows it beside the lines, the way the photo read
   // shows the photo.
   transcript?: string
+  // The structuring model was TRIED and did not answer (the day's budget, an error,
+  // nothing usable) — so the draft is the shape read's, and the cook is told.
+  attempts?: AiAttempt[]
   empty?: boolean
   // Why we came back empty-handed, so the UI can say something true instead of one
   // catch-all "rien trouvé":
@@ -106,9 +109,9 @@ type Known = Pick<DraftOut, 'title' | 'servings' | 'servingsUnit' | 'times'> & {
 // word in it was written by a model. Null when the model came back empty-handed.
 // Servings, times and the title come from the TEXT's own read (`known`) first; the lines
 // the model pointed at only fill what that read left empty.
-export async function draftByModel(env: Env, text: string, lang: Lang, known: Known, hint?: string): Promise<DraftOut | null> {
+export async function draftByModel(env: Env, text: string, lang: Lang, known: Known, hint?: string, report?: { attempts?: AiAttempt[] }): Promise<DraftOut | null> {
   const lines = selectionLines(text)
-  const sel = await selectRecipeLines(env, lines, lang, hint)
+  const sel = await selectRecipeLines(env, lines, lang, hint, report)
   if (!sel) return null
   const d = draftFromSelection(lines, sel, known)
   if (!d) return null
@@ -232,10 +235,14 @@ export async function draftFromText(env: Env, raw: string, lang: Lang, aiOn: boo
   // stay the source's. Servings and times come from the TEXT first: the vision read
   // used to turn « cuire 5 minutes » into a prep time.
   if (aiOn) {
-    const byModel = await draftByModel(env, r.text, lang, r.known, hint)
+    const report: { attempts?: AiAttempt[] } = {}
+    const byModel = await draftByModel(env, r.text, lang, r.known, hint, report)
     if (byModel) return byModel
+    // AI empty-handed or refused — the heuristic's best effort still beats nothing, and
+    // the cook is told WHY the model is not behind this draft.
+    return report.attempts?.length ? { ...r.fallback, attempts: report.attempts } : r.fallback
   }
-  // AI unbound or empty-handed — the heuristic's best effort still beats nothing.
+  // AI unbound — the heuristic's best effort still beats nothing.
   return r.fallback
 }
 
