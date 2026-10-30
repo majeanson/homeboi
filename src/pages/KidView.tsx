@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../i18n'
@@ -15,6 +15,7 @@ import { timeOfDay } from '../lib/timeofday'
 import { todRank, isRoutineTod, TOD_ICON, TOD_TINT } from '../lib/routineTod'
 import { ROUTINES_KEY } from '../lib/queryKeys'
 import { RoutinePlayer, type PlayerRoutine } from '../components/RoutinePlayer'
+import { isComplete, normalizeDone, stepTimerRunning, type RoutineTimer } from '../lib/routineProgress'
 import { colourFor } from '../lib/things'
 
 // The pre-reader surface: a face/routine PICKER, then the calm picture-story RUN.
@@ -44,6 +45,8 @@ interface Routine {
   cards: Card[]
   // (the parent-voice clip + photo ride ON each card: clipKey / photoKey)
   doneIdx: number[]
+  // A started step countdown (card idx → {endsAt}|{left}); read only to hold the idle drift.
+  timers?: Record<number, RoutineTimer>
 }
 type RoutinesData = { routines: Routine[] }
 
@@ -74,7 +77,7 @@ export function KidView() {
   useEffect(() => {
     if (!pickedId) return
     const r = (data?.routines ?? []).find((x) => x.id === pickedId)
-    if (!r || r.cards.length === 0 || r.doneIdx.length < r.cards.length) return
+    if (!r || !isComplete(r.cards.length, r.doneIdx)) return
     const id = setTimeout(() => setPickedId(null), 20_000)
     return () => clearTimeout(id)
   }, [data, pickedId])
@@ -85,12 +88,22 @@ export function KidView() {
   // like the finished-drift, whatever « Mode calme » says (the old calm gate silently
   // neutered this idle-drift on a calm-OFF tablet). Nothing is lost: the run state is
   // server-side, so the returning kid re-picks their face and resumes in place.
+  // …but a step's countdown is the one thing that legitimately takes minutes with no tap
+  // (two minutes of tooth-brushing): while the current step's timer runs, the drift waits.
+  const latest = useRef(data)
+  useEffect(() => {
+    latest.current = data
+  }, [data])
   useEffect(() => {
     if (!pickedId) return
     let id: ReturnType<typeof setTimeout>
     const arm = () => {
       clearTimeout(id)
-      id = setTimeout(() => setPickedId(null), 60_000)
+      id = setTimeout(() => {
+        const r = latest.current?.routines.find((x) => x.id === pickedId)
+        if (r && stepTimerRunning(r.cards.length, r.doneIdx, r.timers, Date.now() / 1000)) arm()
+        else setPickedId(null)
+      }, 60_000)
     }
     arm()
     window.addEventListener('pointerdown', arm)
@@ -158,8 +171,9 @@ export function KidView() {
           <div className="kid__faces">
             {visible.map((r) => {
               const total = r.cards.length
-              const doneCount = r.doneIdx.filter((i) => i >= 0 && i < total).length
-              const done = total > 0 && doneCount >= total
+              const doneSet = new Set(normalizeDone(total, r.doneIdx))
+              const doneCount = doneSet.size
+              const done = isComplete(total, r.doneIdx)
               // A familiar-voice hint when the parent recorded any card (feature #17 A).
               const hasVoice = r.cards.some((c) => !!c.clipKey)
               const tint = colourFor('routine', r.color)
@@ -207,7 +221,7 @@ export function KidView() {
                       {r.cards.slice(0, PREVIEW).map((c, i) => (
                         <span
                           key={i}
-                          className={'kid__routine-slot' + (r.doneIdx.includes(i) ? ' is-done' : '')}
+                          className={'kid__routine-slot' + (doneSet.has(i) ? ' is-done' : '')}
                         >
                           {c.photoKey ? (
                             <img className="kid__routine-thumb" src={imgUrl(c.photoKey)} alt="" />

@@ -426,6 +426,20 @@
 .tdl-prev:active {
   transform: scale(0.95);
 }
+/* The brief rest after a step commits (ADVANCE_REST_MS in RoutinePlayer): the ▶ / → / ←
+   sit in the same spot, so a double-tap's second tap must land on something that reads as
+   "already done" and does nothing. aria-disabled, not `disabled` — keyboard focus stays. */
+.tdl-start[aria-disabled='true'],
+.tdl-finish[aria-disabled='true'],
+.tdl-prev[aria-disabled='true'] {
+  cursor: default;
+  opacity: 0.85;
+}
+.tdl-start[aria-disabled='true']:active,
+.tdl-finish[aria-disabled='true']:active,
+.tdl-prev[aria-disabled='true']:active {
+  transform: none;
+}
 .tdl-sweet {
   font-family: var(--font-hand);
   font-size: 32px;

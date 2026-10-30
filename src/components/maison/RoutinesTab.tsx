@@ -1,3 +1,4 @@
+import { doneCount as countDone } from '../../lib/routineProgress'
 import { readableInk } from '../../lib/colors'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
@@ -82,7 +83,7 @@ export function RoutinesTab({ help }: { help: HelpMode }) {
     // Today's progress (from the GET payload's per-routine doneIdx). A step can
     // appear in doneIdx beyond the current deck length after an edit, so clamp
     // the count to the deck so the ring never over-fills.
-    const doneCount = Math.min((r.doneIdx ?? []).length, r.cards.length)
+    const doneCount = countDone(r.cards.length, r.doneIdx)
     const started = doneCount > 0
     // Tap the card, do the routine. There used to be a peek in between, but the card
     // already SHOWS everything it held (the face, the moment, every step picto, the

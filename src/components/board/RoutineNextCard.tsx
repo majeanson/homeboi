@@ -1,3 +1,4 @@
+import { doneCount as countDone } from '../../lib/routineProgress'
 import { type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -46,7 +47,7 @@ export function RoutineNextCard() {
   const tint =
     routine.color ?? (isRoutineTod(routine.timeOfDay) ? TOD_TINT[routine.timeOfDay] : 'var(--berry-deep)')
   const icon = isRoutineTod(routine.timeOfDay) ? TOD_ICON[routine.timeOfDay] : 'clock-bold'
-  const doneCount = Math.min((routine.doneIdx ?? []).length, routine.cards.length)
+  const doneCount = countDone(routine.cards.length, routine.doneIdx)
 
   return (
     <BoardCard

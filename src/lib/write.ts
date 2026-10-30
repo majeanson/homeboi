@@ -107,7 +107,7 @@ export async function writeWith<T = unknown>(
 
   // Cancel what is ALREADY in flight for these keys before painting the change: a poll
   // sent before the tap would otherwise land after it and repaint the old state — the
-  // standard TanStack rule (lib/optimistic.ts has always done it; this path never did).
+  // standard TanStack rule.
   // The write's own invalidate below refetches once the change is on the server.
   if (spec.optimistic && affectedKeys.length)
     await Promise.all(affectedKeys.map((k) => qc.cancelQueries({ queryKey: k })))

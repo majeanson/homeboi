@@ -283,13 +283,22 @@ export function playNarration(
     stopSpeaking() // a clip and TTS must never overlap — pauses a prior clip too
     const audio = new Audio(`/api/img/${audioKey}`)
     currentClip = audio // so the NEXT narration (or stopSpeaking) can pause this one
-    audio.onerror = () => speak(fallbackText) // clip unavailable → TTS
+    // Only while THIS clip is still the current narration: a fast tap moves on to the next
+    // step and pauses this one, which makes play() reject (AbortError) and can fire onerror —
+    // and the old step's fallback TTS then talked over the new step. A superseded clip is silent.
+    const stillCurrent = () => currentClip === audio
+    audio.onerror = () => {
+      if (stillCurrent()) speak(fallbackText) // clip unavailable → TTS
+    }
     audio.onended = () => {
       if (currentClip === audio) currentClip = null
     }
     // play() rejects on a blocked autoplay / decode error — fall back then too.
     const p = audio.play()
-    if (p && typeof p.catch === 'function') p.catch(() => speak(fallbackText))
+    if (p && typeof p.catch === 'function')
+      p.catch(() => {
+        if (stillCurrent()) speak(fallbackText)
+      })
     return () => {
       if (currentClip === audio) currentClip = null
       try {

@@ -180,6 +180,10 @@ All data writes go through `useWrite()` / `writeWith()`:
   `useMealPlanning`, `PantryTab`, `ReserveSection`.
 - **Forms / recipes / deals:** `EventForm`, `ChoreForm`, `RoutineForm`,
   `RecipeSheet`, `lib/picks`.
+- **Routine run (the toddler player):** a tick, a ← rewind, « Recommencer » and a step's
+  countdown all go through `lib/routineWrites` — painted into the cache synchronously, sent
+  in tap order, re-applied over any poll that beats the write to the server, and (when queued
+  offline) held on screen until the outbox drains. Progress rules live in `lib/routineProgress`.
 - **Operator settings:** members add/edit/delete, chore/routine/event delete,
   routine time-of-day, store-include toggle, list-history, réserve locations.
 - **Capture (A-2, bmad/10):** `AddSheet`'s quick-capture form (the ＋ button's typed
@@ -193,8 +197,7 @@ All data writes go through `useWrite()` / `writeWith()`:
 `t.offline.unavailable` hint, or just left as direct `api()`): voice capture / recipe
 vision-import-draft / suggest / recap, photo + avatar +
 recipe-image uploads (Blob bodies), pairing, auth, the **postal save** (reads the
-server-normalized value back), and **recipe-tags** (uses the `useOptimisticMutation`
-wrapper). These need a live server round-trip, so queueing them adds no value.
+server-normalized value back), and **recipe-tags**. These need a live server round-trip, so queueing them adds no value.
 
 ## The two service-worker cache traps
 

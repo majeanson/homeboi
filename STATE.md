@@ -113,6 +113,9 @@ now, so the repo-wide count is honest for the first time.
 
 ## 3. What just shipped
 
+### La routine du tout-petit, solidifiée — 2026-10-29
+Reported from the wall: stepping too fast misbehaved, and a big sticker wall could not be scrolled. **Causes found, all fixed:** the ✓ was painted after an `await`, so two taps in one task both read the SAME current step (→ `[1,1]`, which `length >= cards` read as « finished »); a poll that left after the tap but before the write landed un-ticked the step; ▶ and → share one spot, so a double-tap on ▶ ticked step one unseen; `.sticker-wall` was a flex child of a fixed 100dvh `.scene` with no overflow of its own; the kiosk's 60 s « nobody is here » drift fired mid-tooth-brushing countdown; a superseded parent-voice clip fell back to TTS of the OLD step over the new one. **Shape now:** `lib/routineProgress` (pure: done = distinct, in-range; shared by player, picker, board card, Maison tab) · `lib/routineWrites` (cache painted SYNCHRONOUSLY, PATCHes in tap order, pending ops re-applied over any fetched frame, a queued offline write held until the outbox drains) · a 600 ms `aria-disabled` rest after ▶/→/←/Recommencer. `lib/optimistic.ts` is gone (player was its only user). e2e mock `routines` is now stateful. Guards: `routineProgress.test`, `routineWrites.test`, `e2e/routine-run-solid.spec` (burst taps, poll race, 8 viewports × 2 decks, 150-sticker wall) — each run red against the pre-fix code first.
+
 ### Groupes et photos du site, plusieurs recettes, lecture photo auto, contrat hebdo — 2026-10-27
 Corpus 26/26 exact (14 sites); `_lib/siteAdapters` (Ricardo props, WPRM groups), HowToStep photos → R2 (`_lib/stepImageImport`, upload budget; a cancel frees them),
 `candidates` + `pick`, OCR « Auto » default, Mistral-vision first (shape unverified — Llama fallback), `e2e:recipes` weekly. **Open:** the prod-only checks in the commit body.

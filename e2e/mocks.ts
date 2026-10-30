@@ -962,6 +962,11 @@ export async function mockApi(
   // faces that checked it off. The défi is a standing kind='defi' habit; its text
   // rides a habit_days.note and who-tried-it lives in `marks`. Null until a défi is
   // drawn, so specs that never touch it see the fixture unchanged.
+  // A routine's RUN for today (ticks + step timers), mutated by the player's PATCHes exactly as
+  // functions/api/routines.ts does (a Set per run; reset wipes both). The player now invalidates
+  // routines after every write, as the rest of the app does, so a static GET would snap each
+  // tick straight back to the fixture — the mock has to remember what the child did.
+  const routineRuns = new Map<string, { doneIdx: number[]; timers: Record<number, unknown> }>()
   const DEFI_ID = 'defidaily'
   let defiText: string | null = null
   const defiMarks = new Set<string>()
@@ -1062,6 +1067,32 @@ export async function mockApi(
               if (body.defiMark.on) defiMarks.add(face)
               else defiMarks.delete(face)
             }
+          }
+        } catch {
+          /* no body */
+        }
+      }
+      // The routine player's progress: tick / un-tick one step, set or clear a step timer,
+      // or « Recommencer » (reset). Field edits (name/cards…) carry no routineId + these keys.
+      if (method === 'PATCH' && path === 'routines') {
+        try {
+          const body = JSON.parse(route.request().postData() || '{}')
+          if (body.routineId) {
+            const seed = (DATA.routines as { routines: { id: string; doneIdx?: number[]; timers?: Record<number, unknown> }[] }).routines.find((r) => r.id === body.routineId)
+            const run = routineRuns.get(body.routineId) ?? { doneIdx: [...(seed?.doneIdx ?? [])], timers: { ...(seed?.timers ?? {}) } }
+            if (body.reset) {
+              run.doneIdx = []
+              run.timers = {}
+            } else if (typeof body.cardIdx === 'number' && body.timer !== undefined) {
+              if (body.timer === null) delete run.timers[body.cardIdx]
+              else run.timers[body.cardIdx] = body.timer
+            } else if (typeof body.cardIdx === 'number') {
+              const set = new Set(run.doneIdx)
+              if (body.done === false) set.delete(body.cardIdx)
+              else set.add(body.cardIdx)
+              run.doneIdx = [...set]
+            }
+            routineRuns.set(body.routineId, run)
           }
         } catch {
           /* no body */
@@ -1260,6 +1291,18 @@ export async function mockApi(
           .sort((a, b) => (noRushItems.has(a.id) ? 1 : 0) - (noRushItems.has(b.id) ? 1 : 0)),
       }
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(b) })
+      return
+    }
+
+    // The routines read serves this session's ticks + step timers, so the refetch that
+    // follows a tap confirms it instead of reverting to the fixture's doneIdx.
+    if (path === 'routines' && routineRuns.size) {
+      const base = DATA.routines as { routines: Record<string, unknown>[] }
+      const routines = base.routines.map((r) => {
+        const run = routineRuns.get(r.id as string)
+        return run ? { ...r, doneIdx: run.doneIdx, timers: run.timers } : r
+      })
+      await route.fulfill({ status: 200, contentType: 'application/json', body: serve({ ...base, routines }) })
       return
     }
 

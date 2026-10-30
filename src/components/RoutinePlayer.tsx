@@ -5,13 +5,14 @@ import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useT, useLang } from '../i18n'
 import { useCalm } from '../lib/calm'
-import { useSpeak, playNarration } from '../lib/speak'
+import { useSpeak, playNarration, stopSpeaking } from '../lib/speak'
 import { Icon, InlineIcon } from './Icon'
 import { tintInk, wash } from '../lib/colors'
 import { imgUrl } from '../lib/image'
 import { writeWith } from '../lib/write'
-import { useOptimisticMutation } from '../lib/optimistic'
-import { ROUTINES_KEY, STICKERS_KEY } from '../lib/queryKeys'
+import { STICKERS_KEY } from '../lib/queryKeys'
+import { currentStep, isComplete, normalizeDone, previousDone, type RoutineTimer } from '../lib/routineProgress'
+import { currentDone, sendRoutineOp } from '../lib/routineWrites'
 import { stickersFor } from '../lib/stickers'
 import { todayLocalDay } from '../lib/localDay'
 import { chime, clock } from '../lib/cookTimers'
@@ -81,14 +82,16 @@ const ARM_MS = 6000
 const SPEAK_FLASH_MAX_MS = 4000
 // How long the end screen ignores « Recommencer » after the last step is ticked.
 const AGAIN_LOCK_MS = 2000
+// How long the → / ✓ rests after it commits a step (and after the ▶ that turns into it).
+// The ▶ and the → sit in the SAME spot, so a toddler's second tap of a double-tap landed on
+// the → and ticked step one nobody had seen; mashing → ticked the whole routine in a second.
+// Long enough to swallow a double-tap, short enough that a deliberate next tap never waits.
+const ADVANCE_REST_MS = 600
 
 // A running/just-finished timer is { endsAt } (the unix second it reaches zero);
 // a paused one is { left } (banked seconds). The player derives remaining from the
 // clock, never a frozen counter — so it stays true after the app was closed.
-type TimerEntry = { endsAt: number } | { left: number }
-// The shape GET /api/routines returns — the optimistic toggle rewrites doneIdx in
-// this cache the same way whether KidView or the run scene owns the query.
-type RoutinesData = { routines: PlayerRoutine[] }
+type TimerEntry = RoutineTimer
 
 export function RoutinePlayer({
   routine,
@@ -120,54 +123,18 @@ export function RoutinePlayer({
   const onPhone = surface === 'mobile'
   const buddySize = onPhone ? 46 : 72
 
-  // Toggle one card done for today. Optimistic so the tap feels instant on a cheap
-  // tablet; on failure the shared hook rolls back and resyncs. Owns the mutation
-  // itself (not passed in) so both mount points get the same correct behaviour.
-  // Writes go through `writeWith` (not raw `api`) so a tap made offline queues to
-  // the outbox and replays on reconnect instead of silently dropping — a routine is
-  // exactly what a kid taps on a wall tablet with flaky wifi (NFR-OFFLINE-1).
-  const toggle = useOptimisticMutation<RoutinesData, { routineId: string; cardIdx: number; done: boolean }>({
-    queryKey: ROUTINES_KEY,
-    mutationFn: (v) => writeWith(qc, 'routines', { method: 'PATCH', body: v }),
-    apply: (old, v) => ({
-      routines: old.routines.map((r) =>
-        r.id === v.routineId
-          ? { ...r, doneIdx: v.done ? [...r.doneIdx, v.cardIdx] : r.doneIdx.filter((i) => i !== v.cardIdx) }
-          : r,
-      ),
-    }),
-  })
-
-  // "Recommencer" — wipe today's ✓ so the routine plays fresh again (the calm
-  // STOP is the absence of a nag, not a lock: a kid who wants to do it again, or a
-  // parent re-running it, can — deliberately, no streak/reward). Optimistic so the
-  // recap clears instantly; the backend deletes the day's run row.
-  const resetRun = useOptimisticMutation<RoutinesData, { routineId: string }>({
-    queryKey: ROUTINES_KEY,
-    mutationFn: (v) => writeWith(qc, 'routines', { method: 'PATCH', body: { ...v, reset: true } }),
-    apply: (old, v) => ({
-      // Recommencer wipes the whole day's run row server-side (doneIdx AND timers),
-      // so clear both in the cache to match.
-      routines: old.routines.map((r) => (r.id === v.routineId ? { ...r, doneIdx: [], timers: {} } : r)),
-    }),
-  })
-
-  // Persist one step's countdown timer (start / pause / resume / restart / clear).
-  // Optimistic so the tap feels instant on the tablet; the server merges it into
-  // today's run row so reopening the app shows the timer at its real remaining.
-  const setTimer = useOptimisticMutation<RoutinesData, { routineId: string; cardIdx: number; timer: TimerEntry | null }>({
-    queryKey: ROUTINES_KEY,
-    mutationFn: (v) => writeWith(qc, 'routines', { method: 'PATCH', body: v }),
-    apply: (old, v) => ({
-      routines: old.routines.map((r) => {
-        if (r.id !== v.routineId) return r
-        const timers = { ...(r.timers ?? {}) }
-        if (v.timer === null) delete timers[v.cardIdx]
-        else timers[v.cardIdx] = v.timer
-        return { ...r, timers }
-      }),
-    }),
-  })
+  // Every write (tick / rewind / « Recommencer » / a step's countdown) goes through
+  // lib/routineWrites: painted into the cache SYNCHRONOUSLY (so a second tap, however soon,
+  // reads where the story really is), sent in tap order, and re-applied over any poll that
+  // beats it to the server. A tap made offline queues to the outbox and replays on
+  // reconnect instead of silently dropping — a routine is exactly what a kid taps on a wall
+  // tablet with flaky wifi (NFR-OFFLINE-1). A guest never commits (the helper refuses).
+  const total = routine.cards.length
+  // The truth RIGHT NOW. `routine.doneIdx` is what the last render saw; two taps can land
+  // inside one render, so every handler reads the cache instead.
+  const doneNow = () => currentDone(qc, routine.id, routine.doneIdx)
+  const markDone = (cardIdx: number, done: boolean) =>
+    sendRoutineOp(qc, { kind: 'done', routineId: routine.id, cardIdx, done })
 
   // One continuous run, not a per-step start/stop: tap ▶ ONCE to begin (reads the
   // first step aloud), then → through each step, ✓ on the last. `running` marks
@@ -190,19 +157,31 @@ export function RoutinePlayer({
   const [speakingIdx, setSpeakingIdx] = useState<number | null>(null)
   const speakTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const armTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const restTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(
     () => () => {
       if (speakTimer.current) clearTimeout(speakTimer.current)
       if (armTimer.current) clearTimeout(armTimer.current)
+      if (restTimer.current) clearTimeout(restTimer.current)
+      // Leaving the scene (✕, a face switch, a drift back to the picker) silences it: the
+      // narration of a screen that is gone is just noise in the next room.
+      stopSpeaking()
     },
     [],
   )
-  function flashSpeaking(idx: number) {
+  // Each flash gets a ticket. speak() cancels the utterance before it, and a cancelled
+  // utterance still fires its `end` — which used to wipe the pulse of the step the child
+  // had just tapped on to. Only the latest ticket may end the pulse.
+  const speakSeq = useRef(0)
+  function flashSpeaking(idx: number): number {
+    const seq = ++speakSeq.current
     setSpeakingIdx(idx)
     if (speakTimer.current) clearTimeout(speakTimer.current)
     speakTimer.current = setTimeout(() => setSpeakingIdx(null), SPEAK_FLASH_MAX_MS)
+    return seq
   }
-  const endSpeaking = () => {
+  const endSpeaking = (seq: number) => {
+    if (seq !== speakSeq.current) return
     if (speakTimer.current) clearTimeout(speakTimer.current)
     setSpeakingIdx(null)
   }
@@ -211,8 +190,8 @@ export function RoutinePlayer({
   function readAloud(idx: number) {
     if (idx < 0 || idx >= routine.cards.length) return
     const text = routine.cards[idx].narration ?? routine.cards[idx].label
-    flashSpeaking(idx)
-    playNarration(routine.cards[idx].clipKey, text, (raw) => speak(raw, undefined, { onEnd: endSpeaking }))
+    const seq = flashSpeaking(idx)
+    playNarration(routine.cards[idx].clipKey, text, (raw) => speak(raw, undefined, { onEnd: () => endSpeaking(seq) }))
   }
   // A short, gentle pulse when a step settles — the same one the step Countdown gives
   // at zero, so the app feels the same in the hand. Guarded: no vibration API is fine.
@@ -262,26 +241,55 @@ export function RoutinePlayer({
       affectedKeys: [STICKERS_KEY],
     }).catch(() => setAwarded(null))
   }
-  function startStep(idx: number) {
-    setRunning(true)
-    readAloud(idx)
+  // The → / ✓ rests briefly after it commits (see ADVANCE_REST_MS). `restUntil` is the
+  // synchronous gate — two taps can land before React has painted anything — and `resting`
+  // only mirrors it into aria-disabled so the button LOOKS settled (and a test's click
+  // waits for it). aria-disabled, never `disabled`: a focused button that goes `disabled`
+  // drops keyboard focus to the page, and a keyboard user would lose their place each step.
+  const restUntil = useRef(0)
+  const [resting, setResting] = useState(false)
+  function rest() {
+    restUntil.current = Date.now() + ADVANCE_REST_MS
+    setResting(true)
+    if (restTimer.current) clearTimeout(restTimer.current)
+    restTimer.current = setTimeout(() => setResting(false), ADVANCE_REST_MS)
   }
-  // Advance one step: mark it done (which moves the story to the next card) — until
-  // the LAST step, where it stops and the recap appears.
-  function advance(idx: number) {
-    const isLast = idx >= routine.cards.length - 1
-    toggle.mutate({ routineId: routine.id, cardIdx: idx, done: true })
+  function startStep() {
+    if (ro) return
+    // The ▶ is replaced by the → in the same spot: a double-tap on ▶ must not land its
+    // second tap on the → and tick step one unseen.
+    rest()
+    setRunning(true)
+    readAloud(currentStep(total, doneNow()))
+  }
+  // Advance one step: mark the CURRENT one done (which moves the story to the next card)
+  // — until the LAST one, where it stops and the recap appears. « Current » is read from
+  // the cache at tap time, never from the render: a second tap landing before React has
+  // painted the first would otherwise tick the same step twice, or tick it after a ← had
+  // already put the story back (the story "skipped" and nobody could say why).
+  function advance() {
+    if (ro || Date.now() < restUntil.current) return
+    const done = doneNow()
+    if (isComplete(total, done)) return // the recap is up; nothing left to tick
+    const idx = currentStep(total, done)
+    if (idx < 0) return
+    const after = [...normalizeDone(total, done), idx]
+    markDone(idx, true)
+    rest()
     buzz()
-    if (isLast) {
+    if (isComplete(total, after)) {
       setRunning(false)
       // A pre-reader can't read the "sweet dreams" card — say it (the SAME gentle
       // line every time, NFR-CALM-2).
       speak(t.kid.allDone)
     } else {
-      readAloud(idx + 1)
+      // Not simply idx + 1: a sparse run (a deck edit) can leave the next undone step
+      // anywhere, and the story reads the one it will actually show.
+      const next = currentStep(total, after)
+      readAloud(next)
       // A screen reader gets nothing from the TTS narration (it isn't AT), so say
       // where we are, politely, in the live region under the strip.
-      setAnnounce(stepLabel(idx + 1, t.kid.stepNow))
+      setAnnounce(stepLabel(next, t.kid.stepNow))
     }
   }
 
@@ -290,12 +298,21 @@ export function RoutinePlayer({
   // the story rewinds to it and reads itself aloud. Anything after stays ✓ — nothing
   // is lost if the kid steps forward again. Never a redo prompt, never a scold.
   function goBack(idx: number) {
-    if (ro || idx < 0) return
+    if (ro || idx < 0 || idx >= total) return
     setArmedIdx(null)
-    toggle.mutate({ routineId: routine.id, cardIdx: idx, done: false })
+    markDone(idx, false)
     buzz()
     readAloud(idx)
     setAnnounce(stepLabel(idx, t.kid.stepNow))
+  }
+  // The big ← : one step back from where the story is NOW (cache, not render), under the
+  // same rest as → — a double-tap on ← would otherwise rewind two steps nobody meant to.
+  function backOne() {
+    if (ro || Date.now() < restUntil.current) return
+    const idx = previousDone(total, doneNow())
+    if (idx < 0) return
+    rest()
+    goBack(idx)
   }
 
   // The filmstrip's hear-first tap (BigTiles' arm/ARM_MS pattern, not a new one):
@@ -305,7 +322,7 @@ export function RoutinePlayer({
   //   the CURRENT   → speaks itself, like the hero card.
   const [armedIdx, setArmedIdx] = useState<number | null>(null)
   function tapStep(idx: number) {
-    const done = routine.doneIdx.includes(idx)
+    const done = normalizeDone(total, doneNow()).includes(idx)
     if (!done || ro) {
       setArmedIdx(null)
       readAloud(idx)
@@ -316,8 +333,8 @@ export function RoutinePlayer({
       return
     }
     const c = routine.cards[idx]
-    flashSpeaking(idx)
-    speak(t.kid.backTo(c.narration ?? c.label), undefined, { onEnd: endSpeaking })
+    const seq = flashSpeaking(idx)
+    speak(t.kid.backTo(c.narration ?? c.label), undefined, { onEnd: () => endSpeaking(seq) })
     setArmedIdx(idx)
     if (armTimer.current) clearTimeout(armTimer.current)
     armTimer.current = setTimeout(() => setArmedIdx(null), ARM_MS)
@@ -327,8 +344,10 @@ export function RoutinePlayer({
   // taps ▶ to begin again (we don't auto-run — calm).
   function restart() {
     if (ro) return
-    resetRun.mutate({ routineId: routine.id })
+    sendRoutineOp(qc, { kind: 'reset', routineId: routine.id })
     setRunning(false)
+    // The ▶ that replaces « Recommencer » lands where the child's finger already is.
+    rest()
     // The live region still held the LAST step (« étape 3 de 3 · on est ici ») while the
     // screen is back on the first — say where the story actually is now.
     setAnnounce(stepLabel(0, t.kid.stepNow))
@@ -340,7 +359,7 @@ export function RoutinePlayer({
   // Calm used to fork this into a second, poorer ending ("sit on the last card") —
   // two code paths saying the same thing badly. Calm now gates exactly ONE thing:
   // the sticker offer below.
-  const allDone = routine.cards.length > 0 && routine.doneIdx.length >= routine.cards.length
+  const allDone = isComplete(total, routine.doneIdx)
   // « Recommencer » shows up where the big → / ✓ button just was, so a child's one extra
   // tap on it skipped the celebration and landed back on step 1. For the first couple of
   // seconds of the end screen the button is inert (a real `disabled`, so it reads as
@@ -354,9 +373,11 @@ export function RoutinePlayer({
   }, [allDone])
 
   // The story position: the first not-yet-done card (else the last).
-  const firstUndone = routine.cards.findIndex((_, i) => !routine.doneIdx.includes(i))
-  const curIdx = firstUndone === -1 ? routine.cards.length - 1 : firstUndone
+  const curIdx = Math.max(0, currentStep(total, routine.doneIdx))
   const cur = routine.cards[curIdx]
+  // What this render counts as done: distinct and in range (lib/routineProgress), so a
+  // duplicate or a stale index from an edited deck can't tick a step nobody did.
+  const doneSet = new Set(normalizeDone(total, routine.doneIdx))
 
   // ── What the companion says when the child taps it ─────────────────────────
   //
@@ -376,7 +397,7 @@ export function RoutinePlayer({
     const trick = allDone || !cur ? null : tipFor(cur, lang)
     const moment: CompanionMoment | null = allDone
       ? null
-      : routine.doneIdx.length === 0
+      : doneSet.size === 0
         ? 'start'
         : curIdx >= routine.cards.length - 1
           ? 'last'
@@ -412,15 +433,10 @@ export function RoutinePlayer({
   // curIdx - 1; computed rather than assumed, since a deck edit can leave doneIdx
   // sparse (done [1] with 0 undone → we're on 0 and there is nothing behind it).
   // -1 = nothing to go back to → the ← doesn't render (first step / nothing done).
-  let prevIdx = -1
-  for (let i = curIdx - 1; i >= 0; i--)
-    if (routine.doneIdx.includes(i)) {
-      prevIdx = i
-      break
-    }
+  const prevIdx = previousDone(total, routine.doneIdx)
   // Picking a routine back up mid-day: the ▶ reads as « Continuer », not « Commencer »
   // (and, as always, speaks the step it lands on).
-  const resuming = routine.doneIdx.length > 0
+  const resuming = doneSet.size > 0
 
   return (
     <div className="kid">
@@ -598,7 +614,7 @@ export function RoutinePlayer({
                   seconds={cur.seconds}
                   tint={tint}
                   persisted={routine.timers?.[curIdx]}
-                  onPersist={ro ? undefined : (s) => setTimer.mutate({ routineId: routine.id, cardIdx: curIdx, timer: s })}
+                  onPersist={ro ? undefined : (s) => sendRoutineOp(qc, { kind: 'timer', routineId: routine.id, cardIdx: curIdx, timer: s })}
                 />
               ) : null}
 
@@ -612,7 +628,7 @@ export function RoutinePlayer({
                   like the hero. Pictures + audio carry it; no reading required. */}
               <div className={'tdl-strip' + (onPhone ? ' tdl-strip--phone' : '')}>
                 {routine.cards.map((c, k) => {
-                  const done = routine.doneIdx.includes(k)
+                  const done = doneSet.has(k)
                   const state = done ? 'done' : k === curIdx ? 'on' : 'wait'
                   const armed = armedIdx === k
                   const word = done ? t.kid.stepDone : k === curIdx ? t.kid.stepNow : t.kid.stepTodo
@@ -668,7 +684,8 @@ export function RoutinePlayer({
                     <button
                       type="button"
                       className="tdl-prev"
-                      onClick={() => goBack(prevIdx)}
+                      onClick={backOne}
+                      aria-disabled={resting || undefined}
                       aria-label={t.kid.prev}
                       title={t.kid.prev}
                     >
@@ -680,7 +697,8 @@ export function RoutinePlayer({
                       <button
                         type="button"
                         className="tdl-finish"
-                        onClick={() => advance(curIdx)}
+                        onClick={advance}
+                        aria-disabled={resting || undefined}
                         aria-label={curIdx >= routine.cards.length - 1 ? t.kid.finish : t.kid.tapNext}
                       >
                         <Icon name={curIdx >= routine.cards.length - 1 ? 'check-bold' : 'arrow-right-bold'} size={34} />
@@ -690,7 +708,8 @@ export function RoutinePlayer({
                     <button
                       type="button"
                       className="tdl-start"
-                      onClick={() => startStep(curIdx)}
+                      onClick={startStep}
+                      aria-disabled={resting || undefined}
                       aria-label={resuming ? t.kid.resume : t.kid.start}
                       title={resuming ? t.kid.resume : t.kid.start}
                     >

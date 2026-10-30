@@ -204,7 +204,17 @@
   cursor: pointer;
 }
 .sticker-wall {
-  padding: 1rem clamp(0.75rem, 4vw, 2rem) 2rem;
+  /* THE scroller of this scene. `.scene` is a fixed 100dvh flex column, so a body that
+     neither grows (`flex`) nor may shrink (`min-height:0`) nor scrolls (`overflow-y`)
+     just runs off the bottom of the screen: a wall with more stickers than one screen
+     held could not be scrolled at all, and the newest stickers (appended last) were the
+     ones out of reach. Same recipe as `.scene__body`. */
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 1rem clamp(0.75rem, 4vw, 2rem) calc(2rem + env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
