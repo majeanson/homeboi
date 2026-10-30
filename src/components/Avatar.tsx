@@ -1,6 +1,7 @@
 import { imgUrl } from '../lib/image'
 import { initialsFor } from '../lib/initials'
 import { readableInk } from '../lib/colors'
+import { Img } from './Img'
 
 // One place that knows how to draw a person: their photo if they have one, else
 // a coloured disc with their initial(s). Used wherever a member's face appears so
@@ -22,7 +23,7 @@ export function Avatar({
 }) {
   const dims = { width: size, height: size }
   if (kind === 'photo' && photo) {
-    return <img className="avatar avatar--photo" src={imgUrl(photo)} alt={name ?? ''} style={dims} />
+    return <Img className="avatar avatar--photo" src={imgUrl(photo)} alt={name ?? ''} style={dims} />
   }
   const initials = initialsFor(name)
   // Two letters need a smaller glyph so "FC" doesn't crowd the disc's edges.

@@ -360,20 +360,27 @@ self.addEventListener('fetch', (e) => {
 
   // Immutable image bytes → cache-first: capability-keyed photos (/api/img/) and
   // proxied Flipp clippings (/api/flyer-img), which the offline download pre-warms.
-  // On a network-level fetch reject (upstream unreachable, connection dropped) fall
-  // back to any cached copy, else a synthetic 504 — never let respondWith reject, or
-  // the browser logs "ServiceWorker intercepted the request and encountered an
-  // unexpected error" and the <img> breaks with no clean failure.
+  // On a network-level fetch reject (upstream unreachable, connection dropped) or a
+  // 5xx, ask ONCE more after a beat — a dropped packet on one bar of signal and a
+  // Worker hiccup both clear in well under a second, and the <img> on the page (now
+  // components/Img.tsx) only sees the second answer. Then a synthetic 504 — never let
+  // respondWith reject, or the browser logs "ServiceWorker intercepted the request
+  // and encountered an unexpected error" and the <img> breaks with no clean failure.
   if (url.pathname.startsWith('/api/img/') || url.pathname.startsWith('/api/flyer-img')) {
+    const ask = () =>
+      fetch(req).then((res) => {
+        if (res.ok) {
+          const copy = res.clone()
+          e.waitUntil(caches.open(CACHE).then((c) => c.put(req, copy)))
+        } else if (res.status >= 500) throw new Error('img ' + res.status)
+        return res
+      })
     e.respondWith(
       caches.match(req, { ignoreVary: true }).then((hit) =>
-        hit ?? fetch(req).then((res) => {
-          if (res.ok) {
-            const copy = res.clone()
-            caches.open(CACHE).then((c) => c.put(req, copy))
-          }
-          return res
-        }).catch(() => new Response('', { status: 504 })),
+        hit ??
+        ask()
+          .catch(() => new Promise((r) => setTimeout(r, 500)).then(ask))
+          .catch(() => new Response('', { status: 504 })),
       ),
     )
     return

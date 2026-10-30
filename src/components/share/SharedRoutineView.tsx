@@ -2,6 +2,7 @@ import { useT } from '../../i18n'
 import { imgUrl } from '../../lib/image'
 import { isRoutineTod } from '../../lib/routineTod'
 import type { RoutineSharePayload } from '../../lib/share'
+import { Img } from '../Img'
 
 // Read-only routine render for the public /partage page — the picture-card deck (a
 // parent's photo wins over the emoji, the same rule the toddler run + overview follow).
@@ -17,7 +18,7 @@ export function SharedRoutineView({ payload }: { payload: RoutineSharePayload })
           <div key={i} className="shared-routine__card">
             <div className="shared-routine__pic">
               {c.photoKey ? (
-                <img src={imgUrl(c.photoKey)} alt="" />
+                <Img src={imgUrl(c.photoKey)} alt="" />
               ) : (
                 <span className="shared-routine__emoji">{c.icon || '○'}</span>
               )}

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import QRCode from 'qrcode'
+import { Img } from './Img'
 
 // A dumb, presentational QR tile. Encodes `value` to a data-URL <img> client-side
 // (no network), so a minted share link can be scanned off the wall tablet or
@@ -28,7 +29,7 @@ export function QrCode({ value, size = 180 }: { value: string; size?: number }) 
   if (!src) return null
   return (
     <div className="qrcode">
-      <img className="qrcode__img" src={src} width={size} height={size} alt={value} />
+      <Img className="qrcode__img" src={src} width={size} height={size} alt={value} />
     </div>
   )
 }

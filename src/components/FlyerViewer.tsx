@@ -13,6 +13,7 @@ import { FLYERS_KEY } from '../lib/queryKeys'
 import { useModal } from '../lib/useModal'
 import { warmImageCache } from '../lib/cacheWarm'
 import { scrollBehavior } from '../lib/motion'
+import { Img } from './Img'
 
 // Full-flyer viewer. A Flipp flyer page is a canvas of item clippings positioned
 // by coordinates (no scanned page image), so we fetch /api/flyer and reconstruct
@@ -79,50 +80,13 @@ const proxied = (url: string | null | undefined): string =>
 // A flyer's clippings load eagerly and all at once (not lazy) — a slower start, but
 // the page fills in completely instead of popping in as you scroll. The browser caps
 // itself at ~6 concurrent connections, so "eager" queues rather than truly flooding.
-// data-state drives a calm placeholder (sheets/flyer.css): 'loading' shows a soft shimmer so
-// the grid never reads as broken blank boxes; the real bitmap fades in on load. On a
-// genuine failure we retry the SAME url ONCE (a remount via key, cache-friendly — no
-// cache-buster that would re-hit the upstream every time), then settle to a static
-// 'fail' tint rather than a broken-image icon or an endless shimmer.
-type ImgState = 'loading' | 'ok' | 'fail'
-const FLYER_IMG_RETRIES = 1
+// Load state is Img's (components/Img.tsx — the retry-with-backoff this component
+// used to carry privately, now the default for every picture in the app): its
+// data-loaded drives the calm placeholder in sheets/flyer.css ('0' shimmers so the
+// grid never reads as broken blank boxes, '1' fades the real bitmap in, 'x' — only
+// once the retries are spent — settles to a static tint, never a broken-image icon).
 function FlyerImg({ src, alt, className }: { src: string; alt: string; className?: string }) {
-  const url = proxied(src)
-  const canRetry = url.startsWith('/api/flyer-img')
-  const [tries, setTries] = useState(0)
-  const [state, setState] = useState<ImgState>('loading')
-
-  // Retry after a short backoff so a transient proxy/CDN hiccup clears, instead of
-  // hammering the moment it fails. Remounting (key={tries}) re-fetches the same URL.
-  useEffect(() => {
-    if (state !== 'fail' || !canRetry || tries >= FLYER_IMG_RETRIES) return
-    const id = setTimeout(() => {
-      setTries((n) => n + 1)
-      setState('loading')
-    }, 600)
-    return () => clearTimeout(id)
-  }, [state, tries, canRetry])
-
-  // While a retry is still pending keep the calm shimmer; only settle to the static
-  // fail tint once retries are genuinely exhausted.
-  const exhausted = state === 'fail' && (!canRetry || tries >= FLYER_IMG_RETRIES)
-  return (
-    <img
-      key={tries}
-      // A cache-first hit can finish before React attaches onLoad (the img is already
-      // `complete`), which would otherwise leave it stuck hidden — reveal it here.
-      ref={(el) => {
-        if (el?.complete && el.naturalWidth > 0) setState('ok')
-      }}
-      src={url}
-      alt={alt}
-      className={className}
-      loading="eager"
-      data-loaded={state === 'ok' ? '1' : exhausted ? 'x' : '0'}
-      onLoad={() => setState('ok')}
-      onError={() => setState('fail')}
-    />
-  )
+  return <Img src={proxied(src)} alt={alt} className={className} loading="eager" />
 }
 
 const FLYER_STALE = 30 * 60 * 1000 // flyers change ~weekly; cache generously
@@ -351,7 +315,7 @@ export function FlyerViewer({
       <div className="flyer-bar">
         <div className="flyer-bar__brand">
           {resolvedLogo ? (
-            <img className="flyer-bar__logo" src={resolvedLogo} alt="" loading="lazy" />
+            <Img className="flyer-bar__logo" src={resolvedLogo} alt="" loading="lazy" />
           ) : (
             <span className="flyer-bar__logo flyer-bar__logo--mono" aria-hidden="true">
               {monogram}

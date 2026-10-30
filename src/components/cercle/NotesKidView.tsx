@@ -12,6 +12,7 @@ import { imgUrl } from '../../lib/image'
 import { useSpeak, playNarration } from '../../lib/speak'
 import { EmptyState } from '../EmptyState'
 import { Icon } from '../Icon'
+import { Img } from '../Img'
 
 // Toddler lens for « Les notes » (pages/Notes.tsx): read-only, hear-first — the
 // same `.cercle-kid` faces-grid anatomy CircleKidView uses (reused as-is, no new
@@ -102,7 +103,7 @@ export function NotesKidView() {
                     Only tier 3 is tinted: a photo and an emoji carry their own
                     colours, and tinting them would fight the picture. */}
                 {(n.media_kind === 'image' || n.media_kind === 'drawing') && n.media_key ? (
-                  <img className="cercle-kid__pic" src={imgUrl(n.media_key)} alt="" />
+                  <Img className="cercle-kid__pic" src={imgUrl(n.media_key)} alt="" />
                 ) : picto(n) ? (
                   <span className="cercle-kid__emoji" aria-hidden="true">
                     {picto(n)}

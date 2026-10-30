@@ -7,6 +7,7 @@ import { imgUrl } from '../lib/image'
 import { type Member } from '../lib/members'
 import { MEMBERS_KEY } from '../lib/queryKeys'
 import { Icon } from './Icon'
+import { Img } from './Img'
 
 // The ❤ on a recipe (or a planned meal linked to one) — family "favorites" (#21).
 // Shows WHICH faces loved it (small dots, never a count). The add/remove toggle
@@ -40,7 +41,7 @@ export function HeartButton({ recipeId }: { recipeId: string }) {
         const photo = m.avatar_kind === 'photo' && m.avatar_ref ? imgUrl(m.avatar_ref) : null
         return (
           <span key={m.id} className="hearts__face" style={{ background: photo ? undefined : m.colour }}>
-            {photo ? <img src={photo} alt="" /> : (m.display_name?.[0] ?? '?').toUpperCase()}
+            {photo ? <Img src={photo} alt="" /> : (m.display_name?.[0] ?? '?').toUpperCase()}
           </span>
         )
       })}

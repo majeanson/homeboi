@@ -8,6 +8,7 @@ import { BOARD_KEY } from '../lib/queryKeys'
 import { StatusMessage } from '../components/StatusMessage'
 import { CaptureForm } from '../components/CaptureForm'
 import { Icon } from '../components/Icon'
+import { Img } from '../components/Img'
 
 // PWA share-target capture (#13). The manifest registers /share as a POST share
 // target; the service worker (vite.config) intercepts that POST, stashes the
@@ -160,7 +161,7 @@ export function SharePage() {
       ) : (
         <>
           <p className="lead">{imageBlob ? t.share.photoLead : t.share.lead}</p>
-          {imageUrl && <img className="share-page__img" src={imageUrl} alt="" />}
+          {imageUrl && <Img className="share-page__img" src={imageUrl} alt="" />}
           {imageBlob ? (
             <>
               <input

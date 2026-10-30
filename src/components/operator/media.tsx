@@ -15,6 +15,7 @@ import { usePhotos } from '../../lib/photoGallery'
 import { PHOTOS_KEY } from '../../lib/queryKeys'
 import { Icon } from '../Icon'
 import { EmptyState } from '../EmptyState'
+import { Img } from '../Img'
 
 // Weekly recap: an on-demand, calm reflection (NFR-CALM/COST — a button, never a
 // loop). Hides itself when AI is unavailable (503) so it never shows a dead button.
@@ -118,7 +119,7 @@ export function PhotosSection({ help }: { help?: HelpMode }) {
         <div className="photo-grid">
           {photos.map((p) => (
             <div key={p.id} className="photo-grid__item">
-              <img src={imgUrl(p.key)} alt="" loading="lazy" />
+              <Img src={imgUrl(p.key)} alt="" loading="lazy" />
               {!ro && (
                 <button
                   type="button"

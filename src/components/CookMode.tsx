@@ -38,6 +38,7 @@ import { useModal } from '../lib/useModal'
 import { useCookTimers } from '../lib/cookTimers'
 import { useWakeLock } from '../lib/useWakeLock'
 import { TimerRail } from './cook/TimerRail'
+import { Img } from './Img'
 
 // The three cooking layouts. The TODDLER lens is always locked to 'step' (the calm
 // one-thing-at-a-time stepper — its whole point). The PARENT lens picks among all
@@ -762,7 +763,7 @@ export function CookMode({
             {(() => {
               const key = cur?.kind === 'step' ? recipe.stepImages?.[cur.srcIdx] : ''
               return key ? (
-                <img className="cook__step-photo" src={imgUrl(key)} alt="" loading="lazy" />
+                <Img className="cook__step-photo" src={imgUrl(key)} alt="" loading="lazy" />
               ) : null
             })()}
             {/* The instruction as bullet points (one per sentence), and the

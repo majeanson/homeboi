@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useT, type Lang } from '../i18n'
 import { useSpeak, playNarration } from '../lib/speak'
 import { Icon } from './Icon'
+import { Img } from './Img'
 
 // The toddler primitive: a grid of big, picture-first, tappable tiles that read
 // themselves aloud on tap. Touch targets are huge (NFR-KID-1), meaning carried
@@ -143,7 +144,7 @@ export function BigTiles({ tiles, empty }: { tiles: Tile[]; empty?: string }) {
               <span className="bigtile__dot" aria-hidden="true" style={{ background: tile.color }} />
             )}
             <span className={`bigtile__icon${tile.image ? ' bigtile__icon--photo' : ''}`} aria-hidden="true">
-              {tile.image ? <img src={tile.image} alt="" loading="lazy" /> : (tile.icon ?? '•')}
+              {tile.image ? <Img src={tile.image} alt="" loading="lazy" /> : (tile.icon ?? '•')}
             </span>
             <span className="bigtile__label">{tile.label}</span>
             {tile.sub && <span className="bigtile__sub mono">{tile.sub}</span>}

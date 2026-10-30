@@ -12,6 +12,7 @@ import { uploadMedia, MediaUnavailableError } from '../lib/uploadMedia'
 import { EditField } from './EditField'
 import { DrawPad } from './DrawPad'
 import { Icon, InlineIcon } from './Icon'
+import { Img } from './Img'
 
 // Edit a routine's deck of picture cards: each card is an emoji + a word. Tap
 // the emoji to switch it from a palette, type the word, reorder by dragging the
@@ -138,7 +139,7 @@ export function CardDeckEditor({
                         (feature #17 C). Tapping still opens the emoji palette —
                         the emoji is the fallback when no photo is attached. */}
                     {card.photoKey ? (
-                      <img className="deck__emoji-photo" src={imgUrl(card.photoKey)} alt="" />
+                      <Img className="deck__emoji-photo" src={imgUrl(card.photoKey)} alt="" />
                     ) : (
                       card.icon || '⭐'
                     )}
@@ -600,7 +601,7 @@ function PhotoControl({
       />
       {photoKey ? (
         <>
-          <img className="deck__photo-thumb" src={imgUrl(photoKey)} alt="" />
+          <Img className="deck__photo-thumb" src={imgUrl(photoKey)} alt="" />
           {pickBtn}
           {drawBtn}
           <button

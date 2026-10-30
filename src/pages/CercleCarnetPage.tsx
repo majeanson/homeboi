@@ -38,6 +38,7 @@ import { CarnetDocs } from '../components/cercle/CarnetDocs'
 import { CareLogForm } from '../components/cercle/CareLogForm'
 import { HomePinForm } from '../components/cercle/HomePinForm'
 import { HomeProjectForm } from '../components/forms/HomeProjectForm'
+import { Img } from '../components/Img'
 
 type Seg = 'surveiller' | 'carnet'
 
@@ -210,7 +211,7 @@ export function CercleCarnetPage() {
         {/* Hero — the thing's face: photo or its emoji disc, name, kind. */}
         <div className="carnet-hero" style={{ ['--carnet-tint']: carnet.color } as CSSProperties}>
           <span className="carnet-hero__av" style={!photo ? { background: faint(carnet.color) } : undefined}>
-            {photo ? <img src={photo} alt="" /> : <span className="carnet-hero__emoji">{carnetEmoji(carnet)}</span>}
+            {photo ? <Img src={photo} alt="" /> : <span className="carnet-hero__emoji">{carnetEmoji(carnet)}</span>}
           </span>
           <div className="carnet-hero__main">
             <h2>{carnet.name}</h2>

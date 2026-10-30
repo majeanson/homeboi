@@ -4,6 +4,7 @@ import { TopBar } from '../components/TopBar'
 import { Icon, type IconName } from '../components/Icon'
 import { useLang, useT } from '../i18n'
 import { api } from '../lib/api'
+import { Img } from '../components/Img'
 
 // The marketing front door — shown to first-time visitors only (the `/` smart
 // entry in router.tsx redirects a returning kiosk/phone straight to its home).
@@ -120,7 +121,7 @@ export function Home() {
           <figure className="home__shot">
             <picture>
               <source media="(max-width: 699px)" srcSet={`/showcase/board-phone-${lang}.webp`} width="780" height="1688" />
-              <img
+              <Img
                 src={`/showcase/board-wide-${lang}.webp`}
                 width="1280"
                 height="800"

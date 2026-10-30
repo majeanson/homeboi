@@ -8,6 +8,7 @@ import { type HomePin, type HomePinKind, PIN_EMOJI } from '../../lib/carnets'
 import { StatusMessage } from '../StatusMessage'
 import { FormFooter } from '../FormFooter'
 import { Icon } from '../Icon'
+import { Img } from '../Img'
 
 const PIN_KINDS: HomePinKind[] = ['where', 'howto', 'doc']
 
@@ -92,7 +93,7 @@ export function HomePinForm({
 
       <label className="business-form__photo">
         {photo ? (
-          <img src={photo} alt="" className="business-form__photo-img" />
+          <Img src={photo} alt="" className="business-form__photo-img" />
         ) : (
           <span className="business-form__photo-add">
             <Icon name="camera-bold" size={20} /> {uploading ? c.uploading : c.addPhoto}

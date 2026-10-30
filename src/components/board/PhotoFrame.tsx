@@ -8,6 +8,7 @@ import { ZoomableImg } from '../ZoomableImg'
 import { Icon } from '../Icon'
 import { useCardLens } from './CardLens'
 import { CardMini } from './BoardCard'
+import { Img } from '../Img'
 
 // A calm family-photo frame for the wall: one photo at a time, a slow cross-fade
 // every 30s. Tapping the photo opens it full-screen via the shared ZoomableImg
@@ -37,7 +38,7 @@ export function PhotoFrame() {
         className="cardmini--media"
         label={t.boardCard.photos}
         onExpand={lens.expand}
-        body={<img key={p!.id} className="cardmini__photo" src={imgUrl(p!.key)} alt="" loading="lazy" />}
+        body={<Img key={p!.id} className="cardmini__photo" src={imgUrl(p!.key)} alt="" loading="lazy" />}
       />
     )
   }

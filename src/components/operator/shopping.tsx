@@ -22,6 +22,7 @@ import { StatusMessage } from '../StatusMessage'
 import { Cluster } from '../Layout'
 import { flippBookmarklet } from '../../lib/flippList'
 import { Disclosure } from '../Disclosure'
+import { Img } from '../Img'
 
 // Shopping: the household's postal code, used by the flyer/deal lookups so the
 // price-match proof on the list knows where to search. Set once, used every trip.
@@ -252,7 +253,7 @@ export function StoreFilterSection({ help }: { help?: HelpMode }) {
           {stores.map((s) => (
             <li key={s.key} className={'store-filter__row' + (s.included ? '' : ' is-off')}>
               {s.logo ? (
-                <img className="store-filter__logo" src={s.logo} alt="" loading="lazy" />
+                <Img className="store-filter__logo" src={s.logo} alt="" loading="lazy" />
               ) : (
                 <span className="store-filter__logo store-filter__logo--none" aria-hidden="true">
                   <Icon name="storefront-bold" size={20} />

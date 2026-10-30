@@ -38,6 +38,7 @@ import { Chip } from '../Chip'
 import { EmptyState } from '../EmptyState'
 import { LoadError } from '../LoadError'
 import { RowActions } from '../RowActions'
+import { Img } from '../Img'
 
 // « Un seul tiroir d'idées-repas » (C-14, bmad/10) — the ONE place every source of
 // "what's for supper" ideas lives, replacing four-plus scattered pools a family
@@ -385,7 +386,7 @@ function FavoritesChip({
               const photo = m.avatar_kind === 'photo' && m.avatar_ref ? imgUrl(m.avatar_ref) : null
               return (
                 <span key={m.id} className="hearts__face" style={{ background: photo ? undefined : m.colour }}>
-                  {photo ? <img src={photo} alt="" /> : (m.display_name?.[0] ?? '?').toUpperCase()}
+                  {photo ? <Img src={photo} alt="" /> : (m.display_name?.[0] ?? '?').toUpperCase()}
                 </span>
               )
             })}

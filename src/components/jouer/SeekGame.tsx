@@ -3,6 +3,7 @@ import { useT } from '../../i18n'
 import { useSpeak } from '../../lib/speak'
 import { Icon } from '../Icon'
 import { type SeekDeck, type SeekItem, pickSeekRound } from '../../lib/playContent'
+import { Img } from '../Img'
 
 // « Cherche et trouve » — the hear-first find-it TOY. Pick a deck (faces / animals /
 // colours / foods / weather / a mix), then: "Trouve le chien !" Tap the right tile →
@@ -110,7 +111,7 @@ export function SeekGame({ decks }: { decks: SeekDeck[] }) {
                     style={item.color && !item.emoji ? { background: item.color } : undefined}
                     aria-hidden="true"
                   >
-                    {item.photo ? <img src={item.photo} alt="" loading="lazy" /> : item.emoji ?? ''}
+                    {item.photo ? <Img src={item.photo} alt="" loading="lazy" /> : item.emoji ?? ''}
                   </span>
                   <span className="seek-tile__label">{item.label}</span>
                   {found && isTarget && (

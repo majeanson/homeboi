@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Icon } from './Icon'
 import { FaceSheet } from './FaceSheet'
 import { type MemberFace } from './MemberSwitcher'
+import { Img } from './Img'
 
 // The COLLAPSED "pick-a-face" control — a small chip showing the current face that
 // opens the shared face sheet (`FaceSheet`) on tap. It's the same tap-to-select
@@ -44,7 +45,7 @@ export function FaceSelect({
       <button type="button" className="profile-chip profile-chip--labeled" onClick={() => setOpen(true)} aria-label={ariaLabel}>
         {sel ? (
           <span className="profile-chip__av" style={{ background: sel.photoUrl ? undefined : (sel.colour ?? undefined) }}>
-            {sel.photoUrl ? <img src={sel.photoUrl} alt="" /> : (sel.name?.[0] ?? '?').toUpperCase()}
+            {sel.photoUrl ? <Img src={sel.photoUrl} alt="" /> : (sel.name?.[0] ?? '?').toUpperCase()}
           </span>
         ) : (
           <span className="profile-chip__av profile-chip__av--all" aria-hidden="true">

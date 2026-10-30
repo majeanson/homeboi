@@ -146,6 +146,7 @@ import { DealCard } from '../components/DealCard'
 import { IngredientLine } from '../components/IngredientLine'
 import { MeasureScoops } from '../components/MeasureScoops'
 import { findMeasures } from '../lib/measure'
+import { Img } from '../components/Img'
 import { ZoomableImg } from '../components/ZoomableImg'
 import { WonderBand } from '../components/board/ApodFrame'
 import { SkyTonight } from '../components/board/SkyTonight'
@@ -3072,6 +3073,20 @@ export function DevKit() {
             </span>
           </Demo>
         </>
+      ),
+    },
+    {
+      cat: 'Affichage',
+      name: 'Img',
+      file: 'components/Img.tsx',
+      kw: 'image img photo retry chargement placeholder data-loaded',
+      render: () => (
+        <Demo label="THE image element: retries a failed load (600 ms · 2.5 s · 6 s, then once per reconnection / foregrounding); data-loaded 0→1 (or x once spent) for a shape-reserving placeholder. The second one never loads.">
+          <div style={{ display: 'flex', gap: '0.6rem' }}>
+            <Img src={sampleImg} alt="exemple" className="recipe-thumb" />
+            <Img src="/api/img/devkit-never-exists" alt="introuvable" className="recipe-thumb" style={{ width: 160, height: 120, background: 'rgba(0,0,0,0.05)' }} />
+          </div>
+        </Demo>
       ),
     },
     {

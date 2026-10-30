@@ -59,6 +59,7 @@ import { Notes } from '../components/board/Notes'
 import { DayNote } from '../components/board/DayNote'
 import { Skeleton } from '../components/Skeleton'
 import { BoardViewToggle, TodayFaceRow } from '../components/board/chrome'
+import { Img } from '../components/Img'
 // « Mois » and « Année » are BEHIND A VIEW SWITCH — the board opens on its widget
 // grid, so neither calendar is on the first-paint path, and together they were ~65 KB
 // of the eager entry chunk. Lazy, with the same Skeleton the board already shows while
@@ -1707,7 +1708,7 @@ export function Board() {
                 const photo = me.avatar_kind === 'photo' && me.avatar_ref ? imgUrl(me.avatar_ref) : null
                 return (
                   <span className="profile-chip__av" style={{ background: photo ? undefined : me.colour }}>
-                    {photo ? <img src={photo} alt="" /> : (me.display_name?.[0] ?? '?').toUpperCase()}
+                    {photo ? <Img src={photo} alt="" /> : (me.display_name?.[0] ?? '?').toUpperCase()}
                   </span>
                 )
               })()

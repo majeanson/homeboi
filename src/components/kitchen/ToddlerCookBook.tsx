@@ -4,6 +4,7 @@ import { useSpeak } from '../../lib/speak'
 import { type Recipe, recipeImg } from '../../lib/recipes'
 import { pictoFor } from '../../lib/picto'
 import { Icon, InlineIcon } from '../Icon'
+import { Img } from '../Img'
 
 // #45 (reframed) — the toddler's ON-SCREEN cooking book, not the printable one. A
 // calm, swipeable picture book the app builds from the household's recipes: a
@@ -70,7 +71,7 @@ export function ToddlerCookBook({
               onClick={() => speak(recipe.title, recipe.lang ?? undefined)}
               aria-label={recipe.title}
             >
-              {img ? <img src={img} alt="" /> : <span className="tbook__picto">{pictoFor(recipe.title, '🍽')}</span>}
+              {img ? <Img src={img} alt="" /> : <span className="tbook__picto">{pictoFor(recipe.title, '🍽')}</span>}
             </button>
             <h2 className="tbook__title">{recipe.title}</h2>
             <button type="button" className="tbook__cook" onClick={() => onCook(recipe)}>

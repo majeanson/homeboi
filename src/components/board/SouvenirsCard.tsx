@@ -17,6 +17,7 @@ import { Rail } from '../Layout'
 import { ZoomableImg } from '../ZoomableImg'
 import { useCardLens } from './CardLens'
 import { CardMini } from './BoardCard'
+import { Img } from '../Img'
 
 // « Souvenirs » (PLAN-mots C1, accepted 2026-09-25 — « you can put the widget back »): the
 // keepsake shelf, a band card beside « Mots ». What the household chose to KEEP, in one
@@ -65,7 +66,7 @@ export function SouvenirsCard({ readOnly = false }: { readOnly?: boolean }) {
         onExpand={lens.expand}
         body={
           pictures.length ? (
-            <img key={pictures[0].id} className="cardmini__photo" src={pictures[0].src} alt="" loading="lazy" />
+            <Img key={pictures[0].id} className="cardmini__photo" src={pictures[0].src} alt="" loading="lazy" />
           ) : (
             <span className="souv__mot souv__mot--mini">{label(mots[0])}</span>
           )

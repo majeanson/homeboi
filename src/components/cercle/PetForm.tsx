@@ -30,6 +30,7 @@ import { RowActions } from '../RowActions'
 import { Avatar } from '../Avatar'
 import { Icon } from '../Icon'
 import { THING_DEFAULTS } from '../../lib/things'
+import { Img } from '../Img'
 
 const PET_COLOUR = THING_DEFAULTS.pet.colour // the pet amber — one source in lib/things
 
@@ -361,7 +362,7 @@ export function PetForm({ value, onSaved, onCancel }: { value?: Pet | null; onSa
         {/* Optional photo (hidden gracefully if R2 is unset → upload fails). */}
         <label className="business-form__photo">
           {photo ? (
-            <img src={photo} alt="" className="business-form__photo-img" />
+            <Img src={photo} alt="" className="business-form__photo-img" />
           ) : (
             <span className="business-form__photo-add">
               <Icon name="smiley-bold" size={20} /> {uploading ? p.uploading : p.addPhoto}

@@ -20,6 +20,7 @@ import { SubTabs } from '../SubTabs'
 import { Chip } from '../Chip'
 import { EmptyState } from '../EmptyState'
 import { type HelpMode } from '../../lib/helpMode'
+import { Img } from '../Img'
 
 // The recipe book: search, tag chips, the configurable filter/sort PILLS, and the
 // #11 collections browse layer — all flat in one view (no second-level sub-tabs).
@@ -217,7 +218,7 @@ export function RecipesTab({
       <div key={r.id} className="recipe-card-wrap">
         <button type="button" className="recipe-card surface" onClick={() => onView(r)}>
           <span className="recipe-card__thumb" aria-hidden="true">
-            {img ? <img src={img} alt="" loading="lazy" /> : <span className="recipe-card__noimg">{pictoFor(r.title, '🍳')}</span>}
+            {img ? <Img src={img} alt="" loading="lazy" /> : <span className="recipe-card__noimg">{pictoFor(r.title, '🍳')}</span>}
           </span>
           <span className="recipe-card__title">{r.title}</span>
           {activeSort === 'useSoon' ? (

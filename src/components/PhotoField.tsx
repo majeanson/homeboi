@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { api } from '../lib/api'
 import { resizeImage, imgUrl } from '../lib/image'
 import { Icon, type IconName } from './Icon'
+import { Img } from './Img'
 
 // THE optional-single-photo field — pick one image, see it, replace it by picking
 // again. The shape three forms had each written out for themselves (`CarnetForm`'s
@@ -62,7 +63,7 @@ export function PhotoField({
   return (
     <label className={'business-form__photo' + (className ? ` ${className}` : '')}>
       {photo ? (
-        <img src={photo} alt="" className="business-form__photo-img" />
+        <Img src={photo} alt="" className="business-form__photo-img" />
       ) : (
         <span className="business-form__photo-add">
           <Icon name={icon} size={20} /> {uploading ? uploadingLabel : addLabel}

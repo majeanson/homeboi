@@ -17,6 +17,7 @@ import { useBoardData } from '../lib/queryHooks'
 import { useEscapeKey } from '../lib/sceneNav'
 import { useTabParam } from '../lib/tabParam'
 import { useOnline } from '../lib/online'
+import { Img } from './Img'
 
 // Standalone flyer/deals browser: search what's on sale near the household this
 // week and add items straight to the shared list (or open the full flyer and add
@@ -328,7 +329,7 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
                       onClick={() => setFlyer({ id: f.flyerId, itemId: null, merchant: f.merchant, logo: f.logo, premium: f.premium })}
                     >
                       {f.logo ? (
-                        <img className="flyer-store__logo" src={f.logo} alt="" loading="lazy" />
+                        <Img className="flyer-store__logo" src={f.logo} alt="" loading="lazy" />
                       ) : (
                         <span className="flyer-store__logo flyer-store__logo--none" aria-hidden="true">
                           <Icon name="storefront-bold" size={20} />

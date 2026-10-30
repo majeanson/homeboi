@@ -15,6 +15,7 @@ import { EmptyState } from '../components/EmptyState'
 import { GuestExpired } from '../components/GuestExpired'
 import { Icon, InlineIcon } from '../components/Icon'
 import { SharePreviewBar, useSharePreview } from '../components/SharePreviewBar'
+import { Img } from '../components/Img'
 
 // #34 — the babysitter handoff. The terminal view a `sitter` share link lands on
 // (it can read nothing else — the server allowlist keeps it to /api/guest/window).
@@ -167,7 +168,7 @@ export function HandoffPage() {
                       </span>
                       {p.detail && <span className="handoff__note-text">{p.detail}</span>}
                       {p.mediaKey && (
-                        <img src={imgUrl(p.mediaKey)} alt="" className="handoff__pin-img" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                        <Img src={imgUrl(p.mediaKey)} alt="" className="handoff__pin-img" onError={(e) => (e.currentTarget.style.display = 'none')} />
                       )}
                     </li>
                   ))}
@@ -190,7 +191,7 @@ export function HandoffPage() {
                       </span>
                       {p.detail && <span className="handoff__note-text">{p.detail}</span>}
                       {p.mediaKey && (
-                        <img src={imgUrl(p.mediaKey)} alt="" className="handoff__pin-img" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                        <Img src={imgUrl(p.mediaKey)} alt="" className="handoff__pin-img" onError={(e) => (e.currentTarget.style.display = 'none')} />
                       )}
                     </li>
                   ))}

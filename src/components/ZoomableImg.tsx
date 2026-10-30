@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useModal } from '../lib/useModal'
 import { Icon } from './Icon'
+import { Img } from './Img'
 
 // Tap an image to open it full-screen (zoom-in); tap the backdrop, the ✕, or
 // press Esc to close. Used for flyer/deal images, recipe photos, and the cercle
@@ -26,33 +27,18 @@ export function ZoomableImg({
    *  nothing renders, and the overlay is exactly what it was. */
   caption?: React.ReactNode
   // Forwarded to the thumbnail — lets a caller detect a blob that won't render as an
-  // image (e.g. an extension-less PDF key) and swap in a different affordance.
+  // image (e.g. an extension-less PDF key) and swap in a different affordance. Fires
+  // only once Img's retries are spent, never on a first hiccup.
   onError?: React.ReactEventHandler<HTMLImageElement>
 }) {
   const [open, setOpen] = useState(false)
-  // Loading state, surfaced as a `data-loaded` attribute. Purely additive — no CSS
-  // targets it unless a wrapper opts in (e.g. carnet docs / cercle photos show a calm
-  // flyer-img-shimmer skeleton via `:has(img[data-loaded='0'])` until the R2 blob
-  // loads). A cache-first hit can finish before onLoad attaches, so the ref reveals it.
-  const [loaded, setLoaded] = useState<'0' | '1' | 'x'>('0')
+  // Load / retry state is Img's (components/Img.tsx): it sets `data-loaded` ('0'
+  // travelling · '1' shown · 'x' spent), which a wrapper may style (carnet docs /
+  // cercle photos show a calm flyer-img-shimmer skeleton via
+  // `:has(img[data-loaded='0'])`), and it re-asks for a failed blob by itself.
   return (
     <>
-      <img
-        ref={(el) => {
-          if (el?.complete && el.naturalWidth > 0) setLoaded('1')
-        }}
-        src={src}
-        alt={alt}
-        className={className}
-        data-loaded={loaded}
-        onClick={() => setOpen(true)}
-        onLoad={() => setLoaded('1')}
-        onError={(e) => {
-          setLoaded('x')
-          onError?.(e)
-        }}
-        style={{ cursor: 'zoom-in' }}
-      />
+      <Img src={src} alt={alt} className={className} onClick={() => setOpen(true)} onError={onError} style={{ cursor: 'zoom-in' }} />
       {open && <ZoomOverlay src={src} alt={alt} caption={caption} onClose={() => setOpen(false)} />}
     </>
   )
@@ -167,7 +153,7 @@ function ZoomOverlay({ src, alt, caption, onClose }: { src: string; alt: string;
         if (e.target === overlayRef.current) onClose() // backdrop tap closes
       }}
     >
-      <img
+      <Img
         ref={imgRef}
         className="zoom-overlay__img"
         src={src}

@@ -22,6 +22,7 @@ import { useSurface } from '../lib/surface'
 import { companionPool, companionTone, isCompanion, type CompanionMoment } from '../lib/companions'
 import { computeDayPart } from '../lib/timeofday'
 import { tipFor } from '../lib/routineTips'
+import { Img } from './Img'
 
 // The RUN of one routine — the calm "right now / then" picture story extracted
 // from KidView so it can play on EVERY surface, not just the locked toddler
@@ -460,7 +461,7 @@ export function RoutinePlayer({
           {onBack ? (
             <button type="button" className="tdl-face" onClick={onBack} aria-label={backLabel} title={backLabel}>
               {routine.avatarPhoto ? (
-                <img className="tdl-face__img" src={imgUrl(routine.avatarPhoto)} alt="" />
+                <Img className="tdl-face__img" src={imgUrl(routine.avatarPhoto)} alt="" />
               ) : (
                 <span className="tdl-face__initial" style={{ background: tint }} aria-hidden="true">
                   {(routine.memberName ?? routine.name).slice(0, 1).toUpperCase()}
@@ -516,7 +517,7 @@ export function RoutinePlayer({
                     aria-label={c.label}
                   >
                     {c.photoKey ? (
-                      <img className="tdl-recap__photo" src={imgUrl(c.photoKey)} alt="" aria-hidden="true" />
+                      <Img className="tdl-recap__photo" src={imgUrl(c.photoKey)} alt="" aria-hidden="true" />
                     ) : (
                       <span aria-hidden="true">{c.icon || '○'}</span>
                     )}
@@ -586,7 +587,7 @@ export function RoutinePlayer({
                 aria-label={stepLabel(curIdx, t.kid.stepNow)}
               >
                 {routine.cards[curIdx]?.photoKey ? (
-                  <img className="tdl-illus-photo" src={imgUrl(routine.cards[curIdx].photoKey!)} alt="" />
+                  <Img className="tdl-illus-photo" src={imgUrl(routine.cards[curIdx].photoKey!)} alt="" />
                 ) : (
                   <span className="tdl-illus-emoji">{cur?.icon || '○'}</span>
                 )}
@@ -646,7 +647,7 @@ export function RoutinePlayer({
                     >
                       <span className="tdl-step__pic">
                         {routine.cards[k]?.photoKey ? (
-                          <img src={imgUrl(routine.cards[k].photoKey!)} alt="" />
+                          <Img src={imgUrl(routine.cards[k].photoKey!)} alt="" />
                         ) : (
                           <span className="tdl-step__emoji">{c.icon || '○'}</span>
                         )}

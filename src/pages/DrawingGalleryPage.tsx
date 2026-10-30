@@ -22,6 +22,7 @@ import { ZoomableImg } from '../components/ZoomableImg'
 import { ageAt, groupByYear } from '../lib/year'
 import type { GalleryDrawing } from '../lib/drawingGallery'
 import type { OperatorMember } from '../lib/members'
+import { Img } from '../components/Img'
 
 // /drawings — the drawing COLLECTION / gallery (#14). "Mes dessins": a lasting wall
 // of kept drawings, especially a toddler's growing collection (big tap targets,
@@ -117,7 +118,7 @@ export function DrawingGalleryPage() {
                         onClick={() => draw.begin(d)}
                         aria-label={t.memo.editTitle}
                       >
-                        <img src={imgUrl(d.media_key)} alt={t.notes.drawing} loading="lazy" />
+                        <Img src={imgUrl(d.media_key)} alt={t.notes.drawing} loading="lazy" />
                       </button>
                     )}
                     {/* « Garder » (C1): keep it for the board's « Souvenirs » shelf — distinct

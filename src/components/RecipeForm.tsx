@@ -42,6 +42,7 @@ import { sameSource } from '../lib/recipes'
 import { fold } from '../lib/normalize'
 import { stashPendingImport, type CapturedRecipePage } from '../lib/recipeBookmarklet'
 import { importStage, useElapsed, type ImportKind, type ImportStage } from '../lib/importProgress'
+import { Img } from './Img'
 
 // In the EDITOR a row is a section row as soon as it carries the "## " marker —
 // even with the title still empty ("## "), so typing the name doesn't flip the
@@ -1679,7 +1680,7 @@ export function RecipeForm({
           <div className="recipe-photo">
             {imgSrc ? (
               <div className="recipe-photo__has">
-                <img src={imgSrc} alt="" />
+                <Img src={imgSrc} alt="" />
                 <button type="button" className="btn btn--ghost mono" onClick={() => setImage(null)}>
                   {t.recipes.removePhoto}
                 </button>

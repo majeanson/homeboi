@@ -39,6 +39,7 @@ import { Cluster } from '../components/Layout'
 import { Icon, InlineIcon, type IconName } from '../components/Icon'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { AskAnswerCard, type AnswerKind } from '../lib/askAnswer'
+import { Img } from '../components/Img'
 
 // #30 — global search: ONE box across recipes, Le cercle people, events, and the
 // shared list. A full-screen scene (deep-linkable: /search?q=…) that reads the
@@ -406,7 +407,7 @@ export function SearchPage() {
                 {res!.recipes.items.map((r) => (
                   <Link key={r.id} to={`/kitchen/recipe/${r.id}`} className="search__row">
                     <span className="search__pic" aria-hidden="true">
-                      {recipeImg(r.image) ? <img src={recipeImg(r.image)!} alt="" /> : pictoFor(r.title, '🍳')}
+                      {recipeImg(r.image) ? <Img src={recipeImg(r.image)!} alt="" /> : pictoFor(r.title, '🍳')}
                     </span>
                     <span className="search__main">
                       <span className="search__title">{hl(r.title)}</span>
@@ -566,7 +567,7 @@ export function SearchPage() {
                 {res!.drawings.items.map((d) => (
                   <Link key={d.id} to="/drawings" className="search__row">
                     <span className="search__pic" aria-hidden="true">
-                      <img src={imgUrl(d.media_key)} alt="" />
+                      <Img src={imgUrl(d.media_key)} alt="" />
                     </span>
                     <span className="search__main">
                       <span className="search__title">{hl(d.member_id ? memberName.get(d.member_id) ?? t.notes.drawing : t.notes.drawing)}</span>

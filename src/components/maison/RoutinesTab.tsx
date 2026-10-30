@@ -20,6 +20,7 @@ import { imgUrl } from '../../lib/image'
 import { isRoutineTod, todRank, TOD_ICON, TOD_TINT, type RoutineTod } from '../../lib/routineTod'
 import { timeOfDay } from '../../lib/timeofday'
 import { type HelpMode } from '../../lib/helpMode'
+import { Img } from '../Img'
 
 export interface RoutineRow {
   id: string
@@ -152,7 +153,7 @@ export function RoutinesTab({ help }: { help: HelpMode }) {
                     when set (feature #17 C) — the same rule the toddler
                     view follows, so both surfaces show the same picture. */}
                 {c.photoKey ? (
-                  <img className="routine-card__step-photo" src={imgUrl(c.photoKey)} alt="" />
+                  <Img className="routine-card__step-photo" src={imgUrl(c.photoKey)} alt="" />
                 ) : (
                   c.icon || '○'
                 )}

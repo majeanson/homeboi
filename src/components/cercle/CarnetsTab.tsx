@@ -11,6 +11,7 @@ import { CARNETS_KEY, BOARD_KEY } from '../../lib/queryKeys'
 import { Icon } from '../Icon'
 import { Disclosure } from '../Disclosure'
 import { EmptyState } from '../EmptyState'
+import { Img } from '../Img'
 
 const ARCHIVED_CARNETS_KEY = [...CARNETS_KEY, 'archived']
 
@@ -75,7 +76,7 @@ export function CarnetsTab() {
             <div key={x.id} className="cercle-row">
               <button type="button" className="cercle-row__open" onClick={() => nav(`/cercle/carnet/${x.id}`)}>
                 <span className="cercle-business__av" aria-hidden="true" style={!photo ? { background: faint(x.color) } : undefined}>
-                  {photo ? <img src={photo} alt="" /> : <span className="cercle-carnets__emoji">{carnetEmoji(x)}</span>}
+                  {photo ? <Img src={photo} alt="" /> : <span className="cercle-carnets__emoji">{carnetEmoji(x)}</span>}
                 </span>
                 <span className="cercle-row__main">
                   <span className="cercle-row__name">{x.name}</span>

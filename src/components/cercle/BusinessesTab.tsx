@@ -25,6 +25,7 @@ import { JoindreRail } from './JoindreRail'
 import { EventForm, type EventInit } from '../forms/EventForm'
 import { type FormMember } from '../FormScene'
 import { scrollBehavior } from '../../lib/motion'
+import { Img } from '../Img'
 
 // « Le cercle » → Business tab: the household's services / vendors directory (vet,
 // hospital, plumber, business cards…). DELIBERATELY isolated from the people graph —
@@ -134,7 +135,7 @@ export function BusinessesTab({
                   aria-hidden="true"
                   style={b.colour && !photo ? { background: faint(b.colour), color: tintInk(b.colour) } : undefined}
                 >
-                  {photo ? <img src={photo} alt="" /> : <Icon name="storefront-bold" size={22} />}
+                  {photo ? <Img src={photo} alt="" /> : <Icon name="storefront-bold" size={22} />}
                 </span>
                 <span className="cercle-row__main">
                   <span className="cercle-row__name">{b.name}</span>

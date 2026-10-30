@@ -8,6 +8,7 @@ import { type Face } from '../../lib/eventPeople'
 import { type HelpMode } from '../../lib/helpMode'
 import { SecLabel, CardMini, type CompactRow, type CornerAction } from './BoardCard'
 import { useCardLens } from './CardLens'
+import { Img } from '../Img'
 
 // Pip section header: an optional category glyph + label + rule + a quiet count
 // (never a score). Each Section is a bento tile in the board grid. `icon` + `tint`
@@ -213,7 +214,7 @@ export function Act({
       data-icon={photo || icon ? icon : emoji ? undefined : c.icon}
     >
       {photo ? (
-        <img src={photo} alt="" loading="lazy" />
+        <Img src={photo} alt="" loading="lazy" />
       ) : icon ? (
         <Icon name={icon} size={28} color={glyph} />
       ) : emoji ? (

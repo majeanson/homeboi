@@ -7,6 +7,7 @@ import { useSpeak } from '../../lib/speak'
 import { useT } from '../../i18n'
 import { ZoomableImg } from '../ZoomableImg'
 import { Icon } from '../Icon'
+import { Img } from '../Img'
 
 // The board's calm daily-wonder band. One image + caption that the household can
 // shuffle between free sources — Bing's photo of the day (curated landscapes),
@@ -74,7 +75,7 @@ export function WonderBand({ wonder, onShuffle }: { wonder: Wonder; onShuffle?: 
           onClick={() => speak(say, wonder.lang)}
           aria-label={`${kicker}: ${wonder.title}`}
         >
-          <img src={wonder.imgUrl} alt={wonder.title} className="apod__img" />
+          <Img src={wonder.imgUrl} alt={wonder.title} className="apod__img" />
           <span className="apod__cap apod__cap--kid">
             <span className="apod__kicker mono">{kicker}</span>
             <span className="apod__name">{wonder.title}</span>

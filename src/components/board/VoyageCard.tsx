@@ -6,6 +6,7 @@ import { Chip } from '../Chip'
 import { imgUrl } from '../../lib/image'
 import { useReportEmpty } from '../../lib/useReportEmpty'
 import { BoardCard } from './BoardCard'
+import { Img } from '../Img'
 
 // The board « Prochain voyage » glance — the next upcoming (or in-progress) trip, the
 // calm heads-up a calendar dot can't give. Reads BOTH the private /api/trips model and
@@ -80,7 +81,7 @@ export function VoyageCard() {
                     `justify-content: space-between`, which would have pushed the picture
                     to one edge and the title to the middle, away from each other.
                     Decorative — alt="" — the title carries the meaning. */}
-                {tr.media_key && <img src={imgUrl(tr.media_key)} alt="" className="voyage-card__cover" />}
+                {tr.media_key && <Img src={imgUrl(tr.media_key)} alt="" className="voyage-card__cover" />}
                 {tr.title}
                 {tr.shared && (
                   <Chip icon="users-three-bold" className="voyage-card__shared">

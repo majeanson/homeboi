@@ -14,6 +14,7 @@ import type { MemberFace } from '../MemberSwitcher'
 import { FaceSelect } from '../FaceSelect'
 import { Icon } from '../Icon'
 import { DrawPad } from '../DrawPad'
+import { Img } from '../Img'
 
 // Full-screen iOS-Notes-style editor for « Le cercle » → Notes, reused for BOTH a new
 // note and modifying an existing one (#richnotes). Mirrors DrawPad's shell: a portal to
@@ -275,7 +276,7 @@ export function NoteEditor({
         <div className="note-editor__media">
           {mediaKey ? (
             <div className="note-editor__attach">
-              <img src={imgUrl(mediaKey)} alt="" className="note-editor__attachimg" />
+              <Img src={imgUrl(mediaKey)} alt="" className="note-editor__attachimg" />
               <button type="button" className="btn btn--ghost" onClick={() => (mediaKind === 'drawing' ? setDrawOpen(true) : photoInputRef.current?.click())} disabled={busy || (mediaKind === 'image' && !online)}>
                 <Icon name="pencil-simple-bold" size={16} /> {mediaKind === 'drawing' ? fn.attachDrawing : fn.attachPhoto}
               </button>

@@ -1,4 +1,5 @@
 import { type MemberFace } from './MemberSwitcher'
+import { Img } from './Img'
 
 // The MULTI-select sibling of MemberSwitcher: tap household faces to select several
 // at once — a chore rotation, an event's passengers, a pet's owners, a routine's kids.
@@ -49,7 +50,7 @@ export function MemberPicker({
               className="mswitch__av"
               style={{ background: f.photoUrl ? undefined : f.colour ?? undefined }}
             >
-              {f.photoUrl ? <img src={f.photoUrl} alt="" /> : (f.name?.[0] ?? '?').toUpperCase()}
+              {f.photoUrl ? <Img src={f.photoUrl} alt="" /> : (f.name?.[0] ?? '?').toUpperCase()}
             </span>
             {ordinals && on && (
               <span className="mswitch__ord" aria-hidden="true">

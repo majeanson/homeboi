@@ -14,6 +14,7 @@ import { Icon, InlineIcon } from './Icon'
 import { Cluster } from './Layout'
 import { OfflineBanner } from './OfflineBanner'
 import { useModal } from '../lib/useModal'
+import { Img } from './Img'
 
 // « Montrer à la caisse » / "Show at the till" mode. The user holds the phone (the
 // cashier never does) and
@@ -173,7 +174,7 @@ export function CashierMode({
                     onClick={() => show(p)}
                   >
                     {p.deal.image && (
-                      <img className="cashier__tile-img" src={p.deal.image} alt="" loading="lazy" />
+                      <Img className="cashier__tile-img" src={p.deal.image} alt="" loading="lazy" />
                     )}
                     <span className="cashier__tile-for">{p.itemText}</span>
                     <span className="cashier__tile-name mono">{p.deal.name}</span>
@@ -232,7 +233,7 @@ export function CashierMode({
             {/* Logo small and first, as on the page it echoes — the store is the
                 first thing read, not the loudest. */}
             <span className="bigcard__store">
-              {d.logo && <img className="bigcard__logo" src={d.logo} alt="" loading="lazy" />}
+              {d.logo && <Img className="bigcard__logo" src={d.logo} alt="" loading="lazy" />}
               {d.merchant}
             </span>
             {d.image && (

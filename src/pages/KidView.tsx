@@ -17,6 +17,7 @@ import { ROUTINES_KEY } from '../lib/queryKeys'
 import { RoutinePlayer, type PlayerRoutine } from '../components/RoutinePlayer'
 import { isComplete, normalizeDone, stepTimerRunning, type RoutineTimer } from '../lib/routineProgress'
 import { colourFor } from '../lib/things'
+import { Img } from '../components/Img'
 
 // The pre-reader surface: a face/routine PICKER, then the calm picture-story RUN.
 // The run itself lives in the shared RoutinePlayer (so a parent's phone + the
@@ -203,7 +204,7 @@ export function KidView() {
                   <span className="kid__routine-who">
                     {!identified &&
                       (r.avatarPhoto ? (
-                        <img className="kid__routine-ava" src={imgUrl(r.avatarPhoto)} alt="" />
+                        <Img className="kid__routine-ava" src={imgUrl(r.avatarPhoto)} alt="" />
                       ) : (
                         <span className="kid__routine-ava kid__routine-ava--initial" style={{ background: tint }}>
                           {(r.memberName ?? '?').slice(0, 1).toUpperCase()}
@@ -224,7 +225,7 @@ export function KidView() {
                           className={'kid__routine-slot' + (doneSet.has(i) ? ' is-done' : '')}
                         >
                           {c.photoKey ? (
-                            <img className="kid__routine-thumb" src={imgUrl(c.photoKey)} alt="" />
+                            <Img className="kid__routine-thumb" src={imgUrl(c.photoKey)} alt="" />
                           ) : (
                             <span className="kid__routine-emoji">{c.icon || '○'}</span>
                           )}
@@ -258,7 +259,7 @@ export function KidView() {
               {others.map((r) => {
                 const tint = colourFor('routine', r.color)
                 return r.avatarPhoto ? (
-                  <img key={r.id} className="kid__others-face" src={imgUrl(r.avatarPhoto)} alt="" />
+                  <Img key={r.id} className="kid__others-face" src={imgUrl(r.avatarPhoto)} alt="" />
                 ) : (
                   <span key={r.id} className="kid__others-face kid__others-face--initial" style={{ background: tint }} aria-hidden="true">
                     {(r.memberName ?? '?').slice(0, 1).toUpperCase()}

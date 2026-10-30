@@ -13,6 +13,7 @@ import { useKeepInGalleryToast } from '../lib/drawingGallery'
 import { useKeepPhotoInGalleryToast } from '../lib/photoGallery'
 import { saveToDevice } from '../lib/saveToDevice'
 import { useOnline } from '../lib/online'
+import { Img } from './Img'
 
 // « Joindre » — the ONE way to hang a voice memo (#38), a drawing (#14) or a photo
 // (#13) onto whatever you're writing. It replaces `MemoControls`, which rendered a
@@ -372,7 +373,7 @@ export function useMemoAttach({
               <Icon name="play-bold" size={14} />
             </button>
           ) : (
-            <img className="memo-attach__thumb" src={imgUrl(draft.key)} alt="" />
+            <Img className="memo-attach__thumb" src={imgUrl(draft.key)} alt="" />
           )}
           <span className="memo-attach__label">{t.memo.attached[draft.kind]}</span>
           <button

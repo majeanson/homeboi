@@ -4,6 +4,7 @@ import { useAmbient } from '../lib/ambient'
 import { useGallery } from '../lib/drawingGallery'
 import { usePhotos } from '../lib/photoGallery'
 import { computeDayPart, type DayPart } from '../lib/timeofday'
+import { Img } from './Img'
 
 // Full-screen family-memory mosaic for the idle screensaver: tiles the whole
 // surface with family PHOTOS and saved kids' DRAWINGS (#49), and every few seconds
@@ -20,7 +21,7 @@ const TILE_PX = 260 // target tile edge at full density; the dense cap is set by
 const SWAP_MS = 4500 // how often one tile gently changes image
 
 type Tile = { photo: number; nonce: number }
-type Img = { id: string; key: string; draw: boolean }
+type MosaicImg = { id: string; key: string; draw: boolean }
 
 // Probability a swap lands on a DRAWING rather than a photo, by daypart. Only
 // matters when BOTH sources are present; otherwise the available one always wins.
@@ -77,7 +78,7 @@ function seedTiles(count: number, n: number): Tile[] {
 // free; if a group is exhausted on screen we take the other rather than duplicate.
 // When nothing fresh remains (tiles == images) we return `current` — the caller
 // reads that as "stay put", so a small gallery rests rather than churning dupes.
-function pickBiased(images: Img[], used: Set<number>, current: number, drawWeight: number): number {
+function pickBiased(images: MosaicImg[], used: Set<number>, current: number, drawWeight: number): number {
   if (images.length <= 1) return current
   const draws: number[] = []
   const photos: number[] = []
@@ -99,8 +100,8 @@ export function PhotoMosaic() {
 
   // The blended pool, honouring the Mode veille toggles. Drawings are served by the
   // SAME /api/img/<key> route as photos, so a tile renders either identically.
-  const images = useMemo<Img[]>(() => {
-    const out: Img[] = []
+  const images = useMemo<MosaicImg[]>(() => {
+    const out: MosaicImg[] = []
     if (a.showPhotos) for (const p of photosQ.data?.photos ?? []) out.push({ id: p.id, key: p.key, draw: false })
     if (a.showDrawings) for (const d of drawingsQ.data?.drawings ?? []) out.push({ id: `d_${d.media_key}`, key: d.media_key, draw: true })
     return out
@@ -171,7 +172,7 @@ export function PhotoMosaic() {
         return (
           <div className="ambient-mosaic__tile" key={i}>
             {/* key bumps with the nonce so React remounts the <img>, replaying the fade. */}
-            <img key={`${p.id}-${tile.nonce}`} src={imgUrl(p.key)} alt="" />
+            <Img key={`${p.id}-${tile.nonce}`} src={imgUrl(p.key)} alt="" />
           </div>
         )
       })}

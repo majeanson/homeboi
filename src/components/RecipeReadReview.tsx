@@ -8,6 +8,7 @@ import { isSectionHeading, SECTION_PREFIX } from '../lib/recipeSections'
 import { Icon, InlineIcon } from './Icon'
 import { Chip } from './Chip'
 import { Cluster } from './Layout'
+import { Img } from './Img'
 import { Disclosure } from './Disclosure'
 import { EditField } from './EditField'
 
@@ -430,9 +431,9 @@ export function RecipeReadReview({
                   ariaLabel={t.recipes.reviewPhotoAlt}
                   initialScale={2}
                   tools={chips(true)}
-                  minimap={<img className="read-review__mag-img" src={photoUrls[shown]} alt="" draggable={false} />}
+                  minimap={<Img className="read-review__mag-img" src={photoUrls[shown]} alt="" draggable={false} />}
                 >
-                  <img className="read-review__mag-img" src={photoUrls[shown]} alt={t.recipes.reviewPhotoAlt} draggable={false} />
+                  <Img className="read-review__mag-img" src={photoUrls[shown]} alt={t.recipes.reviewPhotoAlt} draggable={false} />
                 </PanZoom>
               )
             ) : (

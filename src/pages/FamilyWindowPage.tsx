@@ -10,6 +10,7 @@ import { EmptyState } from '../components/EmptyState'
 import { GuestExpired } from '../components/GuestExpired'
 import { InlineIcon } from '../components/Icon'
 import { SharePreviewBar, useSharePreview } from '../components/SharePreviewBar'
+import { Img } from '../components/Img'
 
 // #36 — the grandparents' window. The terminal view a `family` share link lands on:
 // the grandkids' upcoming dates, the family's birthdays, and the latest photos.
@@ -124,7 +125,7 @@ export function FamilyWindowPage() {
                 </h3>
                 <div className="family-window__photos">
                   {photos.map((key) => (
-                    <img key={key} className="family-window__photo" src={imgUrl(key)} alt="" loading="lazy" />
+                    <Img key={key} className="family-window__photo" src={imgUrl(key)} alt="" loading="lazy" />
                   ))}
                 </div>
               </section>
