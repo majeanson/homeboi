@@ -536,6 +536,9 @@ ${numbered}`
       // Indices only, but up to 80 ingredients + 60 steps + sections of 3-digit numbers:
       // 600 could cut the JSON, and a cut selection salvages as a SHORTER steps list.
       max_tokens: SELECTION_TOKENS,
+      // A selection has one right answer. Sampled, the same page came back with its
+      // garnish block one run and without it the next (photo corpus, live, 2026-10-30).
+      temperature: 0,
     })) as { response?: unknown }
     raw = res.response
   } catch (err) {
@@ -544,7 +547,7 @@ ${numbered}`
     const msg = logAi('selectRecipeLines', err)
     if (!/json mode/i.test(msg)) return null
     try {
-      const res = (await runModel(env, MODEL, { messages, max_tokens: SELECTION_TOKENS })) as { response?: unknown }
+      const res = (await runModel(env, MODEL, { messages, max_tokens: SELECTION_TOKENS, temperature: 0 })) as { response?: unknown }
       raw = res.response
     } catch (err2) {
       logAi('selectRecipeLines (retry)', err2)
