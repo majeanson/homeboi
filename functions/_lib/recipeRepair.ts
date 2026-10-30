@@ -308,6 +308,7 @@ export function repairRecipeRead<
     steps: string[]
     servings: number | null
     times: { prep: number | null; cook: number | null; total: number | null }
+    notes?: string | null
   },
 >(r: R): R {
   const title = unquoteTitle(r.title)
@@ -316,12 +317,17 @@ export function repairRecipeRead<
   const st = salvageFieldLines(r.steps.map(unquoteLine).filter(Boolean))
   let servings = r.servings ?? ing.servings ?? st.servings
   const times = { ...r.times, prep: r.times.prep ?? ing.prep ?? st.prep, cook: r.times.cook ?? ing.cook ?? st.cook }
-  // 2: the footer out of both lists; its yield is the servings when none was read.
+  // 2: the footer out of both lists; its yield is the servings when none was read — and
+  // its WORDS go to the notes, not away: « Se congèle très bien » is something the cook
+  // wanted to keep (it used to be deleted with the yield, 2026-10-30).
+  const footer: string[] = []
   const keep = (lines: string[]) =>
     lines.filter((l) => {
       const m = metaLine(l)
-      if (m.meta && m.servings != null) servings ??= m.servings
-      return !m.meta
+      if (!m.meta) return true
+      if (m.servings != null) servings ??= m.servings
+      footer.push(l.trim())
+      return false
     })
   let ingredients = keep(ing.lines)
   let steps = keep(st.lines)
@@ -340,5 +346,8 @@ export function repairRecipeRead<
     if (lifted.length) ingredients = lifted
     else if (ingredients.length) ingredients = []
   }
-  return { ...r, title, ingredients, steps, servings, times }
+  const have = r.notes ?? ''
+  const added = footer.filter((l) => l && !have.includes(l))
+  const notes = [have, ...added].filter(Boolean).join('\n') || r.notes || null
+  return { ...r, title, ingredients, steps, servings, times, ...(added.length ? { notes } : {}) }
 }

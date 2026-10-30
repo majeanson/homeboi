@@ -86,8 +86,8 @@ describe('refineSteps', () => {
   it('drops junk steps and strips leading markers', () => {
     expect(refineSteps(['Étape 3', '4.', '- Servir chaud.'])).toEqual(['Servir chaud.'])
   })
-  it('dedupes repeated steps', () => {
-    expect(refineSteps(['Brasser.', 'brasser.'])).toEqual(['Brasser.'])
+  it('keeps a repeated step — a multi-part recipe prints « Mélanger. » under each part; the audit flags a true double', () => {
+    expect(refineSteps(['Brasser.', 'brasser.'])).toEqual(['Brasser.', 'brasser.'])
   })
   it('passes "## Section" markers through untouched (no split, strip or dedupe)', () => {
     expect(refineSteps(['## Glaçage', 'Fouetter le beurre.', '## Glaçage 2', 'Étaler.'])).toEqual([
@@ -800,6 +800,11 @@ describe('stripAiCommentary', () => {
   it('peels a leaked "## Remarque" heading, leaves a real "## Section"', () => {
     const r = stripAiCommentary(['## Version au barbecue', 'Griller 10 min.', '## Remarque'])
     expect(r).toEqual(['## Version au barbecue', 'Griller 10 min.'])
+  })
+  // A cookbook's notes box is headed « Notes » — the heading the parsers find the notes
+  // by. It was eaten as a leaked label (Marc's « Saumon à l'asiatique », 2026-10-30).
+  it('keeps a printed « Notes » heading', () => {
+    expect(stripAiCommentary(['Servir.', 'Notes', 'Ne gaspillez plus de gingembre!'])).toEqual(['Servir.', 'Notes', 'Ne gaspillez plus de gingembre!'])
   })
 })
 

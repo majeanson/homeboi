@@ -412,21 +412,66 @@ export const SELECTION_SCHEMA = {
 }
 
 // The source as the model sees it: blank lines out, each line capped, at most 400 (the
-// recipe window already stops at the page's footer). A RUN-ON line is segmented first:
+// recipe window already stops at the page's footer). A RUN-ON text is segmented first:
 // the model may only pick whole lines, so a paste with no line breaks (a recipe typed
 // in one go, a message, a one-line OCR) gave it ONE line to choose from and came back
 // « Rien trouvé » (prod, step 6, 2026-10-27). Segments are cut at sentence ends, before
 // an amount that opens an ingredient (« … d'eau 30 ml de beurre »), and where a
 // capitalised verb follows a lowercase word inside an amount-led segment (« de lait
 // Faire bouillir… »; « farine Robin Hood » stays, its next word is capitalised too).
+//
+// ONLY a run-on text, though (2026-10-30). This used to cut every line over 100 chars,
+// and a vision transcript's numbered step — three sentences on one line, as printed —
+// came back as three « steps », one per sentence (and a method sentence was cut before
+// its « 30 ml »): the sentence-splitting refineSteps had stopped doing three days
+// earlier, re-grown one layer up. A text that already has its lines keeps them; the one
+// cut still made inside it is a PACKED ingredient line (several amounts, no sentence).
+// And a line that opens mid-sentence is rejoined to the line before it first: a step
+// printed across two columns (« … Retirer » / « du feu et laisser reposer… ») reaches the
+// model as two lines otherwise, and it keeps the capitalised half.
 export function selectionLines(text: string): string[] {
-  return text
-    .split(/\r?\n/)
-    .map((l) => l.replace(/\s+/g, ' ').trim())
-    .filter(Boolean)
-    .flatMap((l) => (l.length > 100 ? segmentRunOn(l) : [l]))
-    .slice(0, 400)
-    .map((l) => l.slice(0, 240))
+  const lines = joinContinuations(
+    text
+      .split(/\r?\n/)
+      .map((l) => l.replace(/\s+/g, ' ').trim())
+      .filter(Boolean),
+  )
+  const runOn = lines.length <= 3
+  // Whole lines, never cut: the draft is built from THESE by index. The prompt shows the
+  // model a capped preview of each (PREVIEW_CHARS) — it only picks numbers.
+  return lines.flatMap((l) => (runOn && l.length > 100 ? segmentRunOn(l) : isPackedIngredients(l) ? segmentRunOn(l) : [l])).slice(0, 400)
+}
+// How much of a line the selection model sees. The line itself is never cut (a step
+// reflowed onto one line runs 300+ chars; the cap used to truncate it in the DRAFT,
+// 2026-10-30) — a preview is enough to tell an ingredient from a step from a note.
+const PREVIEW_CHARS = 240
+
+// A line that is only a continuation of the previous one — starts lowercase, on a word
+// that never opens an ingredient, a label or a step (« du feu… », « de sésame
+// (facultatif) », « et laisser… »). « pour la sauce », « sel », « en dés » do open lines,
+// so they are not in the set. A trailing period the reader put on the first half
+// (« Retirer. ») goes: the sentence was not over.
+const CONTINUATION_START =
+  /^(?:d[eu]|des|d['’]|et|puis|à|au|aux|jusqu['’]|avant|après|afin|pendant|ensuite|and|then|of|until|into|the)(?![\p{L}])/iu
+export function joinContinuations(lines: string[]): string[] {
+  const out: string[] = []
+  for (const line of lines) {
+    const prev = out[out.length - 1]
+    if (prev && /^\p{Ll}/u.test(line) && CONTINUATION_START.test(line) && !/[:]$/.test(prev)) {
+      out[out.length - 1] = `${prev.replace(/\.$/, '')} ${line}`
+    } else {
+      out.push(line)
+    }
+  }
+  return out
+}
+
+// Several ingredients glued on one line (« 500 ml de cassonade 500 ml d'eau 30 ml de
+// beurre ») — three or more amount-led pieces and not a sentence.
+const AMOUNT_PIECES = 3
+function isPackedIngredients(line: string): boolean {
+  if (/[.!?]/.test(line)) return false
+  return line.split(BEFORE_AMOUNT).filter((p) => AMOUNT_LED.test(p)).length >= AMOUNT_PIECES
 }
 
 const AMOUNT_UNIT =
@@ -450,6 +495,7 @@ export function segmentRunOn(line: string): string[] {
   return out.length ? out : [line]
 }
 
+const SELECTION_TOKENS = 1500
 export async function selectRecipeLines(
   env: Env,
   lines: string[],
@@ -460,7 +506,7 @@ export async function selectRecipeLines(
 ): Promise<LineSelection | null> {
   if (!env.AI || !lines.length) return null
   const note = (hint ?? '').replace(/\s+/g, ' ').trim().slice(0, 200)
-  const numbered = lines.map((l, i) => `${i}: ${l}`).join('\n')
+  const numbered = lines.map((l, i) => `${i}: ${l.slice(0, PREVIEW_CHARS)}`).join('\n')
   const prompt =
     lang === 'en'
       ? `Below is a recipe's text, one numbered line per line ("<number>: <text>"). Pick LINE NUMBERS only — never write any text.
@@ -485,7 +531,9 @@ ${numbered}`
     const res = (await runModel(env, MODEL, {
       messages,
       response_format: { type: 'json_schema', json_schema: SELECTION_SCHEMA },
-      max_tokens: 600,
+      // Indices only, but up to 80 ingredients + 60 steps + sections of 3-digit numbers:
+      // 600 could cut the JSON, and a cut selection salvages as a SHORTER steps list.
+      max_tokens: SELECTION_TOKENS,
     })) as { response?: unknown }
     raw = res.response
   } catch (err) {
@@ -494,7 +542,7 @@ ${numbered}`
     const msg = logAi('selectRecipeLines', err)
     if (!/json mode/i.test(msg)) return null
     try {
-      const res = (await runModel(env, MODEL, { messages, max_tokens: 600 })) as { response?: unknown }
+      const res = (await runModel(env, MODEL, { messages, max_tokens: SELECTION_TOKENS })) as { response?: unknown }
       raw = res.response
     } catch (err2) {
       logAi('selectRecipeLines (retry)', err2)
@@ -596,6 +644,10 @@ function partsInput(model: string, text: string, bytes: Uint8Array, max_tokens: 
   return {
     messages: [{ role: 'user', content: [{ type: 'text', text }, { type: 'image_url', image_url: { url: dataUrl(bytes) } }] }],
     max_tokens,
+    // A transcription has one right answer. At the default temperature the reader
+    // paraphrased (« égoutter les pavés » became « égoutter les pavés de saumon »,
+    // « Couvrir » came out « Couver », 2026-10-30) — sampling, not reading.
+    temperature: 0,
     ...(model === VISION_SECOND_ID ? { chat_template_kwargs: { enable_thinking: false } } : {}),
   }
 }
@@ -619,6 +671,10 @@ function dataUrl(bytes: Uint8Array): string {
 // model echoes example words straight back (that exact bug, with fake sections), and
 // an "organize" framing invites remarks. Returns '' on no-AI or any failure so the form
 // just opens for manual entry; `report` carries the reason to the AI error journal.
+// A full magazine page with its notes box is ~700 tokens of French; a dense two-page
+// spread approaches 2000, which was the cap — and a cut transcript is a recipe missing
+// its last steps, not « still a transcript ». Only what is used is charged.
+const TRANSCRIPT_TOKENS = 4000
 export async function transcribeImage(
   env: Env,
   bytes: Uint8Array,
@@ -629,12 +685,12 @@ export async function transcribeImage(
   const prompt =
     lang === 'en'
       ? `Transcribe ALL the text in this image exactly as printed, as plain text.
-- One printed line per line, in reading order. Keep the line breaks, the headings and the list markers as they appear.
+- One item per line, in reading order: a heading, a list item or a numbered step is ONE line, even when it is printed wrapped over several lines. Keep the headings and the list markers as they appear.
 - If the page is set in COLUMNS, transcribe each column separately, top to bottom, one column at a time. Never join text from two different columns onto one line.
 - Copy every number, fraction and unit exactly. Do not translate, rephrase, summarize, correct spelling, or convert units.
 - Output ONLY the transcription: no JSON, no markdown, no quotation marks around lines, no comments, nothing about what is missing or unreadable.`
       : `Transcris TOUT le texte de cette image exactement comme il est imprimé, en texte brut.
-- Une ligne imprimée par ligne, dans l'ordre de lecture. Garde les sauts de ligne, les titres et les puces tels qu'ils apparaissent.
+- Un élément par ligne, dans l'ordre de lecture : un titre, un ingrédient ou une étape numérotée tient sur UNE ligne, même s'il est imprimé sur plusieurs. Garde les titres et les puces tels qu'ils apparaissent.
 - Si la page est en COLONNES, transcris chaque colonne séparément, de haut en bas, une colonne à la fois. Ne joins jamais le texte de deux colonnes différentes sur une même ligne.
 - Recopie chaque nombre, fraction et unité exactement. Ne traduis pas, ne reformule pas, ne résume pas, ne corrige pas l'orthographe, ne convertis pas les unités.
 - Réponds UNIQUEMENT avec la transcription : pas de JSON, pas de markdown, pas de guillemets autour des lignes, aucun commentaire, rien sur ce qui manque ou serait illisible.`
@@ -652,7 +708,7 @@ export async function transcribeImage(
   // that says it sees no image is treated as no read, not as text (BLIND_REPLY).
   for (const model of [VISION_PRIMARY_ID, VISION_SECOND_ID]) {
     try {
-      const res = (await runModel(env, model, partsInput(model, prompt, bytes, 2000))) as VisionReply
+      const res = (await runModel(env, model, partsInput(model, prompt, bytes, TRANSCRIPT_TOKENS))) as VisionReply
       const text = clean(visionText(res))
       if (text && !BLIND_REPLY.test(text)) {
         if (report) report.visionModel = model
@@ -669,9 +725,8 @@ export async function transcribeImage(
       // Workers AI vision wants the image as an array of 0-255 byte values.
       image: [...bytes],
       prompt,
-      // Plain text is shorter than the JSON this used to ask for; the headroom is for
-      // a two-page spread, not a safety net — a cut transcript is still a transcript.
-      max_tokens: 2000,
+      max_tokens: TRANSCRIPT_TOKENS,
+      temperature: 0,
     })) as { response?: unknown }
     // Fences a model adds out of habit go; a leaked remark (« La recette n'indique
     // pas… ») is dropped line by line, the same net the structuring model gets.

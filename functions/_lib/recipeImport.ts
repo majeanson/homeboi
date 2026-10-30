@@ -218,7 +218,7 @@ function asStringList(value: unknown, max: number): string[] {
   const out: string[] = []
   for (const x of arr) {
     const s = typeof x === 'string' ? clean(x) : ''
-    if (s) out.push(s.slice(0, 200))
+    if (s) out.push(s.slice(0, MAX_INGREDIENT_LEN))
     if (out.length >= max) break
   }
   return out
@@ -319,7 +319,17 @@ export function sentenceChunks(s: string, target = 280): string[] {
 export const MAX_STEPS = 60
 export const MAX_STEP_ROWS = MAX_STEPS + 20
 // The ingredient-line cap every import path shares (it was a bare 40 in five places).
-export const MAX_INGREDIENTS = 40
+// 80, not 40: the count includes « ## » part headings, and a four-part recipe (Marc's
+// « Saumon à l'asiatique »: marinade, bowl, garnishes, sauce — 2026-10-30) is thirty
+// lines before its headings. A line past the cap vanished without a word.
+export const MAX_INGREDIENTS = 80
+// Per-line caps, shared with the save (functions/api/recipes.ts) so a line that survives
+// the import survives the save byte for byte. They were a bare 200 / 2000 in nine
+// places; an ingredient with its own note (« …, ou 1 grosse, pelées et coupées en petits
+// cubes (facultatif, voir la note) ») and a cookbook's Notes box both ran past them, and
+// a cut is silent. The row is TEXT either way — these only bound a hostile client.
+export const MAX_INGREDIENT_LEN = 400
+export const MAX_NOTES_LEN = 4000
 
 // One sentence boundary: end punctuation, then whitespace and an uppercase / « /
 // digit start — so « env. 5 min » and « 1.5 L » never split.
@@ -360,12 +370,15 @@ function fitStep(s: string): string[] {
 }
 
 // The shared refinement pipeline: clean → split packed lists → strip leading
-// markers → drop junk → (split a lone paragraph | chunk an overlong step) → dedupe.
+// markers → drop junk → (split a lone paragraph | chunk an overlong step).
 // Every import path (JSON-LD, microdata, paste, AI, photo OCR) funnels its raw steps
 // through here. It used to chunk EVERY step over 400 chars into ~280-char pieces —
 // one per sentence — so a site's 450-char paragraph came out as three steps (Marc,
 // 2026-10-27: « ça rajoute des étapes pour chaque phrase »). The source's own step
-// boundaries win now.
+// boundaries win now. It also used to DEDUPE: a step printed twice was kept once —
+// but a multi-part recipe prints « Mélanger tous les ingrédients. » under each part,
+// and the second part lost its step in silence (2026-10-30). The audit's 'dup-step'
+// flag exists for exactly this and could never fire; now it does, and the cook decides.
 export function refineSteps(raw: string[], opts: RefineOpts = {}): string[] {
   const max = opts.max ?? MAX_STEPS
   const cleanedAll = raw.map(clean)
@@ -376,7 +389,6 @@ export function refineSteps(raw: string[], opts: RefineOpts = {}): string[] {
     mode = lone.length === 1 && lone[0].length > 400 ? 'sentences' : 'keep'
   }
   const out: string[] = []
-  const seen = new Set<string>()
   let count = 0
   for (const cleaned of cleanedAll) {
     if (count >= max) break
@@ -395,11 +407,7 @@ export function refineSteps(raw: string[], opts: RefineOpts = {}): string[] {
           : fitStep(stripped)
       for (const chunk of parts) {
         if (count >= max) break
-        const final = chunk.slice(0, MAX_STEP_LEN)
-        const key = final.toLowerCase()
-        if (seen.has(key)) continue
-        seen.add(key)
-        out.push(final)
+        out.push(chunk.slice(0, MAX_STEP_LEN))
         count++
       }
     }
@@ -808,7 +816,7 @@ export function parseRecipeMicrodata(html: string): ParsedRecipe | null {
     inner('recipeIngredient|ingredients')
       .flatMap((s) => (/<(?:li|p|div|br|ul)\b/i.test(s) ? htmlBlocksToLines(s) : [clean(s)]))
       .filter((s) => s && !UI_CHROME.test(s))
-      .map((s) => s.slice(0, 200)),
+      .map((s) => s.slice(0, MAX_INGREDIENT_LEN)),
   ).slice(0, MAX_INGREDIENTS)
 
   // Instructions may be one element per step OR a single container; turn block
@@ -825,7 +833,7 @@ export function parseRecipeMicrodata(html: string): ParsedRecipe | null {
   // ends the method: what follows is the recipe's notes, not more steps.
   const noteAt = allLines.findIndex((l) => NOTE_HEADING.test(l.replace(/^##\s*/, '')))
   const stepLines = noteAt >= 0 ? allLines.slice(0, noteAt) : allLines
-  const notes = noteAt >= 0 ? allLines.slice(noteAt + 1).map((l) => l.replace(/^##\s*/, '')).join('\n').slice(0, 2000) || null : null
+  const notes = noteAt >= 0 ? allLines.slice(noteAt + 1).map((l) => l.replace(/^##\s*/, '')).join('\n').slice(0, MAX_NOTES_LEN) || null : null
   const steps = dropDanglingHeadings(refineSteps(stepLines))
 
   if (ingredients.length < 2 && steps.length === 0) return null
@@ -1292,14 +1300,14 @@ export function parsePastedRecipe(text: string): PastedRecipe {
       }
       const words = wordsAfter(li)
       if (words >= 0) {
-        ings.push(`${stripBullet(line)} ${lines[words]}`.slice(0, 200))
+        ings.push(`${stripBullet(line)} ${lines[words]}`.slice(0, MAX_INGREDIENT_LEN))
         skipTo = words
         continue
       }
       // A paragraph under « Ingredients » (a site's note on scaling the yield) is not
       // an ingredient: several sentences in one long line.
       if (line.length > 100 && (line.match(/[.!?]\s+[A-ZÀ-ÖŒ]/g) ?? []).length >= 2) continue
-      const ing = stripBullet(line).slice(0, 200)
+      const ing = stripBullet(line).slice(0, MAX_INGREDIENT_LEN)
       if (ing) ings.push(ing)
       continue
     }
@@ -1342,11 +1350,11 @@ export function parsePastedRecipe(text: string): PastedRecipe {
       const continuation = !!prev && prev.length > 40 && !/[.!?:]$/.test(prev)
       const words = continuation ? -1 : wordsAfter(li)
       if (words >= 0) {
-        ings.push(`${stripBullet(line)} ${lines[words]}`.slice(0, 200))
+        ings.push(`${stripBullet(line)} ${lines[words]}`.slice(0, MAX_INGREDIENT_LEN))
         pairTo = words
         continue
       }
-      if (!continuation && ING_LIKE.test(line) && line.length <= 80) ings.push(stripBullet(line).slice(0, 200))
+      if (!continuation && ING_LIKE.test(line) && line.length <= 80) ings.push(stripBullet(line).slice(0, MAX_INGREDIENT_LEN))
       else stepLines.push(line)
     }
   }
@@ -1378,7 +1386,7 @@ export function parsePastedRecipe(text: string): PastedRecipe {
   const steps = dropDanglingHeadings(refineSteps(blobs, { blob: 'auto' }))
   // One note per printed line: a numbered « 1. … 2. … » list or two paragraphs stay apart.
   // A line printed twice (a page that shows its notes in two layouts) is kept once.
-  const notes = [...new Set(noteLines)].join('\n').trim().slice(0, 2000) || null
+  const notes = [...new Set(noteLines)].join('\n').trim().slice(0, MAX_NOTES_LEN) || null
 
   const ingredients = dropDanglingHeadings(ings.slice(0, MAX_INGREDIENTS))
   const realIngs = ingredients.filter((l) => !isSectionHeading(l))
@@ -1403,8 +1411,11 @@ export function parsePastedRecipe(text: string): PastedRecipe {
 // stray remark than to eat a real instruction. A leading "## " is peeled first so
 // a "## Remarque" heading the model emitted is caught too.
 const AI_COMMENTARY: RegExp[] = [
-  // A bare leaked label as its own line ("Remarque", "Note :", "N.B.").
-  /^(?:remarques?|notes?|nota(?:\s*bene)?|n\.?\s*b\.?|avertissements?|disclaimer)\s*:?\s*$/i,
+  // A bare leaked label as its own line ("Remarque", "N.B."). NOT « Note(s) » / « Nota »:
+  // that is the printed heading of a cookbook's notes box (Marc's « Saumon à
+  // l'asiatique », 2026-10-30), and the parsers find the notes BY that heading — a
+  // leaked model label left bare is a dangling heading, which the drafts drop anyway.
+  /^(?:remarques?|n\.?\s*b\.?|avertissements?|disclaimer)\s*:?\s*$/i,
   // "La recette / le texte / l'image n'indique pas / ne précise pas / est illisible…"
   /^(?:la\s+recette|le\s+texte|l['’]image|la\s+photo|cette\s+(?:recette|image))\b.*\b(?:n['’]indique|ne\s+(?:précise|pr[ée]cise|mentionne|donne|dit|sp[ée]cifie|permet)|est\s+(?:partiellement\s+)?illisible)/i,
   /^(?:the\s+recipe|the\s+image|the\s+text|this\s+(?:recipe|image))\b.*\b(?:does\s+not|doesn['’]t|is\s+(?:partially\s+)?(?:unclear|illegible|cut|not\s+))/i,

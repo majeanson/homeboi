@@ -1,7 +1,7 @@
 import type { Env } from './env'
 import { SELECTION_MODEL, type LineSelection, type Lang, selectRecipeLines, selectionLines } from './ai'
 import { detectLang } from './langDetect'
-import { MAX_STEPS, NO_TIMES, type RecipeTimes, parseRecipeText, parseYield, refineSteps, textToMinutes } from './recipeImport'
+import { MAX_NOTES_LEN, MAX_STEPS, NO_TIMES, type RecipeTimes, parseRecipeText, parseYield, refineSteps, textToMinutes } from './recipeImport'
 import { jsonFragmentsToText, repairRecipeRead, stripTranscriptPreamble } from './recipeRepair'
 import { dropDanglingHeadings, makeSectionHeading } from './recipeSections'
 
@@ -134,11 +134,15 @@ export function draftFromSelection(lines: string[], sel: LineSelection, known: K
   }
   const ingredients = withParts(sel.ingredients, sel.ingredientSections)
   // The method's lines as printed — one line, one step; refineSteps only strips a
-  // « 1. » the editor numbers itself and splits a run-on past the step cap.
-  const steps = dropDanglingHeadings(refineSteps(withParts(sel.steps, sel.stepSections), { blob: 'keep' }))
+  // « 1. » the editor numbers itself and splits a run-on past the step cap. 'auto', not
+  // 'keep': the ONE case it differs is a method that is a single long paragraph (a paste
+  // typed in one go) — now that selectionLines no longer cuts a formatted text's long
+  // lines at sentences (2026-10-30), that paragraph reaches here whole, and one
+  // 600-char step is not what the cook meant.
+  const steps = dropDanglingHeadings(refineSteps(withParts(sel.steps, sel.stepSections), { blob: 'auto' }))
   if (!ingredients.length && !steps.length) return null
   const at = (i: number | null) => (i == null ? null : lines[i])
-  const notes = sel.notes.map(bare).join('\n').slice(0, 2000) || null
+  const notes = sel.notes.map(bare).join('\n').slice(0, MAX_NOTES_LEN) || null
   return {
     title: known.title ?? (sel.title != null ? bare(sel.title).slice(0, 200) : null),
     ingredients,

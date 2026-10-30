@@ -195,7 +195,7 @@ describe('selectRecipeLines — the model chooses lines, it never writes them', 
     const input = run.mock.calls[0][1] as { messages: { content: string }[]; response_format: { type: string; json_schema: { required: string[] } }; max_tokens: number }
     expect(input.response_format.type).toBe('json_schema')
     expect(input.response_format.json_schema.required).toContain('ingredientSections')
-    expect(input.max_tokens).toBe(600)
+    expect(input.max_tokens).toBe(1500)
     const prompt = input.messages[0].content
     expect(prompt).toContain('2: 500 ml de cassonade')
     expect(prompt).toContain('NUMÉROS DE LIGNE')
@@ -329,6 +329,48 @@ describe('selectionLines — a run-on paste is cut into pickable lines', () => {
       '250 ml de farine Robin Hood',
       '2 oeufs',
       'Battre les oeufs 5 minutes avec la farine, puis laisser reposer 30 minutes avant de verser.',
+    ])
+  })
+
+  // Marc's « Saumon à l'asiatique » photo (2026-10-30): the vision model transcribed each
+  // numbered step as ONE line, and the run-on cut — meant for a paste with no line breaks
+  // at all — chopped every step over 100 chars at its sentence ends (and before « 30 ml »
+  // inside a method sentence), so the model picked three « steps » out of printed step 3.
+  // A text that already has its lines is not a run-on: a long line stays one line.
+  it('does not cut a formatted text’s long step at sentences or inline amounts', () => {
+    const step3 =
+      "3 Dans une casserole, déposer le riz et l'eau. Porter à ébullition, puis couvrir et cuire de 18 à 20 minutes à feu doux, jusqu'à absorption complète du liquide."
+    const step = 'Ajouter 30 ml de beurre et 250 ml de farine, puis cuire 2 minutes en remuant sans arrêt jusqu’à ce que le mélange épaississe.'
+    const text = ['Saumon', '4 pavés de saumon', '750 ml (3 tasses) d’eau', step3, step, '4 Servir.'].join('\n')
+    expect(selectionLines(text)).toEqual(['Saumon', '4 pavés de saumon', '750 ml (3 tasses) d’eau', step3, step, '4 Servir.'])
+  })
+  // The same page: step 3 ends at the foot of column 2 on « Retirer », and column 3 opens
+  // on « du feu et laisser reposer… ». Transcribed column by column those are two lines, and
+  // the model took « Retirer. » as a step and left the lowercase remainder out. A line that
+  // opens mid-sentence belongs to the line before it — the period the reader put after
+  // « Retirer » goes with it.
+  it('rejoins a line that continues the previous line’s sentence (a column break)', () => {
+    expect(selectionLines('complète du liquide. Retirer.\ndu feu et laisser reposer 5 minutes.\n4 Pendant ce temps, égoutter.')).toEqual([
+      'complète du liquide. Retirer du feu et laisser reposer 5 minutes.',
+      '4 Pendant ce temps, égoutter.',
+    ])
+    expect(selectionLines('30 ml (2 c. à soupe) de graines\nde sésame (facultatif)\n15 ml de gingembre')).toEqual([
+      '30 ml (2 c. à soupe) de graines de sésame (facultatif)',
+      '15 ml de gingembre',
+    ])
+    // A lowercase label or ingredient is not a continuation.
+    expect(selectionLines('Sel et poivre au goût\npour la sauce :\nsel')).toEqual(['Sel et poivre au goût', 'pour la sauce :', 'sel'])
+  })
+  // Ingredients glued onto one line inside an otherwise formatted text still come apart.
+  it('still cuts a packed ingredient line in a formatted text', () => {
+    expect(selectionLines("Pouding\n500 ml de cassonade 500 ml d'eau 30 ml de beurre 250 ml de farine\nPréparation\nCuire 35 minutes.")).toEqual([
+      'Pouding',
+      '500 ml de cassonade',
+      "500 ml d'eau",
+      '30 ml de beurre',
+      '250 ml de farine',
+      'Préparation',
+      'Cuire 35 minutes.',
     ])
   })
 })

@@ -3,7 +3,7 @@ import { authed } from '../_lib/route'
 import { deleteR2Blob } from '../_lib/r2'
 import { newId, nowSec } from '../_lib/ids'
 import { isValidR2Key } from '../_lib/validate'
-import { MAX_INGREDIENTS, MAX_STEP_LEN, MAX_STEP_ROWS } from '../_lib/recipeImport'
+import { MAX_INGREDIENT_LEN, MAX_INGREDIENTS, MAX_NOTES_LEN, MAX_STEP_LEN, MAX_STEP_ROWS } from '../_lib/recipeImport'
 // THE row -> wire mapping for the list read lives in one place, with the reason the
 // as-imported snapshot is not in it. Its test is the guard.
 import { recipeListItem, parseOriginal, type RecipeRow, type RecipeOriginal } from '../_lib/recipeWire'
@@ -65,12 +65,12 @@ const cleanUnit = (v: unknown): string | null => (isStr(v) ? v.trim().slice(0, 2
 const cleanLang = (v: unknown): string | null => (v === 'fr' || v === 'en' ? v : null)
 
 // Trim, drop blanks, cap length + count so a runaway paste can't bloat a row.
-// Ingredients fit in 200 chars; STEPS need much more (a real instruction sentence
-// group runs long) — silently chopping them at 200 mangled imports, then 500 was
-// still too tight for a dense run-on step, so steps get MAX_STEP_LEN (1000). The
-// step cap is the SAME constant the importer uses, so a step that survives the
-// import survives the save unchanged.
-function cleanList(v: unknown, max = MAX_INGREDIENTS, maxLen = 200): string[] {
+// STEPS need much more than ingredients (a real instruction sentence group runs
+// long) — silently chopping them at 200 mangled imports, then 500 was still too
+// tight for a dense run-on step, so steps get MAX_STEP_LEN (1000). Every cap is the
+// SAME constant the importer uses, so a line that survives the import survives the
+// save unchanged (ingredients were a bare 200 here until 2026-10-30).
+function cleanList(v: unknown, max = MAX_INGREDIENTS, maxLen = MAX_INGREDIENT_LEN): string[] {
   if (!Array.isArray(v)) return []
   return v
     .map((x) => (isStr(x) ? x.trim() : ''))
@@ -163,7 +163,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
       cleanMin(body?.prepMin),
       cleanMin(body?.cookMin),
       cleanMin(body?.totalMin),
-      body?.notes?.trim()?.slice(0, 2000) || null,
+      body?.notes?.trim()?.slice(0, MAX_NOTES_LEN) || null,
       body?.source?.trim()?.slice(0, 200) || null,
       cleanImage(body?.image),
       JSON.stringify(cleanTags(body?.tags)),
@@ -216,7 +216,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       cleanMin(body.prepMin),
       cleanMin(body.cookMin),
       cleanMin(body.totalMin),
-      body.notes?.trim()?.slice(0, 2000) || null,
+      body.notes?.trim()?.slice(0, MAX_NOTES_LEN) || null,
       body.source?.trim()?.slice(0, 200) || null,
       image,
       JSON.stringify(cleanTags(body.tags)),

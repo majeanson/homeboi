@@ -109,6 +109,41 @@ describe('mergeOcrPages', () => {
       '3/4 tasse de farine\n2 oeufs\nMelanger le tout\nCuire 12 minutes',
     )
   })
+
+  // Marc's « Saumon à l'asiatique » (2026-10-30): page 2 is the bowl version — its sauce
+  // shares the « ml (1 c. à thé) de » scaffolding with page 1's marinade, so word overlap
+  // scored every sauce line as a « clearer read » of a marinade line and REPLACED it: the
+  // sriracha overwrote the sesame oil, « Pour la sauce : » overwrote « Pour la marinade : »,
+  // and the 15 ml of soy sauce overwrote the 15 ml of ginger. A second PAGE is appended
+  // whole — a line that repeats verbatim (5 ml of sesame oil in both parts) included.
+  it('keeps a second page whole even when its lines look like the first page’s', () => {
+    const page1 = [
+      '4 pavés de saumon',
+      'Pour la marinade :',
+      '60 ml (1/4 de tasse) de sauce soya',
+      '15 ml (1 c. à soupe) de gingembre râpé',
+      "10 ml (2 c. à thé) d'ail haché",
+      "5 ml (1 c. à thé) d'huile de sésame",
+      'Poivre au goût',
+    ].join('\n')
+    const page2 = [
+      'Pour la sauce :',
+      '80 ml (1/3 de tasse) de mayonnaise',
+      '15 ml (1 c. à soupe) de sauce soya',
+      "5 ml (1 c. à thé) d'huile de sésame",
+      "5 ml (1 c. à thé) d'ail haché",
+      '5 ml (1 c. à thé) de sriracha',
+    ].join('\n')
+    expect(mergeOcrPages([page1, page2])).toBe(`${page1}\n${page2}`)
+  })
+
+  it('a zoom replaces only a line that differs by a misread glyph or two, never by a word', () => {
+    const wide = '3/4 tasse de farine\n15 ml de sauce soya\n5 ml de sriracha\n2 oeufs'
+    // A real zoom: most of its lines ARE the wide shot's; « % » → « 3/4 » is a glyph.
+    expect(mergeOcrPages([wide, '% tasse de farine\n2 oeufs'])).toBe('% tasse de farine\n15 ml de sauce soya\n5 ml de sriracha\n2 oeufs')
+    // Same scaffolding, a different ingredient: appended, not swapped in.
+    expect(mergeOcrPages([wide, '3/4 tasse de farine\n2 oeufs\n15 ml de gingembre'])).toBe(`${wide}\n15 ml de gingembre`)
+  })
 })
 
 // Build a bboxed page tree the way Tesseract merges a 2-column recipe: each

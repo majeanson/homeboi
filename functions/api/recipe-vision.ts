@@ -40,7 +40,9 @@ export const onRequestPost = authed(async (ctx) => {
   // took the FIRST photo only and structured it alone: three photos of one long recipe
   // came back as page one (Marc's phone, 2026-10-27).
   if (new URL(ctx.request.url).searchParams.get('only') === 'transcript') {
-    return withAiError(ok({ ...reader, transcript: transcript.slice(0, 16_000) }), report)
+    // This transcript IS the data (the client stitches and structures it) — the cap is
+    // above anything 4000 tokens can produce, a bound on bytes, never a cut of a page.
+    return withAiError(ok({ ...reader, transcript: transcript.slice(0, 40_000) }), report)
   }
   if (!transcript) return withAiError(ok({ ...draft({ empty: true }), ...reader }), report)
   // `requiresAi` guaranteed AI is usable for this household — the text model may run.

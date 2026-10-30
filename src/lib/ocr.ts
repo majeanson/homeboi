@@ -121,43 +121,90 @@ export function normalizeOcrText(text: string): string {
 // is appended so a separate page (ingredients here, steps there) still merges cleanly.
 // Pure; degrades to plain concatenation when photos don't overlap, and to the single
 // text when there's one photo.
+//
+// TWO GATES, both learned on Marc's « Saumon à l'asiatique » (2026-10-30), where page 2
+// (the bowl version's sauce) shared the « ml (1 c. à thé) de » scaffolding with page 1's
+// marinade: word-set overlap (Jaccard ≥ 0.55) scored the sriracha as a clearer read of
+// the sesame oil, « Pour la sauce : » of « Pour la marinade : » (the French space-colon
+// is a token), the soy sauce of the ginger — and each REPLACED its victim. Three
+// ingredients and a heading vanished without a flag.
+//  1. A page is a ZOOM (its lines may replace the base's) only when most of its lines
+//     match a base line; a page that is mostly new is a second PAGE and is appended
+//     whole — including a line that repeats verbatim (5 ml of sesame oil sits in both
+//     the marinade and the sauce; deduping it would delete a real ingredient).
+//  2. Two lines match only when they are the same words except for a misread GLYPH
+//     or two — a token that is a number/fraction/symbol, or a couple of letters off.
+//     A different WORD in the same slot (sauce / marinade, sriracha / sésame) is a
+//     different line, however much scaffolding surrounds it.
 const lineTokens = (s: string): string[] => s.toLowerCase().split(/\s+/).filter(Boolean)
-// Jaccard overlap of two lines' word sets — robust to a single mis-read glyph
-// ("% tasse de farine" vs "3/4 tasse de farine" still share most words).
-function lineSimilarity(a: string, b: string): number {
-  const A = new Set(lineTokens(a))
-  const B = new Set(lineTokens(b))
-  if (!A.size || !B.size) return 0
-  let inter = 0
-  for (const x of A) if (B.has(x)) inter++
-  return inter / (A.size + B.size - inter)
+// Does a token look like an amount or a misread glyph rather than a word? « % », « 3/4 »,
+// « 1½ », « 6 » — the things a zoom exists to read better.
+const glyphy = (t: string) => !/^[a-zà-ÿœ'’-]+$/i.test(t)
+function editDistance(a: string, b: string): number {
+  if (a === b) return 0
+  const m = a.length
+  const n = b.length
+  let prev = Array.from({ length: n + 1 }, (_, j) => j)
+  for (let i = 1; i <= m; i++) {
+    const cur = [i]
+    for (let j = 1; j <= n; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1))
+    prev = cur
+  }
+  return prev[n]
 }
-const MERGE_THRESHOLD = 0.55 // high enough that different lines sharing a word or two don't merge
+// A token pair a zoom could legitimately have read differently.
+const glyphClose = (a: string, b: string) => a === b || glyphy(a) || glyphy(b) || editDistance(a, b) <= 2
+const MAX_SUBSTITUTIONS = 2
+// Same line, read twice: the same token count, and at most MAX_SUBSTITUTIONS slots that
+// differ, each by a glyph. Returns how many slots differ (0 = identical), or -1.
+function sameLineDistance(a: string, b: string): number {
+  const A = lineTokens(a)
+  const B = lineTokens(b)
+  if (!A.length || A.length !== B.length) return -1
+  let diff = 0
+  for (let i = 0; i < A.length; i++) {
+    if (A[i] === B[i]) continue
+    if (!glyphClose(A[i], B[i]) || ++diff > MAX_SUBSTITUTIONS) return -1
+  }
+  return diff
+}
+// A page whose lines mostly match the base is a zoom; below this share it is a new page.
+const ZOOM_MIN_OVERLAP = 0.5
 
 export function mergeOcrPages(pages: string[]): string {
   const texts = pages.map((p) => p.trim()).filter(Boolean)
   if (texts.length <= 1) return texts[0] ?? ''
   const splitLines = (t: string) => t.split(/\r?\n/).map((l) => l.trim()).filter(Boolean)
   const base = splitLines(texts[0])
-  // Best detail replacement found for each base line (highest-similarity wins).
-  const replacement = new Map<number, { line: string; score: number }>()
+  // Best detail replacement found for each base line (closest read wins).
+  const replacement = new Map<number, { line: string; dist: number }>()
   const extras: string[] = []
   for (const page of texts.slice(1)) {
-    for (const line of splitLines(page)) {
+    const lines = splitLines(page)
+    // Each line's nearest base line, if it has one.
+    const matches = lines.map((line) => {
       let bestIdx = -1
-      let bestScore = MERGE_THRESHOLD
+      let bestDist = Infinity
       for (let i = 0; i < base.length; i++) {
-        const score = lineSimilarity(line, base[i])
-        if (score > bestScore) {
-          bestScore = score
+        const d = sameLineDistance(line, base[i])
+        if (d >= 0 && d < bestDist) {
+          bestDist = d
           bestIdx = i
         }
       }
+      return { line, bestIdx, bestDist }
+    })
+    const matched = matches.filter((m) => m.bestIdx >= 0).length
+    if (matched < lines.length * ZOOM_MIN_OVERLAP) {
+      extras.push(...lines) // a second page: every line is new, in its own order
+      continue
+    }
+    for (const { line, bestIdx, bestDist } of matches) {
       if (bestIdx >= 0) {
         const cur = replacement.get(bestIdx)
-        if (!cur || bestScore > cur.score) replacement.set(bestIdx, { line, score: bestScore })
+        if (!cur || bestDist < cur.dist) replacement.set(bestIdx, { line, dist: bestDist })
       } else {
-        extras.push(line) // matched nothing in the base → a genuinely new line
+        extras.push(line) // the zoom caught a line the wide shot missed
       }
     }
   }

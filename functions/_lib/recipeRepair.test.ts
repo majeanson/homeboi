@@ -151,6 +151,8 @@ describe('repairRecipeRead — the six real reads of one card', () => {
     expect(r.steps.join('\n')).toContain('Cuire 2 minutes.')
     expect(r.ingredients).toEqual(LIFTED)
     expect(r.servings).toBe(4)
+    // The footer's words are kept as notes, never deleted.
+    for (const l of FOOTER) expect((r as { notes?: string | null }).notes ?? '').toContain(l.trim())
   })
   it('C · the method and the footer as ingredients, NO steps at all', () => {
     const r = repairRecipeRead(read([...STEPS.slice(1, 6), ...FOOTER], []))
