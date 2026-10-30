@@ -9,15 +9,18 @@ import { mockApi, seedState } from './mocks'
 // being present and legible, not about the grid being correct (the month's own specs
 // already cover the payload, and both views read it through the same `linesFor`).
 
-const DAY = 86_400
 // The board fixture's clock is pinned by the app, so anchor the week on the browser's
-// own local midnight — the same thing WeekView does.
-const monthWindow = (day0: number) => ({
+// own local midnights — the same thing WeekView does. SEVEN of them, each computed by
+// the calendar (`setDate`), never `day0 + i * 86_400`: a DST day is 23 or 25 h long,
+// so a fixed day off a local midnight lands at 23:00 the night before — which is how
+// this spec went red on the 2026-10-30 run (the week that holds Nov 1) while the app
+// was right. The documented trap in CLAUDE.md (« Day arithmetic on a local midnight »).
+const monthWindow = (days: number[]) => ({
   events: [
-    { id: 'e1', title: 'Rendez-vous dentiste', at: day0 + 9 * 3600, all_day: 0, member_id: 'm3', day: day0 },
-    { id: 'e2', title: 'Souper chez Mamie', at: day0 + 2 * DAY, all_day: 1, member_id: null, day: day0 + 2 * DAY },
+    { id: 'e1', title: 'Rendez-vous dentiste', at: days[0] + 9 * 3600, all_day: 0, member_id: 'm3', day: days[0] },
+    { id: 'e2', title: 'Souper chez Mamie', at: days[2], all_day: 1, member_id: null, day: days[2] },
   ],
-  meals: [{ id: 'm1', slot: 'supper', title: 'Spaghetti maison', cook_member_id: 'm1', day: day0 }],
+  meals: [{ id: 'm1', slot: 'supper', title: 'Spaghetti maison', cook_member_id: 'm1', day: days[0] }],
   chores: [],
   dayNotes: [],
   todos: [],
@@ -34,19 +37,23 @@ const monthWindow = (day0: number) => ({
     colour: null,
     kind: 'do',
     member_id: null,
-    day: day0 + i * DAY,
+    day: days[i],
     done: i % 2 === 0,
   })),
   transfers: [],
 })
 
 test('the week spells its days out, and each row is a link into that day', async ({ page }) => {
-  const day0 = await page.evaluate(() => {
+  const days = await page.evaluate(() => {
     const d = new Date()
     d.setHours(0, 0, 0, 0)
-    return Math.floor(d.getTime() / 1000)
+    return Array.from({ length: 7 }, (_, i) => {
+      const x = new Date(d)
+      x.setDate(d.getDate() + i)
+      return Math.floor(x.getTime() / 1000)
+    })
   })
-  await mockApi(page, { overrides: { month: monthWindow(day0) } })
+  await mockApi(page, { overrides: { month: monthWindow(days) } })
   await seedState(page, { theme: 'day', lang: 'fr', surface: 'mobile', boardView: 'semaine' })
   await page.goto('/board')
 
@@ -74,8 +81,8 @@ test('the week spells its days out, and each row is a link into that day', async
   // Every row is a real LINK to the ONE day door — not a div with an onClick. It has
   // to survive a middle-click and a keyboard, and be announced as a link (ACTIONS.md).
   const href = await rows.first().locator('a').getAttribute('href')
-  expect(href).toBe(`/kitchen/day/${day0}`)
-  await expect(rows.nth(3).locator('a')).toHaveAttribute('href', `/kitchen/day/${day0 + 3 * DAY}`)
+  expect(href).toBe(`/kitchen/day/${days[0]}`)
+  await expect(rows.nth(3).locator('a')).toHaveAttribute('href', `/kitchen/day/${days[3]}`)
 })
 
 test('stepping a week moves the window and names where you landed', async ({ page }) => {
