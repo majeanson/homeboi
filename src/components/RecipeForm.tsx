@@ -10,7 +10,7 @@ import { BookmarkletHowTo } from './BookmarkletHowTo'
 import { EditField } from './EditField'
 import { useAi } from '../lib/ai'
 import { resizeImage, imgUrl, OCR_MAX, VISION_MAX, MAX_UPLOAD_BYTES } from '../lib/image'
-import { ocrImage, mergeOcrPages, disposeOcr, warmOcr } from '../lib/ocr'
+import { ocrImage, mergeOcrPages, disposeOcr, warmOcr, normalizeOcrText } from '../lib/ocr'
 import { repairImperialFromMetric } from '../lib/measure'
 import { useOcrEngine, useCloudOcrAvailable, markCloudOcrThrottled } from '../lib/ocrPref'
 import { uploadMedia, MediaUnavailableError } from '../lib/uploadMedia'
@@ -680,7 +680,9 @@ export function RecipeForm({
         report.timings.read = (report.timings.read ?? 0) + (Date.now() - t0)
         for (const v of pages) {
           if (v?.transcript) {
-            texts.push(v.transcript)
+            // The same glyph normalisation the device read gets (« ⅔ », « ²⁄₃ » → "2/3"):
+            // the verify panel's measure check and the saved line read one spelling.
+            texts.push(normalizeOcrText(v.transcript))
             report.reader = 'vision'
             report.readerModel = v.readerModel ?? null
           }

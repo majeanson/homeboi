@@ -243,7 +243,7 @@ export const MAX_STEP_LEN = 1000
 export function stripStepPrefix(s: string): string {
   return s
     .trim()
-    .replace(/^[•·▪◦‣*]+\s*/, '')
+    .replace(/^(?:[•·▪◦‣*›»▸►⇨➜→]+|,)\s*/, '')
     .replace(/^[-–—]+\s+/, '')
     .replace(/^(?:[ée]tapes?|steps?)\s*\d{1,2}\s*(?:[:.)\-–—]\s*)?/i, '')
     .replace(/^\d{1,2}\s*[.):\-–—]\s+/, '')
@@ -1084,8 +1084,30 @@ export function textToMinutes(s: string): number | null {
 // « Quantité 4 portions », « QUANTITE de 4 à 6 portions », « Quantité : 12 muffins » — a
 // cookbook's yield label, accented or not (the caps on a page often are not). The
 // number right after it is the yield, a range keeps its low end, the unit word rides.
+// The yield LABEL starts a word: without the lookbehind « Se con‑serve de 1 à 2 jours »
+// (a keeping note) yielded « 1 jours » (photo corpus, 2026-10-30).
 const SERVINGS_LINE =
-  /(?:^|\b)(\d{1,2})\s*(?:[àa]\s*\d{1,2}\s*)?(?:portions?|servings?|personnes?|convives|parts)\b|(?:donne|serves?|rendement|yield|quantit[ée])\s*:?\s*(?:de\s+)?(\d{1,2})\b\s*(?:[àa]\s*\d{1,2}\s*)?([a-zà-öœ]{3,24})?|^(?:portions?|servings?|personnes?|pour)\s*:\s*(\d{1,2})\b/i
+  /(?:^|\b)(\d{1,2})\s*(?:[àa]\s*\d{1,2}\s*)?(?:portions?|servings?|personnes?|convives|parts)\b|(?<![a-zà-öœ])(?:donne|serves?|rendement|yield|quantit[ée])\s*:?\s*(?:de\s+)?(\d{1,2})\b\s*(?:[àa]\s*\d{1,2}\s*)?([a-zà-öœ]{3,24})?|^(?:portions?|servings?|personnes?|pour)\s*:\s*(\d{1,2})\b/i
+// A card's time/yield BADGES as a reader lists them when the label and its value are set
+// on two lines (« PRÉPARATION » / « 20 MINUTES », « QUANTITÉ » / « 12 MUFFINS »): the
+// label alone is a METHOD heading to the walk below (« Préparation »), and everything
+// printed above it was dropped as preamble (2026-10-30). Joined before the walk.
+const BADGE_LABEL =
+  /^(?:pr[ée]p(?:aration)?|cuisson|cook(?:ing)?(?:\s*time)?|bak(?:e|ing)|marinage|r[ée]frig[ée]ration|cong[ée]lation|repos|attente|temps\s+total|total|quantit[ée]|portions?|rendement|donne|yield|serves?)\s*:?$/i
+// …and only when the next line IS a badge value — a figure, a unit word or two, maybe an
+// aside in parentheses (« 20 MINUTES », « 3 HEURES », « 12 PORTIONS (24 RONDELLES) »):
+// a real « Préparation » heading followed by « 1. Cuire les pâtes… » stays a heading.
+const BADGE_VALUE = /^\d{1,3}(?:[,.]\d+)?(?:\s*[àa]\s*\d{1,3})?(?:\s*h\s*\d{2})?\s*(?:[a-zà-öœ]+(?:\s+[a-zà-öœ]+)?)?(?:\s*\([^)]{0,40}\))?$/i
+function joinBadges(lines: string[]): string[] {
+  const out = [...lines]
+  for (let i = 0; i + 1 < out.length; i++) {
+    if (BADGE_LABEL.test(out[i]) && BADGE_VALUE.test(out[i + 1])) {
+      out[i] = `${out[i]} ${out[i + 1]}`
+      out[i + 1] = ''
+    }
+  }
+  return out
+}
 // The number, whichever branch matched: « 4 portions », « Donne 4 », « Portions : 4 ».
 const servingsOf = (sv: RegExpMatchArray): number => +(sv[1] ?? sv[2] ?? sv[4])
 
@@ -1096,13 +1118,15 @@ const AMOUNT_ONLY =
 const WORDS_ONLY = /^[a-zà-öœ'’(][^\d]*$/i
 // An ingredient-looking line: bullet or quantity-leading, short. Used only by
 // the no-headings fallback.
-const ING_LIKE = /^[-•*–▢☐□]?\s*(?:\d|[¼½¾⅓⅔⅛]|une?\b|deux\b|trois\b|quelques\b)/i
+const ING_LIKE = /^(?:[-•*–›»▸►⇨➜→▢☐□]|,)?\s*(?:\d|[¼½¾⅓⅔⅛]|une?\b|deux\b|trois\b|quelques\b)/i
 // A line that opens on a STEP NUMBER: « 1. Déposer… », « 3) Cuire… », or a cookbook's
 // bare figure before a capital with a sentence behind it (« 4 Augmenter la température
 // du four à 180 °C (350 °F). ») — never an ingredient, and the method's own boundary.
 export const STEP_MARKED = /^\d{1,2}(?:\s*[.)]\s*(?=[A-ZÀ-ÖŒ«])|\s+(?=[A-ZÀ-ÖŒ«])(?=.*[.!?]\s*$))/
 
-const stripBullet = (s: string): string => s.replace(/^[-•·▪◦‣*–—▢☐□]+\s*/, '').trim()
+// …« ⇨ » (a tip's arrow) too, and a lone leading comma: a « › » one reader could not tell
+// from a comma (2026-10-30). No printed line opens on « , ».
+const stripBullet = (s: string): string => s.replace(/^(?:[-•·▪◦‣*–—›»▸►⇨➜→▢☐□]+|,)\s*/, '').trim()
 
 // A heading's qualifier becomes a section title only when it's wordy, not a
 // count ("pour 4 personnes") — digits mean it's meta, not a part name.
@@ -1128,12 +1152,15 @@ function inlineSectionTitle(line: string): string | null {
 
 // Does `line` continue a title that wrapped onto a second printed line? Short, no
 // digits, and opening on a conjunction or preposition (« et au sésame », « aux
-// pommes », « with lemon »); a title already closed by punctuation never continues.
+// pommes », « with lemon ») — or on a LOWERCASE word, the way a cookbook's headline
+// breaks mid-phrase (« Coquilles géantes » / « farcies à la pizza », a reader that
+// keeps the printed wrap, 2026-10-30); a title already closed by punctuation never
+// continues.
 const titleContinues = (title: string, line: string): boolean =>
   !/[.!?:]$/.test(title) &&
   line.length <= 60 &&
   !/\d/.test(line) &&
-  /^(?:et|ou|au|aux|à|a|de|du|des|d['’]|en|pour|sans|avec|sur|and|or|with|in|for|of|to|on)\b/i.test(line)
+  (/^[a-zà-öœ]/.test(line) || /^(?:et|ou|au|aux|à|a|de|du|des|d['’]|en|pour|sans|avec|sur|and|or|with|in|for|of|to|on)\b/i.test(line))
 
 // Parse text the user pasted (from a site, a PDF, a message). Heading-aware
 // first; when the paste has no headings, fall back to shape detection
@@ -1143,7 +1170,7 @@ export function parsePastedRecipe(text: string): PastedRecipe {
   // NFC first: a decomposed « É » (E + combining acute) never matches `[ée]`, and an
   // « INGRÉDIENTS » heading that misses ING_HEADING falls through to the bare-label
   // rule and comes out as a « ## » section (seen on a live capture, 2026-10-27).
-  const lines = text.normalize('NFC').split(/\r?\n/).map((l) => l.replace(/\s+/g, ' ').trim())
+  const lines = joinBadges(text.normalize('NFC').split(/\r?\n/).map((l) => l.replace(/\s+/g, ' ').trim()))
   let mode: 'pre' | 'ing' | 'steps' | 'notes' | 'aside' = 'pre'
   let title: string | null = null
   // Where the title sits and where it ends (the index after its last line, 2 lines when
@@ -1437,6 +1464,9 @@ export function parsePastedRecipe(text: string): PastedRecipe {
           const prevStep = stepLines[stepLines.length - 1]
           if (/^[a-zà-öœ]/.test(line) && prevStep && !/[.!?:]$/.test(prevStep)) stepLines.push(line)
           else if (line.length <= 60 && SERVINGS_LINE.test(line)) continue
+          // A BADGE or a chapter mark (« SE CONGÈLE », « À congeler »): a few words, no
+          // figure, no sentence — not a note. « Se congèle très bien. » is one.
+          else if (!/\d/.test(line) && !/[.!?]$/.test(line) && line.split(/\s+/).length <= 3) continue
           else {
             noteLines.push(line)
             noteOrder.push(li)

@@ -1,0 +1,33 @@
+{
+  "title": "Coquilles géantes farcies à la pizza",
+  "servings": 10,
+  "servingsUnit": null,
+  "times": {
+    "prep": 20,
+    "cook": 27,
+    "total": null
+  },
+  "ingredients": [
+    "30 coquilles géantes",
+    "1 contenant de ricotta de 475 g",
+    "500 ml (2 tasses) de mozzarella râpée",
+    "125 ml (½ tasse) de parmesan râpé",
+    "3 oignons verts émincés",
+    "Sel et poivre au goût",
+    "375 ml (1 ½ tasse) de sauce à pizza"
+  ],
+  "steps": [
+    "Préchauffer le four à 180 °C (350 °F).",
+    "Dans une casserole d’eau bouillante salée, cuire les coquilles al dente. Égoutter.",
+    "Dans un bol, mélanger la ricotta avec 125 ml (½ tasse) de mozzarella, le parmesan, les oignons verts et 125 ml (½ tasse) de pepperoni. Saler et poivrer.",
+    "Dans un plat de cuisson, verser la sauce à pizza. Farcir les coquilles de préparation à la ricotta,",
+    "puis les déposer dans le plat au fur et à mesure. Couvrir de la mozzarella et du pepperoni restants.",
+    "Régler le four à la position « gril » (broil). Retirer la feuille de papier d’aluminium du plat et poursuivre la cuisson de 2 à 3 minutes, jusqu’à ce que le fromage soit doré.",
+    "Retirer du four et laisser tiédir.",
+    "Dans dix alvéoles d’un moule à muffins en silicone, déposer trois coquilles farcies dans chaque alvéole. Placer au congélateur de 3 à 4 heures, jusqu’à ce que la préparation soit complètement congelée.",
+    "Déposer les coquilles dans des sacs hermétiques. Retirer l’air des sacs et sceller. Placer au congélateur.",
+    "Servir chaudes dans un récipient isotherme."
+  ],
+  "notes": "- 180 ml (¾ de tasse) de mini-pepperonis coupés en fines rondelles ou de pepperoni émincé\nIl est possible d’utiliser du pepperoni végétarien pour faire cette recette. Allez-y selon vos goûts !\nÀ congeler • 103",
+  "structuring": "heuristic"
+}

@@ -105,12 +105,19 @@ const VULGAR: Record<string, string> = {
   '⅙': '1/6', '⅚': '5/6', '⅛': '1/8', '⅜': '3/8', '⅝': '5/8', '⅞': '7/8',
 }
 const VULGAR_CLASS = /[¼½¾⅐⅑⅒⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞]/g
+const SUP = '⁰¹²³⁴⁵⁶⁷⁸⁹'
+const SUB = '₀₁₂₃₄₅₆₇₈₉'
 export function normalizeOcrText(text: string): string {
   if (!text) return text
-  return text
-    // A whole number glued to a fraction glyph ("1½" / "1 ½") → mixed "1 1/2".
-    .replace(/(\d)\s*([¼½¾⅐⅑⅒⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞])/g, (_, d, g) => `${d} ${VULGAR[g]}`)
-    .replace(VULGAR_CLASS, (g) => VULGAR[g])
+  return (
+    text
+      // A fraction typeset as superscript ⁄ subscript (« ²⁄₃ ») — a vision reader's
+      // spelling of ⅔ (2026-10-30) — reads as "2/3" like the glyph below.
+      .replace(/([⁰¹²³⁴⁵⁶⁷⁸⁹]+)[⁄/]([₀₁₂₃₄₅₆₇₈₉]+)/g, (_, a: string, b: string) => `${[...a].map((c) => SUP.indexOf(c)).join('')}/${[...b].map((c) => SUB.indexOf(c)).join('')}`)
+      // A whole number glued to a fraction glyph ("1½" / "1 ½") → mixed "1 1/2".
+      .replace(/(\d)\s*([¼½¾⅐⅑⅒⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞])/g, (_, d, g) => `${d} ${VULGAR[g]}`)
+      .replace(VULGAR_CLASS, (g) => VULGAR[g])
+  )
 }
 
 // Merging several photos' transcripts lives in lib/ocrMerge.ts (pure, no DOM — the

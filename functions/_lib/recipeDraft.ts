@@ -125,7 +125,9 @@ export async function draftByModel(env: Env, text: string, lang: Lang, known: Kn
 // bullet is dropped, and a label's closing colon). A part label becomes a « ## » line
 // before the first selected line of its part.
 export function draftFromSelection(lines: string[], sel: LineSelection, known: Known): Omit<DraftOut, 'image' | 'source' | 'lang'> | null {
-  const bare = (i: number) => lines[i].replace(/^[-•·▪◦‣*–—]+\s*/, '').trim()
+  // The list markers cookbooks print, « › », « ⇨ » included (a reader keeps them) — and a
+  // lone leading comma, which is a « › » one reader could not tell from a comma.
+  const bare = (i: number) => lines[i].replace(/^(?:[-•·▪◦‣*–—›»▸►⇨➜→]+|,)\s*/, '').trim()
   const label = (i: number) => bare(i).replace(/\s*:\s*$/, '')
   // A part's label heads the lines printed UNDER it: its place is where it physically
   // sits, before the first picked line after it — not where the model's `before` says

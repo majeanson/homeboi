@@ -85,6 +85,7 @@ describe('ocrImage', () => {
     expect(normalizeOcrText('½ c. à thé de sel')).toBe('1/2 c. à thé de sel')
     expect(normalizeOcrText('1½ tasse')).toBe('1 1/2 tasse') // mixed number
     expect(normalizeOcrText('1 ⅓ tasse')).toBe('1 1/3 tasse')
+    expect(normalizeOcrText('160 ml (²⁄₃ de tasse) de mayonnaise')).toBe('160 ml (2/3 de tasse) de mayonnaise') // a vision reader's ⅔
     expect(normalizeOcrText('farine')).toBe('farine') // untouched
     expect(normalizeOcrText('')).toBe('')
   })

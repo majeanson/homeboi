@@ -1,9 +1,10 @@
 {
-    "pages":  1,
-    "source":  "Marc\u0027s cookbooks, photographed on an iPhone, 2026-10-30",
-    "shot":  "IMG_6904",
-    "readAt":  "2026-10-30",
-    "readerModel":  "@cf/mistralai/mistral-small-3.1-24b-instruct",
-    "notes":  ""
+  "pages": 1,
+  "source": "Marc's cookbooks, photographed on an iPhone, 2026-10-30",
+  "shot": "IMG_6904",
+  "readAt": "2026-10-30",
+  "readerModel": "@cf/mistralai/mistral-small-3.1-24b-instruct",
+  "notes": "A sidebar's chapter name (« LES PREFS EN 3 DÉCLINAISONS ») reads first, then a « Recette de base » kicker, then the title; an « Astuces » box and the author's blurb under the method. The stored (Mistral) read dropped a clause of the blurb (« tout en simplifiant le processus de préparation et en ») — a second reader (Sonnet 5.5) kept it; expected.json holds the page.",
+  "pending": "reader: the blurb's clause « tout en simplifiant le processus de préparation et en » dropped by the stored transcript",
+  "readerErrors": ["the blurb's « tout en simplifiant le processus de préparation et en » dropped"]
 }
-

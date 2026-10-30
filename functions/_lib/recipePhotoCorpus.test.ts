@@ -24,82 +24,18 @@
 // too, for every expected line the reader did transcribe.
 import { describe, expect, it } from 'vitest'
 import { mergeOcrPages } from '../../src/lib/ocrMerge'
-import { type Expected, diffExpected, expectedOf } from '../test/recipeCorpus'
-import { loadPhotoCorpus } from '../test/recipePhotoCorpus'
-import { type LineSelection, selectionLines } from './ai'
+import { type Expected, diffExpected as diffRaw, expectedOf as rawOf } from '../test/recipeCorpus'
+import { canonExpected, loadPhotoCorpus, perfectSelection } from '../test/recipePhotoCorpus'
+
+// Every comparison apostrophe-blind (recipePhotoCorpus canon): « d’huile » and « d'huile »
+// are one word.
+const expectedOf: typeof rawOf = (d) => canonExpected(rawOf(d))
+const diffExpected = (want: Expected, got: Expected) => diffRaw(canonExpected(want), got)
+import { selectionLines } from './ai'
 import { draft, draftFromSelection, readText } from './recipeDraft'
-import { stripStepPrefix } from './recipeImport'
 
 const corpus = loadPhotoCorpus()
-const isHeading = (l: string) => l.startsWith('## ')
 const unheading = (l: string) => l.replace(/^##\s*/, '')
-// A line as the draft would copy it: list bullet off, a label's trailing colon off.
-const bare = (l: string) => l.replace(/^[-•·▪◦‣*–—]+\s*/, '').trim()
-const label = (l: string) => bare(l).replace(/\s*:\s*$/, '')
-
-// The selection a model that chose PERFECTLY would return for this expectation: each
-// expected line located as one whole line of `lines`. A line that cannot be found whole
-// is reported — that is finding 2.
-function perfectSelection(lines: string[], want: Expected): { sel: LineSelection; missing: string[] } {
-  const missing: string[] = []
-  const used = new Set<number>()
-  const find = (text: string, how: (l: string) => string): number | null => {
-    const i = lines.findIndex((l, k) => !used.has(k) && how(l) === text)
-    if (i < 0) return null
-    used.add(i)
-    return i
-  }
-  // A step is located the way the draft copies it — its printed number off (« 3 Dans une
-  // casserole… » is step « Dans une casserole… »); an ingredient keeps every figure.
-  const pickList = (items: string[], how: (l: string) => string) => {
-    const picked: number[] = []
-    const sections: { line: number; before: number }[] = []
-    let pendingLabel: string | null = null
-    for (const item of items) {
-      if (isHeading(item)) {
-        pendingLabel = unheading(item)
-        continue
-      }
-      const i = find(item, how)
-      if (i == null) {
-        missing.push(item)
-        continue
-      }
-      if (pendingLabel != null) {
-        const li = find(pendingLabel, label)
-        if (li == null) missing.push(`## ${pendingLabel}`)
-        else sections.push({ line: li, before: i })
-        pendingLabel = null
-      }
-      picked.push(i)
-    }
-    if (pendingLabel != null) missing.push(`## ${pendingLabel}`)
-    return { picked, sections }
-  }
-  const ing = pickList(want.ingredients, bare)
-  const st = pickList(want.steps, (l) => stripStepPrefix(bare(l)))
-  const notes: number[] = []
-  for (const n of (want.notes ?? '').split('\n').filter(Boolean)) {
-    const i = find(n, bare)
-    if (i == null) missing.push(`(note) ${n}`)
-    else notes.push(i)
-  }
-  const title = want.title == null ? null : find(want.title, bare)
-  return {
-    sel: {
-      title,
-      servings: null,
-      prep: null,
-      cook: null,
-      ingredients: ing.picked,
-      steps: st.picked,
-      notes,
-      ingredientSections: ing.sections,
-      stepSections: st.sections,
-    },
-    missing,
-  }
-}
 
 describe('photo corpus — real pages, the reader’s real transcripts, read exactly without a model', () => {
   it('the corpus is there (a scan of nothing would pass forever)', () => {

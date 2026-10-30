@@ -1,0 +1,29 @@
+{
+  "title": "PÂTÉ PAS CHINOIS",
+  "servings": 6,
+  "servingsUnit": null,
+  "times": {
+    "prep": 25,
+    "cook": 45,
+    "total": null
+  },
+  "ingredients": [
+    "1,5 litre (6 tasses) de pommes de terre Russet pelées et coupées en cubes",
+    "80 ml (1/3 de tasse) de beurre",
+    "80 ml (1/3 de tasse) de lait",
+    "Sel au goût",
+    "450 g (1 lb) de poulet cuit effiloché",
+    "250 ml (1 tasse) de sauce pour dinde ou poulet prête à servir",
+    "1 boîte de macédoine de légumes de 398 ml, égouttée"
+  ],
+  "steps": [
+    "Déposer les pommes de terre dans une casserole et couvrir d'eau froide. Porter à ébullition, puis cuire 15 minutes, jusqu'à ce que les pommes de terre soient tendres. Égoutter.",
+    "Remettre les pommes de terre dans la casserole. À l'aide d'un pilon, réduire les pommes de terre en purée avec le beurre et le lait, en ajoutant ce dernier progressivement. Saler et réserver.",
+    "Préchauffer le four à 190 °C (375 °F).",
+    "Déposer le poulet effiloché dans un plat de cuisson rectangulaire de 33 cm x 23 cm (13 po x 9 po). Verser la sauce dans le plat et remuer afin de bien en enrober le poulet. Presser légèrement la préparation au fond du plat.",
+    "Couvrir le poulet de macédoine de légumes, puis de purée de pommes de terre. Égaliser la surface.",
+    "Cuire au four 30 minutes."
+  ],
+  "notes": "Le pâté chinois, c'est bon, mais si vous êtes comme nous, vous en avez probablement assez d'en cuisiner. Cette recette propose une variation qui fera non seulement changement, mais qui vous réconfortera également en vous rappelant le bon goût de la dinde et des patates que vous mangez pendant le temps des Fêtes!",
+  "structuring": "heuristic"
+}

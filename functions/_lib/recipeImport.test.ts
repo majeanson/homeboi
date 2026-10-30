@@ -808,6 +808,47 @@ describe('stripAiCommentary', () => {
   })
 })
 
+// A cookbook card as a second reader lists it (Sonnet 5.5 on the photo corpus,
+// 2026-10-30): the time/yield badges down the page's edge come out label on one line,
+// value on the next, and the keeping note is numbered as the last step.
+describe('parseRecipeText — a numbered card with its badges split over two lines', () => {
+  const card = [
+    'Muffins à la pêche Melba',
+    '• 250 ml (1 tasse) de farine tout usage',
+    '• 2 œufs',
+    '1 Préchauffer le four à 205 °C (400 °F).',
+    '2 Dans un bol, mélanger la farine et les œufs.',
+    '3 Se conserve de 1 à 2 jours à température ambiante dans un contenant hermétique.',
+    'PRÉPARATION',
+    '20 MINUTES',
+    'CUISSON',
+    '20 MINUTES',
+    'QUANTITÉ',
+    '12 MUFFINS',
+    'SE CONGÈLE',
+    'À congeler',
+  ].join('\n')
+  it('a label alone is not the method heading: the body above it is kept, the badge is read', () => {
+    const r = parseRecipeText(card)
+    expect(r.title).toBe('Muffins à la pêche Melba')
+    expect(r.ingredients).toEqual(['250 ml (1 tasse) de farine tout usage', '2 œufs'])
+    expect(r.steps).toEqual([
+      'Préchauffer le four à 205 °C (400 °F).',
+      'Dans un bol, mélanger la farine et les œufs.',
+      'Se conserve de 1 à 2 jours à température ambiante dans un contenant hermétique.',
+    ])
+    expect(r.times).toEqual({ prep: 20, cook: 20, total: null })
+  })
+  it('« Se conserve de 1 à 2 jours » is a keeping note, never a yield of « 1 jours »; the yield is the badge’s', () => {
+    const r = parseRecipeText(card)
+    expect(r.servings).toBe(12)
+    expect(r.servingsUnit).toBe('muffins')
+  })
+  it('a badge under the method (« SE CONGÈLE », « À congeler ») is not a note', () => {
+    expect(parseRecipeText(card).notes).toBeNull()
+  })
+})
+
 describe('htmlToText', () => {
   it('strips scripts/styles/tags, keeps block boundaries as newlines', () => {
     const html = '<style>.a{}</style><h1>Hi</h1><script>x()</script><p>there\n  friend</p>'

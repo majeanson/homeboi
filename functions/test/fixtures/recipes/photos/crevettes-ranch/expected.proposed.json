@@ -1,0 +1,51 @@
+{
+  "title": "Crevettes ranch",
+  "servings": 4,
+  "servingsUnit": null,
+  "times": {
+    "prep": 20,
+    "cook": 30,
+    "total": null
+  },
+  "ingredients": [
+    "1 sac de crevettes moyennes (calibre 31/40) de 340 g, crues et décortiquées",
+    "2 carottes coupées en rondelles",
+    "1 petit oignon rouge coupé en petits cubes",
+    "450 g (1 lb) de pommes de terre grelots coupées en deux ou 3 pommes de terre moyennes coupées en cubes",
+    "1 poivron rouge coupé en cubes",
+    "30 ml (2 c. à soupe) d'huile d'olive",
+    "5 ml (1 c. à thé) d'herbes italiennes",
+    "Sel et poivre au goût",
+    "1 courgette coupée en rondelles",
+    "## Pour la marinade ranch",
+    "30 ml (2 c. à soupe) d'huile d'olive",
+    "15 ml (1 c. à soupe) de ciboulette séchée",
+    "15 ml (1 c. à soupe) de jus de citron",
+    "10 ml (2 c. à thé) de persil séché",
+    "5 ml (1 c. à thé) d'aneth séché",
+    "## Garnitures (au choix et au goût)",
+    "Laitue romaine déchiquetée",
+    "Concombre anglais coupés en demi-rondelles",
+    "Aneth frais haché",
+    "## Pour la sauce",
+    "180 ml (3/4 de tasse) de yogourt nature",
+    "15 ml (1 c. à soupe) de persil séché",
+    "15 ml (1 c. à soupe) de ciboulette séchée",
+    "15 ml (1 c. à soupe) de jus de citron",
+    "5 ml (1 c. à thé) d'aneth séché",
+    "5 ml (1 c. à thé) de poudre d'oignon",
+    "5 ml (1 c. à thé) de moutarde en poudre",
+    "2,5 ml (1/2 c. à thé) de poudre d'ail"
+  ],
+  "steps": [
+    "Dans un bol, mélanger les ingrédients de la marinade. Ajouter les crevettes dans le bol et remuer afin de bien les enrober de marinade. Couvrir et laisser mariner 30 minutes au frais.",
+    "Au moment de la cuisson, préchauffer le four à 205 °C (400 °F).",
+    "Sur une plaque de cuisson tapissée de papier parchemin, mélanger les carottes avec l'oignon, les pommes de terre, le poivron, l'huile et les herbes italiennes. Saler et poivrer. Étaler la préparation sur la plaque. Cuire au four 10 minutes.",
+    "Ajouter la courgette sur la plaque et remuer. Poursuivre la cuisson 10 minutes.",
+    "Ajouter les crevettes sur la plaque et remuer. Poursuivre la cuisson de 8 à 10 minutes.",
+    "## Pour une version bol",
+    "Dans un bol, mélanger les ingrédients de la sauce."
+  ],
+  "notes": "Vous pouvez remplacer les ingrédients de la marinade par des assaisonnements ranch du commerce!",
+  "structuring": "ai"
+}

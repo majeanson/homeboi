@@ -6,6 +6,13 @@
 //                                                   (the selection model) → expected.proposed.json
 //   node scripts/recipe-photos.mjs score [<id>]     propose, then diff against expected.json — the table
 //   node scripts/recipe-photos.mjs add <slug> <photo…>   downscale the photos into a new entry (no read)
+//   node scripts/recipe-photos.mjs read-claude [<id>] [--model <id>]
+//                                                   read each page with CLAUDE (the Anthropic API, key from
+//                                                   .env CLAUDE_API_KEY — never prod) through the SAME
+//                                                   transcription prompt, save page-N.transcript.claude.txt and
+//                                                   score each transcript the way the corpus test does: every
+//                                                   expected line must be ONE pickable line. The reader eval
+//                                                   before any wiring (2026-10-30).
 //
 // Every call that reaches the model mints a 24 h demo SANDBOX on the deployed app
 // (POST /api/demo — the one door that needs no account) and spends its AI budget;
@@ -148,12 +155,118 @@ async function add(slug, photos) {
   console.log(`now: node scripts/recipe-photos.mjs read ${slug} — then rename each page-N.transcript.proposed.txt to page-N.transcript.txt, fill meta.readAt/readerModel, propose, verify.`)
 }
 
-const [cmd, arg, ...rest] = process.argv.slice(2)
-if (cmd === 'read') await read(arg)
+// read-claude: the reader evaluation. The key comes from .env (CLAUDE_API_KEY, git-ignored)
+// and never leaves this machine; the prompt is production's (_lib/ai transcriptionPrompt);
+// the score is the corpus test's own measure — how many expected lines are NOT one whole
+// pickable line of the transcript (a reader miss), and whether the draft built from a
+// perfect selection is exact — side by side with the STORED (Workers AI) transcript.
+function envKey() {
+  const p = join(ROOT, '.env')
+  if (!existsSync(p)) return null
+  for (const line of readFileSync(p, 'utf8').split(/\r?\n/)) {
+    const m = line.match(/^\s*(CLAUDE_API_KEY|ANTHROPIC_API_KEY)\s*=\s*"?([^"\s]+)"?\s*$/)
+    if (m) return m[2]
+  }
+  return null
+}
+async function readClaude(id, model = 'claude-opus-5-5', effort, run) {
+  // The file tag: model, effort, and --run N so three reads of one page sit side by side
+  // (the reader is not deterministic; one run proves nothing).
+  const tag = model.replace(/^claude-/, '') + (effort ? `-${effort}` : '') + (run ? `-run${run}` : '')
+  const { default: Anthropic } = await import('@anthropic-ai/sdk')
+  const apiKey = envKey()
+  if (!apiKey) throw new Error('no CLAUDE_API_KEY in .env')
+  const client = new Anthropic({ apiKey })
+  const ai = await load('functions/_lib/ai.ts')
+  const imp = await load('functions/_lib/recipeImport.ts')
+  const draftMod = await load('functions/_lib/recipeDraft.ts')
+  const { mergeOcrPages } = await load('src/lib/ocrMerge.ts')
+  const corpus = await load('functions/test/recipeCorpus.ts')
+  const photos = await load('functions/test/recipePhotoCorpus.ts')
+  const prompt = ai.transcriptionPrompt('fr')
+  // Production's cleaning of a reply: fences off, a leaked remark dropped line by line.
+  const clean = (raw) => imp.stripAiCommentary(String(raw ?? '').replace(/```[a-z]*/gi, '').split(/\r?\n/)).join('\n').trim()
+  // The corpus test's measure, on any set of page transcripts — apostrophe-blind, as it is.
+  const score = (transcripts, want) => {
+    const stitched = mergeOcrPages(transcripts)
+    const lines = ai.selectionLines(stitched)
+    const { sel, missing } = photos.perfectSelection(lines, want)
+    const r = draftMod.readText(stitched)
+    const built = draftMod.draftFromSelection(lines, sel, r.known)
+    const got = built ? photos.canonExpected(corpus.expectedOf(draftMod.draft({ ...built, structuring: 'ai' }))) : null
+    const diff = got ? corpus.diffExpected(photos.canonExpected(want), got) : ['nothing built']
+    return { missing, diff }
+  }
+  let usd = 0
+  const rows = []
+  for (const e of await entries(id)) {
+    if (!e.expected) continue
+    const transcripts = []
+    let ms = 0
+    for (let i = 1; i <= e.meta.pages; i++) {
+      const photo = join(e.dir, `page-${i}.jpg`)
+      const saved = join(e.dir, `page-${i}.transcript.${tag}.txt`)
+      if (!existsSync(photo)) {
+        transcripts.push(e.transcripts[i - 1]) // a duplicate shot: the stored read stands in
+        continue
+      }
+      // --saved: re-score the transcripts already paid for, no call.
+      if (SAVED && existsSync(saved)) {
+        transcripts.push(readFileSync(saved, 'utf8').trim())
+        continue
+      }
+      const t0 = Date.now()
+      const res = await client.beta.messages.create({
+        model,
+        max_tokens: 4000,
+        ...(effort ? { output_config: { effort } } : {}),
+        // A refused request is re-run on a fallback model inside the same call (the
+        // Claude API's server-side fallback); a transcription is never a policy case.
+        ...(/opus-5-5|sonnet-5-5|fable-5-1/.test(model) ? { betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default' } : {}),
+        messages: [
+          {
+            role: 'user',
+            content: [
+              { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: readFileSync(photo).toString('base64') } },
+              { type: 'text', text: prompt },
+            ],
+          },
+        ],
+      })
+      ms += Date.now() - t0
+      if (res.stop_reason === 'refusal') throw new Error(`${e.id} page ${i}: refused (${res.stop_details?.category ?? '?'})`)
+      const text = clean(res.content.filter((b) => b.type === 'text').map((b) => b.text).join('\n'))
+      const price = /opus/.test(model) ? [4, 20] : /sonnet/.test(model) ? [2, 10] : [0.1, 0.5]
+      usd += (res.usage.input_tokens * price[0] + res.usage.output_tokens * price[1]) / 1e6
+      writeFileSync(saved, text + '\n')
+      transcripts.push(text)
+    }
+    const stored = score(e.transcripts, e.expected)
+    const claude = score(transcripts, e.expected)
+    rows.push([e.id, `${stored.missing.length}`, `${claude.missing.length}`, stored.diff.length ? '✗' : '✓', claude.diff.length ? '✗' : '✓', `${(ms / 1000).toFixed(1)} s`,
+      claude.missing.length ? claude.missing.map((m) => `« ${m.slice(0, 60)} »`).join(' · ') : claude.diff[0]?.split('\n')[0] ?? ''])
+  }
+  const head = ['entry', 'stored misses', 'claude misses', 'stored exact', 'claude exact', 'read', 'claude: what is still missing / the first diff']
+  const w = head.map((h, i) => Math.max(h.length, ...rows.map((r) => String(r[i] ?? '').length)))
+  const line = (r) => r.map((c, i) => String(c ?? '').padEnd(w[i])).join(' | ')
+  console.log(`model ${model}${effort ? ` effort ${effort}` : ''}\n` + line(head))
+  console.log(w.map((x) => '-'.repeat(x)).join('-|-'))
+  for (const r of rows) console.log(line(r))
+  console.log(`\n${rows.filter((r) => r[4] === '✓').length}/${rows.length} exact with Claude (stored: ${rows.filter((r) => r[3] === '✓').length}/${rows.length}) — ~$${usd.toFixed(2)} spent`)
+}
+
+const SAVED = process.argv.includes('--saved')
+const [cmd, arg, ...rest] = process.argv.slice(2).filter((a) => a !== '--saved')
+const opt = (name) => {
+  const i = process.argv.indexOf(name)
+  return i >= 0 ? process.argv[i + 1] : undefined
+}
+if (cmd === 'read-claude') await readClaude(arg?.startsWith('--') ? undefined : arg, opt('--model'), opt('--effort'), opt('--run'))
+else if (cmd === 'read') await read(arg)
 else if (cmd === 'propose') await propose(arg)
 else if (cmd === 'score') await score(arg)
 else if (cmd === 'add' && arg && rest.length) await add(arg, rest)
 else {
-  console.log('usage: recipe-photos.mjs read [id] | propose [id] | score [id] | add <slug> <photo…>')
+  console.log('usage: recipe-photos.mjs read [id] | read-claude [id] [--model m] | propose [id] | score [id] | add <slug> <photo…>')
   process.exit(1)
 }

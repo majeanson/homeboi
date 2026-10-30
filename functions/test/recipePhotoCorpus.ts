@@ -1,5 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import type { LineSelection } from '../_lib/ai'
+import { stripStepPrefix } from '../_lib/recipeImport'
 import type { Expected } from './recipeCorpus'
 
 // THE PHOTO CORPUS (2026-10-30) — real cookbook pages photographed on a phone, with the
@@ -50,6 +52,97 @@ export interface PhotoEntry {
   meta: PhotoMeta
   expected: Expected | null
   transcripts: string[]
+}
+
+const isHeading = (l: string) => l.startsWith('## ')
+const unheading = (l: string) => l.replace(/^##\s*/, '')
+// A typographic apostrophe and a straight one are the same word to a cook — the
+// expectations were typed from one reader's « d’huile », another reader writes « d'huile »,
+// and neither is a reading error. Every comparison in the corpus goes through this.
+const VULGAR: Record<string, string> = { '¼': '1/4', '½': '1/2', '¾': '3/4', '⅓': '1/3', '⅔': '2/3', '⅛': '1/8', '⅜': '3/8', '⅝': '5/8', '⅞': '7/8' }
+const SUP = '⁰¹²³⁴⁵⁶⁷⁸⁹'
+const SUB = '₀₁₂₃₄₅₆₇₈₉'
+export const canon = (s: string) =>
+  s
+    .replace(/[’‘`´]/g, "'")
+    // A fraction typeset as superscript ⁄ subscript (« ²⁄₃ », one reader's spelling of ⅔).
+    .replace(/([⁰¹²³⁴⁵⁶⁷⁸⁹]+)[⁄/]([₀₁₂₃₄₅₆₇₈₉]+)/g, (_, a: string, b: string) => `${[...a].map((c) => SUP.indexOf(c)).join('')}/${[...b].map((c) => SUB.indexOf(c)).join('')}`)
+    // A fraction glyph and its ASCII spelling (« ⅓ » / « 1/3 ») are one amount.
+    .replace(/(\d)\s*([¼½¾⅓⅔⅛⅜⅝⅞])/g, (_, d, g) => `${d} ${VULGAR[g]}`)
+    .replace(/[¼½¾⅓⅔⅛⅜⅝⅞]/g, (g) => VULGAR[g])
+    // French guillemets with or without their inner spaces (« gril » / «gril»).
+    .replace(/«\s*/g, '« ')
+    .replace(/\s*»/g, ' »')
+    .replace(/\s+/g, ' ')
+    .trim()
+// A part heading's CASE is the page's typography (« pour une version bol » is printed
+// lowercase, a reader capitalises it) — compared case-blind; the lines keep theirs.
+const canonLine = (l: string) => (l.startsWith('## ') ? canon(l).toLowerCase() : canon(l))
+export const canonExpected = (e: Expected): Expected => ({
+  ...e,
+  title: e.title == null ? null : canon(e.title),
+  ingredients: e.ingredients.map(canonLine),
+  steps: e.steps.map(canonLine),
+  notes: e.notes == null ? null : e.notes.split('\n').map(canon).join('\n'),
+  ...(e.candidates ? { candidates: e.candidates.map(canon) } : {}),
+})
+// A line as the draft would copy it: list bullet off, a label's trailing colon off.
+const bare = (l: string) => canon(l.replace(/^(?:[-•·▪◦‣*–—›»▸►⇨➜→]+|,)\s*/, ''))
+const label = (l: string) => bare(l).replace(/\s*:\s*$/, '')
+
+// The selection a model that chose PERFECTLY would return for an expectation: each
+// expected line located as ONE whole line of `lines` (a step the way the draft copies
+// it — its printed number off; an ingredient with every figure). A line that cannot be
+// found whole is reported in `missing` — the corpus test's finding 2, and the measure
+// a reader is scored by (scripts/recipe-photos.mjs read-claude).
+export function perfectSelection(lines: string[], want: Expected): { sel: LineSelection; missing: string[] } {
+  const missing: string[] = []
+  const used = new Set<number>()
+  const find = (raw: string, how: (l: string) => string): number | null => {
+    const text = canon(raw)
+    const i = lines.findIndex((l, k) => !used.has(k) && how(l) === text)
+    if (i < 0) return null
+    used.add(i)
+    return i
+  }
+  const pickList = (items: string[], how: (l: string) => string) => {
+    const picked: number[] = []
+    const sections: { line: number; before: number }[] = []
+    let pendingLabel: string | null = null
+    for (const item of items) {
+      if (isHeading(item)) {
+        pendingLabel = unheading(item)
+        continue
+      }
+      const i = find(item, how)
+      if (i == null) {
+        missing.push(item)
+        continue
+      }
+      if (pendingLabel != null) {
+        const li = find(pendingLabel.toLowerCase(), (l) => label(l).toLowerCase())
+        if (li == null) missing.push(`## ${pendingLabel}`)
+        else sections.push({ line: li, before: i })
+        pendingLabel = null
+      }
+      picked.push(i)
+    }
+    if (pendingLabel != null) missing.push(`## ${pendingLabel}`)
+    return { picked, sections }
+  }
+  const ing = pickList(want.ingredients, bare)
+  const st = pickList(want.steps, (l) => stripStepPrefix(bare(l)))
+  const notes: number[] = []
+  for (const n of (want.notes ?? '').split('\n').filter(Boolean)) {
+    const i = find(n, bare)
+    if (i == null) missing.push(`(note) ${n}`)
+    else notes.push(i)
+  }
+  const title = want.title == null ? null : find(want.title, bare)
+  return {
+    sel: { title, servings: null, prep: null, cook: null, ingredients: ing.picked, steps: st.picked, notes, ingredientSections: ing.sections, stepSections: st.sections },
+    missing,
+  }
 }
 
 export function loadPhotoCorpus(dir = PHOTO_CORPUS_DIR): PhotoEntry[] {

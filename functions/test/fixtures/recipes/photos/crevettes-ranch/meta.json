@@ -4,5 +4,11 @@
   "shot": "IMG_6900, IMG_6901",
   "readAt": "2026-10-30",
   "readerModel": "@cf/mistralai/mistral-small-3.1-24b-instruct",
-  "notes": "A hand's shadow over the lower ingredients on page 1 and over the sauce label on page 2 — the reader still read every line; the label came out « Pour la sauce : » where the page prints « Pour la sauce ranch : » (accepted as the typed truth). A tip with an arrow inside the ingredient column (« ⇨ Vous pouvez remplacer… ») is the recipe's note."
+  "notes": "A hand's shadow over the lower ingredients on page 1 and over the sauce label on page 2. The stored (Mistral) read lost three words under it — « coupé » became « coupés », « Pour la sauce ranch : » became « Pour la sauce : », the tip's « ci-dessus » vanished; a second reader (Sonnet 5.5) read all three as the page prints them, and expected.json holds the page. A tip with an arrow inside the ingredient column (« ⇨ Vous pouvez remplacer… ») is the recipe's note.",
+  "pending": "reader: three words under the shadow mis-read by the stored transcript (« coupés », the sauce label's « ranch », the tip's « ci-dessus ») — a page the next reader gets right",
+  "readerErrors": [
+    "Concombre anglais coupé en demi-rondelles → Concombre anglais coupés en demi-rondelles",
+    "Pour la sauce ranch : → Pour la sauce :",
+    "the tip's « ci-dessus » dropped"
+  ]
 }
