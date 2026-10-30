@@ -86,13 +86,13 @@ test('photo import: read → verify dialog → apply draft to the form', async (
 
   // The « Rapport » tab exposes the real pipeline: the cloud reader (with its
   // model name), the line selection, and what the audit found.
-  await modal.getByRole('tab', { name: 'Rapport' }).click()
+  await modal.getByRole('button', { name: 'Rapport' }).click()
   const report = modal.locator('.read-review__report')
   await expect(report).toBeVisible()
   await expect(report).toContainText('mistral-ocr-latest')
   await expect(report).toContainText('llama-3.3-70b')
   await expect(report).toContainText('125 ml de lait')
-  await modal.getByRole('tab', { name: 'Vérifier' }).click()
+  await modal.getByRole('button', { name: 'Rapport' }).click() // the chip toggles back to the lines
 
   // Confirm → the draft lands in the form behind the dialog (applyDraft).
   await modal.locator('.read-review__foot .btn--primary').click()
@@ -147,7 +147,7 @@ test('« Auto » with no usable cloud key: the vision reader goes first, the dev
 
   const modal = page.locator('.read-review')
   await expect(modal).toBeVisible({ timeout: 15_000 })
-  await modal.getByRole('tab', { name: 'Rapport' }).click()
+  await modal.getByRole('button', { name: 'Rapport' }).click()
   await expect(modal.locator('.read-review__report')).toContainText('gemma-4')
   expect(visionCalls).toBe(1)
   expect(ocrCalls).toBe(0)

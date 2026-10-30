@@ -1493,8 +1493,8 @@ export const FR = {
     auditNoQty: 'La plupart des ingrédients n’ont pas de quantité.',
     // The « Rapport » tab: what read the photo, what organized the text, what was
     // corrected or flagged — honesty about the pipeline, in plain words.
-    reviewTabVerify: 'Vérifier',
     reviewTabReport: 'Rapport',
+    reviewPhotoToggle: 'Photo',
     reportReader: 'Lecture de la photo',
     reportReaderDevice: 'Sur l’appareil (Tesseract) — rien n’a quitté la maison',
     reportReaderCloud: 'Haute précision (nuage)',

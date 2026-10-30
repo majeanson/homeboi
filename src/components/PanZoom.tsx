@@ -17,12 +17,34 @@ const MAX = 5
 const STEP = 0.5
 const clampScale = (s: number) => Math.min(MAX, Math.max(MIN, s))
 
-export function PanZoom({ children, className, ariaLabel }: { children: ReactNode; className?: string; ariaLabel?: string }) {
+export function PanZoom({
+  children,
+  className,
+  ariaLabel,
+  initialScale = 1,
+  minimap,
+}: {
+  children: ReactNode
+  className?: string
+  ariaLabel?: string
+  /** Open already zoomed, top-left corner first (a cookbook page at 2× reads on a phone). */
+  initialScale?: number
+  /** A thumbnail of the WHOLE content, in the child's fit-to-box shape: drawn in the
+   *  bottom-right corner with the visible window on it — tap or drag there to jump
+   *  (the recipe verify panel's loupe over a page, 2026-10-30). */
+  minimap?: ReactNode
+}) {
   const t = useT()
   const surfaceRef = useRef<HTMLDivElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
-  const tf = useRef({ scale: 1, tx: 0, ty: 0 })
-  const [scale, setScale] = useState(1) // mirrors tf.scale, only to drive the buttons
+  const mapRef = useRef<HTMLDivElement>(null)
+  const tf = useRef({ scale: clampScale(initialScale), tx: 0, ty: 0 })
+  const [scale, setScale] = useState(tf.current.scale) // mirrors tf.scale, only to drive the buttons
+  // The visible window on the content (0–1) for the minimap, and the surface's shape,
+  // so the map is drawn in the same proportions and the window lands where the eye
+  // expects it.
+  const [win, setWin] = useState({ x: 0, y: 0, w: 1, h: 1 })
+  const [box, setBox] = useState({ w: 4, h: 3 })
   const pointers = useRef(new Map<number, { x: number; y: number }>())
   // Two-finger pinch snapshot (anchored on its starting midpoint).
   const pinch = useRef<{ dist: number; cx: number; cy: number; scale: number; tx: number; ty: number } | null>(null)
@@ -47,6 +69,24 @@ export function PanZoom({ children, className, ariaLabel }: { children: ReactNod
     const el = contentRef.current
     if (el) el.style.transform = `translate(${tf.current.tx}px, ${tf.current.ty}px) scale(${tf.current.scale})`
     setScale(tf.current.scale)
+    const s = surfaceRef.current
+    if (minimap && s && el) {
+      const cw = el.offsetWidth * tf.current.scale
+      const ch = el.offsetHeight * tf.current.scale
+      setWin({ x: Math.max(0, -tf.current.tx / cw), y: Math.max(0, -tf.current.ty / ch), w: Math.min(1, s.clientWidth / cw), h: Math.min(1, s.clientHeight / ch) })
+    }
+  }
+  // The minimap: tap, or drag, to put the window there.
+  const mapDown = useRef(false)
+  const jump = (e: React.PointerEvent) => {
+    const m = mapRef.current
+    const s = surfaceRef.current
+    const c = contentRef.current
+    if (!m || !s || !c) return
+    const r = m.getBoundingClientRect()
+    tf.current.tx = s.clientWidth / 2 - ((e.clientX - r.left) / r.width) * c.offsetWidth * tf.current.scale
+    tf.current.ty = s.clientHeight / 2 - ((e.clientY - r.top) / r.height) * c.offsetHeight * tf.current.scale
+    apply()
   }
 
   // Zoom toward a point (px, py) in surface-local coords so it stays put under the
@@ -126,6 +166,25 @@ export function PanZoom({ children, className, ariaLabel }: { children: ReactNod
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Paint the initial scale — the TOP of the content, centred across (a portrait page
+  // in a landscape box sits between two blank bands; top-left would open on a band) —
+  // and keep the minimap's shape and window right through a resize (a rotation, a
+  // desktop pane).
+  useEffect(() => {
+    const s = surfaceRef.current
+    const c = contentRef.current
+    if (!s) return
+    if (c && tf.current.scale > 1) tf.current.tx = (s.clientWidth - c.offsetWidth * tf.current.scale) / 2
+    const ro = new ResizeObserver(() => {
+      setBox({ w: s.clientWidth || 4, h: s.clientHeight || 3 })
+      apply()
+    })
+    ro.observe(s)
+    apply()
+    return () => ro.disconnect()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   return (
     <div className={`panzoom${className ? ` ${className}` : ''}`}>
       <div
@@ -153,6 +212,31 @@ export function PanZoom({ children, className, ariaLabel }: { children: ReactNod
           <Icon name="plus-bold" size={18} />
         </button>
       </div>
+      {minimap && (
+        <div
+          ref={mapRef}
+          className="panzoom__map"
+          aria-hidden="true"
+          style={{ aspectRatio: `${box.w} / ${box.h}` }}
+          onPointerDown={(e) => {
+            mapDown.current = true
+            ;(e.currentTarget as Element).setPointerCapture?.(e.pointerId)
+            jump(e)
+          }}
+          onPointerMove={(e) => {
+            if (mapDown.current) jump(e)
+          }}
+          onPointerUp={() => {
+            mapDown.current = false
+          }}
+          onPointerCancel={() => {
+            mapDown.current = false
+          }}
+        >
+          {minimap}
+          <div className="panzoom__map-box" style={{ left: `${win.x * 100}%`, top: `${win.y * 100}%`, width: `${win.w * 100}%`, height: `${win.h * 100}%` }} />
+        </div>
+      )}
     </div>
   )
 }

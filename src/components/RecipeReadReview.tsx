@@ -1,13 +1,13 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useT } from '../i18n'
 import { Modal } from './Modal'
-import { SubTabs } from './SubTabs'
+import { PanZoom } from './PanZoom'
 import { findMeasures, measuresDisagree } from '../lib/measure'
 import type { PhotoWarningKind } from '../lib/photoCheck'
 import { isSectionHeading, SECTION_PREFIX } from '../lib/recipeSections'
 import { Icon, InlineIcon } from './Icon'
 import { Chip } from './Chip'
-import { ZoomableImg } from './ZoomableImg'
+import { Cluster } from './Layout'
 import { Disclosure } from './Disclosure'
 import { EditField } from './EditField'
 
@@ -229,6 +229,8 @@ export function RecipeReadReview({
   const t = useT()
   const [tab, setTab] = useState<'verify' | 'report'>('verify')
   const [hint, setHint] = useState('')
+  // The page can be folded away for the lines' sake, and brought back.
+  const [showPhoto, setShowPhoto] = useState(true)
   const fromText = !photoUrl
 
   const [title, setTitle] = useState(draft.title ?? '')
@@ -378,19 +380,24 @@ export function RecipeReadReview({
 
   return (
     <Modal open onClose={onCancel} className="read-review" title={t.recipes.reviewTitle}>
-        {/* Vérifier ↔ Rapport: the second face is the pipeline honesty report —
-            what read the photo, what organized the text, what was corrected or
-            couldn't be traced back. Only offered when the caller built one. */}
-        {report && (
-          <SubTabs<'verify' | 'report'>
-            options={[
-              { key: 'verify', label: t.recipes.reviewTabVerify },
-              { key: 'report', label: t.recipes.reviewTabReport },
-            ]}
-            value={tab}
-            onSelect={setTab}
-            ariaLabel={t.recipes.reviewTitle}
-          />
+        {/* One row of two chips: show/hide the page, and « Rapport » — the pipeline
+            honesty report (what read the photo, what organized the text, what was
+            corrected or couldn't be traced back) as a toggle, not a tab row that took a
+            whole band of a phone's height for two words (Marc, 2026-10-30). Only
+            offered when the caller built one. */}
+        {(photoUrl || report) && (
+          <Cluster className="read-review__tools">
+            {photoUrl && (
+              <Chip selected={showPhoto} onClick={() => setShowPhoto((v) => !v)} icon="image-square-bold">
+                {t.recipes.reviewPhotoToggle}
+              </Chip>
+            )}
+            {report && (
+              <Chip selected={tab === 'report'} onClick={() => setTab((x) => (x === 'report' ? 'verify' : 'report'))}>
+                {t.recipes.reviewTabReport}
+              </Chip>
+            )}
+          </Cluster>
         )}
 
         <div className="read-review__body">
@@ -400,9 +407,18 @@ export function RecipeReadReview({
               Stays on BOTH tabs: the report's flagged lines are checked against the
               same photo. */}
           {photoUrl ? (
-            <div className="read-review__photo">
-              <ZoomableImg src={photoUrl} alt={t.recipes.reviewPhotoAlt} />
-            </div>
+            /* The page under a LOUPE, a third of the phone high — not the whole photo at
+               full width, which left no room for the lines (Marc, 2026-10-30: « a
+               zoomed-in picture we can drag up, down, left, right, and show where we are
+               in the bigger picture »): the shared PanZoom opened at 2×, top-left first,
+               with its minimap in the corner. */
+            showPhoto && (
+              <div className="read-review__photo">
+                <PanZoom className="read-review__mag" ariaLabel={t.recipes.reviewPhotoAlt} initialScale={2} minimap={<img className="read-review__mag-img" src={photoUrl} alt="" draggable={false} />}>
+                  <img className="read-review__mag-img" src={photoUrl} alt={t.recipes.reviewPhotoAlt} draggable={false} />
+                </PanZoom>
+              </div>
+            )
           ) : (
             // The page text in the same sticky column — selectable, scrollable, never
             // editable (it is the SOURCE the lines are checked against).

@@ -110,6 +110,30 @@
   transform-origin: 0 0;
   will-change: transform;
 }
+/* The MINIMAP (opt-in): the whole content as a thumbnail in the bottom-right corner,
+   the visible window drawn on it — tap or drag there to jump (the recipe verify panel's
+   loupe over a cookbook page, 2026-10-30). Same proportions as the surface, so a
+   fit-to-box thumbnail letterboxes exactly like the content. */
+.panzoom__map {
+  position: absolute;
+  right: 0.6rem;
+  bottom: 0.6rem;
+  width: 24%;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--paper);
+  box-shadow: var(--shadow-md);
+  opacity: 0.94;
+  touch-action: none;
+  cursor: pointer;
+}
+.panzoom__map-box {
+  position: absolute;
+  border: 2px solid var(--terracotta-deep);
+  background: color-mix(in srgb, var(--terracotta-deep) 18%, transparent);
+  pointer-events: none;
+}
 /* The +− / reset cluster floats over the surface's top-right corner — clear of the
    ＋ quick-add FAB, which hovers over the bottom-right and would otherwise cover it.
    A frosted pill of three round, quiet icon buttons (the surface shows through), so

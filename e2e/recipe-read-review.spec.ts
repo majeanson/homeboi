@@ -55,14 +55,14 @@ for (const format of [
 
     // The « Rapport » tab: the pipeline honesty report names the reader, the
     // structuring model, the auto-repair and the AI-changed line.
-    await modal.getByRole('tab', { name: 'Rapport' }).click()
+    await modal.getByRole('button', { name: 'Rapport' }).click()
     const reportPane = modal.locator('.read-review__report')
     await expect(reportPane).toBeVisible()
     await expect(reportPane).toContainText('Tesseract')
     await expect(reportPane).toContainText('llama-3.3-70b')
     await expect(reportPane).toContainText('« 125 ml de lait » est dans les étapes')
     await expect(reportPane).toContainText('60 ml (1/4 de tasse)')
-    await modal.getByRole('tab', { name: 'Vérifier' }).click()
+    await modal.getByRole('button', { name: 'Rapport' }).click() // the chip toggles back to the lines
 
     // The rows are MEMO boxes: the deliberately-long ramens ingredient must be
     // fully visible — wrapped, never clipped. A one-line <input> fails this on

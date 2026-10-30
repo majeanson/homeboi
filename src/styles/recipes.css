@@ -1064,6 +1064,33 @@
   flex-direction: column;
   overflow: hidden;
 }
+/* On a phone the panel is the WHOLE screen (Marc, 2026-10-30: « make it a full-screen
+   sheet » — the card-in-a-card kept a band of the form behind it and left no room for
+   the page and the lines). Under the keyboard it caps to the visible band like every
+   dialog (kit.css), so the confirm foot stays reachable. */
+@media (max-width: 43.99rem) {
+  .kit-modal__backdrop:has(> .kit-modal.read-review) {
+    padding: 0;
+  }
+  .kit-modal.read-review {
+    /* 100 % of the fixed backdrop, never 100vw: a vw counts the scrollbar a desktop
+       browser draws at phone width, and the card then overflows the viewport. */
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    max-height: 100%;
+    border: 0;
+    border-radius: 0;
+  }
+  .kb-open .kit-modal.read-review {
+    height: auto;
+    max-height: calc(var(--vvh, 100dvh) - 0px);
+  }
+}
+/* One row of two chips under the title: show/hide the page, and the Rapport. */
+.read-review__tools {
+  padding: 0 1rem 0.5rem;
+}
 /* Style Modal's title as the old top bar (the ✕ floats over it via kit-modal__close). */
 .read-review .kit-modal__title {
   margin: 0;
@@ -1127,17 +1154,28 @@
     flex: 1 1 auto;
     min-width: 0;
   }
-  .read-review__photo img {
-    max-height: 60vh;
+  .read-review__mag {
+    height: 60vh;
   }
 }
-/* A third of the phone for the page, the rest for the lines under it. */
-.read-review__photo img {
-  width: 100%;
-  max-height: 34vh;
-  object-fit: contain;
-  border-radius: var(--radius-md);
+/* The page under a LOUPE (Marc, 2026-10-30: « a zoomed-in picture we can drag up, down,
+   left, right, and show where we are in the bigger picture »): the shared PanZoom
+   surface (pinch / drag / wheel / +−, its minimap in the corner), a third of the phone
+   high, opened at 2×. The page fits the box at rest; the transform grows it. */
+.read-review__mag {
+  height: 30vh;
+}
+.read-review__mag .panzoom__surface {
+  height: 100%;
   background: var(--paper-deep);
+}
+.read-review__mag-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 .read-review__fields {
   display: flex;
@@ -1321,8 +1359,12 @@
   }
 }
 /* « Guider l'IA » above the foot — folded, inside the panel's side margin. */
-.read-review__guide {
+/* A Disclosure owns its row with `width: 100%` (kit.css, cascading after this file) —
+   100 % of the panel PLUS these margins ran 16px past a phone's edge once the panel
+   went full-width. Named with the primitive's class to outweigh it. */
+.disclosure.read-review__guide {
   margin: 0 1rem;
+  width: auto;
 }
 
 /* --- Furniture on demand (Marc, 2026-10-27) --------------------------------- */
