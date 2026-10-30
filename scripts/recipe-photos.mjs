@@ -261,16 +261,24 @@ async function readCf(id, model = '@cf/google/gemma-4-26b-a4b-it', run) {
       // Two input shapes on Workers AI: the chat models take content parts with a data:
       // URL (what _lib/ai partsInput sends); the Image-to-Text models (moondream, LLaVA,
       // Llama 3.2 Vision) take the image as a byte array beside a prompt.
-      const imageToText = /moondream|llava|llama-3\.2-11b-vision|uform/.test(model)
-      const body = imageToText
+      const imageToText = /llava|llama-3\.2-11b-vision|uform/.test(model)
+      // moondream 3.1 (its schema, read from the account): a `query` task with the image
+      // as a data URI and the prompt as the question; its reasoning off.
+      const body = /moondream/.test(model)
+        ? { task: 'query', image: `data:image/jpeg;base64,${bytes.toString('base64')}`, question: prompt, reasoning: false, max_tokens: 4000 }
+        : imageToText
         ? { image: [...bytes], prompt, max_tokens: 4000 }
         : {
             messages: [{ role: 'user', content: [{ type: 'text', text: prompt }, { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${bytes.toString('base64')}` } }] }],
             max_tokens: 4000,
             temperature: 0,
             // The thinking switches the chain already uses (Gemma) / the models document.
-            ...(/gemma/.test(model) ? { chat_template_kwargs: { enable_thinking: false } } : {}),
-            ...(/qwen3\.8|deepseek-v4/.test(model) ? { reasoning_effort: 'none' } : {}),
+            // Gemma and Qwen 3 take the chat template's switch; Qwen's `reasoning_effort` has
+            // no « off » (xhigh default, medium, low) and at « low » still spent 2.7–5.9k
+            // tokens and 27–81 s a page (2026-10-30).
+            ...(/gemma|qwen3\.8/.test(model) ? { chat_template_kwargs: { enable_thinking: false } } : {}),
+            ...(/qwen3\.8/.test(model) && process.argv.includes('--think') ? { reasoning_effort: 'low' } : {}),
+            ...(/deepseek-v4/.test(model) ? { reasoning_effort: 'none' } : {}),
           }
       const r = await fetch(`https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/ai/run/${model}`, {
         method: 'POST',
@@ -285,7 +293,10 @@ async function readCf(id, model = '@cf/google/gemma-4-26b-a4b-it', run) {
         continue
       }
       const res = j.result ?? {}
-      const text = clean(typeof res.response === 'string' ? res.response : typeof res.description === 'string' ? res.description : (res.choices?.[0]?.message?.content ?? ''))
+      const text = clean(
+        typeof res.response === 'string' ? res.response : typeof res.answer === 'string' ? res.answer : typeof res.description === 'string' ? res.description : (res.choices?.[0]?.message?.content ?? ''),
+      )
+      if (!text) console.log(`${e.id} page ${i}: empty read — ${JSON.stringify(j).slice(0, 400)}`)
       neurons += res.usage?.total_tokens ?? 0
       writeFileSync(saved, text + '\n')
       transcripts.push(text)
