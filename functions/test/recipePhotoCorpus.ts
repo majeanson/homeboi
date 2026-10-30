@@ -159,6 +159,10 @@ export function loadPhotoCorpus(dir = PHOTO_CORPUS_DIR): PhotoEntry[] {
       const p = join(dir, id)
       const meta = JSON.parse(readFileSync(join(p, 'meta.json'), 'utf8')) as PhotoMeta
       const ex = join(p, 'expected.json')
+      // A page added but not yet READ (`add` ran on a day the AI allowance was spent —
+      // chicken-meatballs, 2026-10-30) has no transcript: it waits out of the test, in
+      // the folder, until `read` fills it in.
+      if (!existsSync(join(p, 'page-1.transcript.txt'))) return null
       const transcripts: string[] = []
       for (let i = 1; i <= meta.pages; i++) transcripts.push(readFileSync(join(p, `page-${i}.transcript.txt`), 'utf8'))
       return {
@@ -169,4 +173,5 @@ export function loadPhotoCorpus(dir = PHOTO_CORPUS_DIR): PhotoEntry[] {
         transcripts,
       }
     })
+    .filter((e): e is PhotoEntry => e !== null)
 }

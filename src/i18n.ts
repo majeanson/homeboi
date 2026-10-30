@@ -1538,6 +1538,8 @@ export const FR = {
     reportShakyNone: 'Aucun',
     reportShakyCount: (n: number) => (n === 1 ? '1 mot — surligné dans « Vérifier »' : `${n} mots — surlignés dans « Vérifier »`),
     readFailEngine: 'Le lecteur n’a pas pu se charger (connexion ?). Réessaie, ou colle le texte.',
+    // Every reader was tried and the day's AI allowance is spent — say THAT, not « connexion ».
+    readFailBudget: 'Quota IA du jour épuisé — réessaie demain, ou colle le texte.',
     import: 'Importer un lien',
     importTitle: 'Importer une recette',
     importUrl: 'Coller un lien de recette',

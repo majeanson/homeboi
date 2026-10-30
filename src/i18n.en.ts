@@ -1313,6 +1313,7 @@ export const EN: typeof FR = {
     reportTimingStructure: 'organizing',
     reportShakyNone: 'None',
     reportShakyCount: (n: number) => (n === 1 ? '1 word — highlighted under “Verify”' : `${n} words — highlighted under “Verify”`),
+    readFailBudget: 'Today’s AI allowance is spent — try again tomorrow, or paste the text.',
     readFailEngine: 'The reader couldn’t load (connection?). Try again, or paste the text.',
     import: 'Import a link',
     importTitle: 'Import a recipe',

@@ -741,9 +741,14 @@ export function RecipeForm({
       }
 
       if (!draft || !draftHasContent(draft)) {
-        // The honest failure message: "the reader never loaded" is a connection
-        // problem, not an unreadable card — don't send the cook retaking photos.
-        setReadMsg(engineFailed && !texts.length ? t.recipes.readFailEngine : t.recipes.readFail)
+        // The honest failure message. The day's AI allowance spent (every vision reader
+        // answered « budget ») beats everything else: the cook saw « connexion ? » when
+        // the device engine then failed to fetch its language data on one bar of signal
+        // (Marc, 2026-10-30) — the real reason was the quota. Then: "the reader never
+        // loaded" is a connection problem, not an unreadable card — don't send the cook
+        // retaking photos.
+        const budget = report.readerAttempts.some((a) => a.reason === 'budget')
+        setReadMsg(budget && !texts.length ? t.recipes.readFailBudget : engineFailed && !texts.length ? t.recipes.readFailEngine : t.recipes.readFail)
         return
       }
       // Rescue garbled imperial fractions from the (reliably-read) millilitres: a
