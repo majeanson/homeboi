@@ -849,6 +849,31 @@ describe('parseRecipeText — a numbered card with its badges split over two lin
   })
 })
 
+// The same kind of card as a column break reads it: a step ends at the foot of a column on
+// « Retirer. » (the reader closes the half with a period) and the next column opens on
+// « du feu et laisser reposer… ». The shape read kept « Retirer. » and lost the rest — the
+// remainder went to the notes after the last step, and stood as a step of its own
+// mid-method (Marc, live, 2026-10-30: « Retirer du feu is lost, only Retirer is kept »).
+// And a cookbook that sets its step numbers in a display face gets them read on a line
+// of their own — the method then has no marked boundary and the numbering drifts.
+describe('parseRecipeText — a numbered card whose step breaks across a column', () => {
+  const card = (tail: string[]) => ['Saumon à l’asiatique', 'Préparation 20 minutes · Quantité 4 portions', '4 pavés de saumon', '750 ml (3 tasses) d’eau', ...tail].join('\n')
+  it('a lowercase remainder after a period-closed step finishes it, mid-method', () => {
+    const r = parseRecipeText(card(['1 Mélanger la marinade.', '2 Cuire le riz 18 minutes. Retirer.', 'du feu et laisser reposer 5 minutes.', '3 Servir.']))
+    expect(r.steps).toEqual(['Mélanger la marinade.', 'Cuire le riz 18 minutes. Retirer du feu et laisser reposer 5 minutes.', 'Servir.'])
+  })
+  it('…and after the last numbered step', () => {
+    const r = parseRecipeText(card(['1 Mélanger la marinade.', '2 Cuire le riz 18 minutes. Retirer.', 'du feu et laisser reposer 5 minutes.']))
+    expect(r.steps).toEqual(['Mélanger la marinade.', 'Cuire le riz 18 minutes. Retirer du feu et laisser reposer 5 minutes.'])
+    expect(r.notes).toBeNull()
+  })
+  it('a step number set apart on its own line is its sentence’s', () => {
+    const r = parseRecipeText(card(['1', 'Mélanger la marinade.', '2', 'Cuire le riz 18 minutes.', '3', 'Servir.']))
+    expect(r.ingredients).toEqual(['4 pavés de saumon', '750 ml (3 tasses) d’eau'])
+    expect(r.steps).toEqual(['Mélanger la marinade.', 'Cuire le riz 18 minutes.', 'Servir.'])
+  })
+})
+
 describe('htmlToText', () => {
   it('strips scripts/styles/tags, keeps block boundaries as newlines', () => {
     const html = '<style>.a{}</style><h1>Hi</h1><script>x()</script><p>there\n  friend</p>'

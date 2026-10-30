@@ -379,6 +379,21 @@ describe('selectionLines — a run-on paste is cut into pickable lines', () => {
     // A lowercase label or ingredient is not a continuation.
     expect(selectionLines('Sel et poivre au goût\npour la sauce :\nsel')).toEqual(['Sel et poivre au goût', 'pour la sauce :', 'sel'])
   })
+  // A cookbook sets its step numbers in a display face, apart from the text; a reader
+  // then gives the figure a line of its own (« 1 » / « Dans un contenant… ») and the
+  // step is no longer MARKED: the shape read loses the method's boundary, the numbering
+  // drifts (Marc, live, 2026-10-30). A lone figure before a sentence is that sentence's
+  // number. A page number at the foot (nothing after it) stays what it is.
+  it('glues a step number read on its own line back onto its sentence', () => {
+    expect(selectionLines('Saumon\n1\nDans un contenant, mélanger la marinade.\n2.\nPréchauffer le four.\n42')).toEqual([
+      'Saumon',
+      '1 Dans un contenant, mélanger la marinade.',
+      '2 Préchauffer le four.',
+      '42',
+    ])
+    // …but not onto an ingredient: « 2 » / « oignons hachés » is an amount read apart.
+    expect(selectionLines('2\noignons hachés')).toEqual(['2 oignons hachés'])
+  })
   // Ingredients glued onto one line inside an otherwise formatted text still come apart.
   it('still cuts a packed ingredient line in a formatted text', () => {
     expect(selectionLines("Pouding\n500 ml de cassonade 500 ml d'eau 30 ml de beurre 250 ml de farine\nPréparation\nCuire 35 minutes.")).toEqual([

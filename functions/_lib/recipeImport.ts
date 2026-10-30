@@ -994,7 +994,7 @@ export const NOTE_HEADING =
   /^(?:(?:recipe|chef['’]?s?|cook['’]?s?)\s+)?(?:notes?|remarques?|conseils?|astuces?|tips?|variantes?|bon\s+[àa]\s+savoir|id[ée]es?\s+pour\s+accompagner|pour\s+accompagner|suggestions?\s+d['’]accompagnement|serving\s+suggestions?|suggestions?\s+gourmandes?|trucs?\s+(?:de\s+pro|du\s+chef)|make[- ]ahead(?:\s+and\s+storage)?)\b[^.!?:]{0,30}[:!]?$/i
 // A cookbook page's FOOTER as a photo reads it: a page number with the chapter beside it
 // (« À congeler • 103 », « 104 · À congeler »), or the number alone.
-const PAGE_FOOTER = /^(?:\d{1,3}|\d{1,3}\s*[•·|]\s*\S.{0,24}|\S.{0,24}[•·|]\s*\d{1,3})$/
+export const PAGE_FOOTER = /^(?:\d{1,3}|\d{1,3}\s*[•·|]\s*\S.{0,24}|\S.{0,24}[•·|]\s*\d{1,3})$/
 
 // "Préparation : 20 min", "Cuisson 1 h 30", "Total time: 45 minutes" — the time
 // block most printed recipes start with. Must be checked BEFORE the step
@@ -1025,6 +1025,47 @@ const splitStrip = (l: string): string[] => {
   if (f.length > 1) return f
   const g = l.split(LABEL_SPLIT).map((s) => s.trim()).filter(Boolean)
   return g.length > 1 && g.filter(isMetaFrag).length >= 2 ? g : f
+}
+// A line that is ONLY the card's meta — a time, a yield (with its aside: « Quantité 12
+// portions (24 rondelles congelées) »), or a strip of them (« Préparation 20 minutes ·
+// Quantité 4 portions ») — and never a line of the recipe itself. A yield fact OPENS on its
+// label or its figure: « Cuire les 4 portions de poulet 10 minutes. » names portions and
+// is a step.
+const YIELD_OPENS = /^(?:\d{1,2}(?![\d,.])|quantit[ée]|donne|portions?|servings?|rendement|yield|serves?|pour|personnes?)/i
+export const isMetaLine = (l: string): boolean => {
+  const frags = splitStrip(l)
+  return frags.length > 0 && frags.every((f) => f.length <= 60 && (TIME_LINE.test(f) || (SERVINGS_LINE.test(f) && YIELD_OPENS.test(f))))
+}
+
+// A line that is only a continuation of the previous one — starts lowercase, on a word
+// that never opens an ingredient, a label or a step (« du feu… », « de sésame
+// (facultatif) », « et laisser… »). « pour la sauce », « sel », « en dés » do open lines,
+// so they are not in the set. Shared by the model's view of the text (ai.ts
+// joinContinuations) and the shape read below: a step printed across two columns
+// reaches both as « … Retirer. » / « du feu et laisser reposer… » — the reader closes
+// the first half with a period, and that period goes: the sentence was not over.
+export const CONTINUATION_START =
+  /^(?:d[eu]|des|d['’]|et|puis|à|au|aux|jusqu['’]|avant|après|afin|pendant|ensuite|and|then|of|until|into|the)(?![\p{L}])/iu
+
+// A cookbook sets its step numbers in a display face, apart from the text, and a reader
+// then gives the figure a line of its own (« 3 » / « Dans une casserole… »): the step is
+// no longer MARKED, the method has no boundary and the numbering drifts (Marc, live,
+// 2026-10-30). A lone figure is glued back onto the line it numbers — a sentence (it
+// closes on punctuation) or an amount's noun (it opens lowercase: « 2 » / « oignons
+// hachés »). A page number at the foot (nothing after it, or the next page's title,
+// capitalised and open) stays alone.
+export function joinLoneNumbers(lines: string[]): string[] {
+  const out: string[] = []
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i]
+    const m = /^(\d{1,2})[.)]?$/.exec(l)
+    const next = lines[i + 1]
+    if (m && +m[1] >= 1 && +m[1] <= 30 && next && (/^\p{Ll}/u.test(next) || /[.!?]$/.test(next))) {
+      out.push(`${m[1]} ${next}`)
+      i++
+    } else out.push(l)
+  }
+  return out
 }
 // A website's NAV BAR or breadcrumb transcribed as one line (« RECETTES.QC • Menu •
 // Recherche • Connexion », « Accueil › Plats › Pâtes »): three or more short wordy
@@ -1170,7 +1211,7 @@ export function parsePastedRecipe(text: string): PastedRecipe {
   // NFC first: a decomposed « É » (E + combining acute) never matches `[ée]`, and an
   // « INGRÉDIENTS » heading that misses ING_HEADING falls through to the bare-label
   // rule and comes out as a « ## » section (seen on a live capture, 2026-10-27).
-  const lines = joinBadges(text.normalize('NFC').split(/\r?\n/).map((l) => l.replace(/\s+/g, ' ').trim()))
+  const lines = joinLoneNumbers(joinBadges(text.normalize('NFC').split(/\r?\n/).map((l) => l.replace(/\s+/g, ' ').trim())))
   let mode: 'pre' | 'ing' | 'steps' | 'notes' | 'aside' = 'pre'
   let title: string | null = null
   // Where the title sits and where it ends (the index after its last line, 2 lines when
@@ -1394,9 +1435,11 @@ export function parsePastedRecipe(text: string): PastedRecipe {
       stepLines.push(sec ? makeSectionHeading(sec) : line)
       continue
     }
-    // A note's own numbering (« 1 » on a line of its own, a list marker) is not a note.
+    // A note's own numbering (« 1 » on a line of its own, a list marker) is not a note —
+    // and once joinLoneNumbers has glued that figure onto the note (« 1 Dans cette
+    // recette… »), it comes off again here: a note needs no number, a step does.
     if (!/^\d{1,2}[.)]?$/.test(line)) {
-      noteLines.push(line)
+      noteLines.push(line.replace(/^\d{1,2}\s+(?=[A-ZÀ-ÖŒ«])/, ''))
       noteOrder.push(li)
       noteAt.add(li)
     }
@@ -1459,10 +1502,13 @@ export function parsePastedRecipe(text: string): PastedRecipe {
         if (PAGE_FOOTER.test(line) || NOTE_HEADING.test(line) || ASIDE_HEADING.test(line)) continue
         if (li > lastStepAt) {
           // After the method. A lowercase line right after the last step still finishes
-          // it (a column break); a yield line with its aside (« Quantité 12 portions (24
-          // rondelles congelées) ») was read above; everything else is the notes.
+          // it (a column break) — even past a period the reader put on the cut half, when
+          // it opens on a word that only ever continues (« Retirer. » / « du feu et laisser
+          // reposer… » went to the notes, Marc, live, 2026-10-30); a yield line with its
+          // aside (« Quantité 12 portions (24 rondelles congelées) ») was read above;
+          // everything else is the notes.
           const prevStep = stepLines[stepLines.length - 1]
-          if (/^[a-zà-öœ]/.test(line) && prevStep && !/[.!?:]$/.test(prevStep)) stepLines.push(line)
+          if (/^[a-zà-öœ]/.test(line) && prevStep && (!/[.!?:]$/.test(prevStep) || CONTINUATION_START.test(line))) stepLines.push(line)
           else if (line.length <= 60 && SERVINGS_LINE.test(line)) continue
           // A BADGE or a chapter mark (« SE CONGÈLE », « À congeler »): a few words, no
           // figure, no sentence — not a note. « Se congèle très bien. » is one.
@@ -1521,12 +1567,16 @@ export function parsePastedRecipe(text: string): PastedRecipe {
   // de miel… ») before the shared refinement pass. A numbered marker (« 2. Ajouter »)
   // is never a continuation, and a "## " section marker never merges in either
   // direction — it isn't part of any sentence.
+  // A line that opens on a word that only ever continues (CONTINUATION_START) rejoins
+  // even a period-closed line — the reader closes a column's cut half with a period
+  // (« … Retirer. » / « du feu et laisser reposer 5 minutes. »), and that period goes.
   const merged: string[] = []
   for (const l of stepLines) {
     const prev = merged[merged.length - 1]
-    const open = !!prev && !isSectionHeading(prev) && !isSectionHeading(l) && !/[.!?:]$/.test(prev)
+    const resumes = !!prev && /\.$/.test(prev) && /^[a-zà-öœ]/.test(l) && CONTINUATION_START.test(l)
+    const open = !!prev && !isSectionHeading(prev) && !isSectionHeading(l) && (!/[.!?:]$/.test(prev) || resumes)
     const continues = /^[a-zà-öœ]/.test(l) || (prev !== undefined && prev.length > 40 && /^\d/.test(l) && !/^\d{1,2}\s*[.)]\s/.test(l))
-    if (open && continues) merged[merged.length - 1] = `${prev} ${l}`
+    if (open && continues) merged[merged.length - 1] = `${resumes ? prev.replace(/\.$/, '') : prev} ${l}`
     else merged.push(l)
   }
   // A PARAGRAPH recipe (no headings, no markers) reads one sentence per step — the

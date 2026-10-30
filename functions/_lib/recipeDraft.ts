@@ -1,7 +1,7 @@
 import type { Env } from './env'
 import { type AiAttempt, SELECTION_MODEL, type LineSelection, type Lang, selectRecipeLines, selectionLines } from './ai'
 import { detectLang } from './langDetect'
-import { MAX_NOTES_LEN, MAX_STEPS, NO_TIMES, NOTE_HEADING, type RecipeTimes, STEP_MARKED, parseRecipeText, parseYield, refineSteps, textToMinutes } from './recipeImport'
+import { MAX_NOTES_LEN, MAX_STEPS, NO_TIMES, NOTE_HEADING, PAGE_FOOTER, type RecipeTimes, STEP_MARKED, isMetaLine, parseRecipeText, parseYield, refineSteps, textToMinutes } from './recipeImport'
 import { jsonFragmentsToText, repairRecipeRead, stripTranscriptPreamble } from './recipeRepair'
 import { dropDanglingHeadings, makeSectionHeading } from './recipeSections'
 
@@ -181,7 +181,47 @@ export function draftFromSelection(lines: string[], sel: LineSelection, known: K
     const above = runStart - 1
     if (above >= 0 && !filed.has(above) && isLabel(above)) restoredSections.push({ line: above, before: runStart })
   }
-  const ingredientIdx = restored.length ? [...sel.ingredients, ...restored].sort((a, b) => a - b) : sel.ingredients
+  // Marc, live, 2026-10-30: « it's easy for a user to remove extra text than find missing
+  // one ». Every OTHER line the model filed nowhere is still a line of the page, and it
+  // is kept where the page puts it: between two picked steps it is a step, inside the
+  // picked list an ingredient (an amount-led line between the list and the method too),
+  // anywhere else a note — a stray goes in a tap, a lost line is hunted for an hour.
+  // Only the page's FURNITURE stays out: the header above the title, the time/yield
+  // strip, a label heading nothing, a badge (« SE CONGÈLE »), a page number.
+  const restoredSet = new Set(restored)
+  const ingAll = [...sel.ingredients, ...restored]
+  const stepAll = [...sel.steps, ...numberedNotes]
+  const span = (xs: number[]): [number, number] => (xs.length ? [Math.min(...xs), Math.max(...xs)] : [Infinity, -Infinity])
+  const [firstIng, lastIng] = span(ingAll)
+  const [firstStep, lastStep] = span(stepAll)
+  // A chapter mark or a badge: a few words, no figure, no sentence (the shape read's rule).
+  const isBadge = (l: string) => !/\d/.test(l) && !/[.!?]$/.test(l) && l.split(/\s+/).length <= 3
+  // A label heading nothing: a colon, or a short capitalised line — « Servir chaud avec du
+  // pain » (five words, no period) is a step, so a bare label stays under four words.
+  const isBareLabel = (i: number) => isLabel(i) && (/:\s*$/.test(lines[i]) || lines[i].split(/\s+/).length <= 4)
+  const isFurniture = (i: number) => {
+    const l = lines[i]
+    return (
+      (sel.title != null && i < sel.title) ||
+      l === known.title ||
+      isMetaLine(l) ||
+      PAGE_FOOTER.test(l) ||
+      /^\d{1,2}[.)]?$/.test(l) ||
+      NOTE_HEADING.test(bare(i)) ||
+      isBareLabel(i) ||
+      isBadge(l)
+    )
+  }
+  const strayIng: number[] = []
+  const straySteps: number[] = []
+  const strayNotes: number[] = []
+  for (let i = 0; i < lines.length; i++) {
+    if (filed.has(i) || restoredSet.has(i) || isFurniture(i)) continue
+    if (i > firstStep && i < lastStep) straySteps.push(i)
+    else if ((i > firstIng && i < lastIng) || (i > lastIng && i < firstStep && /^(?:\d|[¼½¾⅓⅔⅛])/.test(bare(i)))) strayIng.push(i)
+    else strayNotes.push(i)
+  }
+  const ingredientIdx = [...ingAll, ...strayIng].sort((a, b) => a - b)
   const ingredients = withParts(ingredientIdx, [...sel.ingredientSections, ...restoredSections])
   // The method's lines as printed — one line, one step; refineSteps only strips a
   // « 1. » the editor numbers itself and splits a run-on past the step cap. 'auto', not
@@ -190,17 +230,19 @@ export function draftFromSelection(lines: string[], sel: LineSelection, known: K
   // lines at sentences (2026-10-30), that paragraph reaches here whole, and one
   // 600-char step is not what the cook meant.
   const steps = dropDanglingHeadings(
-    refineSteps(withParts([...sel.steps, ...numberedNotes].sort((a, b) => a - b), sel.stepSections), { blob: 'auto' }),
+    refineSteps(withParts([...stepAll, ...straySteps].sort((a, b) => a - b), sel.stepSections), { blob: 'auto' }),
   )
   if (!ingredients.length && !steps.length) return null
   const at = (i: number | null) => (i == null ? null : lines[i])
-  // The model's notes, and only those: the text read's notes on a page without
+  // The model's notes — plus the strays above: the text read's notes on a page without
   // headings are a guess (a « SE CONGÈLE » badge, 2026-10-30), and a model told what
-  // notes are chose none for a reason.
+  // notes are chose none for a reason; a printed line it filed nowhere is not a guess.
+  // A bare figure joinLoneNumbers glued onto a note (a site's « 1 » heading its tip) comes
+  // off: a note needs no number — a numbered line that IS a step went to the steps above.
   const notes =
-    noteIdx
-      .filter((i) => !numberedNotes.includes(i))
-      .map(bare)
+    [...noteIdx.filter((i) => !numberedNotes.includes(i)), ...strayNotes]
+      .sort((a, b) => a - b)
+      .map((i) => bare(i).replace(/^\d{1,2}\s+(?=[A-ZÀ-ÖŒ«])/, ''))
       .join('\n')
       .slice(0, MAX_NOTES_LEN) || null
   return {

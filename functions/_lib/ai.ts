@@ -8,7 +8,7 @@ import { AiBudgetError, runModel } from './runModel'
 // never lost and the UI can offer a manual type-picker.
 
 import type { Env } from './env'
-import { stripAiCommentary } from './recipeImport'
+import { CONTINUATION_START, joinLoneNumbers, stripAiCommentary } from './recipeImport'
 
 // AI output language. Mirrors the UI locale (src/i18n.ts `Lang`). The router and
 // meal suggester pick their prompt by this so the household sees AI text in the
@@ -428,13 +428,17 @@ export const SELECTION_SCHEMA = {
 // cut still made inside it is a PACKED ingredient line (several amounts, no sentence).
 // And a line that opens mid-sentence is rejoined to the line before it first: a step
 // printed across two columns (« … Retirer » / « du feu et laisser reposer… ») reaches the
-// model as two lines otherwise, and it keeps the capitalised half.
+// model as two lines otherwise, and it keeps the capitalised half. A step number the
+// reader gave a line of its own (a display-face « 3 ») is glued back onto its sentence
+// first (recipeImport joinLoneNumbers — the shape read does the same).
 export function selectionLines(text: string): string[] {
   const lines = joinContinuations(
-    text
-      .split(/\r?\n/)
-      .map((l) => l.replace(/\s+/g, ' ').trim())
-      .filter(Boolean),
+    joinLoneNumbers(
+      text
+        .split(/\r?\n/)
+        .map((l) => l.replace(/\s+/g, ' ').trim())
+        .filter(Boolean),
+    ),
   )
   const runOn = lines.length <= 3
   // Whole lines, never cut: the draft is built from THESE by index. The prompt shows the
@@ -447,12 +451,9 @@ export function selectionLines(text: string): string[] {
 const PREVIEW_CHARS = 240
 
 // A line that is only a continuation of the previous one — starts lowercase, on a word
-// that never opens an ingredient, a label or a step (« du feu… », « de sésame
-// (facultatif) », « et laisser… »). « pour la sauce », « sel », « en dés » do open lines,
-// so they are not in the set. A trailing period the reader put on the first half
-// (« Retirer. ») goes: the sentence was not over.
-const CONTINUATION_START =
-  /^(?:d[eu]|des|d['’]|et|puis|à|au|aux|jusqu['’]|avant|après|afin|pendant|ensuite|and|then|of|until|into|the)(?![\p{L}])/iu
+// that never opens an ingredient, a label or a step (CONTINUATION_START, recipeImport:
+// the shape read rejoins on the same set). A trailing period the reader put on the first
+// half (« Retirer. ») goes: the sentence was not over.
 export function joinContinuations(lines: string[]): string[] {
   const out: string[] = []
   for (const line of lines) {

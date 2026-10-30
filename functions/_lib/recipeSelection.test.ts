@@ -103,4 +103,32 @@ describe('a model selection vs the text read', () => {
     expect(shape.steps).toEqual(['Mélanger.'])
     expect(shape.notes).toContain('Se conserve de 1 à 2 jours')
   })
+  // Marc, live, 2026-10-30: « it's easy for a user to remove extra text than find missing
+  // one ». A line the model filed NOWHERE — not a bullet, not the title, not meta — is
+  // still a line of the page, and it is kept where the page puts it: between two steps it
+  // is a step, inside the list it is an ingredient, after the method it is a note. Only
+  // the page's furniture stays out: the header above the title, the time/yield strip, a
+  // label heading nothing, a badge (« SE CONGÈLE »), a page number.
+  it('a line the model filed nowhere is kept where the page puts it — never dropped', () => {
+    const page = [
+      'plaques-bols',
+      'Saumon',
+      'Préparation 20 minutes · Quantité 4 portions',
+      '4 pavés de saumon',
+      '750 ml (3 tasses) d’eau',
+      'Pour la marinade :',
+      '1 Mélanger la marinade.',
+      'Laisser mariner 30 minutes au frais.',
+      '2 Préchauffer le four à 205 °C (400 °F).',
+      '3 Servir.',
+      'Se conserve 2 jours au réfrigérateur.',
+      'SE CONGÈLE',
+      '103 · À congeler',
+    ]
+    const s: LineSelection = { title: 1, servings: 2, prep: 2, cook: null, ingredients: [3], steps: [6, 8, 9], notes: [], ingredientSections: [], stepSections: [] }
+    const d = draftFromSelection(page, s, { title: 'Saumon', servings: 4, servingsUnit: 'portions', times: { prep: 20, cook: null, total: null } })!
+    expect(d.ingredients).toEqual(['4 pavés de saumon', '750 ml (3 tasses) d’eau'])
+    expect(d.steps).toEqual(['Mélanger la marinade.', 'Laisser mariner 30 minutes au frais.', 'Préchauffer le four à 205 °C (400 °F).', 'Servir.'])
+    expect(d.notes).toBe('Se conserve 2 jours au réfrigérateur.')
+  })
 })

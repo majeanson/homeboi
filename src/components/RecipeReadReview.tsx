@@ -270,6 +270,14 @@ export function RecipeReadReview({
     [ingredients, steps, lowSet, auditLines, verified],
   )
 
+  // The step's number as the recipe will show it (a section heading has none) — so the
+  // page's « 1, 2, 3, 5 » is checked against a « 1, 2, 3, 4 » here by eye (Marc,
+  // 2026-10-30: « in the verify page we can't see the step numbers »).
+  const stepNos = useMemo(() => {
+    let n = 0
+    return steps.map((v) => (isSectionHeading(v) ? null : ++n))
+  }, [steps])
+
   const editLine = (set: React.Dispatch<React.SetStateAction<string[]>>, i: number, v: string) =>
     set((xs) => xs.map((x, idx) => (idx === i ? v : x)))
 
@@ -295,7 +303,7 @@ export function RecipeReadReview({
 
   // One editable line. A section heading ("## Glaçage") edits its title only; a
   // flagged line gets the warning rail + an "à confirmer" chip.
-  const lineRow = (kind: 'ingredients' | 'steps', value: string, i: number) => {
+  const lineRow = (kind: 'ingredients' | 'steps', value: string, i: number, no: number | null = null) => {
     const set = kind === 'ingredients' ? setIngredients : setSteps
     const sec = isSectionHeading(value)
     const shown = sec ? value.replace(/^##\s?/, '') : value
@@ -305,6 +313,11 @@ export function RecipeReadReview({
     const reason = checked ? null : risky
     return (
       <div key={i} className={'read-review__line' + (reason ? ' is-flagged' : '') + (sec ? ' is-sec' : '')}>
+        {no != null && (
+          <span className="read-review__no mono" aria-hidden="true">
+            {no}
+          </span>
+        )}
         {reason && (
           <span className="read-review__flag" title={reasonTip(reason, t)}>
             <Icon name="warning-bold" size={14} />
@@ -313,7 +326,7 @@ export function RecipeReadReview({
         <GrowingLine
           value={shown}
           onChange={(v) => editLine(set, i, sec ? SECTION_PREFIX + v : v)}
-          ariaLabel={kind === 'ingredients' ? t.recipes.ingredients : t.recipes.steps}
+          ariaLabel={kind === 'ingredients' ? t.recipes.ingredients : no != null ? `${t.recipes.steps} ${no}` : t.recipes.steps}
         />
         {/* « à vérifier » is a TAP: looked at the photo, it's right → « vérifié » (and
             back, if the eye was too quick). */}
@@ -326,8 +339,11 @@ export function RecipeReadReview({
     )
   }
 
-  return (
-    <Modal open onClose={onCancel} className="read-review" title={t.recipes.reviewTitle}>
+  // The hints ride INSIDE the scrolling column, at its head — not pinned above it. The
+  // photo is what stays put (below): a cook checking a line against the page needs the
+  // page in view, not the sentence telling them to check (Marc, 2026-10-30).
+  const hints = (
+    <>
         <p className="read-review__hint mono">
           {fromText ? t.recipes.reviewHintText : flaggedCount > 0 ? t.recipes.reviewHint : t.recipes.reviewHintClean}
         </p>
@@ -357,7 +373,11 @@ export function RecipeReadReview({
           </p>
         ) : null}
         {report?.reader === 'vision' && !fromText ? <p className="read-review__hint mono">{t.recipes.columnsNudge}</p> : null}
+    </>
+  )
 
+  return (
+    <Modal open onClose={onCancel} className="read-review" title={t.recipes.reviewTitle}>
         {/* Vérifier ↔ Rapport: the second face is the pipeline honesty report —
             what read the photo, what organized the text, what was corrected or
             couldn't be traced back. Only offered when the caller built one. */}
@@ -374,9 +394,11 @@ export function RecipeReadReview({
         )}
 
         <div className="read-review__body">
-          {/* The source card — tap to zoom and read a price/fraction up close.
-              Stays visible on BOTH tabs: the report's flagged lines are checked
-              against the same photo. */}
+          {/* The source card — tap to zoom and read a price/fraction up close. PINNED
+              at the top of the scroll on every width (sticky): the lines, the hints and
+              the title scroll under it, so a line is always read with the page in view.
+              Stays on BOTH tabs: the report's flagged lines are checked against the
+              same photo. */}
           {photoUrl ? (
             <div className="read-review__photo">
               <ZoomableImg src={photoUrl} alt={t.recipes.reviewPhotoAlt} />
@@ -394,6 +416,7 @@ export function RecipeReadReview({
           ) : (
           /* The parsed lines, editable in place against the photo. */
           <div className="read-review__fields">
+            {hints}
             <input
               className="input read-review__title"
               value={title}
@@ -452,7 +475,7 @@ export function RecipeReadReview({
               <Icon name="pencil-simple-bold" size={16} color="var(--berry-deep)" /> {t.recipes.steps}
             </h3>
             {steps.length ? (
-              steps.map((v, i) => lineRow('steps', v, i))
+              steps.map((v, i) => lineRow('steps', v, i, stepNos[i]))
             ) : (
               <p className="read-review__empty mono">{t.recipes.reviewNone}</p>
             )}

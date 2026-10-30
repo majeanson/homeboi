@@ -1052,8 +1052,9 @@
 /* The OCR read-review rides the shared <Modal> (.kit-modal) chrome — backdrop, ✕
    close, focus-trap, Esc — so the scrim/card/bar are no longer hand-rolled. It only
    overrides the modal here for its own shape: a WIDE two-pane (photo | fields) card,
-   and a pinned header/hint/footer with the body scrolling (kit-modal's default is a
-   whole-card scroll, which would let the confirm footer scroll away). */
+   and a pinned header/tabs/footer with the body scrolling (kit-modal's default is a
+   whole-card scroll, which would let the confirm footer scroll away). The hints are
+   NOT pinned (they scroll at the head of the lines) — the PHOTO is, see below. */
 .kit-modal.read-review {
   width: min(96vw, 56rem);
   max-width: 56rem;
@@ -1078,6 +1079,27 @@
   background: var(--paper-deep);
   border-bottom: 1px solid var(--line);
 }
+/* …inside the lines column (where they live now), each hint is a soft card. */
+.read-review__fields .read-review__hint {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+}
+/* The PHOTO is what stays put — on a phone too (Marc, 2026-10-30: « sticky the photo so
+   we can compare on both screens easily — top photo, bottom verification, independent »).
+   It pins to the top of the scrolling body on its own paper, bleeding to the body's
+   edges; the hints, the title and the lines scroll under it. Before, the HINTS were the
+   pinned part and the photo scrolled away — backwards for checking a line against the
+   page. */
+.read-review__photo {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: -0.9rem -1rem 0;
+  padding: 0.6rem 1rem 0.5rem;
+  background: var(--paper);
+  box-shadow: 0 8px 12px -10px rgba(0, 0, 0, 0.35);
+}
 .read-review__body {
   flex: 1 1 auto;
   min-height: 0;
@@ -1096,18 +1118,23 @@
     align-items: flex-start;
   }
   .read-review__photo {
-    position: sticky;
-    top: 0;
     flex: 0 0 42%;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
   }
   .read-review__fields {
     flex: 1 1 auto;
     min-width: 0;
   }
+  .read-review__photo img {
+    max-height: 60vh;
+  }
 }
+/* A third of the phone for the page, the rest for the lines under it. */
 .read-review__photo img {
   width: 100%;
-  max-height: 60vh;
+  max-height: 34vh;
   object-fit: contain;
   border-radius: var(--radius-md);
   background: var(--paper-deep);
@@ -1172,6 +1199,17 @@
 .read-review__flag,
 .read-review__chiptag {
   margin-top: 0.45rem; /* optically centre on the memo's first text line */
+}
+/* The step's number, as the recipe will show it — the page's own numbering is checked
+   against it by eye (a « 1, 2, 3, 5 » on the page reads « 1, 2, 3, 4 » here). */
+.read-review__no {
+  flex: none;
+  min-width: 1.4rem;
+  margin-top: 0.55rem;
+  text-align: right;
+  color: var(--ink-faint);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
 }
 .read-review__line.is-sec .input {
   font-weight: 700;
