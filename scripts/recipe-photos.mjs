@@ -212,6 +212,24 @@ function printBakeoff(label, rows, usd) {
 // (_lib/ai partsInput: content parts, a data: URL), scored like read-claude. Needs
 // CF_API_TOKEN (Workers AI read) + CF_ACCOUNT_ID in .env. Mistral answers first in prod,
 // so Gemma 4 — second in the chain — had never had a turn on a real photo (2026-10-30).
+// read-cf --list: the account's vision-capable models with their exact ids — the roster of
+// the bake-off (2026-10-30: gemma-4, qwen3.8, glm-5.3-flash, deepseek-v4.1-flash,
+// llama-4-scout, kimi-k2.6, moondream3.1; mistral-small-3.1 as the baseline).
+async function listCfModels() {
+  const env = dotenv()
+  if (!env.CF_API_TOKEN || !env.CF_ACCOUNT_ID) throw new Error('need CF_API_TOKEN and CF_ACCOUNT_ID in .env')
+  for (let page = 1; page <= 5; page++) {
+    const r = await fetch(`https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/ai/models/search?per_page=100&page=${page}`, {
+      headers: { authorization: `Bearer ${env.CF_API_TOKEN}` },
+    })
+    const j = await r.json().catch(() => ({}))
+    if (!r.ok || !j.success) throw new Error(`models: ${r.status} ${JSON.stringify(j.errors ?? j).slice(0, 300)}`)
+    const vision = (j.result ?? []).filter((m) => /vision|image-to-text/i.test(JSON.stringify(m.properties ?? m.task ?? '')) || /vision|image/i.test(m.task?.name ?? ''))
+    for (const m of vision) console.log(`${m.name}  (${m.task?.name ?? '?'})`)
+    if ((j.result ?? []).length < 100) break
+  }
+}
+
 async function readCf(id, model = '@cf/google/gemma-4-26b-a4b-it', run) {
   const env = dotenv()
   if (!env.CF_API_TOKEN || !env.CF_ACCOUNT_ID) throw new Error('need CF_API_TOKEN and CF_ACCOUNT_ID in .env')
@@ -239,15 +257,21 @@ async function readCf(id, model = '@cf/google/gemma-4-26b-a4b-it', run) {
         continue
       }
       const t0 = Date.now()
-      const dataUrl = `data:image/jpeg;base64,${readFileSync(photo).toString('base64')}`
-      const body = {
-        messages: [{ role: 'user', content: [{ type: 'text', text: prompt }, { type: 'image_url', image_url: { url: dataUrl } }] }],
-        max_tokens: 4000,
-        temperature: 0,
-        // The thinking switches the chain already uses (Gemma) / the models document.
-        ...(/gemma/.test(model) ? { chat_template_kwargs: { enable_thinking: false } } : {}),
-        ...(/qwen3\.8|deepseek-v4/.test(model) ? { reasoning_effort: 'none' } : {}),
-      }
+      const bytes = readFileSync(photo)
+      // Two input shapes on Workers AI: the chat models take content parts with a data:
+      // URL (what _lib/ai partsInput sends); the Image-to-Text models (moondream, LLaVA,
+      // Llama 3.2 Vision) take the image as a byte array beside a prompt.
+      const imageToText = /moondream|llava|llama-3\.2-11b-vision|uform/.test(model)
+      const body = imageToText
+        ? { image: [...bytes], prompt, max_tokens: 4000 }
+        : {
+            messages: [{ role: 'user', content: [{ type: 'text', text: prompt }, { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${bytes.toString('base64')}` } }] }],
+            max_tokens: 4000,
+            temperature: 0,
+            // The thinking switches the chain already uses (Gemma) / the models document.
+            ...(/gemma/.test(model) ? { chat_template_kwargs: { enable_thinking: false } } : {}),
+            ...(/qwen3\.8|deepseek-v4/.test(model) ? { reasoning_effort: 'none' } : {}),
+          }
       const r = await fetch(`https://api.cloudflare.com/client/v4/accounts/${env.CF_ACCOUNT_ID}/ai/run/${model}`, {
         method: 'POST',
         headers: { authorization: `Bearer ${env.CF_API_TOKEN}`, 'content-type': 'application/json' },
@@ -261,7 +285,7 @@ async function readCf(id, model = '@cf/google/gemma-4-26b-a4b-it', run) {
         continue
       }
       const res = j.result ?? {}
-      const text = clean(typeof res.response === 'string' ? res.response : (res.choices?.[0]?.message?.content ?? ''))
+      const text = clean(typeof res.response === 'string' ? res.response : typeof res.description === 'string' ? res.description : (res.choices?.[0]?.message?.content ?? ''))
       neurons += res.usage?.total_tokens ?? 0
       writeFileSync(saved, text + '\n')
       transcripts.push(text)
@@ -366,6 +390,7 @@ const opt = (name) => {
   return i >= 0 ? process.argv[i + 1] : undefined
 }
 if (cmd === 'read-claude') await readClaude(arg?.startsWith('--') ? undefined : arg, opt('--model'), opt('--effort'), opt('--run'))
+else if (cmd === 'read-cf' && process.argv.includes('--list')) await listCfModels()
 else if (cmd === 'read-cf') await readCf(arg?.startsWith('--') ? undefined : arg, opt('--model'), opt('--run'))
 else if (cmd === 'read') await read(arg)
 else if (cmd === 'propose') await propose(arg)
