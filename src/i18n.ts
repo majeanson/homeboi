@@ -1495,6 +1495,7 @@ export const FR = {
     // corrected or flagged — honesty about the pipeline, in plain words.
     reviewTabReport: 'Rapport',
     reviewPhotoToggle: 'Photo',
+    reviewPhotoN: (n: number) => `Photo ${n}`,
     reportReader: 'Lecture de la photo',
     reportReaderDevice: 'Sur l’appareil (Tesseract) — rien n’a quitté la maison',
     reportReaderCloud: 'Haute précision (nuage)',

@@ -199,7 +199,7 @@ function GrowingLine({
 }
 
 export function RecipeReadReview({
-  photoUrl,
+  photoUrls = [],
   sourceText,
   draft,
   lowConfidenceWords,
@@ -210,8 +210,9 @@ export function RecipeReadReview({
   onRetry,
   retrying,
 }: {
-  /** The photo that was read — or null when the source is page text. */
-  photoUrl?: string | null
+  /** The photo(s) that were read, in page order — empty when the source is page text.
+   *  Several pages = one chip each (« Photo 1 », « Photo 2 »…) above the loupe. */
+  photoUrls?: string[]
   /** The page text the AI organised (link / paste path), shown when there is no photo. */
   sourceText?: string | null
   draft: ReadReviewDraft
@@ -229,9 +230,10 @@ export function RecipeReadReview({
   const t = useT()
   const [tab, setTab] = useState<'verify' | 'report'>('verify')
   const [hint, setHint] = useState('')
-  // The page can be folded away for the lines' sake, and brought back.
-  const [showPhoto, setShowPhoto] = useState(true)
-  const fromText = !photoUrl
+  // WHICH page is under the loupe (null = folded away for the lines' sake). With
+  // several photos the chips pick one; tapping the picked one folds it.
+  const [shown, setShown] = useState<number | null>(photoUrls.length ? 0 : null)
+  const fromText = !photoUrls.length
 
   const [title, setTitle] = useState(draft.title ?? '')
   const [ingredients, setIngredients] = useState<string[]>(draft.ingredients.length ? draft.ingredients : [])
@@ -385,13 +387,16 @@ export function RecipeReadReview({
             corrected or couldn't be traced back) as a toggle, not a tab row that took a
             whole band of a phone's height for two words (Marc, 2026-10-30). Only
             offered when the caller built one. */}
-        {(photoUrl || report) && (
+        {(photoUrls.length > 0 || report) && (
           <Cluster className="read-review__tools">
-            {photoUrl && (
-              <Chip selected={showPhoto} onClick={() => setShowPhoto((v) => !v)} icon="image-square-bold">
-                {t.recipes.reviewPhotoToggle}
+            {/* One chip per photo read (« Photo 1 », « Photo 2 »…; just « Photo » for
+                one); the picked one shows under the loupe, tapping it again folds the
+                page away. « Rapport » comes last (Marc, 2026-10-30). */}
+            {photoUrls.map((_, i) => (
+              <Chip key={i} selected={shown === i} onClick={() => setShown((s) => (s === i ? null : i))} icon="image-square-bold">
+                {photoUrls.length > 1 ? t.recipes.reviewPhotoN(i + 1) : t.recipes.reviewPhotoToggle}
               </Chip>
-            )}
+            ))}
             {report && (
               <Chip selected={tab === 'report'} onClick={() => setTab((x) => (x === 'report' ? 'verify' : 'report'))}>
                 {t.recipes.reviewTabReport}
@@ -406,16 +411,16 @@ export function RecipeReadReview({
               the title scroll under it, so a line is always read with the page in view.
               Stays on BOTH tabs: the report's flagged lines are checked against the
               same photo. */}
-          {photoUrl ? (
+          {photoUrls.length ? (
             /* The page under a LOUPE, a third of the phone high — not the whole photo at
                full width, which left no room for the lines (Marc, 2026-10-30: « a
                zoomed-in picture we can drag up, down, left, right, and show where we are
-               in the bigger picture »): the shared PanZoom opened at 2×, top-left first,
-               with its minimap in the corner. */
-            showPhoto && (
+               in the bigger picture »): the shared PanZoom opened at 2×, top centred,
+               with its minimap in the corner. Keyed by page so each opens at its top. */
+            shown != null && (
               <div className="read-review__photo">
-                <PanZoom className="read-review__mag" ariaLabel={t.recipes.reviewPhotoAlt} initialScale={2} minimap={<img className="read-review__mag-img" src={photoUrl} alt="" draggable={false} />}>
-                  <img className="read-review__mag-img" src={photoUrl} alt={t.recipes.reviewPhotoAlt} draggable={false} />
+                <PanZoom key={shown} className="read-review__mag" ariaLabel={t.recipes.reviewPhotoAlt} initialScale={2} minimap={<img className="read-review__mag-img" src={photoUrls[shown]} alt="" draggable={false} />}>
+                  <img className="read-review__mag-img" src={photoUrls[shown]} alt={t.recipes.reviewPhotoAlt} draggable={false} />
                 </PanZoom>
               </div>
             )

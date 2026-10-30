@@ -3452,7 +3452,7 @@ export function DevKit() {
             </button>
             {readReviewTextOpen && (
               <RecipeReadReview
-                photoUrl={null}
+                photoUrls={[]}
                 sourceText={
                   'Pouding chômeur\n\nIngrédients\n500 ml de cassonade\n500 ml d’eau\n250 ml de farine\n\nPréparation\nPréchauffer le four à 180 °C.\nPorter la cassonade et l’eau à ébullition.\nVerser sur la pâte et cuire 40 minutes.\n\nVous aimerez aussi'
                 }
@@ -3488,7 +3488,8 @@ export function DevKit() {
             )}
             {readReviewOpen && (
               <RecipeReadReview
-                photoUrl={SAMPLE_RECIPE_PHOTO}
+                // Two pages of the same card: shows the per-photo chips (« Photo 1 », « Photo 2 »).
+                photoUrls={[SAMPLE_RECIPE_PHOTO, SAMPLE_RECIPE_PHOTO]}
                 draft={{
                   title: 'Biscuits à l’avoine',
                   // One specimen line per flag reason (risky-only flagging): a

@@ -135,8 +135,14 @@ export function PanZoom({
     if (pointers.current.size >= 2 && pinch.current) {
       const [a, b] = [...pointers.current.values()]
       const s1 = clampScale(pinch.current.scale * (Math.hypot(a.x - b.x, a.y - b.y) / pinch.current.dist))
-      tf.current.tx = pinch.current.cx - (pinch.current.cx - pinch.current.tx) * (s1 / pinch.current.scale)
-      tf.current.ty = pinch.current.cy - (pinch.current.cy - pinch.current.ty) * (s1 / pinch.current.scale)
+      // Scale about the pinch's starting midpoint, THEN follow the midpoint as the two
+      // fingers travel — so two fingers also MOVE the content, with or without a
+      // spread (Marc, 2026-10-30: « make sure we can two-finger move the picture »).
+      const r = surfaceRef.current!.getBoundingClientRect()
+      const mx = (a.x + b.x) / 2 - r.left
+      const my = (a.y + b.y) / 2 - r.top
+      tf.current.tx = pinch.current.cx - (pinch.current.cx - pinch.current.tx) * (s1 / pinch.current.scale) + (mx - pinch.current.cx)
+      tf.current.ty = pinch.current.cy - (pinch.current.cy - pinch.current.ty) * (s1 / pinch.current.scale) + (my - pinch.current.cy)
       tf.current.scale = s1
       apply()
     } else if (pointers.current.size === 1 && pan.current && tf.current.scale > 1) {

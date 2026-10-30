@@ -186,7 +186,8 @@ export function RecipeForm({
   // import's own picture + link ride along in `image`/`source` until confirmed.
   const [readReview, setReadReview] = useState<{
     draft: ReadReviewDraft
-    photoUrl: string | null
+    // Every page read, in order (object URLs, revoked on close) — empty for page text.
+    photoUrls: string[]
     sourceText?: string | null
     sourceFile: File | null
     lowConfidenceWords: string[]
@@ -756,7 +757,7 @@ export function RecipeForm({
       // cook glances at the photo, confirms the flagged numbers, THEN it lands.
       setReadReview({
         draft,
-        photoUrl: URL.createObjectURL(files[0]),
+        photoUrls: files.map((f) => URL.createObjectURL(f)),
         sourceFile: files[0],
         lowConfidenceWords: [...lowWords],
         report,
@@ -811,7 +812,7 @@ export function RecipeForm({
 
   function closeReadReview() {
     setReadReview((r) => {
-      if (r?.photoUrl) URL.revokeObjectURL(r.photoUrl)
+      for (const u of r?.photoUrls ?? []) URL.revokeObjectURL(u)
       return null
     })
   }
@@ -875,7 +876,7 @@ export function RecipeForm({
         // A clean read lands directly, below.
         setReadReview({
           draft: r,
-          photoUrl: null,
+          photoUrls: [],
           sourceText: r.transcript ?? null,
           sourceFile: null,
           lowConfidenceWords: [],
@@ -1713,7 +1714,7 @@ export function RecipeForm({
       {readReview && (
         <RecipeReadReview
           key={reviewRun}
-          photoUrl={readReview.photoUrl}
+          photoUrls={readReview.photoUrls}
           sourceText={readReview.sourceText}
           draft={readReview.draft}
           lowConfidenceWords={readReview.lowConfidenceWords}

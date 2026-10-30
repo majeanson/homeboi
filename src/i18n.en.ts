@@ -1277,6 +1277,7 @@ export const EN: typeof FR = {
     auditNoQty: 'Most ingredients have no amount.',
     reviewTabReport: 'Report',
     reviewPhotoToggle: 'Photo',
+    reviewPhotoN: (n: number) => `Photo ${n}`,
     reportReader: 'Photo reading',
     reportReaderDevice: 'On-device (Tesseract) — nothing left the house',
     reportReaderCloud: 'High accuracy (cloud)',
