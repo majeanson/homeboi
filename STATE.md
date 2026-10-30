@@ -1,4 +1,4 @@
-﻿# STATE.md — where Babillard is, what's left, and how we've been working
+# STATE.md — where Babillard is, what's left, and how we've been working
 
 > **What this file is.** The single front door. Nine other root markdown files hold real,
 > careful detail; none of them answers "what should I do next?", which is why that

@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useRef, useState, type TouchEvent as ReactTouchEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type TouchEvent as ReactTouchEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { useT, useLang } from '../i18n'
 import { useAudience } from '../lib/audience'
