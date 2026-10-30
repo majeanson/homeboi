@@ -1278,6 +1278,7 @@ export const EN: typeof FR = {
     reviewTabReport: 'Report',
     reviewPhotoToggle: 'Photo',
     reviewPhotoN: (n: number) => `Photo ${n}`,
+    versionBase: 'Recipe',
     reportReader: 'Photo reading',
     reportReaderDevice: 'On-device (Tesseract) — nothing left the house',
     reportReaderCloud: 'High accuracy (cloud)',

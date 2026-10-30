@@ -13,7 +13,8 @@ import { formatDuration } from '../lib/duration'
 import { scaleIngredients } from '../lib/scale'
 import { useRecipeToRoutine } from '../lib/recipeToRoutine'
 import { ingredientsForStep, stepSentences, stripStepOrdinal } from '../lib/recipeSteps'
-import { groupSections } from '../lib/recipeSections'
+import { applyVersion, groupSections, recipeVersions, versionLabel } from '../lib/recipeSections'
+import { Cluster } from './Layout'
 import { type MealSlot } from '../lib/mealSlots'
 import { useMealPrefs } from '../lib/mealPrefs'
 import { Loading } from './Fallback'
@@ -146,10 +147,13 @@ export function RecipeSheet({
     .filter((p): p is [string, number] => !!p[1])
     .map(([label, m]) => `${label} ${formatDuration(m * 60)}`)
   const MULTS: [string, number][] = [['½', 0.5], ['1', 1], ['2', 2], ['3', 3]]
-  const scaledIngredients = useMemo(
-    () => scaleIngredients(recipe.ingredients, factor),
-    [recipe.ingredients, factor],
-  )
+  // A recipe with an ALTERNATIVE (« pour une version bol » — lib/recipeSections
+  // recipeVersions): a switch above the lists, the base recipe by default; a picked
+  // version adds its ingredients and shows ITS steps instead (Marc, 2026-10-30).
+  const versions = useMemo(() => recipeVersions(recipe.ingredients, recipe.steps), [recipe.ingredients, recipe.steps])
+  const [version, setVersion] = useState<string | null>(null)
+  const view = useMemo(() => applyVersion(recipe.ingredients, recipe.steps, version), [recipe.ingredients, recipe.steps, version])
+  const scaledIngredients = useMemo(() => scaleIngredients(view.ingredients, factor), [view.ingredients, factor])
   // Sectioned display ("Biscuits" / "Glaçage"): inline "## " markers group the
   // flat lines; a recipe without markers is one untitled group, unchanged. Step
   // numbering runs ACROSS sections (each group's <ol> picks up where the last
@@ -157,12 +161,24 @@ export function RecipeSheet({
   const ingGroups = useMemo(() => groupSections(scaledIngredients), [scaledIngredients])
   const stepGroups = useMemo(() => {
     let n = 1
-    return groupSections(recipe.steps).map((g) => {
+    return groupSections(view.steps).map((g) => {
       const start = n
       n += g.items.length
       return { ...g, start }
     })
-  }, [recipe.steps])
+  }, [view.steps])
+  const versionRow = versions.length ? (
+    <Cluster className="recipe-versions">
+      <Chip selected={version == null} onClick={() => setVersion(null)}>
+        {t.recipes.versionBase}
+      </Chip>
+      {versions.map((v) => (
+        <Chip key={v.title} selected={version === v.title} onClick={() => setVersion(v.title)}>
+          {versionLabel(v.title)}
+        </Chip>
+      ))}
+    </Cluster>
+  ) : null
   // The Original view groups too (the markers are part of the snapshot) —
   // computed inline, it's a handful of lines.
   const origIngGroups = groupSections(origView.ingredients)
@@ -381,6 +397,7 @@ export function RecipeSheet({
             </div>
           )}
 
+          {versionRow}
           {recipe.ingredients.length > 0 && (
             <>
               <h3 className="recipe-sec-h">{t.recipes.ingredients}</h3>

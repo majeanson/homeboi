@@ -1496,6 +1496,9 @@ export const FR = {
     reviewTabReport: 'Rapport',
     reviewPhotoToggle: 'Photo',
     reviewPhotoN: (n: number) => `Photo ${n}`,
+    // The version switch on a recipe that carries an alternative (« version bol ») —
+    // the base recipe's chip; each version's chip is the page's own label.
+    versionBase: 'Recette',
     reportReader: 'Lecture de la photo',
     reportReaderDevice: 'Sur l’appareil (Tesseract) — rien n’a quitté la maison',
     reportReaderCloud: 'Haute précision (nuage)',

@@ -992,6 +992,13 @@ const STEP_HEADING =
 // a line of the recipe, not a heading.
 export const NOTE_HEADING =
   /^(?:(?:recipe|chef['’]?s?|cook['’]?s?)\s+)?(?:notes?|remarques?|conseils?|astuces?|tips?|variantes?|bon\s+[àa]\s+savoir|id[ée]es?\s+pour\s+accompagner|pour\s+accompagner|suggestions?\s+d['’]accompagnement|serving\s+suggestions?|suggestions?\s+gourmandes?|trucs?\s+(?:de\s+pro|du\s+chef)|make[- ]ahead(?:\s+and\s+storage)?)\b[^.!?:]{0,30}[:!]?$/i
+// A page's ALTERNATIVE — « pour une version bol », « Variante », « Version au barbecue »,
+// « Bowl version » — the label that opens a second way of making the same dish: its
+// own ingredients (sometimes in parts) and its own method. Everything printed after it
+// belongs to that version (recipeDraft: a matched pair of « ## » sections the sheet
+// shows behind a switch, 2026-10-30). Never a note heading (« Variantes » heads tips).
+export const VERSION_LABEL =
+  /^(?:pour\s+(?:une?|la|le)\s+)?(?:version|variante|autre\s+(?:version|façon|facon))\b[^.!?]{0,40}:?$|^[^.!?:]{0,25}\bversion\s*:?$/i
 // A cookbook page's FOOTER as a photo reads it: a page number with the chapter beside it
 // (« À congeler • 103 », « 104 · À congeler »), or the number alone.
 export const PAGE_FOOTER = /^(?:\d{1,3}|\d{1,3}\s*[•·|]\s*\S.{0,24}|\S.{0,24}[•·|]\s*\d{1,3})$/

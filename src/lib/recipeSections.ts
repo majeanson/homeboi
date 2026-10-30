@@ -60,3 +60,101 @@ export function groupSections(lines: string[]): RecipeSection[] {
   if (cur.items.length || cur.title) groups.push(cur)
   return groups
 }
+
+// ── Versions ─────────────────────────────────────────────────────────────────
+// A page's ALTERNATIVE — « pour une version bol », « Variante », « Version au barbecue »
+// (Marc, 2026-10-30: « sometimes it adds the ingredients in the ingredient list, not as
+// a full "this is another way if you want" thing ») — rides the same two flat lists, no
+// new table: a VERSION is a step section titled T, matched by ingredient sections titled
+// T or « T — part » (the import composes those from the page's part labels printed under
+// the version's label). A section present in ONE list only is a part (« Pour la
+// sauce », « Cuisson »), never a version. The sheet and cook mode show a version behind
+// a switch: the base recipe plus the version's ingredients, and the version's steps
+// INSTEAD of the base's — a « version bol » is a whole other way to the table.
+export interface RecipeVersion {
+  title: string
+  // The version's own lines, its parts as plain « ## part » headings.
+  ingredients: string[]
+  steps: string[]
+}
+const VERSION_SEP = ' — '
+const key = (t: string) => t.trim().toLowerCase()
+// « T — part » → T ; « T » → T.
+const versionOf = (title: string) => {
+  const i = title.indexOf(VERSION_SEP)
+  return i < 0 ? title : title.slice(0, i)
+}
+const partOf = (title: string): string | null => {
+  const i = title.indexOf(VERSION_SEP)
+  return i < 0 ? null : title.slice(i + VERSION_SEP.length)
+}
+const flatten = (groups: RecipeSection[]): string[] => groups.flatMap((g) => [...(g.title ? [makeSectionHeading(g.title)] : []), ...g.items.map((i) => i.text)])
+
+export function recipeVersions(ingredients: string[], steps: string[]): RecipeVersion[] {
+  const ingGroups = groupSections(ingredients)
+  const stepGroups = groupSections(steps)
+  const ingKeys = new Set(ingGroups.filter((g) => g.title).map((g) => key(versionOf(g.title!))))
+  const out: RecipeVersion[] = []
+  const seen = new Set<string>()
+  for (const g of stepGroups) {
+    if (!g.title) continue
+    const title = versionOf(g.title)
+    const k = key(title)
+    if (seen.has(k) || !ingKeys.has(k)) continue
+    seen.add(k)
+    const lines = (groups: RecipeSection[]) =>
+      groups
+        .filter((x) => x.title && key(versionOf(x.title)) === k)
+        .flatMap((x) => {
+          const part = partOf(x.title!)
+          return [...(part ? [makeSectionHeading(part)] : []), ...x.items.map((i) => i.text)]
+        })
+    out.push({ title, ingredients: lines(ingGroups), steps: lines(stepGroups) })
+  }
+  return out
+}
+
+// The lists a cook reads for a pick: `null` = the base recipe (every line outside the
+// versions); a version = base ingredients + its own, and ITS steps only. Lists without
+// a version come back untouched.
+export function applyVersion(ingredients: string[], steps: string[], pick: string | null): { ingredients: string[]; steps: string[] } {
+  const versions = recipeVersions(ingredients, steps)
+  if (!versions.length) return { ingredients, steps }
+  const keys = new Set(versions.map((v) => key(v.title)))
+  const isVersion = (title: string | null) => !!title && keys.has(key(versionOf(title)))
+  const baseIng = flatten(groupSections(ingredients).filter((g) => !isVersion(g.title)))
+  const baseSteps = flatten(groupSections(steps).filter((g) => !isVersion(g.title)))
+  const v = pick == null ? null : (versions.find((x) => key(x.title) === key(pick)) ?? null)
+  if (!v) return { ingredients: baseIng, steps: baseSteps }
+  return { ingredients: [...baseIng, ...v.ingredients], steps: v.steps }
+}
+
+// The same pick over DISPLAY groups, keeping every item's original `idx` (cook mode's
+// gather checklist and the step photos are keyed by it): base groups stay, a picked
+// version's groups show under their part name (its own heading is the switch), and
+// with a version picked the base's step groups go.
+export function versionGroups(groups: RecipeSection[], kind: 'ingredients' | 'steps', versions: RecipeVersion[], pick: string | null): RecipeSection[] {
+  if (!versions.length) return groups
+  const keys = new Set(versions.map((v) => key(v.title)))
+  const pk = pick == null ? null : key(pick)
+  return groups.flatMap((g) => {
+    const vk = g.title ? key(versionOf(g.title)) : null
+    if (vk == null || !keys.has(vk)) return kind === 'steps' && pk != null ? [] : [g]
+    if (vk !== pk) return []
+    return [{ ...g, title: partOf(g.title!) }]
+  })
+}
+
+// The switch's word for a version: the page's label without its preamble (« pour une
+// version bol » → « Bol », « Version au barbecue » → « Au barbecue », « Bowl version » →
+// « Bowl »); a bare « Variante » keeps its name.
+export const versionLabel = (title: string): string => {
+  const s = title
+    .trim()
+    .replace(/^(?:pour\s+(?:une?|la|le)\s+)?(?:version|variante)\s*/i, '')
+    .replace(/\s*(?:version|variante)\s*$/i, '')
+    .replace(/^[:\-–—\s]+|[:\s]+$/g, '')
+    .trim()
+  const w = s || title.trim()
+  return w.charAt(0).toUpperCase() + w.slice(1)
+}

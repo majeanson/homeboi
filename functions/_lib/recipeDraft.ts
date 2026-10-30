@@ -1,7 +1,7 @@
 import type { Env } from './env'
 import { type AiAttempt, SELECTION_MODEL, type LineSelection, type Lang, selectRecipeLines, selectionLines } from './ai'
 import { detectLang } from './langDetect'
-import { MAX_NOTES_LEN, MAX_STEPS, NO_TIMES, NOTE_HEADING, PAGE_FOOTER, type RecipeTimes, STEP_MARKED, isMetaLine, parseRecipeText, parseYield, refineSteps, textToMinutes } from './recipeImport'
+import { MAX_NOTES_LEN, MAX_STEPS, NO_TIMES, NOTE_HEADING, PAGE_FOOTER, type RecipeTimes, STEP_MARKED, VERSION_LABEL, isMetaLine, parseRecipeText, parseYield, refineSteps, textToMinutes } from './recipeImport'
 import { jsonFragmentsToText, repairRecipeRead, stripTranscriptPreamble } from './recipeRepair'
 import { dropDanglingHeadings, makeSectionHeading } from './recipeSections'
 
@@ -136,17 +136,47 @@ export function draftFromSelection(lines: string[], sel: LineSelection, known: K
   // sits, before the first picked line after it — not where the model's `before` says
   // (« Pour la marinade » was put above the whole list, 2026-10-30). A label with no
   // picked line after it heads nothing and is dropped.
-  const withParts = (items: number[], parts: { line: number; before: number }[]): string[] => {
+  type Part = { line: number; before: number; title?: string }
+  const withParts = (items: number[], parts: Part[]): string[] => {
     const pending = parts
-      .map((p) => ({ line: p.line, before: items.find((i) => i > p.line) ?? -1 }))
+      .map((p) => ({ line: p.line, before: items.find((i) => i > p.line) ?? -1, title: p.title ?? label(p.line) }))
       .filter((p) => p.before >= 0)
       .sort((a, b) => a.before - b.before)
     const out: string[] = []
     for (const i of items) {
-      while (pending.length && pending[0].before <= i) out.push(makeSectionHeading(label(pending.shift()!.line)))
+      while (pending.length && pending[0].before <= i) out.push(makeSectionHeading(pending.shift()!.title))
       out.push(bare(i))
     }
     return dropDanglingHeadings(out)
+  }
+  // A page's ALTERNATIVE (« pour une version bol », « Variante »): the label opens a
+  // second way of making the dish, and everything printed AFTER it — up to the next such
+  // label — is that version's: its part labels become « ## <version> — <part> » sections
+  // in both lists, and a version with no part label of its own heads its lines itself.
+  // The client (lib/recipeSections recipeVersions) reads the matched pair back and shows
+  // it behind a switch (Marc, 2026-10-30: « a full "this is another way if you want"
+  // thing »). The label is structure: never a line, never a stray note.
+  const versionAt = lines.map((l, i) => (VERSION_LABEL.test(l.trim()) && !STEP_MARKED.test(l) ? i : -1)).filter((i) => i >= 0)
+  const versionSet = new Set(versionAt)
+  const versionOf = (i: number): { line: number; title: string } | null => {
+    let v: number | null = null
+    for (const a of versionAt) if (a < i) v = a
+    return v == null ? null : { line: v, title: label(v) }
+  }
+  // Sections printed under a version carry its name; a version whose first lines come
+  // before any part label gets a section of its own at the label.
+  const versioned = (items: number[], parts: Part[]): Part[] => {
+    const out: Part[] = parts.filter((p) => !versionSet.has(p.line)).map((p) => {
+      const v = versionOf(p.line)
+      return v ? { ...p, title: `${v.title} — ${label(p.line)}` } : p
+    })
+    for (const v of versionAt) {
+      const first = items.find((i) => i > v)
+      if (first == null) continue
+      const covered = out.some((p) => p.line > v && p.line < first)
+      if (!covered) out.push({ line: v, before: first, title: label(v) })
+    }
+    return out
   }
   // A NOTE is a tip. A heading (« Astuces », « Notes »), a bare label (« Pour la sauce : »)
   // is not one and is dropped; a NUMBERED line is a step wherever the model filed it —
@@ -208,6 +238,7 @@ export function draftFromSelection(lines: string[], sel: LineSelection, known: K
       PAGE_FOOTER.test(l) ||
       /^\d{1,2}[.)]?$/.test(l) ||
       NOTE_HEADING.test(bare(i)) ||
+      versionSet.has(i) ||
       isBareLabel(i) ||
       isBadge(l)
     )
@@ -221,17 +252,16 @@ export function draftFromSelection(lines: string[], sel: LineSelection, known: K
     else if ((i > firstIng && i < lastIng) || (i > lastIng && i < firstStep && /^(?:\d|[¼½¾⅓⅔⅛])/.test(bare(i)))) strayIng.push(i)
     else strayNotes.push(i)
   }
-  const ingredientIdx = [...ingAll, ...strayIng].sort((a, b) => a - b)
-  const ingredients = withParts(ingredientIdx, [...sel.ingredientSections, ...restoredSections])
+  const ingredientIdx = [...ingAll, ...strayIng].sort((a, b) => a - b).filter((i) => !versionSet.has(i))
+  const ingredients = withParts(ingredientIdx, versioned(ingredientIdx, [...sel.ingredientSections, ...restoredSections]))
   // The method's lines as printed — one line, one step; refineSteps only strips a
   // « 1. » the editor numbers itself and splits a run-on past the step cap. 'auto', not
   // 'keep': the ONE case it differs is a method that is a single long paragraph (a paste
   // typed in one go) — now that selectionLines no longer cuts a formatted text's long
   // lines at sentences (2026-10-30), that paragraph reaches here whole, and one
   // 600-char step is not what the cook meant.
-  const steps = dropDanglingHeadings(
-    refineSteps(withParts([...stepAll, ...straySteps].sort((a, b) => a - b), sel.stepSections), { blob: 'auto' }),
-  )
+  const stepIdx = [...stepAll, ...straySteps].sort((a, b) => a - b).filter((i) => !versionSet.has(i))
+  const steps = dropDanglingHeadings(refineSteps(withParts(stepIdx, versioned(stepIdx, sel.stepSections)), { blob: 'auto' }))
   if (!ingredients.length && !steps.length) return null
   const at = (i: number | null) => (i == null ? null : lines[i])
   // The model's notes — plus the strays above: the text read's notes on a page without

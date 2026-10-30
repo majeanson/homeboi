@@ -1087,6 +1087,16 @@
     max-height: calc(var(--vvh, 100dvh) - 0px);
   }
 }
+/* The VERSION switch on a recipe with an alternative (« pour une version bol »): one
+   chip row above the lists on the sheet and at the top of the cook stage — « Recette »
+   for the base, the page's own word for each version (lib/recipeSections). */
+.recipe-versions {
+  margin: 0.25rem 0 0.6rem;
+}
+.cook__stage > .recipe-versions {
+  margin: 0.5rem var(--gutter) 0;
+}
+
 /* The chips (one per photo, then « Rapport ») ride ON the picture — top-left, a frosted
    pill like the zoom cluster top-right — so the strip is one block of page, no band
    above it (Marc, 2026-10-30: « there's a gap between the pills and the photo; make it

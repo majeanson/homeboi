@@ -120,7 +120,11 @@ export function perfectSelection(lines: string[], want: Expected): { sel: LineSe
         continue
       }
       if (pendingLabel != null) {
-        const li = find(pendingLabel.toLowerCase(), (l) => label(l).toLowerCase())
+        // A version's part (« pour une version bol — Pour la sauce ») is the page's
+        // « Pour la sauce » label under the version's label: the draft composes the
+        // title, the page prints only the part (recipeDraft, 2026-10-30).
+        const printed = pendingLabel.includes(' — ') ? pendingLabel.slice(pendingLabel.lastIndexOf(' — ') + 3) : pendingLabel
+        const li = find(printed.toLowerCase(), (l) => label(l).toLowerCase())
         if (li == null) missing.push(`## ${pendingLabel}`)
         else sections.push({ line: li, before: i })
         pendingLabel = null

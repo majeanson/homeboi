@@ -109,6 +109,55 @@ describe('a model selection vs the text read', () => {
   // is a step, inside the list it is an ingredient, after the method it is a note. Only
   // the page's furniture stays out: the header above the title, the time/yield strip, a
   // label heading nothing, a badge (« SE CONGÈLE »), a page number.
+  // Marc, 2026-10-30: « for alternatives to recipes it's still confusing — sometimes it
+  // adds the ingredients in the ingredient list, not as a full "this is another way if
+  // you want" thing ». A page's version label (« pour une version bol ») opens a second
+  // way of making the dish: everything printed AFTER it belongs to that version — its
+  // parts become « ## <version> — <part> » ingredient sections, its method a « ## <version> »
+  // step section — a matched pair the sheet shows behind a switch. The label itself is
+  // structure, never a stray note.
+  it('a version label makes everything after it a matched pair of sections (ingredients and steps)', () => {
+    const page = [
+      'Saumon',
+      '4 pavés de saumon',
+      '1 Cuire le saumon au four 15 minutes.',
+      'pour une version bol',
+      'Garnitures (au choix et au goût) :',
+      '› Chou rouge émincé',
+      'pour la sauce :',
+      '80 ml (1/3 de tasse) de mayonnaise',
+      '1 Dans un bol, mélanger les ingrédients de la sauce.',
+      '2 Garnir.',
+    ]
+    const s: LineSelection = {
+      title: 0,
+      servings: null,
+      prep: null,
+      cook: null,
+      ingredients: [1, 5, 7],
+      steps: [2, 8, 9],
+      notes: [],
+      ingredientSections: [
+        { line: 4, before: 5 },
+        { line: 6, before: 7 },
+      ],
+      stepSections: [],
+    }
+    const d = draftFromSelection(page, s, { title: null, servings: null, servingsUnit: null, times: { prep: null, cook: null, total: null } })!
+    expect(d.ingredients).toEqual([
+      '4 pavés de saumon',
+      '## pour une version bol — Garnitures (au choix et au goût)',
+      'Chou rouge émincé',
+      '## pour une version bol — pour la sauce',
+      '80 ml (1/3 de tasse) de mayonnaise',
+    ])
+    expect(d.steps).toEqual(['Cuire le saumon au four 15 minutes.', '## pour une version bol', 'Dans un bol, mélanger les ingrédients de la sauce.', 'Garnir.'])
+    expect(d.notes).toBeNull()
+    // A version with no part label of its own: its ingredients go under the version itself.
+    const bare = draftFromSelection(['Saumon', '4 pavés de saumon', '1 Cuire.', 'Variante', '2 oignons', '1 Frire.'], { ...s, ingredients: [1, 4], steps: [2, 5], ingredientSections: [] }, { title: null, servings: null, servingsUnit: null, times: { prep: null, cook: null, total: null } })!
+    expect(bare.ingredients).toEqual(['4 pavés de saumon', '## Variante', '2 oignons'])
+    expect(bare.steps).toEqual(['Cuire.', '## Variante', 'Frire.'])
+  })
   it('a line the model filed nowhere is kept where the page puts it — never dropped', () => {
     const page = [
       'plaques-bols',

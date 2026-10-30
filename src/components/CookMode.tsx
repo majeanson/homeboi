@@ -5,7 +5,9 @@ import { useAudience } from '../lib/audience'
 import { type Recipe } from '../lib/recipes'
 import { findDurations } from '../lib/duration'
 import { ingredientsForStep, stepSentences, stripStepOrdinal } from '../lib/recipeSteps'
-import { groupSections } from '../lib/recipeSections'
+import { applyVersion, groupSections, recipeVersions, versionGroups, versionLabel } from '../lib/recipeSections'
+import { Chip } from './Chip'
+import { Cluster } from './Layout'
 import { imgUrl } from '../lib/image'
 import { spokenIngredient } from '../lib/measure'
 import { useSpeak, stopSpeaking } from '../lib/speak'
@@ -195,8 +197,16 @@ export function CookMode({
   // "## Section" markers group the flat lines (a recipe without markers is one
   // untitled group). A marker is never its own page — each step page carries
   // its section's name instead, and the step count covers real steps only.
-  const ingGroups = groupSections(recipe.ingredients)
-  const stepGroups = groupSections(recipe.steps)
+  // A recipe with an ALTERNATIVE (« pour une version bol », lib/recipeSections): the
+  // parent picks a version in a chip row at the top of the stage; the groups keep every
+  // item's ORIGINAL index (the gather ticks and the step photos are keyed by it), the
+  // step ↔ ingredient pairing reads the picked lists. The toddler cooks the base.
+  const versions = recipeVersions(recipe.ingredients, recipe.steps)
+  const [version, setVersion] = useState<string | null>(null)
+  const pick = isToddler ? null : version
+  const applied = applyVersion(recipe.ingredients, recipe.steps, pick)
+  const ingGroups = versionGroups(groupSections(recipe.ingredients), 'ingredients', versions, pick)
+  const stepGroups = versionGroups(groupSections(recipe.steps), 'steps', versions, pick)
   let stepN = 0
   const stages: Stage[] = [
     ...(ingGroups.some((g) => g.items.length) ? [{ kind: 'ingredients' } as Stage] : []),
@@ -353,7 +363,7 @@ export function CookMode({
               // This step's own ingredients (scaled quantities + colour pills),
               // shown inline when the bar toggle is on — the same "what you need
               // right now" the stepper shows, generalized to the scroll views.
-              const used = stepIngsOn ? ingredientsForStep(s, recipe.ingredients, g.title) : []
+              const used = stepIngsOn ? ingredientsForStep(s, applied.ingredients, g.title) : []
               return (
                 // The step's TEXT is the read-aloud control, not the whole <li>. The li
                 // used to be a role="button" holding the timer chips' real buttons —
@@ -610,6 +620,20 @@ export function CookMode({
         onTouchEnd={onTouchEnd}
       >
         {mode === 'full' ? (
+        {/* The version switch (parent only; the toddler cooks the base): the page's own
+            words for each alternative, « Recette » for the base. */}
+        {!isToddler && versions.length > 0 && (
+          <Cluster className="recipe-versions">
+            <Chip selected={version == null} onClick={() => setVersion(null)}>
+              {t.recipes.versionBase}
+            </Chip>
+            {versions.map((v) => (
+              <Chip key={v.title} selected={version === v.title} onClick={() => setVersion(v.title)}>
+                {versionLabel(v.title)}
+              </Chip>
+            ))}
+          </Cluster>
+        )}
           <div className="cook__full">
             {recipe.ingredients.length > 0 && (
               <section className="cook__full-sec">
@@ -767,7 +791,7 @@ export function CookMode({
             {cur?.kind === 'step' &&
               stepIngsOn &&
               (() => {
-                const used = ingredientsForStep(cur.text, recipe.ingredients, cur.section)
+                const used = ingredientsForStep(cur.text, applied.ingredients, cur.section)
                 return used.length > 0 ? (
                   <ul className="cook__step-ings mono" aria-label={t.recipes.ingredients}>
                     {used.map((ing, i) => (
