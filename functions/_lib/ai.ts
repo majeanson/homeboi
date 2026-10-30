@@ -686,12 +686,14 @@ export async function transcribeImage(
     lang === 'en'
       ? `Transcribe ALL the text in this image exactly as printed, as plain text.
 - One item per line, in reading order: a heading, a list item or a numbered step is ONE line, even when it is printed wrapped over several lines. Keep the headings and the list markers as they appear.
-- If the page is set in COLUMNS, transcribe each column separately, top to bottom, one column at a time. Never join text from two different columns onto one line.
+- If the page is set in COLUMNS, transcribe each column separately, top to bottom, one column at a time. Never join text from two different columns onto one line. A step that continues at the top of the next column without a number is the SAME step: finish its line, never number it.
+- Ignore text cut off by the edge of the photo (half words, the margin of another page) — never complete it.
 - Copy every number, fraction and unit exactly. Do not translate, rephrase, summarize, correct spelling, or convert units.
 - Output ONLY the transcription: no JSON, no markdown, no quotation marks around lines, no comments, nothing about what is missing or unreadable.`
       : `Transcris TOUT le texte de cette image exactement comme il est imprimé, en texte brut.
 - Un élément par ligne, dans l'ordre de lecture : un titre, un ingrédient ou une étape numérotée tient sur UNE ligne, même s'il est imprimé sur plusieurs. Garde les titres et les puces tels qu'ils apparaissent.
-- Si la page est en COLONNES, transcris chaque colonne séparément, de haut en bas, une colonne à la fois. Ne joins jamais le texte de deux colonnes différentes sur une même ligne.
+- Si la page est en COLONNES, transcris chaque colonne séparément, de haut en bas, une colonne à la fois. Ne joins jamais le texte de deux colonnes différentes sur une même ligne. Une étape qui continue en haut de la colonne suivante sans numéro est la MÊME étape : termine sa ligne, ne la numérote jamais.
+- Ignore le texte coupé par le bord de la photo (des demi-mots, la marge d'une autre page) — ne le complète jamais.
 - Recopie chaque nombre, fraction et unité exactement. Ne traduis pas, ne reformule pas, ne résume pas, ne corrige pas l'orthographe, ne convertis pas les unités.
 - Réponds UNIQUEMENT avec la transcription : pas de JSON, pas de markdown, pas de guillemets autour des lignes, aucun commentaire, rien sur ce qui manque ou serait illisible.`
   const clean = (raw: unknown) =>

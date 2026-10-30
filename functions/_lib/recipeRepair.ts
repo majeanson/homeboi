@@ -310,7 +310,7 @@ export function repairRecipeRead<
     times: { prep: number | null; cook: number | null; total: number | null }
     notes?: string | null
   },
->(r: R): R {
+>(r: R, opts: { footer?: boolean } = {}): R {
   const title = unquoteTitle(r.title)
   // 0 + 1: un-quote every line, then drop field names and bare numbers.
   const ing = salvageFieldLines(r.ingredients.map(unquoteLine).filter(Boolean))
@@ -320,10 +320,12 @@ export function repairRecipeRead<
   // 2: the footer out of both lists; its yield is the servings when none was read — and
   // its WORDS go to the notes, not away: « Se congèle très bien » is something the cook
   // wanted to keep (it used to be deleted with the yield, 2026-10-30).
+  // `footer: false` (a model selection, recipeDraft): the lines are the page's own and a
+  // model sorted them — a numbered « Se conserve… » step stays a step.
   const footer: string[] = []
   const keep = (lines: string[]) =>
     lines.filter((l) => {
-      const m = metaLine(l)
+      const m = opts.footer === false ? { meta: false, servings: null } : metaLine(l)
       if (!m.meta) return true
       if (m.servings != null) servings ??= m.servings
       footer.push(l.trim())

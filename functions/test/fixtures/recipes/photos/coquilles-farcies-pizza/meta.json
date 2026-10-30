@@ -1,0 +1,14 @@
+{
+  "pages": 1,
+  "source": "Marc's cookbooks, photographed on an iPhone, 2026-10-30",
+  "shot": "IMG_6905",
+  "readAt": "2026-10-30",
+  "readerModel": "@cf/mistralai/mistral-small-3.1-24b-instruct",
+  "notes": "Three columns of steps, the times in badges down the right edge, a « NOTE » box, a page footer (« À congeler • 103 »).",
+  "pending": "reader: step 5 (« Couvrir le plat d’une feuille de papier d’aluminium. Cuire au four de 15 à 20 minutes. ») is missing, step 4 is cut at « ricotta, » with its remainder numbered 5, and step 7's « Réfrigérer 30 minutes. » at the top of column 3 is dropped — column-break errors inside the reader",
+  "readerErrors": [
+    "step 5 missing (foil, 15–20 minutes); the following steps renumbered",
+    "step 4 split at « …préparation à la ricotta, » / « puis les déposer… »",
+    "step 7 lost « Réfrigérer 30 minutes. » (top of column 3)"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "pages": 1,
+  "source": "Marc's cookbooks, photographed on an iPhone, 2026-10-30",
+  "shot": "IMG_6907",
+  "readAt": "2026-10-30",
+  "readerModel": "@cf/mistralai/mistral-small-3.1-24b-instruct",
+  "notes": "Three columns of steps; the times in badges down the right edge, in caps without accents (« QUANTITÉ 12 MUFFINS » read « QUANTITE »); a « SE CONGÈLE » badge; step 7 is a keeping note the page numbers as a step.",
+  "pending": "reader: step 3's continuation at the top of column 2 (« Ajouter le lait et la vanille… ») was numbered as a new step 4 and the rest shifted; « CUISSON » read « CUISON » so the cook time is lost",
+  "readerErrors": [
+    "step 3's column-top continuation numbered as step 4 (8 steps for 7)",
+    "CUISSON 20 MINUTES → CUISON 20 MINUTES"
+  ]
+}

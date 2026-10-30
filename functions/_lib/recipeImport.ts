@@ -248,6 +248,10 @@ export function stripStepPrefix(s: string): string {
     .replace(/^(?:[ée]tapes?|steps?)\s*\d{1,2}\s*(?:[:.)\-–—]\s*)?/i, '')
     .replace(/^\d{1,2}\s*[.):\-–—]\s+/, '')
     .replace(/^\d{1,2}\s*[.)]\s*(?=[A-ZÀ-ÖŒ])/, '')
+    // A cookbook numbers its steps with a bare figure (« 3 Dans une casserole… ») and
+    // the reader keeps it; a quantity never opens on a capital (« 2 oignons »). The
+    // photo corpus kept every « 1 » in the form until 2026-10-30.
+    .replace(/^\d{1,2}\s+(?=[A-ZÀ-ÖŒ«])/, '')
     .trim()
 }
 
@@ -620,6 +624,14 @@ const clampServings = (n: number): number | null => {
 export function parseYield(value: unknown): number | null {
   if (typeof value === 'number' && isFinite(value)) return clampServings(value)
   if (typeof value === 'string') {
+    // A whole META STRIP (« Préparation 15 minutes > Cuisson 50 minutes > Quantité 4
+    // portions ») can be the line a model points at as the yield: the number that
+    // precedes a portion word, or follows a yield label, wins over the first number on
+    // the line (15 was the yield of Marc's quiche, 2026-10-30).
+    const labelled =
+      value.match(/(\d{1,2})\s*(?:[àa]\s*\d{1,2}\s*)?(?:portions?|servings?|personnes?|convives|parts)\b/i) ??
+      value.match(/(?:donne|serves?|rendement|yield|quantit[ée])\s*:?\s*(?:de\s+)?(\d{1,2})\b/i)
+    if (labelled) return clampServings(+labelled[1])
     for (const m of value.matchAll(/\d+/g)) {
       const n = clampServings(+m[0])
       if (n) return n
@@ -987,18 +999,24 @@ const NOTE_HEADING =
 // The value must START with a number (or « environ / about »): « Bake 60 min » is a
 // time; « Bake for 1 hour. » is a STEP, and adding « bake » to the labels swallowed it
 // once (the EN fixture caught it). No comma either — a clause is a step.
+// The last group is the durations a card prints that the recipe does not STORE —
+// « Marinage 30 minutes », « Réfrigération 30 minutes », « Congélation 3 heures » — read
+// as meta (consumed, so the strip they sit in still counts as a strip and the title does
+// not swallow it) and kept nowhere. Without them « Préparation 20 minutes · Marinage 30
+// minutes » was one meta fact and one mystery, so the line was not a strip and the prep
+// time was lost (photo corpus, 2026-10-30).
 const TIME_LINE =
-  /^(pr[ée]p(?:aration)?(?:\s*time)?|cuisson|cook(?:ing)?(?:\s*time)?|bak(?:e|ing)(?:\s*time)?|au\s+four|temps\s+total|total(?:\s*time)?)\s*:?\s+((?:environ|about|~)?\s*\d[^,]{0,28})$/i
+  /^(pr[ée]p(?:aration)?(?:\s*time)?|cuisson|cook(?:ing)?(?:\s*time)?|bak(?:e|ing)(?:\s*time)?|au\s+four|temps\s+total|total(?:\s*time)?|marinage|r[ée]frig[ée]ration|cong[ée]lation|repos|attente|mac[ée]ration|trempage|lev[ée]e|refroidissement|marinat(?:e|ing)|chill(?:ing)?|freez(?:e|ing)|rest(?:ing)?)\s*:?\s+((?:environ|about|~)?\s*\d[^,]{0,28})$/i
 
 // A card's META STRIP is several facts on one printed line; the separators vary with the
-// typesetting (« · », « • », « | », a spaced dash, a breadcrumb « › »).
-const STRIP_SEP = /\s*[•·|]\s*|\s+[–—-]\s+|\s+[›»]\s+/
+// typesetting (« · », « • », « | », a spaced dash, a breadcrumb « › », a « > »).
+const STRIP_SEP = /\s*[•·|]\s*|\s+[–—>-]\s+|\s+[›»]\s+/
 const isMetaFrag = (f: string): boolean => TIME_LINE.test(f) || SERVINGS_LINE.test(f)
 // A transcriber may drop the separators altogether (« Préparation : 10 min Cuisson :
 // 15 min Portions : 4 »): then split right before each meta label — and keep that
 // split only when it yields two meta facts (« Cuire 10 min pour dorer » stays whole).
 const LABEL_SPLIT =
-  /\s+(?=(?:pr[ée]p(?:aration)?|cuisson|cook(?:ing)?|bak(?:e|ing)|temps\s+total|total|portions?|servings?|donne|serves?|rendement|yield|pour)\b)/i
+  /\s+(?=(?:pr[ée]p(?:aration)?|cuisson|cook(?:ing)?|bak(?:e|ing)|temps\s+total|total|portions?|servings?|donne|serves?|rendement|yield|quantit[ée]|marinage|r[ée]frig[ée]ration|cong[ée]lation|pour)\b)/i
 const splitStrip = (l: string): string[] => {
   const f = l.split(STRIP_SEP).map((s) => s.trim()).filter(Boolean)
   if (f.length > 1) return f
@@ -1060,8 +1078,11 @@ export function textToMinutes(s: string): number | null {
 
 // Second branch ("Donne 24 biscuits") also captures the unit word so the card
 // can say "24 biscuits" instead of "24 portions".
+// « Quantité 4 portions », « QUANTITE de 4 à 6 portions », « Quantité : 12 muffins » — a
+// cookbook's yield label, accented or not (the caps on a page often are not). The
+// number right after it is the yield, a range keeps its low end, the unit word rides.
 const SERVINGS_LINE =
-  /(?:^|\b)(\d{1,2})\s*(?:[àa]\s*\d{1,2}\s*)?(?:portions?|servings?|personnes?|convives|parts)\b|(?:donne|serves?|rendement|yield)\s*:?\s*(\d{1,2})\b\s*([a-zà-öœ]{3,24})?|^(?:portions?|servings?|personnes?|pour)\s*:\s*(\d{1,2})\b/i
+  /(?:^|\b)(\d{1,2})\s*(?:[àa]\s*\d{1,2}\s*)?(?:portions?|servings?|personnes?|convives|parts)\b|(?:donne|serves?|rendement|yield|quantit[ée])\s*:?\s*(?:de\s+)?(\d{1,2})\b\s*(?:[àa]\s*\d{1,2}\s*)?([a-zà-öœ]{3,24})?|^(?:portions?|servings?|personnes?|pour)\s*:\s*(\d{1,2})\b/i
 // The number, whichever branch matched: « 4 portions », « Donne 4 », « Portions : 4 ».
 const servingsOf = (sv: RegExpMatchArray): number => +(sv[1] ?? sv[2] ?? sv[4])
 
@@ -1073,6 +1094,10 @@ const WORDS_ONLY = /^[a-zà-öœ'’(][^\d]*$/i
 // An ingredient-looking line: bullet or quantity-leading, short. Used only by
 // the no-headings fallback.
 const ING_LIKE = /^[-•*–▢☐□]?\s*(?:\d|[¼½¾⅓⅔⅛]|une?\b|deux\b|trois\b|quelques\b)/i
+// A line that opens on a STEP NUMBER: « 1. Déposer… », « 3) Cuire… », or a cookbook's
+// bare figure before a capital with a sentence behind it (« 4 Augmenter la température
+// du four à 180 °C (350 °F). ») — never an ingredient, and the method's own boundary.
+const STEP_MARKED = /^\d{1,2}(?:\s*[.)]\s*(?=[A-ZÀ-ÖŒ«])|\s+(?=[A-ZÀ-ÖŒ«])(?=.*[.!?]\s*$))/
 
 const stripBullet = (s: string): string => s.replace(/^[-•·▪◦‣*–—▢☐□]+\s*/, '').trim()
 
@@ -1118,10 +1143,16 @@ export function parsePastedRecipe(text: string): PastedRecipe {
   const lines = text.normalize('NFC').split(/\r?\n/).map((l) => l.replace(/\s+/g, ' ').trim())
   let mode: 'pre' | 'ing' | 'steps' | 'notes' | 'aside' = 'pre'
   let title: string | null = null
-  // How many printed lines the title took (1, or 2 when wrapped) — the no-headings
-  // fallback below skips exactly those, so a wrapped title's second half never lands
-  // in the steps as a bogus « et au sésame » instruction.
-  let titleLines = 0
+  // Where the title sits and where it ends (the index after its last line, 2 lines when
+  // wrapped) — the no-headings fallback skips everything before `titleEnd`, so a
+  // wrapped title's second half never lands in the steps as a bogus « et au sésame »
+  // instruction. A card's HEADER BLOCK (the lines above its meta strip) is re-read for
+  // the title once the walk is done, see below.
+  let titleAt = -1
+  let titleEnd = -1
+  // The first META line consumed while still in the preamble (a card's time/yield
+  // strip), or -1: on a card the title is the line right ABOVE it.
+  let firstMetaAt = -1
   // True only for the line RIGHT AFTER the title — a wrapped title continues there and
   // nowhere else (a later « et couper en bâtonnets… » is the method, not the title).
   let afterTitle = false
@@ -1171,7 +1202,9 @@ export function parsePastedRecipe(text: string): PastedRecipe {
           const kind = tm[1].toLowerCase()
           if (/^cuisson|^cook|^bak|^au\s+four/.test(kind)) times.cook ??= mins
           else if (/total/.test(kind)) times.total ??= mins
-          else times.prep ??= mins
+          else if (/^pr[ée]p/.test(kind)) times.prep ??= mins
+          // else: a marinating / chilling / freezing time — read, kept nowhere.
+          if (firstMetaAt < 0 && mode === 'pre') firstMetaAt = li
           return true
         }
       }
@@ -1180,12 +1213,16 @@ export function parsePastedRecipe(text: string): PastedRecipe {
         if (sv) {
           servings = clampServings(servingsOf(sv))
           // "Donne 24 biscuits" — keep the unit word ("biscuits") when it isn't
-          // a plain portion word; the UI then labels servings with it.
+          // a plain portion word; the UI then labels servings with it. A unit the page
+          // set in caps (« 12 MUFFINS ») is typography, not a name — lowercased.
           const unit = sv[3]?.trim()
-          if (servings && unit && !PORTION_WORDS.test(unit)) servingsUnit = unit.slice(0, 24)
+          if (servings && unit && !PORTION_WORDS.test(unit)) servingsUnit = (unit === unit.toUpperCase() ? unit.toLowerCase() : unit).slice(0, 24)
           // A short line around the meta block is the marker itself — consume it.
           // Inside the method, "Diviser en 4 portions…" is a real step: keep it.
-          if (mode !== 'steps' && l.length <= 40) return true
+          if (mode !== 'steps' && l.length <= 40) {
+            if (firstMetaAt < 0 && mode === 'pre') firstMetaAt = li
+            return true
+          }
         }
       }
       return false
@@ -1202,6 +1239,7 @@ export function parsePastedRecipe(text: string): PastedRecipe {
       const meta = frags.filter(isMetaFrag)
       if (meta.length >= 2) {
         for (const f of meta) consumeMeta(f)
+        if (firstMetaAt < 0 && mode === 'pre') firstMetaAt = li
         continue
       }
       if (isNavStrip(frags)) {
@@ -1272,7 +1310,8 @@ export function parsePastedRecipe(text: string): PastedRecipe {
       const cand = labelled ? labelled[1].trim() : line
       if (!title && cand.length <= 120) {
         title = cand.slice(0, 200)
-        titleLines = 1
+        titleAt = li
+        titleEnd = li + 1
         afterTitle = true
       } else if (title && justAfterTitle && titleContinues(title, line)) {
         // A title WRAPPED over two printed lines (« Brocoli sauté au miel » / « et au
@@ -1280,7 +1319,7 @@ export function parsePastedRecipe(text: string): PastedRecipe {
         // it reads as a continuation: short, no digits, opening on a conjunction or
         // preposition. A description (« Une recette de grand-maman ») does not.
         title = `${title} ${line}`.slice(0, 200)
-        titleLines = 2
+        titleEnd = li + 1
       }
       // Further preamble (description, byline) is dropped — it isn't the recipe.
       continue
@@ -1323,16 +1362,35 @@ export function parsePastedRecipe(text: string): PastedRecipe {
   // No headings at all — classify by line shape instead.
   const paragraphCard = !sawIngHeading && !sawStepHeading && ings.length === 0 && stepLines.length === 0
   if (paragraphCard) {
-    let skipped = 0
+    // A COOKBOOK CARD's header: the chapter kicker (« plaques-bols »), a sidebar's chapter
+    // name read first (« CLASSIQUES PU SI CLASSIQUES »), a « Recette de base » label, THEN
+    // the title, THEN the time/yield strip. The first line is not the title there — the
+    // line right above the strip is (three of ten pages in the photo corpus titled
+    // themselves « plaques-bols », 2026-10-30). A title set in two boxes (« QUICHE » /
+    // « RAPIDE ») reads as two short all-caps lines: joined. Everything above the strip
+    // is header, skipped below. Only near the top: a card whose times sit at the FOOT
+    // (« Préparation 20 minutes » under the method) keeps its first line.
+    if (firstMetaAt >= 0 && firstMetaAt <= 8 && titleAt >= 0 && firstMetaAt > titleEnd) {
+      const header = lines.slice(titleAt, firstMetaAt).map((l, i) => ({ l, i: titleAt + i })).filter((x) => x.l && !junk.has(x.i))
+      const last = header[header.length - 1]
+      const prev = header[header.length - 2]
+      const boxed = (s: string) => /^[A-ZÀ-ÖŒ][A-ZÀ-ÖŒ'’ -]{1,15}$/.test(s) && s.split(/\s+/).length <= 2
+      // A header is kickers and labels — short lines, no sentence. A paragraph card whose
+      // « Serves 4. » sits under its method has no header: its first line stays the title.
+      const isHeader = header.length <= 4 && header.every((x) => x.l.length <= 40 && !/[.!?]\s/.test(x.l))
+      if (last && isHeader) {
+        title = (prev && boxed(prev.l) && boxed(last.l) ? `${prev.l} ${last.l}` : last.l).slice(0, 200)
+        titleEnd = firstMetaAt
+      }
+    }
     let pairTo = -1
     for (let li = 0; li < lines.length; li++) {
       const line = lines[li]
       if (!line || li <= pairTo) continue
       if (junk.has(li)) continue // a nav bar, a rating, a « Titre » label — never recipe
-      if (skipped < Math.max(1, titleLines)) {
-        skipped++
-        continue // the title (one line, or two when wrapped) was already captured above
-      }
+      // The title (one line, or two when wrapped) and a card's header above its strip
+      // were captured above; without a title the first line is still the headline.
+      if (li < (titleEnd >= 0 ? titleEnd : 1)) continue
       if (TIME_LINE.test(line) || (line.length <= 40 && SERVINGS_LINE.test(line))) continue // meta, already read
       // …and the one-line meta strip (see the pass above), already read fragment by
       // fragment; a nav bar and a star rating are not recipe either.
@@ -1354,7 +1412,10 @@ export function parsePastedRecipe(text: string): PastedRecipe {
         pairTo = words
         continue
       }
-      if (!continuation && ING_LIKE.test(line) && line.length <= 80) ings.push(stripBullet(line).slice(0, MAX_INGREDIENT_LEN))
+      // A NUMBERED step is never an ingredient, however short (« 1. Préchauffer le four
+      // à 205 °C (400 °F). » opened the muffins' list, 2026-10-30): a list marker, or a
+      // bare figure before a capital with a sentence behind it.
+      if (!continuation && ING_LIKE.test(line) && line.length <= 80 && !STEP_MARKED.test(line)) ings.push(stripBullet(line).slice(0, MAX_INGREDIENT_LEN))
       else stepLines.push(line)
     }
   }
@@ -1379,10 +1440,14 @@ export function parsePastedRecipe(text: string): PastedRecipe {
   // grand poêlon »). Same boundary rule as sentenceChunks: end punctuation, then an
   // uppercase / « / digit start, so « env. 5 min » and « 1.5 L » never split. A
   // formatted recipe keeps its own step lines — a long printed line is ONE step
-  // ('auto': only a method that is a single long paragraph reads per sentence).
-  const blobs = paragraphCard
-    ? merged.flatMap((l) => (isSectionHeading(l) ? [l] : l.split(SENTENCE_SPLIT).filter(Boolean)))
-    : merged
+  // ('auto': only a method that is a single long paragraph reads per sentence). And a
+  // card whose steps are NUMBERED has delimited them itself: no sentence split there
+  // either (six printed steps read as fifteen on Marc's pâté, 2026-10-30).
+  const numbered = merged.some((l) => STEP_MARKED.test(l))
+  const blobs =
+    paragraphCard && !numbered
+      ? merged.flatMap((l) => (isSectionHeading(l) ? [l] : l.split(SENTENCE_SPLIT).filter(Boolean)))
+      : merged
   const steps = dropDanglingHeadings(refineSteps(blobs, { blob: 'auto' }))
   // One note per printed line: a numbered « 1. … 2. … » list or two paragraphs stay apart.
   // A line printed twice (a page that shows its notes in two layouts) is kept once.

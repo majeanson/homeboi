@@ -1,0 +1,25 @@
+{
+  "title": "QUICHE RAPIDE",
+  "servings": 4,
+  "servingsUnit": null,
+  "times": { "prep": 15, "cook": 50, "total": null },
+  "ingredients": [
+    "1 croûte à tarte surgelée",
+    "3 œufs",
+    "125 ml (1/2 tasse) de lait",
+    "250 ml (1 tasse) de jambon haché",
+    "250 ml (1 tasse) de cheddar râpé",
+    "1 oignon vert haché",
+    "Sel et poivre au goût"
+  ],
+  "steps": [
+    "Préchauffer le four à 150 °C (300 °F).",
+    "Réchauffer la croûte à tarte au four 10 minutes.",
+    "Pendant ce temps, fouetter les œufs avec le lait dans un bol. Ajouter le jambon, le fromage et l'oignon vert. Saler, poivrer et remuer délicatement.",
+    "Augmenter la température du four à 180 °C (350 °F).",
+    "Transvider la préparation dans la croûte à tarte.",
+    "Cuire au four de 40 à 50 minutes, jusqu'à ce que la préparation soit prise."
+  ],
+  "notes": "Qui a dit que faire des pâtés et des quiches prenait des heures? Cette recette de quiche ultra-rapide deviendra assurément votre meilleure amie les soirs de semaine!\nDans cette recette, on peut remplacer le jambon haché par du jambon cuit coupé en dés ou même par le jambon que l'on utilise pour faire des sandwichs. L'idée, c'est d'aller au plus simple; ce sera délicieux dans tous les cas!",
+  "structuring": "ai"
+}

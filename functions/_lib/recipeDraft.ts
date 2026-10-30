@@ -76,7 +76,11 @@ export const draft = (d: Partial<DraftOut>): DraftOut => {
   // structured data: the site delimited every step, and the footer rule deleted a real
   // last step there (« Conserver au réfrigérateur jusqu'au service », 2026-10-27).
   const siteData = d.structuring === 'jsonld' || d.structuring === 'microdata'
-  const merged: DraftOut = siteData ? base : repairRecipeRead(base)
+  // A model SELECTION's steps are source lines a model was told are steps: the footer
+  // rule (a « Se conserve… » line out of the method) is for a generative read that put
+  // the footer there — on a cookbook page that numbers « Se conserve de 1 à 2 jours » as
+  // its step 7, the rule deleted step 7 (photo corpus, 2026-10-30).
+  const merged: DraftOut = siteData ? base : repairRecipeRead(base, { footer: d.structuring !== 'ai' })
   // Detect the recipe's language from its own words (title + the lines), unless a
   // caller already supplied one. Runs on every path — incl. the no-AI JSON-LD /
   // paste ones — so the read-aloud voice matches the recipe wherever it came from.
@@ -142,9 +146,16 @@ export function draftFromSelection(lines: string[], sel: LineSelection, known: K
   const steps = dropDanglingHeadings(refineSteps(withParts(sel.steps, sel.stepSections), { blob: 'auto' }))
   if (!ingredients.length && !steps.length) return null
   const at = (i: number | null) => (i == null ? null : lines[i])
+  // The model's notes, and only those: the text read's notes on a page without
+  // headings are a guess (a « SE CONGÈLE » badge, 2026-10-30), and a model told what
+  // notes are chose none for a reason.
   const notes = sel.notes.map(bare).join('\n').slice(0, MAX_NOTES_LEN) || null
   return {
-    title: known.title ?? (sel.title != null ? bare(sel.title).slice(0, 200) : null),
+    // The TITLE is the model's pick first: a selection among the page's lines, where the
+    // text read takes the first line and a cookbook's first line is its chapter kicker
+    // (« plaques-bols » titled three recipes, 2026-10-30). Yield and times stay the
+    // text's: the model pointed at a whole strip and the first number on it was read.
+    title: (sel.title != null ? bare(sel.title).slice(0, 200) : null) ?? known.title,
     ingredients,
     steps,
     servings: known.servings ?? parseYield(at(sel.servings)),
@@ -154,7 +165,7 @@ export function draftFromSelection(lines: string[], sel: LineSelection, known: K
       cook: known.times.cook ?? (at(sel.cook) ? textToMinutes(at(sel.cook)!) : null),
       total: known.times.total,
     },
-    notes: notes ?? known.notes ?? null,
+    notes,
   }
 }
 

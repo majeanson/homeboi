@@ -1,0 +1,26 @@
+{
+  "title": "MACARONI AU FROMAGE",
+  "servings": 4,
+  "servingsUnit": null,
+  "times": { "prep": 15, "cook": 45, "total": null },
+  "ingredients": [
+    "750 ml (3 tasses) de macaronis secs",
+    "250 ml (1 tasse) de lait",
+    "250 ml (1 tasse) de crème sure",
+    "250 ml (1 tasse) de tartinade au fromage fondu (de type Le petit crémeux)",
+    "625 ml (2 1/2 tasses) de cheddar râpé",
+    "60 ml (1/4 de tasse) de parmesan râpé",
+    "5 ml (1 c. à thé) de moutarde en poudre",
+    "80 ml (1/3 de tasse) de sauce tomate",
+    "2,5 ml (1/2 c. à thé) de sel"
+  ],
+  "steps": [
+    "Préchauffer le four à 180 °C (350 °F).",
+    "Dans une grande casserole d'eau bouillante salée, cuire les pâtes selon les indications de l'emballage, en retirant la casserole du feu environ 2 minutes avant la fin de la cuisson. Égoutter.",
+    "Dans la même casserole, mélanger le lait avec la crème sure et la tartinade au fromage fondu. Ajouter 375 ml (1 1/2 tasse) de cheddar, le parmesan, la moutarde en poudre, la sauce tomate et les pâtes dans la casserole. Remuer.",
+    "Transvider la préparation dans un plat de cuisson carré de 20 cm (8 po). Couvrir du reste du fromage.",
+    "Cuire au four 30 minutes. Si désiré, régler le four à la position « gril » (broil) et poursuivre la cuisson 5 minutes, jusqu'à ce que le fromage soit doré."
+  ],
+  "notes": "Pour les déclinaisons, suivre la recette de base jusqu'à l'étape 3 et poursuivre avec les étapes de préparation des déclinaisons.\nLe macaroni est l'un des plats préférés de la plupart des enfants. Cependant, lorsqu'il s'agit de le préparer à la maison, les recettes traditionnelles plaisent parfois moins aux jeunes. C'est pourquoi j'ai créé une version qui promet de ravir les papilles de tous, réduisant la vaisselle au minimum possible! - Maude",
+  "structuring": "ai"
+}

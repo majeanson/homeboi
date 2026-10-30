@@ -1,0 +1,13 @@
+{
+  "pages": 2,
+  "source": "Marc's cookbooks, photographed on an iPhone, 2026-10-30",
+  "shot": "IMG_6898, IMG_6899",
+  "readAt": "2026-10-30",
+  "readerModel": "@cf/mistralai/mistral-small-3.1-24b-instruct",
+  "notes": "Page 1's right edge shows the NEXT page's garnish column cut off; the reader completed the fragments into five invented lines (« Pour la garniture : » … « Mangue pelée et coupée en dés »). They sit in the transcript unselected — the prompt now says to ignore text cut by the photo's edge (2026-10-30).",
+  "pending": "reader: « 160 ml (⅔ de tasse) de mayonnaise » read as « ¼ » — a glyph flip the verify panel flags (measuresDisagree), not a line the text path can mend",
+  "readerErrors": [
+    "160 ml (⅔ de tasse) de mayonnaise → 160 ml (¼ de tasse) de mayonnaise",
+    "page 1: five lines completed from the next page's cut-off column"
+  ]
+}
