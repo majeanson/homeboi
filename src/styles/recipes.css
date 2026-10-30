@@ -1087,9 +1087,28 @@
     max-height: calc(var(--vvh, 100dvh) - 0px);
   }
 }
-/* One row of two chips under the title: show/hide the page, and the Rapport. */
+/* The chips (one per photo, then « Rapport ») ride ON the picture — top-left, a frosted
+   pill like the zoom cluster top-right — so the strip is one block of page, no band
+   above it (Marc, 2026-10-30: « there's a gap between the pills and the photo; make it
+   one nice block, maximum picture content viewable; put pills on top of picture »).
+   With no loupe open (page folded away, or a text source) they sit in the flow. */
 .read-review__tools {
-  padding: 0 1rem 0.5rem;
+  padding: 0.5rem 1rem;
+}
+.read-review__photo:has(.read-review__mag) > .read-review__tools {
+  position: absolute;
+  top: 0.6rem;
+  left: 0.6rem;
+  z-index: 2;
+  max-width: calc(100% - 9.5rem); /* clear of the zoom cluster; wraps past that */
+  padding: 0.25rem;
+  gap: 0.25rem;
+  background: color-mix(in srgb, var(--card) 80%, transparent);
+  -webkit-backdrop-filter: blur(10px) saturate(1.15);
+  backdrop-filter: blur(10px) saturate(1.15);
+  border: 1px solid color-mix(in srgb, var(--line) 65%, transparent);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-md);
 }
 /* Style Modal's title as the old top bar (the ✕ floats over it via kit-modal__close). */
 .read-review .kit-modal__title {
@@ -1123,7 +1142,7 @@
   top: 0;
   z-index: 1;
   margin: -0.9rem -1rem 0;
-  padding: 0.6rem 1rem 0.5rem;
+  padding: 0;
   background: var(--paper);
   box-shadow: 0 8px 12px -10px rgba(0, 0, 0, 0.35);
 }
@@ -1157,17 +1176,21 @@
   .read-review__mag {
     height: 60vh;
   }
+  .read-review__mag .panzoom__surface {
+    border-radius: var(--radius-md);
+  }
 }
 /* The page under a LOUPE (Marc, 2026-10-30: « a zoomed-in picture we can drag up, down,
    left, right, and show where we are in the bigger picture »): the shared PanZoom
    surface (pinch / drag / wheel / +−, its minimap in the corner), a third of the phone
    high, opened at 2×. The page fits the box at rest; the transform grows it. */
 .read-review__mag {
-  height: 30vh;
+  height: 36vh;
 }
 .read-review__mag .panzoom__surface {
   height: 100%;
   background: var(--paper-deep);
+  border-radius: 0; /* edge to edge on a phone: every pixel of the strip is page */
 }
 .read-review__mag-img {
   display: block;
@@ -1339,7 +1362,7 @@
    the page text in the photo's column — same sticky slot on a wide screen, a short
    scrollable box above the lines on a phone. Wraps, never scrolls sideways. */
 .read-review__source {
-  margin: 0;
+  margin: 0 1rem 0.5rem; /* inside the edge-to-edge sticky block on a phone */
   max-height: 32vh;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -1355,6 +1378,7 @@
 }
 @media (min-width: 44rem) {
   .read-review__source {
+    margin: 0;
     max-height: 60vh;
   }
 }

@@ -382,55 +382,49 @@ export function RecipeReadReview({
 
   return (
     <Modal open onClose={onCancel} className="read-review" title={t.recipes.reviewTitle}>
-        {/* One row of two chips: show/hide the page, and « Rapport » — the pipeline
-            honesty report (what read the photo, what organized the text, what was
-            corrected or couldn't be traced back) as a toggle, not a tab row that took a
-            whole band of a phone's height for two words (Marc, 2026-10-30). Only
-            offered when the caller built one. */}
-        {(photoUrls.length > 0 || report) && (
-          <Cluster className="read-review__tools">
-            {/* One chip per photo read (« Photo 1 », « Photo 2 »…; just « Photo » for
-                one); the picked one shows under the loupe, tapping it again folds the
-                page away. « Rapport » comes last (Marc, 2026-10-30). */}
-            {photoUrls.map((_, i) => (
-              <Chip key={i} selected={shown === i} onClick={() => setShown((s) => (s === i ? null : i))} icon="image-square-bold">
-                {photoUrls.length > 1 ? t.recipes.reviewPhotoN(i + 1) : t.recipes.reviewPhotoToggle}
-              </Chip>
-            ))}
-            {report && (
-              <Chip selected={tab === 'report'} onClick={() => setTab((x) => (x === 'report' ? 'verify' : 'report'))}>
-                {t.recipes.reviewTabReport}
-              </Chip>
-            )}
-          </Cluster>
-        )}
-
         <div className="read-review__body">
-          {/* The source card — tap to zoom and read a price/fraction up close. PINNED
-              at the top of the scroll on every width (sticky): the lines, the hints and
-              the title scroll under it, so a line is always read with the page in view.
-              Stays on BOTH tabs: the report's flagged lines are checked against the
-              same photo. */}
-          {photoUrls.length ? (
-            /* The page under a LOUPE, a third of the phone high — not the whole photo at
-               full width, which left no room for the lines (Marc, 2026-10-30: « a
-               zoomed-in picture we can drag up, down, left, right, and show where we are
-               in the bigger picture »): the shared PanZoom opened at 2×, top centred,
-               with its minimap in the corner. Keyed by page so each opens at its top. */
-            shown != null && (
-              <div className="read-review__photo">
+          {/* ONE sticky block at the top of the scroll on every width: the source (the
+              page under the loupe, or the page text) with the chips riding on it — one
+              per photo (« Photo 1 », « Photo 2 »…; just « Photo » for one; the picked one
+              shows, tapping it again folds the page away) and « Rapport » last, the
+              pipeline honesty report as a toggle. No band above the picture: the chips
+              float over its top-left corner like the zoom cluster over its top-right
+              (Marc, 2026-10-30). The lines, the hints and the title scroll under it, so
+              a line is always read with the page in view — on BOTH faces. */}
+          <div className="read-review__photo">
+            {(photoUrls.length > 0 || report) && (
+              <Cluster className="read-review__tools">
+                {photoUrls.map((_, i) => (
+                  <Chip key={i} selected={shown === i} onClick={() => setShown((s) => (s === i ? null : i))} icon="image-square-bold">
+                    {photoUrls.length > 1 ? t.recipes.reviewPhotoN(i + 1) : t.recipes.reviewPhotoToggle}
+                  </Chip>
+                ))}
+                {report && (
+                  <Chip selected={tab === 'report'} onClick={() => setTab((x) => (x === 'report' ? 'verify' : 'report'))}>
+                    {t.recipes.reviewTabReport}
+                  </Chip>
+                )}
+              </Cluster>
+            )}
+            {photoUrls.length ? (
+              /* The page under a LOUPE, a third of the phone high — not the whole photo at
+                 full width, which left no room for the lines (Marc, 2026-10-30: « a
+                 zoomed-in picture we can drag up, down, left, right, and show where we are
+                 in the bigger picture »): the shared PanZoom opened at 2×, top centred,
+                 with its minimap in the corner. Keyed by page so each opens at its top. */
+              shown != null && (
                 <PanZoom key={shown} className="read-review__mag" ariaLabel={t.recipes.reviewPhotoAlt} initialScale={2} minimap={<img className="read-review__mag-img" src={photoUrls[shown]} alt="" draggable={false} />}>
                   <img className="read-review__mag-img" src={photoUrls[shown]} alt={t.recipes.reviewPhotoAlt} draggable={false} />
                 </PanZoom>
-              </div>
-            )
-          ) : (
-            // The page text in the same sticky column — selectable, scrollable, never
-            // editable (it is the SOURCE the lines are checked against).
-            <pre className="read-review__photo read-review__source" tabIndex={0} aria-label={t.recipes.reviewSourceText}>
-              {sourceText ?? ''}
-            </pre>
-          )}
+              )
+            ) : (
+              // The page text in the same sticky block — selectable, scrollable, never
+              // editable (it is the SOURCE the lines are checked against).
+              <pre className="read-review__source" tabIndex={0} aria-label={t.recipes.reviewSourceText}>
+                {sourceText ?? ''}
+              </pre>
+            )}
+          </div>
 
           {report && tab === 'report' ? (
             <ReadReportPanel report={report} fromText={fromText} />
