@@ -43,3 +43,7 @@ test-results/
 # page.html.gz + meta.json + the hand-verified expected.json are the corpus
 functions/test/fixtures/recipes/corpus/*/proposed.txt
 functions/test/fixtures/recipes/corpus/*/expected.proposed.json
+
+# Recipe corpus drafts: a proposal is never the truth (scripts/recipe-corpus.mjs, recipe-photos.mjs)
+functions/test/fixtures/recipes/**/expected.proposed.json
+functions/test/fixtures/recipes/**/*.transcript.proposed.txt
