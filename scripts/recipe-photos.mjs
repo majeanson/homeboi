@@ -105,6 +105,7 @@ async function propose(id, quiet = false) {
 
 async function score(id) {
   const corpus = await load('functions/test/recipeCorpus.ts')
+  const photos = await load('functions/test/recipePhotoCorpus.ts')
   const rows = []
   let exact = 0
   for (const { e, read: got, audit } of await propose(id, true)) {
@@ -114,8 +115,10 @@ async function score(id) {
     }
     const want = e.expected
     // HOW it was structured is the pipeline's choice (the shape read when it is sure, else
-    // the model) — both must read the page exactly; neither is the expectation.
-    const diff = corpus.diffExpected(want, { ...got, structuring: want.structuring })
+    // the model) — both must read the page exactly; neither is the expectation. And the
+    // comparison is the corpus test's: apostrophes, guillemet spacing, fraction glyphs and
+    // a part heading's case are typography, not reading.
+    const diff = corpus.diffExpected(photos.canonExpected(want), photos.canonExpected({ ...got, structuring: want.structuring }))
     if (!diff.length) exact++
     const n = (k) => {
       const a = want[k] ?? []
