@@ -106,7 +106,9 @@ async function score(id) {
       continue
     }
     const want = e.expected
-    const diff = corpus.diffExpected(want, got)
+    // HOW it was structured is the pipeline's choice (the shape read when it is sure, else
+    // the model) — both must read the page exactly; neither is the expectation.
+    const diff = corpus.diffExpected(want, { ...got, structuring: want.structuring })
     if (!diff.length) exact++
     const n = (k) => {
       const a = want[k] ?? []

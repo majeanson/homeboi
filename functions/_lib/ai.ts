@@ -514,6 +514,7 @@ Reply with JSON: {"title": n|null, "servings": n|null, "prep": n|null, "cook": n
 - title: the recipe's name. servings / prep / cook: the line that states the yield / the prep time / the cooking time, or null.
 - ingredients: every ingredient line. steps: every line of the method, up to the LAST one. notes: tips, variations, storage notes.
 - A short label line like "Sauce" or "For the glaze:" that heads a group of ingredients or steps is a SECTION: {"line": its number, "before": the number of the first line of its group}. It is not itself an ingredient or a step.
+- A VARIANT on the page ("For a bowl version", "Garnishes:", "For the sauce:") keeps its ingredient lines in ingredients and its numbered lines in steps, each under its own section — never in notes. notes are tips only.
 - Keep page order. A line may appear only once. Leave out menus, ads, comments, other recipes.
 ${note ? `Cook's note: "${note}"\n` : ''}Text:
 ${numbered}`
@@ -522,6 +523,7 @@ Réponds en JSON : {"title": n|null, "servings": n|null, "prep": n|null, "cook":
 - title : le nom de la recette. servings / prep / cook : la ligne qui donne le rendement / le temps de préparation / le temps de cuisson, ou null.
 - ingredients : chaque ligne d'ingrédient. steps : chaque ligne de la méthode, jusqu'à la DERNIÈRE. notes : conseils, variantes, conservation.
 - Une courte ligne d'étiquette comme « Sauce » ou « Pour le glaçage : » qui coiffe un groupe d'ingrédients ou d'étapes est une SECTION : {"line": son numéro, "before": le numéro de la première ligne de son groupe}. Elle n'est pas elle-même un ingrédient ni une étape.
+- Une VARIANTE sur la page (« Pour une version bol », « Garnitures : », « Pour la sauce : ») garde ses lignes d'ingrédients dans ingredients et ses lignes numérotées dans steps, chacune sous sa propre section — jamais dans notes. notes ne contient que des conseils.
 - Garde l'ordre de la page. Une ligne n'apparaît qu'une fois. Laisse de côté les menus, publicités, commentaires, autres recettes.
 ${note ? `Indication du cuisinier : « ${note} »\n` : ''}Texte :
 ${numbered}`

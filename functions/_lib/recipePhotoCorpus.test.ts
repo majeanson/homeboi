@@ -154,5 +154,17 @@ describe('photo corpus — real pages, the reader’s real transcripts, read exa
         expect(diff, `${e.id}\n${diff.join('\n')}`).toEqual([])
       }
     })
+
+    // The SHAPE read, when it is sure of itself, skips the model on the live path — so on
+    // a page it claims, it must be exactly right too. Deployed on 2026-10-30 it claimed
+    // the quiche and the pâté and put « Sel au goût » and the page's blurb in the steps.
+    it(`${e.id} · 4. the shape read, when confident, is exact too${e.meta.pending ? ' (pending: skipped)' : ''}`, () => {
+      if (e.meta.pending) return
+      const r = readText(stitched)
+      if (!r.read) return // not confident: the model path above is the one that runs
+      const got = expectedOf(r.read)
+      const diff = diffExpected({ ...want, structuring: got.structuring }, got)
+      expect(diff, `${e.id} (shape read, structuring ${got.structuring})\n${diff.join('\n')}`).toEqual([])
+    })
   }
 })

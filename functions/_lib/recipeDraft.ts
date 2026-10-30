@@ -1,7 +1,7 @@
 import type { Env } from './env'
 import { SELECTION_MODEL, type LineSelection, type Lang, selectRecipeLines, selectionLines } from './ai'
 import { detectLang } from './langDetect'
-import { MAX_NOTES_LEN, MAX_STEPS, NO_TIMES, type RecipeTimes, parseRecipeText, parseYield, refineSteps, textToMinutes } from './recipeImport'
+import { MAX_NOTES_LEN, MAX_STEPS, NO_TIMES, NOTE_HEADING, type RecipeTimes, STEP_MARKED, parseRecipeText, parseYield, refineSteps, textToMinutes } from './recipeImport'
 import { jsonFragmentsToText, repairRecipeRead, stripTranscriptPreamble } from './recipeRepair'
 import { dropDanglingHeadings, makeSectionHeading } from './recipeSections'
 
@@ -127,8 +127,15 @@ export async function draftByModel(env: Env, text: string, lang: Lang, known: Kn
 export function draftFromSelection(lines: string[], sel: LineSelection, known: Known): Omit<DraftOut, 'image' | 'source' | 'lang'> | null {
   const bare = (i: number) => lines[i].replace(/^[-•·▪◦‣*–—]+\s*/, '').trim()
   const label = (i: number) => bare(i).replace(/\s*:\s*$/, '')
+  // A part's label heads the lines printed UNDER it: its place is where it physically
+  // sits, before the first picked line after it — not where the model's `before` says
+  // (« Pour la marinade » was put above the whole list, 2026-10-30). A label with no
+  // picked line after it heads nothing and is dropped.
   const withParts = (items: number[], parts: { line: number; before: number }[]): string[] => {
-    const pending = [...parts].sort((a, b) => a.before - b.before)
+    const pending = parts
+      .map((p) => ({ line: p.line, before: items.find((i) => i > p.line) ?? -1 }))
+      .filter((p) => p.before >= 0)
+      .sort((a, b) => a.before - b.before)
     const out: string[] = []
     for (const i of items) {
       while (pending.length && pending[0].before <= i) out.push(makeSectionHeading(label(pending.shift()!.line)))
@@ -136,6 +143,11 @@ export function draftFromSelection(lines: string[], sel: LineSelection, known: K
     }
     return dropDanglingHeadings(out)
   }
+  // A NOTE is a tip. A heading (« Astuces », « Notes »), a bare label (« Pour la sauce : »)
+  // is not one and is dropped; a NUMBERED line is a step wherever the model filed it —
+  // the « version bol »'s « 1. Dans un bol, mélanger… » went to the notes (2026-10-30).
+  const noteIdx = sel.notes.filter((i) => !NOTE_HEADING.test(bare(i)) && !/:\s*$/.test(bare(i)))
+  const numberedNotes = noteIdx.filter((i) => STEP_MARKED.test(bare(i)))
   const ingredients = withParts(sel.ingredients, sel.ingredientSections)
   // The method's lines as printed — one line, one step; refineSteps only strips a
   // « 1. » the editor numbers itself and splits a run-on past the step cap. 'auto', not
@@ -143,13 +155,20 @@ export function draftFromSelection(lines: string[], sel: LineSelection, known: K
   // typed in one go) — now that selectionLines no longer cuts a formatted text's long
   // lines at sentences (2026-10-30), that paragraph reaches here whole, and one
   // 600-char step is not what the cook meant.
-  const steps = dropDanglingHeadings(refineSteps(withParts(sel.steps, sel.stepSections), { blob: 'auto' }))
+  const steps = dropDanglingHeadings(
+    refineSteps(withParts([...sel.steps, ...numberedNotes].sort((a, b) => a - b), sel.stepSections), { blob: 'auto' }),
+  )
   if (!ingredients.length && !steps.length) return null
   const at = (i: number | null) => (i == null ? null : lines[i])
   // The model's notes, and only those: the text read's notes on a page without
   // headings are a guess (a « SE CONGÈLE » badge, 2026-10-30), and a model told what
   // notes are chose none for a reason.
-  const notes = sel.notes.map(bare).join('\n').slice(0, MAX_NOTES_LEN) || null
+  const notes =
+    noteIdx
+      .filter((i) => !numberedNotes.includes(i))
+      .map(bare)
+      .join('\n')
+      .slice(0, MAX_NOTES_LEN) || null
   return {
     // The TITLE is the model's pick first: a selection among the page's lines, where the
     // text read takes the first line and a cookbook's first line is its chapter kicker

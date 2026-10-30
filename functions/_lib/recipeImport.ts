@@ -990,8 +990,11 @@ const STEP_HEADING =
 // A notes heading may carry a short qualifier — « Note de l'équipe Ricardo », « Recipe
 // Notes: », « Conseils du chef » — but never a colon mid-line: « Note : bien mélanger » is
 // a line of the recipe, not a heading.
-const NOTE_HEADING =
+export const NOTE_HEADING =
   /^(?:(?:recipe|chef['’]?s?|cook['’]?s?)\s+)?(?:notes?|remarques?|conseils?|astuces?|tips?|variantes?|bon\s+[àa]\s+savoir|id[ée]es?\s+pour\s+accompagner|pour\s+accompagner|suggestions?\s+d['’]accompagnement|serving\s+suggestions?|suggestions?\s+gourmandes?|trucs?\s+(?:de\s+pro|du\s+chef)|make[- ]ahead(?:\s+and\s+storage)?)\b[^.!?:]{0,30}[:!]?$/i
+// A cookbook page's FOOTER as a photo reads it: a page number with the chapter beside it
+// (« À congeler • 103 », « 104 · À congeler »), or the number alone.
+const PAGE_FOOTER = /^(?:\d{1,3}|\d{1,3}\s*[•·|]\s*\S.{0,24}|\S.{0,24}[•·|]\s*\d{1,3})$/
 
 // "Préparation : 20 min", "Cuisson 1 h 30", "Total time: 45 minutes" — the time
 // block most printed recipes start with. Must be checked BEFORE the step
@@ -1097,7 +1100,7 @@ const ING_LIKE = /^[-•*–▢☐□]?\s*(?:\d|[¼½¾⅓⅔⅛]|une?\b|deux\b|
 // A line that opens on a STEP NUMBER: « 1. Déposer… », « 3) Cuire… », or a cookbook's
 // bare figure before a capital with a sentence behind it (« 4 Augmenter la température
 // du four à 180 °C (350 °F). ») — never an ingredient, and the method's own boundary.
-const STEP_MARKED = /^\d{1,2}(?:\s*[.)]\s*(?=[A-ZÀ-ÖŒ«])|\s+(?=[A-ZÀ-ÖŒ«])(?=.*[.!?]\s*$))/
+export const STEP_MARKED = /^\d{1,2}(?:\s*[.)]\s*(?=[A-ZÀ-ÖŒ«])|\s+(?=[A-ZÀ-ÖŒ«])(?=.*[.!?]\s*$))/
 
 const stripBullet = (s: string): string => s.replace(/^[-•·▪◦‣*–—▢☐□]+\s*/, '').trim()
 
@@ -1168,6 +1171,14 @@ export function parsePastedRecipe(text: string): PastedRecipe {
   const ings: string[] = []
   const stepLines: string[] = []
   const noteLines: string[] = []
+  // Lines the heading walk took as NOTES (under a « Notes » / « Astuces » heading) — the
+  // no-headings fallback re-walks every line and must not read them a second time as
+  // steps (a quiche's tip became step 9, 2026-10-30).
+  const noteAt = new Set<number>()
+  // Every note's line index, parallel to noteLines — a numbered card's notes are read in
+  // two passes (the heading walk takes the « Astuces » box, the shape pass the blurb
+  // above it) and are put back in PAGE order at the end.
+  const noteOrder: number[] = []
   let sawIngHeading = false
   let sawStepHeading = false
 
@@ -1295,6 +1306,7 @@ export function parsePastedRecipe(text: string): PastedRecipe {
     if (inlineNote) {
       mode = 'notes'
       noteLines.push(inlineNote[1])
+      noteOrder.push(li)
       continue
     }
 
@@ -1356,7 +1368,11 @@ export function parsePastedRecipe(text: string): PastedRecipe {
       continue
     }
     // A note's own numbering (« 1 » on a line of its own, a list marker) is not a note.
-    if (!/^\d{1,2}[.)]?$/.test(line)) noteLines.push(line)
+    if (!/^\d{1,2}[.)]?$/.test(line)) {
+      noteLines.push(line)
+      noteOrder.push(li)
+      noteAt.add(li)
+    }
   }
 
   // No headings at all — classify by line shape instead.
@@ -1383,14 +1399,27 @@ export function parsePastedRecipe(text: string): PastedRecipe {
         titleEnd = firstMetaAt
       }
     }
+    // A NUMBERED CARD — a cookbook page whose method is « 1 … 2 … 3 … » — has told us its
+    // shape: the list is everything before the first numbered line (number or not —
+    // « Sel au goût »; a label heads a part; a sentence there is a tip), the method is
+    // the numbered lines, and what follows the last one is the notes box, a blurb, a
+    // badge. Read by shape alone, « Sel au goût » and the blurb were steps (the quiche
+    // and the pâté, deployed, 2026-10-30). A page with the method interleaved with a
+    // second list (a « version bol ») does not fit this and the shape read self-rejects
+    // (heuristicIsGood) — the model sorts it.
+    const bodyFrom = titleEnd >= 0 ? titleEnd : 1
+    const stepAt = lines.map((l, i) => (i >= bodyFrom && !junk.has(i) && !noteAt.has(i) && STEP_MARKED.test(l) ? i : -1)).filter((i) => i >= 0)
+    const numberedCard = stepAt.length >= 2
+    const firstStepAt = stepAt[0] ?? -1
+    const lastStepAt = stepAt[stepAt.length - 1] ?? -1
     let pairTo = -1
     for (let li = 0; li < lines.length; li++) {
       const line = lines[li]
       if (!line || li <= pairTo) continue
-      if (junk.has(li)) continue // a nav bar, a rating, a « Titre » label — never recipe
+      if (junk.has(li) || noteAt.has(li)) continue // a nav bar, a rating, a « Titre » label, a note already read — never recipe
       // The title (one line, or two when wrapped) and a card's header above its strip
       // were captured above; without a title the first line is still the headline.
-      if (li < (titleEnd >= 0 ? titleEnd : 1)) continue
+      if (li < bodyFrom) continue
       if (TIME_LINE.test(line) || (line.length <= 40 && SERVINGS_LINE.test(line))) continue // meta, already read
       // …and the one-line meta strip (see the pass above), already read fragment by
       // fragment; a nav bar and a star rating are not recipe either.
@@ -1399,6 +1428,43 @@ export function parsePastedRecipe(text: string): PastedRecipe {
       if (isRating(line)) continue
       // The site's chrome after the body: the recipe is over.
       if (NOISE_END.test(line) && stepLines.length) break
+      if (numberedCard) {
+        if (PAGE_FOOTER.test(line) || NOTE_HEADING.test(line) || ASIDE_HEADING.test(line)) continue
+        if (li > lastStepAt) {
+          // After the method. A lowercase line right after the last step still finishes
+          // it (a column break); a yield line with its aside (« Quantité 12 portions (24
+          // rondelles congelées) ») was read above; everything else is the notes.
+          const prevStep = stepLines[stepLines.length - 1]
+          if (/^[a-zà-öœ]/.test(line) && prevStep && !/[.!?:]$/.test(prevStep)) stepLines.push(line)
+          else if (line.length <= 60 && SERVINGS_LINE.test(line)) continue
+          else {
+            noteLines.push(line)
+            noteOrder.push(li)
+          }
+          continue
+        }
+        if (li < firstStepAt) {
+          const sec = inlineSectionTitle(line)
+          if (sec) {
+            ings.push(makeSectionHeading(sec))
+            continue
+          }
+          const words = wordsAfter(li)
+          if (words >= 0) {
+            ings.push(`${stripBullet(line)} ${lines[words]}`.slice(0, MAX_INGREDIENT_LEN))
+            pairTo = words
+            continue
+          }
+          // A sentence in the list column is a tip (« ⇨ Vous pouvez remplacer… »).
+          if (line.length > 80 || /[.!?]$/.test(line)) {
+            noteLines.push(line)
+            noteOrder.push(li)
+          } else ings.push(stripBullet(line).slice(0, MAX_INGREDIENT_LEN))
+          continue
+        }
+        stepLines.push(line) // the method: numbered lines, and whatever sits between them
+        continue
+      }
       // A WRAPPED line of prose is a continuation, not an ingredient — even when the
       // wrap happens to fall right before a quantity (« Verser » / « 15 ml (1 c. à
       // soupe) de miel et 7,5 ml (1/2 c. à » / « soupe) de sauce soya… »). The tell is
@@ -1450,8 +1516,11 @@ export function parsePastedRecipe(text: string): PastedRecipe {
       : merged
   const steps = dropDanglingHeadings(refineSteps(blobs, { blob: 'auto' }))
   // One note per printed line: a numbered « 1. … 2. … » list or two paragraphs stay apart.
-  // A line printed twice (a page that shows its notes in two layouts) is kept once.
-  const notes = [...new Set(noteLines)].join('\n').trim().slice(0, MAX_NOTES_LEN) || null
+  // A line printed twice (a page that shows its notes in two layouts) is kept once. In
+  // PAGE order when every note carries its line (the two passes of a numbered card).
+  const inPageOrder =
+    noteOrder.length === noteLines.length ? noteLines.map((l, k) => ({ l, i: noteOrder[k] })).sort((a, b) => a.i - b.i).map((x) => x.l) : noteLines
+  const notes = [...new Set(inPageOrder)].join('\n').trim().slice(0, MAX_NOTES_LEN) || null
 
   const ingredients = dropDanglingHeadings(ings.slice(0, MAX_INGREDIENTS))
   const realIngs = ingredients.filter((l) => !isSectionHeading(l))
