@@ -82,11 +82,14 @@ function cleanList(v: unknown, max = MAX_INGREDIENTS, maxLen = MAX_INGREDIENT_LE
 // It was 40 rows, so a long import lost its tail AT SAVE (2026-10-27).
 const cleanSteps = (v: unknown): string[] => cleanList(v, MAX_STEP_ROWS, MAX_STEP_LEN)
 
-// The read-from photo's R2 key inside a stored original snapshot, if any — so it's
-// freed with the row (and when a re-import during edit replaces the snapshot).
-function originalSourceImage(json: string | null): string | null {
+// The read-from photos' R2 keys inside a stored original snapshot — every page (the
+// first doubles as `sourceImage` for older snapshots) — so they are freed with the row
+// (and when a re-import during edit replaces the snapshot).
+function originalSourceImages(json: string | null): string[] {
   const o = parseOriginal(json)
-  return isValidR2Key(o?.sourceImage) ? (o!.sourceImage as string) : null
+  if (!o) return []
+  const keys = [o.sourceImage, ...(Array.isArray(o.sourceImages) ? o.sourceImages : [])].filter((k): k is string => isValidR2Key(k))
+  return [...new Set(keys)]
 }
 
 // Validate + serialize the as-imported snapshot. Returns the JSON string for
@@ -105,8 +108,10 @@ function cleanOriginal(v: unknown): string | null {
     servings: typeof o.servings === 'number' && o.servings > 0 ? Math.floor(o.servings) : null,
     source: isStr(o.source) ? o.source.trim().slice(0, 600) || null : null,
     importedAt: typeof o.importedAt === 'number' ? Math.floor(o.importedAt) : null,
-    // The read-from photo's R2 key (validated like a step-image key, never a URL).
+    // The read-from photo's R2 key (validated like a step-image key, never a URL) —
+    // and every page of it, in order, a few at most (a spread is two or three).
     sourceImage: isValidR2Key(o.sourceImage) ? o.sourceImage : null,
+    sourceImages: (Array.isArray(o.sourceImages) ? o.sourceImages : []).filter((k): k is string => isValidR2Key(k)).slice(0, 8),
   })
 }
 
@@ -235,11 +240,10 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     const kept = new Set(newStepImages)
     const orphaned = stepImageKeys(prev.steps_images_json).filter((k) => !kept.has(k))
     for (const k of orphaned) await deleteR2Blob(ctx.env.PHOTOS, k)
-    // A re-import during the edit can replace the snapshot (and its source photo);
-    // free the old source-card blob when it's no longer the one we just stored.
-    const prevSrc = originalSourceImage(prev.original_json)
-    const nextSrc = originalSourceImage(original)
-    if (prevSrc && prevSrc !== nextSrc) await deleteR2Blob(ctx.env.PHOTOS, prevSrc)
+    // A re-import during the edit can replace the snapshot (and its source photos);
+    // free every old source-page blob that is no longer among the ones just stored.
+    const nextSrc = new Set(originalSourceImages(original))
+    for (const k of originalSourceImages(prev.original_json)) if (!nextSrc.has(k)) await deleteR2Blob(ctx.env.PHOTOS, k)
   }
   return ok({ ok: true })
 })
@@ -257,9 +261,8 @@ export const onRequestDelete = authed(async (ctx, actor) => {
   if (ctx.env.PHOTOS) {
     if (isR2Key(row?.image)) await deleteR2Blob(ctx.env.PHOTOS, row?.image)
     for (const k of stepImageKeys(row?.steps_images_json)) await deleteR2Blob(ctx.env.PHOTOS, k)
-    // The source-card photo lives in the original snapshot (photo-import path).
-    const src = originalSourceImage(row?.original_json ?? null)
-    if (src) await deleteR2Blob(ctx.env.PHOTOS, src)
+    // The source-card photos live in the original snapshot (photo-import path).
+    for (const k of originalSourceImages(row?.original_json ?? null)) await deleteR2Blob(ctx.env.PHOTOS, k)
   }
   await ctx.env.DB.prepare('DELETE FROM recipes WHERE id = ? AND household_id = ?')
     .bind(body.id, actor.householdId)

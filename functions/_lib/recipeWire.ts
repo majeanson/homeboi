@@ -55,6 +55,10 @@ export interface RecipeOriginal {
   // « Original » view can show the source card. An R2 key only — never a remote
   // URL — and freed with the row on delete.
   sourceImage?: string | null
+  // EVERY page read, in order (a two-page spread, 2026-10-30: « tel qu'importé only
+  // gives the first photo »). `sourceImage` stays the first of them for older
+  // readers. R2 keys only, freed with the row like the first.
+  sourceImages?: string[]
 }
 
 const isStr = (v: unknown): v is string => typeof v === 'string'

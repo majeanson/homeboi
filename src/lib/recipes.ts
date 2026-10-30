@@ -19,6 +19,9 @@ export interface RecipeOriginal {
   // text months later (the sheet's "Original" view renders it). Only set for the
   // photo-import path; null/undefined for URL/paste imports or when R2 is unbound.
   sourceImage?: string | null
+  // Every page read, in order (`sourceImage` is the first of them) — a two-page
+  // spread shows both under « Tel qu'importé » (2026-10-30).
+  sourceImages?: string[]
 }
 
 export interface Recipe {

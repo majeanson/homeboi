@@ -189,7 +189,8 @@ export function RecipeForm({
     // Every page read, in order (object URLs, revoked on close) — empty for page text.
     photoUrls: string[]
     sourceText?: string | null
-    sourceFile: File | null
+    // Every page's file, in order — all stashed to R2 on confirm; empty for page text.
+    sourceFiles: File[]
     lowConfidenceWords: string[]
     report: ReadReport
     // How the read was made, for the provenance line once confirmed (a site-data read
@@ -441,6 +442,8 @@ export function RecipeForm({
     // R2 key of the photo this was READ from (photo-import path) — stashed into the
     // original snapshot so the sheet can show the source card later.
     sourceImage?: string | null
+    // …and every page of it, in order (a two-page spread keeps both, 2026-10-30).
+    sourceImages?: string[]
     // The site's step photos, already stored (R2 keys, aligned to `steps`; '' = none).
     stepImages?: string[]
   }
@@ -486,7 +489,8 @@ export function RecipeForm({
         servings: d.servings ?? null,
         source: d.source ?? null,
         importedAt: Math.floor(Date.now() / 1000),
-        sourceImage: d.sourceImage ?? null,
+        sourceImage: d.sourceImage ?? d.sourceImages?.[0] ?? null,
+        sourceImages: d.sourceImages ?? (d.sourceImage ? [d.sourceImage] : []),
       })
     }
   }
@@ -758,7 +762,7 @@ export function RecipeForm({
       setReadReview({
         draft,
         photoUrls: files.map((f) => URL.createObjectURL(f)),
-        sourceFile: files[0],
+        sourceFiles: files,
         lowConfidenceWords: [...lowWords],
         report,
       })
@@ -777,13 +781,16 @@ export function RecipeForm({
   async function confirmRead(edited: Draft) {
     if (!readReview) return
     setConfirming(true)
-    let sourceImage: string | null = null
-    // A photo read stashes its source card; a page-text read has no file to keep.
-    if (readReview.sourceFile) {
-      try {
-        sourceImage = await uploadMedia('recipe-image', readReview.sourceFile, { maxBytes: MAX_UPLOAD_BYTES })
-      } catch {
-        /* R2 off / un-shrinkable — keep the parsed recipe, just no source snapshot */
+    // A photo read stashes EVERY page it was read from (a two-page spread keeps both —
+    // Marc, 2026-10-30); a page-text read has no file to keep.
+    const sourceImages: string[] = []
+    if (readReview.sourceFiles.length) {
+      for (const f of readReview.sourceFiles) {
+        try {
+          sourceImages.push(await uploadMedia('recipe-image', f, { maxBytes: MAX_UPLOAD_BYTES }))
+        } catch {
+          /* R2 off / un-shrinkable — keep the parsed recipe, just no source snapshot */
+        }
       }
     } else {
       // The link/paste import the cook just checked: its picture and link land now,
@@ -797,7 +804,7 @@ export function RecipeForm({
     // The verify panel splits and drops rows freely; the site's step photos are aligned to the
     // rows it was handed, so once the row count moved they would sit on the wrong steps.
     // Free them instead of guessing.
-    let confirmed: Draft = { ...edited, sourceImage }
+    let confirmed: Draft = { ...edited, sourceImage: sourceImages[0] ?? null, sourceImages }
     const handed = readReview.draft as ReadDraft
     if (confirmed.stepImages?.some(Boolean) && confirmed.steps?.length !== handed.steps.length) {
       const drop = confirmed.stepImages.filter(Boolean)
@@ -878,7 +885,7 @@ export function RecipeForm({
           draft: r,
           photoUrls: [],
           sourceText: r.transcript ?? null,
-          sourceFile: null,
+          sourceFiles: [],
           lowConfidenceWords: [],
           report: {
             reader: 'page',
@@ -1723,7 +1730,7 @@ export function RecipeForm({
           onConfirm={confirmRead}
           onCancel={closeReadReview}
           // « Guider l'IA » only for a page the AI organised — a photo has « Annuler ».
-          onRetry={readReview.sourceFile ? undefined : (h) => void runImport(h)}
+          onRetry={readReview.sourceFiles.length ? undefined : (h) => void runImport(h)}
           retrying={importing}
         />
       )}

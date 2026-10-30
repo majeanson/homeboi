@@ -311,13 +311,13 @@ export function RecipeSheet({
             </p>
             {/* The photo this recipe was READ from (photo-import path), so the cook
                 can re-check the parsed text against the real card any time. */}
-            {orig?.sourceImage && recipeImg(orig.sourceImage) && (
-              <ZoomableImg
-                className="recipe-original__source"
-                src={recipeImg(orig.sourceImage)!}
-                alt={t.recipes.reviewPhotoAlt}
-              />
-            )}
+            {/* EVERY page it was read from, in order (a two-page spread shows both —
+                Marc, 2026-10-30: « tel qu'importé only gives the first photo »). */}
+            {(orig?.sourceImages?.length ? orig.sourceImages : orig?.sourceImage ? [orig.sourceImage] : [])
+              .filter((k) => recipeImg(k))
+              .map((k, i) => (
+                <ZoomableImg key={k} className="recipe-original__source" src={recipeImg(k)!} alt={`${t.recipes.reviewPhotoAlt} ${i + 1}`} />
+              ))}
             <h3 className="recipe-original__title">{origView.title}</h3>
             {origView.servings ? <p className="recipe-original__meta">{t.recipes.servingsN(origView.servings)}</p> : null}
             {origView.ingredients.length > 0 && (
