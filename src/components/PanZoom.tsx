@@ -23,10 +23,14 @@ export function PanZoom({
   ariaLabel,
   initialScale = 1,
   minimap,
+  tools,
 }: {
   children: ReactNode
   className?: string
   ariaLabel?: string
+  /** Extra controls for the floating cluster, placed before − ⌖ + (the recipe verify
+   *  panel's « P1 P2 R » chips) — one bar, not two boxes over the picture. */
+  tools?: ReactNode
   /** Open already zoomed, top-left corner first (a cookbook page at 2× reads on a phone). */
   initialScale?: number
   /** A thumbnail of the WHOLE content, in the child's fit-to-box shape: drawn in the
@@ -208,6 +212,7 @@ export function PanZoom({
         </div>
       </div>
       <div className="panzoom__controls">
+        {tools}
         <button type="button" className="btn btn--icon" onClick={zoomOut} disabled={scale <= MIN} aria-label={t.common.zoomOut} title={t.common.zoomOut}>
           <Icon name="minus-bold" size={18} />
         </button>

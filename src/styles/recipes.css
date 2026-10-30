@@ -1087,6 +1087,20 @@
     max-height: calc(var(--vvh, 100dvh) - 0px);
   }
 }
+/* An OPTIONAL ingredient's « (facultatif) » worn as a quiet tag at the end of its line
+   (IngredientLine) — the page's word, set apart from the must-haves. */
+.ing-opt {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0 0.45rem;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  color: var(--ink-soft);
+  font-size: 0.75em;
+  line-height: 1.6;
+  vertical-align: 0.1em;
+}
+
 /* The VERSION switch on a recipe with an alternative (« pour une version bol »): one
    chip row above the lists on the sheet and at the top of the cook stage — « Recette »
    for the base, the page's own word for each version (lib/recipeSections). */
@@ -1097,28 +1111,14 @@
   margin: 0.5rem var(--gutter) 0;
 }
 
-/* The chips (one per photo, then « Rapport ») ride ON the picture — top-left, a frosted
-   pill like the zoom cluster top-right — so the strip is one block of page, no band
-   above it (Marc, 2026-10-30: « there's a gap between the pills and the photo; make it
-   one nice block, maximum picture content viewable; put pills on top of picture »).
-   With no loupe open (page folded away, or a text source) they sit in the flow. */
+/* The chips (one per photo, then « Rapport ») live IN the loupe's bar with − ⌖ + (PanZoom
+   `tools`, `.panzoom--bar`): one flat box across the top of the picture, « P1 P2 R »
+   (Marc, 2026-10-30: « pills are too big, reduce to one letter; agglomerate − reset +
+   into that toolbar, starting from the very top of the picture, the least height
+   possible »). With no loupe open (page folded away, or a text source) the same chips
+   sit in the flow, where their full words fit. */
 .read-review__tools {
   padding: 0.5rem 1rem;
-}
-.read-review__photo:has(.read-review__mag) > .read-review__tools {
-  position: absolute;
-  top: 0.6rem;
-  left: 0.6rem;
-  z-index: 2;
-  max-width: calc(100% - 9.5rem); /* clear of the zoom cluster; wraps past that */
-  padding: 0.25rem;
-  gap: 0.25rem;
-  background: color-mix(in srgb, var(--card) 80%, transparent);
-  -webkit-backdrop-filter: blur(10px) saturate(1.15);
-  backdrop-filter: blur(10px) saturate(1.15);
-  border: 1px solid color-mix(in srgb, var(--line) 65%, transparent);
-  border-radius: var(--radius-pill);
-  box-shadow: var(--shadow-md);
 }
 /* Style Modal's title as the old top bar (the ✕ floats over it via kit-modal__close). */
 .read-review .kit-modal__title {

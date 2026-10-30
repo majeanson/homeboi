@@ -252,16 +252,27 @@ export function draftFromSelection(lines: string[], sel: LineSelection, known: K
     else if ((i > firstIng && i < lastIng) || (i > lastIng && i < firstStep && /^(?:\d|[¼½¾⅓⅔⅛])/.test(bare(i)))) strayIng.push(i)
     else strayNotes.push(i)
   }
-  const ingredientIdx = [...ingAll, ...strayIng].sort((a, b) => a - b).filter((i) => !versionSet.has(i))
-  const ingredients = withParts(ingredientIdx, versioned(ingredientIdx, [...sel.ingredientSections, ...restoredSections]))
+  // A picked line that is a bare LABEL — a colon, no figure, a few words (« pour la
+  // sauce : ») — heads the lines under it; it is not an ingredient or a step (the
+  // selector filed one as an ingredient and it sat in the list with its colon, Marc,
+  // 2026-10-30: « "Pour la sauce :" is not clear at all »).
+  const isLabelLine = (i: number) => /:\s*$/.test(lines[i].trim()) && !/\d/.test(lines[i]) && lines[i].replace(/\s*:\s*$/, '').split(/\s+/).length <= 6
+  const labelled = (items: number[], parts: Part[]): { items: number[]; parts: Part[] } => ({
+    items: items.filter((i) => !isLabelLine(i)),
+    parts: [...parts, ...items.filter(isLabelLine).map((i) => ({ line: i, before: -1 }))],
+  })
+  const ingL = labelled([...ingAll, ...strayIng].sort((a, b) => a - b).filter((i) => !versionSet.has(i)), [...sel.ingredientSections, ...restoredSections])
+  const ingredientIdx = ingL.items
+  const ingredients = withParts(ingredientIdx, versioned(ingredientIdx, ingL.parts))
   // The method's lines as printed — one line, one step; refineSteps only strips a
   // « 1. » the editor numbers itself and splits a run-on past the step cap. 'auto', not
   // 'keep': the ONE case it differs is a method that is a single long paragraph (a paste
   // typed in one go) — now that selectionLines no longer cuts a formatted text's long
   // lines at sentences (2026-10-30), that paragraph reaches here whole, and one
   // 600-char step is not what the cook meant.
-  const stepIdx = [...stepAll, ...straySteps].sort((a, b) => a - b).filter((i) => !versionSet.has(i))
-  const steps = dropDanglingHeadings(refineSteps(withParts(stepIdx, versioned(stepIdx, sel.stepSections)), { blob: 'auto' }))
+  const stL = labelled([...stepAll, ...straySteps].sort((a, b) => a - b).filter((i) => !versionSet.has(i)), sel.stepSections)
+  const stepIdx = stL.items
+  const steps = dropDanglingHeadings(refineSteps(withParts(stepIdx, versioned(stepIdx, stL.parts)), { blob: 'auto' }))
   if (!ingredients.length && !steps.length) return null
   const at = (i: number | null) => (i == null ? null : lines[i])
   // The model's notes — plus the strays above: the text read's notes on a page without

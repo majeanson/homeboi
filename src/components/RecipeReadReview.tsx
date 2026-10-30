@@ -380,6 +380,27 @@ export function RecipeReadReview({
     </>
   )
 
+  // One chip per photo (« Photo 1 », « Photo 2 »…; « Photo » for one; the picked one shows
+  // under the loupe, tapping it again folds the page away) and « Rapport » last — the
+  // pipeline honesty report as a toggle. `short` = the loupe bar's one-letter face.
+  const chips = (short: boolean) => (
+    <>
+      {photoUrls.map((_, i) => {
+        const word = photoUrls.length > 1 ? t.recipes.reviewPhotoN(i + 1) : t.recipes.reviewPhotoToggle
+        return (
+          <Chip key={i} selected={shown === i} onClick={() => setShown((s) => (s === i ? null : i))} icon={short ? undefined : 'image-square-bold'} ariaLabel={short ? word : undefined}>
+            {short ? (photoUrls.length > 1 ? t.recipes.reviewPhotoShortN(i + 1) : t.recipes.reviewPhotoShort) : word}
+          </Chip>
+        )
+      })}
+      {report && (
+        <Chip selected={tab === 'report'} onClick={() => setTab((x) => (x === 'report' ? 'verify' : 'report'))} ariaLabel={short ? t.recipes.reviewTabReport : undefined}>
+          {short ? t.recipes.reviewReportShort : t.recipes.reviewTabReport}
+        </Chip>
+      )}
+    </>
+  )
+
   return (
     <Modal open onClose={onCancel} className="read-review" title={t.recipes.reviewTitle}>
         <div className="read-review__body">
@@ -392,20 +413,10 @@ export function RecipeReadReview({
               (Marc, 2026-10-30). The lines, the hints and the title scroll under it, so
               a line is always read with the page in view — on BOTH faces. */}
           <div className="read-review__photo">
-            {(photoUrls.length > 0 || report) && (
-              <Cluster className="read-review__tools">
-                {photoUrls.map((_, i) => (
-                  <Chip key={i} selected={shown === i} onClick={() => setShown((s) => (s === i ? null : i))} icon="image-square-bold">
-                    {photoUrls.length > 1 ? t.recipes.reviewPhotoN(i + 1) : t.recipes.reviewPhotoToggle}
-                  </Chip>
-                ))}
-                {report && (
-                  <Chip selected={tab === 'report'} onClick={() => setTab((x) => (x === 'report' ? 'verify' : 'report'))}>
-                    {t.recipes.reviewTabReport}
-                  </Chip>
-                )}
-              </Cluster>
-            )}
+            {/* With the loupe open the chips ride in ITS bar, one letter each (« P1 P2
+                R », the full word as the accessible name) beside − ⌖ +; folded, or on a
+                text source, the same chips sit in the flow with their words. */}
+            {!(photoUrls.length && shown != null) && (photoUrls.length > 0 || report) && <Cluster className="read-review__tools">{chips(false)}</Cluster>}
             {photoUrls.length ? (
               /* The page under a LOUPE, a third of the phone high — not the whole photo at
                  full width, which left no room for the lines (Marc, 2026-10-30: « a
@@ -413,7 +424,14 @@ export function RecipeReadReview({
                  in the bigger picture »): the shared PanZoom opened at 2×, top centred,
                  with its minimap in the corner. Keyed by page so each opens at its top. */
               shown != null && (
-                <PanZoom key={shown} className="read-review__mag" ariaLabel={t.recipes.reviewPhotoAlt} initialScale={2} minimap={<img className="read-review__mag-img" src={photoUrls[shown]} alt="" draggable={false} />}>
+                <PanZoom
+                  key={shown}
+                  className="read-review__mag panzoom--bar"
+                  ariaLabel={t.recipes.reviewPhotoAlt}
+                  initialScale={2}
+                  tools={chips(true)}
+                  minimap={<img className="read-review__mag-img" src={photoUrls[shown]} alt="" draggable={false} />}
+                >
                   <img className="read-review__mag-img" src={photoUrls[shown]} alt={t.recipes.reviewPhotoAlt} draggable={false} />
                 </PanZoom>
               )

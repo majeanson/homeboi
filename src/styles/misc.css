@@ -110,6 +110,35 @@
   transform-origin: 0 0;
   will-change: transform;
 }
+/* `.panzoom--bar`: the cluster as ONE flat strip across the very top of the surface —
+   the least height possible, square corners, the caller's `tools` on the left and
+   − ⌖ + on the right (the recipe verify panel's loupe, Marc, 2026-10-30: « agglomerate
+   − reset + into that toolbar, starting from the very top of the picture like a box »). */
+.panzoom--bar .panzoom__controls {
+  left: 0;
+  right: 0;
+  top: 0;
+  gap: 0.2rem;
+  padding: 0.2rem 0.35rem;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 65%, transparent);
+  border-radius: 0;
+  box-shadow: none;
+}
+.panzoom--bar .panzoom__controls > .chip + .btn--icon {
+  margin-left: auto; /* the caller's chips left, − ⌖ + right */
+}
+.panzoom--bar .panzoom__controls .btn--icon {
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+}
+.panzoom--bar .panzoom__controls .chip {
+  min-height: 30px;
+  padding: 0 0.6rem;
+  font-size: 0.85rem;
+}
+
 /* The MINIMAP (opt-in): the whole content as a thumbnail in the bottom-right corner,
    the visible window drawn on it — tap or drag there to jump (the recipe verify panel's
    loupe over a cookbook page, 2026-10-30). Same proportions as the surface, so a

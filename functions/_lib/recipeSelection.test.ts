@@ -158,6 +158,17 @@ describe('a model selection vs the text read', () => {
     expect(bare.ingredients).toEqual(['4 pavés de saumon', '## Variante', '2 oignons'])
     expect(bare.steps).toEqual(['Cuire.', '## Variante', 'Frire.'])
   })
+  // Marc, 2026-10-30: « "Pour la sauce :" is not clear at all » — the selector had filed
+  // the page's part label as an INGREDIENT, so it sat in the list with its colon, heading
+  // nothing. A picked line that is a bare label (a colon, no figure, a few words) is a
+  // part heading at its place — in the list and in the method alike.
+  it('a part label the model filed as a line becomes the heading of the lines under it', () => {
+    const page = ['Saumon', '4 pavés de saumon', 'pour la sauce :', '80 ml de mayonnaise', 'Pour la cuisson :', '1 Cuire 10 minutes.']
+    const s: LineSelection = { title: 0, servings: null, prep: null, cook: null, ingredients: [1, 2, 3], steps: [4, 5], notes: [], ingredientSections: [], stepSections: [] }
+    const d = draftFromSelection(page, s, { title: null, servings: null, servingsUnit: null, times: { prep: null, cook: null, total: null } })!
+    expect(d.ingredients).toEqual(['4 pavés de saumon', '## pour la sauce', '80 ml de mayonnaise'])
+    expect(d.steps).toEqual(['## Pour la cuisson', 'Cuire 10 minutes.'])
+  })
   it('a line the model filed nowhere is kept where the page puts it — never dropped', () => {
     const page = [
       'plaques-bols',

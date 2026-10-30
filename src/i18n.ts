@@ -1496,6 +1496,11 @@ export const FR = {
     reviewTabReport: 'Rapport',
     reviewPhotoToggle: 'Photo',
     reviewPhotoN: (n: number) => `Photo ${n}`,
+    // The loupe's bar says it in one letter (« P1 P2 R »); the full word stays the
+    // accessible name.
+    reviewPhotoShort: 'P',
+    reviewPhotoShortN: (n: number) => `P${n}`,
+    reviewReportShort: 'R',
     // The version switch on a recipe that carries an alternative (« version bol ») —
     // the base recipe's chip; each version's chip is the page's own label.
     versionBase: 'Recette',
