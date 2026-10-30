@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type TouchEvent as ReactTouchEvent } from 'react'
+﻿import { useCallback, useEffect, useRef, useState, type TouchEvent as ReactTouchEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { useT, useLang } from '../i18n'
 import { useAudience } from '../lib/audience'
@@ -619,7 +619,6 @@ export function CookMode({
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
       >
-        {mode === 'full' ? (
         {/* The version switch (parent only; the toddler cooks the base): the page's own
             words for each alternative, « Recette » for the base. */}
         {!isToddler && versions.length > 0 && (
@@ -634,6 +633,7 @@ export function CookMode({
             ))}
           </Cluster>
         )}
+        {mode === 'full' ? (
           <div className="cook__full">
             {recipe.ingredients.length > 0 && (
               <section className="cook__full-sec">
