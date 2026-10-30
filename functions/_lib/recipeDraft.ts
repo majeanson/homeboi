@@ -150,7 +150,36 @@ export function draftFromSelection(lines: string[], sel: LineSelection, known: K
   // the « version bol »'s « 1. Dans un bol, mélanger… » went to the notes (2026-10-30).
   const noteIdx = sel.notes.filter((i) => !NOTE_HEADING.test(bare(i)) && !/:\s*$/.test(bare(i)))
   const numberedNotes = noteIdx.filter((i) => STEP_MARKED.test(bare(i)))
-  const ingredients = withParts(sel.ingredients, sel.ingredientSections)
+  // A BULLETED printed line is a list item — the page's author made it one — and a list
+  // item the model filed nowhere (not an ingredient, a step, a note, a label, the title)
+  // is still on the page. The selector left out « › Chou rouge émincé » and its three
+  // sisters under « Garnitures (au choix et au goût) : » on every run (2026-10-30): it
+  // read « au choix » as « not an ingredient ». Restored at their place in the source,
+  // under the label printed right above the run — copied, never written.
+  const filed = new Set<number>([
+    ...sel.ingredients,
+    ...sel.steps,
+    ...sel.notes,
+    ...sel.ingredientSections.map((s) => s.line),
+    ...sel.stepSections.map((s) => s.line),
+    ...(sel.title != null ? [sel.title] : []),
+  ])
+  const isBullet = (i: number) => /^[-•·▪◦‣*–—›»▸►⇨➜→]\s+\S/.test(lines[i])
+  const isLabel = (i: number) => /:\s*$/.test(lines[i]) || (/^[A-ZÀ-ÖŒ][^\d.!?;]{0,40}$/.test(lines[i]) && lines[i].split(/\s+/).length <= 6)
+  const restored: number[] = []
+  const restoredSections: { line: number; before: number }[] = []
+  for (let i = 0; i < lines.length; i++) {
+    if (filed.has(i) || !isBullet(i)) continue
+    const runStart = i
+    while (i + 1 < lines.length && !filed.has(i + 1) && isBullet(i + 1)) i++
+    for (let k = runStart; k <= i; k++) restored.push(k)
+    // The label printed right above the run heads it — when that label is not already
+    // a section the model named (then its lines simply join that section).
+    const above = runStart - 1
+    if (above >= 0 && !filed.has(above) && isLabel(above)) restoredSections.push({ line: above, before: runStart })
+  }
+  const ingredientIdx = restored.length ? [...sel.ingredients, ...restored].sort((a, b) => a - b) : sel.ingredients
+  const ingredients = withParts(ingredientIdx, [...sel.ingredientSections, ...restoredSections])
   // The method's lines as printed — one line, one step; refineSteps only strips a
   // « 1. » the editor numbers itself and splits a run-on past the step cap. 'auto', not
   // 'keep': the ONE case it differs is a method that is a single long paragraph (a paste
