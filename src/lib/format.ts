@@ -31,6 +31,14 @@ export function formatTime(unixSec: number, lang: Lang): string {
   return fmt('time', lang, { hour: 'numeric', minute: '2-digit' }).format(unixSec * 1000)
 }
 
+// The hour, in the device's zone, at which the next 00:00 UTC falls — when the
+// account's free Workers AI allowance comes back (« il revient vers 20 h »). The cook
+// reads a clock in their own time; the quota keeps Cloudflare's.
+export function formatNextUtcMidnight(lang: Lang, now: number = Date.now()): string {
+  const d = new Date(now)
+  return formatTime(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + 1) / 1000, lang)
+}
+
 // Calm relative time for the "Récents" session log (#38) — "à l'instant",
 // "il y a 4 s", "il y a 2 min", "il y a 1 h". Coarse on purpose: a household
 // glance, never a precise audit clock. `at` and `now` are in milliseconds; `now`

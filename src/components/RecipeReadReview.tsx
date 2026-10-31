@@ -79,7 +79,7 @@ export interface ReadReport {
 /** One model tried and not answering, as the endpoints send it. */
 export interface AiAttemptView {
   model: string
-  reason: 'budget' | 'error' | 'empty' | 'blind'
+  reason: 'budget' | 'quota' | 'error' | 'empty' | 'blind'
 }
 
 /** One audit finding, as the import endpoints send it (`audit` on every response). */
@@ -97,7 +97,7 @@ export const modelLabel = (id: string): string => {
   return [cap(m[1]), m[2] && !/^\d/.test(m[2]) ? cap(m[2]) : '', m[3] ?? ''].filter(Boolean).join(' ')
 }
 const reasonText = (r: AiAttemptView['reason'], t: ReturnType<typeof useT>): string =>
-  r === 'budget' ? t.recipes.aiReasonBudget : r === 'error' ? t.recipes.aiReasonError : r === 'blind' ? t.recipes.aiReasonBlind : t.recipes.aiReasonEmpty
+  r === 'budget' ? t.recipes.aiReasonBudget : r === 'quota' ? t.recipes.aiReasonQuota : r === 'error' ? t.recipes.aiReasonError : r === 'blind' ? t.recipes.aiReasonBlind : t.recipes.aiReasonEmpty
 const attemptsText = (a: AiAttemptView[], t: ReturnType<typeof useT>): string =>
   a.map((x) => `${modelLabel(x.model)} : ${reasonText(x.reason, t)}`).join(' · ')
 const photoWarnText = (k: PhotoWarningKind, t: ReturnType<typeof useT>): string =>

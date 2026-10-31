@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { type AiAttempt, answerQuestion, classifyCapture, decodeStrayEscapes, suggestMeals, resolveLang, extractSizes, salvageTruncatedJson, segmentRunOn, selectionLines, selectRecipeLines, toSelection, transcribeImage, VISION_MODEL_ID, VISION_PRIMARY_ID, VISION_SECOND_ID } from './ai'
+import { type AiAttempt, answerQuestion, attemptReason, classifyCapture, decodeStrayEscapes, suggestMeals, resolveLang, extractSizes, salvageTruncatedJson, segmentRunOn, selectionLines, selectRecipeLines, toSelection, transcribeImage, VISION_MODEL_ID, VISION_PRIMARY_ID, VISION_SECOND_ID } from './ai'
 import type { Env } from './env'
 
 // A fake Workers AI binding that returns a canned `response`, so we can test the
@@ -307,6 +307,22 @@ describe('transcribeImage — primary vision model, Llama fallback', () => {
       { model: VISION_SECOND_ID, reason: 'empty' },
     ])
     expect(report.visionModel).toBe(VISION_MODEL_ID)
+  })
+  // The ACCOUNT's free allowance (10 000 neurons a day, shared by every household, back
+  // at 00:00 UTC) is a different spent quota from the household's own budget — and it
+  // arrives as a plain error from the binding, not as AiBudgetError. Tagged « error »,
+  // the cook read « connexion ? » twice on 2026-10-30 while the real reason sat in the
+  // AI error journal in English. It is its own reason, so the UI can say when it is back.
+  it("Cloudflare's « daily free allocation used up » (4006) is reason quota, not error", async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const quota = new Error("4006: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare's Workers Paid plan if you would like to continue usage.")
+    const run = vi.fn().mockRejectedValueOnce(quota).mockRejectedValueOnce(quota).mockRejectedValueOnce(quota)
+    const report = { error: null as string | null, visionModel: null as string | null, attempts: [] as AiAttempt[] }
+    expect(await transcribeImage({ DB: {}, AI: { run } } as unknown as Env, bytes, 'fr', report)).toBe('')
+    expect(report.attempts.map((a) => a.reason)).toEqual(['quota', 'quota', 'quota'])
+    // The REST shape of the same refusal (code 3036 « Account limited » in the docs).
+    expect(attemptReason(new Error('3036: Account limited'))).toBe('quota')
+    expect(attemptReason(new Error('5006: bad input'))).toBe('error')
   })
   it('both stronger readers throw (or answer nothing) → the Llama read, named', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})

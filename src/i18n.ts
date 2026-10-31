@@ -1461,7 +1461,8 @@ export const FR = {
     // A model tried and not answering — never silent.
     readerFallback: (model: string) => `Lecteur de secours : ${model}`,
     structuringFallback: 'L’IA n’a pas organisé ce texte — lecture de forme seulement',
-    aiReasonBudget: 'quota IA du jour épuisé',
+    aiReasonBudget: 'budget IA du jour de la maisonnée atteint',
+    aiReasonQuota: 'quota IA gratuit du jour épuisé (tout le service)',
     aiReasonError: 'erreur du modèle',
     aiReasonEmpty: 'n’a rien lu',
     aiReasonBlind: 'n’a pas vu l’image',
@@ -1539,7 +1540,8 @@ export const FR = {
     reportShakyCount: (n: number) => (n === 1 ? '1 mot — surligné dans « Vérifier »' : `${n} mots — surlignés dans « Vérifier »`),
     readFailEngine: 'Le lecteur n’a pas pu se charger (connexion ?). Réessaie, ou colle le texte.',
     // Every reader was tried and the day's AI allowance is spent — say THAT, not « connexion ».
-    readFailBudget: 'Quota IA du jour épuisé — réessaie demain, ou colle le texte.',
+    readFailBudget: 'Le budget IA du jour de la maisonnée est atteint — il revient à minuit. Colle le texte en attendant.',
+    readFailQuota: (at: string) => `Le quota IA gratuit du jour est épuisé pour tout le service — il revient vers ${at}. Colle le texte en attendant.`,
     import: 'Importer un lien',
     importTitle: 'Importer une recette',
     importUrl: 'Coller un lien de recette',

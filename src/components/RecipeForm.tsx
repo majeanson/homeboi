@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useT } from '../i18n'
+import { useLang, useT } from '../i18n'
+import { formatNextUtcMidnight } from '../lib/format'
 import { api, ApiError, hasSessionCookie, isStatus } from '../lib/api'
 import { useWrite } from '../lib/write'
 import { useConfirm } from '../lib/confirm'
@@ -76,6 +77,7 @@ export function RecipeForm({
   autoImport?: AutoImport | null
 }) {
   const t = useT()
+  const { lang } = useLang()
   const nav = useNavigate()
   const write = useWrite()
   const confirm = useConfirm()
@@ -747,8 +749,21 @@ export function RecipeForm({
         // (Marc, 2026-10-30) — the real reason was the quota. Then: "the reader never
         // loaded" is a connection problem, not an unreadable card — don't send the cook
         // retaking photos.
+        // Two quotas, two lines: the ACCOUNT's free allowance (every household, back
+        // at 00:00 UTC — « vers 20 h » here) and the household's own daily budget
+        // (back at its midnight). The first fix named only the second, and Marc read
+        // « connexion ? » again at 20 h 07 the same night.
+        const quota = report.readerAttempts.some((a) => a.reason === 'quota')
         const budget = report.readerAttempts.some((a) => a.reason === 'budget')
-        setReadMsg(budget && !texts.length ? t.recipes.readFailBudget : engineFailed && !texts.length ? t.recipes.readFailEngine : t.recipes.readFail)
+        setReadMsg(
+          quota && !texts.length
+            ? t.recipes.readFailQuota(formatNextUtcMidnight(lang))
+            : budget && !texts.length
+              ? t.recipes.readFailBudget
+              : engineFailed && !texts.length
+                ? t.recipes.readFailEngine
+                : t.recipes.readFail,
+        )
         return
       }
       // Rescue garbled imperial fractions from the (reliably-read) millilitres: a

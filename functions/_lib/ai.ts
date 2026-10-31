@@ -714,12 +714,23 @@ export function transcriptionPrompt(lang: Lang): string {
 // Every chain here falls through to the next model or the shape read; without this,
 // « the day's AI budget is spent » and « a weaker reader answered » were invisible, and
 // the cook trusted a worse read exactly as much as a good one (Marc, 2026-10-30).
-export type AiAttemptReason = 'budget' | 'error' | 'empty' | 'blind'
+// Two spent quotas, told apart because they come back at different hours and the cook
+// is told which: « budget » is the HOUSEHOLD's own daily ceiling (`_lib/usage`, back at
+// the family's midnight); « quota » is the ACCOUNT's free Workers AI allowance (10 000
+// neurons a day, shared by every household on the deployment, back at 00:00 UTC — and
+// in practice a little after: at 00:13 UTC on 2026-10-31 it still refused).
+export type AiAttemptReason = 'budget' | 'quota' | 'error' | 'empty' | 'blind'
 export interface AiAttempt {
   model: string
   reason: AiAttemptReason
 }
-export const attemptReason = (err: unknown): AiAttemptReason => (err instanceof AiBudgetError ? 'budget' : 'error')
+// The account's allowance refused: the binding throws a plain Error whose message is
+// Cloudflare's own (« 4006: you have used up your daily free allocation of 10,000
+// neurons… »); the REST API spells the same refusal 3036 « Account limited ». Tagged a
+// generic « error » it read as « connexion ? » on the phone (2026-10-30, twice).
+const ACCOUNT_QUOTA = /\b(?:4006|3036)\b|daily free allocation|used up your daily|account limited/i
+export const isAccountQuotaError = (err: unknown): boolean => ACCOUNT_QUOTA.test(err instanceof Error ? err.message : String(err))
+export const attemptReason = (err: unknown): AiAttemptReason => (err instanceof AiBudgetError ? 'budget' : isAccountQuotaError(err) ? 'quota' : 'error')
 
 export async function transcribeImage(
   env: Env,
