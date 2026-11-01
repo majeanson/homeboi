@@ -1,8 +1,11 @@
 # Journal manuscrit → Les notes (ingestion par courriel)
 
-> **Statut : PLAN, rien n'est construit.** Écrit 2026-11-01 avec Marc, après une revue
-> du marché des « e-writers » et une vérification de chaque porte d'intégration.
-> Deux décisions restent à prendre (§6) — elles touchent le DNS et le modèle de données.
+> **Statut : PHASE 1 CONSTRUITE** (2026-11-01, migration 0146) — et DORMANTE : rien
+> n'entre tant que `JOURNAL_MAIL_DOMAIN` n'est pas posé et qu'Email Routing ne pointe
+> pas sur le Worker. Le plan a été écrit le même jour, après une revue du marché des
+> « e-writers » et une vérification de chaque porte d'intégration.
+>
+> Une seule décision reste (§6-1), et elle est sur le DNS, pas dans le code.
 
 ## 1. Ce qu'on veut
 
@@ -74,30 +77,46 @@ convertir-puis-envoyer : l'outsider sur le prix, pénalisé par l'écosystème A
 > faut une demande de remboursement occasionnel à l'ASFC). D'où la phase 1 ci-dessous,
 > qui se teste à 0 $ avec un téléphone.
 
-## 4. Phase 1 — le texte seul (petite, livrable, aucune migration)
+## 4. Phase 1 — le texte seul : CONSTRUITE
 
-Livre déjà la demande telle qu'énoncée : de vrais mots-clés, cherchables, par date.
+Livre la demande telle qu'énoncée : de vrais mots-clés, cherchables, par date. Aucune
+migration de `family_notes`, aucun nouveau `media_kind`, aucun onglet.
 
-- **`functions/_lib/journalAddress.ts`** — l'adresse est un jeton HMAC, sur le modèle
-  exact de `issueGuestToken`/`verifyGuestToken` (`_lib/auth.ts`, même clé
-  `SESSION_SECRET`). `jrnl-<b64url>@<zone>` encode `household_id` + `member_id`.
-  **Une adresse entrante n'est pas authentifiée** : sans jeton infalsifiable,
-  n'importe qui écrit dans le journal. Plus une liste blanche d'expéditeurs.
-- **`functions/_lib/journalMail.ts`** — la fonction **pure** (donc testable sans
-  déployer) : MIME analysé → `{ title, text, at }`. Sujet → titre ; à défaut, la
-  première ligne, sinon « Journal du <date> ». L'en-tête `Date` → `created_at`, pour
-  que l'entrée porte le jour **où elle a été écrite**, pas celui de l'ingestion.
-- **`email()` dans `worker/index.ts`** — à côté de `fetch` et `scheduled` (le cron
-  nocturne), même forme. Mince : analyse, vérifie, insère, rien d'autre.
-- **L'insertion réutilise `functions/api/family-notes.ts`**, elle ne la recopie pas.
-- **Dépendance : `postal-mime`.** Côté Worker, donc hors du plafond de
-  `check:bundle` (qui borne le chunk FR **eager** du client) — à confirmer quand même.
-- **Tests.** `journalMail` et `journalAddress` sont purs → unitaires. Le handler
-  `email()` ne tourne pas sous `wrangler dev` (limite connue de Wrangler) : d'où la
-  règle de garder la logique dans les helpers purs et le handler squelettique.
+| Pièce | Ce qu'elle fait |
+| --- | --- |
+| `0146_journal_inboxes.sql` | une ligne par boîte vivante, `revoked_at` pour la révoquer |
+| `_lib/journalMail.ts` | **pur** : MIME → `{ title, text, at }`. 29 cas unitaires |
+| `_lib/journalInbox.ts` | l'adresse : frappe, résolution, rotation |
+| `_lib/journalIngest.ts` | le dépôt dans `family_notes` + la borne anti-inondation |
+| `email()` dans `worker/index.ts` | la porte entrante, squelettique |
+| `api/journal-inbox.ts` | GET lit, POST frappe ou remplace (opérateur seulement) |
+| `operator/journalInbox.tsx` | UNE carte, Système ▸ Appareils & accès (C-15) |
+| `worker/journal.d1.test.ts` | 13 cas en runtime réel |
 
-**Ce que Marc teste à 0 $, avant d'acheter :** il s'envoie une note tapée, ou la photo
-d'une page de papier, depuis son téléphone à l'adresse privée. Si une entrée datée et
+**Pourquoi une TABLE et pas un jeton signé** — le premier jet s'est trompé, et la
+raison vaut d'être gardée : la partie locale d'une adresse courriel est bornée à
+**64 caractères**, et un jeton d'ici (`b64url(JSON).b64url(HMAC)`) en fait ~124 à lui
+seul. D'où un id court en **minuscules** (`newShortCode(16)`, ~79 bits — les serveurs de
+courriel normalisent la casse en chemin). Et c'est mieux ainsi : `revoked_at` répond à
+« l'adresse a fuité », ce qu'un jeton signé ne pourrait pas sans faire tourner
+`SESSION_SECRET` et déconnecter toutes les sessions et tous les appareils.
+
+**Ce que le test en runtime réel a trouvé, et qu'un test pur ne pouvait pas voir :**
+`journal_inboxes.member_id` est une réf souple EXPRÈS (supprimer un visage ne doit
+jamais supprimer ses entrées), mais `family_notes.member_id` porte une **vraie FK**.
+Une adresse frappée pour un visage retiré depuis faisait donc échouer l'INSERT sur la
+contrainte — et comme l'appelant est un handler de courriel qui ne doit jamais
+rebondir, **chaque page suivante disparaissait sans un mot.** La portée est vérifiée
+maintenant et retombe sur la Maisonnée au lieu de perdre la page : déplacer une note
+coûte un geste, une page jamais arrivée ne se récupère pas. Garde planté rouge puis
+restauré.
+
+**Les deux gardes élargies ont été plantées rouges elles aussi** : retirer
+`journal_inboxes` du balayage du bac à sable fait échouer `demoHousehold.test.ts`, et
+retirer l'entrée ALLOWED fait échouer `write-rule.test.ts`.
+
+**Ce que Marc teste à 0 $, avant d'acheter :** une note tapée, ou la photo d'une page de
+papier, envoyée depuis son téléphone à l'adresse privée. Si une entrée datée et
 cherchable apparaît dans « Les notes », la chaîne est prouvée.
 
 ## 5. Phase 2 — la page manuscrite comme pièce jointe (après la phase 1)
@@ -117,15 +136,23 @@ presque gratuite. S'il n'envoie que du PDF, le nouveau `kind` se justifie — et
 loupe `PanZoom` (`initialScale` + `minimap`, construite pour la vérification des
 recettes) est déjà là pour lire une page.
 
-## 6. Les deux décisions qui restent
+## 6. Ce qui reste
 
-1. **Est-ce que `marcportal.com` reçoit du courriel aujourd'hui ?** Activer Email
+1. **LA question, et elle est pour Marc : est-ce que `marcportal.com` reçoit du courriel
+   aujourd'hui ?** Activer Email
    Routing pose des enregistrements **MX** sur la zone. Resend n'a besoin que de TXT
    (SPF/DKIM) pour **envoyer**, donc l'envoi n'est pas touché — mais s'il existe des
    boîtes sur ce domaine, les MX de Cloudflare les cassent. Si oui → un sous-domaine
    ou une zone dédiée.
-2. **Phase 2 : quel `media_kind`** — attendre de voir un courriel réel (recommandé), ou
-   ajouter `'pdf'` tout de suite en pariant sur la doc.
+2. **Poser `JOURNAL_MAIL_DOMAIN`** (une var, pas un secret) et router l'adresse vers le
+   Worker (action « Send to a Worker »). Tant qu'elle est absente, la carte le dit et
+   n'offre rien à copier — contrat des liaisons optionnelles, comme AI et R2.
+
+3. **Une ligne PARITY est DUE avant que ça compte comme livré.** Trous connus et
+   assumés pour l'instant : aucun palier d'annulation, aucun aperçu (peek), aucune
+   lentille tout-petit, aucun e2e. Les écrire gap-free aujourd'hui serait faux.
+
+4. **Phase 2 : quel `media_kind`** — attendre de voir un VRAI courriel du Manta.
 
 ## 7. Les barrières à respecter (CLAUDE.md)
 

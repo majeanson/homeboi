@@ -54,6 +54,21 @@ export interface Env {
   // that, not on this.** A plain var, not a secret — it is meant to be read.
   CONTACT_EMAIL?: string
 
+  // OPTIONAL INBOUND mail domain for « Mon journal » (_lib/journalInbox.ts, migration
+  // 0146): the zone Cloudflare Email Routing delivers to a Worker, e.g.
+  // "marcportal.com". A handwritten page mailed to `jrnl-<id>@<this>` becomes a dated,
+  // searchable note. Unset → the feature HIDES (the Réglages card says inbound mail is
+  // not configured and offers nothing to copy); every address already minted stays in
+  // the table and starts working again the day it is set.
+  //
+  // Deliberately NOT derived from MAIL_FROM's domain, even though both will likely be
+  // marcportal.com: that one is where Resend SENDS from (TXT records only), and this
+  // one requires MX records pointing at Cloudflare. Enabling inbound on a zone that
+  // already receives mail elsewhere would break those mailboxes, so the two must be
+  // settable apart — this one on a subdomain if need be. A plain var, not a secret:
+  // the domain is public, the per-face id in front of it is the credential.
+  JOURNAL_MAIL_DOMAIN?: string
+
   // OPTIONAL deploy-callback secret for POST /api/remarks/shipped (_lib/deployHook.ts):
   // the shared secret GitHub Actions presents after a successful deploy of main, to mark
   // a remark « expédiée » with the commit that fixed it. ≥32 chars.

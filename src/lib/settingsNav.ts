@@ -102,6 +102,13 @@ export const SETTINGS_TREE = {
       // everywhere; 0134). Access, not faces — this sub, beside the other adult.
       s('sessions', 'operator'),
       s('guestLinks', 'operator'),
+      // « Mon journal » (0146) — the inbound mail address a handwritten page is sent
+      // to. It stacks here, not in a new pill (C-15), because this sub is the
+      // household's ACCESS screen and that is what the address is: a credential
+      // letting something outside the app write in, revoked from the same card.
+      // 'operator' for the same reason the agent token is — a kiosk on the kitchen
+      // wall has no business displaying it.
+      s('journalInbox', 'operator'),
       s('health', 'household'),
       s('buildInfo', 'household'),
       s('takeout', 'operator'),

@@ -46,6 +46,12 @@ export default defineConfig(async () => {
             // is why that gate is a separate pure module: a binding cannot be unset
             // per-test from here.
             DEPLOY_NOTIFY_SECRET: 'd1-deploy-secret-d1-deploy-secret-32',
+            // « Mon journal » (0146): the inbound-mail zone. Bound here so the d1 suite
+            // exercises the CONFIGURED path — minting an address, and filing a mail into
+            // « Les notes ». The unconfigured half (the feature hiding itself) is held in
+            // the pure tests, for the same reason DEPLOY_NOTIFY_SECRET's is: a binding
+            // cannot be unset per-test from here.
+            JOURNAL_MAIL_DOMAIN: 'jrnl.d1.test',
           },
         },
       }),

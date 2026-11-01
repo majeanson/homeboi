@@ -26,6 +26,20 @@ export const EN_OPERATOR: typeof FR_OPERATOR = {
     'The token is shown once. Copy the command and paste it into your terminal. You can revoke it any time from the list above.',
   agentCopy: 'Copy the command',
   agentCopied: 'Copied',
+  journalTitle: 'My journal (by email)',
+  journalLead:
+    'A private address, yours alone. Write your page by hand on your writing tablet, have the device convert it to text, then send it here: it becomes a dated note in "Notes", searchable by its words.',
+  journalOff:
+    'Inbound email is not set up for this household yet. Nothing to copy for now — the address will be created the day it is.',
+  journalMint: 'Create my address',
+  journalCopy: 'Copy the address',
+  journalCopied: 'Copied',
+  journalRotate: 'Replace the address',
+  journalRotateConfirm:
+    'Replace this address? The old one stops receiving, and you will have to change it on your writing tablet. Entries that already arrived stay.',
+  journalRotateGo: 'Replace',
+  journalHow:
+    'Keep it to yourself: anything that writes to this address writes into your notes. If it gets around, replace it — the old one dies immediately.',
   noDevices: 'No tablets paired.',
   chores: 'Chores',
   addChore: 'Add a chore',

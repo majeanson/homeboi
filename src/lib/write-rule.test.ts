@@ -81,6 +81,13 @@ const ALLOWED = new Set<string>([
   'components/operator/devices.tsx → pair/claim',
   'components/operator/devices.tsx → pair/devices',
   'components/operator/guest.tsx → pair/devices',
+  // « Mon journal » (0146) mints / rotates the inbound mail address. The outbox would
+  // be actively WRONG: the caller must DISPLAY the minted address now, and a mint
+  // queued offline then replayed on reconnection could hand back a second address for
+  // a face that already has one — the duplicate 0146's unique index exists to stop. A
+  // rotate replayed late is worse still: it would kill an address the person has since
+  // configured on their device, with nobody watching.
+  'components/operator/journalInbox.tsx → journal-inbox',
 
   // 2. Demo sandbox and sample data. Both mint or wipe a WHOLE household; replaying
   //    one later would seed or erase a household nobody is looking at any more.

@@ -61,6 +61,7 @@ import * as homePins from '../functions/api/home-pins'
 import * as homeProjects from '../functions/api/home-projects'
 import * as household from '../functions/api/household'
 import * as householdReset from '../functions/api/household/reset'
+import * as journalInbox from '../functions/api/journal-inbox'
 import * as list from '../functions/api/list'
 import * as meals from '../functions/api/meals'
 import * as mealHistory from '../functions/api/meal-history'
@@ -214,6 +215,10 @@ const TABLE: Record<string, RouteMod> = {
   'home-projects': homeProjects,
   household,
   'household/reset': householdReset,
+  // « Mon journal » (0146): the per-face address a handwritten page is mailed to. The
+  // INBOUND half is not a route at all — Email Routing delivers to the Worker's
+  // email() handler (worker/index.ts), which is why there is only one entry here.
+  'journal-inbox': journalInbox,
   list,
   meals,
   'meal-history': mealHistory,

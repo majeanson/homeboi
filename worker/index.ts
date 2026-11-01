@@ -22,6 +22,8 @@ import { shareOgMeta } from '../functions/_lib/shareOg'
 import { matchRoute, guestKindAllows, type RouteMod } from './routes'
 import { nightly } from '../functions/_lib/nightly'
 import { withSecurityHeaders } from '../functions/_lib/securityHeaders'
+import { handleJournalMail } from '../functions/_lib/journalIngest'
+import { resolveJournalInbox } from '../functions/_lib/journalInbox'
 
 // Re-export the Durable Object class so the Workers runtime can find it (a DO
 // must be exported from the entry module named in wrangler.toml). SCAFFOLD (#20).
@@ -426,6 +428,56 @@ const app = {
   async scheduled(_controller, env, ctx): Promise<void> {
     ctx.waitUntil(nightly(env))
   },
+
+  // « Mon journal » (migration 0146, plans/JOURNAL-EWRITER.md) — the INBOUND door.
+  //
+  // Cloudflare Email Routing, action « Send to a Worker », delivers a mail addressed
+  // to `jrnl-<id>@JOURNAL_MAIL_DOMAIN` here. A page written by hand on an e-writer,
+  // converted to text BY THE DEVICE (fr_CA, on-device, free), becomes a dated note in
+  // « Les notes » — searchable at once, since SEARCH_INDEX.familyNote already indexes
+  // title + body.
+  //
+  // This handler owns the EmailMessage and nothing else: every decision lives in
+  // _lib/journalIngest + _lib/journalMail, because `wrangler dev` cannot run an Email
+  // Worker locally and logic that only runs in production is logic nothing tests.
+  //
+  // It NEVER rejects and never replies. `setReject()` would tell a stranger probing
+  // addresses which ones are live, and a bounce to a forged sender makes us the one
+  // sending the junk. An unknown address, a blank mail and a tripped flood cap all end
+  // the same way from outside: nothing happened. The reason is logged — Workers Logs
+  // keeps 7 days (wrangler.toml [observability]) — so Marc can tell « my page never
+  // arrived » from « the address is wrong » without guessing.
+  async email(message, env, ctx): Promise<void> {
+    ctx.waitUntil(
+      (async () => {
+        try {
+          // Imported lazily so the MIME parser is not in the hot path of the fetch
+          // handler's module graph — a board poll should not pay for it.
+          const { default: PostalMime } = await import('postal-mime')
+          const parsed = await PostalMime.parse(message.raw)
+          const result = await handleJournalMail(
+            env,
+            message.to,
+            {
+              subject: parsed.subject,
+              text: parsed.text,
+              html: parsed.html,
+              // postal-mime gives the Date header already normalised to ISO.
+              date: parsed.date,
+              attachments: parsed.attachments,
+            },
+            resolveJournalInbox,
+          )
+          if (!result.ok) console.error('[email jrnl]', result.reason, message.to)
+        } catch (err) {
+          // A malformed MIME body must not throw out of here: an Email Worker that
+          // throws makes Cloudflare retry the delivery, and a mail that can never be
+          // parsed would then be retried forever.
+          console.error('[email jrnl] parse/ingest failed', err)
+        }
+      })(),
+    )
+  },
 } satisfies ExportedHandler<WorkerEnv>
 
 // The deploy target. Every response — the SPA shell, a hashed asset, a JSON answer, a
@@ -436,4 +488,7 @@ export default {
     return withSecurityHeaders(await app.fetch(request, env, ctx))
   },
   scheduled: app.scheduled,
+  // The inbound-mail door (« Mon journal »). No security-headers wrapper: there is no
+  // HTTP response to wrap — Email Routing hands us a message, not a request.
+  email: app.email,
 } satisfies ExportedHandler<WorkerEnv>

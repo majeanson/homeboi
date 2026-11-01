@@ -14,6 +14,7 @@ import { BoardLayoutSection } from '../components/operator/boardLayout'
 import { ShopSection, StoreFilterSection, FlippSection, HistorySection, GhostSection } from '../components/operator/shopping'
 import { AisleOrderSection } from '../components/operator/aisles'
 import { AgentSection, ClaimTablet, DevicesSection } from '../components/operator/devices'
+import { JournalInboxSection } from '../components/operator/journalInbox'
 import { MembersSection } from '../components/operator/household'
 import { GuestSection } from '../components/operator/guest'
 import { CoOperatorsSection } from '../components/operator/CoOperatorsSection'
@@ -404,6 +405,7 @@ export function Operator() {
     coop: <CoOperatorsSection help={operatorHelp} />,
     sessions: <SessionsSection help={operatorHelp} />,
     guestLinks: <GuestSection help={operatorHelp} />,
+    journalInbox: <JournalInboxSection />,
     health: <HealthSection />,
     buildInfo: <BuildInfoSection />,
     takeout: <TakeoutSection help={operatorHelp} />,

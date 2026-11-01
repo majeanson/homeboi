@@ -102,6 +102,10 @@ export const HOUSEHOLD_TABLES: readonly string[] = [
   // A derived-signal acknowledgement (0122) — no FK, and it prunes itself, but a
   // sandbox must still leave nothing behind when it's swept.
   'a_regler_snoozes',
+  // « Mon journal » inbound addresses (0146). A sandbox CAN mint one, and an address
+  // that outlived its household would be a live write door into a row that no longer
+  // exists — so it goes with everything else.
+  'journal_inboxes',
   // cercle content children → parents
   'contact_links',
   'contact_photos',

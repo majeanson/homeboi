@@ -46,6 +46,22 @@ export const FR_OPERATOR = {
     'Le jeton n’est montré qu’une fois. Copie la commande, colle-la dans ton terminal. Tu peux le révoquer en tout temps dans la liste ci-dessus.',
   agentCopy: 'Copier la commande',
   agentCopied: 'Copié',
+  // « Mon journal » (0146) — l'adresse courriel privée par laquelle une page écrite à
+  // la main entre dans « Les notes ». Le plan : plans/JOURNAL-EWRITER.md.
+  journalTitle: 'Mon journal (par courriel)',
+  journalLead:
+    'Une adresse privée, à toi. Écris ta page à la main sur ta tablette d’écriture, fais-la convertir en texte par l’appareil, puis envoie-la ici : elle devient une note datée dans « Les notes », cherchable par ses mots.',
+  journalOff:
+    'Le courriel entrant n’est pas encore configuré pour cette maisonnée. Rien à copier pour l’instant — l’adresse se créera toute seule le jour où il le sera.',
+  journalMint: 'Créer mon adresse',
+  journalCopy: 'Copier l’adresse',
+  journalCopied: 'Copié',
+  journalRotate: 'Remplacer l’adresse',
+  journalRotateConfirm:
+    'Remplacer cette adresse ? L’ancienne cessera de recevoir, et il faudra la changer sur ta tablette d’écriture. Les entrées déjà arrivées restent.',
+  journalRotateGo: 'Remplacer',
+  journalHow:
+    'Garde-la pour toi : tout ce qui écrit à cette adresse écrit dans tes notes. Si elle se promène, remplace-la — l’ancienne meurt sur le coup.',
   chores: 'Corvées',
   addChore: 'Ajouter une corvée',
   schedule: 'Céduler',
