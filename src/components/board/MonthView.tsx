@@ -24,7 +24,7 @@ import { useOperatorT } from '../../i18n.operator'
 import { Icon } from '../Icon'
 import { Cluster } from '../Layout'
 import { ActionMenu, type ActionMenuItem } from '../ActionMenu'
-import { Act } from './Act'
+import { Act, SharedMark } from './Act'
 import { DayMark } from './DayMark'
 import { tripCategoryIcon, type TripCategory } from '../voyage/voyage'
 import { AutoCardView } from './AutoCard'
@@ -614,9 +614,7 @@ export function MonthView({
                 // month grid band — the band colour + title carry it there (calm).
                 badge={
                   tr.shared ? (
-                    <span className="act__sharedmark" role="img" title={t.sharedVoyage.badge} aria-label={t.sharedVoyage.badge}>
-                      <Icon name="users-three-bold" size={13} />
-                    </span>
+                    <SharedMark label={t.sharedVoyage.badge} />
                   ) : undefined
                 }
                 onActivate={() => nav(`${base}?vue=itineraire`)}
@@ -932,9 +930,7 @@ export function MonthView({
                 color={tr.colour}
                 badge={
                   tr.shared ? (
-                    <span className="act__sharedmark" role="img" title={t.sharedVoyage.badge} aria-label={t.sharedVoyage.badge}>
-                      <Icon name="users-three-bold" size={13} />
-                    </span>
+                    <SharedMark label={t.sharedVoyage.badge} />
                   ) : undefined
                 }
                 onActivate={() => nav(`${tr.shared ? '/voyage/partage' : '/voyage'}/${tr.id}?vue=itineraire`)}

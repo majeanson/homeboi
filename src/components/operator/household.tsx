@@ -1,3 +1,4 @@
+import { IconButton } from '../IconButton'
 import { Field } from '../Field'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
@@ -430,9 +431,7 @@ function MemberCard({
                 />
               </label>
               {member.avatar_kind === 'photo' && (
-                <button type="button" className="row-actions__btn" onClick={clearPhoto} aria-label={o18n.removePhoto}>
-                  <Icon name="x-bold" size={18} />
-                </button>
+                <IconButton icon="x-bold" label={o18n.removePhoto} variant="bare" size="sm" iconSize={18} onClick={clearPhoto} />
               )}
             </div>
           }

@@ -1,7 +1,8 @@
+import { CheckDisc } from './CheckDisc'
 import { useState, type ReactNode } from 'react'
 import { useT } from '../i18n'
 import { isGuest } from '../lib/device'
-import { Icon, type IconName } from './Icon'
+import { type IconName } from './Icon'
 import { EditField } from './EditField'
 import { RowActions } from './RowActions'
 
@@ -98,9 +99,7 @@ export function CheckRow({
       <button type="button" className="checkrow__check" onClick={onCheck} aria-label={checkLabel}>
         {/* The SAME tick as the board and the list: one shape for « I dealt with
             this », and with it the 44px hit area the bare glyph never had. */}
-        <span className="check" aria-hidden="true">
-          <Icon name="check-bold" size={18} />
-        </span>
+        <CheckDisc />
       </button>
       <span className="checkrow__body">
         <span className="checkrow__title">{item}</span>

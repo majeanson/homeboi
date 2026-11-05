@@ -1,3 +1,4 @@
+import { CheckDisc } from '../components/CheckDisc'
 import { IconButton } from '../components/IconButton'
 import { Fragment, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -360,9 +361,7 @@ function ListItemRow({
           />
         )}
         {!readOnly && (
-          <button type="button" className="check list-row__toggle" onClick={onToggle} aria-label={`${toggleLabel} — ${text}`}>
-            <Icon name="check-bold" size={18} />
-          </button>
+          <CheckDisc className="list-row__toggle" done={checked} onClick={onToggle} label={`${toggleLabel} — ${text}`} />
         )}
       </div>
     </div>

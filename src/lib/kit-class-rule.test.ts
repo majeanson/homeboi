@@ -37,6 +37,8 @@ const OWNED = new Map<string, { owner: string; hint: string }>([
   ['scene__head', { owner: 'components/SceneHead.tsx', hint: '<SceneHead title subtitle? icon? card? onClose? backTo? action? />' }],
   ['segmented', { owner: 'components/Segmented.tsx', hint: '<Segmented options value onChange ariaLabel />' }],
   ['segmented__opt', { owner: 'components/Segmented.tsx', hint: '<Segmented>' }],
+  ['check', { owner: 'components/CheckDisc.tsx', hint: '<CheckDisc done? onClick? label? className? />' }],
+  ['act__sharedmark', { owner: 'components/board/Act.tsx', hint: '<SharedMark label />' }],
   ['operator__seg', { owner: 'components/operator/SettingsRow.tsx', hint: '<SettingsRow label hint? as? />' }],
   ['operator__seg-label', { owner: 'components/operator/SettingsRow.tsx', hint: '<SettingsRow label>' }],
 ])

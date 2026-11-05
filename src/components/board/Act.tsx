@@ -1,3 +1,4 @@
+import { CheckDisc } from '../CheckDisc'
 import { CATS, type CatKey } from '../../lib/cats'
 import { tintInk } from '../../lib/colors'
 import { isGuest } from '../../lib/device'
@@ -136,6 +137,15 @@ export function SubHead({ label, icon, tint }: { label: string; icon?: IconName;
 //   • a static informational card                     — neither
 // `badge` rides at the right (e.g. a "Prochain" pill); `photo` swaps the glyph
 // for an image (a recipe's photo). Used by the board AND the kitchen ＋ pickers.
+// The « shared with another household » marker on a row's badge slot.
+export function SharedMark({ label }: { label: string }) {
+  return (
+    <span className="act__sharedmark" role="img" title={label} aria-label={label}>
+      <Icon name="users-three-bold" size={13} />
+    </span>
+  )
+}
+
 export function Act({
   cat,
   title,
@@ -266,15 +276,7 @@ export function Act({
         </button>
         {mineEl}
         {badgeEl}
-        <button
-          type="button"
-          className="check act__checkbtn"
-          onClick={onCheck}
-          aria-pressed={!!done}
-          aria-label={t.detail.markDone}
-        >
-          <Icon name="check-bold" size={18} />
-        </button>
+        <CheckDisc className="act__checkbtn" done={done} onClick={onCheck} label={t.detail.markDone} />
       </div>
     )
   }
@@ -287,9 +289,7 @@ export function Act({
       {mineEl}
       {badgeEl}
       {onCheck ? (
-        <span className="check" aria-hidden="true">
-          <Icon name="check-bold" size={18} />
-        </span>
+        <CheckDisc />
       ) : activate ? (
         <span className="act__caret" aria-hidden="true">
           <Icon name="caret-right-bold" size={16} />

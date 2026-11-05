@@ -1,3 +1,4 @@
+import { IconButton } from '../IconButton'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useT, useLang } from '../../i18n'
@@ -263,14 +264,7 @@ export function PetForm({ value, onSaved, onCancel }: { value?: Pet | null; onSa
               <li key={k} className="pet-form__owner">
                 {pp && <Avatar kind={pp.avatarKind} photo={pp.avatarRef} colour={pp.colour} name={pp.firstName} size={28} />}
                 <span className="pet-form__owner-name">{pp?.name ?? k}</span>
-                <button
-                  type="button"
-                  className="row-actions__btn"
-                  aria-label={t.common.cancel}
-                  onClick={() => setOwnerKeys((s) => { const n = new Set(s); n.delete(k); return n })}
-                >
-                  <Icon name="x-bold" size={14} />
-                </button>
+                <IconButton icon="x-bold" label={t.common.cancel} variant="bare" size="sm" onClick={() => setOwnerKeys((s) => { const n = new Set(s); n.delete(k); return n })} />
               </li>
             )
           })}

@@ -1,3 +1,5 @@
+import { SecLabel } from '../board/BoardCard'
+import { CheckDisc } from '../CheckDisc'
 import { healingClearBody, healingDeleteBody } from '../../lib/staleDelete'
 import { useState, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
@@ -338,16 +340,13 @@ export function TodoSection({
     ) : (
       <div key={todo.id} className={'act todo-row' + (isChecked(todo) ? ' done' : '')}>
         {!ro ? (
-          <button
-            type="button"
-            className="check todo-row__check"
+          <CheckDisc
+            className="todo-row__check"
+            done={isChecked(todo)}
             onClick={() => toggle(todo)}
-            aria-pressed={isChecked(todo)}
-            aria-label={`${isChecked(todo) ? t.todos.uncheck : t.todos.check} — ${todo.title}`}
+            label={`${isChecked(todo) ? t.todos.uncheck : t.todos.check} — ${todo.title}`}
             style={isChecked(todo) ? checkedStyle : undefined}
-          >
-            <Icon name="check-bold" size={18} />
-          </button>
+          />
         ) : (
           // Read-only guest: a static state marker (check only when done).
           <span className="todo-row__check" aria-hidden="true" style={isChecked(todo) ? { color: rowColour } : undefined}>
@@ -389,17 +388,7 @@ export function TodoSection({
       className={'todo-sec' + (bento ? ' bento' : '') + (bento && tint ? ' bento--tinted' : '')}
       style={tint ? ({ '--sec-tint': tint } as React.CSSProperties) : undefined}
     >
-      <div className="sec-label">
-        {icon && (
-          <span className="sec-label__ico" aria-hidden="true">
-            <Icon name={icon} size={16} />
-          </span>
-        )}
-        <b>{title}</b>
-        <span className="ln" />
-        {openCount && !loneFold ? <span className="ct">{openCount}</span> : null}
-        {action ? <span className="sec-label__act">{action}</span> : null}
-      </div>
+      <SecLabel label={title} icon={icon} count={openCount && !loneFold ? openCount : undefined} action={action} />
 
       {all.length === 0 && !ro ? (
         <EmptyState tone="calm">{emptyText ?? t.todos.empty}</EmptyState>

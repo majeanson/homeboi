@@ -21,8 +21,8 @@ import { sourceFiles, blankComments } from './buildGuardScan'
 const SRC = join(__dirname, '..')
 
 // Icon-only labelled buttons spelled by hand, the day the primitive shipped: the 146
-// the audit found minus the 31 that moved onto IconButton (counted by the scan below).
-const HAND_SPELLED_MAX = 115
+// the audit found minus the 43 that moved onto IconButton and Segmented so far.
+const HAND_SPELLED_MAX = 103
 
 const files = sourceFiles(SRC)
   .filter((f) => f.endsWith('.tsx'))

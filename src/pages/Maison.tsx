@@ -1,3 +1,4 @@
+import { IconButton } from '../components/IconButton'
 // B-11 (bmad/10) — cercle.css moved out of the eager shell (position-immaterial
 // .cercle-*/.cf-* classes); load it whenever this page renders instead. « Maison »
 // merged the old Le cercle tab with Routines into ONE hub tab (Routines · Famille ·
@@ -1019,29 +1020,20 @@ function MaisonParent() {
                         <span className="mono cercle-group__kind">{t.cercle.memberBadge}</span>
                         {/* Wire up who's whose parent/sibling/spouse — links only,
                             no redundant group (the household already IS this card). */}
-                        <button
-                          type="button"
-                          className="row-actions__btn"
-                          aria-label={t.cercle.familyDefineLinks}
-                          title={t.cercle.familyDefineLinks}
+                        <IconButton
+                          icon="tree-bold"
+                          label={t.cercle.familyDefineLinks}
+                          variant="bare"
+                          size="sm"
+                          iconSize={12}
                           onClick={help.pick('householdLinks', () =>
                             nav(`/cercle/family/new?linksOnly=1&seed=${encodeURIComponent(householdMembers.map((p) => p.key).join(','))}`),
                           )}
-                        >
-                          <InlineIcon name="tree-bold" size={12} />
-                        </button>
+                        />
                         {/* Hand the Maisonnée to a friend on their own account — family-share
                             POST is operator-only, so no door on a kiosk either. */}
                         {!ro && !needsOperator() && (
-                          <button
-                            type="button"
-                            className="row-actions__btn"
-                            aria-label={t.familyShare.shareFamily}
-                            title={t.familyShare.shareFamily}
-                            onClick={() => openShare(householdKeys, householdName)}
-                          >
-                            <InlineIcon name="link-bold" size={12} />
-                          </button>
+                          <IconButton icon="link-bold" label={t.familyShare.shareFamily} variant="bare" size="sm" iconSize={12} onClick={() => openShare(householdKeys, householdName)} />
                         )}
                       </h2>
                       {help.bubbleFor('household')}

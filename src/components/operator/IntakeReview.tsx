@@ -1,3 +1,4 @@
+import { Cluster } from '../Layout'
 // B-11 (bmad/10) — intake.css moved out of the eager shell (uniquely-named
 // .intake-review__ classes); load it whenever this operator section renders.
 import '../../styles/intake.css'
@@ -49,14 +50,14 @@ export function IntakeReview({ help }: { help?: HelpMode }) {
         {submissions.map((sub) => (
           <div key={sub.id} className="intake-review__row">
             <span className="intake-review__name">{displayName(sub.self)}</span>
-            <div className="row-actions">
+            <Cluster>
               <Link className="btn btn--primary btn--sm" to={`/cercle/import?intake=${encodeURIComponent(sub.id)}`}>
                 <Icon name="check-bold" size={15} /> {t.intake.reviewOne}
               </Link>
               <button type="button" className="btn btn--ghost btn--sm" onClick={() => void dismiss(sub)}>
                 <Icon name="trash-bold" size={15} /> {t.intake.dismiss}
               </button>
-            </div>
+            </Cluster>
           </div>
         ))}
       </div>

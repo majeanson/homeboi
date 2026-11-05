@@ -1,3 +1,4 @@
+import { Cluster } from '../Layout'
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
@@ -111,7 +112,7 @@ export function PostboxReview({ help }: { help?: HelpMode }) {
               ) : null}
               {m.text && <span className="postbox-review__text">{m.text}</span>}
             </div>
-            <div className="row-actions">
+            <Cluster>
               <button
                 type="button"
                 className="btn btn--primary btn--sm"
@@ -128,7 +129,7 @@ export function PostboxReview({ help }: { help?: HelpMode }) {
               >
                 <Icon name="trash-bold" size={15} /> {t.postbox.dismiss}
               </button>
-            </div>
+            </Cluster>
           </div>
         ))}
       </div>

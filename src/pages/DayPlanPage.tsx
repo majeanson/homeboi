@@ -22,7 +22,7 @@ import { Cluster } from '../components/Layout'
 import { SceneHead } from '../components/SceneHead'
 import { SubTabs } from '../components/SubTabs'
 import { useTabParam } from '../lib/tabParam'
-import { Act } from '../components/board/Act'
+import { Act, SharedMark } from '../components/board/Act'
 import { SecLabel } from '../components/board/BoardCard'
 import { SectionAdd, useSectionAdd } from '../components/SectionAdd'
 import { CATS } from '../lib/cats'
@@ -717,9 +717,7 @@ function DayPlanScene() {
                 // « Partagé » — a quiet icon marker (no loud pill), calm + subtle.
                 badge={
                   tr.shared ? (
-                    <span className="act__sharedmark" role="img" title={t.sharedVoyage.badge} aria-label={t.sharedVoyage.badge}>
-                      <Icon name="users-three-bold" size={13} />
-                    </span>
+                    <SharedMark label={t.sharedVoyage.badge} />
                   ) : undefined
                 }
                 onActivate={() => nav(`${base}?vue=itineraire`)}
