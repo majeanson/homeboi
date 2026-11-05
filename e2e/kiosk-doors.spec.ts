@@ -39,7 +39,11 @@ test('a kiosk opening the family import lands on the family section', async ({ p
 test('the virements section shows no add / edit / delete door to a kiosk (the operator sees them)', async ({ page, app }) => {
   // The doors: row furniture (edit / delete) and the section's own « Ajouter … » CTAs.
   // Not the section pill (« Les virements » is a tab, not a door).
-  const doors = () => page.locator('.hub .row-actions__btn, .hub button').filter({ hasText: /^(Ajouter|Modifier|Supprimer)/ })
+  // By ACCESSIBLE NAME, not text: the row furniture is icon-only buttons whose word
+  // lives in aria-label (RowActions), and so is the section's ＋. `hasText` saw none of
+  // them, so the operator control counted zero and this test was red from the day it
+  // shipped (CI runs 42079625356 / 42081025487, 2026-11-05).
+  const doors = () => page.locator('.hub').getByRole('button', { name: /^(Ajouter|Modifier|Supprimer)/ })
   await operator(app)
   await page.goto('/notes?section=virements')
   await page.locator('.hub').waitFor({ state: 'visible', timeout: 15_000 })
