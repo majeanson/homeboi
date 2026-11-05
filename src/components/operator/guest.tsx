@@ -1,3 +1,4 @@
+import { SettingsRow } from './SettingsRow'
 import { useEffect, useMemo, useState, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -341,8 +342,7 @@ export function GuestSection({ help }: { help?: HelpMode }) {
       {subTab === 'phone' && (
         <>
       <OperatorSection title={t.guest.title} help={help} helpKey="guest" anchor="guestLinks">
-        <label className="operator__seg">
-          <span className="operator__seg-label mono">{t.guest.kindLabel}</span>
+        <SettingsRow as="label" label={t.guest.kindLabel}>
           <select className="input" value={kind} onChange={(e) => chooseKind(e.target.value as GuestKind)} disabled={busy}>
             {KINDS.map((k) => (
               <option key={k.kind} value={k.kind}>
@@ -350,7 +350,7 @@ export function GuestSection({ help }: { help?: HelpMode }) {
               </option>
             ))}
           </select>
-        </label>
+        </SettingsRow>
         <p className="operator__hint mono">{t.guest[KINDS.find((k) => k.kind === kind)!.hintKey]}</p>
         {/* showcase is the read-EVERYTHING Démo link — warn before it's shared publicly.
             A caution glyph (not the neutral info clock) so it reads as "careful". */}
@@ -365,7 +365,7 @@ export function GuestSection({ help }: { help?: HelpMode }) {
             actually contain, with a per-gap deep link to go fill it — never blocking
             the mint below. */}
         {kind === 'sitter' && sitterGaps.length > 0 && (
-          <div className="operator__seg">
+          <SettingsRow>
             <StatusMessage tone="info" icon="warning-bold">
               {t.guest.sitterMissingLabel} {sitterGaps.map((g) => t.guest[GAP_LABEL_KEY[g]]).join(', ')}
             </StatusMessage>
@@ -377,14 +377,14 @@ export function GuestSection({ help }: { help?: HelpMode }) {
               ))}
             </Cluster>
             <p className="operator__hint mono">{t.guest.sitterMissingHint}</p>
-          </div>
+          </SettingsRow>
         )}
 
         {/* D-19 — opt-in « Joindre un parent »: mid-evening plan changes get a
             channel. Off by default; the picker only offers MEMBERS with a phone
             on file (a contact isn't "a parent" in the app's model). */}
         {kind === 'sitter' && (
-          <div className="operator__seg">
+          <SettingsRow>
             <label className="operator__check mono">
               <input
                 type="checkbox"
@@ -418,14 +418,13 @@ export function GuestSection({ help }: { help?: HelpMode }) {
               </select>
             )}
             <p className="operator__hint mono">{t.guest.reachParentHint}</p>
-          </div>
+          </SettingsRow>
         )}
 
         {/* Per-person box: pick WHO it is for — it then opens on their details form —
             or leave blank for an open box the whole family can use. */}
         {kind === 'postbox' && (
-          <div className="operator__seg">
-            <span className="operator__seg-label mono">{t.guest.intakeForLabel}</span>
+          <SettingsRow label={t.guest.intakeForLabel}>
             <EntityCombobox<Person>
               value={targetText}
               onChange={(v) => {
@@ -446,14 +445,13 @@ export function GuestSection({ help }: { help?: HelpMode }) {
             <p className="operator__hint mono">
               {targetKey ? t.guest.intakeForPerson(targetText) : t.guest.intakeOpenHint}
             </p>
-          </div>
+          </SettingsRow>
         )}
 
         {/* Which optional sections the details form asks for. Name is always
             required; the operator unchecks anything they'd rather not request. */}
         {kind === 'postbox' && (
-          <div className="operator__seg">
-            <span className="operator__seg-label mono">{t.guest.intakeAsk}</span>
+          <SettingsRow label={t.guest.intakeAsk}>
             <div className="cf__gender-chips">
               <Chip selected={scope.bday} onClick={() => setScope((s) => ({ ...s, bday: !s.bday }))}>
                 {t.guest.intakeFieldBday}
@@ -474,11 +472,10 @@ export function GuestSection({ help }: { help?: HelpMode }) {
                 {t.guest.intakeFieldPhoto}
               </Chip>
             </div>
-          </div>
+          </SettingsRow>
         )}
 
-        <label className="operator__seg">
-          <span className="operator__seg-label mono">{t.guest.ttlLabel}</span>
+        <SettingsRow as="label" label={t.guest.ttlLabel}>
           <select className="input" value={ttl} onChange={(e) => setTtl(Number(e.target.value))} disabled={busy}>
             {ttlOptions.map((o) => (
               <option key={o.seconds} value={o.seconds}>
@@ -488,15 +485,14 @@ export function GuestSection({ help }: { help?: HelpMode }) {
             {/* D-18 — a durable link, for any kind: doesn't expire, only revoke closes it. */}
             <option value={STANDING_SENTINEL}>{t.guest.ttlStanding}</option>
           </select>
-        </label>
+        </SettingsRow>
         <p className="operator__hint mono">{t.guest.limitation}</p>
 
         {/* Standing: a required name identifies this link in « Liens actifs » — and
             a prominent reminder of the ONE way to close it (since time no longer will). */}
         {standing && (
           <>
-            <label className="operator__seg">
-              <span className="operator__seg-label mono">{t.guest.standingNameLabel}</span>
+            <SettingsRow as="label" label={t.guest.standingNameLabel}>
               <input
                 className="input"
                 value={standingLabel}
@@ -505,7 +501,7 @@ export function GuestSection({ help }: { help?: HelpMode }) {
                 disabled={busy}
                 maxLength={60}
               />
-            </label>
+            </SettingsRow>
             <StatusMessage tone="info" icon="warning-bold">
               {t.guest.standingHint}
             </StatusMessage>
@@ -513,14 +509,13 @@ export function GuestSection({ help }: { help?: HelpMode }) {
         )}
 
         {/* E-38 — per-guest locale: rides every kind, not just standing. */}
-        <label className="operator__seg">
-          <span className="operator__seg-label mono">{t.guest.guestLangLabel}</span>
+        <SettingsRow as="label" label={t.guest.guestLangLabel}>
           <select className="input" value={guestLang} onChange={(e) => setGuestLang(e.target.value as GuestLangChoice)} disabled={busy}>
             <option value="household">{t.guest.guestLangDefault}</option>
             <option value="fr">FR</option>
             <option value="en">EN</option>
           </select>
-        </label>
+        </SettingsRow>
 
         <div className="operator__inline-form">
           <button type="button" className="btn btn--primary" onClick={generate} disabled={busy}>
@@ -824,22 +819,18 @@ function ShareInfoEditor({ help }: { help?: HelpMode }) {
   return (
     <OperatorSection title={t.shareMode.editorTitle} help={help} helpKey="guest">
       <p className="operator__hint mono">{t.shareMode.editorHint}</p>
-      <label className="operator__seg">
-        <span className="operator__seg-label mono">{t.shareMode.wifiNetwork}</span>
+      <SettingsRow as="label" label={t.shareMode.wifiNetwork}>
         <input className="input" value={fields.wifiSsid} onChange={set('wifiSsid')} autoComplete="off" />
-      </label>
-      <label className="operator__seg">
-        <span className="operator__seg-label mono">{t.shareMode.wifiPassword}</span>
+      </SettingsRow>
+      <SettingsRow as="label" label={t.shareMode.wifiPassword}>
         <input className="input mono" value={fields.wifiPassword} onChange={set('wifiPassword')} autoComplete="off" />
-      </label>
-      <label className="operator__seg">
-        <span className="operator__seg-label mono">{t.shareMode.binDay}</span>
+      </SettingsRow>
+      <SettingsRow as="label" label={t.shareMode.binDay}>
         <input className="input" value={fields.binDay} onChange={set('binDay')} autoComplete="off" />
-      </label>
-      <label className="operator__seg">
-        <span className="operator__seg-label mono">{t.shareMode.houseRules}</span>
+      </SettingsRow>
+      <SettingsRow as="label" label={t.shareMode.houseRules}>
         <textarea className="input" value={fields.houseRules} onChange={set('houseRules')} rows={3} />
-      </label>
+      </SettingsRow>
       <button type="button" className="btn" onClick={save} disabled={saving}>
         <InlineIcon name="check-bold" /> {saved ? t.shareMode.saved : t.common.save}
       </button>
@@ -978,14 +969,13 @@ function CastTvSection({ help }: { help?: HelpMode }) {
   return (
     <OperatorSection title={o18n.castTitle} help={help} helpKey="guest">
       <p className="operator__hint mono">{o18n.castIntro}</p>
-      <label className="operator__seg">
-        <span className="operator__seg-label mono">{o18n.castSceneLabel}</span>
+      <SettingsRow as="label" label={o18n.castSceneLabel}>
         <select className="input" value={scene} onChange={(e) => chooseScene(e.target.value as CastScene)} disabled={busy}>
           <option value="board">{o18n.castSceneBoard}</option>
           <option value="ambient">{o18n.castSceneAmbient}</option>
           <option value="welcome">{o18n.castSceneWelcome}</option>
         </select>
-      </label>
+      </SettingsRow>
       <p className="operator__hint mono">{o18n.castSceneHint[scene]}</p>
       <div className="operator__inline-form">
         {canCast && (

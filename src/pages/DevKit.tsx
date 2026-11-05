@@ -1,3 +1,4 @@
+import { SettingsRow } from '../components/operator/SettingsRow'
 import { Field } from '../components/Field'
 import { IconButton } from '../components/IconButton'
 // B-11 (bmad/10) — cercle.css moved out of the eager shell (position-immaterial
@@ -3704,6 +3705,29 @@ export function DevKit() {
             onConfirm={() => {}}
           />
         </Demo>
+      ),
+    },
+    {
+      cat: 'Overlays & chrome',
+      name: 'SettingsRow',
+      file: 'components/operator/SettingsRow.tsx',
+      kw: 'réglages setting row rangée réglage label hint toggle operator__seg',
+      render: () => (
+        <>
+          <Demo label="THE Réglages setting row (2026-11-05, solidify 3.2): label left, control right, an optional hint line under. 42 hand-spelled .operator__seg rows in 13 files folded onto it by a transformer; the classes are unchanged (no visual change) and OWNED here (kit-class-rule).">
+            <div className="surface operator__section">
+              <SettingsRow label="Écran de veille" hint="Après 10 min sans toucher la tablette.">
+                <Toggle on icon="image-square-bold" label="Activé" onClick={() => {}} />
+              </SettingsRow>
+              <SettingsRow as="label" label="Langue">
+                <select className="input">
+                  <option>Français</option>
+                  <option>English</option>
+                </select>
+              </SettingsRow>
+            </div>
+          </Demo>
+        </>
       ),
     },
     {

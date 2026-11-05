@@ -1,3 +1,4 @@
+import { SettingsRow } from './SettingsRow'
 import { IconButton } from '../IconButton'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -162,7 +163,7 @@ function HomeProjectsSection({ kind, help }: { kind: 'plan' | 'upkeep'; help?: H
       )}
       {seeds.length > 0 && (
         <div className="season-seeds">
-          <p className="operator__seg-label mono">{o18n.home.seedsTitle}</p>
+          <SettingsRow label={o18n.home.seedsTitle} />
           <p className="operator__hint mono">{o18n.home.seedsHint}</p>
           {seeds.map((seed) => (
             <Cluster key={seed.id}>

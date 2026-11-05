@@ -1,3 +1,4 @@
+import { SettingsRow } from './SettingsRow'
 import { useEffect, useState } from 'react'
 import { SoundToggle } from '../SoundToggle'
 import { useSoundOn } from '../../lib/sound'
@@ -134,8 +135,7 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
   return (
     <OperatorSection title={o18n.display} help={help} helpKey="display">
       <div className="operator__display">
-        <div className="operator__seg">
-          <span className="operator__seg-label mono">{o18n.themeLabel}</span>
+        <SettingsRow label={o18n.themeLabel}>
           {/* While ambient is on, day/night follows the time (auto day/night) —
               the manual toggle is governed by it, so show it disabled with a
               hint rather than letting a tap be silently re-asserted next tick. */}
@@ -154,18 +154,16 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
             {theme === 'night' ? o18n.themeNight : o18n.themeDay}
           </button>
           {ambient && <p className="operator__seg-hint mono">{o18n.themeFollowsTime}</p>}
-        </div>
-        <div className="operator__seg">
-          <span className="operator__seg-label mono">{o18n.ambientLabel}</span>
+        </SettingsRow>
+        <SettingsRow label={o18n.ambientLabel}>
           <Toggle
             on={ambient}
             icon={ambient ? 'sun-horizon-bold' : 'sun-bold'}
             label={ambient ? o18n.ambientOn : o18n.ambientOff}
             onClick={toggleAmbient}
           />
-        </div>
-        <div className="operator__seg">
-          <span className="operator__seg-label mono">{o18n.apodLabel}</span>
+        </SettingsRow>
+        <SettingsRow label={o18n.apodLabel}>
           <Toggle
             on={apod}
             icon="moon-stars-bold"
@@ -173,9 +171,8 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
             onClick={() => setApodEnabled(!apod)}
           />
           <p className="operator__seg-hint mono">{o18n.apodHint}</p>
-        </div>
-        <div className="operator__seg">
-          <span className="operator__seg-label mono">{o18n.canvasLabel}</span>
+        </SettingsRow>
+        <SettingsRow label={o18n.canvasLabel}>
           <Toggle
             on={canvas}
             icon={canvas ? 'sun-horizon-bold' : 'sun-bold'}
@@ -183,11 +180,10 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
             onClick={() => setCanvasEnabled(!canvas)}
           />
           <p className="operator__seg-hint mono">{o18n.canvasHint}</p>
-        </div>
+        </SettingsRow>
         {/* A-2 (bmad/09): the derived QC/CA fêtes announce lines on the board —
             all on by default (zero-impact), this device can opt out. */}
-        <div className="operator__seg">
-          <span className="operator__seg-label mono">{o18n.fetesLabel}</span>
+        <SettingsRow label={o18n.fetesLabel}>
           <Toggle
             on={fetes}
             icon="calendar-dots-bold"
@@ -195,12 +191,11 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
             onClick={() => setHolidaysEnabled(!fetes)}
           />
           <p className="operator__seg-hint mono">{o18n.fetesHint}</p>
-        </div>
+        </SettingsRow>
         {/* D-21 (bmad/10) « Sortir le bac »: a flagged recurring chore's own
             "evening before" announce line — all on by default, this device can
             opt out (lib/choreAnnounce), same shape as the fêtes toggle above. */}
-        <div className="operator__seg">
-          <span className="operator__seg-label mono">{o18n.binAnnounceLabel}</span>
+        <SettingsRow label={o18n.binAnnounceLabel}>
           <Toggle
             on={binAnnounce}
             icon="hand-heart-bold"
@@ -208,9 +203,8 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
             onClick={() => setChoreAnnounceEnabled(!binAnnounce)}
           />
           <p className="operator__seg-hint mono">{o18n.binAnnounceHint}</p>
-        </div>
-        <div className="operator__seg">
-          <span className="operator__seg-label mono">{o18n.keepAwakeLabel}</span>
+        </SettingsRow>
+        <SettingsRow label={o18n.keepAwakeLabel}>
           <Toggle
             on={keepAwake}
             icon="device-tablet-bold"
@@ -218,10 +212,9 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
             onClick={() => setKeepAwake(!keepAwake)}
           />
           <p className="operator__seg-hint mono">{o18n.keepAwakeHint}</p>
-        </div>
+        </SettingsRow>
         {(cloudOcrAvailable || aiOn) && (
-          <div className="operator__seg">
-            <span className="operator__seg-label mono">{o18n.ocrLabel}</span>
+          <SettingsRow label={o18n.ocrLabel}>
             <div className="audience-switch mono" role="group" aria-label={o18n.ocrLabel}>
               <button
                 type="button"
@@ -254,16 +247,14 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
               {ocrChoice !== 'device' && ocrChoice !== 'cloud' ? `${o18n.ocrAutoHint} ` : ''}
               {ocrEngine === 'cloud' ? o18n.ocrCloudHint : ocrEngine === 'vision' ? o18n.ocrVisionHint : o18n.ocrDeviceHint}
             </p>
-          </div>
+          </SettingsRow>
         )}
-        <div className="operator__seg">
-          <span className="operator__seg-label mono">{o18n.langLabel}</span>
+        <SettingsRow label={o18n.langLabel}>
           <button type="button" className="btn" onClick={() => setLang(lang === 'fr' ? 'en' : 'fr')}>
             {lang === 'fr' ? 'Français' : 'English'}
           </button>
-        </div>
-        <div className="operator__seg">
-          <span className="operator__seg-label mono">{o18n.contrastLabel}</span>
+        </SettingsRow>
+        <SettingsRow label={o18n.contrastLabel}>
           <div className="audience-switch mono" role="group" aria-label={o18n.contrastLabel}>
             <button
               type="button"
@@ -282,9 +273,8 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
               <InlineIcon name="sparkle-bold" /> {o18n.contrastHigh}
             </button>
           </div>
-        </div>
-        <div className="operator__seg">
-          <span className="operator__seg-label mono">{o18n.textScaleLabel}</span>
+        </SettingsRow>
+        <SettingsRow label={o18n.textScaleLabel}>
           {/* Mapped rather than hand-written, now that there are three: the third
               copy of a nine-line button block is where one of them quietly stops
               matching its siblings. TEXT_SCALES is the order. */}
@@ -301,9 +291,8 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
               </button>
             ))}
           </div>
-        </div>
-        <div className="operator__seg">
-          <span className="operator__seg-label mono">{o18n.viewLabel}</span>
+        </SettingsRow>
+        <SettingsRow label={o18n.viewLabel}>
           <div
             className="audience-switch mono"
             role="group"
@@ -354,9 +343,8 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
           </div>
           {guestPreview && <p className="operator__seg-hint mono">{t.audience.guestPreviewHint}</p>}
           {audience === 'simple' && !guestPreview && <p className="operator__seg-hint mono">{t.audience.simpleHint}</p>}
-        </div>
-        <div className="operator__seg">
-          <span className="operator__seg-label mono">{o18n.tutorialLabel}</span>
+        </SettingsRow>
+        <SettingsRow label={o18n.tutorialLabel}>
           <div className="audience-switch mono" role="group" aria-label={o18n.tutorialTitle}>
             <button
               type="button"
@@ -375,13 +363,12 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
               <InlineIcon name="lightning-bold" /> {o18n.tutorialOff}
             </button>
           </div>
-        </div>
+        </SettingsRow>
         {/* The calm "Récents" session log (#38) — a quiet look back at what just
             happened, with a late Annuler. Reachable here even after the toast fades. */}
-        <div className="operator__seg">
-          <span className="operator__seg-label mono">{t.recents.title}</span>
+        <SettingsRow label={t.recents.title}>
           <RecentsPanel />
-        </div>
+        </SettingsRow>
       </div>
       {/* « Sur l'écran d'accueil » — the standing install door (the board's one-time
           nudge is the other; lib/install). Renders nothing where there is nothing to
@@ -445,13 +432,12 @@ export function VoiceSection({ help }: { help?: HelpMode }) {
           The same switch rides the routine player's and cook mode's bars — this is
           the calm mirror, not the primary door (you reach for it when something is
           already talking). Device-local, so a guest may flip it. */}
-      <div className="operator__seg">
-        <span className="operator__seg-label mono">{t.sound.label}</span>
+      <SettingsRow label={t.sound.label}>
         <div className="picker-chips mono">
           <SoundToggle />
           <span className="mono">{soundIsOn ? t.sound.on : t.sound.off}</span>
         </div>
-      </div>
+      </SettingsRow>
       <p className="operator__hint mono">{t.sound.hint}</p>
       {!available ? (
         <p className="operator__hint mono">{o18n.voiceNone}</p>
@@ -460,24 +446,22 @@ export function VoiceSection({ help }: { help?: HelpMode }) {
           {/* #TTS — the GLOBAL read-aloud language, used everywhere narration plays
               (cook mode, routines, toddler tiles…). Auto follows the app language; a
               recipe's own language still wins for that recipe. */}
-          <div className="operator__seg">
-            <span className="operator__seg-label mono">{o18n.readLangLabel}</span>
+          <SettingsRow label={o18n.readLangLabel}>
             <div className="picker-chips mono">
               <Chip selected={readLang === 'auto'} onClick={() => setReadLang('auto')}>{t.recipes.readLangAuto}</Chip>
               <Chip selected={readLang === 'fr'} onClick={() => setReadLang('fr')}>{t.recipes.readLangFr}</Chip>
               <Chip selected={readLang === 'en'} onClick={() => setReadLang('en')}>{t.recipes.readLangEn}</Chip>
             </div>
-          </div>
+          </SettingsRow>
 
           {/* Pick the voice for EACH language independently — a French app can still
               choose a good English voice for recipes read in English. */}
-          <div className="operator__seg">
-            <span className="operator__seg-label mono">{o18n.voiceLabel}</span>
+          <SettingsRow label={o18n.voiceLabel}>
             <div className="picker-chips mono">
               <Chip selected={voiceLang === 'fr'} onClick={() => setVoiceLang('fr')}>{t.recipes.readLangFr}</Chip>
               <Chip selected={voiceLang === 'en'} onClick={() => setVoiceLang('en')}>{t.recipes.readLangEn}</Chip>
             </div>
-          </div>
+          </SettingsRow>
           {voicesForLang.length === 0 ? (
             <p className="operator__hint mono">{o18n.voiceNoneLang}</p>
           ) : (
@@ -499,10 +483,7 @@ export function VoiceSection({ help }: { help?: HelpMode }) {
             </select>
           )}
 
-          <label className="operator__seg">
-            <span className="operator__seg-label mono">
-              {o18n.voiceSpeedLabel} · {rate.toFixed(1)}×
-            </span>
+          <SettingsRow as="label" label={<>{o18n.voiceSpeedLabel} · {rate.toFixed(1)}×</>}>
             <input
               type="range"
               min={0.6}
@@ -515,19 +496,18 @@ export function VoiceSection({ help }: { help?: HelpMode }) {
                 setRate(r)
               }}
             />
-          </label>
+          </SettingsRow>
 
           {/* Tap-to-hear (A-2): in the Enfant / Simple lenses, holding a finger
               ~½ s on any row reads it aloud. Per-device, opt-out here. */}
-          <div className="operator__seg">
-            <span className="operator__seg-label mono">{o18n.tapToHearLabel}</span>
+          <SettingsRow label={o18n.tapToHearLabel}>
             <Toggle
               on={tapToHear}
               icon="speaker-high-bold"
               label={tapToHear ? o18n.ambientOnWord : o18n.ambientOffWord}
               onClick={() => setTapToHear(!tapToHear)}
             />
-          </div>
+          </SettingsRow>
           <p className="operator__hint mono">{o18n.tapToHearHint}</p>
 
           {/* Test in the SELECTED voice language, with a phrase in that language —

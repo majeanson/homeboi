@@ -1,3 +1,4 @@
+import { SettingsRow } from './SettingsRow'
 import { IconButton } from '../IconButton'
 import { Loading } from '../Fallback'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -338,8 +339,7 @@ export function MealWindowSection({ help }: { help?: HelpMode }) {
 
   return (
     <OperatorSection title={o18n.mealWindowTitle} help={help} helpKey="mealWindow">
-      <div className="operator__seg">
-        <span className="operator__seg-label mono">{o18n.mealWindowLabel}</span>
+      <SettingsRow label={o18n.mealWindowLabel}>
         {ro ? (
           <span className="mono">{o18n.mealWindowDays(days ?? WINDOW_DAYS_DEFAULT)}</span>
         ) : (
@@ -356,7 +356,7 @@ export function MealWindowSection({ help }: { help?: HelpMode }) {
             ))}
           </select>
         )}
-      </div>
+      </SettingsRow>
       <p className="operator__hint mono">{o18n.mealWindowHint}</p>
       {status === 'saved' && <StatusMessage tone="success">{o18n.postalSaved}</StatusMessage>}
       {status === 'bad' && <StatusMessage tone="error">{o18n.postalBad}</StatusMessage>}

@@ -1,3 +1,4 @@
+import { SettingsRow } from './SettingsRow'
 import { useOperatorT } from '../../i18n.operator'
 import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
@@ -22,20 +23,18 @@ export function AmbientSettingsSection({ help }: { help?: HelpMode }) {
   return (
     <OperatorSection title={o18n.ambientTitle} help={help} helpKey="ambient">
       {/* — The screensaver — */}
-      <div className="operator__seg">
-        <span className="operator__seg-label mono">{o18n.ambientScreensaver}</span>
+      <SettingsRow label={o18n.ambientScreensaver}>
         <Toggle
           on={a.screensaver}
           icon="image-square-bold"
           label={a.screensaver ? o18n.ambientOnWord : o18n.ambientOffWord}
           onClick={() => set({ screensaver: !a.screensaver })}
         />
-      </div>
+      </SettingsRow>
 
       {a.screensaver && (
         <>
-          <div className="operator__seg">
-            <span className="operator__seg-label mono">{o18n.ambientIdleBefore}</span>
+          <SettingsRow label={o18n.ambientIdleBefore}>
             <select
               className="input"
               value={a.idleMin}
@@ -48,9 +47,9 @@ export function AmbientSettingsSection({ help }: { help?: HelpMode }) {
                 </option>
               ))}
             </select>
-          </div>
+          </SettingsRow>
 
-          <p className="operator__seg-label mono">{o18n.ambientShows}</p>
+          <SettingsRow label={o18n.ambientShows} />
           <div className="ambient-set__shows">
             <Toggle on={a.showClock} icon="clock-bold" label={o18n.ambientClock} onClick={() => set({ showClock: !a.showClock })} />
             <Toggle on={a.showDate} icon="calendar-blank-bold" label={o18n.ambientDate} onClick={() => set({ showDate: !a.showDate })} />
@@ -62,15 +61,14 @@ export function AmbientSettingsSection({ help }: { help?: HelpMode }) {
           {/* F-47 (bmad/08): the hourly breath — at the top of the hour the idle
               clock breathes once (a slow 2 s scale). No sound, no badge — the
               house's heartbeat. Every surface; reduced-motion drops it. */}
-          <div className="operator__seg">
-            <span className="operator__seg-label mono">{o18n.ambientBreath}</span>
+          <SettingsRow label={o18n.ambientBreath}>
             <Toggle
               on={a.hourlyBreath}
               icon="heart-bold"
               label={a.hourlyBreath ? o18n.ambientOnWord : o18n.ambientOffWord}
               onClick={() => set({ hourlyBreath: !a.hourlyBreath })}
             />
-          </div>
+          </SettingsRow>
           <p className="operator__hint mono">{o18n.ambientBreathHint}</p>
 
           {/* Says WHERE it applies (this device, whatever its surface) and that
@@ -87,18 +85,16 @@ export function AmbientSettingsSection({ help }: { help?: HelpMode }) {
       )}
 
       {/* — Return to Maisonnée (the profile drift) — */}
-      <div className="operator__seg">
-        <span className="operator__seg-label mono">{o18n.ambientReturnHome}</span>
+      <SettingsRow label={o18n.ambientReturnHome}>
         <Toggle
           on={a.returnHome}
           icon="users-three-bold"
           label={a.returnHome ? o18n.ambientOnWord : o18n.ambientOffWord}
           onClick={() => set({ returnHome: !a.returnHome })}
         />
-      </div>
+      </SettingsRow>
       {a.returnHome && (
-        <div className="operator__seg">
-          <span className="operator__seg-label mono">{o18n.ambientReturnAfter}</span>
+        <SettingsRow label={o18n.ambientReturnAfter}>
           <select
             className="input"
             value={a.returnHomeMin}
@@ -111,7 +107,7 @@ export function AmbientSettingsSection({ help }: { help?: HelpMode }) {
               </option>
             ))}
           </select>
-        </div>
+        </SettingsRow>
       )}
 
     </OperatorSection>
@@ -131,26 +127,24 @@ export function HabitCheckinSection({ help }: { help?: HelpMode }) {
 
   return (
     <OperatorSection title={fn.habitCheckinTitle} help={help} helpKey="habits">
-      <div className="operator__seg">
-        <span className="operator__seg-label mono">{fn.habitCheckinMorning}</span>
+      <SettingsRow label={fn.habitCheckinMorning}>
         <Toggle
           on={c.autoOpen}
           icon="sun-horizon-bold"
           label={c.autoOpen ? fn.ambientOnWord : fn.ambientOffWord}
           onClick={() => setHabitCheckin({ autoOpen: !c.autoOpen })}
         />
-      </div>
+      </SettingsRow>
       <p className="operator__hint mono">{fn.habitCheckinMorningHint}</p>
 
-      <div className="operator__seg">
-        <span className="operator__seg-label mono">{fn.habitCheckinReminders}</span>
+      <SettingsRow label={fn.habitCheckinReminders}>
         <Toggle
           on={c.reminders}
           icon="clock-bold"
           label={c.reminders ? fn.ambientOnWord : fn.ambientOffWord}
           onClick={() => setHabitCheckin({ reminders: !c.reminders })}
         />
-      </div>
+      </SettingsRow>
       <p className="operator__hint mono">{fn.habitCheckinRemindersHint}</p>
 
       {/* Dev tooling (the idleDebug spirit): a morning open fires once per local

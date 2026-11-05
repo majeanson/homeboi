@@ -1,3 +1,4 @@
+import { SettingsRow } from './SettingsRow'
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT, useLang } from '../../i18n'
@@ -169,8 +170,7 @@ export function CoOperatorsSection({ help }: { help?: HelpMode }) {
           overrides one. On a shared wall tablet nothing changes — whoever is standing
           there taps their own face, as always. */}
       {members.length > 0 && (
-        <div className="operator__seg">
-          <span className="operator__seg-label mono">{t.coop.myFace}</span>
+        <SettingsRow label={t.coop.myFace}>
           <Cluster>
             {members.map((m) => (
               <Chip
@@ -183,7 +183,7 @@ export function CoOperatorsSection({ help }: { help?: HelpMode }) {
             ))}
           </Cluster>
           <p className="operator__hint">{t.coop.myFaceHint}</p>
-        </div>
+        </SettingsRow>
       )}
 
       {link ? (

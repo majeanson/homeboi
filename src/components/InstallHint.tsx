@@ -1,3 +1,4 @@
+import { SettingsRow } from './operator/SettingsRow'
 import { useT } from '../i18n'
 import { Icon } from './Icon'
 import { useInstall, useInstallNudge, dismissInstallNudge } from '../lib/install'
@@ -27,15 +28,14 @@ export function InstallHint({ nudge = false }: { nudge?: boolean }) {
 
   if (!nudge) {
     return (
-      <div className="operator__seg install-hint" data-face="settings">
-        <span className="operator__seg-label mono">{t.install.settingsTitle}</span>
+      <SettingsRow className="install-hint" data-face="settings" label={t.install.settingsTitle}>
         <p className="operator__hint mono">{body}</p>
         {promptable && (
           <button type="button" className="btn btn--sm" onClick={() => void prompt()}>
             <Icon name="download-simple-bold" size={16} /> {t.install.cta}
           </button>
         )}
-      </div>
+      </SettingsRow>
     )
   }
 
