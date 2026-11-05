@@ -72,8 +72,8 @@ export function TakeoutSection({ help }: { help?: HelpMode }) {
     enabled: !hidden,
     staleTime: 5 * 60_000,
   })
-  if (hidden) return null
   const o = useOperatorT()
+  if (hidden) return null
   // Defensive: a payload without `backups` (an older Worker, a stubbed harness) must
   // render an empty list, not throw `reading 'length'` into the ErrorBoundary and take
   // the whole settings tab with it — which is what it did, caught by e2e the same

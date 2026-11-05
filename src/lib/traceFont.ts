@@ -111,7 +111,8 @@ export function drawTraceLine(ctx: CanvasRenderingContext2D, text: string, x: nu
         stroke.forEach(([gx, gy], i) => {
           const px = cx + gx * cap
           const py = top + gy * cap
-          i ? ctx.lineTo(px, py) : ctx.moveTo(px, py)
+          if (i) ctx.lineTo(px, py)
+          else ctx.moveTo(px, py)
         })
         ctx.stroke()
       }

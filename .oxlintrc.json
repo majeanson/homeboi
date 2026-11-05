@@ -1,0 +1,42 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  // THE LINTER — oxlint, CI-gated (ci.yml, right after typecheck). Added 2026-11-05 as
+  // the first wave of the solidification plan: correctness rules ONLY, so a red lint is a
+  // real defect, never a style opinion. The 2026-08-27 knip lesson applies here too: a
+  // gate that reports noise gets skimmed, then ignored, then it gates nothing.
+  //
+  // Every `off` below is a decision with a reason, not a silenced complaint:
+  //   • The React-Compiler-derived rules (set-state-in-effect · purity · refs ·
+  //     immutability · preserve-manual-memoization · use-memo · static-components) fired
+  //     110 times on the 2026-11-05 baseline, and what they ask for is a refactor, not a
+  //     fix: `Date.now()` in render IS how a clock board renders; a `setState` in an
+  //     effect that syncs with a DOM measurement is the documented pattern in CardSlot.
+  //     They stay off until a wave budgets the refactors; a line-level disable needs a
+  //     reason (`src/lib/lint-disable-rule.test.ts`).
+  //   • `unicorn` is a style plugin (prefer-string-starts-ends-with, no-new-array…) — its
+  //     "correctness" category is not ours. Not loaded.
+  //   • rules-of-hooks is OFF in e2e/ and *.test.ts: Playwright's `test.use(…)` and a test
+  //     calling a hook through a fake are not components, and the rule cannot tell.
+  "plugins": ["react", "typescript", "oxc"],
+  "categories": {
+    "correctness": "error"
+  },
+  "rules": {
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "warn",
+    "react/set-state-in-effect": "off",
+    "react/purity": "off",
+    "react/refs": "off",
+    "react/immutability": "off",
+    "react/preserve-manual-memoization": "off",
+    "react/use-memo": "off",
+    "react/static-components": "off"
+  },
+  "overrides": [
+    {
+      "files": ["e2e/**", "**/*.test.ts", "**/*.test.tsx", "**/*.test.mjs"],
+      "rules": { "react-hooks/rules-of-hooks": "off" }
+    }
+  ],
+  "ignorePatterns": ["dist/**", "node_modules/**", "test-results/**", "screenshots/**", "promo/**", "research/**", "plans/**", "public/**"]
+}

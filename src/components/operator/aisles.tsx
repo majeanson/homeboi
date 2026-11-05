@@ -27,7 +27,7 @@ const ORDERABLE: AisleId[] = AISLES.filter((a) => a.id !== 'autres').map((a) => 
 function normalize(saved: AisleId[] | null | undefined): AisleId[] {
   const seen = new Set<AisleId>()
   const out: AisleId[] = []
-  for (const id of saved ?? []) if (ORDERABLE.includes(id) && !seen.has(id)) (seen.add(id), out.push(id))
+  for (const id of saved ?? []) if (ORDERABLE.includes(id) && !seen.has(id)) { seen.add(id); out.push(id) }
   for (const id of ORDERABLE) if (!seen.has(id)) out.push(id)
   return out
 }

@@ -52,7 +52,7 @@ import type { HouseholdSettings } from '../../lib/mealPrefs'
 function normalize(saved: string[] | null | undefined): MealSlot[] {
   const seen = new Set<MealSlot>()
   const out: MealSlot[] = []
-  for (const s of saved ?? []) if (isMealSlot(s) && !seen.has(s)) (seen.add(s), out.push(s))
+  for (const s of saved ?? []) if (isMealSlot(s) && !seen.has(s)) { seen.add(s); out.push(s) }
   for (const s of DEFAULT_SLOT_ORDER) if (!seen.has(s)) out.push(s)
   return out
 }

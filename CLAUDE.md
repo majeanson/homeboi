@@ -175,7 +175,7 @@ channel or a fifth spelling of delete. PARITY's D17 points at it.
 npm run dev            # Vite frontend-only, HMR on :5173, /api proxied to :8787
 npm run cf:dev         # full stack: wrangler dev on :8787 (SPA + Worker + local D1)
 npm run build          # tsc -b (typechecks SPA + Worker + Functions) then vite build → dist/
-npm run typecheck      # tsc -b --noEmit
+npm run typecheck      # tsc -b --noEmit · npm run lint = oxlint, CORRECTNESS rules only (.oxlintrc.json says why each `off`)
 npm test               # vitest run (pure-logic unit tests; *.d1.test.ts excluded)
 npm run test:d1        # the REAL-RUNTIME suite: the Worker in workerd against a real D1 +
                        #   R2 + the DO (vitest.d1.config.ts; helpers functions/test/d1.ts).
@@ -213,7 +213,7 @@ npm run db:migrate:local   # apply migrations to local D1, then sync the sqlite 
 npm run db:migrate:prod    # apply to remote D1 (CI does this before deploy)
 ```
 
-CI (`.github/workflows/ci.yml`) runs typecheck → test → build on every push, which
+CI (`.github/workflows/ci.yml`) runs typecheck → lint → test → build on every push, which
 **gates** `db:migrate:prod` + deploy on `main`. E2E (`.github/workflows/e2e.yml`) is
 **decoupled**: it **chains off** the CI & Deploy workflow (`workflow_run`) and only runs
 once CI concluded successfully on `main` — so it gives signal *after* a green merge but

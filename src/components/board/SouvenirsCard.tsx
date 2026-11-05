@@ -39,7 +39,9 @@ export function SouvenirsCard({ readOnly = false }: { readOnly?: boolean }) {
   const { memberId: face } = useProfile()
   const lens = useCardLens()
   const detail = useEntityDetail()
-  const mots = readOnly ? [] : savedMots(useMots({ live: false }), face)
+  // The hook runs on every render (rules-of-hooks); a read-only guest just asks nothing.
+  const allMots = useMots({ live: false, enabled: !readOnly })
+  const mots = readOnly ? [] : savedMots(allMots, face)
   const drawings = (useGallery().data?.drawings ?? []).filter((d) => d.saved_at != null)
   const photos = (usePhotos().data?.photos ?? []).filter((p) => p.saved_at != null)
   const { data } = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: Member[] }>('members') })

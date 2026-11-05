@@ -35,6 +35,11 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
+      # oxlint, correctness category only (.oxlintrc.json carries every `off` with its
+      # reason). Added 2026-11-05: three conditional hook calls and ten comma-expression
+      # statements had sat in the tree with nothing to say so. Style rules are NOT here
+      # on purpose — a gate that reports opinions gets skimmed (the knip story below).
+      - run: npm run lint
       - run: npm test
       - run: npm run build
       # C-23 (bmad/08): size budgets + the load-bearing offline check — every lazy

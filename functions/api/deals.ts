@@ -253,7 +253,7 @@ function sortBestFirst(deals: Deal[]): void {
   for (const d of deals) if (d.unitPrice != null && d.unitKind) tally.set(d.unitKind, (tally.get(d.unitKind) ?? 0) + 1)
   let primary: UnitKind | null = null
   let best = -1
-  for (const [k, n] of tally) if (n > best) (best = n), (primary = k)
+  for (const [k, n] of tally) if (n > best) { best = n; primary = k }
 
   const rank = (d: Deal): number => {
     if (d.unitPrice != null && d.unitKind === primary) return 0

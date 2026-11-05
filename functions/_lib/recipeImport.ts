@@ -1804,9 +1804,13 @@ export function htmlToText(html: string, max = 6000): string {
       .replace(/<(?:[^>"']|"[^"]*"|'[^']*')*>/g, ' '),
   )
     .replace(INVISIBLE, '')
+    /* oxlint-disable no-control-regex -- \x01 is this pass's own column-break sentinel
+       (set three lines up), not a stray byte: these three regexes are what turn it back
+       into a newline once the surrounding blanks are trimmed. */
     .replace(/(^|\n)[\x01 ]+/g, '$1')
     .replace(/[\x01 ]+(?=\n|$)/g, '')
     .replace(/ *\x01[\x01 ]*/g, '\n')
+    /* oxlint-enable no-control-regex */
     .split('\n')
     // An inline tag left a space before the punctuation that closed it (« <a>velveting</a>. »
     // → « velveting . »). French sets a space before « : ! ? ; », never before « . , ) ».

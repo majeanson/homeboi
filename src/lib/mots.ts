@@ -169,11 +169,16 @@ export function waitingRecipientIds(mots: Mot[]): Set<string> {
 // The cache holds the WIRE shape (`{ notes }`, exactly what /api/notes answers) and the
 // mapping runs in `select`: the discovery probe reads the same key raw (lib/discovery),
 // and one key holding two shapes is how a probe and a card quietly break each other.
-export function useAllMots(opts?: { live?: boolean }): Mot[] {
+// `enabled: false` keeps the HOOK in place (rules-of-hooks — a caller cannot branch
+// around it) while asking the server nothing: the board's Souvenirs card hides mots
+// from a read-only guest, and a guest fetch of /api/notes would only 403 into the
+// console.
+export function useAllMots(opts?: { live?: boolean; enabled?: boolean }): Mot[] {
   const { data } = useQuery({
     queryKey: MOTS_KEY,
     queryFn: () => api<{ notes: NoteWire[] }>('notes'),
     select: (d) => (d?.notes ?? []).map(motFromNote),
+    enabled: opts?.enabled !== false,
     ...(opts?.live === false ? { staleTime: 5 * 60_000 } : live),
   })
   return data ?? []
@@ -181,7 +186,7 @@ export function useAllMots(opts?: { live?: boolean }): Mot[] {
 
 // Shared read of the cache with SCHEDULED mots gated out — the single chokepoint, so a
 // not-yet-surfaced mot is absent from the dot, « Pour toi » and the toddler tiles at once.
-export function useMots(opts?: { live?: boolean }): Mot[] {
+export function useMots(opts?: { live?: boolean; enabled?: boolean }): Mot[] {
   const now = Date.now() / 1000
   return useAllMots(opts).filter((m) => isSurfaced(m, now))
 }

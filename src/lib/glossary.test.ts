@@ -499,7 +499,7 @@ describe('e2e asserts labels the app can render', () => {
   const allLiterals = new Map<string, Set<string>>()
   for (const f of sourceFiles(E2E).filter((p) => p.endsWith('.spec.ts'))) {
     const raw = readFileSync(f, 'utf8')
-    const path = f.split(/[\/]/).pop()!
+    const path = f.split('/').pop()!
     for (const m of raw.matchAll(/name:\s*'([^']{3,60})'/g)) {
       if (!allLiterals.has(m[1])) allLiterals.set(m[1], new Set())
       allLiterals.get(m[1])!.add(path)

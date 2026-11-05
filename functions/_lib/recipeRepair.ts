@@ -103,7 +103,7 @@ export function jsonFragmentsToText(text: string): string {
       else if (/^total/.test(key) && /^\d+$/.test(v)) out.push(`Total : ${v} min`)
       continue
     }
-    out.push(unquoteLine(l.replace(/^[\[{]+|[\]}]+,?$/g, '')))
+    out.push(unquoteLine(l.replace(/^[[{]+|[\]}]+,?$/g, '')))
   }
   return out.join('\n')
 }

@@ -47,6 +47,11 @@ export function CoOperatorsSection({ help }: { help?: HelpMode }) {
     queryFn: () => api<{ operators: { email: string; createdAt: number; isSelf: boolean }[] }>('operator-invite'),
     enabled: !isGuest() && !isPaired(),
   })
+  // The household faces this account can BE. Read here rather than passed down: this
+  // card is the only place that asks, and MEMBERS_KEY is already warm everywhere else.
+  // Declared ABOVE the guest/kiosk return (rules-of-hooks): a hook after a conditional
+  // return changes the hook order between renders.
+  const members = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: Member[] }>('members'), enabled: !isGuest() && !isPaired() }).data?.members ?? []
 
   if (isGuest() || isPaired()) return null
 
@@ -108,9 +113,6 @@ export function CoOperatorsSection({ help }: { help?: HelpMode }) {
     }
   }
 
-  // The household faces this account can BE. Read here rather than passed down: this
-  // card is the only place that asks, and MEMBERS_KEY is already warm everywhere else.
-  const members = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: Member[] }>('members'), enabled: !isGuest() && !isPaired() }).data?.members ?? []
   const myFace = auth.memberId
 
   async function setMyFace(id: string | null) {

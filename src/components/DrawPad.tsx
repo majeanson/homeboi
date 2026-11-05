@@ -207,7 +207,8 @@ function shapePath(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: num
       const hx = 16 * Math.sin(t) ** 3
       const hy = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t)
       const x = cx + (hx / 16) * r, y = cy - (hy / 16) * r
-      t === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
+      if (t === 0) ctx.moveTo(x, y)
+      else ctx.lineTo(x, y)
     }
   } else if (shape === 'tri') {
     ctx.moveTo(cx, cy - r); ctx.lineTo(cx + r * 0.92, cy + r * 0.8); ctx.lineTo(cx - r * 0.92, cy + r * 0.8); ctx.closePath()
@@ -218,7 +219,8 @@ function shapePath(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: num
       const ang = (i * Math.PI) / pts - Math.PI / 2
       const rad = i % 2 === 0 ? r : r * inner
       const x = cx + Math.cos(ang) * rad, y = cy + Math.sin(ang) * rad
-      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
+      if (i === 0) ctx.moveTo(x, y)
+      else ctx.lineTo(x, y)
     }
     if (shape !== 'star') { ctx.closePath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, r * 0.3, 0, Math.PI * 2) }
   } else if (shape === 'house') {

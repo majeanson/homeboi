@@ -111,7 +111,7 @@ export function aisleFor(text: string, overrides?: AisleOverrides): AisleId {
 export function aisleRanks(order: AisleId[] | null | undefined): Record<AisleId, number> {
   const seen = new Set<AisleId>()
   const ordered: AisleId[] = []
-  for (const id of order ?? []) if (AISLE_BY_ID[id] && !seen.has(id)) (seen.add(id), ordered.push(id))
+  for (const id of order ?? []) if (AISLE_BY_ID[id] && !seen.has(id)) { seen.add(id); ordered.push(id) }
   // Append any aisle the saved order didn't mention (e.g. a newly added built-in),
   // in default order, so the set is always complete.
   for (const a of AISLES) if (!seen.has(a.id)) ordered.push(a.id)

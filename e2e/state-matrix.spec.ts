@@ -972,7 +972,7 @@ async function scrollFrames(page: Page, id: string, max: number): Promise<string
         if (over <= 8) continue
         const oy = getComputedStyle(el).overflowY
         if (oy !== 'auto' && oy !== 'scroll') continue
-        if (over > bestOver) (bestOver = over), (best = el)
+        if (over > bestOver) { bestOver = over; best = el }
       }
       const el = best ?? document.scrollingElement
       if (!el) return false
@@ -1002,7 +1002,7 @@ async function scrollFrames(page: Page, id: string, max: number): Promise<string
         if (over <= 8) continue
         const oy = getComputedStyle(el).overflowY
         if (oy !== 'auto' && oy !== 'scroll') continue
-        if (over > bestOver) (bestOver = over), (best = el)
+        if (over > bestOver) { bestOver = over; best = el }
       }
       return (best ?? document.scrollingElement)?.scrollTop ?? 0
     })
