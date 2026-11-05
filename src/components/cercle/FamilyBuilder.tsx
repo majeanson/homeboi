@@ -22,6 +22,7 @@ import {
 } from '../../lib/cercle'
 import { Avatar } from '../Avatar'
 import { Icon } from '../Icon'
+import { ActionMenu } from '../ActionMenu'
 import { EntityCombobox, type ComboOption } from '../EntityCombobox'
 import { THING_DEFAULTS } from '../../lib/things'
 
@@ -329,6 +330,19 @@ export function FamilyBuilder({
     >
       <Avatar kind={p.avatarKind} photo={p.avatarRef} colour={p.colour} name={p.firstName} size={32} />
       <span className="cercle-fam__chip-name">{p.firstName}</span>
+      {/* « Placer » — the chip's ⋯ lists the bands (and the tray): the mouse/keyboard
+          MIRROR of dragging the face onto a band. Until 2026-11-05 the drag was the
+          only door (ACTIONS.md: a gesture is never the only path). pointerdown is
+          stopped so opening the menu does not also start the drag. */}
+      <span className="cercle-fam__chip-menu" onPointerDown={(e) => e.stopPropagation()}>
+        <ActionMenu
+          label={`${t.cercle.familyPlace} — ${p.firstName}`}
+          items={[
+            ...FAMILY_BANDS.filter((b) => band[p.key] !== b).map((b) => ({ label: t.cercle.familyBand[b], onSelect: () => moveTo(p.key, b) })),
+            ...(band[p.key] ? [{ label: t.cercle.familyTray, onSelect: () => moveTo(p.key, 'tray' as Slot), separated: true }] : []),
+          ]}
+        />
+      </span>
       <button
         type="button"
         className="cercle-fam__chip-x"

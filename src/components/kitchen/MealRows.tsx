@@ -19,6 +19,7 @@ export function MealRows({
   onOpenRecipe,
   onRemove,
   onMove,
+  onMoveTo,
   onRename,
   onClearAll,
   onLeftover,
@@ -34,6 +35,9 @@ export function MealRows({
   onOpenRecipe: (r: Recipe, m: MealRow) => void
   onRemove: (id: string) => void
   onMove: (id: string, dir: 'up' | 'down') => void
+  // « Déplacer… » — to another day and/or slot. The mouse/keyboard MIRROR of the two
+  // drags (ACTIONS.md: a gesture is never the only door); the host opens its picker.
+  onMoveTo?: (meal: MealRow) => void
   onRename: (id: string, title: string) => void
   onClearAll?: () => void // "clear this slot" — shown only when the slot holds several
   // "Il en reste ?" — announce that this cooked meal has leftovers (drops them into
@@ -173,6 +177,9 @@ export function MealRows({
                                   { icon: 'caret-up-bold' as const, label: t.kitchen.moveUp, disabled: i === 0, onSelect: () => onMove(m.id, 'up') },
                                   { icon: 'caret-down-bold' as const, label: t.kitchen.moveDown, disabled: i === meals.length - 1, onSelect: () => onMove(m.id, 'down') },
                                 ]
+                              : []),
+                            ...(onMoveTo
+                              ? [{ icon: 'calendar-dots-bold' as const, label: t.kitchen.moveTo, onSelect: () => onMoveTo(m) }]
                               : []),
                             // "Il en reste ?" — announce leftovers from this cooked meal.
                             // Not offered on a row that is itself already a leftover.

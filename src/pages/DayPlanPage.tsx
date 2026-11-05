@@ -48,10 +48,14 @@ import { DayEditor } from '../components/kitchen/DayEditor'
 import { useMealPlanning } from '../components/kitchen/useMealPlanning'
 import { useRecipeForMeal } from '../components/kitchen/mealLookup'
 import { useAnnounceLeftover, usePlanLeftover } from '../components/kitchen/Leftovers'
-import { isMealSlot, type MealSlot } from '../lib/mealSlots'
+import { isMealSlot, type MealSlot, WINDOW_DAYS_DEFAULT } from '../lib/mealSlots'
+import { Sheet } from '../components/Sheet'
+import { MealPlanPicker } from '../components/kitchen/MealPlanPicker'
+import { useWeekLabeled } from '../components/kitchen/week'
 import { reschedule, restoreMeals, planMealRecipe } from '../components/kitchen/mealMutations'
 import {
   type Leftover,
+  type MealRow,
   type MealsData,
   type DayNotesData,
   MEALS_KEY,
@@ -473,6 +477,27 @@ function DayPlanScene() {
 
   // Drag a meal to another slot (same day) — shares the grid's reschedule helper.
   const rescheduleMeal = (id: string, toDate: number, slot?: string) => void reschedule(qc, id, toDate, slot)
+
+  // « Déplacer… » — the row ⋯'s picker (day + slot), the mouse/keyboard MIRROR of
+  // both drags (the week grid's day→day, this scene's slot→slot). Until 2026-11-05 a
+  // meal could only change days by a press-and-hold on the grid — no door for a mouse
+  // or a keyboard, though ACTIONS.md called the row ✅. Same owner (reschedule,
+  // mealMutations.ts); the undo is the inverse move, so nothing is recreated.
+  const [moving, setMoving] = useState<MealRow | null>(null)
+  const [moveSlot, setMoveSlot] = useState<MealSlot>(heroSlot)
+  const moveWeek = useWeekLabeled(meals.data?.weekStart ?? 0, meals.data?.windowDays ?? WINDOW_DAYS_DEFAULT, lang)
+  const moveMealTo = (m: MealRow) => {
+    setMoveSlot(isMealSlot(m.slot) ? m.slot : heroSlot)
+    setMoving(m)
+  }
+  const moveTo = (toDate: number) => {
+    const m = moving
+    if (!m) return
+    setMoving(null)
+    if (toDate === m.date && moveSlot === m.slot) return
+    void reschedule(qc, m.id, toDate, moveSlot)
+    recordUndo({ message: t.undo.mealMoved(m.title), onUndo: () => void reschedule(qc, m.id, m.date, m.slot) })
+  }
 
   // ?focus= — LAND ON THE THING, not merely on the page that contains it.
   //
@@ -956,7 +981,7 @@ function DayPlanScene() {
                 }}
                 slotEdit={{ editSlot, setEditSlot, slotText, setSlotText, saveSlot }}
                 noteEdit={{ editNote, setEditNote, noteText, setNoteText, saveNote, clearNote }}
-                actions={{ clearMeal, moveMeal, renameMeal, clearSlotMeals, clearDay, announceLeftover, rescheduleMeal }}
+                actions={{ clearMeal, moveMeal, renameMeal, clearSlotMeals, clearDay, announceLeftover, rescheduleMeal, moveMealTo }}
                 hideNote
               />
             </section>
@@ -964,6 +989,10 @@ function DayPlanScene() {
         )}
 
       </div>
+      {/* « Déplacer… » (the row ⋯): the shared day + slot picker, in a Sheet. */}
+      <Sheet open={moving !== null} onClose={() => setMoving(null)} title={moving ? t.kitchen.moveToTitle(moving.title) : undefined} className="meal-move">
+        {moving && <MealPlanPicker slot={moveSlot} onSlot={setMoveSlot} week={moveWeek} onPickDay={moveTo} />}
+      </Sheet>
     </div>
   )
 }

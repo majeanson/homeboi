@@ -1294,6 +1294,10 @@ export const FR = {
     manage: 'Gérer',
     moveUp: 'Monter',
     moveDown: 'Descendre',
+    // « Déplacer… » — the row ⋯ door to another day and/or slot: the mouse/keyboard
+    // MIRROR of the two drags (the week grid's day→day, the day scene's slot→slot).
+    moveTo: 'Déplacer…',
+    moveToTitle: (s: string) => `Déplacer « ${s} »`,
     dragDay: 'Glisser vers un autre jour',
     dragMeal: 'Glisser vers un autre repas',
     clearText: 'Effacer le texte',
@@ -1971,8 +1975,10 @@ export const FR = {
     familyModeMatrix: 'Liste',
     familyBand: { grandparents: 'Grands-parents', parents: 'Parents', children: 'Enfants' },
     familyTray: 'À placer',
+    // The face chip's ⋯ — the mouse/keyboard MIRROR of dragging it onto a band.
+    familyPlace: 'Placer',
     familyDropHere: 'Dépose un visage ici',
-    familyBandsHint: 'Glisse chaque visage dans une rangée. Les liens se créent tout seuls : parents ↔ enfants, frères et sœurs, conjoint·e·s, grands-parents.',
+    familyBandsHint: 'Glisse chaque visage dans une rangée (ou choisis-la dans son ⋯). Les liens se créent tout seuls : parents ↔ enfants, frères et sœurs, conjoint·e·s, grands-parents.',
     familyAnchor: 'Par rapport à',
     familyAnchorHint: 'Choisis une personne de référence ci-dessus : tu indiques ensuite comment chaque autre lui est relié·e.',
     familyEmpty: 'Ajoute des personnes pour commencer.',
@@ -3047,6 +3053,7 @@ export const FR = {
     postponed: (s: string) => `« ${s} » reporté`,
     todoDone: (s: string) => `« ${s} » fait`,
     mealRemoved: (s: string) => `« ${s} » retiré du menu`,
+    mealMoved: (s: string) => `« ${s} » déplacé`,
     noteDeleted: (s: string) => `Note « ${s} » supprimée`,
     // A meal planned from a pool (Idées, Favoris, IA, 👧, Historique) — names the day,
     // because the planning row sits in a scene where the week grid is not visible.

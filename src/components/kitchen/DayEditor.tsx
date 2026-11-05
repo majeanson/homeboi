@@ -121,6 +121,8 @@ export function DayEditor({
     announceLeftover: (meal: MealRow) => void
     // Drag a meal to another slot (same day) — slot passed, date kept.
     rescheduleMeal: (id: string, toDate: number, slot?: string) => void
+    // The drag's mouse/keyboard mirror: the row ⋯ « Déplacer… » opens the host's picker.
+    moveMealTo: (meal: MealRow) => void
   }
   // Suppress the day-note section — the day-plan page renders the note as a headline
   // at the top instead, so it shouldn't repeat it here. Default false keeps the note
@@ -137,7 +139,7 @@ export function DayEditor({
   const { planRecipe } = picker
   const { editSlot, setEditSlot, slotText, setSlotText, saveSlot } = slotEdit
   const { editNote, setEditNote, noteText, setNoteText, saveNote, clearNote } = noteEdit
-  const { clearMeal, moveMeal, renameMeal, clearSlotMeals, clearDay, announceLeftover, rescheduleMeal } = actions
+  const { clearMeal, moveMeal, renameMeal, clearSlotMeals, clearDay, announceLeftover, rescheduleMeal, moveMealTo } = actions
 
   // The day's HERO slot (souper unless the household picked another in Réglages ▸
   // Repas) — it gets the grocery-staples step; the rest are plain slot sections.
@@ -216,6 +218,7 @@ export function DayEditor({
               onOpenRecipe={onOpenRecipe}
               onRemove={clearMeal}
               onMove={moveMeal}
+              onMoveTo={ro ? undefined : moveMealTo}
               onRename={renameMeal}
               onClearAll={() => clearSlotMeals(date, slot)}
               onLeftover={announceLeftover}
@@ -279,6 +282,7 @@ export function DayEditor({
           onOpenRecipe={onOpenRecipe}
           onRemove={clearMeal}
           onMove={moveMeal}
+          onMoveTo={ro ? undefined : moveMealTo}
           onRename={renameMeal}
           onClearAll={() => clearSlotMeals(date, hero)}
           onLeftover={announceLeftover}
