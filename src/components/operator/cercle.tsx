@@ -1,3 +1,4 @@
+import { loadStateOf } from '../Fallback'
 // B-11 (bmad/10) revue — cercle.css moved out of the eager shell, but this
 // operator section renders `.cercle-group__dot` and Operator.tsx's own chunk
 // never pulls cercle.css in; load it as a side effect whenever this renders.
@@ -37,10 +38,11 @@ export function CercleGroupsSection({ help }: { help?: HelpMode }) {
   const o18n = useOperatorT()
   const write = useWrite()
   const confirm = useConfirm()
-  const { data, isLoading } = useQuery({
+  const cercleQ = useQuery({
     queryKey: CERCLE_KEY,
     queryFn: () => api<{ groups: ContactGroupRaw[]; members: Member[] }>('cercle'),
   })
+  const { data } = cercleQ
 
   // Household member keys — used only to flag WHY a family group is invisible on
   // the directory (redundant with the Maisonnée card), so the panel explains the
@@ -55,7 +57,7 @@ export function CercleGroupsSection({ help }: { help?: HelpMode }) {
     await write('cercle-groups', { method: 'DELETE', body: { id: g.id }, affectedKeys: [CERCLE_KEY] }).catch(writeFailed)
   }
 
-  if (isLoading && !data) return <p className="loading mono">{t.common.loading}</p>
+  if (!data) return loadStateOf(cercleQ)
 
   return (
     <OperatorSection title={o18n.cercleGroupsTitle} help={help} helpKey="cercleGroups">

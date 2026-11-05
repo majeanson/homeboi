@@ -1,3 +1,4 @@
+import { Loading } from '../Fallback'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useT, useLang } from '../../i18n'
 import { useOperatorT } from '../../i18n.operator'
@@ -181,7 +182,7 @@ export function MealSlotsSection({ help }: { help?: HelpMode }) {
     holdMs: DND_HOLD_MS,
   })
 
-  if (order === null) return <p className="loading mono">{t.common.loading}</p>
+  if (order === null) return <Loading />
 
   return (
     <OperatorSection

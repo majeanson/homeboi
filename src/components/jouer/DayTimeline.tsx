@@ -1,3 +1,4 @@
+import { loadStateOf } from '../Fallback'
 import { useMemo } from 'react'
 import { useT } from '../../i18n'
 import { useSpeak } from '../../lib/speak'
@@ -17,7 +18,8 @@ export function DayTimeline() {
   const t = useT()
   const speak = useSpeak()
   const p = t.play.day
-  const { data } = useBoardData()
+  const boardQ = useBoardData()
+  const { data } = boardQ
   // A meal lands in the part of the day it's SERVED in (Réglages ▸ Repas) — a household
   // that soupes at 20 h hears it in « soir », not « midi ».
   const { hours } = useMealPrefs()
@@ -44,7 +46,7 @@ export function DayTimeline() {
   }
   const sub = (part: DayPartData): string | null => [...part.mealTitles, ...part.eventTitles][0] ?? null
 
-  if (!data) return <p className="loading mono">{t.common.loading}</p>
+  if (!data) return loadStateOf(boardQ)
 
   return (
     <div className="daytl">

@@ -1,3 +1,4 @@
+import { Loading } from '../components/Fallback'
 import { useEffect, useState } from 'react'
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { useT } from '../i18n'
@@ -141,7 +142,7 @@ export function SharePage() {
   if (!ready) {
     return (
       <main className="narrow share-page">
-        <p className="loading mono">{t.common.loading}</p>
+        <Loading />
       </main>
     )
   }

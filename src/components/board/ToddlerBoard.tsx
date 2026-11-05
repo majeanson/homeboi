@@ -1,3 +1,4 @@
+import { Loading } from '../Fallback'
 import { Link } from 'react-router-dom'
 import { useLang, useT } from '../../i18n'
 import { BigTiles, Sayable, type Tile } from '../BigTiles'
@@ -242,7 +243,7 @@ export function ToddlerBoard({
           board gets. Generic when nobody's picked (shared wall). Tap to hear. */}
       <Sayable className="today-kid__greet" text={greet} />
       {!data ? (
-        <p className="loading mono">{t.common.loading}</p>
+        <Loading />
       ) : (
         <>
           <div className="today-kid__heroes">

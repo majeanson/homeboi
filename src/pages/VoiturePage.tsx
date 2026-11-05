@@ -1,3 +1,4 @@
+import { Loading } from '../components/Fallback'
 import { useState, type CSSProperties } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useLang, useT } from '../i18n'
@@ -234,7 +235,7 @@ export function VoiturePage() {
             (carQ.isError ? (
               <LoadError onRetry={() => void carQ.refetch()} />
             ) : (
-              <p className="loading mono">{t.common.loading}</p>
+              <Loading />
             ))}
         </div>
 

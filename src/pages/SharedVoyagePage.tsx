@@ -14,7 +14,7 @@ import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { useTabParam } from '../lib/tabParam'
 import { SHARED_TRIPS_KEY, SHARED_TRIP_NOTES_KEY, SHARED_TRIP_PACKING_KEY, TRIPS_KEY, BOARD_KEY, MONTH_KEY } from '../lib/queryKeys'
 import { connectSharedTripRealtime } from '../lib/realtime'
-import { PairPrompt } from '../components/Fallback'
+import { loadStateOf, PairPrompt } from '../components/Fallback'
 import { StatusMessage } from '../components/StatusMessage'
 import { SceneHead } from '../components/SceneHead'
 import { SubTabs } from '../components/SubTabs'
@@ -116,7 +116,10 @@ function SharedVoyageInner() {
   // Dissolved (404) or no-longer-a-member (403 after leaving / being removed): a calm
   // "n'existe plus" with a way back — never an error page.
   const gone = tripQ.error instanceof ApiError && (tripQ.error.status === 404 || tripQ.error.status === 403)
-  if (gone || (!trip && !tripQ.isLoading)) {
+  // « Parti » only when the server SAID so (404/403) or answered without this trip; any
+  // other failure with nothing cached is LoadError + « Réessayer » below — not a false
+  // « ce voyage n'est plus partagé » over a dropped connection (2026-11-05).
+  if (gone || (tripQ.data !== undefined && !trip)) {
     return (
       <div className="scene" aria-label={t.voyage.title}>
         <SceneHead title={t.voyage.title} card="voyage" onClose={close} closeLabel={t.common.close} />
@@ -135,9 +138,7 @@ function SharedVoyageInner() {
     return (
       <div className="scene" aria-label={t.voyage.title}>
         <SceneHead title={t.voyage.title} card="voyage" onClose={close} closeLabel={t.common.close} />
-        <div className="scene__body">
-          <p className="loading mono">{t.common.loading}</p>
-        </div>
+        <div className="scene__body">{loadStateOf(tripQ)}</div>
       </div>
     )
   }

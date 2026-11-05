@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { blankComments, openTags, arrayStrings } from './buildGuardScan'
+import { blankComments, openTags, arrayStrings, classNameValues } from './buildGuardScan'
 
 // THE SCANNERS THEMSELVES, pinned against the traps that fooled them.
 //
@@ -90,5 +90,22 @@ describe('blankComments keeps line numbers, which is why reports stay clickable'
     const out = blankComments(src)
     expect(out.split('\n')).toHaveLength(src.split('\n').length)
     expect(out).toContain('const b = 2')
+  })
+})
+
+describe('classNameValues — a class rule looks at classes, not at words', () => {
+  const fixture = [
+    `<p className="loading mono">x</p>`, // ← the token (line 1)
+    `<b className={'loading' + (on ? ' is-on' : '')}>y</b>`, // ← built form (line 2)
+    `<i className="is-loading loading-shell">w</i>`, // a longer token is not this one
+    `const state: 'loading' | 'ok' = 'loading'`, // a union, not a class
+    `<Demo label="still loading" kw="loading wait" />`, // prose + data
+    `<span className={\`row \${open ? 'loading' : ''}\`}>z</span>`, // ← inside a template (line 6)
+  ].join('\n')
+  it('finds the literal, the concatenated and the templated spellings, and nothing else', () => {
+    expect(classNameValues(fixture, 'loading').map((h) => h.line)).toEqual([1, 2, 6])
+  })
+  it('returns nothing for a token the source never spells as a class', () => {
+    expect(classNameValues(fixture, 'shell')).toEqual([])
   })
 })

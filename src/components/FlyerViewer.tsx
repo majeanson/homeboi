@@ -1,3 +1,4 @@
+import { Loading } from './Fallback'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { EmptyState } from './EmptyState'
@@ -407,7 +408,7 @@ export function FlyerViewer({
       )}
 
       <div className="flyer-scroll">
-        {state === 'loading' && <p className="loading mono">{t.shop.searching}</p>}
+        {state === 'loading' && <Loading>{t.shop.searching}</Loading>}
         {(state === 'empty' || state === 'error') && <EmptyState>{t.shop.flyerNone}</EmptyState>}
 
         {/* Offres — a tight grid of every clipping (each carries its own price), so

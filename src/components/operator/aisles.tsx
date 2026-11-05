@@ -1,5 +1,6 @@
+import { Loading } from '../Fallback'
 import { useEffect, useState } from 'react'
-import { useT, useLang } from '../../i18n'
+import { useLang } from '../../i18n'
 import { useOperatorT } from '../../i18n.operator'
 import { api } from '../../lib/api'
 import { useWrite } from '../../lib/write'
@@ -33,7 +34,6 @@ function normalize(saved: AisleId[] | null | undefined): AisleId[] {
 }
 
 export function AisleOrderSection() {
-  const t = useT()
   const o18n = useOperatorT()
   const { lang } = useLang()
   const write = useWrite()
@@ -73,7 +73,7 @@ export function AisleOrderSection() {
     holdMs: DND_HOLD_MS,
   })
 
-  if (order === null) return <p className="loading mono">{t.common.loading}</p>
+  if (order === null) return <Loading />
 
   return (
     <OperatorSection

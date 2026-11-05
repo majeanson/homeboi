@@ -1,3 +1,4 @@
+import { Loading } from '../components/Fallback'
 // B-11 (bmad/10) — handoff.css moved out of the eager shell (uniquely-named
 // .handoff__/.welcome__ classes); load it whenever this page renders instead.
 import '../styles/handoff.css'
@@ -63,7 +64,7 @@ export function FamilyWindowPage() {
 
       <div className="scene__body welcome__body">
         {isLoading && !data ? (
-          <p className="loading mono">{t.common.loading}</p>
+          <Loading />
         ) : isError && !data ? (
           <GuestExpired />
         ) : !has ? (

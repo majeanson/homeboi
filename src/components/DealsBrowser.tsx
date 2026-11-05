@@ -1,3 +1,4 @@
+import { Loading } from './Fallback'
 import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EmptyState } from './EmptyState'
@@ -240,7 +241,7 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
         </div>
 
         {state === 'start' && <EmptyState>{t.shop.browseStart}</EmptyState>}
-        {state === 'loading' && <p className="loading mono">{t.shop.searching}</p>}
+        {state === 'loading' && <Loading>{t.shop.searching}</Loading>}
         {state === 'empty' && <EmptyState>{t.shop.none}</EmptyState>}
         {state === 'noPostal' && (
           // Not a dead-end: jump straight to Réglages ▸ Magasinage to fix it.
@@ -297,7 +298,7 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
 
         {mode === 'store' && (
           <>
-            {flyersQ.isLoading && <p className="loading mono">{t.shop.searching}</p>}
+            {flyersQ.isLoading && <Loading>{t.shop.searching}</Loading>}
             {flyersQ.error &&
               (isStatus(flyersQ.error, 400) ? (
                 <EmptyState>

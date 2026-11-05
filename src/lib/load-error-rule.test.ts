@@ -32,6 +32,20 @@ const ALLOWED = new Map<string, string>([
   ['pages/JoinHouseholdPage.tsx', 'handles isError itself with a page-specific message (an invite token can be invalid, which is not « the network did not answer »)'],
   ['pages/DevKit.tsx', 'the gallery renders every face on purpose'],
   ['router.tsx', 'Suspense fallbacks for lazy chunks — a chunk that fails to load is the SW/offline shell’s problem, not a query’s'],
+  // The 2.1 sweep (2026-11-05): the hand-rolled « Chargement… » lines became <Loading>;
+  // these waits are not a query’s, and each says what its failure face is instead.
+  ['components/board/SimpleBoard.tsx', 'renders the board’s own frame (`data` is a prop); Board’s stale strip names a failed read'],
+  ['components/board/ToddlerBoard.tsx', 'same as SimpleBoard — a lens over Board’s data, under its strip'],
+  ['components/DealsBrowser.tsx', 'a state machine (start · loading · ok · empty · noPostal · error) with its own `error` arm'],
+  ['components/FlyerViewer.tsx', 'a state machine whose `error` arm renders the empty state with the flyer’s own words'],
+  ['components/operator/aisles.tsx', 'a local order seeded by a read whose .catch falls back to the default order — the wait cannot hang'],
+  ['components/operator/meals.tsx', 'same shape as aisles: a failed read seeds the default slot order'],
+  ['components/operator/HouseholdListSection.tsx', 'lib/householdListSetting seeds the defaults on a failed read — the wait cannot hang'],
+  ['pages/FamilyWindowPage.tsx', 'a guest-link scene: a failed read is <GuestExpired>, which says the one thing a guest can do'],
+  ['pages/HandoffPage.tsx', 'guest-link scene, same as FamilyWindowPage'],
+  ['pages/WelcomePage.tsx', 'guest-link scene, same as FamilyWindowPage'],
+  ['pages/Operator.tsx', 'the auth gate (`loading || !canEnter`) — a session check, not a household read'],
+  ['pages/SharePage.tsx', 'waits on the share-target payload being parsed, not on a fetch'],
 ])
 
 const files = sourceFiles(SRC)

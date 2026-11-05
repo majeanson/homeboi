@@ -1,3 +1,4 @@
+import { Loading } from '../Fallback'
 import { useState } from 'react'
 import { useT } from '../../i18n'
 import { useOperatorT } from '../../i18n.operator'
@@ -51,7 +52,7 @@ export function HouseholdListSection<T extends HouseholdListItem>({
   const [adding, setAdding] = useState('')
   const ro = isGuest()
 
-  if (items === null) return <p className="loading mono">{t.common.loading}</p>
+  if (items === null) return <Loading />
 
   return (
     <OperatorSection title={labels.title} help={help} helpKey={helpKey}>

@@ -1,3 +1,4 @@
+import { Loading } from '../Fallback'
 import { Link } from 'react-router-dom'
 import type { CSSProperties } from 'react'
 import { useLang, useT } from '../../i18n'
@@ -42,7 +43,7 @@ export function SimpleBoard({
   if (!data) {
     return (
       <main className="kid__main today-simple">
-        <p className="loading mono">{t.common.loading}</p>
+        <Loading />
       </main>
     )
   }

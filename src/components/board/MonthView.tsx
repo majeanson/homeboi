@@ -1,3 +1,4 @@
+import { Loading } from '../Fallback'
 import { useMemo, useRef, useState, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { EmptyState } from '../EmptyState'
@@ -909,7 +910,7 @@ export function MonthView({
         </div>
         <div className="monthv__day-body" id="monthv-day-body">
         {isLoading && !data ? (
-          <p className="loading mono">{t.common.loading}</p>
+          <Loading />
         ) : !data && isError ? (
           // A month whose fetch FAILED is not an empty month — saying « rien »
           // (or hanging on Chargement) lied on flaky wifi (2026-08-27).

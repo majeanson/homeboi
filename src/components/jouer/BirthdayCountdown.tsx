@@ -1,3 +1,4 @@
+import { loadStateOf } from '../Fallback'
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../../i18n'
@@ -37,7 +38,8 @@ export function BirthdayCountdown() {
   const t = useT()
   const speak = useSpeak()
   const p = t.play.fete
-  const { data } = useQuery({ queryKey: CERCLE_KEY, queryFn: () => api<CercleData>('cercle'), ...live })
+  const cercleQ = useQuery({ queryKey: CERCLE_KEY, queryFn: () => api<CercleData>('cercle'), ...live })
+  const { data } = cercleQ
 
   const people = useMemo(
     () => (data ? unifyCircle(data.contacts, data.members, data.links ?? [], [], data.pets).people : []),
@@ -54,7 +56,7 @@ export function BirthdayCountdown() {
 
   const phrase = (firstName: string, days: number) => (days === 0 ? p.today(firstName) : p.inDodos(firstName, days))
 
-  if (!data) return <p className="loading mono">{t.common.loading}</p>
+  if (!data) return loadStateOf(cercleQ)
   if (items.length === 0)
     return (
       <button type="button" className="bigtiles__empty" onClick={() => speak(p.none)}>

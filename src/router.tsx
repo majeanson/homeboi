@@ -1,7 +1,7 @@
+import { Loading } from './components/Fallback'
 import { lazy, Suspense, useEffect } from 'react'
 import { Routes, Route, Navigate, useSearchParams, useLocation } from 'react-router-dom'
 import { Home } from './pages/Home'
-import { useT } from './i18n'
 import { useSurface } from './lib/surface'
 import { useAuth, wasSignedIn } from './lib/auth'
 import { isPaired } from './lib/device'
@@ -130,11 +130,6 @@ const StickerWallPage = lazy(() => import('./pages/StickerWallPage').then((m) =>
 // Dev-only component gallery (unlinked). A live catalogue of the shared primitives
 // across the four presentation axes — see src/pages/DevKit.tsx.
 const DevKit = lazy(() => import('./pages/DevKit').then((m) => ({ default: m.DevKit })))
-
-function Loading() {
-  const t = useT()
-  return <p className="loading mono">{t.common.loading}</p>
-}
 
 // Legacy hub routes live on as query-preserving redirects — the plain <Navigate>
 // precedent (e.g. the /kid redirect below) drops search params, which breaks a

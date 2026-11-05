@@ -8,10 +8,12 @@ import { Skeleton } from './Skeleton'
 // The two states every data page shares before it has rows to show, factored out
 // so the wording/markup stays identical everywhere and a copy never drifts.
 
-// Shown while the first fetch is in flight.
-export function Loading() {
+// Shown while the first fetch is in flight. `children` replaces the word when the
+// wait has a better one (« Recherche… » over a flyer search) — the markup stays THE one
+// (`.loading` belongs to this file: kit-class-rule.test.ts).
+export function Loading({ children }: { children?: ReactNode } = {}) {
   const t = useT()
-  return <p className="loading mono">{t.common.loading}</p>
+  return <p className="loading mono">{children ?? t.common.loading}</p>
 }
 
 // THE pre-data face of a query, decided in ONE place (2026-11-05). A surface that

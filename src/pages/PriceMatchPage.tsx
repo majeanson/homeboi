@@ -9,7 +9,7 @@ import { api, isStatus } from '../lib/api'
 import { useWrite, writeFailed } from '../lib/write'
 import { live } from '../lib/query'
 import { useT } from '../i18n'
-import { loadStateOf } from '../components/Fallback'
+import { Loading, loadStateOf } from '../components/Fallback'
 import { SceneHead } from '../components/SceneHead'
 import { FlyerViewer } from '../components/FlyerViewer'
 import { DealCard } from '../components/DealCard'
@@ -136,7 +136,7 @@ export function PriceMatchPage() {
       <SceneHead title={t.shop.proofTitle} subtitle={query} card="deals" onClose={close} closeLabel={t.shop.close} offline />
 
       <div className="scene__body">
-        {state === 'loading' && <p className="loading mono">{t.shop.searching}</p>}
+        {state === 'loading' && <Loading>{t.shop.searching}</Loading>}
         {state === 'empty' && <EmptyState>{t.shop.none}</EmptyState>}
         {state === 'noPostal' && (
           // Not a dead-end: jump straight to Réglages ▸ Magasinage to fix it.

@@ -16,7 +16,8 @@ import { useTabParam } from '../lib/tabParam'
 import { MEMBERS_KEY, TRIPS_KEY, BOARD_KEY, MONTH_KEY, SHARED_TRIPS_KEY } from '../lib/queryKeys'
 import { useConfirm } from '../lib/confirm'
 import type { Member } from '../lib/members'
-import { PairPrompt } from '../components/Fallback'
+import { loadStateOf, PairPrompt } from '../components/Fallback'
+import { EmptyState } from '../components/EmptyState'
 import { SceneHead } from '../components/SceneHead'
 import { PhotoField } from '../components/PhotoField'
 import { ActionMenu } from '../components/ActionMenu'
@@ -105,7 +106,7 @@ function VoyageInner() {
       <div className="scene" aria-label={t.voyage.title}>
         <SceneHead title={t.voyage.title} card="voyage" onClose={close} closeLabel={t.common.close} />
         <div className="scene__body">
-          <p className="loading mono">{tripsQ.isLoading ? t.common.loading : t.voyage.notFound}</p>
+          {loadStateOf(tripsQ) ?? <EmptyState tone="calm">{t.voyage.notFound}</EmptyState>}
         </div>
       </div>
     )

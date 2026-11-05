@@ -1,3 +1,4 @@
+import { Loading } from '../components/Fallback'
 import { Fragment, useCallback, useEffect, type CSSProperties, type ReactNode } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -488,7 +489,7 @@ export function Operator() {
   const [sub, setSub] = useTabParam('sub', subFallback, subKeys)
   const activeSub = subs?.find((s) => s.key === sub) ?? subs?.[0]
 
-  if (loading || !canEnter) return <p className="loading mono">{t.common.loading}</p>
+  if (loading || !canEnter) return <Loading />
 
   return (
     <main className="operator">

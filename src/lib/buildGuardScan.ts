@@ -161,3 +161,37 @@ export function arrayStrings(src: string, name: string): string[] {
   const body = blankComments(src.slice(open + 1, src.indexOf(']', open)))
   return [...body.matchAll(/'([^']*)'|"([^"]*)"/g)].map((m) => m[1] ?? m[2])
 }
+
+/**
+ * Every `className=` VALUE in `src` whose class list holds the bare `token` — the quoted
+ * literal, or every string literal inside the braces (`'chip' + (on ? ' is-on' : '')`),
+ * read brace-balanced so a template's `${…}` or a ternary over an object does not end
+ * the value early. Lifted from chip-rule.test.ts (2026-11-05) for the general
+ * class-ownership guard (kit-class-rule.test.ts); chip-rule keeps its own copy, by its
+ * header's own rule about retrofitting a trusted guard.
+ *
+ * The trap it refuses: scanning EVERY string literal reads the word out of prose and
+ * data — a `variant: 'chip' | 'card'` union, a gallery keyword, a demo label. A class
+ * rule looks at classes. `buildGuardScan.test.ts` pins it against both.
+ */
+export function classNameValues(src: string, token: string): { line: number; text: string }[] {
+  const out: { line: number; text: string }[] = []
+  for (const m of src.matchAll(/className=/g)) {
+    const at = (m.index ?? 0) + m[0].length
+    let value: string
+    if (src[at] === '{') {
+      let depth = 0
+      let i = at
+      for (; i < src.length; i++) {
+        if (src[i] === '{') depth++
+        else if (src[i] === '}' && --depth === 0) break
+      }
+      value = src.slice(at, i + 1)
+    } else {
+      value = src.slice(at).match(/^(['"])[^'"\n]*\1/)?.[0] ?? ''
+    }
+    const holds = [...value.matchAll(/(['"`])([^'"`\n]*)\1/g)].some((lit) => lit[2].trim().split(/\s+/).includes(token))
+    if (holds) out.push({ line: src.slice(0, m.index).split('\n').length, text: value.slice(0, 60) })
+  }
+  return out
+}
