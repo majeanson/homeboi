@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test'
+import type { HealthWire } from '../functions/_lib/wire'
 import { addLocalDays, localDayStart } from '../src/lib/localDay'
 
 // Deterministic API stubs so screenshots render populated, calm surfaces with
@@ -632,6 +633,28 @@ const TRANSFERS = {
 // query strings (?view=manage, ?id=…) still hit. GET only; writes get a generic ok.
 // Exported so a spec can build a VARIANT of a fixture (spread + tweak one field)
 // instead of hand-writing a whole payload that then drifts from this one.
+// Typed against the handler's wire (functions/_lib/wire.ts) — `tsc -b` fails if the two
+// drift. The VALUES are what every spec effectively saw before the fixture was typed
+// (2026-11-05: it carried 4 of these 15 keys, the other 11 read as undefined): photos,
+// realtime, cloudOcr OFF. Flip one here only when a spec means to exercise that door.
+const HEALTH: HealthWire = {
+  ok: true,
+  app: 'Babillard',
+  ai: true,
+  aiAvailable: true,
+  cloudOcr: false,
+  browserRun: false,
+  invite: false,
+  sessionSecret: true,
+  photos: false,
+  mail: true,
+  rateLimit: true,
+  alerts: true,
+  deployHook: false,
+  realtime: false,
+  contact: null,
+}
+
 export const ROUTES: Record<string, unknown> = {
   'auth/me': AUTH_ME,
   board: BOARD,
@@ -743,7 +766,7 @@ export const ROUTES: Record<string, unknown> = {
   chores: CHORES,
   events: EVENTS,
   year: YEAR,
-  health: { ai: true, aiAvailable: true, rateLimit: true, alerts: true },
+  health: HEALTH,
   // The nightly copies the restore door lists (STATE §4-L L8). Empty by default: the
   // shared fixture is a household, not a backup history; takeout-restore.spec.ts
   // registers its own route when it wants rows.

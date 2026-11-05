@@ -7,6 +7,7 @@ import { ok } from '../_lib/json'
 import { resolveActor } from '../_lib/household'
 import { householdAiEnabled } from '../_lib/aiPref'
 import { inviteRequired } from '../_lib/signupGate'
+import type { HealthWire } from '../_lib/wire'
 
 // Liveness + a peek at which optional bindings are wired, so the operator hub
 // can show "voice available / degraded" honestly. `invite` tells the signup
@@ -28,7 +29,9 @@ export const onRequestGet: PagesFunction<Env> = async (ctx) => {
   // for a signed-in operator / paired kiosk.
   const actor = aiAvailable ? await resolveActor(ctx.env, ctx.request).catch(() => null) : null
   const ai = aiAvailable && (actor ? await householdAiEnabled(ctx.env, actor.householdId) : true)
-  return ok({
+  // Typed against the wire so e2e/mocks.ts's fixture cannot drift from this answer
+  // again (it had four of these fifteen keys for months — _lib/wire.ts has the story).
+  const wire: HealthWire = {
     ok: true,
     app: ctx.env.APP_NAME ?? 'Babillard',
     ai,
@@ -66,5 +69,6 @@ export const onRequestGet: PagesFunction<Env> = async (ctx) => {
     // be changed without a deploy. It is a public address by definition; `ALERT_EMAIL`
     // stays a secret and never appears here.
     contact: ctx.env.CONTACT_EMAIL ?? null,
-  })
+  }
+  return ok(wire)
 }

@@ -1,5 +1,5 @@
-import { test, expect, type Page, type Request } from '@playwright/test'
-import { mockApi, seedState } from './mocks'
+import type { Page, Request } from '@playwright/test'
+import { test, expect } from './fixtures'
 
 // Behavioural coverage for the « Le cercle » create flows, now hosted on Maison
 // (the nav restructure merged Le cercle + Routines into one /maison tab). The ＋
@@ -19,10 +19,8 @@ async function expectApi(page: Page, method: string, path: string, action: () =>
   await Promise.all([page.waitForRequest(isApi(method, path), { timeout: 20_000 }), action()])
 }
 
-test.beforeEach(async ({ page }) => {
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  await mockApi(page)
-  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+test.beforeEach(async ({ app }) => {
+  await app.boot()
 })
 
 test('creating a named group posts to cercle-groups', async ({ page }) => {

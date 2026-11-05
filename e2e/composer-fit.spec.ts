@@ -1,5 +1,5 @@
-import { test, expect, type Page } from '@playwright/test'
-import { mockApi, seedState } from './mocks'
+import type { Page } from '@playwright/test'
+import { test, expect, type App } from './fixtures'
 // The same per-child right-edge check add-sheet-overflow.spec.ts uses: a composer
 // that gained a full-width line is also the shape most likely to bleed past it.
 import { assertClean } from './overflow'
@@ -24,17 +24,8 @@ import { assertClean } from './overflow'
 // own placeholder, measured in the field's own font, must FIT. A number can drift
 // past a reviewer; « Ajouter un… » cannot.
 
-async function boot(page: Page, width: number) {
-  await page.setViewportSize({ width, height: 844 })
-  await page.addInitScript(() => {
-    try {
-      localStorage.setItem('babillard-tours-seen', JSON.stringify(['essentials']))
-    } catch {
-      /* noop */
-    }
-  })
-  await mockApi(page)
-  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+async function boot(app: App, width: number) {
+  await app.boot({ viewport: { width, height: 844 } })
 }
 
 type Composer = {
@@ -97,8 +88,8 @@ async function measure(page: Page, selector: string) {
 
 for (const width of [360, 390]) {
   for (const c of COMPOSERS) {
-    test(`composer keeps its typing width — ${c.name} @${width}`, async ({ page }) => {
-      await boot(page, width)
+    test(`composer keeps its typing width — ${c.name} @${width}`, async ({ page, app }) => {
+      await boot(app, width)
       await page.goto(c.route)
       await expect(page.locator('.hub__body')).toBeVisible({ timeout: 15_000 })
 
@@ -163,8 +154,8 @@ const SCENE_FIELDS: { name: string; route: string; field: string }[] = [
 
 for (const width of [360, 390]) {
   for (const f of SCENE_FIELDS) {
-    test(`scene form keeps its placeholder readable — ${f.name} @${width}`, async ({ page }) => {
-      await boot(page, width)
+    test(`scene form keeps its placeholder readable — ${f.name} @${width}`, async ({ page, app }) => {
+      await boot(app, width)
       await page.goto(f.route)
       await expect(page.locator(f.field).first()).toBeVisible({ timeout: 15_000 })
 
@@ -206,8 +197,8 @@ const DATE_ROWS: { name: string; route: string; ready: string }[] = [
 
 for (const width of [360, 390]) {
   for (const d of DATE_ROWS) {
-    test(`a date field is never narrower than the control needs — ${d.name} @${width}`, async ({ page }) => {
-      await boot(page, width)
+    test(`a date field is never narrower than the control needs — ${d.name} @${width}`, async ({ page, app }) => {
+      await boot(app, width)
       await page.goto(d.route)
       await expect(page.locator(d.ready).first()).toBeVisible({ timeout: 15_000 })
 
@@ -253,10 +244,9 @@ const CARD_FIELDS: { name: string; card: string; field: string }[] = [
 for (const width of [360, 390]) {
   for (const lang of ['fr', 'en'] as const) {
     for (const f of CARD_FIELDS) {
-      test(`a board composer keeps its placeholder readable — ${f.name} ${lang} @${width}`, async ({ page }) => {
+      test(`a board composer keeps its placeholder readable — ${f.name} ${lang} @${width}`, async ({ page, app }) => {
         await page.setViewportSize({ width, height: 844 })
-        await mockApi(page)
-        await seedState(page, { theme: 'day', audience: 'parent', lang, surface: 'mobile' })
+        await app.boot({ state: { lang } })
         await page.goto('/board')
         await page.waitForSelector('.board-grid .wg-slot')
         const card = page.locator(`.wg-slot[data-card="${f.card}"]`)
