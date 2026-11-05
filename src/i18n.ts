@@ -1063,6 +1063,9 @@ export const FR = {
     // be filtered out and become unfindable). Deliberately not « à planifier », which
     // would read as a nag; it just states the fact.
     noDatesYet: 'Sans dates',
+    allTrips: 'Tous les voyages',
+    pastTrips: 'Voyages passés',
+    noTrips: 'Aucun voyage pour l’instant.',
     inDays: (n: number) => (n === 1 ? 'Demain' : `Dans ${n} jours`),
     startsToday: 'Aujourd’hui',
     legendTrips: 'Voyages',

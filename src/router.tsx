@@ -103,6 +103,7 @@ const Courrier = lazy(() => import('./pages/Postbox').then((m) => ({ default: m.
 const VoiturePage = lazy(() => import('./pages/VoiturePage').then((m) => ({ default: m.VoiturePage })))
 // « Voyage » — the trip notebook (Carnet de voyage): a full-screen scene with the
 // Itinéraire / Infos / Bagages / Documents sub-tabs. Standalone (no hub chrome).
+const TripsPage = lazy(() => import('./pages/TripsPage').then((m) => ({ default: m.TripsPage })))
 const VoyagePage = lazy(() => import('./pages/VoyagePage').then((m) => ({ default: m.VoyagePage })))
 // « Voyage partagé » — the cross-household shared trip scene + its invite-link landing.
 const SharedVoyagePage = lazy(() => import('./pages/SharedVoyagePage').then((m) => ({ default: m.SharedVoyagePage })))
@@ -287,6 +288,7 @@ export function AppRoutes() {
         <Route path="/voyage/rejoindre" element={<SharedVoyageJoinPage />} />
         <Route path="/voyage/partage/:id" element={<SharedVoyagePage />} />
         {/* « Voyage » — the trip notebook. `new` before `:id` so it isn't an id. */}
+        <Route path="/voyage" element={<TripsPage />} />
         <Route path="/voyage/new" element={<VoyagePage />} />
         <Route path="/voyage/:id" element={<VoyagePage />} />
         {/* « Diffuser au salon » — the read-only living-room TV board (cast to a TV). */}

@@ -1460,9 +1460,9 @@ export async function seedState(page: Page, s: AppState) {
       // Pre-dismiss the per-section welcome cards unless a test opts in, so they
       // never sit on top of the content a screenshot/interaction spec is after.
       if (!state.intros) {
-        // The nav restructure retired the 'routines'/'cercle' SectionIntro card ids —
-        // Maison (routines is its default section) and Les notes are the current ones.
-        localStorage.setItem('babillard-sections-seen', JSON.stringify(['board', 'kitchen', 'liste', 'maison', 'notes']))
+        // Maison shows the card of the pill you are on (routines, cercle) since solidify 4.4,
+        // so those ids sit here beside the tab ids.
+        localStorage.setItem('babillard-sections-seen', JSON.stringify(['board', 'kitchen', 'liste', 'maison', 'routines', 'cercle', 'notes']))
       }
       // Pre-mark the first-login guided tour seen unless a test opts in, so its
       // auto-started welcome card / spotlight never covers the elements a spec is

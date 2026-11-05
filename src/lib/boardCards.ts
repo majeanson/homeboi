@@ -184,7 +184,7 @@ export const BOARD_CARDS: readonly BoardCardMeta[] = [
   { id: 'upcoming', icon: 'calendar-blank-bold', tint: 'var(--sky)', zone: 'grid', size: 1, mode: 'auto', emptyTo: '/event/new' },
   { id: 'cercleNotes', icon: 'file-text-bold', tint: 'var(--teal-deep)', zone: 'grid', size: 1, mode: 'auto', emptyTo: '/notes?add=1' },
   { id: 'voyage', icon: 'map-pin-bold', tint: 'var(--teal)', zone: 'grid', size: 1, mode: 'auto', emptyTo: '/voyage/new' },
-  { id: 'carnets', icon: 'book-open-bold', tint: 'var(--teal-deep)', zone: 'grid', size: 1, mode: 'auto', emptyTo: '/maison?section=carnets' },
+  { id: 'carnets', icon: 'book-open-bold', tint: 'var(--teal-deep)', zone: 'grid', size: 1, mode: 'auto', emptyTo: '/maison?section=carnets&plus=carnet' },
   { id: 'seasonUpkeep', icon: 'broom-bold', tint: 'var(--sage-deep)', zone: 'grid', size: 1, mode: 'auto', emptyTo: '/home-project/new' },
   // `drawings` is not `halvable` for the same reason as `notes`: a gallery door has
   // no one-summary compact form. `photos` IS halvable — its mini is a MEDIA tile

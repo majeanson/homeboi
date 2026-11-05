@@ -63,6 +63,7 @@ export function VoyageCard() {
       icon={VOYAGE_ICON}
       label={t.voyage.nextTrip}
       compactLabel={t.voyage.nextTripShort}
+      action={<Chip to="/voyage">{t.voyage.allTrips}</Chip>}
       compactHint={rows[0]?.title}
       // The mini names the next trip; tapping it opens THAT trip's notebook straight away
       // (a shared row → the shared scene) instead of growing to a one-row list of the same

@@ -833,7 +833,7 @@ function MaisonParent() {
       />
       {help.bubbleFor('globalSearch')}
 
-      <SectionIntro card="maison" />
+      <SectionIntro key={sectionCard} card={sectionCard ?? 'maison'} />
 
       {/* « Planifier un rendez-vous » — the shared EventForm, seeded with the person /
           member from their peek's action. Businesses schedule from their own peek

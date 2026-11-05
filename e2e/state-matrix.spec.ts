@@ -672,6 +672,15 @@ const MATRIX: Entry[] = [
   { name: 'notes-toddler', route: '/notes', audience: 'toddler', content: '.cercle-kid__grid, .cercle-kid > *', budgetPx: 32, themes: ['day'], api: NOTES_FIXTURE },
   { name: 'maison-toddler', route: '/maison', audience: 'toddler', content: '.kid__faces, .kid__main > *', budgetPx: 238, themes: ['day'] },
 
+  // « simple » on every hub tab it has (solidify 4.4): the calm lens had no frame at all.
+  // No Réglages entry: the lens redirects /settings to the board. Budgets are first
+  // baselines from a measured run, and slightly above parent because its rows are bigger.
+  { name: 'board-simple', route: '/board', audience: 'simple', content: '.today-simple .bigtile', budgetPx: 145, themes: ['day'] },
+  { name: 'kitchen-simple', route: '/kitchen', audience: 'simple', content: '.kitchen__meal-list, .kitchen__week', budgetPx: 176, themes: ['day'] },
+  { name: 'liste-simple', route: '/liste', audience: 'simple', content: '.list-rows > *', budgetPx: 258, themes: ['day'] },
+  { name: 'notes-simple', route: '/notes', audience: 'simple', content: '.cnote', budgetPx: 237, api: NOTES_FIXTURE, themes: ['day'] },
+  { name: 'maison-simple', route: '/maison', audience: 'simple', content: '.routine-card, .cercle-row', budgetPx: 268, themes: ['day'] },
+
   // board-kiosk (334px) and maison-toddler (216px) are the two biggest numbers in
   //   this table and NEITHER is fat: a wall tablet is read from across a room, so its
   //   greeting is deliberately large type, and the toddler Maison is a centred

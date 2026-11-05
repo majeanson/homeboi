@@ -47,7 +47,7 @@ test('the first-visit card explains the section and deep-links into the Guide', 
 // its Guide card carries no `settings` field, but « En savoir plus » still lands
 // on its own themed tab, not a fallback).
 test('the Maison first-visit card explains the merged section', async ({ page }) => {
-  await boot(page, '/maison')
+  await boot(page, '/maison?section=business')
   const intro = page.locator('.section-intro')
   await expect(intro).toBeVisible()
   await expect(intro).toContainText('maison')
@@ -55,6 +55,13 @@ test('the Maison first-visit card explains the merged section', async ({ page })
   await expect(page).toHaveURL(/\/settings\?tab=maison&lens=comprendre$/)
   const target = page.locator('.guide__card.is-target')
   await expect(target).toBeVisible()
+})
+
+// The card follows the pill you are LOOKING at (solidify 4.4), the same table as the « ? »:
+// a welcome about the whole tab sat above the routines.
+test('Maison opens on routines, so its first-visit card is the routines one', async ({ page }) => {
+  await boot(page, '/maison')
+  await expect(page.locator('.section-intro')).toHaveAttribute('aria-label', /routines/i)
 })
 
 test('the Les notes first-visit card explains the split-out section', async ({ page }) => {

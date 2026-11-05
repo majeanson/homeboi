@@ -15,7 +15,7 @@ type DetailKind =
   | 'meal'
   | 'day' // a whole day's meals, informative (La cuisine week grid)
   | 'chore'
-  | 'todo'
+  | 'todo' // the board À faire row: built by buildChore({ todo: true }). Checking stays inline on the row, the peek is for reading (deliberate split, solidify 4.4)
   | 'leftover'
   | 'list-item' // « La liste » — one grocery line (Simple's hold; Avancé's ✏️ skips it)
   // ('note' was a dead arm — nothing ever built one: a fridge note's card IS its
