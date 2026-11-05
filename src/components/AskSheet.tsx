@@ -1,3 +1,4 @@
+import { IconButton } from './IconButton'
 import { useEffect, useRef, useState } from 'react'
 import { useT } from '../i18n'
 import { api } from '../lib/api'
@@ -155,15 +156,7 @@ export function AskSheet({ aiEnabled = true, onClose }: { aiEnabled?: boolean; o
               onRelatedClick={onClose}
               replay={
                 status === 'answer' && answer ? (
-                  <button
-                    type="button"
-                    className="btn btn--ghost btn--sm ask-sheet__replay"
-                    onClick={() => speak(speakableAnswer(answer.text))}
-                    aria-label={t.ask.replay}
-                    title={t.ask.replay}
-                  >
-                    <Icon name="speaker-high-bold" size={18} />
-                  </button>
+                  <IconButton icon="speaker-high-bold" label={t.ask.replay} size="sm" iconSize={18} className="ask-sheet__replay" onClick={() => speak(speakableAnswer(answer.text))} />
                 ) : undefined
               }
             />

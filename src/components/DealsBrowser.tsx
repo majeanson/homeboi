@@ -1,3 +1,4 @@
+import { IconButton } from './IconButton'
 import { SearchField } from './SearchField'
 import { Loading } from './Fallback'
 import { useRef, useState } from 'react'
@@ -221,9 +222,7 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
         >
           {/* Inside the <form>, Enter is the form's submit — no onSubmit here. */}
           <SearchField value={input} onChange={setInput} placeholder={t.shop.search} ariaLabel={t.shop.search} />
-          <button type="submit" className="btn" disabled={!input.trim() || !online} aria-label={t.shop.search}>
-            <Icon name="magnifying-glass-bold" size={18} />
-          </button>
+          <IconButton icon="magnifying-glass-bold" label={t.shop.search} type="submit" variant="solid" disabled={!input.trim() || !online} />
         </form>
         {/* The quiet why, right where the disabled controls sit. */}
         {!online && <StatusMessage>{t.shop.searchOffline}</StatusMessage>}

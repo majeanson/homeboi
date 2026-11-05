@@ -1,3 +1,4 @@
+import { IconButton } from './IconButton'
 import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { EmptyState } from './EmptyState'
@@ -114,9 +115,7 @@ export function CashierMode({
       <div ref={cashierRef} className="cashier" role="dialog" aria-modal="true" aria-label={t.shop.cashierTitle}>
         <div className="cashier__bar">
           <span className="cashier__title">{t.shop.cashierTitle}</span>
-          <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.shop.close}>
-            <Icon name="x-bold" size={18} />
-          </button>
+          <IconButton icon="x-bold" label={t.shop.close} onClick={onClose} />
         </div>
         <EmptyState>{t.shop.none}</EmptyState>
       </div>
@@ -135,9 +134,7 @@ export function CashierMode({
               <InlineIcon name="eye-bold" /> {t.shop.showAgain}
             </button>
           )}
-          <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.shop.close}>
-            <Icon name="x-bold" size={18} />
-          </button>
+          <IconButton icon="x-bold" label={t.shop.close} onClick={onClose} />
         </div>
 
         {/* The till IS the weak-signal spot (shop seam #2): the cashier scene lives
@@ -214,9 +211,7 @@ export function CashierMode({
         >
           <InlineIcon name="caret-left-bold" /> {t.common.back}
         </button>
-        <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.shop.close}>
-          <Icon name="x-bold" size={18} />
-        </button>
+        <IconButton icon="x-bold" label={t.shop.close} onClick={onClose} />
       </div>
 
       {/* THE PROOF CARD, in the reading order of the item page a cashier already

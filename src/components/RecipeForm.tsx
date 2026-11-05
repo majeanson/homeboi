@@ -1,3 +1,4 @@
+import { IconButton } from './IconButton'
 import { useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useLang, useT } from '../i18n'
@@ -1369,9 +1370,7 @@ export function RecipeForm({
       <form className="recipe-modal__card surface" onSubmit={save}>
         <div className="recipe-modal__bar">
           <h2>{value ? t.recipes.edit : t.recipes.new}</h2>
-          <button type="button" className="btn btn--ghost mono" onClick={cancel} aria-label={t.common.cancel}>
-            <Icon name="x-bold" size={18} />
-          </button>
+          <IconButton icon="x-bold" label={t.common.cancel} onClick={cancel} />
         </div>
 
         <div className="recipe-modal__body">
@@ -1803,14 +1802,7 @@ function StepPhoto({
               }}
             />
           </label>
-          <button
-            type="button"
-            className="btn btn--ghost mono recipe-step__photo-btn recipe-step__photo-del"
-            onClick={onClear}
-            aria-label={t.recipes.stepPhotoRemove}
-          >
-            <Icon name="x-bold" size={14} />
-          </button>
+          <IconButton icon="x-bold" label={t.recipes.stepPhotoRemove} iconSize={14} className="recipe-step__photo-btn recipe-step__photo-del" onClick={onClear} />
         </>
       ) : (
         <label className="btn btn--ghost mono recipe-step__photo-btn">

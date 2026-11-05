@@ -1,9 +1,10 @@
+import { IconButton } from './IconButton'
 import { useId, useRef, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { useModal } from '../lib/useModal'
 import { useSwipeToDismiss } from '../lib/useSwipeToDismiss'
 import { useT } from '../i18n'
-import { Icon } from './Icon'
+
 
 // The ONE bottom-sheet shell. AddSheet, ProfilePicker and the detail peek each
 // hand-rolled the identical chrome — a `.scrim` backdrop, an always-mounted
@@ -83,18 +84,10 @@ export function Sheet({
           // both controls ride together (flex kills the ✕'s own float inside it).
           <div className="sheet__head-actions">
             {action}
-            {showClose && (
-              <button type="button" className="sheet__close" onClick={onClose} aria-label={closeLabel ?? t.common.close}>
-                <Icon name="x-bold" size={18} />
-              </button>
-            )}
+            {showClose && <IconButton icon="x-bold" label={closeLabel ?? t.common.close} onClick={onClose} className="sheet__close" />}
           </div>
         ) : (
-          showClose && (
-            <button type="button" className="sheet__close" onClick={onClose} aria-label={closeLabel ?? t.common.close}>
-              <Icon name="x-bold" size={18} />
-            </button>
-          )
+          showClose && <IconButton icon="x-bold" label={closeLabel ?? t.common.close} onClick={onClose} className="sheet__close" />
         )}
         {children}
       </div>

@@ -1,8 +1,9 @@
+import { IconButton } from './IconButton'
 import { useEffect, useRef, useState } from 'react'
 import { useT } from '../i18n'
 import { type Pick, flippItemUrl } from '../lib/deals'
 import { useModal } from '../lib/useModal'
-import { Icon, InlineIcon } from './Icon'
+import { InlineIcon } from './Icon'
 import { Cluster } from './Layout'
 import { Loading } from './Fallback'
 
@@ -86,9 +87,7 @@ export function FlippPager({
         <a className="btn btn--ghost mono flipp-pager__open" href={url} target="_blank" rel="noopener noreferrer">
           <InlineIcon name="arrow-up-right-bold" size={16} /> {t.shop.flippOpenTab}
         </a>
-        <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.shop.close}>
-          <Icon name="x-bold" size={18} />
-        </button>
+        <IconButton icon="x-bold" label={t.shop.close} onClick={onClose} />
       </div>
       <div className="flipp-pager__body">
         {loading && (

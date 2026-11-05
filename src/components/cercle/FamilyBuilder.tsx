@@ -1,3 +1,4 @@
+import { IconButton } from '../IconButton'
 import { EmptyState } from '../EmptyState'
 import { useMemo, useState } from 'react'
 import { useLang, useT } from '../../i18n'
@@ -417,9 +418,7 @@ export function FamilyBuilder({
               }
             }}
           />
-          <button type="button" className="btn btn--sm" disabled={!newName.trim()} onClick={addNewPerson}>
-            <Icon name="plus-bold" size={14} />
-          </button>
+          <IconButton icon="plus-bold" label={t.cercle.familyNewPerson} variant="solid" size="sm" disabled={!newName.trim()} onClick={addNewPerson} />
         </div>
       </div>
 
@@ -574,9 +573,7 @@ export function FamilyBuilder({
                 }
               }}
             />
-            <button type="button" className="btn btn--sm" disabled={!newPet.trim()} onClick={addNewPet}>
-              <Icon name="plus-bold" size={14} />
-            </button>
+            <IconButton icon="plus-bold" label={t.cercle.familyAddPet} variant="solid" size="sm" disabled={!newPet.trim()} onClick={addNewPet} />
           </div>
           {petRoster.length > 0 && (
             <div className="cercle-fam__chips">

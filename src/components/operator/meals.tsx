@@ -1,3 +1,4 @@
+import { IconButton } from '../IconButton'
 import { Loading } from '../Fallback'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useT, useLang } from '../../i18n'
@@ -229,25 +230,11 @@ export function MealSlotsSection({ help }: { help?: HelpMode }) {
               {/* When the meal starts — "à partir de". Drives « Prochain repas ». */}
               <span className="meal-slots__hour">
                 {!ro && (
-                  <button
-                    type="button"
-                    className="btn btn--ghost btn--sm"
-                    onClick={() => nudgeHour(slot, -STEP_MIN)}
-                    aria-label={`${o18n.mealHourEarlier} · ${t.kitchen.slots[slot]}`}
-                  >
-                    <InlineIcon name="minus-bold" />
-                  </button>
+                  <IconButton icon="minus-bold" label={`${o18n.mealHourEarlier} · ${t.kitchen.slots[slot]}`} size="sm" iconSize={16} onClick={() => nudgeHour(slot, -STEP_MIN)} />
                 )}
                 <span className="mono meal-slots__hour-val">{formatSlotHour(hours[slot], lang)}</span>
                 {!ro && (
-                  <button
-                    type="button"
-                    className="btn btn--ghost btn--sm"
-                    onClick={() => nudgeHour(slot, STEP_MIN)}
-                    aria-label={`${o18n.mealHourLater} · ${t.kitchen.slots[slot]}`}
-                  >
-                    <InlineIcon name="plus-bold" />
-                  </button>
+                  <IconButton icon="plus-bold" label={`${o18n.mealHourLater} · ${t.kitchen.slots[slot]}`} size="sm" iconSize={16} onClick={() => nudgeHour(slot, STEP_MIN)} />
                 )}
               </span>
 

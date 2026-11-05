@@ -83,7 +83,7 @@ Before implementing ANY change, do this first — it's faster than the rework it
 | "Search + pick an existing thing + free-text" | **`EntityCombobox`** | `components/EntityCombobox.tsx` (options in `kitchen/comboOptions.tsx`) |
 | An activity / list row (check / nav / info) | **`Act`** + `Section` | `components/board/Act.tsx` |
 | Generic checklist row | **`CheckRow`** / **`ListRow`** | `components/CheckRow.tsx`, `components/ListRow.tsx` |
-| Edit/delete icon pair on a row | **`RowActions`** | `components/RowActions.tsx` |
+| Edit/delete icon pair on a row · ONE icon-only button (a ✕, a ＋, a ←) | **`RowActions`** · **`IconButton`** (`label` required = the accessible name; `icon-button-rule.test.ts` fails a nameless glyph button) | `components/RowActions.tsx`, `components/IconButton.tsx` |
 | "Tap an item → detail peek" | **`useEntityDetail()`** + adapters | `components/detail/*`, `lib/detail.ts` |
 | Empty / status / chip / section header | **`EmptyState`/`StatusMessage`/`Chip`+`ChipGroup`/`SectionHeader`** | same-named files in `components/` |
 | A surface that is still loading | **`loadStateOf(q, { shape? })`** / **`<LoadState q>`** — THE one decision: no data + error → `LoadError` with a retry; no data → **`Skeleton`** if the caller knows the SHAPE (rows, a grid of tiles — it reserves the space so nothing jumps under a thumb already reaching), else **`Loading`** (a single record, a form scene, a whole route: a skeleton is a promise about shape, and on a recipe you have never opened that promise is a lie). Never `if (!data) return <Loading />` by hand — sixteen scenes did and sat on « Chargement… » forever once the fetch had failed (`load-error-rule.test.ts` fails it) | `components/Fallback.tsx`, `components/Skeleton.tsx` |

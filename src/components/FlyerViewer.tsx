@@ -1,3 +1,4 @@
+import { IconButton } from './IconButton'
 import { Loading } from './Fallback'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
@@ -327,9 +328,7 @@ export function FlyerViewer({
             {dateRange && <span className="flyer-bar__dates mono">{dateRange}</span>}
           </span>
         </div>
-        <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.shop.close}>
-          <Icon name="x-bold" size={18} />
-        </button>
+        <IconButton icon="x-bold" label={t.shop.close} onClick={onClose} />
       </div>
 
       <div className="flyer-meta">

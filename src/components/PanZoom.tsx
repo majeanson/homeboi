@@ -1,6 +1,7 @@
+import { IconButton } from './IconButton'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useT } from '../i18n'
-import { Icon } from './Icon'
+
 
 // A calm inline pan + zoom surface. Wraps any fit-to-box child (an SVG graph, a
 // diagram) and lets a finger pinch / drag — or the +/− / reset buttons (top-right,
@@ -213,15 +214,9 @@ export function PanZoom({
       </div>
       <div className="panzoom__controls">
         {tools}
-        <button type="button" className="btn btn--icon" onClick={zoomOut} disabled={scale <= MIN} aria-label={t.common.zoomOut} title={t.common.zoomOut}>
-          <Icon name="minus-bold" size={18} />
-        </button>
-        <button type="button" className="btn btn--icon" onClick={reset} disabled={scale === MIN} aria-label={t.common.zoomReset} title={t.common.zoomReset}>
-          <Icon name="crosshair-bold" size={18} />
-        </button>
-        <button type="button" className="btn btn--icon" onClick={zoomIn} disabled={scale >= MAX} aria-label={t.common.zoomIn} title={t.common.zoomIn}>
-          <Icon name="plus-bold" size={18} />
-        </button>
+        <IconButton icon="minus-bold" label={t.common.zoomOut} variant="solid" onClick={zoomOut} disabled={scale <= MIN} />
+        <IconButton icon="crosshair-bold" label={t.common.zoomReset} variant="solid" onClick={reset} disabled={scale === MIN} />
+        <IconButton icon="plus-bold" label={t.common.zoomIn} variant="solid" onClick={zoomIn} disabled={scale >= MAX} />
       </div>
       {minimap && (
         <div

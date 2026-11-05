@@ -369,7 +369,7 @@ export function SearchPage() {
         {needle && (total > 0 || (q.trim() && aiEnabled && !aiOff)) && (
           <Cluster justify="between" className="search__meta">
             {total > 0 ? (
-              <StatusMessage icon={null}>{t.search.resultsCount(total)}</StatusMessage>
+              <StatusMessage icon={null} className="search__count">{t.search.resultsCount(total)}</StatusMessage>
             ) : (
               <span />
             )}

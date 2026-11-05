@@ -1,3 +1,4 @@
+import { IconButton } from '../IconButton'
 import { useT } from '../../i18n'
 import { Icon } from '../Icon'
 import { Cluster } from '../Layout'
@@ -55,15 +56,7 @@ export function HabitControls({ habit, status, onMark, className }: HabitControl
           <button type="button" className="btn habit-row__plus" onClick={() => onMark({ value: status.value + 1 })}>
             <Icon name="plus-bold" size={18} /> {fn.plusOne}
           </button>
-          <button
-            type="button"
-            className="btn btn--ghost habit-row__minus"
-            aria-label={fn.minusOne}
-            disabled={status.value === 0}
-            onClick={() => onMark({ value: Math.max(0, status.value - 1) })}
-          >
-            <Icon name="minus-bold" size={16} />
-          </button>
+          <IconButton icon="minus-bold" label={fn.minusOne} iconSize={16} className="habit-row__minus" disabled={status.value === 0} onClick={() => onMark({ value: Math.max(0, status.value - 1) })} />
           {/* A ceiling habit needs a way to say « aucune aujourd'hui » — else a
               zero day is indistinguishable from an untouched one. Last in the
               row, so it can drop away once marked without moving ＋ or −. */}

@@ -1,3 +1,4 @@
+import { IconButton } from '../IconButton'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -169,15 +170,7 @@ function HomeProjectsSection({ kind, help }: { kind: 'plan' | 'upkeep'; help?: H
                 <InlineIcon name="plus-bold" size={14} /> <span aria-hidden="true">{seed.emoji}</span>{' '}
                 {seed.title[lang]} · {recurLabel(JSON.stringify(seed.recur), t)}
               </button>
-              <button
-                type="button"
-                className="btn btn--ghost btn--sm"
-                onClick={() => hideSeed(seed.id)}
-                aria-label={o18n.home.seedDismiss}
-                title={o18n.home.seedDismiss}
-              >
-                <InlineIcon name="x-bold" size={14} />
-              </button>
+              <IconButton icon="x-bold" label={o18n.home.seedDismiss} size="sm" onClick={() => hideSeed(seed.id)} />
             </Cluster>
           ))}
         </div>

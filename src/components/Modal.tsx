@@ -1,8 +1,9 @@
+import { IconButton } from './IconButton'
 import { useId, useRef, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { useModal } from '../lib/useModal'
 import { useT } from '../i18n'
-import { Icon } from './Icon'
+
 import { Cluster } from './Layout'
 
 // A centred dialog wrapper: one place that wires the shared modal behaviour
@@ -56,9 +57,7 @@ export function Modal({
         aria-label={title == null ? ariaLabel : undefined}
         onClick={(e) => e.stopPropagation()}
       >
-        <button type="button" className="kit-modal__close" onClick={onClose} aria-label={t.common.close} title={t.common.close}>
-          <Icon name="x-bold" size={18} />
-        </button>
+        <IconButton icon="x-bold" label={t.common.close} onClick={onClose} variant="bare" className="kit-modal__close" />
         {title != null && (
           <h3 id={titleId} className="kit-modal__title">
             {title}

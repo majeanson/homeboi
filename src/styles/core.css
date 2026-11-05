@@ -725,6 +725,17 @@ button {
   gap: 0;
   flex: 0 0 auto;
 }
+.btn--icon.btn--sm {
+  width: 38px;
+  min-width: 38px;
+}
+/* No border, no background — an icon button sitting INSIDE a card's own frame (the
+   modal's corner ✕), where a disc would fight the card. Keeps the 44px box + focus. */
+.btn--bare {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
 .btn--ghost {
   border-color: var(--line);
   background: transparent;

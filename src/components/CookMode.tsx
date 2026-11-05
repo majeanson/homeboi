@@ -1,3 +1,4 @@
+import { IconButton } from './IconButton'
 import { StatusMessage } from './StatusMessage'
 import { useCallback, useEffect, useRef, useState, type TouchEvent as ReactTouchEvent } from 'react'
 import { createPortal } from 'react-dom'
@@ -522,9 +523,7 @@ export function CookMode({
           )}
           {/* Sharing lives on the recipe view now (one home for it), not in the
               cook bar — keeps the at-the-stove chrome to cook controls + exit. */}
-          <button type="button" className="btn btn--ghost mono" onClick={onClose} aria-label={t.common.close}>
-            <Icon name="x-bold" size={20} />
-          </button>
+          <IconButton icon="x-bold" label={t.common.close} iconSize={20} onClick={onClose} />
         </div>
       </div>
 

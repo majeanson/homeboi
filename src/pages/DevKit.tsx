@@ -1,3 +1,4 @@
+import { IconButton } from '../components/IconButton'
 // B-11 (bmad/10) — cercle.css moved out of the eager shell (position-immaterial
 // .cercle-*/.cf-* classes); load it whenever this page renders instead.
 import '../styles/cercle.css'
@@ -2328,6 +2329,27 @@ export function DevKit() {
     // ── Actions & rows ─────────────────────────────────────────────────
     {
       cat: 'Rangées & actions',
+      name: 'IconButton',
+      file: 'components/IconButton.tsx',
+      kw: 'icon button bouton icône fermer ✕ close plus minus back retour aria-label ghost bare solid',
+      render: () => (
+        <>
+          <Demo label="THE icon-only button (2026-11-05, solidify 2.5): `label` is required — it IS the accessible name and the hover title, so a glyph can never ship nameless again (icon-button-rule.test.ts). ghost · solid · bare, md (44px) · sm (38px), tone='danger', pressed (a toggle).">
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+              <IconButton icon="x-bold" label="Fermer" />
+              <IconButton icon="plus-bold" label="Ajouter" variant="solid" />
+              <IconButton icon="x-bold" label="Fermer (bare — inside a card's own frame)" variant="bare" />
+              <IconButton icon="minus-bold" label="Moins" size="sm" />
+              <IconButton icon="trash-bold" label="Supprimer" tone="danger" />
+              <IconButton icon="microphone-bold" label="Micro (pressé)" pressed />
+              <IconButton icon="arrow-left-bold" label="Retour" disabled />
+            </div>
+          </Demo>
+        </>
+      ),
+    },
+    {
+      cat: 'Rangées & actions',
       name: 'RowActions',
       file: 'components/RowActions.tsx',
       kw: 'edit delete ✏️ 🗑️ modifier supprimer',
@@ -2780,7 +2802,7 @@ export function DevKit() {
       render: () => (
         <>
           <Demo label="emoji + subtitle + action">
-            <SectionHeader emoji="🍳" title="Déjeuner" subtitle="Matin" action={<button className="btn btn--sm" aria-label="Ajouter"><Icon name="plus-bold" size={16} /></button>} />
+            <SectionHeader emoji="🍳" title="Déjeuner" subtitle="Matin" action={<IconButton icon="plus-bold" label="Ajouter" variant="solid" size="sm" iconSize={16} />} />
           </Demo>
           <Demo label="icon + title">
             <SectionHeader icon="carrot-bold" iconColor="var(--marigold-deep)" title="Garde-manger" />
@@ -3656,7 +3678,7 @@ export function DevKit() {
       kw: 'réglages section panneau surface operator',
       render: () => (
         <Demo label="Réglages panel shell">
-          <OperatorSection title="Magasinage" hint="Le code postal, utilisé par les rabais." action={<button className="btn btn--sm" aria-label="Ajouter"><Icon name="plus-bold" size={16} /></button>}>
+          <OperatorSection title="Magasinage" hint="Le code postal, utilisé par les rabais." action={<IconButton icon="plus-bold" label="Ajouter" variant="solid" size="sm" iconSize={16} />}>
             <p className="mono" style={{ color: 'var(--ink-faint)' }}>…contenu du panneau…</p>
           </OperatorSection>
         </Demo>

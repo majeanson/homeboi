@@ -1,3 +1,4 @@
+import { IconButton } from './IconButton'
 import { Fragment, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../i18n'
@@ -19,7 +20,7 @@ import { type MealSlot } from '../lib/mealSlots'
 import { useMealPrefs } from '../lib/mealPrefs'
 import { loadStateOf } from './Fallback'
 import { ZoomableImg } from './ZoomableImg'
-import { Icon, InlineIcon } from './Icon'
+import { InlineIcon } from './Icon'
 import { IngredientLine } from './IngredientLine'
 import { MealPlanPicker } from './kitchen/MealPlanPicker'
 import { MEALS_KEY, MEAL_HISTORY_KEY } from './kitchen/types'
@@ -279,16 +280,13 @@ export function RecipeSheet({
           onClose={onClose}
           action={
             <>
-              <button
-                type="button"
-                className={'btn btn--ghost mono recipe-original-toggle' + (showOriginal ? ' is-on' : '')}
+              <IconButton
+                icon="scroll-bold"
+                label={showOriginal ? t.recipes.originalHide : t.recipes.originalShow}
+                className="recipe-original-toggle"
+                pressed={showOriginal}
                 onClick={() => setShowOriginal((s) => !s)}
-                aria-pressed={showOriginal}
-                title={showOriginal ? t.recipes.originalHide : t.recipes.originalShow}
-                aria-label={showOriginal ? t.recipes.originalHide : t.recipes.originalShow}
-              >
-                <Icon name="scroll-bold" size={18} />
-              </button>
+              />
               <ActionMenu items={menuItems} />
             </>
           }

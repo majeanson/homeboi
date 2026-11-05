@@ -252,22 +252,12 @@
   width: min(96vw, 720px);
   max-height: 94dvh;
 }
+/* POSITION only — the box (44px, bare) is IconButton's (solidify 2.5, 2026-11-05). */
 .kit-modal__close {
   position: absolute;
   top: 0.6rem;
   right: 0.6rem;
-  display: inline-grid;
-  place-items: center;
-  /* Full 44px hit area (the system --touch-target), not a sub-target 40px — the
-     ✕ glyph stays its visual size, the grid just centres it in a roomier box so
-     a thumb / toddler tap lands. */
-  width: var(--touch-target);
-  height: var(--touch-target);
-  border: 0;
-  border-radius: var(--radius-sm);
-  background: transparent;
   color: var(--ink-faint);
-  cursor: pointer;
 }
 .kit-modal__close:hover,
 .kit-modal__close:focus-visible {

@@ -1,3 +1,4 @@
+import { IconButton } from '../components/IconButton'
 import { StatusMessage } from '../components/StatusMessage'
 import { Avatar } from '../components/Avatar'
 import { Suspense, lazy, useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
@@ -1937,15 +1938,7 @@ export function Board() {
           {showEditHint && (
             <div className="board-edit-hint" role="note">
               <span className="mono">{t.board.editDiscover}</span>
-              <button
-                type="button"
-                className="btn btn--ghost btn--sm"
-                onClick={dismissEditHint}
-                aria-label={t.common.close}
-                title={t.common.close}
-              >
-                <InlineIcon name="x-bold" size={14} />
-              </button>
+              <IconButton icon="x-bold" label={t.common.close} size="sm" onClick={dismissEditHint} />
             </div>
           )}
           {/* Once the hint retires, its slot keeps a PERMANENT quiet door: the

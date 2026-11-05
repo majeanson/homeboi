@@ -1,7 +1,8 @@
+import { IconButton } from './IconButton'
 import { useT } from '../i18n'
 import { isIos, type VoiceInput } from '../lib/useVoiceInput'
 import { useOnline } from '../lib/online'
-import { Icon } from './Icon'
+
 import { StatusMessage } from './StatusMessage'
 
 // The shared "speak it" mic, used by every add field (CaptureBar, the ＋ sheet,
@@ -25,17 +26,16 @@ export function VoiceButton({ voice, label }: { voice: VoiceInput; label: string
   // letting a tap fail silently.
   const title = !online ? t.offline.unavailable : blocked ? blockedMsg : undefined
   return (
-    <button
-      type="button"
-      className={`btn btn--ghost capture__voice${voice.listening ? ' is-listening' : ''}${blocked ? ' is-blocked' : ''}`}
+    <IconButton
+      icon="microphone-bold"
+      iconSize={20}
+      className={'capture__voice' + (voice.listening ? ' is-listening' : '') + (blocked ? ' is-blocked' : '')}
       onClick={voice.start}
       disabled={!online}
-      aria-label={title ? `${label} — ${title}` : label}
-      aria-pressed={voice.listening}
-      title={title}
-    >
-      <Icon name="microphone-bold" size={20} />
-    </button>
+      label={title ? `${label} — ${title}` : label}
+      pressed={voice.listening}
+      title={title ?? null}
+    />
   )
 }
 

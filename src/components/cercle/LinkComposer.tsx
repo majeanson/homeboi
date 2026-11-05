@@ -1,3 +1,4 @@
+import { IconButton } from '../IconButton'
 import { EmptyState } from '../EmptyState'
 import { useEffect, useMemo, useState } from 'react'
 import { useLang, useT } from '../../i18n'
@@ -196,15 +197,7 @@ export function LinkComposer({
                       string already existed and had simply never been wired to the
                       control that needed it. Found 2026-09-14 by the first axe pass over
                       the state matrix; the only `critical` in the whole sweep. */}
-                  <button
-                    type="button"
-                    className="btn btn--ghost btn--sm"
-                    aria-label={t.cercle.dismissSuggestion}
-                    title={t.cercle.dismissSuggestion}
-                    onClick={() => dismissSuggestion(s)}
-                  >
-                    <Icon name="x-bold" size={13} />
-                  </button>
+                  <IconButton icon="x-bold" label={t.cercle.dismissSuggestion} size="sm" onClick={() => dismissSuggestion(s)} />
                 </div>
               </div>
             )

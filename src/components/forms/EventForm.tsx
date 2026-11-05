@@ -1,3 +1,4 @@
+import { IconButton } from '../IconButton'
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useWrite } from '../../lib/write'
@@ -478,14 +479,7 @@ export function EventForm({
                 placeholder={o18n.bringAddItem}
                 aria-label={o18n.bringAddItem}
               />
-              <button
-                type="button"
-                className="btn btn--ghost"
-                onClick={() => pushBringItem(bringInput)}
-                aria-label={o18n.bringAddItem}
-              >
-                <InlineIcon name="plus-bold" size={16} />
-              </button>
+              <IconButton icon="plus-bold" label={o18n.bringAddItem} iconSize={16} onClick={() => pushBringItem(bringInput)} />
             </div>
             {bringDraft.length > 0 && (
               <>

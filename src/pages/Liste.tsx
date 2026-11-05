@@ -1,3 +1,4 @@
+import { IconButton } from '../components/IconButton'
 import { Fragment, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -806,15 +807,15 @@ export function Liste() {
             the other two reorder or restock a list you already have. It carries the
             list's own marigold and a bigger target to say so; the other two stay
             quiet ghosts beside it. */}
-        <button
-          type="button"
-          className="btn btn--sm list-actions__icon list-actions__icon--flyer help-pick"
-          aria-label={t.shop.browse}
-          title={t.shop.browse}
+        <IconButton
+          icon="magnifying-glass-bold"
+          label={t.shop.browse}
+          variant="solid"
+          size="sm"
+          iconSize={20}
+          className="list-actions__icon list-actions__icon--flyer help-pick"
           onClick={help.pick('flyer', () => nav('/liste/circulaires'))}
-        >
-          <InlineIcon name="magnifying-glass-bold" size={20} />
-        </button>
+        />
         <button
           type="button"
           className="btn btn--sm btn--ghost list-actions__icon help-pick"

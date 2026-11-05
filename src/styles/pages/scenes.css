@@ -835,4 +835,8 @@
 .search__meta {
   margin: 0.1rem 0 0.2rem;
 }
-/* (.search__count folded onto StatusMessage, 2026-11-05) */
+/* The count beside « Demander à l’IA » — a StatusMessage (2026-11-05); the class keeps
+   the two on ONE line (lean-scenes.spec measures it). */
+.search__count {
+  margin: 0;
+}

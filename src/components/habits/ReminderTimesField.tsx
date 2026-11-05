@@ -1,3 +1,4 @@
+import { IconButton } from '../IconButton'
 import { useT } from '../../i18n'
 import { Icon } from '../Icon'
 import { Cluster } from '../Layout'
@@ -55,14 +56,7 @@ export function ReminderTimesField({ value, onChange }: { value: number[]; onCha
             aria-label={fn.reminderAt}
             onChange={(e) => setAt(i, e.target.value)}
           />
-          <button
-            type="button"
-            className="btn btn--ghost"
-            aria-label={fn.removeReminder}
-            onClick={() => commit(value.filter((_, j) => j !== i))}
-          >
-            <Icon name="x-bold" size={16} />
-          </button>
+          <IconButton icon="x-bold" label={fn.removeReminder} iconSize={16} onClick={() => commit(value.filter((_, j) => j !== i))} />
         </Cluster>
       ))}
       {value.length < MAX && (

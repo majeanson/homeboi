@@ -1,5 +1,6 @@
+import { IconButton } from './IconButton'
 import type { ReactNode } from 'react'
-import { Icon, InlineIcon, type IconName } from './Icon'
+import { InlineIcon, type IconName } from './Icon'
 import { HelpDot } from './HelpDot'
 import { OfflineBanner } from './OfflineBanner'
 import { useT } from '../i18n'
@@ -62,15 +63,7 @@ export function SceneHead({
     {offline && <OfflineBanner />}
     <div className="scene__head">
       {backTo != null && onClose == null && (
-        <button
-          type="button"
-          className="btn btn--ghost mono scene__head-back"
-          onClick={back}
-          aria-label={closeLabel ?? t.common.back}
-          title={closeLabel ?? t.common.back}
-        >
-          <Icon name="arrow-left-bold" size={18} />
-        </button>
+        <IconButton icon="arrow-left-bold" label={closeLabel ?? t.common.back} onClick={back} className="scene__head-back" />
       )}
       <div className="scene__head-titles">
         <h2 className="scene__head-title">
@@ -87,15 +80,7 @@ export function SceneHead({
         {action}
         {card && <HelpDot card={card} />}
         {onClose && (
-          <button
-            type="button"
-            className="btn btn--ghost mono"
-            onClick={onClose}
-            aria-label={closeLabel ?? t.common.close}
-            title={closeLabel ?? t.common.close}
-          >
-            <Icon name="x-bold" size={18} />
-          </button>
+          <IconButton icon="x-bold" label={closeLabel ?? t.common.close} onClick={onClose} />
         )}
       </div>
     </div>

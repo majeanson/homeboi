@@ -33,6 +33,7 @@ const OWNED = new Map<string, { owner: string; hint: string }>([
   ['searchfield__input', { owner: 'components/SearchField.tsx', hint: '<SearchField>' }],
   ['searchfield__open', { owner: 'components/SearchField.tsx', hint: '<SearchField collapsible>' }],
   ['searchfield__clear', { owner: 'components/SearchField.tsx', hint: '<SearchField>' }],
+  ['btn--icon', { owner: 'components/IconButton.tsx', hint: '<IconButton icon label variant? size? />' }],
 ])
 
 // (token, file) → why this file may spell it. An entry says what makes hosting the
