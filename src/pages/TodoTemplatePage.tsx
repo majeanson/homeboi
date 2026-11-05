@@ -9,7 +9,7 @@ import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { TODO_TEMPLATES_KEY } from '../lib/queryKeys'
 import { type TemplatesData, expandSectioned } from '../lib/todos'
 import { SceneHead } from '../components/SceneHead'
-import { Loading } from '../components/Fallback'
+import { loadStateOf } from '../components/Fallback'
 import { TemplateEditor } from '../components/todos/TemplateEditor'
 
 // Where the ✕ lands on a cold deep-link: the section this scene belongs to.
@@ -29,12 +29,13 @@ export function TodoTemplatePage() {
   const { signedIn, loading } = useAuth()
   const close = useSceneClose(SETTINGS)
   useEscapeKey(close)
-  const { data } = useQuery({
+  const templatesQ = useQuery({
     queryKey: TODO_TEMPLATES_KEY,
     queryFn: () => api<TemplatesData>('todo-templates'),
     ...live,
     enabled: signedIn && !isGuest(),
   })
+  const { data } = templatesQ
 
   // Wait for the auth check before bouncing — a transient loading=false flash would
   // redirect a signed-in operator on a cold deep-link (the FormScene precedent).
@@ -57,7 +58,7 @@ export function TodoTemplatePage() {
         card="todos"
         onClose={close}
       />
-      <div className="scene__body">{tpl ? <TemplateEditor templates={templates} tpl={tpl} /> : <Loading />}</div>
+      <div className="scene__body">{tpl ? <TemplateEditor templates={templates} tpl={tpl} /> : loadStateOf(templatesQ)}</div>
     </div>
   )
 }

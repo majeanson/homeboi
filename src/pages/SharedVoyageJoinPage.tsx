@@ -10,7 +10,7 @@ import { needsOperator } from '../lib/device'
 import { formatDayLong, capitalize as cap } from '../lib/format'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { SceneHead } from '../components/SceneHead'
-import { Loading } from '../components/Fallback'
+import { loadStateOf } from '../components/Fallback'
 import { EmptyState } from '../components/EmptyState'
 import { StatusMessage } from '../components/StatusMessage'
 import { EditField } from '../components/EditField'
@@ -45,12 +45,13 @@ export function SharedVoyageJoinPage() {
   const [joining, setJoining] = useState(false)
   const [err, setErr] = useState<string | null>(null)
 
-  const { data: preview, error, isLoading } = useQuery({
+  const previewQ = useQuery({
     queryKey: ['shared-trip-join', token],
     queryFn: () => api<JoinPreview>(`shared-trip-join?j=${encodeURIComponent(token!)}`),
     enabled: !!token,
     retry: false,
   })
+  const { data: preview, error } = previewQ
 
   // A read-only guest can't write into a household — bounce to the board.
   if (needsOperator()) return <Navigate to="/board" replace />
@@ -100,9 +101,12 @@ export function SharedVoyageJoinPage() {
     <div className="scene" aria-label={t.sharedVoyage.joinTitle}>
       <SceneHead title={t.sharedVoyage.joinTitle} icon="users-three-bold" card="voyage" onClose={close} />
       <div className="scene__body">
-        {isLoading ? (
-          <Loading />
-        ) : invalid || !preview ? (
+        {invalid ? (
+          <EmptyState>{t.sharedVoyage.linkInvalid}</EmptyState>
+        ) : (
+          // A 404/400 is « lien invalide » above; any OTHER failure is LoadError +
+          // « Réessayer », never a false « invalide » (the token is still fine).
+          loadStateOf(previewQ) ?? (!preview ? (
           <EmptyState>{t.sharedVoyage.linkInvalid}</EmptyState>
         ) : (
           <div className="sharesheet-preview">
@@ -117,6 +121,7 @@ export function SharedVoyageJoinPage() {
               <Icon name="users-three-bold" size={16} /> {joining ? t.sharedVoyage.joining : t.sharedVoyage.joinConfirm}
             </button>
           </div>
+        ))
         )}
       </div>
     </div>

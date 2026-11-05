@@ -6,7 +6,7 @@ import { isGuest } from '../lib/device'
 import { useProfile } from '../lib/profile'
 import { useSpeak } from '../lib/speak'
 import { Icon, InlineIcon } from '../components/Icon'
-import { Loading, PairPrompt } from '../components/Fallback'
+import { loadStateOf, PairPrompt } from '../components/Fallback'
 import { wash } from '../lib/colors'
 import { imgUrl } from '../lib/image'
 import { api, isUnauthorized } from '../lib/api'
@@ -63,11 +63,12 @@ export function KidView() {
   // Left-on toddler kiosk: a parent's change from another device (ticking a
   // routine, editing cards) must land here without a manual reload. `live` polls
   // + refetches on focus — same freshness model as the board.
-  const { data, error } = useQuery({
+  const routinesQ = useQuery({
     queryKey: ROUTINES_KEY,
     queryFn: () => api<RoutinesData>('routines'),
     ...live,
   })
+  const { data, error } = routinesQ
 
   // After the "sweet dreams" recap, drift back to the face picker so the wall
   // tablet is ready for the next child — only when a picker was actually used
@@ -117,7 +118,8 @@ export function KidView() {
   }, [pickedId])
 
   if (isUnauthorized(error)) return <div className="kid"><PairPrompt /></div>
-  if (!data && !error) return <Loading />
+  const wait = loadStateOf(routinesQ)
+  if (wait) return <div className="kid">{wait}</div>
   // A routine with no cards yet (a parent saved the shell, steps to come) has no
   // story to tell — keep it out of the kid surface entirely so the picker never
   // lands on an empty stage (curIdx would point at nothing).

@@ -9,7 +9,7 @@ import { isGuest } from '../lib/device'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { CERCLE_KEY, BOARD_KEY } from '../lib/queryKeys'
 import { SceneHead } from '../components/SceneHead'
-import { Loading } from '../components/Fallback'
+import { loadStateOf } from '../components/Fallback'
 import { PetForm } from '../components/cercle/PetForm'
 import type { Pet } from '../lib/cercle'
 
@@ -29,17 +29,18 @@ export function CerclePetPage() {
   const close = useSceneClose('/maison?section=family')
   useEscapeKey(close)
 
-  const { data } = useQuery({
+  const cercleQ = useQuery({
     queryKey: CERCLE_KEY,
     queryFn: () => api<CercleData>('cercle'),
   })
+  const { data } = cercleQ
 
   if (isGuest()) return <Navigate to="/maison?section=family" replace />
 
   const pet = editing ? data?.pets?.find((p) => p.id === id) ?? null : null
   // Editing but the pet is gone (loaded + not found → deleted elsewhere) →
   // bounce; still loading → wait.
-  if (editing && !pet) return data ? <Navigate to="/maison?section=family" replace /> : <Loading />
+  if (editing && !pet) return data ? <Navigate to="/maison?section=family" replace /> : loadStateOf(cercleQ)
 
   return (
     <div className="scene" aria-label={editing ? t.cercle.pet.edit : t.cercle.pet.add}>

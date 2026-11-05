@@ -8,7 +8,7 @@ import { useDeferredRemoval } from '../lib/useDeferredRemoval'
 import { useCalm } from '../lib/calm'
 import { MEMBERS_KEY, STICKERS_KEY } from '../lib/queryKeys'
 import { type StickerRow } from '../lib/stickers'
-import { Loading } from '../components/Fallback'
+import { loadStateOf } from '../components/Fallback'
 import { SceneHead } from '../components/SceneHead'
 import { Avatar } from '../components/Avatar'
 import { EmptyState } from '../components/EmptyState'
@@ -42,7 +42,9 @@ export function StickerWallPage() {
 
   // Calm mode ON → the wall doesn't exist; bounce back to the tab.
   if (calm) return <Navigate to="/maison" replace />
-  if (!stickersQ.data || !membersQ.data) return stickersQ.isLoading || membersQ.isLoading ? <Loading /> : <Navigate to="/maison" replace />
+  // A read that FAILED says so (LoadError + « Réessayer »); the bounce is only for a
+  // query that is neither loading nor failed — never a silent exit on a network error.
+  if (!stickersQ.data || !membersQ.data) return loadStateOf(stickersQ) ?? loadStateOf(membersQ) ?? <Navigate to="/maison" replace />
 
   const members = membersQ.data.members
   const memberById = new Map(members.map((m) => [m.id, m]))

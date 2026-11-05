@@ -9,7 +9,7 @@ import { api, isStatus } from '../lib/api'
 import { useWrite, writeFailed } from '../lib/write'
 import { live } from '../lib/query'
 import { useT } from '../i18n'
-import { Loading } from '../components/Fallback'
+import { loadStateOf } from '../components/Fallback'
 import { SceneHead } from '../components/SceneHead'
 import { FlyerViewer } from '../components/FlyerViewer'
 import { DealCard } from '../components/DealCard'
@@ -33,7 +33,8 @@ export function PriceMatchPage() {
   const { itemId = '' } = useParams()
   const close = useSceneClose('/liste')
 
-  const { data: board } = useQuery({ queryKey: BOARD_KEY, queryFn: () => api<{ list: ListItem[] }>('board'), ...live })
+  const boardQ = useQuery({ queryKey: BOARD_KEY, queryFn: () => api<{ list: ListItem[] }>('board'), ...live })
+  const board = boardQ.data
   const item = board?.list?.find((i) => i.id === itemId) ?? null
   const query = item?.text ?? ''
   const terms = parseTerms(item?.search_terms)
@@ -125,7 +126,7 @@ export function PriceMatchPage() {
   const shown = (deals ?? []).filter((d) => !store || d.merchant === store)
   const bestKey = shown.find((d) => d.unitPrice != null)
 
-  if (!board) return <Loading />
+  if (!board) return loadStateOf(boardQ)
   if (!item) return null
 
   return (

@@ -3,7 +3,7 @@ import { useT } from '../i18n'
 import { StaleBounce } from '../components/StaleBounce'
 import { Navigate, useSearchParams } from 'react-router-dom'
 import { MultiCookMode } from '../components/MultiCookMode'
-import { Loading } from '../components/Fallback'
+import { loadStateOf } from '../components/Fallback'
 import { useCookableMeals } from '../lib/nextMeal'
 import { type Recipe } from '../lib/recipes'
 import { useMeals, useRecipes } from '../lib/queryHooks'
@@ -45,7 +45,7 @@ export function MultiCookPage() {
     return out
   }, [pickIds, recipesQ.data, cookable])
 
-  if (!mealsQ.data || !recipesQ.data) return mealsQ.isLoading || recipesQ.isLoading ? <Loading /> : <Navigate to="/kitchen" replace />
+  if (!mealsQ.data || !recipesQ.data) return loadStateOf(mealsQ) ?? loadStateOf(recipesQ) ?? <Navigate to="/kitchen" replace />
   // Fewer than two cookable recipes left on that day: the link named a pairing
   // that no longer exists (one was cooked, unplanned or deleted). Distinct from
   // the fetch failure above, which keeps its silent bounce — a failed load isn't

@@ -3,7 +3,7 @@ import { Navigate, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useT } from '../i18n'
 import { StaleBounce } from '../components/StaleBounce'
 import { RecipeForm, type AutoImport } from '../components/RecipeForm'
-import { Loading } from '../components/Fallback'
+import { loadStateOf } from '../components/Fallback'
 import { isGuest } from '../lib/device'
 import { useRecipes } from '../lib/queryHooks'
 import { useSceneClose } from '../lib/sceneNav'
@@ -55,7 +55,7 @@ export function RecipeFormPage() {
   if (id) {
     const recipe = recipesQ.data?.recipes.find((r) => r.id === id)
     if (!recipe)
-      return recipesQ.isLoading ? <Loading /> : <StaleBounce to="/kitchen" message={t.kitchen.recipeGone} />
+      return loadStateOf(recipesQ) ?? <StaleBounce to="/kitchen" message={t.kitchen.recipeGone} />
     return <RecipeForm value={recipe} onSaved={close} onCancel={close} />
   }
   return <RecipeForm value={null} onSaved={close} onCancel={close} autoImport={autoImport} />

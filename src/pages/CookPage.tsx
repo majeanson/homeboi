@@ -2,7 +2,7 @@ import { useParams, useSearchParams } from 'react-router-dom'
 import { useT } from '../i18n'
 import { StaleBounce } from '../components/StaleBounce'
 import { CookMode } from '../components/CookMode'
-import { Loading } from '../components/Fallback'
+import { loadStateOf } from '../components/Fallback'
 import { scaleIngredients } from '../lib/scale'
 import { useRecipes } from '../lib/queryHooks'
 import { useSceneClose } from '../lib/sceneNav'
@@ -19,7 +19,7 @@ export function CookPage() {
 
   const recipe = recipesQ.data?.recipes.find((r) => r.id === id)
   if (!recipe)
-    return recipesQ.isLoading ? <Loading /> : <StaleBounce to="/kitchen" message={t.kitchen.cookGone} />
+    return loadStateOf(recipesQ) ?? <StaleBounce to="/kitchen" message={t.kitchen.cookGone} />
 
   const factor = Number(sp.get('x')) || 1
   const cookRecipe =

@@ -25,7 +25,7 @@ import { useCarnets, useCareLog, useHomePins, carnetEmoji, replacementDate, warr
 import type { HomeProject } from '../components/operator/types'
 import { SceneHead } from '../components/SceneHead'
 import { ActionMenu } from '../components/ActionMenu'
-import { Loading } from '../components/Fallback'
+import { loadStateOf } from '../components/Fallback'
 import { SubTabs } from '../components/SubTabs'
 import { Modal } from '../components/Modal'
 import { EmptyState } from '../components/EmptyState'
@@ -58,7 +58,8 @@ export function CercleCarnetPage() {
   const { signedIn } = useAuth()
   const c = t.carnets
 
-  const { data } = useCarnets()
+  const carnetsQ = useCarnets()
+  const { data } = carnetsQ
   const { data: logData } = useCareLog(id)
   const { data: pinData } = useHomePins(id)
   const { data: hpData } = useQuery({ queryKey: HOME_PROJECTS_KEY, queryFn: () => api<{ projects: HomeProject[] }>('home-projects'), ...live })
@@ -87,7 +88,7 @@ export function CercleCarnetPage() {
   const pinRemoval = useDeferredRemoval([...HOME_PINS_KEY, id])
   const upkeepRemoval = useDeferredRemoval(HOME_PROJECTS_KEY)
 
-  if (!data) return <Loading />
+  if (!data) return loadStateOf(carnetsQ)
   const carnet = id ? data.carnets.find((x) => x.id === id) ?? null : null
   if (id && !carnet) return <Navigate to="/maison?section=carnets" replace />
   if (!carnet) return <Navigate to="/maison?section=carnets" replace />

@@ -8,7 +8,7 @@ import { useConfirm } from '../lib/confirm'
 import { isGuest } from '../lib/device'
 import { live } from '../lib/query'
 import { useT, useLang } from '../i18n'
-import { Loading } from '../components/Fallback'
+import { loadStateOf } from '../components/Fallback'
 import { Icon, InlineIcon } from '../components/Icon'
 import { SceneHead } from '../components/SceneHead'
 import { parseDeal, parseTerms, unstageDeal, type ListItem } from '../lib/picks'
@@ -34,7 +34,8 @@ export function ListEditPage() {
   const close = useSceneClose('/liste')
   useEscapeKey(close)
 
-  const { data: board } = useQuery({ queryKey: BOARD_KEY, queryFn: () => api<{ list: ListItem[] }>('board'), ...live })
+  const boardQ = useQuery({ queryKey: BOARD_KEY, queryFn: () => api<{ list: ListItem[] }>('board'), ...live })
+  const board = boardQ.data
   const item = board?.list?.find((i) => i.id === itemId) ?? null
 
   // Seed the editable fields once from the line. `seeded` guards against the live
@@ -156,7 +157,7 @@ export function ListEditPage() {
     }
   }
 
-  if (!board) return <Loading />
+  if (!board) return loadStateOf(boardQ)
   if (!item) return null
 
   return (

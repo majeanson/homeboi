@@ -23,7 +23,7 @@ import { api, isUnauthorized } from '../lib/api'
 import { useWrite, writeFailed } from '../lib/write'
 import { live } from '../lib/query'
 import { PairPrompt } from '../components/Fallback'
-import { Skeleton } from '../components/Skeleton'
+import { loadStateOf } from '../components/Fallback'
 import { useCreateWithUndo } from '../lib/undoCreate'
 import { useDeferredRemoval } from '../lib/useDeferredRemoval'
 import { useVoiceInput } from '../lib/useVoiceInput'
@@ -489,7 +489,8 @@ export function Liste() {
     { continuous: true, split: true },
   )
 
-  const { data: board, error } = useQuery({ queryKey: BOARD_KEY, queryFn: () => api<BoardListData>('board'), ...live })
+  const boardQ = useQuery({ queryKey: BOARD_KEY, queryFn: () => api<BoardListData>('board'), ...live })
+  const { data: board, error } = boardQ
   // Stores hidden at the till — read here (before the early returns) so the
   // « Montrer à la caisse » count matches what the stepper will actually show.
   const tillHidden = useTillHiddenStores()
@@ -611,7 +612,10 @@ export function Liste() {
   }
 
   if (isUnauthorized(error)) return <PairPrompt />
-  if (!board && !error) return <Skeleton count={5} />
+  // A read that FAILED with nothing cached says so (LoadError + « Réessayer ») —
+  // not an empty list, which hides real data behind a calm face (2026-11-05).
+  const wait = loadStateOf(boardQ, { shape: 'row', count: 5 })
+  if (wait) return wait
   // Hide items whose clear is still settling so they can't be resurrected.
   const list = removal.visible(board?.list ?? [])
   const checkedIds = list.filter((i) => i.checked_at).map((i) => i.id)

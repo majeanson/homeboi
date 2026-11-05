@@ -2,7 +2,7 @@ import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-
 import { needsOperator } from '../lib/device'
 import '../styles/virements.css'
 import { FormScene } from '../components/FormScene'
-import { Loading } from '../components/Fallback'
+import { loadStateOf } from '../components/Fallback'
 import { TransferForm } from '../components/forms/TransferForm'
 import { PlanForm } from '../components/forms/PlanForm'
 import { useT } from '../i18n'
@@ -25,7 +25,8 @@ export function TransferFormPage() {
   const t = useT()
   const nav = useNavigate()
   const { id } = useParams()
-  const { data } = useTransfers()
+  const transfersQ = useTransfers()
+  const { data } = transfersQ
   const transfer = id ? (data?.transfers.find((x) => x.id === id) ?? null) : null
 
   // FormScene bounces a guest and a session-less device; a paired KIOSK has a session
@@ -41,9 +42,7 @@ export function TransferFormPage() {
         // came out with no mortgage line at all. Caught by e2e/virements.spec.ts, which
         // is the whole reason that spec asserts the ticks rather than just the fields.
         // `Loading`, not `Skeleton`: a form scene is one record, not a known shape.
-        !data ? (
-          <Loading />
-        ) : (
+        (loadStateOf(transfersQ) ?? (
         <TransferForm
           // Re-init the fields once the edited row arrives from the cache/poll.
           key={transfer?.id ?? 'new'}
@@ -56,7 +55,7 @@ export function TransferFormPage() {
           onDeleted={() => nav(FALLBACK, { replace: true })}
           onCancel={close}
         />
-        )
+        ))
       }
     </FormScene>
   )
@@ -68,7 +67,8 @@ export function TransferPlanFormPage() {
   const nav = useNavigate()
   const { id } = useParams()
   const [sp] = useSearchParams()
-  const { data } = useTransfers()
+  const transfersQ = useTransfers()
+  const { data } = transfersQ
   const plan = id ? (data?.plans.find((x) => x.id === id) ?? null) : null
   // ?modele=<key> — the shape the reader tapped on the empty state. It seeds a title
   // and a rhythm and nothing else; a stale or bogus key resolves to null rather than
@@ -79,9 +79,7 @@ export function TransferPlanFormPage() {
   return (
     <FormScene card="notes" title={id ? t.virements.editPlan : t.virements.addPlan} icon="receipt-bold" fallback={FALLBACK}>
       {(members, close) =>
-        id && !data ? (
-          <Loading />
-        ) : (
+        (id ? loadStateOf(transfersQ) : null) ?? (
         <PlanForm
           key={plan?.id ?? 'new'}
           value={plan}

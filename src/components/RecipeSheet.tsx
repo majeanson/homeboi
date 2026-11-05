@@ -17,7 +17,7 @@ import { applyVersion, groupSections, recipeVersions, versionLabel } from '../li
 import { Cluster } from './Layout'
 import { type MealSlot } from '../lib/mealSlots'
 import { useMealPrefs } from '../lib/mealPrefs'
-import { Loading } from './Fallback'
+import { loadStateOf } from './Fallback'
 import { ZoomableImg } from './ZoomableImg'
 import { Icon, InlineIcon } from './Icon'
 import { IngredientLine } from './IngredientLine'
@@ -300,9 +300,7 @@ export function RecipeSheet({
           // not know whether this recipe has one. Without this the fallback below
           // would paint the EDITED text under the words « telle qu'importée » — a
           // wrong claim, briefly, which is worse than a wait.
-          <div className="recipe-modal__body recipe-original">
-            <Loading />
-          </div>
+          <div className="recipe-modal__body recipe-original">{loadStateOf(origQ)}</div>
         ) : showOriginal ? (
           <div className="recipe-modal__body recipe-original">
             <p className="recipe-original__tag mono">

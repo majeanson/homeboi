@@ -17,7 +17,7 @@ import { live } from '../lib/query'
 import { BOARD_KEY } from '../lib/queryKeys'
 import { usePointerDnd, DragGhost, DND_HOLD_MS, dropCueOf } from '../lib/dnd'
 import { PairPrompt } from '../components/Fallback'
-import { Skeleton } from '../components/Skeleton'
+import { loadStateOf } from '../components/Fallback'
 import { formatDay, weekdayShort, dayNum } from '../lib/format'
 import { addLocalDays, todayLocalDay } from '../lib/localDay'
 import { pictoFor } from '../lib/picto'
@@ -363,7 +363,10 @@ export function Kitchen() {
   // only ever shows on the true cold load the flash came from.
   // The grid's shape is known before its data is (N day cells), so reserve them
   // rather than popping a whole week in over one centred line.
-  if (!meals.data && !meals.error) return <Skeleton variant="card" count={4} />
+  // …and a read that FAILED with nothing cached says so (LoadError) instead of
+  // rendering a week with no meals — the false empty (2026-11-05).
+  const wait = loadStateOf(meals, { shape: 'card', count: 4 })
+  if (wait) return wait
 
   if (toddler) {
     return (

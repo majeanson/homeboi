@@ -9,7 +9,7 @@ import { isGuest } from '../lib/device'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { CERCLE_KEY, BOARD_KEY, A_REGLER_KEY } from '../lib/queryKeys'
 import { SceneHead } from '../components/SceneHead'
-import { Loading } from '../components/Fallback'
+import { loadStateOf } from '../components/Fallback'
 import { ContactForm } from '../components/cercle/ContactForm'
 import type { Contact, ContactLink, Member, ContactGroupRaw } from '../lib/cercle'
 
@@ -32,17 +32,18 @@ export function CercleFormPage() {
   const close = useSceneClose('/maison?section=family')
   useEscapeKey(close)
 
-  const { data } = useQuery({
+  const cercleQ = useQuery({
     queryKey: CERCLE_KEY,
     queryFn: () => api<CercleData>('cercle'),
   })
+  const { data } = cercleQ
 
   if (isGuest()) return <Navigate to="/maison?section=family" replace />
 
   const contact = editing ? data?.contacts.find((c) => c.id === id) ?? null : null
   // Editing but the contact is gone (loaded + not found → deleted elsewhere) →
   // bounce; still loading → wait.
-  if (editing && !contact) return data ? <Navigate to="/maison?section=family" replace /> : <Loading />
+  if (editing && !contact) return data ? <Navigate to="/maison?section=family" replace /> : loadStateOf(cercleQ)
 
   return (
     <div className="scene" aria-label={editing ? t.cercle.editPerson : t.cercle.newPerson}>

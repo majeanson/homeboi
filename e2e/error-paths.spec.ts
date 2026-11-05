@@ -182,3 +182,55 @@ test('AddSheet: a network-level failure queues calmly — the sheet closes, no e
   await expect(page.locator('.sheet.show')).toBeHidden()
   await expect(page.locator('.status-msg--error')).toBeHidden()
 })
+
+// ───────────── A READ that fails with nothing cached SAYS so (solidify 1.6) ─────────────
+//
+// Sixteen scenes wrote `if (!data) return <Loading />` by hand and sat on « Chargement… »
+// forever once the first fetch had errored — nothing retries a cold read, and a wall
+// tablet waited on a server that had already said no. La liste and La cuisine rendered
+// the EMPTY surface instead (a list with no rows), which hides real data behind a calm
+// face. Every one now goes through `loadStateOf(q)` (components/Fallback.tsx): no data +
+// error → `LoadError` with « Réessayer », and the retry is a real door. A representative
+// route per endpoint family; `src/lib/load-error-rule.test.ts` holds the rest.
+const READ_FAILS: { route: string; api: string; name: string }[] = [
+  { route: '/liste', api: 'board', name: 'La liste (board)' },
+  { route: '/liste/cashier', api: 'board', name: 'the cashier scene (board)' },
+  { route: '/kitchen', api: 'meals', name: 'La cuisine (meals)' },
+  { route: '/kitchen/recipe/rc1/cook', api: 'recipes', name: 'cook mode (recipes)' },
+  { route: '/kitchen/book', api: 'recipes', name: 'the recipe book (recipes)' },
+  { route: '/cercle/person/c1', api: 'cercle', name: 'a person form (cercle)' },
+  { route: '/routine/r1', api: 'routines', name: 'a routine form (routines)' },
+  { route: '/liste-modele/tpl1', api: 'todo-templates', name: 'a list template scene (todo-templates)' },
+  { route: '/virement/new', api: 'transfers', name: 'a transfer form (transfers)' },
+]
+
+for (const { route, api, name } of READ_FAILS) {
+  test(`a failed cold read on ${name} shows « Réessayer », not an eternal wait or a false empty — and the retry recovers`, async ({ page }) => {
+    await page.setViewportSize({ width: 420, height: 860 })
+    await mockApi(page)
+    await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+    // Registered AFTER mockApi so it wins; only the GET fails, and only while `on`.
+    const state = { on: true }
+    await page.route(`**/api/${api}`, (route) => {
+      if (state.on && route.request().method() === 'GET') {
+        return route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: 'Erreur serveur' }) })
+      }
+      return route.fallback()
+    })
+    await page.goto(route)
+
+    const error = page.locator('.load-error')
+    await expect(error).toBeVisible({ timeout: 15_000 })
+    const retry = error.getByRole('button', { name: 'Réessayer' })
+    await expect(retry).toBeVisible()
+    // The wait is GONE: no « Chargement… », no skeleton left behind the error line.
+    await expect(page.locator('.loading')).toHaveCount(0)
+    await expect(page.locator('.skeleton')).toHaveCount(0)
+
+    // The door works: with the server back, one tap and the surface renders.
+    state.on = false
+    await retry.click()
+    await expect(error).toBeHidden({ timeout: 15_000 })
+    await expect(page.locator('.loading')).toHaveCount(0)
+  })
+}

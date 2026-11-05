@@ -9,7 +9,7 @@ import { isGuest } from '../lib/device'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { CERCLE_KEY, BOARD_KEY } from '../lib/queryKeys'
 import { SceneHead } from '../components/SceneHead'
-import { Loading } from '../components/Fallback'
+import { loadStateOf } from '../components/Fallback'
 import { FamilyBuilder } from '../components/cercle/FamilyBuilder'
 import { unifyCircle, type Contact, type ContactLink, type Member, type ContactGroupRaw, type Pet } from '../lib/cercle'
 
@@ -33,10 +33,11 @@ export function CercleFamilyPage() {
   const close = useSceneClose('/maison?section=family')
   useEscapeKey(close)
 
-  const { data } = useQuery({ queryKey: CERCLE_KEY, queryFn: () => api<CercleData>('cercle') })
+  const cercleQ = useQuery({ queryKey: CERCLE_KEY, queryFn: () => api<CercleData>('cercle') })
+  const { data } = cercleQ
 
   if (isGuest()) return <Navigate to="/maison?section=family" replace />
-  if (!data) return <Loading />
+  if (!data) return loadStateOf(cercleQ)
 
   // Collapse member + linked contact into one person, and remap links/group keys onto
   // the member — so the builder shows each human once and links attach to one node.

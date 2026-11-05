@@ -10,7 +10,7 @@ import { isGuest } from '../../lib/device'
 import { live } from '../../lib/query'
 import { ROUTINES_KEY } from '../../lib/queryKeys'
 import { PairPrompt } from '../Fallback'
-import { Skeleton } from '../Skeleton'
+import { loadStateOf } from '../Fallback'
 import { InlineIcon } from '../Icon'
 import { Chip } from '../Chip'
 import { SectionHeader } from '../SectionHeader'
@@ -48,17 +48,19 @@ export function RoutinesTab({ help }: { help: HelpMode }) {
   const t = useT()
   const { calm } = useCalm()
   const navigate = useNavigate()
-  const { data, error } = useQuery({
+  const routinesQ = useQuery({
     queryKey: ROUTINES_KEY,
     queryFn: () => api<{ routines: RoutineRow[] }>('routines'),
     ...live,
   })
+  const { data, error } = routinesQ
 
   if (isUnauthorized(error)) return <PairPrompt />
   // Routine CARDS, a shape the reader already knows — so reserve it rather than
   // popping a centred « Chargement… » out for a grid (Skeleton.tsx's own rule; this
   // body renders under a tab bar that is already painted, which is where the jump was).
-  if (!data && !error) return <Skeleton variant="card" count={4} />
+  const wait = loadStateOf(routinesQ, { shape: 'card', count: 4 })
+  if (wait) return wait
   const routines = data?.routines ?? []
 
   // Group the overview into the moments of the day, and float the CURRENT moment

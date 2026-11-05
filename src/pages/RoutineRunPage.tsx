@@ -4,7 +4,7 @@ import { useEscapeKey } from '../lib/sceneNav'
 import { api, isUnauthorized } from '../lib/api'
 import { live } from '../lib/query'
 import { ROUTINES_KEY } from '../lib/queryKeys'
-import { Loading, PairPrompt } from '../components/Fallback'
+import { loadStateOf, PairPrompt } from '../components/Fallback'
 import { isGuest } from '../lib/device'
 import { RoutinePlayer, type PlayerRoutine } from '../components/RoutinePlayer'
 
@@ -20,14 +20,16 @@ export function RoutineRunPage() {
   // The player's exit is a Link (a touch door); Escape is its keyboard mirror — every
   // other full-screen scene already has one (2026-11-05, the one scene without).
   useEscapeKey(() => nav('/maison'))
-  const { data, error } = useQuery({
+  const routinesQ = useQuery({
     queryKey: ROUTINES_KEY,
     queryFn: () => api<{ routines: PlayerRoutine[] }>('routines'),
     ...live,
   })
+  const { data, error } = routinesQ
 
   if (isUnauthorized(error)) return <div className="kid"><PairPrompt /></div>
-  if (!data && !error) return <Loading />
+  const wait = loadStateOf(routinesQ)
+  if (wait) return <div className="kid">{wait}</div>
   const routine = data?.routines.find((r) => r.id === id) ?? null
   // Gone (deleted elsewhere) or an empty shell with no steps → nothing to run;
   // bounce back to the tab rather than show an empty stage.

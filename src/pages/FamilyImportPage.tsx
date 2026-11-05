@@ -12,7 +12,7 @@ import { needsOperator } from '../lib/device'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { CERCLE_KEY, BOARD_KEY, INTAKE_KEY } from '../lib/queryKeys'
 import { SceneHead } from '../components/SceneHead'
-import { Loading } from '../components/Fallback'
+import { loadStateOf } from '../components/Fallback'
 import { ReviewChecklist } from '../components/ReviewChecklist'
 import { StatusMessage } from '../components/StatusMessage'
 import { EmptyState } from '../components/EmptyState'
@@ -92,17 +92,19 @@ export function FamilyImportPage() {
   const intakeId = params.get('intake')
   const [codeInput, setCodeInput] = useState('')
 
-  const { data: share, error, isLoading: shareLoading } = useQuery({
+  const shareQ = useQuery({
     queryKey: ['family-share', shareId],
     queryFn: () => api<ShareResponse>(`family-share?s=${encodeURIComponent(shareId!)}`),
     enabled: !!shareId,
     retry: false,
   })
-  const { data: intake, isLoading: intakeLoading } = useQuery({
+  const { data: share, error } = shareQ
+  const intakeQ = useQuery({
     queryKey: INTAKE_KEY,
     queryFn: () => api<{ submissions: PendingIntake[] }>('intake'),
     enabled: !!intakeId,
   })
+  const { data: intake, isLoading: intakeLoading } = intakeQ
 
   // Our OWN circle, for dedupe suggestions at review.
   const { data: cercle } = useQuery({
@@ -177,7 +179,10 @@ export function FamilyImportPage() {
           },
         }
       : null
-  const isLoading = shareLoading || intakeLoading
+  // The pre-data face of WHICHEVER read this link opened (a disabled query reads as
+  // loading, so each is gated by its own param). A 404/400 is « introuvable » below;
+  // any OTHER failure is LoadError + « Réessayer », never a false « introuvable ».
+  const wait = shareId ? loadStateOf(shareQ) : intakeId ? loadStateOf(intakeQ) : null
   const notFound =
     (error instanceof ApiError && (error.status === 404 || error.status === 400)) || (!!intakeId && !intakeLoading && !pending)
 
@@ -217,9 +222,11 @@ export function FamilyImportPage() {
     <div className="scene" aria-label={t.familyShare.importTitle}>
       <SceneHead title={t.familyShare.importTitle} icon="users-three-bold" card="cercle" onClose={close} />
       <div className="scene__body">
-        {isLoading ? (
-          <Loading />
-        ) : notFound || !source ? (
+        {notFound ? (
+          <EmptyState>{t.familyShare.notFound}</EmptyState>
+        ) : wait ? (
+          wait
+        ) : !source ? (
           <EmptyState>{t.familyShare.notFound}</EmptyState>
         ) : progress ? (
           <div className="sharesheet-preview">

@@ -1,7 +1,7 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { StaleBounce } from '../components/StaleBounce'
 import { RecipeSheet } from '../components/RecipeSheet'
-import { Loading } from '../components/Fallback'
+import { loadStateOf } from '../components/Fallback'
 import { useLang, useT } from '../i18n'
 import { useWeekLabeled } from '../components/kitchen/week'
 import { WINDOW_DAYS_DEFAULT } from '../lib/mealSlots'
@@ -28,7 +28,7 @@ export function RecipeViewPage() {
   const week = weekStart ? labeled : []
 
   if (!recipe)
-    return recipesQ.isLoading ? <Loading /> : <StaleBounce to="/kitchen" message={t.kitchen.recipeGone} />
+    return loadStateOf(recipesQ) ?? <StaleBounce to="/kitchen" message={t.kitchen.recipeGone} />
   return (
     <RecipeSheet
       recipe={recipe}

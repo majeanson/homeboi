@@ -5,7 +5,7 @@ import { FormScene } from '../components/FormScene'
 import { RoutineForm, type RoutineInit } from '../components/forms/RoutineForm'
 import { EntityShareModal } from '../components/EntityShareModal'
 import type { RoutineSeed } from '../lib/drawingToRoutine'
-import { Loading } from '../components/Fallback'
+import { loadStateOf } from '../components/Fallback'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { useWrite } from '../lib/write'
@@ -36,11 +36,12 @@ export function RoutineFormPage() {
 
   // Edit: prefill from the routine. The list is normally already cached from the
   // Routines tab; a cold deep-link fetches it. Create: no fetch.
-  const { data } = useQuery({
+  const routinesQ = useQuery({
     queryKey: ROUTINES_KEY,
     queryFn: () => api<{ routines: RoutineInit[] }>('routines'),
     enabled: editing,
   })
+  const { data } = routinesQ
   const routine = editing ? data?.routines.find((r) => r.id === id) ?? null : null
 
   return (
@@ -53,7 +54,7 @@ export function RoutineFormPage() {
       {(members, close) => {
         // Still loading the routine to edit → wait; loaded but gone (deleted from
         // another device) → bounce back to the tab rather than show a blank form.
-        if (editing && !routine) return data ? <Navigate to="/maison" replace /> : <Loading />
+        if (editing && !routine) return data ? <Navigate to="/maison" replace /> : loadStateOf(routinesQ)
         // Delete from the same scene that edits it (no trip to Réglages ▸ Corvées).
         // A weighty confirm (useConfirm), then a DELETE via useWrite so an offline
         // tap queues to the outbox, then back to the tab.

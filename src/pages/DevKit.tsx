@@ -161,7 +161,7 @@ import { HelpBubble } from '../components/HelpBubble'
 import { OfflineBanner } from '../components/OfflineBanner'
 import { ErrorBoundary } from '../components/ErrorBoundary'
 import { HeartButton } from '../components/HeartButton'
-import { Loading, PairPrompt } from '../components/Fallback'
+import { Loading, LoadState, PairPrompt } from '../components/Fallback'
 import { TopBar } from '../components/TopBar'
 import { SwipeDeletePane } from '../components/SwipeDeletePane'
 import { HelpDot } from '../components/HelpDot'
@@ -3749,13 +3749,20 @@ export function DevKit() {
     // « gallery-suitable » that had no live specimen here. See devkitParity.test.ts.
     {
       cat: 'Feedback',
-      name: 'Loading · PairPrompt',
+      name: 'Loading · LoadState · PairPrompt',
       file: 'components/Fallback.tsx',
-      kw: 'chargement loading appairer pair 401 sans maisonnée états page fallback',
+      kw: 'chargement loading appairer pair 401 sans maisonnée états page fallback loadStateOf réessayer erreur',
       render: () => (
         <>
           <Demo label="« Chargement… » — le seul état pendant que la PREMIÈRE requête est en vol. Une requête qui a ÉCHOUÉ sans données n'est plus « en chargement » : c'est LoadError (juste au-dessus), et l'oublier a déjà fait tourner Mois et L'auto dans le vide sur un wifi à une barre.">
             <Loading />
+          </Demo>
+          <Demo label="LoadState / loadStateOf(q) — LA décision, prise une fois : pas de données + erreur → LoadError avec « Réessayer » ; pas de données → l'attente (Skeleton si la FORME est connue, sinon Chargement) ; des données → la surface. Seize scènes écrivaient « if (!data) return <Loading/> » à la main et restaient en chargement pour toujours quand la requête avait ÉCHOUÉ (load-error-rule.test.ts garde la couture). Les trois visages, de gauche à droite : en vol · échoué · arrivé.">
+            <LoadState q={{ data: undefined, isError: false, refetch: () => {} }}>jamais rendu</LoadState>
+            <LoadState q={{ data: undefined, isError: true, refetch: () => {} }}>jamais rendu</LoadState>
+            <LoadState q={{ data: { rows: 3 }, isError: false, refetch: () => {} }}>
+              {() => <p className="mono">les données sont là — la surface se rend</p>}
+            </LoadState>
           </Demo>
           <Demo label="401 = cet appareil n'a pas de maisonnée. La porte dépend du RÔLE : bascule l'axe Surface ci-dessus — une tablette murale (kiosk) propose « Appairer » en premier, un téléphone (mobile) « Se connecter ». L'autre porte reste dessous, jamais cachée.">
             <PairPrompt />

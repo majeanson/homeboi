@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { CashierMode } from '../components/CashierMode'
-import { Loading } from '../components/Fallback'
+import { loadStateOf } from '../components/Fallback'
 import { EmptyState } from '../components/EmptyState'
 import { SceneHead } from '../components/SceneHead'
 import { useT } from '../i18n'
@@ -19,7 +19,8 @@ import { useSceneClose } from '../lib/sceneNav'
 export function CashierPage() {
   const t = useT()
   const close = useSceneClose('/liste')
-  const { data: board } = useQuery({ queryKey: BOARD_KEY, queryFn: () => api<{ list: ListItem[] }>('board'), ...live })
+  const boardQ = useQuery({ queryKey: BOARD_KEY, queryFn: () => api<{ list: ListItem[] }>('board'), ...live })
+  const board = boardQ.data
   // The household's postal code, off the shared HOUSEHOLD_KEY cache (the aislePrefs
   // idiom): « Montrer Flipp » cannot be built without it.
   const { data: household } = useQuery({
@@ -46,7 +47,7 @@ export function CashierPage() {
     if (board && picks.length === 0 && hadPicks.current) close()
   }, [board, picks.length, close])
 
-  if (!board) return <Loading />
+  if (!board) return loadStateOf(boardQ)
   if (picks.length === 0) {
     // Emptied in-session → the effect above is slipping us back; render nothing.
     // Cold deep-link → explain there's nothing at the till (with a way back), instead
