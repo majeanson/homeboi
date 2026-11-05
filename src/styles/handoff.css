@@ -168,10 +168,6 @@
   background: var(--card);
   box-shadow: inset 0 0 0 1.5px var(--line);
 }
-.handoff__empty {
-  color: var(--ink-soft);
-}
-
 /* Operator preview bar (components/SharePreviewBar.tsx): sits above the scene head
    when an operator opened the scene with ?preview=<kind>. A calm tinted strip with
    a "what you're looking at" note + a way back to settings. Hidden in print. */

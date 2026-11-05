@@ -836,7 +836,4 @@
 .search__meta {
   margin: 0.1rem 0 0.2rem;
 }
-.search__count {
-  margin: 0;
-  color: var(--ink-soft);
-}
+/* (.search__count folded onto StatusMessage, 2026-11-05) */

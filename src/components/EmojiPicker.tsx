@@ -1,3 +1,4 @@
+import { EmptyState } from './EmptyState'
 import { useState } from 'react'
 import { filterEmojis } from '../lib/emoji'
 import { useT } from '../i18n'
@@ -42,7 +43,7 @@ export function EmojiPicker({
         />
       )}
       {list.length === 0 ? (
-        <p className="emoji-picker__empty">{t.common.emojiNoResult}</p>
+        <EmptyState size="cell" className="emoji-picker__empty">{t.common.emojiNoResult}</EmptyState>
       ) : (
         <div
           className={'emoji-picker' + (className ? ' ' + className : '')}

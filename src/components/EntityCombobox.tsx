@@ -1,3 +1,4 @@
+import { EmptyState } from './EmptyState'
 import { useDeferredValue, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useT } from '../i18n'
@@ -476,7 +477,7 @@ export function EntityCombobox<T>({
             </div>
           )}
           {shown.length === 0 ? (
-            <p className="combobox__empty mono">{noMatchLabel}</p>
+            <EmptyState size="cell">{noMatchLabel}</EmptyState>
           ) : (
             <ul className="combobox__list" id={listId} role="listbox">
               {shown.map((o, i) => {

@@ -1,3 +1,4 @@
+import { StatusMessage } from './StatusMessage'
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, Navigate, Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
@@ -624,10 +625,9 @@ export function HubLayout() {
         )}
         <OfflineBanner />
         {guest && (
-          <p className="board__empty mono" role="status" style={{ textAlign: 'center', opacity: 0.8 }}>
-            <InlineIcon name="user-bold" />{' '}
+          <StatusMessage icon="user-bold" className="hub__guest-note">
             {guestLocked && guestKind === 'showcase' ? t.guest.demoBadge : t.guest.banner}
-          </p>
+          </StatusMessage>
         )}
         <Fragment key={pageReset}>
           <Outlet />

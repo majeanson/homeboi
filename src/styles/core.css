@@ -1444,8 +1444,10 @@ html[data-embedded] .home {
   color: var(--accent-ink);
   opacity: 0.85;
 }
-.board__empty {
-  color: var(--ink-soft);
+/* The guest note under the hub's offline bar (HubLayout) — a StatusMessage, centred. */
+.hub__guest-note {
+  justify-content: center;
+  opacity: 0.8;
 }
 .board__events,
 .board__list,
@@ -1521,7 +1523,7 @@ html[data-embedded] .home {
   color: var(--ink-soft);
 }
 .board__synced {
-  text-align: center;
+  justify-content: center;
   color: var(--ink-soft);
   margin-top: 0.75rem;
 }

@@ -17,6 +17,13 @@
   padding: 0.4rem 0.25rem 0.7rem;
   text-wrap: balance;
 }
+/* The CELL size — a terse « rien ici » inside a field, a picker, a review list: no
+   section padding, the host's own alignment, never the guide link (EmptyState.tsx). */
+.empty-state--cell {
+  padding: 0.2rem 0 0.4rem;
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+}
 /* Opt-in "→ Voir le guide" deep-link under an empty line (#8). Block so it sits on
    its own line under the message; quiet accent that invites without shouting. */
 .empty-state__guide {

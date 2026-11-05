@@ -1,3 +1,4 @@
+import { StatusMessage } from '../StatusMessage'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
@@ -169,9 +170,7 @@ export function EmptyFridgeSheet({
         {!error && phase === 'ideas' && (
           <>
             {loading ? (
-              <p className="fridge-modal__status mono" role="status">
-                ⏳ {f.thinking}
-              </p>
+              <StatusMessage icon="clock-bold">{f.thinking}</StatusMessage>
             ) : (
               <>
                 <p className="fridge-modal__hint mono">{f.pickHint(MAX_FRIDGE_PICKS)}</p>
@@ -218,9 +217,7 @@ export function EmptyFridgeSheet({
         {!error && phase === 'recipes' && (
           <>
             {building ? (
-              <p className="fridge-modal__status mono" role="status">
-                ⏳ {f.cooking}
-              </p>
+              <StatusMessage icon="clock-bold">{f.cooking}</StatusMessage>
             ) : (
               <>
                 {recipes.map((r) => {

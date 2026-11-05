@@ -1,3 +1,4 @@
+import { StatusMessage } from '../components/StatusMessage'
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery, useIsFetching } from '@tanstack/react-query'
@@ -368,9 +369,7 @@ export function SearchPage() {
         {needle && (total > 0 || (q.trim() && aiEnabled && !aiOff)) && (
           <Cluster justify="between" className="search__meta">
             {total > 0 ? (
-              <p className="search__count mono" role="status">
-                {t.search.resultsCount(total)}
-              </p>
+              <StatusMessage icon={null}>{t.search.resultsCount(total)}</StatusMessage>
             ) : (
               <span />
             )}

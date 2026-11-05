@@ -1,3 +1,4 @@
+import { StatusMessage } from './StatusMessage'
 import { useCallback, useEffect, useRef, useState, type TouchEvent as ReactTouchEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { useT, useLang } from '../i18n'
@@ -34,7 +35,7 @@ import { api } from '../lib/api'
 import { isGuest } from '../lib/device'
 import { PANTRY_KEY } from './kitchen/types'
 import { A_REGLER_KEY } from '../lib/queryKeys'
-import { Icon, InlineIcon, type IconName } from './Icon'
+import { Icon, type IconName } from './Icon'
 import { useModal } from '../lib/useModal'
 import { useCookTimers } from '../lib/cookTimers'
 import { useWakeLock } from '../lib/useWakeLock'
@@ -604,9 +605,9 @@ export function CookMode({
       {/* A spoken-command hint while the mic is open — so the words are discoverable
           (you can't see a menu of them otherwise). */}
       {mode === 'step' && voice.listening && (
-        <p className="cook__voicehint mono" role="status">
-          <InlineIcon name="microphone-bold" /> {t.recipes.voiceCookHint}
-        </p>
+        <StatusMessage icon="microphone-bold" className="cook__voicehint">
+          {t.recipes.voiceCookHint}
+        </StatusMessage>
       )}
 
       {/* Running timers live ABOVE the step so they stay visible as you move on —

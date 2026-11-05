@@ -1,3 +1,4 @@
+import { EmptyState } from './EmptyState'
 import { useState, type ReactNode } from 'react'
 import { Modal } from './Modal'
 import { Icon } from './Icon'
@@ -60,7 +61,7 @@ export function ReviewChecklist<T>({
   return (
     <Modal open={open} onClose={onClose} title={title}>
       {items.length === 0 ? (
-        <p className="review__empty">{emptyLabel ?? ''}</p>
+        <EmptyState size="cell">{emptyLabel ?? ''}</EmptyState>
       ) : (
         <div className="review">
           <button

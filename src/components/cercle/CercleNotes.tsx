@@ -1,3 +1,4 @@
+import { EmptyState } from '../EmptyState'
 import { useEffect, useMemo, useState } from 'react'
 import { facesFromCercleMembers } from '../../lib/faces'
 import { useQuery } from '@tanstack/react-query'
@@ -234,7 +235,7 @@ export function CercleNotes({
         onEdit={help ? (n) => help.pick('note', () => openEdit(n))() : openEdit}
         focusId={focusId}
         onFocused={onFocused}
-        empty={<p className="cercle-notes__empty mono">{query.trim() ? fn.noMatch : face ? fn.emptyMine : fn.empty}</p>}
+        empty={<EmptyState className="cercle-notes__empty">{query.trim() ? fn.noMatch : face ? fn.emptyMine : fn.empty}</EmptyState>}
       />
 
       {/* The full-screen editor — one component, reused for new + modify. */}

@@ -1,3 +1,4 @@
+import { EmptyState } from '../EmptyState'
 import { useMemo, useRef, useState } from 'react'
 import { useMediaUpload } from '../../lib/uploadMedia'
 import { useNavigate } from 'react-router-dom'
@@ -603,7 +604,7 @@ export function ContactForm({
       ) : (
         <div className="cf__rels">
           <span className="cf__label">{t.cercle.relationships}</span>
-          <p className="cf__rels-empty mono">{t.cercle.saveFirstForLinks}</p>
+          <EmptyState size="cell">{t.cercle.saveFirstForLinks}</EmptyState>
         </div>
       )}
 

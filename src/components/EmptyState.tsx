@@ -35,15 +35,23 @@ import { guideHref } from '../lib/settingsNav'
 // Use the app's own URL grammar for the target (DISCOVERY.md): `?plus=` opens the ＋
 // sheet on a tile, `?tab=&sub=&focus=` lands on a settings card — so the door names
 // the thing the FAB would have done.
+// Two SIZES (COMPONENTS.md #1, the copy contract): a *section* empty teaches in one
+// line (what this is · one example · the one action, or the `guide` link); a *cell*
+// empty is terse — « Rien de prévu », « Aucun résultat » — inside a form field, a
+// picker, a review list, a drop zone, and never carries the guide link. The eleven
+// hand-rolled `<p className="*__empty">` cells folded onto `size="cell"` on
+// 2026-11-05 (solidify 2.3); `empty-rule.test.ts` refuses a new one.
 export function EmptyState({
   children,
   tone = 'plain',
+  size = 'section',
   className,
   guide,
   action,
 }: {
   children: ReactNode
   tone?: 'plain' | 'calm'
+  size?: 'section' | 'cell'
   className?: string
   guide?: { card: string; point?: number }
   action?: { to: string; label: string; icon?: IconName }
@@ -52,12 +60,12 @@ export function EmptyState({
   const { tutorial } = useHelp()
   const { teaches } = useLens()
   const to =
-    guide && tutorial && teaches
+    guide && tutorial && teaches && size === 'section'
       ? guideHref(guide.card, guide.point)
       : null
   return (
     <p
-      className={'empty-state' + (tone === 'calm' ? ' empty-state--calm' : '') + (className ? ` ${className}` : '')}
+      className={'empty-state' + (tone === 'calm' ? ' empty-state--calm' : '') + (size === 'cell' ? ' empty-state--cell' : '') + (className ? ' ' + className : '')}
       role="status"
     >
       {children}

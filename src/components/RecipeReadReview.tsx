@@ -1,3 +1,4 @@
+import { EmptyState } from './EmptyState'
 import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useT } from '../i18n'
 import { Modal } from './Modal'
@@ -502,7 +503,7 @@ export function RecipeReadReview({
             {ingredients.length ? (
               ingredients.map((v, i) => lineRow('ingredients', v, i))
             ) : (
-              <p className="read-review__empty mono">{t.recipes.reviewNone}</p>
+              <EmptyState size="cell">{t.recipes.reviewNone}</EmptyState>
             )}
 
             <h3 className="read-review__sec">
@@ -511,7 +512,7 @@ export function RecipeReadReview({
             {steps.length ? (
               steps.map((v, i) => lineRow('steps', v, i, stepNos[i]))
             ) : (
-              <p className="read-review__empty mono">{t.recipes.reviewNone}</p>
+              <EmptyState size="cell">{t.recipes.reviewNone}</EmptyState>
             )}
           </div>
           )}

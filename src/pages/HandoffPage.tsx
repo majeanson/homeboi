@@ -206,7 +206,7 @@ export function HandoffPage() {
                 <InlineIcon name="sun-bold" /> {t.shareMode.today}
               </h3>
               {events.length === 0 && meals.length === 0 ? (
-                <p className="handoff__empty mono">{t.shareMode.noToday}</p>
+                <EmptyState size="cell">{t.shareMode.noToday}</EmptyState>
               ) : (
                 <>
                   {events.length > 0 && (

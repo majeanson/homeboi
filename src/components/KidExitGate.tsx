@@ -1,3 +1,4 @@
+import { StatusMessage } from './StatusMessage'
 import { useEffect, useRef, useState } from 'react'
 import { useT } from '../i18n'
 import { useAudience } from '../lib/audience'
@@ -141,9 +142,9 @@ export function KidExitGate({ requireMath = true }: { requireMath?: boolean }) {
             />
           </label>
           {wrong && (
-            <p className="kid-exit-modal__wrong" role="alert">
+            <StatusMessage tone="error" className="kid-exit-modal__wrong">
               {t.audience.exitWrong}
-            </p>
+            </StatusMessage>
           )}
           <div className="kid-exit-modal__actions">
             <button type="button" className="btn btn--ghost" onClick={() => setGateOpen(false)}>

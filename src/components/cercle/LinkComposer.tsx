@@ -1,3 +1,4 @@
+import { EmptyState } from '../EmptyState'
 import { useEffect, useMemo, useState } from 'react'
 import { useLang, useT } from '../../i18n'
 import { useWrite } from '../../lib/write'
@@ -148,7 +149,7 @@ export function LinkComposer({
       <span className="cf__label">{t.cercle.relationships}</span>
 
       {mine.length === 0 ? (
-        <p className="cf__rels-empty mono">{t.cercle.noRelationships}</p>
+        <EmptyState size="cell">{t.cercle.noRelationships}</EmptyState>
       ) : (
         <ul className="cf__rels-list">
           {mine.map((m) => {

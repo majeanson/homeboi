@@ -1,3 +1,4 @@
+import { EmptyState } from '../EmptyState'
 import { useMemo, useState } from 'react'
 import { useLang, useT } from '../../i18n'
 import { useWrite, writeFailed } from '../../lib/write'
@@ -423,7 +424,7 @@ export function FamilyBuilder({
       </div>
 
       {humanRoster.length === 0 ? (
-        <p className="cf__rels-empty mono">{t.cercle.familyEmpty}</p>
+        <EmptyState size="cell">{t.cercle.familyEmpty}</EmptyState>
       ) : (
         <>
           {/* Mode toggle — the shared `<SubTabs>`, not the bespoke

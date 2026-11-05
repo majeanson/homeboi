@@ -3209,6 +3209,9 @@ export function DevKit() {
           <Demo label="guide">
             <EmptyState guide={{ card: 'routines' }}>Aucune routine pour l’instant.</EmptyState>
           </Demo>
+          <Demo label="size=cell — the terse « rien ici » inside a field, a picker, a review list: no section padding, never the guide link (2026-11-05: eleven hand-rolled *__empty cells folded onto it; empty-rule.test.ts refuses a new one)">
+            <EmptyState size="cell" guide={{ card: 'routines' }}>Aucun résultat.</EmptyState>
+          </Demo>
         </>
       ),
     },
@@ -3235,6 +3238,12 @@ export function DevKit() {
               <StatusMessage tone="error">Pas enregistré — réessaie.</StatusMessage>
               <StatusMessage tone="success">Code postal enregistré.</StatusMessage>
               <StatusMessage tone="info">Ajouté à la liste.</StatusMessage>
+            </div>
+          </Demo>
+          <Demo label="icon={null} · live={false} (read, not announced — a count beside a list) · as='span' (2026-11-05: nine hand-rolled role=status lines folded onto it; status-rule.test.ts refuses a new raw role=status|alert)">
+            <div>
+              <StatusMessage icon={null} live={false}>12 résultats</StatusMessage>
+              <p className="mono">En ligne : <StatusMessage as="span" tone="success" live={false}>synchronisé</StatusMessage></p>
             </div>
           </Demo>
         </>

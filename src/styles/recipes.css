@@ -1255,10 +1255,6 @@
   margin: 0.5rem 0 0.1rem;
   font-size: 1rem;
 }
-.read-review__empty {
-  color: var(--ink-faint);
-  margin: 0;
-}
 .read-review__line {
   display: flex;
   align-items: flex-start; /* memo boxes grow — pin the flag/chip to the first line */

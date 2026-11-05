@@ -477,21 +477,21 @@ export function RecipesTab({
           {recipeOrder.length === 0 ? (
             // The book has recipes — the FILTERS hid them all. Say so (instead of
             // the misleading "no recipes yet") and offer the one-tap way back.
-            <div className="board__empty mono">
-              <p>{t.recipes.noMatch}</p>
-              <button type="button" className="btn btn--ghost mono" onClick={clearAll}>
+            <EmptyState size="cell">
+              {t.recipes.noMatch}{' '}
+              <button type="button" className="btn btn--ghost btn--sm mono" onClick={clearAll}>
                 {t.recipes.clearFilters}
               </button>
-            </div>
+            </EmptyState>
           ) : groups && groups.byTag.length === 0 && groups.untagged.length === 0 ? (
             // Collections view with a selection that no recipe matches (e.g. a sort
             // pill filtered them out) — same calm "nothing here, clear it" exit.
-            <div className="board__empty mono">
-              <p>{t.recipes.noMatch}</p>
-              <button type="button" className="btn btn--ghost mono" onClick={clearAll}>
+            <EmptyState size="cell">
+              {t.recipes.noMatch}{' '}
+              <button type="button" className="btn btn--ghost btn--sm mono" onClick={clearAll}>
                 {t.recipes.clearFilters}
               </button>
-            </div>
+            </EmptyState>
           ) : groups ? (
             // "Collections" view — one section per tag, untagged under "Autres".
             <>

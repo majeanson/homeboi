@@ -428,11 +428,6 @@
 .combobox__badge.is-ready {
   color: var(--sage-deep);
 }
-.combobox__empty {
-  color: var(--ink-faint);
-  margin: 0.2rem 0;
-}
-
 .operator__check {
   display: flex;
   align-items: center;

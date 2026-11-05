@@ -1,3 +1,4 @@
+import { StatusMessage } from '../components/StatusMessage'
 import { Avatar } from '../components/Avatar'
 import { Suspense, lazy, useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { isBoardStale } from '../lib/online'
@@ -1728,7 +1729,7 @@ export function Board() {
           say so AT THE TOP with "how old" (the newest successful fetch), not as
           a stampless footnote below every card. Calm: one quiet mono line. */}
       {stale && (
-        <p className="board__synced mono" role="status">
+        <StatusMessage icon={null} className="board__synced">
           {t.board.offline}
           {staleStamp && (
             <>
@@ -1736,7 +1737,7 @@ export function Board() {
               {t.offline.stale.toLowerCase()} {staleStamp}
             </>
           )}
-        </p>
+        </StatusMessage>
       )}
 
       {/* No board SectionIntro: the board is the home screen — the first-run tour

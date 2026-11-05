@@ -638,7 +638,7 @@
   padding: 0.5rem 1rem;
   font-size: var(--text-sm);
   color: var(--ink-soft);
-  text-align: center;
+  justify-content: center;
   background: var(--terracotta-wash);
   border-bottom: 1px solid var(--line);
 }

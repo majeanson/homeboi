@@ -156,9 +156,9 @@ export function SharePage() {
           written, there is nothing to re-file. The TEXT branch shows CaptureForm's
           own routed line instead, which is the whole point of mounting it. */}
       {added && imageBlob ? (
-        <p className="share-page__done mono" role="status">
-          <Icon name="check-bold" size={18} /> {t.share.done}
-        </p>
+        <StatusMessage tone="success" className="share-page__done">
+          {t.share.done}
+        </StatusMessage>
       ) : (
         <>
           <p className="lead">{imageBlob ? t.share.photoLead : t.share.lead}</p>

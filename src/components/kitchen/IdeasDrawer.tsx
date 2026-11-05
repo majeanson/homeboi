@@ -1,3 +1,4 @@
+import { StatusMessage } from '../StatusMessage'
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -518,9 +519,9 @@ function AiChip({
         </button>
       </Cluster>
       {suggest.busy && (
-        <p className="kitchen__ai-waking mono" role="status">
-          ⏳ {t.kitchen.aiWaking}
-        </p>
+        <StatusMessage icon="clock-bold" className="kitchen__ai-waking">
+          {t.kitchen.aiWaking}
+        </StatusMessage>
       )}
       {suggest.aiOff && <EmptyState>{t.kitchen.suggestAiOff}</EmptyState>}
       {!suggest.busy && !suggest.aiOff && suggest.batch.length === 0 && (
