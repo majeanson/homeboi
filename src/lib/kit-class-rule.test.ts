@@ -39,6 +39,7 @@ const OWNED = new Map<string, { owner: string; hint: string }>([
 // (token, file) → why this file may spell it. An entry says what makes hosting the
 // component impossible, not merely inconvenient.
 const ALLOWED = new Map<string, string>([
+  ['loading @ router.tsx', 'the door’s route fallback: a static import of components/Fallback (lazy-shared chunk) dragged 208 KB + Icon/guideContent/DrawPad into boot — check-bundle, CI 42100196401'],
   ['avatar @ components/SectionAvatar.tsx', 'a SECTION’s icon disc (not a person) that borrows the avatar box for its size — a different primitive sharing the shell class on purpose'],
 ])
 

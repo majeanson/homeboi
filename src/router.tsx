@@ -1,4 +1,4 @@
-import { Loading } from './components/Fallback'
+import { useT } from './i18n'
 import { lazy, Suspense, useEffect } from 'react'
 import { Routes, Route, Navigate, useSearchParams, useLocation } from 'react-router-dom'
 import { Home } from './pages/Home'
@@ -130,6 +130,16 @@ const StickerWallPage = lazy(() => import('./pages/StickerWallPage').then((m) =>
 // Dev-only component gallery (unlinked). A live catalogue of the shared primitives
 // across the four presentation axes — see src/pages/DevKit.tsx.
 const DevKit = lazy(() => import('./pages/DevKit').then((m) => ({ default: m.DevKit })))
+
+// The route fallback spells the shared .loading markup BY HAND, on purpose: the door
+// (this file's static closure) must not import components/Fallback — that module lives
+// in the lazy-shared chunk with the hub's primitives, and one static import of it dragged
+// 208 KB (+ Icon, guideContent, DrawPad) into boot (check-bundle went 9 → 34 chunks,
+// CI 42100196401, 2026-11-05). kit-class-rule.test.ts lists this file for that reason.
+function Loading() {
+  const t = useT()
+  return <p className="loading mono">{t.common.loading}</p>
+}
 
 // Legacy hub routes live on as query-preserving redirects — the plain <Navigate>
 // precedent (e.g. the /kid redirect below) drops search params, which breaks a
