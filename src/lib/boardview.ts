@@ -19,6 +19,8 @@
 // Persisted to localStorage; the corner toggle on the board flips it.
 export type BoardView = 'bento' | 'semaine' | 'month' | 'annee'
 
+export const BOARD_VIEWS: readonly BoardView[] = ['bento', 'semaine', 'month', 'annee']
+
 const KEY = 'babillard-boardview'
 
 /** « Grille » — where a fresh device lands, and where re-tapping the board's tab returns (HubLayout retapTab). */

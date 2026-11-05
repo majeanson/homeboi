@@ -1,3 +1,4 @@
+import { useTabParam } from '../../lib/tabParam'
 import { SettingsRow } from './SettingsRow'
 import { IconButton } from '../IconButton'
 import { useState } from 'react'
@@ -37,9 +38,10 @@ import type { Chore, HomeProject } from './types'
 // share ONE table (kind-filtered); chores keep their own (tasks). One calm pill
 // row, "one job at a time".
 type ChoresTab = 'corvees' | 'projets' | 'entretien'
+const CHORES_TABS = ['corvees', 'projets', 'entretien'] as const
 export function ChoresTabPanel({ chores, onChange, help }: { chores: Chore[]; onChange: () => void; help?: HelpMode }) {
   const o18n = useOperatorT()
-  const [sub, setSub] = useState<ChoresTab>('corvees')
+  const [sub, setSub] = useTabParam<ChoresTab>('corvee', 'corvees', CHORES_TABS)
   return (
     <>
       <SubTabs<ChoresTab>

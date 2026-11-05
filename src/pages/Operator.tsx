@@ -234,6 +234,14 @@ export function Operator() {
     const focus = params.get('focus')!
     let tries = 0
     const timer = window.setInterval(() => {
+      // Tapped away first? Réglages stays MOUNTED while a lazy scene's chunk loads, so
+      // this timer outlives the tap, and its setParams below would navigate back here:
+      // the tap undid itself (5 runs in 6 on a quick tap, 2026-11-05 — for months the
+      // « known flake » of config-panels, misread as a cold compile).
+      if (window.location.pathname !== '/settings') {
+        window.clearInterval(timer)
+        return
+      }
       const el = document.getElementById(`op-${focus}`)
       tries += 1
       if (!el && tries < 50) return
@@ -261,8 +269,10 @@ export function Operator() {
         }, 400)
       }
       setParams(
-        (prev) => {
-          const next = new URLSearchParams(prev)
+        () => {
+          // The LIVE url, not the render's: a param set since (a tab tapped inside this
+          // 120 ms window, ?corvee=) would otherwise be overwritten and the tab flip back.
+          const next = new URLSearchParams(window.location.search)
           next.delete('focus')
           // The pill this focus DERIVED (a link may name only the section — see the
           // sub fallback below) is pinned now, or dropping the param would fold the

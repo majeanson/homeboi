@@ -1,3 +1,4 @@
+import { useTabParam } from '../lib/tabParam'
 import { CheckDisc } from '../components/CheckDisc'
 import { IconButton } from '../components/IconButton'
 import { Fragment, useRef, useState } from 'react'
@@ -92,6 +93,7 @@ type BoardListData = { list: ListRow[]; members?: ListMember[] }
 // Per-DEVICE list sort choice (not a household setting — a phone may want aisle
 // order while the wall keeps the hand-dragged one). 'mine' = the dragged order,
 // 'aisle' = grouped/sorted by the household's aisle order.
+const LIST_SORTS = ['mine', 'aisle'] as const
 const LIST_SORT_KEY = 'liste-sort'
 
 // The zoomed clipping's caption — the staged deal spelled out the way the cashier
@@ -448,13 +450,15 @@ export function Liste() {
   const aisleOverrides = useAisleOverrides()
   // Device-local: print each row’s aisle under its name, or not (default not).
   const showAisleTags = useAisleTagsShown()
-  const [sortMode, setSortMode] = useState<'mine' | 'aisle'>(() => {
+  // In the URL (?tri=); localStorage is the remembered default (solidify 4.1).
+  const [rememberedSort] = useState<'mine' | 'aisle'>(() => {
     try {
       return localStorage.getItem(LIST_SORT_KEY) === 'aisle' ? 'aisle' : 'mine'
     } catch {
       return 'mine'
     }
   })
+  const [sortMode, setSortMode] = useTabParam<'mine' | 'aisle'>('tri', rememberedSort, LIST_SORTS)
   function chooseSort(m: 'mine' | 'aisle') {
     setSortMode(m)
     try {

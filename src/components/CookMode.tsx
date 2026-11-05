@@ -1,3 +1,4 @@
+import { useTabParam } from '../lib/tabParam'
 import { SubTabs } from './SubTabs'
 import { Segmented } from './Segmented'
 import { IconButton } from './IconButton'
@@ -77,6 +78,8 @@ type Stage =
 // switch — a pasta timer set on dish A still chimes while you read dish B); `hidden`
 // display:none-s the inactive ones and no-ops their modal/keyboard wiring.
 type Siblings = { titles: string[]; active: number; onSwitch: (i: number) => void }
+
+const SPLIT_TABS = ['ings', 'steps'] as const
 
 export function CookMode({
   recipe,
@@ -187,7 +190,7 @@ export function CookMode({
   const canPairIngs = recipe.ingredients.length > 0 && recipe.steps.length > 0
   // Split view: on a narrow phone the two panes collapse to a tab pair (ingredients
   // OR steps); on a tablet both show side by side and this is ignored (CSS).
-  const [splitTab, setSplitTab] = useState<'ings' | 'steps'>('ings')
+  const [splitTab, setSplitTab] = useTabParam<'ings' | 'steps'>('volet', 'ings', SPLIT_TABS)
   // Several one-tap timers can run at once (start the pasta, then come back and
   // start the sauce). Each OUTLIVES step navigation — you set it then move on. The
   // countdown engine + chime/vibrate-on-finish + rail are the shared useCookTimers

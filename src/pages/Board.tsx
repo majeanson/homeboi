@@ -36,7 +36,7 @@ import { useEventPeekActions } from '../components/detail/EventPeekActions'
 import { useSurface } from '../lib/surface'
 import { useProfile } from '../lib/profile'
 import { ProfilePicker } from '../components/ProfilePicker'
-import { readBoardView, saveBoardView, type BoardView } from '../lib/boardview'
+import { BOARD_VIEWS, readBoardView, saveBoardView, type BoardView } from '../lib/boardview'
 import { timeOfDay } from '../lib/timeofday'
 import { isDaypartAuto } from '../lib/theme'
 import { momentFocus } from '../lib/momentFocus'
@@ -228,7 +228,10 @@ export function Board() {
   // Resolves a tapped meal → its saved recipe, so the tap can jump straight to it.
   const recipeFor = useRecipeForMeal()
   // The board layout for this device (bento = Grille | month = Mois), remembered locally.
-  const [view, setView] = useState<BoardView>(() => readBoardView())
+  // The view lives in the URL (?view=, linkable, survives a reload); localStorage is the
+  // remembered default a bare /board opens on (solidify 4.1).
+  const [rememberedView] = useState<BoardView>(() => readBoardView())
+  const [view, setView] = useTabParam<BoardView>('view', rememberedView, BOARD_VIEWS)
   // Pull « Mois » and « Année » down once the board is quiet, so the first tap on the
   // view toggle does not wait for the network (see warmCalendars above).
   useEffect(warmCalendars, [])

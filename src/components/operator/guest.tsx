@@ -1,3 +1,4 @@
+import { useTabParam } from '../../lib/tabParam'
 import { SettingsRow } from './SettingsRow'
 import { useEffect, useMemo, useState, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -151,6 +152,8 @@ const GAP_LABEL_KEY: Record<HandoffGap, 'missingEmergency' | 'missingToKnow' | '
 // gap link scrolls to it instead of navigating (it's already on this page).
 const SHARE_INFO_EDITOR_ID = 'guest-share-info-editor'
 
+const SHARE_TABS = ['phone', 'salon'] as const
+
 export function GuestSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const navigate = useNavigate()
@@ -160,7 +163,7 @@ export function GuestSection({ help }: { help?: HelpMode }) {
   const ro = isGuest()
   // The two ways to share, as sub-tabs ("one job at a time"): a link for someone's
   // PHONE (the typed read-only kinds), or a face cast to the living-room TV.
-  const [subTab, setSubTab] = useState<'phone' | 'salon'>('phone')
+  const [subTab, setSubTab] = useTabParam<'phone' | 'salon'>('partage', 'phone', SHARE_TABS)
   // Default to the safe curated « babysitter » link, NOT the read-everything Démo —
   // so the pre-selected option can't leak the whole household (REVIEW-PASS §518).
   //

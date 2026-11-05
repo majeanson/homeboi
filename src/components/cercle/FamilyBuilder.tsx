@@ -1,3 +1,4 @@
+import { useTabParam } from '../../lib/tabParam'
 import { Field } from '../Field'
 import { IconButton } from '../IconButton'
 import { EmptyState } from '../EmptyState'
@@ -32,6 +33,7 @@ import { THING_DEFAULTS } from '../../lib/things'
 const ACCENT = '#2A8F85' // cercle turquoise
 const PET_COLOUR = THING_DEFAULTS.pet.colour // the pet amber — one source in lib/things
 type Mode = 'bands' | 'matrix'
+const FAMILY_MODES = ['bands', 'matrix'] as const
 type Slot = FamilyBand | 'tray'
 
 // Build a whole family's relationships in one place instead of one link at a time.
@@ -99,7 +101,7 @@ export function FamilyBuilder({
   })
   const [pick, setPick] = useState<Record<string, RelationshipType>>({})
   const [anchor, setAnchor] = useState<string | null>(null)
-  const [mode, setMode] = useState<Mode>('bands')
+  const [mode, setMode] = useTabParam<Mode>('mode', 'bands', FAMILY_MODES)
   const [name, setName] = useState(group?.name ?? '')
   const [addText, setAddText] = useState('')
   const [newName, setNewName] = useState('')

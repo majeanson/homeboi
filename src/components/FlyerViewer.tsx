@@ -1,3 +1,4 @@
+import { useTabParam } from '../lib/tabParam'
 import { IconButton } from './IconButton'
 import { Loading } from './Fallback'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -110,6 +111,8 @@ export async function prefetchFlyer(qc: QueryClient, flyerId: number): Promise<v
   await warmImageCache(data.items.map((it) => proxied(it.image)))
 }
 
+const FLYER_VIEWS = ['offres', 'plan'] as const
+
 export function FlyerViewer({
   flyerId,
   highlightId,
@@ -194,7 +197,7 @@ export function FlyerViewer({
   // - 'plan': the position-faithful page reconstruction — useful in-store to find
   //   where an item sits, and the default: it reads as the real flyer. We also open
   //   straight to it when launched on a specific item (highlightId).
-  const [view, setView] = useState<'offres' | 'plan'>('plan')
+  const [view, setView] = useTabParam<'offres' | 'plan'>('feuille', 'plan', FLYER_VIEWS)
 
   // Manual "download for offline": pull every clipping through the same-origin
   // proxy so the service worker caches it, before you lose wifi (the store). Just

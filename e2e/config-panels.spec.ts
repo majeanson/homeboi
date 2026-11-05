@@ -272,15 +272,12 @@ test('a list row opens its editor scene', async ({ page }) => {
   // The ✏ is the door (the name is its mouse-convenience twin) — same scene.
   await section.getByRole('button', { name: 'Modifier — Avant de partir' }).click()
   await expect(page).toHaveURL(/\/liste-modele\/tpl1/)
-  // The scene is a LAZY route, and this is the suite's first visit to it: on a cold CI
-  // Vite the chunk compiles on demand, and React Router keeps the Réglages page on
-  // screen meanwhile — the default 5 s ran out and read as « element not found »
-  // (2026-09-23, CI run 35915715686; reproduced with a 6 s delay on the chunk). The
-  // same first-visit budget the other scene specs give (meal-order, kitchen-meal-plan).
-  // 15 s was not enough when this test ran EARLY in a shard on CI (run 42074538800,
-  // 2026-11-05) nor locally as the 11th test of a cold run — and it passes alone in 7 s,
-  // so the cost is the chunk, not the scene. Doubled.
-  await expect(page.getByLabel('Ajouter un élément')).toBeVisible({ timeout: 30_000 })
+  // The scene is a LAZY route: 15 s is the first-visit budget (meal-order, kitchen-meal-plan).
+  await expect(page.getByLabel('Ajouter un élément')).toBeVisible({ timeout: 15_000 })
+  // …and it STAYS. This test's reds were read as a cold compile until 2026-11-05: Réglages
+  // stays mounted while the chunk loads, and the ?focus= timer navigated back to it.
+  await page.waitForTimeout(400)
+  await expect(page).toHaveURL(/\/liste-modele\/tpl1/)
 })
 
 test('deleting a list template is HELD behind « Annuler » — the row hides at once, the DELETE waits, undo is the same row', async ({ page }) => {
