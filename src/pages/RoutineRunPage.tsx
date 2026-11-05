@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { Navigate, useParams } from 'react-router-dom'
+import { Navigate, useNavigate, useParams } from 'react-router-dom'
+import { useEscapeKey } from '../lib/sceneNav'
 import { api, isUnauthorized } from '../lib/api'
 import { live } from '../lib/query'
 import { ROUTINES_KEY } from '../lib/queryKeys'
@@ -15,6 +16,10 @@ import { RoutinePlayer, type PlayerRoutine } from '../components/RoutinePlayer'
 export function RoutineRunPage() {
   const ro = isGuest()
   const { id } = useParams()
+  const nav = useNavigate()
+  // The player's exit is a Link (a touch door); Escape is its keyboard mirror — every
+  // other full-screen scene already has one (2026-11-05, the one scene without).
+  useEscapeKey(() => nav('/maison'))
   const { data, error } = useQuery({
     queryKey: ROUTINES_KEY,
     queryFn: () => api<{ routines: PlayerRoutine[] }>('routines'),

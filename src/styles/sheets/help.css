@@ -297,6 +297,12 @@
   font-size: 24px;
   margin: 0 0 4px;
 }
+/* Sheet's own `title` prop (2026-11-05): the heading every sheet used to render by
+   hand, now the dialog's accessible name too. Same ramp as the modal title. */
+.sheet__title {
+  margin: 0 0 0.8rem;
+  padding-right: 2.4rem; /* clear the floated ✕ */
+}
 /* Drilled-in sheet header: the picked action's name, with a ← back to the chooser.
    The name is an anonymous flex item beside the arrow, so a long one wraps under the
    sheet's floated ✕ rather than pushing the row past its right edge. */

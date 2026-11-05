@@ -50,7 +50,11 @@
 /* The price-match proof, the list-item edit, and quick-add are now full-screen
    .scene routes (see above) — no more bottom sheets. Only the shared scene title
    style remains, reused by those deals scenes and DealsBrowser. */
-.pm-sheet__title {
+/* `.scene__head-title` is the name since 2026-11-05 (SceneHead renders it); the
+   `.pm-sheet__title` alias stays until the five hand-copied heads (FamilyWindow,
+   Handoff, IntakeForm, Postbox, Welcome) fold onto SceneHead in wave 3. */
+.pm-sheet__title,
+.scene__head-title {
   font-family: var(--display);
   font-weight: 800;
   /* ONE heading ramp with the hub's `.greet` (today.css), bmad/12 #14. Both are

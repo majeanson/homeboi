@@ -2849,6 +2849,12 @@ export function DevKit() {
           <Demo label="title + leading glyph, no help">
             <SceneHead title="Nouvel événement" icon="calendar-dots-bold" onClose={() => {}} />
           </Demo>
+          <Demo label="`backTo` — a ← on the left instead of the ✕ (a scene that reads as a page you arrived at)">
+            <SceneHead title="Le voyage à Québec" subtitle="12 → 15 juillet" backTo="/dev/kit" />
+          </Demo>
+          <Demo label="no exit at all — a public page reached by a link (the family window, the handoff)">
+            <SceneHead title="La fenêtre de la famille" icon="users-three-bold" />
+          </Demo>
         </>
       ),
     },
@@ -3347,16 +3353,28 @@ export function DevKit() {
       file: 'components/Modal.tsx',
       kw: 'modal dialog overlay dialogue',
       render: () => (
-        <Demo label="centred dialog (Esc / backdrop / ✕)">
+        <Demo label="centred dialog (Esc / backdrop / ✕ / the phone's back button) — `title` is its accessible name, `footer` the ONE button row">
           <div>
             <button className="btn" onClick={() => setModalOpen(true)}>
               Ouvrir le modal
             </button>
-            <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Un dialogue partagé">
-              <p>Esc, le fond, ou le ✕ ferment. Scroll-lock + focus-trap via useModal.</p>
-              <button className="btn btn--primary" onClick={() => setModalOpen(false)}>
-                Compris
-              </button>
+            <Modal
+              open={modalOpen}
+              onClose={() => setModalOpen(false)}
+              title="Un dialogue partagé"
+              size="sm"
+              footer={
+                <>
+                  <button className="btn btn--ghost" onClick={() => setModalOpen(false)}>
+                    Annuler
+                  </button>
+                  <button className="btn btn--primary" onClick={() => setModalOpen(false)}>
+                    Compris
+                  </button>
+                </>
+              }
+            >
+              <p>Esc, le fond, le ✕ ou le bouton retour du téléphone ferment. Scroll-lock + focus-trap via useModal. `size`: sm · md · full.</p>
             </Modal>
           </div>
         </Demo>
@@ -3563,14 +3581,13 @@ export function DevKit() {
       file: 'components/Sheet.tsx',
       kw: 'sheet bottom drawer swipe grab tiroir',
       render: () => (
-        <Demo label="bottom sheet (scrim / swipe-down / ✕)">
+        <Demo label="bottom sheet (scrim / swipe-down / ✕ / the phone's back button) — `title` is its heading AND its accessible name">
           <div>
             <button className="btn" onClick={() => setSheetOpen(true)}>
               Ouvrir la feuille
             </button>
-            <Sheet open={sheetOpen} onClose={() => setSheetOpen(false)} ariaLabel="Démo de feuille">
-              <h3>Une feuille partagée</h3>
-              <p>Glisse la poignée vers le bas, tape le fond, Esc ou le ✕ ferment. Scroll-lock + focus-trap + swipe via useModal/useSwipeToDismiss.</p>
+            <Sheet open={sheetOpen} onClose={() => setSheetOpen(false)} title="Une feuille partagée">
+              <p>Glisse la poignée vers le bas, tape le fond, Esc, le ✕ ou le bouton retour ferment. Scroll-lock + focus-trap + swipe via useModal/useSwipeToDismiss.</p>
               <button className="btn btn--primary btn--block" onClick={() => setSheetOpen(false)}>
                 Compris
               </button>

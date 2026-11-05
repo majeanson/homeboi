@@ -54,7 +54,7 @@ function ZoomOverlay({ src, alt, caption, onClose }: { src: string; alt: string;
   const overlayRef = useRef<HTMLDivElement>(null)
   const imgRef = useRef<HTMLImageElement>(null)
   // Esc-to-close + background scroll lock + focus trap, shared with every dialog.
-  useModal(overlayRef, onClose, { open: true })
+  useModal(overlayRef, onClose, { open: true, history: true })
 
   const pointers = useRef(new Map<number, { x: number; y: number }>())
   const tf = useRef({ scale: 1, tx: 0, ty: 0 })

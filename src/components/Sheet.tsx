@@ -1,4 +1,4 @@
-import { useRef, type ReactNode } from 'react'
+import { useId, useRef, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { useModal } from '../lib/useModal'
 import { useSwipeToDismiss } from '../lib/useSwipeToDismiss'
@@ -19,6 +19,7 @@ import { Icon } from './Icon'
 export function Sheet({
   open,
   onClose,
+  title,
   ariaLabel,
   className,
   /** Render the top-right ✕. Default true; ProfilePicker passes false (it closes
@@ -30,6 +31,11 @@ export function Sheet({
 }: {
   open: boolean
   onClose: () => void
+  /** The sheet's heading, rendered as the first child and wired as its accessible name
+   *  (2026-11-05 — before, every sheet rendered its own `<h3>` and the dialog had a name
+   *  only when the caller remembered `ariaLabel`). Pass `ariaLabel` instead when the
+   *  sheet opens on content with no heading (a picker of faces). */
+  title?: ReactNode
   ariaLabel?: string
   /** Extra modifier on the sheet (e.g. `detail-sheet`, or a dynamic `help-armed`). */
   className?: string
@@ -43,8 +49,10 @@ export function Sheet({
 }) {
   const t = useT()
   const ref = useRef<HTMLDivElement>(null)
-  // Esc / scroll-lock / focus-trap, plus drag-the-grab-handle-down to dismiss.
-  useModal(ref, onClose, { open })
+  const titleId = useId()
+  // Esc / scroll-lock / focus-trap / the phone's back button, plus drag-the-grab-handle-
+  // down to dismiss.
+  useModal(ref, onClose, { open, history: true })
   useSwipeToDismiss(ref, onClose, { open })
 
   // Portal to <body>. The sheet is `position: fixed`, but a transformed ancestor
@@ -61,9 +69,15 @@ export function Sheet({
         className={'sheet' + (className ? ` ${className}` : '') + (open ? ' show' : '')}
         role="dialog"
         aria-modal="true"
-        aria-label={ariaLabel}
+        aria-labelledby={title != null ? titleId : undefined}
+        aria-label={title == null ? ariaLabel : undefined}
       >
         <div className="grab" aria-hidden="true" />
+        {title != null && (
+          <h3 id={titleId} className="sheet__title">
+            {title}
+          </h3>
+        )}
         {action ? (
           // With an `action`, the cluster takes over the ✕'s sticky-float corner so
           // both controls ride together (flex kills the ✕'s own float inside it).

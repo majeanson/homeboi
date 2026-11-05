@@ -52,7 +52,7 @@ export function FlippPager({
 }) {
   const t = useT()
   const ref = useRef<HTMLDivElement>(null)
-  useModal(ref, onClose)
+  useModal(ref, onClose, { history: true })
   const pick = picks[Math.min(index, picks.length - 1)]
   const url = pick ? flippItemUrl(pick.deal.id, postal) : null
   // The veil rides the URL: a new pick → loading again until its frame reports in.

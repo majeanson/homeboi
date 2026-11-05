@@ -66,7 +66,9 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
   const withInput = !!req && 'input' in req && !!req.input
   // Esc / scroll-lock / focus-trap; Esc resolves to "no" (same as Cancel).
   const cancel = useCallback(() => settle(withInput ? null : false), [settle, withInput])
-  useModal(dialogRef, cancel, { open: !!req })
+  // `history`: the phone's back button answers « non » — it closes the dialog, never the
+  // sheet or page that asked (useModal stacks the entries).
+  useModal(dialogRef, cancel, { open: !!req, history: true })
   // The field takes focus on open: the whole dialog exists to receive it.
   useEffect(() => {
     if (withInput) inputRef.current?.focus()

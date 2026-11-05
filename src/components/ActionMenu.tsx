@@ -85,7 +85,7 @@ export function ActionMenu({
   // null while measuring: the panel renders invisible for one layout pass so we
   // know its real size before placing it (labels vary; no magic width).
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null)
-  useModal(panelRef, () => setOpen(false), { open })
+  useModal(panelRef, () => setOpen(false), { open, history: true })
 
   // Measure the trigger + the panel, then place the panel: right-aligned to the
   // trigger, clamped inside the viewport, flipped above when the drop wouldn't

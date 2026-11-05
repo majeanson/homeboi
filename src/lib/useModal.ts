@@ -1,4 +1,4 @@
-import { useEffect, type RefObject } from 'react'
+import { useEffect, useRef, type RefObject } from 'react'
 
 // Shared behaviour every dialog/sheet should have, so the 11 overlays stop
 // drifting apart: Escape-to-close, a background scroll lock, and a focus trap
@@ -48,11 +48,99 @@ function unlockScroll(): void {
 // closes the flyer alone — not both at once.
 const escStack: Array<() => void> = []
 
+// One token per open overlay, so a stack of them (a confirm raised over a sheet) can
+// tell WHOSE history entry the back button just popped.
+let overlaySeq = 0
+
+// Pushes and pops happen in STRICT SEQUENCE. A pop is asynchronous (`history.back()`
+// settles on the next popstate), and an overlay that opens in the same tick another
+// closes — « Modifier » in a peek: the sheet goes, the dialog comes — would push its
+// entry just in time for the pending pop to take it away; the dialog's own listener
+// then read "my entry left the top" and closed it before anyone saw it (five e2e reds
+// on the first run of back-closes-overlay.spec, 2026-11-05). So every push waits for
+// the previous pop; the fallback timer only matters if a back never fires popstate,
+// and it keeps one odd browser from wedging every later overlay.
+let settled: Promise<void> = Promise.resolve()
+function popSentinel(): void {
+  settled = settled.then(
+    () =>
+      new Promise<void>((res) => {
+        let done = false
+        const finish = () => {
+          if (done) return
+          done = true
+          window.removeEventListener('popstate', finish)
+          res()
+        }
+        window.addEventListener('popstate', finish)
+        window.history.back()
+        setTimeout(finish, 500)
+      }),
+  )
+}
+
 export function useModal(
   ref: RefObject<HTMLElement | null>,
   onClose: () => void,
-  { open = true }: { open?: boolean } = {},
+  {
+    open = true,
+    history: ownsBack = false,
+  }: {
+    open?: boolean
+    /**
+     * Hold ONE same-URL history entry while open, so the phone's back button (Android
+     * hardware / gesture, the iOS edge swipe in a PWA) closes THIS overlay instead of
+     * leaving the page underneath it — what every sheet, peek, ⋯ menu and dialog did
+     * until 2026-11-05 (only DrawPad guarded, with a sentinel of its own that BLOCKS
+     * back rather than closing; it keeps that).
+     *
+     * Opt-IN, not default, because ten of the fourteen callers are ROUTED scenes
+     * (CookMode, CashierMode, NoteEditor, RecipeSheet…) where the router already owns
+     * the entry — a second one there would make back land on the same scene twice.
+     * The overlay shells pass it: Modal, Sheet, confirm, ActionMenu, ZoomableImg,
+     * FlyerViewer, FlippPager.
+     *
+     * Stacking: each open overlay pushes its own token; on popstate only the overlay
+     * whose token just LEFT the top closes (a confirm over a sheet: first back closes
+     * the confirm, the sheet stays). Closing by ✕ / Esc / scrim pops the entry back
+     * off if it is still on top; if the page navigated meanwhile (a sheet action that
+     * opens a scene), the entry is left alone — popping it would undo that navigation.
+     * React Router's own `{usr, key, idx}` state is spread into the entry so its
+     * popstate bookkeeping (delta / blockers) keeps reading a sane index.
+     */
+    history?: boolean
+  } = {},
 ): void {
+  // The back-button sentinel. `onClose` rides in a ref so a new callback identity on a
+  // re-render never pushes a second entry — the effect keys on `open` alone.
+  const onCloseRef = useRef(onClose)
+  useEffect(() => {
+    onCloseRef.current = onClose
+  })
+  useEffect(() => {
+    if (!open || !ownsBack) return
+    const token = ++overlaySeq
+    let pushed = false
+    let gone = false
+    const onPop = () => {
+      if (window.history.state?.__overlay !== token) onCloseRef.current()
+    }
+    void settled.then(() => {
+      if (gone) return // closed again before the previous pop had settled — never pushed
+      window.history.pushState({ ...(window.history.state ?? {}), __overlay: token }, '')
+      pushed = true
+      window.addEventListener('popstate', onPop)
+    })
+    return () => {
+      gone = true
+      if (!pushed) return
+      window.removeEventListener('popstate', onPop)
+      // Closed by the UI with our entry still on top → drop it, silently (listener off).
+      // If the page navigated meanwhile the top is the router's entry: leave it be.
+      if (window.history.state?.__overlay === token) popSentinel()
+    }
+  }, [open, ownsBack])
+
   // Escape — top of the stack wins.
   useEffect(() => {
     if (!open) return

@@ -231,6 +231,20 @@
   margin: 0 0 0.8rem;
   padding-right: 2rem;
 }
+/* The ONE button row (Modal's `footer` slot, a right-aligned Cluster — it wraps on a
+   narrow phone instead of overflowing). The bespoke `*-modal__actions` rows converge
+   here (wave 3 of plans/2026-11-05-SOLIDIFY.md). */
+.kit-modal__footer {
+  margin-top: 1rem;
+}
+/* `size`: sm = a yes/no, full = a tall picker or preview that wants the viewport. */
+.kit-modal--sm {
+  width: min(94vw, 360px);
+}
+.kit-modal--full {
+  width: min(96vw, 720px);
+  max-height: 94dvh;
+}
 .kit-modal__close {
   position: absolute;
   top: 0.6rem;

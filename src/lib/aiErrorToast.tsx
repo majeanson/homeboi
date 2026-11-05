@@ -56,8 +56,11 @@ export function AiErrorProvider({ children }: { children: ReactNode }) {
   return (
     <>
       {children}
+      {/* A toast, not a dialog: it takes no focus and traps nothing, so `alertdialog`
+          promised a11y behaviour it never had (overlay-rule.test.ts). `status` +
+          assertive says what it is — an announcement with a dismiss. */}
       {current && (
-        <div className="ai-error-toast" role="alertdialog" aria-live="assertive">
+        <div className="ai-error-toast" role="status" aria-live="assertive">
           <div className="ai-error-toast__body">
             <strong className="ai-error-toast__title">{t.aiErr.title}</strong>
             <span className="ai-error-toast__feature mono">{current.feature}</span>

@@ -138,7 +138,7 @@ export function FlyerViewer({
   const t = useT()
   const qc = useQueryClient()
   const overlayRef = useRef<HTMLDivElement>(null)
-  useModal(overlayRef, onClose)
+  useModal(overlayRef, onClose, { history: true })
   const [addedName, setAddedName] = useState<string | null>(null)
   // The list line the last add landed on (null = a new line, or not known yet).
   const [addedTo, setAddedTo] = useState<AddedTo>(null)
