@@ -1,3 +1,4 @@
+import { Field } from '../Field'
 import { useMemo, useRef, useState } from 'react'
 import { useT, useLang } from '../../i18n'
 import { useConfirm } from '../../lib/confirm'
@@ -238,10 +239,9 @@ export function TransferForm({
         </Cluster>
       </fieldset>
 
-      <label className="recur__row mono">
-        <span>{v.sentOn}</span>
+      <Field inline className="mono" label={v.sentOn}>
         <input className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-      </label>
+      </Field>
 
       {/* The heart of the screen: which due dates this payment covers. Past-and-
           unpaid ones arrive already ticked; a date this face has already sent for
@@ -311,8 +311,7 @@ export function TransferForm({
                 all and could not be logged (Marc, 2026-09-12: an entente anchored on
                 17 sept could not record the 14 août transfer). Promised in the plan for
                 this feature and missed on the first pass. */}
-            <label className="recur__row mono virements__otherdate">
-              <span>{v.addOtherDate}</span>
+            <Field inline className="mono virements__otherdate" label={v.addOtherDate}>
               <input
                 className="input"
                 type="date"
@@ -327,7 +326,7 @@ export function TransferForm({
                 }}
                 aria-label={`${p.title} — ${v.addOtherDate}`}
               />
-            </label>
+            </Field>
           </fieldset>
         )
       })}
@@ -435,10 +434,9 @@ export function TransferForm({
 
       {/* Usually filled on the way back from the bank — it is what ties this row to
           a statement, which is the whole reason to keep it. */}
-      <label className="recur__row mono">
-        <span>{v.reference}</span>
+      <Field inline className="mono" label={v.reference}>
         <input className="input" value={reference} onChange={(e) => setReference(e.target.value)} />
-      </label>
+      </Field>
       <p className="operator__seg-hint mono">{v.referenceHint}</p>
 
       {/* THE NOTE — folded, because it is the rarest field on a tall screen, and open

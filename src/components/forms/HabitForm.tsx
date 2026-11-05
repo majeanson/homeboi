@@ -1,3 +1,4 @@
+import { Field } from '../Field'
 import { useState } from 'react'
 import { useWrite } from '../../lib/write'
 import { useT } from '../../i18n'
@@ -190,10 +191,9 @@ export function HabitForm({
           shared tap-the-glyph trigger the carnets already use (searchable grid on
           a Modal surface); a div, not a label, so the picker button isn't a
           control nested in a label that would re-trigger it. */}
-      <div className="recur__row mono">
-        <span>{fn.iconLabel}</span>
+      <Field as="div" inline className="mono" label={fn.iconLabel}>
         <EmojiField value={icon} onPick={setIcon} ariaLabel={fn.iconLabel} fallback="🚶" />
-      </div>
+      </Field>
 
       {/* Whose habit? « Toute la maisonnée » (null) is the neutral default; a face
           makes it that member's, and private-ish on the check-in scene. */}
@@ -222,8 +222,7 @@ export function HabitForm({
 
       {counted && (
         <div className="habit-form__target">
-          <label className="recur__row mono">
-            <span>{kind === 'count' ? fn.targetLabel : fn.ceilingLabel}</span>
+          <Field inline className="mono" label={kind === 'count' ? fn.targetLabel : fn.ceilingLabel}>
             <input
               className="input recur__interval"
               type="text"
@@ -234,9 +233,8 @@ export function HabitForm({
               onChange={(e) => setTarget(e.target.value.replace(/\D/g, ''))}
               onBlur={() => setTarget(String(Math.max(1, Number(target) || 1)))}
             />
-          </label>
-          <label className="recur__row mono">
-            <span>{fn.unitLabel}</span>
+          </Field>
+          <Field inline className="mono" label={fn.unitLabel}>
             <input
               className="input"
               type="text"
@@ -244,7 +242,7 @@ export function HabitForm({
               placeholder={fn.unitPlaceholder}
               onChange={(e) => setUnit(e.target.value)}
             />
-          </label>
+          </Field>
         </div>
       )}
 
@@ -282,8 +280,7 @@ export function HabitForm({
 
           {cadence === 'week' && (
             <>
-              <label className="recur__row mono">
-                <span>{fn.weekTimesLabel}</span>
+              <Field inline className="mono" label={fn.weekTimesLabel}>
                 <input
                   className="input recur__interval"
                   type="number"
@@ -293,7 +290,7 @@ export function HabitForm({
                   onChange={(e) => setWeekTimes(Math.max(1, Math.min(7, Number(e.target.value) || 1)))}
                 />
                 <span>{fn.weekTimesUnit}</span>
-              </label>
+              </Field>
               <p className="habit-form__hint mono">{fn.weekHint}</p>
             </>
           )}
@@ -301,8 +298,7 @@ export function HabitForm({
           {/* « X fois par jour » — the daily twin of the weekly quota. */}
           {cadence === 'day' && (
             <>
-              <label className="recur__row mono">
-                <span>{fn.dayTimesLabel}</span>
+              <Field inline className="mono" label={fn.dayTimesLabel}>
                 <input
                   className="input recur__interval"
                   type="number"
@@ -312,7 +308,7 @@ export function HabitForm({
                   onChange={(e) => setDayTimes(Math.max(1, Math.min(MAX_DAY_TIMES, Number(e.target.value) || 1)))}
                 />
                 <span>{fn.dayTimesUnit}</span>
-              </label>
+              </Field>
               <p className="habit-form__hint mono">{fn.intradayHint}</p>
             </>
           )}
@@ -321,8 +317,7 @@ export function HabitForm({
               shows the exact times, because those ARE the reminders. */}
           {cadence === 'hours' && (
             <>
-              <label className="recur__row mono">
-                <span>{fn.everyHoursLabel}</span>
+              <Field inline className="mono" label={fn.everyHoursLabel}>
                 <input
                   className="input recur__interval"
                   type="number"
@@ -332,10 +327,9 @@ export function HabitForm({
                   onChange={(e) => setEveryHours(Math.max(1, Math.min(12, Number(e.target.value) || 1)))}
                 />
                 <span>{fn.everyHoursUnit}</span>
-              </label>
+              </Field>
               <Cluster className="habit-form__window">
-                <label className="recur__row mono">
-                  <span>{fn.windowFromLabel}</span>
+                <Field inline className="mono" label={fn.windowFromLabel}>
                   <input
                     className="input"
                     type="time"
@@ -346,9 +340,8 @@ export function HabitForm({
                       if (m !== null) setWindowStart(m)
                     }}
                   />
-                </label>
-                <label className="recur__row mono">
-                  <span>{fn.windowToLabel}</span>
+                </Field>
+                <Field inline className="mono" label={fn.windowToLabel}>
                   <input
                     className="input"
                     type="time"
@@ -359,7 +352,7 @@ export function HabitForm({
                       if (m !== null) setWindowEnd(m)
                     }}
                   />
-                </label>
+                </Field>
               </Cluster>
               {/* The moments the rhythm makes — the same list that will nudge. */}
               <p className="habit-form__moments mono">{fn.hoursMoments(slots.length, slots.map(minutesToHhmm).join(' · '))}</p>

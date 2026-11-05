@@ -1,3 +1,4 @@
+import { Field } from '../Field'
 import { EmptyState } from '../EmptyState'
 import { useMemo, useRef, useState } from 'react'
 import { useMediaUpload } from '../../lib/uploadMedia'
@@ -485,8 +486,7 @@ export function ContactForm({
 
 
       {members.length > 0 && (
-        <div className="cf__field">
-          <span className="cf__label">{t.cercle.relationWith}</span>
+        <Field as="div" label={t.cercle.relationWith}>
           <EntityCombobox<Member>
             value={memberText}
             onChange={(v) => {
@@ -499,13 +499,12 @@ export function ContactForm({
             submitIcon={null}
             typeaheadOnly
           />
-        </div>
+        </Field>
       )}
 
-      <label className="cf__field">
-        <span className="cf__label">{t.cercle.notes}</span>
+      <Field label={t.cercle.notes}>
         <textarea className="cf__input cf__textarea" value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
-      </label>
+      </Field>
 
       {/* Secondary details — gift ideas, tags, named-group membership, and the per-person
           photo gallery — collapsed behind a « Plus de détails » disclosure so the identity
@@ -519,10 +518,7 @@ export function ContactForm({
       >
         {/* #20: gift ideas — jot what to get them; it quietly surfaces next to their
             birthday on the board as the day nears, so a March idea isn't lost by then. */}
-        <label className="cf__field">
-          <span className="cf__label">
-            <Icon name="cake-bold" size={14} /> {t.cercle.giftIdeas}
-          </span>
+        <Field label={<><Icon name="cake-bold" size={14} /> {t.cercle.giftIdeas}</>}>
           <textarea
             className="cf__input cf__textarea"
             value={giftIdeas}
@@ -530,11 +526,10 @@ export function ContactForm({
             rows={2}
             placeholder={t.cercle.giftIdeasHint}
           />
-        </label>
+        </Field>
 
         {/* Tags */}
-        <div className="cf__field">
-          <span className="cf__label">{t.cercle.tags}</span>
+        <Field as="div" label={t.cercle.tags}>
           {tags.length > 0 && (
             <div className="cf__tags">
               {tags.map((tag) => (
@@ -561,16 +556,13 @@ export function ContactForm({
             placeholder={t.cercle.tags}
             ariaLabel={t.cercle.tags}
           />
-        </div>
+        </Field>
 
         {/* Named groups — toggle this person in/out of an explicit group (Famille
             Tremblay, Collègues…). Edit-only (needs an id to attach). The backend was
             already complete; this finally exposes it. */}
         {value && (
-          <div className="cf__field cf__groups">
-            <span className="cf__label">
-              <Icon name="users-three-bold" size={14} /> {t.cercle.groups}
-            </span>
+          <Field as="div" className="cf__groups" label={<><Icon name="users-three-bold" size={14} /> {t.cercle.groups}</>}>
             <div className="cf__groups-chips">
               {groupList.map((g) => (
                 <Chip key={g.id} selected={memberOf.has(g.id)} onClick={() => toggleGroup(g)}>
@@ -587,7 +579,7 @@ export function ContactForm({
             {creatingGroup && (
               <GroupForm autoFocus submitLabel={t.cercle.addGroup} onSubmit={createGroupAndAdd} onCancel={() => setCreatingGroup(false)} />
             )}
-          </div>
+          </Field>
         )}
 
         {/* Per-person photo gallery (ID card, screenshot, snapshot together). Edit-only —
@@ -603,7 +595,7 @@ export function ContactForm({
         <LinkComposer person={subject} people={people} links={unified.links} onChanged={() => qc.invalidateQueries({ queryKey: CERCLE_KEY })} />
       ) : (
         <div className="cf__rels">
-          <span className="cf__label">{t.cercle.relationships}</span>
+          <span className="field__label">{t.cercle.relationships}</span>
           <EmptyState size="cell">{t.cercle.saveFirstForLinks}</EmptyState>
         </div>
       )}

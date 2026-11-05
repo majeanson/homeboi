@@ -1,3 +1,4 @@
+import { Field } from './Field'
 import { useEffect, useState } from 'react'
 import { useT } from '../i18n'
 import { Chip } from './Chip'
@@ -49,8 +50,7 @@ export function RecurPicker({
 
   return (
     <div className="recur">
-      <label className="recur__row mono">
-        <span>{t.recur.repeat}</span>
+      <Field inline className="mono" label={t.recur.repeat}>
         <select className="input" value={freq} onChange={(e) => setFreq(e.target.value)}>
           <option value="none">{noneLabel ?? t.recur.none}</option>
           <option value="daily">{t.recur.daily}</option>
@@ -58,11 +58,10 @@ export function RecurPicker({
           <option value="monthly">{t.recur.monthly}</option>
           <option value="yearly">{t.recur.yearly}</option>
         </select>
-      </label>
+      </Field>
 
       {value && (
-        <label className="recur__row mono">
-          <span>{t.recur.every[value.freq]}</span>
+        <Field inline className="mono" label={t.recur.every[value.freq]}>
           <input
             className="input recur__interval"
             type="text"
@@ -85,7 +84,7 @@ export function RecurPicker({
             }}
           />
           <span className="recur__unit">{(value.interval > 1 ? t.recur.unitPlural : t.recur.unit)[value.freq]}</span>
-        </label>
+        </Field>
       )}
 
       {value?.freq === 'weekly' && (

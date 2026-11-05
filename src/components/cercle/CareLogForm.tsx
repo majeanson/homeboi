@@ -1,3 +1,4 @@
+import { Field } from '../Field'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../../i18n'
@@ -104,13 +105,11 @@ export function CareLogForm({
 
   return (
     <form className="operator__inline-form" onSubmit={submit}>
-      <label className="recur__row mono">
-        <span>{c.logDate}</span>
+      <Field inline className="mono" label={c.logDate}>
         <input className="input" type="date" value={at} onChange={(e) => setAt(e.target.value)} aria-label={c.logDate} />
-      </label>
+      </Field>
 
-      <label className="recur__row mono">
-        <span>{c.logKind}</span>
+      <Field inline className="mono" label={c.logKind}>
         <select className="input" value={kind} onChange={(e) => setKind(e.target.value as CareLog['kind'])} aria-label={c.logKind}>
           {LOG_KINDS.map((k) => (
             <option key={k} value={k}>
@@ -118,15 +117,14 @@ export function CareLogForm({
             </option>
           ))}
         </select>
-      </label>
+      </Field>
 
       <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder={c.logTitle} aria-label={c.logTitle} />
       <textarea className="input" value={note} onChange={(e) => setNote(e.target.value)} rows={2} placeholder={c.logNote} aria-label={c.logNote} />
 
-      <label className="recur__row mono">
-        <span>{c.cost}</span>
+      <Field inline className="mono" label={c.cost}>
         <input className="input" inputMode="decimal" value={cost} onChange={(e) => setCost(e.target.value)} placeholder={c.costPh} aria-label={c.cost} style={{ maxWidth: '8rem' }} />
-      </label>
+      </Field>
 
       {/* Installer / servicer — pick an existing cercle business (optional). */}
       <EntityCombobox<Business>

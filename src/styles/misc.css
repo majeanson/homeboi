@@ -217,8 +217,10 @@
   flex-direction: column;
   gap: 0.4rem;
 }
-.recur__row {
-  display: flex;
+/* The INLINE field — label beside the control (Field inline; was .recur__row until
+   2026-11-05, solidify 3.1). Lives here, not in core.css, for the override order below. */
+.field--inline {
+  flex-direction: row;
   align-items: center;
   gap: 0.5rem;
 }
@@ -229,10 +231,10 @@
    phones — and was blowing these label+select rows out of the form. misc.css loads
    after the pages/* block, so the override holds. Keeps RecurPicker / LeadPicker / chore-start
    date rows identical at every width. */
-.recur__row > span {
+.field--inline > span {
   flex: 0 0 auto;
 }
-.recur__row .input {
+.field--inline .input {
   flex: 1 1 0;
   min-width: 0;
 }
@@ -253,7 +255,7 @@
    Measured 2026-09-14; guarded by e2e/composer-fit.spec.ts « a date field is never
    narrower than the control needs », which clones the control to ask the BROWSER how
    wide it wants to be rather than pinning a number that rots. */
-.recur__row .input[type='date'] {
+.field--inline .input[type='date'] {
   flex: 1 1 auto;
   min-width: 10.5rem;
 }
@@ -263,10 +265,10 @@
    check, which is the documented trap (CLAUDE.md « Horizontal overflow »), and it read
    as « the app can't do every 2 weeks » (Marc, 2026-09-12). The unit may shrink, and
    the row may wrap rather than bleed. */
-.recur__row {
+.field--inline {
   flex-wrap: wrap;
 }
-.recur__row > span.recur__unit {
+.field--inline > span.recur__unit {
   flex: 0 1 auto;
   min-width: 0;
 }

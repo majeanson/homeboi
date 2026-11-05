@@ -1,3 +1,4 @@
+import { Field } from '../Field'
 import { useState } from 'react'
 import { useWrite } from '../../lib/write'
 import { useLang, useT } from '../../i18n'
@@ -131,8 +132,7 @@ export function HomeProjectForm({
           </Chip>
         ))}
       </div>
-      <label className="recur__row mono">
-        <span>{o18n.home.budgetLabel}</span>
+      <Field inline className="mono" label={o18n.home.budgetLabel}>
         <input
           className="input"
           inputMode="decimal"
@@ -140,7 +140,7 @@ export function HomeProjectForm({
           onChange={(e) => setBudget(e.target.value)}
           placeholder={o18n.home.budgetPlaceholder}
         />
-      </label>
+      </Field>
       <textarea
         className="input"
         value={notes}
@@ -150,10 +150,9 @@ export function HomeProjectForm({
         aria-label={o18n.home.notesLabel}
       />
       <ColorPicker value={color} onChange={setColor} label={o18n.colorLabel} />
-      <label className="recur__row mono">
-        <span>{o18n.home.dateLabel}</span>
+      <Field inline className="mono" label={o18n.home.dateLabel}>
         <input className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-      </label>
+      </Field>
       {/* Seasonal cadence presets (Entretien only) — one tap fills date + recurrence;
           no new wire format, just sugar over the shared RecurPicker value. */}
       {kind === 'upkeep' && (

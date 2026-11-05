@@ -1,3 +1,4 @@
+import { Field } from '../components/Field'
 // B-11 (bmad/10) — voyage.css moved out of the eager shell (position-immaterial
 // scene classes); load it whenever this page renders instead.
 import '../styles/voyage.css'
@@ -291,33 +292,33 @@ function VoyageForm({ trip, faces, onClose }: { trip?: Trip; faces: MemberFace[]
     <div className="scene" aria-label={editing ? t.voyage.editTrip : t.voyage.newTrip}>
       <SceneHead title={editing ? t.voyage.editTrip : t.voyage.newTrip} card="voyage" onClose={onClose} closeLabel={t.common.close} />
       <div className="scene__body voyage-form">
-        <label className="voyage-form__label mono">{t.voyage.tripName}</label>
+        <Field className="mono" label={t.voyage.tripName}>
         <input
           className="input"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder={t.voyage.tripNamePlaceholder}
           aria-label={t.voyage.tripName}
-        />
-        <label className="voyage-form__label mono">{t.voyage.destination}</label>
+        /></Field>
+        <Field className="mono" label={t.voyage.destination}>
         <input
           className="input"
           value={destination}
           onChange={(e) => setDestination(e.target.value)}
           placeholder={t.voyage.destinationPlaceholder}
           aria-label={t.voyage.destination}
-        />
+        /></Field>
         <div className="voyage-form__dates">
           <span className="voyage-form__date">
-            <label className="voyage-form__label mono">{t.voyage.startDate}</label>
-            <input className="input" type="date" value={start} max={end || undefined} onChange={(e) => setStart(e.target.value)} />
+            <Field className="mono" label={t.voyage.startDate}>
+            <input className="input" type="date" value={start} max={end || undefined} onChange={(e) => setStart(e.target.value)} /></Field>
           </span>
           <span className="voyage-form__date">
-            <label className="voyage-form__label mono">{t.voyage.endDate}</label>
-            <input className="input" type="date" value={end} min={start || undefined} onChange={(e) => setEnd(e.target.value)} />
+            <Field className="mono" label={t.voyage.endDate}>
+            <input className="input" type="date" value={end} min={start || undefined} onChange={(e) => setEnd(e.target.value)} /></Field>
           </span>
         </div>
-        <label className="voyage-form__label mono">{t.voyage.cover}</label>
+        <Field as="div" className="mono" label={t.voyage.cover}>
         <PhotoField
           value={cover}
           onChange={setCover}
@@ -325,17 +326,17 @@ function VoyageForm({ trip, faces, onClose }: { trip?: Trip; faces: MemberFace[]
           icon="camera-bold"
           addLabel={t.voyage.addCover}
           uploadingLabel={t.voyage.coverUploading}
-        />
+        /></Field>
         {faces.length > 0 && (
           <>
-            <label className="voyage-form__label mono">{t.voyage.whoGoing}</label>
+            <Field as="div" className="mono" label={t.voyage.whoGoing}>
             <ChipGroup>
               {faces.map((f) => (
                 <Chip key={f.id} selected={members.includes(f.id)} onClick={() => toggleMember(f.id)}>
                   {f.name}
                 </Chip>
               ))}
-            </ChipGroup>
+            </ChipGroup></Field>
           </>
         )}
         <button type="button" className="btn btn--primary voyage-form__submit" onClick={() => void save()} disabled={busy || !title.trim()}>

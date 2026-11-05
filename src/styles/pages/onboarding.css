@@ -32,12 +32,7 @@
   margin: 0.25rem 0 0;
 }
 /* A quiet per-field note (password rules, invite-code provenance). */
-.field__hint {
-  display: block;
-  color: var(--ink-faint);
-  font-size: var(--text-xs);
-  margin-top: 4px;
-}
+/* (.field__hint is core.css's now — components/Field.tsx; the --ok flip stays here.) */
 /* The hint flips green once the constraint is met (signup password length). */
 .field__hint--ok {
   color: var(--sage);

@@ -235,12 +235,12 @@ export function PetForm({ value, onSaved, onCancel }: { value?: Pet | null; onSa
 
       <input className="input" value={breed} onChange={(e) => setBreed(e.target.value)} placeholder={p.breed} aria-label={p.breed} />
 
-      <label className="cf__label">{p.birthday}</label>
+      <label className="field__label">{p.birthday}</label>
       <BirthdayPicker value={birthday} onChange={setBirthday} />
 
       {/* Owner(s) — drives where the animal lives in Le cercle. A member → Maisonnée;
           a friend → it shows with them in Social. Leave empty = the Maisonnée's. */}
-      <label className="cf__label">{p.owner}</label>
+      <label className="field__label">{p.owner}</label>
       <EntityCombobox<Person>
         value={ownerQuery}
         onChange={setOwnerQuery}
@@ -311,7 +311,7 @@ export function PetForm({ value, onSaved, onCancel }: { value?: Pet | null; onSa
         <textarea className="input" value={sitterNotes} onChange={(e) => setSitterNotes(e.target.value)} placeholder={p.sitterNotes} aria-label={p.sitterNotes} rows={2} />
 
         {/* Weight log — a dated health log (NOT an inventory count). Add a row, remove one. */}
-        <label className="cf__label">{p.weight}</label>
+        <label className="field__label">{p.weight}</label>
         {weights.length > 0 && (
           <ul className="pet-form__weights">
             {weights.map((w, i) => (
@@ -332,7 +332,7 @@ export function PetForm({ value, onSaved, onCancel }: { value?: Pet | null; onSa
         </div>
 
         {/* Vet — pick an existing Business (or type to filter). Stores vet_business_id. */}
-        <label className="cf__label">{p.vet}</label>
+        <label className="field__label">{p.vet}</label>
         <EntityCombobox<Business>
           value={vetQuery}
           onChange={setVetQuery}
@@ -354,7 +354,7 @@ export function PetForm({ value, onSaved, onCancel }: { value?: Pet | null; onSa
           </p>
         )}
 
-        <label className="cf__label">{p.colour}</label>
+        <label className="field__label">{p.colour}</label>
         <ColorPicker value={colour} onChange={setColour} label={p.colour} />
 
         <textarea className="input" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={p.notes} aria-label={p.notes} rows={2} />

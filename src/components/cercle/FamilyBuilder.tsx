@@ -1,3 +1,4 @@
+import { Field } from '../Field'
 import { IconButton } from '../IconButton'
 import { EmptyState } from '../EmptyState'
 import { useMemo, useState } from 'react'
@@ -377,22 +378,18 @@ export function FamilyBuilder({
       {linksOnly ? (
         <p className="cercle-fam__hint mono">{t.cercle.familyLinksOnlyHint}</p>
       ) : (
-        <label className="cf__field">
-          <span className="cf__label">
-            <Icon name="users-three-bold" size={14} /> {t.cercle.familyName}
-          </span>
+        <Field label={<><Icon name="users-three-bold" size={14} /> {t.cercle.familyName}</>}>
           <input
             className="cf__input"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder={suggestedName || t.cercle.familyName}
           />
-        </label>
+        </Field>
       )}
 
       {/* Add people to the family */}
-      <div className="cf__field">
-        <span className="cf__label">{t.cercle.familyMembers}</span>
+      <Field as="div" label={t.cercle.familyMembers}>
         <EntityCombobox<Person>
           value={addText}
           onChange={setAddText}
@@ -420,7 +417,7 @@ export function FamilyBuilder({
           />
           <IconButton icon="plus-bold" label={t.cercle.familyNewPerson} variant="solid" size="sm" disabled={!newName.trim()} onClick={addNewPerson} />
         </div>
-      </div>
+      </Field>
 
       {humanRoster.length === 0 ? (
         <EmptyState size="cell">{t.cercle.familyEmpty}</EmptyState>
@@ -480,13 +477,12 @@ export function FamilyBuilder({
             </div>
           ) : (
             <div className="cercle-fam__matrix">
-              <label className="cf__field">
-                <span className="cf__label">{t.cercle.familyAnchor}</span>
+              <Field label={t.cercle.familyAnchor}>
                 <select className="cf__input" value={anchor ?? ''} onChange={(e) => setAnchor(e.target.value || null)}>
                   <option value="">—</option>
                   {humanRoster.map((k) => byKey.get(k)).map((p) => p && <option key={p.key} value={p.key}>{p.name}</option>)}
                 </select>
-              </label>
+              </Field>
               {!anchor && <p className="cercle-fam__hint mono">{t.cercle.familyAnchorHint}</p>}
               {anchor &&
                 humanRoster
@@ -544,10 +540,7 @@ export function FamilyBuilder({
           group on save (kind 'pet') and never enter the human bands. Hidden in the
           links-only Maisonnée flow (no group to attach them to). */}
       {!linksOnly && (
-        <div className="cf__field">
-          <span className="cf__label">
-            <Icon name="smiley-bold" size={14} /> {t.cercle.familyPets}
-          </span>
+        <Field as="div" label={<><Icon name="smiley-bold" size={14} /> {t.cercle.familyPets}</>}>
           <EntityCombobox<Person>
             value={petText}
             onChange={setPetText}
@@ -581,7 +574,7 @@ export function FamilyBuilder({
             </div>
           )}
           <p className="cercle-fam__hint mono">{t.cercle.familyPetsHint}</p>
-        </div>
+        </Field>
       )}
 
       {/* Save */}

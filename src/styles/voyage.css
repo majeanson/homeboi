@@ -13,11 +13,6 @@
   gap: 8px;
   max-width: 560px;
 }
-.voyage-form__label {
-  font-size: 0.8rem;
-  color: var(--ink-soft);
-  margin-top: 6px;
-}
 .voyage-form__dates {
   display: flex;
   gap: 12px;

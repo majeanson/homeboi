@@ -1,3 +1,4 @@
+import { Field } from '../components/Field'
 import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -86,8 +87,7 @@ export function ClaimPage() {
         <h1>{t.claim.title}</h1>
         <p className="lead">{t.claim.lead}</p>
         <form className="form auth__card" onSubmit={submit}>
-          <label className="field">
-            <span className="field__label">{t.signup.householdName}</span>
+          <Field label={t.signup.householdName}>
             <input
               className="input"
               value={householdName}
@@ -97,9 +97,8 @@ export function ClaimPage() {
             />
             {/* Optional: leave it blank to keep the current name. */}
             <span className="field__hint mono">{t.claim.nameHint}</span>
-          </label>
-          <label className="field">
-            <span className="field__label">{t.login.email}</span>
+          </Field>
+          <Field label={t.login.email}>
             <input
               className="input"
               type="email"
@@ -108,9 +107,8 @@ export function ClaimPage() {
               required
               autoComplete="email"
             />
-          </label>
-          <label className="field">
-            <span className="field__label">{t.signup.password}</span>
+          </Field>
+          <Field label={t.signup.password}>
             <input
               className="input"
               type="password"
@@ -132,9 +130,8 @@ export function ClaimPage() {
                       </>
                     )}
             </span>
-          </label>
-          <label className="field">
-            <span className="field__label">{t.claim.confirm}</span>
+          </Field>
+          <Field label={t.claim.confirm}>
             <input
               className="input"
               type="password"
@@ -144,10 +141,9 @@ export function ClaimPage() {
               minLength={8}
               autoComplete="new-password"
             />
-          </label>
+          </Field>
           {inviteRequired && (
-            <label className="field">
-              <span className="field__label">{t.signup.invite}</span>
+            <Field label={t.signup.invite}>
               <input
                 className="input"
                 value={invite}
@@ -155,7 +151,7 @@ export function ClaimPage() {
                 autoComplete="off"
               />
               <span className="field__hint mono">{t.signup.inviteHint}</span>
-            </label>
+            </Field>
           )}
           {error && <StatusMessage tone="error">{t.claim[error]}</StatusMessage>}
           {!online && <StatusMessage tone="info">{t.offline.unavailable}</StatusMessage>}

@@ -147,7 +147,7 @@ export function LinkComposer({
 
   return (
     <div className="lc">
-      <span className="cf__label">{t.cercle.relationships}</span>
+      <span className="field__label">{t.cercle.relationships}</span>
 
       {mine.length === 0 ? (
         <EmptyState size="cell">{t.cercle.noRelationships}</EmptyState>
@@ -170,7 +170,7 @@ export function LinkComposer({
       {/* Inference suggestions — dismissable transitive link proposals */}
       {mySuggestions.length > 0 && (
         <div className="lc__suggestions">
-          <span className="cf__label">{t.cercle.suggestedLinks}</span>
+          <span className="field__label">{t.cercle.suggestedLinks}</span>
           {mySuggestions.map((s, i) => {
             const otherSugKey = s.aKey === person.key ? s.bKey : s.aKey
             const relType = s.aKey === person.key ? s.type : s.reverseType

@@ -1,3 +1,4 @@
+import { Field } from '../Field'
 import { useState } from 'react'
 import { useWrite } from '../../lib/write'
 import { useLang, useT } from '../../i18n'
@@ -166,10 +167,9 @@ export function ChoreForm({
       <RecurPicker value={recur} onChange={setRecur} />
       {recur && (
         <>
-          <label className="recur__row mono">
-            <span>{o18n.choreStart}</span>
+          <Field inline className="mono" label={o18n.choreStart}>
             <input className="input" type="date" value={start} onChange={(e) => setStart(e.target.value)} />
-          </label>
+          </Field>
           <LeadPicker value={lead} onChange={setLead} />
           {/* D-21 (bmad/10) « Sortir le bac » — opt-in "evening before" board
               announce, the fête-line sibling (a single household display line,

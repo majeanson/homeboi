@@ -1,3 +1,4 @@
+import { Field } from '../Field'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -265,8 +266,7 @@ function HouseholdTzField() {
   }
 
   return (
-    <label className="operator__field">
-      <span className="operator__field-label">{o18n.householdTz}</span>
+    <Field label={o18n.householdTz}>
       <select className="input" value={current} onChange={(e) => void save(e.target.value)} aria-label={o18n.householdTz}>
         {options.map((z) => (
           <option key={z} value={z}>
@@ -275,7 +275,7 @@ function HouseholdTzField() {
         ))}
       </select>
       <span className="operator__field-hint mono">{o18n.householdTzHint}</span>
-    </label>
+    </Field>
   )
 }
 
@@ -306,8 +306,7 @@ function HouseholdNameField() {
   }
 
   return (
-    <label className="operator__field operator__household-name">
-      <span className="operator__field-label">{o18n.householdName}</span>
+    <Field className="operator__household-name" label={o18n.householdName}>
       <input
         className="input"
         value={name}
@@ -324,7 +323,7 @@ function HouseholdNameField() {
         aria-label={o18n.householdName}
       />
       <span className="operator__field-hint mono">{o18n.householdNameHint}</span>
-    </label>
+    </Field>
   )
 }
 

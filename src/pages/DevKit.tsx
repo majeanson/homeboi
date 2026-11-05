@@ -1,3 +1,4 @@
+import { Field } from '../components/Field'
 import { IconButton } from '../components/IconButton'
 // B-11 (bmad/10) — cercle.css moved out of the eager shell (position-immaterial
 // .cercle-*/.cf-* classes); load it whenever this page renders instead.
@@ -1091,6 +1092,40 @@ export function DevKit() {
       ),
     },
     // ── Inputs ──────────────────────────────────────────────────────────
+    {
+      cat: 'Saisie',
+      name: 'Field',
+      file: 'components/Field.tsx',
+      kw: 'field champ label étiquette libellé hint indice error erreur inline formulaire form',
+      render: () => (
+        <>
+          <Demo label="THE labelled field (2026-11-05, solidify 3.1): label above a native control (as='label', tapping the words focuses it); hint under it; error as a StatusMessage line. Six hand-rolled shapes folded onto it (cf__field, li-edit__field, operator__field, voyage-form__label, recur__row, field).">
+            <Field label="Nom" hint="Comme on l’appelle à la maison.">
+              <input className="input" placeholder="Camille" />
+            </Field>
+            <Field label="Courriel" error="Ce courriel n’a pas l’air complet.">
+              <input className="input" defaultValue="marc@" />
+            </Field>
+          </Demo>
+          <Demo label="inline — label beside the control (the old recur__row): the label keeps its width, the control flexes; a date input keeps its intrinsic minimum (misc.css).">
+            <Field inline className="mono" label="Rappel">
+              <select className="input">
+                <option>Au moment même</option>
+                <option>1 semaine avant</option>
+              </select>
+            </Field>
+          </Demo>
+          <Demo label="as='div' — a COMPOSED control (buttons inside): a <label> around it would nest interactives; the words name the control through htmlFor.">
+            <Field as="div" label="Picto" inline>
+              <ChipGroup>
+                <Chip selected>🍎</Chip>
+                <Chip>🥕</Chip>
+              </ChipGroup>
+            </Field>
+          </Demo>
+        </>
+      ),
+    },
     {
       cat: 'Saisie',
       name: 'EditField',

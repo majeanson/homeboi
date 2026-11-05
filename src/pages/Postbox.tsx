@@ -1,3 +1,4 @@
+import { Field } from '../components/Field'
 // B-11 (bmad/10) — cercle.css moved out of the eager shell (position-immaterial
 // .cercle-*/.cf-* classes); load it whenever this page renders instead.
 import '../styles/cercle.css'
@@ -199,15 +200,14 @@ export function Postbox({ onSwitch }: { onSwitch?: () => void }) {
 
         {/* 1 — who you are (required, so the family knows who wrote). */}
         <section className="intake__sec">
-          <label className="cf__field">
-            <span className="cf__label">{t.postbox.nameLabel}</span>
+          <Field label={t.postbox.nameLabel}>
             <input
               className="cf__input"
               value={senderName}
               onChange={(e) => setSenderName(e.target.value)}
               placeholder={t.postbox.namePlaceholder}
             />
-          </label>
+          </Field>
         </section>
 
         {/* 2 — the message: a written word and/or one memo (voice / drawing / photo). */}

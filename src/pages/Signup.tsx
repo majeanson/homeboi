@@ -1,3 +1,4 @@
+import { Field } from '../components/Field'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -77,8 +78,7 @@ export function Signup() {
         <h1>{t.signup.title}</h1>
         <p className="lead">{t.signup.lead}</p>
         <form className="form auth__card" onSubmit={submit}>
-          <label className="field">
-            <span className="field__label">{t.signup.householdName}</span>
+          <Field label={t.signup.householdName}>
             <input
               className="input"
               value={householdName}
@@ -87,9 +87,8 @@ export function Signup() {
               required
               maxLength={60}
             />
-          </label>
-          <label className="field">
-            <span className="field__label">{t.login.email}</span>
+          </Field>
+          <Field label={t.login.email}>
             <input
               className="input"
               type="email"
@@ -98,9 +97,8 @@ export function Signup() {
               required
               autoComplete="email"
             />
-          </label>
-          <label className="field">
-            <span className="field__label">{t.signup.password}</span>
+          </Field>
+          <Field label={t.signup.password}>
             <input
               className="input"
               type="password"
@@ -123,10 +121,9 @@ export function Signup() {
                       </>
                     )}
             </span>
-          </label>
+          </Field>
           {inviteRequired && (
-            <label className="field">
-              <span className="field__label">{t.signup.invite}</span>
+            <Field label={t.signup.invite}>
               <input
                 className="input"
                 value={invite}
@@ -134,7 +131,7 @@ export function Signup() {
                 autoComplete="off"
               />
               <span className="field__hint mono">{t.signup.inviteHint}</span>
-            </label>
+            </Field>
           )}
           {error && (
             <StatusMessage tone="error">

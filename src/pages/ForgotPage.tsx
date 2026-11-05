@@ -1,3 +1,4 @@
+import { Field } from '../components/Field'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { TopBar } from '../components/TopBar'
@@ -45,8 +46,7 @@ export function ForgotPage() {
           </div>
         ) : (
           <form className="form auth__card" onSubmit={submit}>
-            <label className="field">
-              <span className="field__label">{t.forgot.email}</span>
+            <Field label={t.forgot.email}>
               <input
                 className="input"
                 type="email"
@@ -55,7 +55,7 @@ export function ForgotPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
-            </label>
+            </Field>
             {state === 'unavailable' && <StatusMessage tone="info">{t.forgot.unavailable}</StatusMessage>}
             {state === 'tooMany' && <StatusMessage tone="error">{t.common.tooMany}</StatusMessage>}
             {state === 'error' && <StatusMessage tone="error">{t.forgot.error}</StatusMessage>}

@@ -401,15 +401,6 @@
   gap: 1rem;
   padding-top: 0.5rem;
 }
-.li-edit__field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-.li-edit__label {
-  font-weight: 700;
-  font-size: var(--text-md);
-}
 .li-edit__hint {
   font-size: 0.8rem;
   color: var(--ink-faint);

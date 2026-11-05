@@ -179,7 +179,7 @@ for (const width of [360, 390]) {
 // control cannot render under. It clips instead.
 //
 // The bug that earned this (2026-09-14 matrix pass, first sight of Réglages ▸ Agenda
-// below the fold): `.recur__row` lets its field shrink to nothing on purpose, so a long
+// below the fold): `.field--inline` lets its field shrink to nothing on purpose, so a long
 // <option> in a SELECT truncates rather than bleeding out of the form. A date input is
 // not a select. « Rentrée (premier jour) » — a long label — left its field 100px wide
 // against the 164px the control needs, while « Dernier jour » one line below got 178px
@@ -202,7 +202,7 @@ for (const width of [360, 390]) {
       await page.goto(d.route)
       await expect(page.locator(d.ready).first()).toBeVisible({ timeout: 15_000 })
 
-      const fields = await page.locator('.recur__row .input[type="date"]').evaluateAll((els) =>
+      const fields = await page.locator('.field--inline .input[type="date"]').evaluateAll((els) =>
         els.map((el) => {
           const i = el as HTMLInputElement
           const probe = i.cloneNode(true) as HTMLInputElement
@@ -210,7 +210,7 @@ for (const width of [360, 390]) {
           document.body.appendChild(probe)
           const natural = probe.getBoundingClientRect().width
           probe.remove()
-          const label = (i.closest('.recur__row')?.querySelector('span')?.textContent ?? '').trim()
+          const label = (i.closest('.field--inline')?.querySelector('span')?.textContent ?? '').trim()
           return { label, width: Math.round(i.getBoundingClientRect().width), natural: Math.round(natural) }
         }),
       )

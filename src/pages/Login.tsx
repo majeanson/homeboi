@@ -1,3 +1,4 @@
+import { Field } from '../components/Field'
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { TopBar } from '../components/TopBar'
@@ -61,8 +62,7 @@ export function Login() {
             Safari ≠ the home-screen app) — say why we are here, and that nothing is lost. */}
         {pendingRecipe && <p className="auth__hint mono">{t.login.importPending}</p>}
         <form className="form auth__card" onSubmit={submit}>
-          <label className="field">
-            <span className="field__label">{t.login.email}</span>
+          <Field label={t.login.email}>
             <input
               className="input"
               type="email"
@@ -71,9 +71,8 @@ export function Login() {
               required
               autoComplete="email"
             />
-          </label>
-          <label className="field">
-            <span className="field__label">{t.login.password}</span>
+          </Field>
+          <Field label={t.login.password}>
             <input
               className="input"
               type="password"
@@ -81,7 +80,7 @@ export function Login() {
               onChange={(e) => setPassword(e.target.value)}
               autoComplete="current-password"
             />
-          </label>
+          </Field>
           {error && <StatusMessage tone="error">{error === 'tooMany' ? t.common.tooMany : t.login.error}</StatusMessage>}
           <button type="submit" className="btn btn--primary" disabled={busy || !email.trim()}>
             {t.login.submit}

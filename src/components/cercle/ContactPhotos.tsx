@@ -1,3 +1,4 @@
+import { Field } from '../Field'
 import { useRef } from 'react'
 import { cerclePhotosKey } from '../../lib/queryKeys'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -91,10 +92,7 @@ export function ContactPhotos({ contactId, memberPhoto }: { contactId: string; m
   }
 
   return (
-    <div className="cf__field cf-photos">
-      <span className="cf__label">
-        <Icon name="image-square-bold" size={14} /> {t.cercle.photos}
-      </span>
+    <Field as="div" className="cf-photos" label={<><Icon name="image-square-bold" size={14} /> {t.cercle.photos}</>}>
 
       {(memberPhoto || photos.length > 0) && (
         <div className="cf-photos__grid">
@@ -139,6 +137,6 @@ export function ContactPhotos({ contactId, memberPhoto }: { contactId: string; m
         <Icon name="camera-bold" size={16} /> {t.cercle.addPhotoToGallery}
       </button>
       <p className="cf-photos__hint mono">{online ? t.cercle.photosHint : t.cercle.photoOnline}</p>
-    </div>
+    </Field>
   )
 }

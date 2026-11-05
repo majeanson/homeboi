@@ -1,3 +1,4 @@
+import { Field } from '../components/Field'
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { TopBar } from '../components/TopBar'
@@ -59,8 +60,7 @@ export function ResetPage() {
           </div>
         ) : (
           <form className="form auth__card" onSubmit={submit}>
-            <label className="field">
-              <span className="field__label">{t.reset.password}</span>
+            <Field label={t.reset.password}>
               <input
                 className="input"
                 type="password"
@@ -70,9 +70,8 @@ export function ResetPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
-            </label>
-            <label className="field">
-              <span className="field__label">{t.reset.confirm}</span>
+            </Field>
+            <Field label={t.reset.confirm}>
               <input
                 className="input"
                 type="password"
@@ -82,7 +81,7 @@ export function ResetPage() {
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
               />
-            </label>
+            </Field>
             {error === 'mismatch' && <StatusMessage tone="error">{t.reset.mismatch}</StatusMessage>}
             {error === 'expired' && (
               <StatusMessage tone="info">

@@ -388,7 +388,7 @@
 /* « Aux X heures » — the waking window's two time fields. Each row keeps a real
    min-width and grows with `auto` basis, so the pair sits side by side on a wide
    form and wraps honestly on a phone (a fixed basis would overflow instead). */
-.habit-form__window .recur__row {
+.habit-form__window .field--inline {
   flex: 1 1 auto;
   min-width: 10rem;
 }

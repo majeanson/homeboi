@@ -1,3 +1,4 @@
+import { Field } from '../components/Field'
 // B-11 (bmad/10) — cercle.css moved out of the eager shell (position-immaterial
 // .cercle-*/.cf-* classes); load it whenever this page renders instead.
 import '../styles/cercle.css'
@@ -283,8 +284,7 @@ export function IntakeForm({ onSwitch }: { onSwitch?: () => void } = {}) {
               showContact={scope.contact}
               showAddress={scope.addr}
             />
-            <label className="cf__field">
-              <span className="cf__label">{t.intake.notesLabel}</span>
+            <Field label={t.intake.notesLabel}>
               <textarea
                 className="cf__input cf__textarea"
                 value={notes}
@@ -292,7 +292,7 @@ export function IntakeForm({ onSwitch }: { onSwitch?: () => void } = {}) {
                 rows={2}
                 placeholder={t.intake.notesHint}
               />
-            </label>
+            </Field>
           </div>
         </section>
 
@@ -305,7 +305,7 @@ export function IntakeForm({ onSwitch }: { onSwitch?: () => void } = {}) {
             {household.map((p) => (
               <div key={p.id} className="cf intake__person">
                 <div className="intake__person-head">
-                  <span className="cf__label">{p.core.firstName.trim() || t.intake.personFallback}</span>
+                  <span className="field__label">{p.core.firstName.trim() || t.intake.personFallback}</span>
                   <button type="button" className="btn btn--ghost btn--sm" onClick={() => removePerson(p.id)}>
                     <Icon name="trash-bold" size={15} /> {t.intake.remove}
                   </button>
@@ -325,8 +325,7 @@ export function IntakeForm({ onSwitch }: { onSwitch?: () => void } = {}) {
                   showContact={false}
                   showAddress={false}
                 />
-                <div className="cf__field">
-                  <span className="cf__label">{t.intake.relationToYou}</span>
+                <Field as="div" label={t.intake.relationToYou}>
                   <div className="cf__gender-chips">
                     {RELATION_CHOICES.map((r) => (
                       <Chip key={r.type} selected={p.relation === r.type} onClick={() => setRelation(p.id, r.type)}>
@@ -334,7 +333,7 @@ export function IntakeForm({ onSwitch }: { onSwitch?: () => void } = {}) {
                       </Chip>
                     ))}
                   </div>
-                </div>
+                </Field>
               </div>
             ))}
 
@@ -353,7 +352,7 @@ export function IntakeForm({ onSwitch }: { onSwitch?: () => void } = {}) {
             {pets.map((p) => (
               <div key={p.id} className="cf intake__person">
                 <div className="intake__person-head">
-                  <span className="cf__label">{p.name.trim() || t.intake.petFallback}</span>
+                  <span className="field__label">{p.name.trim() || t.intake.petFallback}</span>
                   <button type="button" className="btn btn--ghost btn--sm" onClick={() => removePet(p.id)}>
                     <Icon name="trash-bold" size={15} /> {t.intake.remove}
                   </button>
@@ -367,19 +366,17 @@ export function IntakeForm({ onSwitch }: { onSwitch?: () => void } = {}) {
                   />
                 )}
                 <div className="cf__grid">
-                  <label className="cf__field">
-                    <span className="cf__label">{t.intake.petName}</span>
+                  <Field label={t.intake.petName}>
                     <input className="cf__input" value={p.name} onChange={(e) => patchPet(p.id, { name: e.target.value })} />
-                  </label>
-                  <label className="cf__field">
-                    <span className="cf__label">{t.intake.petSpecies}</span>
+                  </Field>
+                  <Field label={t.intake.petSpecies}>
                     <input
                       className="cf__input"
                       value={p.species}
                       onChange={(e) => patchPet(p.id, { species: e.target.value })}
                       placeholder={t.intake.petSpeciesHint}
                     />
-                  </label>
+                  </Field>
                 </div>
               </div>
             ))}

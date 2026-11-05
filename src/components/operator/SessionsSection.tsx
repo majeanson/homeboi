@@ -1,3 +1,4 @@
+import { Field } from '../Field'
 import { useState } from 'react'
 import { useT } from '../../i18n'
 import { type HelpMode } from '../../lib/helpMode'
@@ -124,18 +125,15 @@ export function SessionsSection({ help }: { help?: HelpMode }) {
         <>
           <Disclosure label={s.changeTitle}>
             <form className="form" onSubmit={changePassword}>
-              <label className="field">
-                <span className="field__label">{s.current}</span>
+              <Field label={s.current}>
                 <input className="input" type="password" autoComplete="current-password" value={current} onChange={(e) => setCurrent(e.target.value)} required />
-              </label>
-              <label className="field">
-                <span className="field__label">{s.next}</span>
+              </Field>
+              <Field label={s.next}>
                 <input className="input" type="password" autoComplete="new-password" minLength={8} value={next} onChange={(e) => setNext(e.target.value)} required />
-              </label>
-              <label className="field">
-                <span className="field__label">{s.again}</span>
+              </Field>
+              <Field label={s.again}>
                 <input className="input" type="password" autoComplete="new-password" minLength={8} value={again} onChange={(e) => setAgain(e.target.value)} required />
-              </label>
+              </Field>
               <Cluster>
                 <button type="submit" className="btn btn--primary" disabled={busy || !current || next.length < 8 || !again}>
                   <InlineIcon name="key-bold" /> {s.change}

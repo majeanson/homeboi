@@ -1,3 +1,4 @@
+import { Field } from '../Field'
 import { useState } from 'react'
 import { useT } from '../../i18n'
 import { useConfirm } from '../../lib/confirm'
@@ -120,8 +121,7 @@ export function CarnetForm({
       {/* No autoFocus — house rule: a SCREEN, sheet or dialog opening never summons the keyboard (autofocus.test.ts): this form also opens to EDIT, and on a phone the keyboard would cover it before it is read. */}
       <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder={c.namePh} aria-label={c.name} />
 
-      <label className="recur__row mono">
-        <span>{c.kindLabel}</span>
+      <Field inline className="mono" label={c.kindLabel}>
         <select className="input" value={kind} onChange={(e) => setKind(e.target.value as CarnetKind)} aria-label={c.kindLabel}>
           {CARNET_KINDS.map((k) => (
             <option key={k} value={k}>
@@ -129,11 +129,10 @@ export function CarnetForm({
             </option>
           ))}
         </select>
-      </label>
+      </Field>
 
       {kind === 'auto' && cars.length > 0 && (
-        <label className="recur__row mono">
-          <span>{c.linkCar}</span>
+        <Field inline className="mono" label={c.linkCar}>
           <select className="input" value={linkId} onChange={(e) => setLinkId(e.target.value)} aria-label={c.linkCar}>
             <option value="">{c.noCarLink}</option>
             {cars.map((car) => (
@@ -142,15 +141,14 @@ export function CarnetForm({
               </option>
             ))}
           </select>
-        </label>
+        </Field>
       )}
 
       {/* Tap the glyph to open the searchable EmojiPicker on a roomy sheet (EmojiField);
           empty selection → the kind's default disc glyph (KIND_EMOJI) shown as fallback. */}
-      <div className="cf__field cf__field--row">
-        <label className="cf__label">{c.emoji}</label>
+      <Field as="div" inline label={c.emoji}>
         <EmojiField value={emoji} onPick={setEmoji} ariaLabel={c.emoji} fallback={KIND_EMOJI[kind]} />
-      </div>
+      </Field>
 
       <ColorPicker value={colour} onChange={setColour} label={c.colour} />
 
@@ -162,13 +160,11 @@ export function CarnetForm({
         label={t.carnets.techSheet}
         defaultOpen={!!(installed || lifeYears || model.trim() || warranty)}
       >
-        <label className="recur__row mono">
-          <span>{c.installed}</span>
+        <Field inline className="mono" label={c.installed}>
           <input className="input" type="date" value={installed} onChange={(e) => setInstalled(e.target.value)} aria-label={c.installed} />
-        </label>
+        </Field>
 
-        <label className="recur__row mono">
-          <span>{c.lifespan}</span>
+        <Field inline className="mono" label={c.lifespan}>
           <input
             className="input"
             inputMode="numeric"
@@ -178,14 +174,13 @@ export function CarnetForm({
             aria-label={c.lifespan}
             style={{ maxWidth: '6rem' }}
           />
-        </label>
+        </Field>
 
         <input className="input" value={model} onChange={(e) => setModel(e.target.value)} placeholder={c.model} aria-label={c.model} />
 
-        <label className="recur__row mono">
-          <span>{c.warranty}</span>
+        <Field inline className="mono" label={c.warranty}>
           <input className="input" type="date" value={warranty} onChange={(e) => setWarranty(e.target.value)} aria-label={c.warranty} />
-        </label>
+        </Field>
       </Disclosure>
 
       <textarea className="input" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder={c.notes} aria-label={c.notes} />

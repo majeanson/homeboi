@@ -1,3 +1,4 @@
+import { Field } from '../Field'
 import { useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLang, useT } from '../../i18n'
@@ -278,14 +279,12 @@ export function SchoolYearSection({ help }: { help?: HelpMode }) {
 
   return (
     <OperatorSection title={o18n.schoolYearTitle} hint={o18n.schoolYearHint} help={help} helpKey="schoolYear">
-      <label className="recur__row mono">
-        <span>{o18n.schoolYearFirstDay}</span>
+      <Field inline className="mono" label={o18n.schoolYearFirstDay}>
         <input className="input" type="date" value={firstDay} onChange={(e) => setFirstDay(e.target.value)} />
-      </label>
-      <label className="recur__row mono">
-        <span>{o18n.schoolYearLastDay}</span>
+      </Field>
+      <Field inline className="mono" label={o18n.schoolYearLastDay}>
         <input className="input" type="date" value={lastDay} onChange={(e) => setLastDay(e.target.value)} />
-      </label>
+      </Field>
       <h3 className="operator__field-label">{o18n.schoolYearBreaksTitle}</h3>
       {/* One relâche = one ROW, not three open date fields. Four breaks in a school
           year used to put twelve controls on the panel at once, so reading "when are
@@ -300,14 +299,12 @@ export function SchoolYearSection({ help }: { help?: HelpMode }) {
           from != null && to != null ? `${formatDay(from, lang)} → ${formatDay(to, lang)}` : o18n.schoolYearBreakBlank
         return openBreak(b.key) ? (
           <Cluster key={b.key} className="operator__schoolbreak">
-            <label className="recur__row mono">
-              <span>{o18n.schoolYearBreakFrom}</span>
+            <Field inline className="mono" label={o18n.schoolYearBreakFrom}>
               <input className="input" type="date" value={b.from} onChange={(e) => updateBreak(b.key, { from: e.target.value })} />
-            </label>
-            <label className="recur__row mono">
-              <span>{o18n.schoolYearBreakTo}</span>
+            </Field>
+            <Field inline className="mono" label={o18n.schoolYearBreakTo}>
               <input className="input" type="date" value={b.to} onChange={(e) => updateBreak(b.key, { to: e.target.value })} />
-            </label>
+            </Field>
             <input
               className="input"
               value={b.label}

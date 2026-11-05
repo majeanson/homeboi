@@ -1,3 +1,4 @@
+import { Field } from '../components/Field'
 // B-11 (bmad/10) — partage.css moved out of the eager shell (standalone public
 // page, no hub chrome); load it whenever this page renders instead.
 import '../styles/partage.css'
@@ -214,8 +215,7 @@ function RoutineImportFoot({
 
   return (
     <div className="partage__foot no-print">
-      <label className="field">
-        <span className="field__label">{t.shareLink.pickChild}</span>
+      <Field label={t.shareLink.pickChild}>
         <select className="input" value={memberId} onChange={(e) => setMemberId(e.target.value)}>
           <option value="">—</option>
           {list.map((m) => (
@@ -224,7 +224,7 @@ function RoutineImportFoot({
             </option>
           ))}
         </select>
-      </label>
+      </Field>
       <button
         type="button"
         className="btn btn--primary"

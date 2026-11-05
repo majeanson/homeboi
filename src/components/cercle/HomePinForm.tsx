@@ -1,3 +1,4 @@
+import { Field } from '../Field'
 import { useState } from 'react'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
@@ -77,8 +78,7 @@ export function HomePinForm({
 
   return (
     <form className="operator__inline-form" onSubmit={submit}>
-      <label className="recur__row mono">
-        <span>{c.pinKind}</span>
+      <Field inline className="mono" label={c.pinKind}>
         <select className="input" value={kind} onChange={(e) => setKind(e.target.value as HomePinKind)} aria-label={c.pinKind}>
           {PIN_KINDS.map((k) => (
             <option key={k} value={k}>
@@ -86,7 +86,7 @@ export function HomePinForm({
             </option>
           ))}
         </select>
-      </label>
+      </Field>
 
       <input className="input" value={label} onChange={(e) => setLabel(e.target.value)} placeholder={c.pinLabel} aria-label={c.pinLabel} />
       <textarea className="input" value={detail} onChange={(e) => setDetail(e.target.value)} rows={2} placeholder={c.pinDetail} aria-label={c.pinDetail} />

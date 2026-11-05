@@ -606,7 +606,7 @@ const MATRIX: Entry[] = [
     themes: ['day'],
   },
   { name: 'quickadd', route: '/liste/quick', content: '.list-row', budgetPx: 92, themes: ['day'] },
-  { name: 'list-item', route: '/liste/item/l1', content: '.li-edit__field, .li-edit__row', budgetPx: 40, themes: ['day'] },
+  { name: 'list-item', route: '/liste/item/l1', content: '.field, .li-edit__row', budgetPx: 40, themes: ['day'] },
   // 288px, and NOT fat — the third case this table exists to distinguish. What sits
   // above the first habit is the « qui es-tu aujourd'hui » face row (the lens the whole
   // scene answers through) and « Le défi du jour » (a thing you DO today, drawn here as
@@ -619,7 +619,7 @@ const MATRIX: Entry[] = [
   { name: 'form-home-project', route: '/home-project/new', content: '.edit-field__input, .input', budgetPx: 33, themes: ['day'] },
   { name: 'carnet', route: '/cercle/carnet/c1', content: '.carnet-block, .carnet-chose', budgetPx: 194, themes: ['day'], api: CARNETS_FIXTURE },
   { name: 'monde', route: '/cercle/monde', content: '.scene__body > *', budgetPx: 16, themes: ['day'] },
-  { name: 'courrier', route: '/courrier', content: '.cf__field, .intake__h', budgetPx: 127, themes: ['day'] },
+  { name: 'courrier', route: '/courrier', content: '.field, .intake__h', budgetPx: 127, themes: ['day'] },
   { name: 'drawings', route: '/drawings', content: '.drawgallery__item', budgetPx: 89, themes: ['day'] },
   { name: 'jouer', route: '/jouer', content: '.play-door', budgetPx: 84, themes: ['day'] },
   // …and the rest of the router's scenes, so "what this table does NOT list" is a

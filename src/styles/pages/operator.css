@@ -156,12 +156,6 @@
   margin: 0;
 }
 /* A single labelled settings field (the household-name rename). */
-.operator__field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  margin-bottom: 1rem;
-}
 .operator__field-label {
   font-size: 0.8rem;
   font-weight: 600;

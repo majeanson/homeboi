@@ -239,7 +239,9 @@
    marigold and a bigger target. Deliberately NOT .btn--primary: that token is the
    app accent, and this row belongs to La liste. The other two stay quiet ghosts —
    one loud thing per row, or none of them reads as loud. */
-.list-actions__icon--flyer {
+/* .btn.… : two classes, so the loud 3rem box beats IconButton's own .btn--icon.btn--sm
+   (38px) — same specificity, later in the cascade (2026-11-05, solidify 2.5). */
+.btn.list-actions__icon--flyer {
   width: 3rem;
   min-width: 3rem;
   height: 3rem;
@@ -248,7 +250,7 @@
   color: #3a2a12;
   box-shadow: var(--shadow-sm);
 }
-.list-actions__icon--flyer:hover {
+.btn.list-actions__icon--flyer:hover {
   background: color-mix(in srgb, var(--marigold) 88%, black);
 }
 

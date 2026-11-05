@@ -1,3 +1,4 @@
+import { Field } from '../Field'
 import { IconButton } from '../IconButton'
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -283,8 +284,7 @@ export function EventForm({
           "jj/mm/aaaa" / "--:--" hint is invisible on light themes — an empty box
           reads as unlabelled. Give each a visible label via the same `.recur__row`
           pattern the Répéter / Afficher dès rows below already use (Marc, 2026-07-04). */}
-      <label className="recur__row mono">
-        <span>{o18n.eventDateLabel}</span>
+      <Field inline className="mono" label={o18n.eventDateLabel}>
         <input
           className="input"
           type="date"
@@ -292,9 +292,8 @@ export function EventForm({
           onChange={(e) => setDate(e.target.value)}
           aria-label={o18n.eventDateLabel}
         />
-      </label>
-      <label className="recur__row mono">
-        <span>{o18n.eventTimeLabel}</span>
+      </Field>
+      <Field inline className="mono" label={o18n.eventTimeLabel}>
         <input
           className="input"
           type="time"
@@ -302,13 +301,12 @@ export function EventForm({
           onChange={(e) => setStartTime(e.target.value)}
           aria-label={o18n.eventTimeLabel}
         />
-      </label>
+      </Field>
       {/* Optional « Jusqu'à ». Only offered once a start time exists: an all-day
           rendez-vous already spans the whole day. Blank stays the default — a point,
           exactly as before — so nothing about an existing rendez-vous changes. */}
       {time && (
-        <label className="recur__row mono">
-          <span>{o18n.eventUntilLabel}</span>
+        <Field inline className="mono" label={o18n.eventUntilLabel}>
           <input
             className="input"
             type="time"
@@ -316,7 +314,7 @@ export function EventForm({
             onChange={(e) => setEndTime(e.target.value)}
             aria-label={o18n.eventUntilLabel}
           />
-        </label>
+        </Field>
       )}
       {members.length > 0 && (
         <>

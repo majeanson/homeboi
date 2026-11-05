@@ -1,3 +1,4 @@
+import { Field } from '../components/Field'
 import { useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -124,8 +125,7 @@ export function JoinHouseholdPage() {
             <h1>{t.join.titleFor(preview.data?.householdName ?? '')}</h1>
             <p className="lead">{t.join.lead}</p>
             <form className="form auth__card" onSubmit={submit}>
-              <label className="field">
-                <span className="field__label">{t.login.email}</span>
+              <Field label={t.login.email}>
                 <input
                   className="input"
                   type="email"
@@ -135,9 +135,8 @@ export function JoinHouseholdPage() {
                   autoComplete="email"
                 />
                 <span className="field__hint mono">{t.join.emailHint}</span>
-              </label>
-              <label className="field">
-                <span className="field__label">{t.signup.password}</span>
+              </Field>
+              <Field label={t.signup.password}>
                 <input
                   className="input"
                   type="password"
@@ -160,7 +159,7 @@ export function JoinHouseholdPage() {
                           </>
                         )}
                 </span>
-              </label>
+              </Field>
               {error && (
                 <StatusMessage tone="error">
                   {t.join[error]}

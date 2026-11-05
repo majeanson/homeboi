@@ -998,14 +998,31 @@ textarea.input {
   gap: 1rem;
   max-width: 22rem;
 }
+/* THE labelled field (components/Field.tsx, 2026-11-05 — the cercle's cf__field, the
+   list editor's li-edit__field, Réglages' operator__field, the voyage labels and the
+   inline recur__row all folded here). The label carries the cercle form's weight and
+   icon gap, which every field reads better with. */
 .field {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
 }
 .field__label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
   font-size: var(--text-sm);
+  font-weight: 600;
   color: var(--ink-soft);
+}
+.field__hint {
+  display: block;
+  color: var(--ink-faint);
+  font-size: var(--text-xs);
+  margin-top: 4px;
+}
+.field__error {
+  margin: 0;
 }
 
 /* --- Home ----------------------------------------------------------------- */
@@ -1864,7 +1881,7 @@ html[data-embedded] .home {
 :is(.operator__inline-form, .picker-chips) > .mswitch,
 :is(.cf, .recipe-modal__body, .habitudes__body) > .disclosure,
 .cf > :is(.cf__rels, .lc),
-.cf__field > .cercle-fam__newrow,
+.field > .cercle-fam__newrow,
 .cercle-fam > .cf__rels-empty,
 .reminders > .reminders__sub,
 fieldset > .operator__seg-hint,

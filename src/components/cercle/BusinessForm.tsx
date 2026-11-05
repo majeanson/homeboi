@@ -195,7 +195,7 @@ export function BusinessForm({
       {/* A colour for this business — tints its row, its detail peek, and every
           rendez-vous linked to it (board, calendar, day page, agenda). */}
       <label className="business-form__colour">
-        <span className="cf__label">{bz.colour}</span>
+        <span className="field__label">{bz.colour}</span>
         <ColorPicker value={colour} onChange={setColour} label={bz.colour} />
       </label>
 

@@ -79,7 +79,7 @@ Before implementing ANY change, do this first — it's faster than the rework it
 
 | Need | Use (not a new one) | Where |
 | --- | --- | --- |
-| Type/edit text + clear/mic/actions | **`EditField`** | `components/EditField.tsx` |
+| Type/edit text + clear/mic/actions · a LABELLED control (label above or beside, hint, error) | **`EditField`** · **`Field`** (`inline` for label-beside; `as="div"` around a composed control; raw date/select/number stay raw `.input` inside it) | `components/EditField.tsx`, `components/Field.tsx` |
 | "Search + pick an existing thing + free-text" | **`EntityCombobox`** | `components/EntityCombobox.tsx` (options in `kitchen/comboOptions.tsx`) |
 | An activity / list row (check / nav / info) | **`Act`** + `Section` | `components/board/Act.tsx` |
 | Generic checklist row | **`CheckRow`** / **`ListRow`** | `components/CheckRow.tsx`, `components/ListRow.tsx` |

@@ -1,3 +1,4 @@
+import { Field } from './Field'
 import { useT } from '../i18n'
 
 // Calm "Bientôt" reminder lead: how far AHEAD the board starts highlighting a dated
@@ -22,8 +23,7 @@ export function LeadPicker({ value, onChange }: { value: number | null; onChange
   // in the control without losing the underlying number until the user picks.
   const current = LEAD_OPTIONS.find((o) => o.seconds === value)?.key ?? 'none'
   return (
-    <label className="recur__row mono">
-      <span>{t.lead.label}</span>
+    <Field inline className="mono" label={t.lead.label}>
       <select
         className="input"
         value={current}
@@ -35,6 +35,6 @@ export function LeadPicker({ value, onChange }: { value: number | null; onChange
           </option>
         ))}
       </select>
-    </label>
+    </Field>
   )
 }

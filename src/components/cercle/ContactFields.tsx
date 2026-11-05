@@ -1,3 +1,4 @@
+import { Field } from '../Field'
 import { type ReactNode } from 'react'
 import { useT } from '../../i18n'
 import { BirthdayPicker } from './BirthdayPicker'
@@ -78,12 +79,10 @@ export function ContactFields({
   // are any, and stay inline when there aren't (see the second invariant above).
   const nicknameGender: ReactNode = (
     <>
-      <label className="cf__field">
-        <span className="cf__label">{t.cercle.nickname}</span>
+      <Field label={t.cercle.nickname}>
         <input className="cf__input" value={value.nickname} onChange={(e) => onChange({ nickname: e.target.value })} />
-      </label>
-      <div className="cf__field cf__gender">
-        <span className="cf__label">{t.cercle.gender}</span>
+      </Field>
+      <Field as="div" className="cf__gender" label={t.cercle.gender}>
         <div className="cf__gender-chips">
           {(['m', 'f', null] as const).map((g) => (
             <Chip key={String(g)} selected={value.gender === g} onClick={() => onChange({ gender: g })}>
@@ -91,42 +90,33 @@ export function ContactFields({
             </Chip>
           ))}
         </div>
-      </div>
+      </Field>
     </>
   )
 
   const contactFields: ReactNode = showContact ? (
     <>
-      <label className="cf__field">
-        <span className="cf__label">
-          <Icon name="phone-bold" size={14} /> {t.cercle.phone}
-        </span>
+      <Field label={<><Icon name="phone-bold" size={14} /> {t.cercle.phone}</>}>
         <input
           className="cf__input"
           type="tel"
           value={value.phone}
           onChange={(e) => onChange({ phone: e.target.value })}
         />
-      </label>
-      <label className="cf__field">
-        <span className="cf__label">
-          <Icon name="envelope-bold" size={14} /> {t.cercle.email}
-        </span>
+      </Field>
+      <Field label={<><Icon name="envelope-bold" size={14} /> {t.cercle.email}</>}>
         <input
           className="cf__input"
           type="email"
           value={value.email}
           onChange={(e) => onChange({ email: e.target.value })}
         />
-      </label>
+      </Field>
     </>
   ) : null
 
   const addressBlock: ReactNode = showAddress ? (
-    <div className="cf__field">
-      <span className="cf__label">
-        <Icon name="map-pin-bold" size={14} /> {t.cercle.address}
-      </span>
+    <Field as="div" label={<><Icon name="map-pin-bold" size={14} /> {t.cercle.address}</>}>
       <input
         className="cf__input"
         value={value.street}
@@ -157,7 +147,7 @@ export function ContactFields({
           autoComplete="postal-code"
         />
       </div>
-    </div>
+    </Field>
   ) : null
 
   // Only fold when there are coordonnées to fold; otherwise the label would lie.
@@ -174,25 +164,20 @@ export function ContactFields({
     <>
       {/* Who they are: the name, and the one date the app actually uses. */}
       <div className="cf__grid">
-        <label className="cf__field">
-          <span className="cf__label">{t.cercle.firstName}</span>
+        <Field label={t.cercle.firstName}>
           <input
             className="cf__input"
             value={value.firstName}
             onChange={(e) => onChange({ firstName: e.target.value })}
           />
-        </label>
-        <label className="cf__field">
-          <span className="cf__label">{t.cercle.lastName}</span>
+        </Field>
+        <Field label={t.cercle.lastName}>
           <input className="cf__input" value={value.lastName} onChange={(e) => onChange({ lastName: e.target.value })} />
-        </label>
+        </Field>
         {showBirthday && (
-          <div className="cf__field cf__field--bday">
-            <span className="cf__label">
-              <Icon name="cake-bold" size={14} /> {t.cercle.birthday}
-            </span>
+          <Field as="div" className="cf__field--bday" label={<><Icon name="cake-bold" size={14} /> {t.cercle.birthday}</>}>
             <BirthdayPicker value={value.birthday || null} onChange={(v) => onChange({ birthday: v ?? '' })} />
-          </div>
+          </Field>
         )}
         {!folds && nicknameGender}
       </div>

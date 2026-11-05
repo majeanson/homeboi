@@ -1,3 +1,4 @@
+import { Field } from '../Field'
 import { useState } from 'react'
 import { useT } from '../../i18n'
 import { useConfirm } from '../../lib/confirm'
@@ -183,16 +184,14 @@ export function PlanForm({
       />
       <p className="operator__seg-hint mono">{v.planTitleHint}</p>
 
-      <label className="recur__row mono">
-        <span>{v.planAmount}</span>
+      <Field inline className="mono" label={v.planAmount}>
         <input className="input" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />
-      </label>
+      </Field>
       <p className="operator__seg-hint mono">{v.planAmountHint}</p>
 
-      <label className="recur__row mono">
-        <span>{v.planWhen}</span>
+      <Field inline className="mono" label={v.planWhen}>
         <input className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-      </label>
+      </Field>
       <p className="operator__seg-hint mono">{v.planWhenHint}</p>
       <RecurPicker value={recur} onChange={setRecur} />
 
@@ -201,11 +200,10 @@ export function PlanForm({
       <fieldset className="virements__shares-field">
         <legend className="mono">{v.planShares}</legend>
         {members.filter((m) => !m.is_child).map((m) => (
-          <label className="recur__row mono" key={m.id}>
-            <span className="virements__share-label">
+          <Field inline className="mono" key={m.id} label={<span className="virements__share-label">
               <Avatar kind={m.avatar_kind} photo={m.avatar_ref} colour={m.colour} name={m.display_name} size={24} />
               {m.display_name}
-            </span>
+            </span>}>
             <input
               className="input"
               inputMode="decimal"
@@ -213,7 +211,7 @@ export function PlanForm({
               onChange={(e) => setShares((s) => ({ ...s, [m.id]: e.target.value }))}
               aria-label={v.planShareOf(m.display_name)}
             />
-          </label>
+          </Field>
         ))}
       </fieldset>
       <p className="operator__seg-hint mono">{v.planSharesHint}</p>
@@ -258,19 +256,16 @@ export function PlanForm({
             ))}
           </Cluster>
         </fieldset>
-        <label className="recur__row mono">
-          <span>{v.catchupGap}</span>
+        <Field inline className="mono" label={v.catchupGap}>
           <input className="input" inputMode="decimal" value={gap} onChange={(e) => setGap(e.target.value)} />
-        </label>
+        </Field>
         <p className="operator__seg-hint mono">{v.catchupGapHint}</p>
-        <label className="recur__row mono">
-          <span>{v.catchupAsOf}</span>
+        <Field inline className="mono" label={v.catchupAsOf}>
           <input className="input" type="date" value={asOf} onChange={(e) => setAsOf(e.target.value)} />
-        </label>
-        <label className="recur__row mono">
-          <span>{v.catchupEnd}</span>
+        </Field>
+        <Field inline className="mono" label={v.catchupEnd}>
           <input className="input" type="date" value={termEnd} onChange={(e) => setTermEnd(e.target.value)} />
-        </label>
+        </Field>
         <p className="operator__seg-hint mono">{v.catchupEndHint}</p>
       </Disclosure>
 

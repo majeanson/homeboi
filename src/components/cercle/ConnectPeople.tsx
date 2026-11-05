@@ -1,3 +1,4 @@
+import { Field } from '../Field'
 import { useEffect, useMemo, useState } from 'react'
 import { useLang, useT } from '../../i18n'
 import { useWrite, writeFailed } from '../../lib/write'
@@ -100,7 +101,7 @@ export function ConnectPeople({
     <div className="cercle-connect">
       <p className="cercle-fam__hint mono">{t.cercle.connectHint}</p>
 
-      <span className="cf__label">{t.cercle.connectPersonA}</span>
+      <span className="field__label">{t.cercle.connectPersonA}</span>
       <EntityCombobox<Person>
         value={aText}
         onChange={(v) => {
@@ -118,8 +119,7 @@ export function ConnectPeople({
       />
 
       {/* "est [le/la] …" — the relationship, gendered live by person A in the preview. */}
-      <label className="cf__field">
-        <span className="cf__label">{t.cercle.connectRelation}</span>
+      <Field label={t.cercle.connectRelation}>
         <select className="cf__input" value={type} onChange={(e) => setType(e.target.value as RelationshipType | '')}>
           <option value="">—</option>
           {shownGroups.map((g) => (
@@ -132,9 +132,9 @@ export function ConnectPeople({
             </optgroup>
           ))}
         </select>
-      </label>
+      </Field>
 
-      <span className="cf__label">{t.cercle.connectPersonB}</span>
+      <span className="field__label">{t.cercle.connectPersonB}</span>
       <EntityCombobox<Person>
         value={bText}
         onChange={(v) => {

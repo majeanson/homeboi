@@ -1,3 +1,4 @@
+import { Field } from '../components/Field'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -167,22 +168,20 @@ export function ListEditPage() {
       <div className="scene__body">
         {ro ? (
           <div className="li-edit">
-            <div className="li-edit__field">
-              <span className="li-edit__label">{t.list.nameLabel}</span>
+            <Field as="div" label={t.list.nameLabel}>
               <p className="li-edit__readonly">{item.text}</p>
-            </div>
+            </Field>
             {/* A guest can't flip the flag, but should still read why the line
                 looks faded on the list. Only shown when it's actually set. */}
             {!!item.non_urgent && (
-              <div className="li-edit__field">
+              <div className="field">
                 <ChipGroup>
                   <Chip icon="hourglass-high-bold">{t.list.rushNone}</Chip>
                 </ChipGroup>
               </div>
             )}
             {terms.length > 0 && (
-              <div className="li-edit__field">
-                <span className="li-edit__label">{t.list.termsLabel}</span>
+              <Field as="div" label={t.list.termsLabel}>
                 <div className="li-terms">
                   {terms.map((term, i) => (
                     <span key={`${term}-${i}`} className="li-term">
@@ -190,7 +189,7 @@ export function ListEditPage() {
                     </span>
                   ))}
                 </div>
-              </div>
+              </Field>
             )}
             {deal && (
               <p className="li-edit__row mono">
@@ -200,8 +199,7 @@ export function ListEditPage() {
           </div>
         ) : (
         <div className="li-edit">
-          <label className="li-edit__field">
-            <span className="li-edit__label">{t.list.nameLabel}</span>
+          <Field label={t.list.nameLabel}>
             <input
               className="input"
               value={text}
@@ -209,21 +207,20 @@ export function ListEditPage() {
               onKeyDown={(e) => e.key === 'Enter' && save()}
               aria-label={t.list.nameLabel}
             />
-          </label>
+          </Field>
 
           {/* Which store aisle this item sorts into under "Par allée". Defaults to
               the automatic guess (from the row picture); pick one to correct it and
               the choice is remembered for this item from now on. */}
-          <div className="li-edit__field">
-            <span className="li-edit__label">{t.list.aisleLabel}</span>
+          <Field as="div" label={t.list.aisleLabel}>
             <span className="li-edit__hint">{t.list.aisleHint}</span>
             <AislePicker text={item.text} />
-          </div>
+          </Field>
 
           {/* A line is an actual errand by default — that needs no control. The only
               thing worth a tap is the rare "actually, only if there's an aubaine",
               so this is ONE toggle you switch on, not a choice you have to make. */}
-          <div className="li-edit__field">
+          <div className="field">
             <ChipGroup>
               <Chip
                 selected={!!item.non_urgent}
@@ -236,8 +233,7 @@ export function ListEditPage() {
             <span className="li-edit__hint">{t.list.rushHint}</span>
           </div>
 
-          <div className="li-edit__field">
-            <span className="li-edit__label">{t.list.termsLabel}</span>
+          <Field as="div" label={t.list.termsLabel}>
             <span className="li-edit__hint">{t.list.termsHint}</span>
             {terms.length > 0 && (
               <div className="li-terms">
@@ -269,7 +265,7 @@ export function ListEditPage() {
               placeholder={t.list.addTerm}
               aria-label={t.list.addTerm}
             />
-          </div>
+          </Field>
 
           {deal && (
             <button type="button" className="btn btn--ghost li-edit__row" onClick={unlink} disabled={busy}>
