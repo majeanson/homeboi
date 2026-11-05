@@ -5,7 +5,7 @@
   position: fixed;
   right: 20px;
   bottom: 20px;
-  z-index: 24;
+  z-index: var(--z-fab);
   width: 60px;
   height: 60px;
   border-radius: 50%;
@@ -46,6 +46,9 @@ body.is-recording .add-fab {
      `*__scrim` compounds (recipe-modal, now-card, tour) are unrelated rules.
 
      ── THE fixed-overlay layer scale (ascending; keep this list true) ──────────
+     Since 2026-11-05 every tier is a `--z-*` TOKEN in core.css (`--z-scrim: 155`),
+     and tokens.test.ts fails a literal z-index ≥ 10 — this prose carries the WHY,
+     core.css the number; layer-order.test.ts reads the tokens to check the sandwich.
        24        the ＋ FAB
        25 / 30   hub chrome (kiosk rail, mobile tab bar)
        40 / 42   .undo-toast / .ai-error-toast  ← page-chrome level ON PURPOSE
@@ -67,7 +70,7 @@ body.is-recording .add-fab {
      it is out of reach from a scene. The cost is that a toast raised while a
      sheet is open waits for the sheet to close; every sheet action that offers
      an undo closes the sheet first today. */
-  z-index: 155;
+  z-index: var(--z-scrim);
   background: rgba(44, 39, 34, 0.32);
   opacity: 0;
   pointer-events: none;
@@ -87,7 +90,7 @@ body.is-recording .add-fab {
   left: 50%;
   bottom: 24px;
   transform: translateX(-50%);
-  z-index: 40;
+  z-index: var(--z-toast);
   display: flex;
   align-items: center;
   gap: 14px;
@@ -359,7 +362,7 @@ body.is-recording .add-fab {
   left: 50%;
   bottom: calc(24px + env(safe-area-inset-bottom, 0px));
   transform: translateX(-50%);
-  z-index: 42;
+  z-index: var(--z-toast-ai);
   display: flex;
   align-items: center;
   gap: 14px;
@@ -435,7 +438,7 @@ body.is-recording .add-fab {
 }
 .ai-log__row {
   padding: 10px 12px;
-  background: var(--paper-2, rgba(0, 0, 0, 0.03));
+  background: var(--paper-2);
   border-left: 3px solid #d9776b;
   border-radius: 8px;
 }
@@ -469,8 +472,8 @@ body.is-recording .add-fab {
   display: flex;
   gap: 10px;
   padding: 10px 12px;
-  background: var(--paper-2, rgba(0, 0, 0, 0.03));
-  border-left: 3px solid var(--line, #ccc);
+  background: var(--paper-2);
+  border-left: 3px solid var(--line);
   border-radius: 0 8px 8px 0;
 }
 .ai-test__row.is-ok {
@@ -529,7 +532,7 @@ body.is-recording .add-fab {
      glitch after iOS suspended the web view with --kb stuck. */
   bottom: 0;
   /* Above every full-screen scene, one above `.scrim` — see its comment. */
-  z-index: 156;
+  z-index: var(--z-sheet);
   max-width: 40rem;
   margin: 0 auto;
   max-height: 88vh;

@@ -96,6 +96,44 @@
   --primary-press: var(--marigold-deep);
   --on-primary: #3a2a12;
   --success: var(--sage-deep);
+  /* The TONE names are these two: --warn (the error / destructive red) and --success.
+     `--danger` and `--ok` were spelled at 12 sites and defined NOWHERE (2026-11-05) —
+     each fell back to a literal that disagreed with the palette (#c0392b, #3bb24a).
+     tokens.test.ts now fails a `var(--x)` that resolves to nothing. */
+
+  /* ── THE fixed-overlay layer scale, as tokens (ascending; the prose version with the
+     WHY of each tier is in sheets/capture.css beside .scrim — keep both true). A
+     literal `z-index` ≥ 10 anywhere in src/styles fails tokens.test.ts; 0–9 stays a
+     local stacking order inside one component and is not a layer. */
+  --z-sticky: 10; /* a sticky toolbar over its own page (the DevKit axis bar) */
+  --z-fab: 24; /* the ＋ FAB */
+  --z-chrome: 25; /* hub chrome: the kiosk rail… */
+  --z-chrome-mobile: 30; /* …and the mobile tab bar */
+  --z-toast: 40; /* .undo-toast, the board's idle pill — page-chrome level ON PURPOSE */
+  --z-toast-ai: 42; /* .ai-error-toast */
+  --z-popover: 45; /* a word's glossary bubble: over a toast, under any scene */
+  --z-scene: 50; /* full-screen scenes start here: cashier */
+  --z-scene-flyer: 70; /* flyer / flipp pager */
+  --z-scene-recipe: 80;
+  --z-scene-cook: 90;
+  --z-scene-note: 140; /* note editor */
+  --z-scene-draw: 150; /* DrawPad */
+  --z-scrim: 155; /* a Sheet can open from inside a scene */
+  --z-sheet: 156;
+  --z-tour: 158; /* a teaching layer, above whatever it points at */
+  --z-modal: 160; /* .kit-modal__backdrop, .confirm-backdrop */
+  --z-confirm: 161; /* a confirm raised from an OPEN sheet */
+  --z-ambient: 200; /* the screensaver owns the screen */
+  --z-zoom: 1000; /* image zoom */
+  --z-menu: 1100; /* the ⋯ menu panel */
+  --z-drag: 1200; /* the drag ghost */
+
+  /* Breakpoints — the three the layout is designed at (tokens cannot hold a @media
+     width, so this is the canon by comment; tokens.test.ts ratchets the number of
+     DISTINCT width queries in src/styles down toward these):
+       phone   ≤ 480px   (the 390px first screen; LEAN.md)
+       tablet  ≥ 700px   (the wall tablet in portrait, 820×1180 in the matrix)
+       wide    ≥ 1100px  (the hybrid reading-column pass, STATE §K wave 0) */
 
   /* ---- type ---- */
   --mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
@@ -1181,7 +1219,7 @@ html[data-embedded] .home {
 .home__feature-body {
   font-size: 0.92rem;
   line-height: 1.4;
-  color: var(--ink-soft, var(--ink-faint));
+  color: var(--ink-soft);
 }
 /* The calm promise list — short ✓ lines, then the privacy one-liner. */
 .home__promises {

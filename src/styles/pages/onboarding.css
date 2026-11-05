@@ -40,7 +40,7 @@
 }
 /* The hint flips green once the constraint is met (signup password length). */
 .field__hint--ok {
-  color: var(--sage, #6b8a52);
+  color: var(--sage);
 }
 /* The shared 401 prompt: primary door for this surface, the other underneath. */
 .pairprompt {

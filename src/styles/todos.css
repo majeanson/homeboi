@@ -95,7 +95,7 @@
   }
 }
 .todo-row.done .todo-row__check {
-  color: var(--accent, #6b8a52);
+  color: var(--accent);
 }
 .todo-row__name {
   flex: 1 1 auto;
@@ -224,7 +224,7 @@
   gap: 0.4rem;
   padding: 0.25rem 0.5rem;
   border-radius: var(--radius-pill);
-  background: var(--sky-wash, #e8eef6);
+  background: var(--sky-wash);
   color: var(--ink);
   font-size: 0.9rem;
 }
@@ -331,11 +331,11 @@
    card use: a Disclosure whose summary reads like a .todo-grouphead (same quiet
    mono type), with the shared count chip riding it. */
 .todo-fold > .disclosure__summary {
-  font-family: var(--mono, monospace);
+  font-family: var(--mono);
   font-size: 0.78rem;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--ink-soft);
 }
 .todo-fold .todo-group {
   margin-top: 0.25rem;
@@ -363,5 +363,5 @@
 .addsheet__todo-hint {
   margin: 0;
   font-size: 0.78rem;
-  color: var(--muted);
+  color: var(--ink-soft);
 }

@@ -88,7 +88,7 @@
 }
 .drawgallery__pin.is-done {
   color: var(--paper);
-  background: var(--berry-deep, var(--accent, #4a8a5a));
+  background: var(--berry-deep);
 }
 /* « Garder » (C1): the keepsake pin, the fridge pin's twin one step to the right. */
 .drawgallery__keep {
@@ -105,7 +105,7 @@
 }
 .drawgallery__keep.is-done {
   color: var(--paper);
-  background: var(--berry-deep, var(--accent, #4a8a5a));
+  background: var(--berry-deep);
 }
 
 /* « Souvenirs » (PLAN-mots C1, SouvenirsCard): the keepsake shelf — kept photos, drawings

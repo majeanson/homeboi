@@ -32,8 +32,8 @@
 /* Each added household member sits in its own soft card so the form reads as a
    stack of people, not one long field run. */
 .intake__person {
-  border: 1px solid var(--line, rgba(0, 0, 0, 0.1));
-  border-radius: var(--radius, 12px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
   padding: 0.75rem;
   margin-bottom: 0.75rem;
   background: var(--surface-2);
@@ -86,7 +86,7 @@
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: var(--accent, #2a8f85);
+  background: var(--accent);
   color: #fff;
   margin-bottom: 0.5rem;
 }
@@ -109,7 +109,7 @@
   justify-content: space-between;
   gap: 0.5rem;
   padding: 0.5rem 0;
-  border-top: 1px solid var(--line, rgba(0, 0, 0, 0.08));
+  border-top: 1px solid var(--line);
 }
 .intake-review__row:first-child {
   border-top: none;
@@ -130,9 +130,9 @@
   cursor: pointer;
 }
 .intake-review__merge.is-on {
-  background: var(--accent, #2a8f85);
+  background: var(--accent);
   color: #fff;
-  border-color: var(--accent, #2a8f85);
+  border-color: var(--accent);
 }
 
 /* « La boîte aux lettres » (#postbox) — the sender's attached-memo preview on the
@@ -156,7 +156,7 @@
   justify-content: space-between;
   gap: 0.6rem;
   padding: 0.6rem 0;
-  border-top: 1px solid var(--line, rgba(0, 0, 0, 0.08));
+  border-top: 1px solid var(--line);
 }
 .postbox-review__row:first-child {
   border-top: none;

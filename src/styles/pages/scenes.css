@@ -23,7 +23,7 @@
   align-items: center;
   gap: 0.4rem;
   margin-top: 1rem;
-  color: var(--sage-deep, #6b8a52);
+  color: var(--sage-deep);
 }
 
 /* ---- #30 Global search scene (pages/SearchPage) ------------------------------ */
@@ -329,14 +329,14 @@
   height: 1.7rem;
   border-radius: 0.5rem;
   background: var(--paper);
-  box-shadow: inset 0 0 0 2.5px var(--line-strong, var(--line));
-  color: var(--accent-ink, #fff);
+  box-shadow: inset 0 0 0 2.5px var(--line-strong);
+  color: var(--accent-ink);
 }
 .departure__row.is-done {
-  background: color-mix(in srgb, var(--sage-deep, #6b8a52) 12%, var(--card));
+  background: color-mix(in srgb, var(--sage-deep) 12%, var(--card));
 }
 .departure__row.is-done .departure__check {
-  background: var(--sage-deep, #6b8a52);
+  background: var(--sage-deep);
   box-shadow: none;
   color: #fff;
 }
@@ -400,15 +400,15 @@
   border: 1px solid color-mix(in srgb, var(--car-tint, var(--ink-faint)) 65%, var(--line));
   box-shadow: var(--shadow-sm);
   transition:
-    transform var(--dur-fast, 0.12s) var(--ease-soft, ease),
-    box-shadow var(--dur-fast, 0.12s);
+    transform var(--dur-fast) var(--ease-soft),
+    box-shadow var(--dur-fast);
   /* The header is a standard .sec-label; its glyph disc + rule pick up the car colour
      via --sec-tint (folded in here from a duplicate .auto-card block, CSS-2). */
   --sec-tint: var(--car-tint);
 }
 .auto-card:active {
   transform: translateY(1px);
-  box-shadow: var(--shadow-press, var(--shadow-sm));
+  box-shadow: var(--shadow-press);
 }
 /* The .sec-label header is a compact strip here (not a tall section) — tighten it. */
 .auto-card .sec-label {
@@ -509,7 +509,7 @@
   align-items: center;
   gap: 0.25rem;
   font-size: 0.82rem;
-  color: var(--warn, #b4690e);
+  color: var(--warn);
 }
 
 /* « L'auto » week scene (/voiture) — the fast weekly editor. */
@@ -540,17 +540,17 @@
 }
 .voiture__day {
   position: relative;
-  border: 1px solid var(--line, #e3e0d8);
+  border: 1px solid var(--line);
   border-radius: 14px;
   padding: 0.6rem 0.8rem 0.6rem 1rem;
-  background: var(--surface, #fff);
+  background: var(--surface);
   overflow: hidden;
 }
 /* Busy day (the car is claimed): a colour accent bar + faint wash, tinted to who
    holds it — so a committed day reads apart from a free one at a glance. */
 .voiture__day--busy {
-  border-color: color-mix(in srgb, var(--day-tint, #6b7a8f) 35%, var(--line, #e3e0d8));
-  background: color-mix(in srgb, var(--day-tint, #6b7a8f) 7%, var(--surface, #fff));
+  border-color: color-mix(in srgb, var(--day-tint, #6b7a8f) 35%, var(--line));
+  background: color-mix(in srgb, var(--day-tint, #6b7a8f) 7%, var(--surface));
 }
 .voiture__day--busy::before {
   content: '';
@@ -566,8 +566,8 @@
   opacity: 0.9;
 }
 .voiture__day--today {
-  border-color: var(--accent, #6b7a8f);
-  box-shadow: 0 0 0 1px var(--accent, #6b7a8f) inset;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent) inset;
 }
 .voiture__day-head {
   display: flex;
@@ -639,7 +639,7 @@
   padding: 0.1rem 0.45rem;
   border-radius: var(--radius-pill);
   background: var(--accent-wash, #eef1f4);
-  color: var(--accent, #6b7a8f);
+  color: var(--accent);
 }
 .voiture__rides {
   list-style: none;
@@ -662,7 +662,7 @@
   flex: none;
 }
 .voiture__ride--conflict {
-  color: var(--warn, #b4690e);
+  color: var(--warn);
 }
 .voiture__ride-when {
   flex: none;
@@ -691,7 +691,7 @@
   flex: none;
   display: inline-flex;
   align-items: center;
-  color: var(--warn, #b4690e);
+  color: var(--warn);
 }
 .voiture__pax {
   display: inline-flex;
@@ -710,7 +710,7 @@
 .voiture__editor {
   margin-top: 0.5rem;
   padding-top: 0.5rem;
-  border-top: 1px dashed var(--line, #e3e0d8);
+  border-top: 1px dashed var(--line);
 }
 .voiture__editor-label {
   color: var(--ink-soft);
@@ -728,9 +728,9 @@
   align-items: center;
   gap: 0.35rem;
   padding: 0.25rem 0.5rem 0.25rem 0.25rem;
-  border: 2px solid var(--line, #e3e0d8);
+  border: 2px solid var(--line);
   border-radius: var(--radius-pill);
-  background: var(--surface, #fff);
+  background: var(--surface);
   cursor: pointer;
   font-size: 0.9em;
 }

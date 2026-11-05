@@ -43,7 +43,7 @@ function GuideCard({
   cardRef?: Ref<HTMLDetailsElement>
   // The section colour (SECTION_TINT ink) this card belongs to. Applied as a local
   // `--accent` override so the card's icon, chevron, target-ring and "go there"
-  // link all adopt the section's hue — they already read `var(--accent, …)`. Undefined
+  // link all adopt the section's hue — they already read `var(--accent)`. Undefined
   // (start cards, inline section guides) keeps the default marigold accent.
   tint?: string
   pointsOpen?: boolean

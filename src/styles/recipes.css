@@ -76,7 +76,7 @@
      since closed shrank the form, leaving dead space below — the "form is small but
      my keyboard is closed" bug. See src/lib/viewportVars.ts. */
   height: 100dvh;
-  z-index: 80;
+  z-index: var(--z-scene-recipe);
   display: flex;
   align-items: stretch;
   justify-content: center;
@@ -589,7 +589,7 @@
 }
 .kitchen__clear-meal:hover,
 .kitchen__clear-meal:focus-visible {
-  color: var(--danger, #c0392b);
+  color: var(--warn);
 }
 /* The ✕ that empties the meal input — square and unobtrusive, beside the field. */
 .kitchen__clear-text {

@@ -1,7 +1,7 @@
 /* --- List action bar + chosen state -------------------------------------- */
 .list-row__proof.is-picked {
-  background: var(--sage, #88a36f);
-  border-color: var(--sage, #88a36f);
+  background: var(--sage);
+  border-color: var(--sage);
   color: #fff;
   opacity: 1;
 }
@@ -144,8 +144,8 @@
   border-color: var(--accent);
 }
 .qa__chip.is-added {
-  background: var(--sage-wash, var(--paper-deep));
-  border-color: var(--sage, var(--line));
+  background: var(--sage-wash);
+  border-color: var(--sage);
   color: var(--ink-soft);
   cursor: default;
 }
@@ -175,8 +175,8 @@
   letter-spacing: 0.03em;
 }
 .qa__tag--due {
-  background: var(--marigold-wash, var(--paper-deep));
-  color: var(--marigold-deep, var(--ink));
+  background: var(--marigold-wash);
+  color: var(--marigold-deep);
 }
 .qa__tag--soon {
   background: var(--paper-deep);
@@ -188,7 +188,7 @@
   color: var(--accent);
 }
 .qa__chip.is-added .qa__act {
-  color: var(--sage, var(--accent));
+  color: var(--sage);
 }
 /* Swipe-to-delete wrapper for a Quick-add candidate — the same clip-window +
    red delete pane as La liste's rows (useSwipeToDelete), but sized to the chip
@@ -243,13 +243,13 @@
   width: 3rem;
   min-width: 3rem;
   height: 3rem;
-  background: var(--marigold, #f2a03d);
-  border-color: color-mix(in srgb, var(--marigold, #f2a03d) 78%, black);
+  background: var(--marigold);
+  border-color: color-mix(in srgb, var(--marigold) 78%, black);
   color: #3a2a12;
   box-shadow: var(--shadow-sm);
 }
 .list-actions__icon--flyer:hover {
-  background: color-mix(in srgb, var(--marigold, #f2a03d) 88%, black);
+  background: color-mix(in srgb, var(--marigold) 88%, black);
 }
 
 /* The menu's WRAPPER is the flex child (ActionMenu renders .action-menu around its
@@ -280,11 +280,11 @@
   padding: 3px 10px;
   border: 0;
   border-radius: 99px;
-  background: var(--sage, #88a36f);
+  background: var(--sage);
   /* Not #fff: 2.79:1 on the sage fill. --accent-ink is our warm-dark button ink and
      sage is a mid-tone, so the dark side wins here exactly as readableInk() computes
      it for the routine card’s « Faire » pill. */
-  color: var(--accent-ink, #2c2722);
+  color: var(--accent-ink);
   font-size: 11px;
   font-weight: 800;
   cursor: pointer;
@@ -293,7 +293,7 @@
   background: var(--ink-soft);
 }
 .deal--chosen {
-  box-shadow: inset 0 0 0 2px var(--sage, #88a36f);
+  box-shadow: inset 0 0 0 2px var(--sage);
 }
 
 

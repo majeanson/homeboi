@@ -204,7 +204,7 @@
   cursor: pointer;
 }
 .photo-frame__keep.is-done {
-  background: var(--berry-deep, var(--accent));
+  background: var(--berry-deep);
 }
 .photo-frame__shuffle {
   position: absolute;

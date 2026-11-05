@@ -12,7 +12,7 @@
 .tour {
   position: fixed;
   inset: 0;
-  z-index: 158;
+  z-index: var(--z-tour);
   /* NON-BLOCKING by design (calm ethos: the app never traps you). The layer only
      DIMS for focus — it does NOT catch input, so the highlighted control (e.g. a
      nav tab) and the rest of the app stay tappable. Advance with the card, just

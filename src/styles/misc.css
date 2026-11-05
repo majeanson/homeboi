@@ -2,7 +2,7 @@
 .zoom-overlay {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: var(--z-zoom);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -453,7 +453,7 @@
   background: var(--paper-2);
 }
 .flyer-store__when--upcoming {
-  color: var(--accent-ink, #fff);
+  color: var(--accent-ink);
   background: var(--accent);
 }
 
@@ -758,7 +758,7 @@
 }
 .errboundary__msg {
   margin: 0 0 18px;
-  color: var(--ink-soft, var(--ink));
+  color: var(--ink-soft);
   line-height: 1.5;
 }
 .errboundary__en {
@@ -799,7 +799,7 @@
    context would swallow its clicks. `top`/`left` come from the component. */
 .action-menu__panel {
   position: fixed;
-  z-index: 1100;
+  z-index: var(--z-menu);
   min-width: 13.5rem;
   max-width: min(20rem, calc(100vw - 1rem));
   display: flex;
@@ -832,7 +832,7 @@
   display: inline-flex;
   justify-content: center;
   width: 15px;
-  color: var(--sky-deep, var(--ink));
+  color: var(--sky-deep);
 }
 .action-menu__item:hover:not(:disabled),
 .action-menu__item:focus-visible {
@@ -879,15 +879,15 @@
   padding: 0;
   color: inherit;
   cursor: pointer;
-  border-radius: var(--radius-pill, 99px);
+  border-radius: var(--radius-pill);
   -webkit-tap-highlight-color: transparent;
 }
 /* MUTED is the state worth seeing across a room: the app is quiet and it needs to
    look deliberate, not broken. Struck speaker + a warm ground, so a glance at the
    wall answers « pourquoi ça ne parle pas ? » without touching anything. */
 .sound-toggle.is-muted {
-  color: var(--terracotta-deep, var(--ink));
-  background: var(--terracotta-wash, transparent);
+  color: var(--terracotta-deep);
+  background: var(--terracotta-wash);
 }
 .sound-toggle:focus-visible {
   outline: 2px solid var(--focus-ring);
@@ -905,5 +905,5 @@
   box-shadow: var(--shadow-sm);
 }
 .tdl-sound.is-muted {
-  background: var(--terracotta-wash, var(--card));
+  background: var(--terracotta-wash);
 }

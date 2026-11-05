@@ -76,7 +76,7 @@ export function CercleNotesCard({ members }: { members: Member[] }) {
     <Section
       label={t.boardCard.cercleNotes}
       icon="file-text-bold"
-      tint="var(--teal-deep, #2a8f85)"
+      tint="var(--teal-deep)"
       // Compact: the same heading `NotesList` shows — the explicit title, else the body's
       // first line, else « Sans titre » (a media memo). Never filtered: one row per note,
       // so the tile can't quietly name fewer things than the card holds.

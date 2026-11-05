@@ -56,7 +56,7 @@
 /* An in-text cross-reference to another Guide card ([[card:id|label]]). Calm:
    reads as a link (accent + dotted underline) without shouting. */
 .guide-link {
-  color: var(--marigold-deep, var(--accent));
+  color: var(--marigold-deep);
   font-weight: 600;
   text-decoration: underline;
   text-decoration-style: dotted;
@@ -99,7 +99,7 @@
   gap: 0.4rem;
   font-size: 0.9rem;
   font-weight: 600;
-  color: var(--ink-soft, var(--ink));
+  color: var(--ink-soft);
   margin: 0 0 0.5rem;
 }
 /* The manual lands as a table of contents: each group + concept-theme is a collapsed
@@ -129,7 +129,7 @@ details.guide__theme > summary::-webkit-details-marker {
 }
 details[open] > summary > .guide__group-caret {
   transform: rotate(180deg);
-  color: var(--accent, var(--ink));
+  color: var(--accent);
 }
 .guide__cards {
   display: flex;
@@ -159,16 +159,16 @@ details[open] > summary > .guide__group-caret {
    `scroll-margin` keeps the landing off the very edge — `block: 'start'` parks the
    border box flush at 0, which clipped this ring by a few pixels. */
 .guide__card.is-target {
-  border-color: var(--accent, var(--marigold-deep));
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, var(--marigold-deep)) 28%, transparent);
-  animation: guide-card-pulse 1.4s var(--ease-out, ease) 1;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 28%, transparent);
+  animation: guide-card-pulse 1.4s var(--ease-out) 1;
 }
 @keyframes guide-card-pulse {
   0% {
-    box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent, var(--marigold-deep)) 40%, transparent);
+    box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 40%, transparent);
   }
   100% {
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent, var(--marigold-deep)) 28%, transparent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 28%, transparent);
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -199,7 +199,7 @@ details[open] > summary > .guide__group-caret {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--accent, var(--ink));
+  color: var(--accent);
   margin-top: 0.1rem;
 }
 .guide__heads {
@@ -223,7 +223,7 @@ details[open] > summary > .guide__group-caret {
 }
 .guide__card[open] > .guide__summary .guide__chevron {
   transform: rotate(180deg);
-  color: var(--accent, var(--ink));
+  color: var(--accent);
 }
 .guide__title {
   font-weight: 600;
@@ -249,18 +249,18 @@ details[open] > summary > .guide__group-caret {
 /* The sub-point a contextual "?" deep-linked to: a gentle accent wash + ring so
    the eye lands on the exact line after the scroll. Fades once, then settles. */
 .guide__point.is-target {
-  border-radius: var(--radius-sm, 8px);
-  background: color-mix(in srgb, var(--accent, var(--marigold-deep)) 12%, transparent);
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent, var(--marigold-deep)) 34%, transparent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 34%, transparent);
   padding: 0 0.5rem;
-  animation: guide-point-pulse 1.6s var(--ease-out, ease) 1;
+  animation: guide-point-pulse 1.6s var(--ease-out) 1;
 }
 @keyframes guide-point-pulse {
   0% {
-    background: color-mix(in srgb, var(--accent, var(--marigold-deep)) 30%, transparent);
+    background: color-mix(in srgb, var(--accent) 30%, transparent);
   }
   100% {
-    background: color-mix(in srgb, var(--accent, var(--marigold-deep)) 12%, transparent);
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -289,8 +289,8 @@ details[open] > summary > .guide__group-caret {
   flex: 0 0 auto;
   width: 0.45rem;
   height: 0.45rem;
-  border-right: 2px solid var(--accent, var(--ink-soft));
-  border-bottom: 2px solid var(--accent, var(--ink-soft));
+  border-right: 2px solid var(--accent);
+  border-bottom: 2px solid var(--accent);
   transform: rotate(-45deg);
   transition: transform 0.15s ease;
 }
@@ -319,7 +319,7 @@ details[open] > summary > .guide__group-caret {
   content: '↗';
   margin-right: 0.35rem;
   font-style: normal;
-  color: var(--accent, var(--ink-soft));
+  color: var(--accent);
 }
 /* A guide action link/button: « Ouvrir » (the live feature), « Régler » (its
    Réglages spot), a point's « Essayer », the tour-replay… — one family. */
@@ -338,7 +338,7 @@ details[open] > summary > .guide__group-caret {
      E2E workflow had been SKIPPED for days (it chains off CI, and CI was red), so a
      real contrast regression sat on main unseen. Same shape as the five `-deep`-token
      misuses the a11y census caught in one week (STATE §4-J). */
-  border: 1.5px solid var(--accent, var(--line-strong));
+  border: 1.5px solid var(--accent);
   border-radius: var(--radius);
   background: var(--paper);
   color: var(--accent-ink-on-paper, var(--ink));
@@ -347,8 +347,8 @@ details[open] > summary > .guide__group-caret {
   text-decoration: none;
 }
 .guide__goto:hover {
-  border-color: var(--accent, var(--line-strong));
-  background: color-mix(in srgb, var(--accent, var(--ink)) 8%, var(--paper));
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--paper));
 }
 /* A point's own « Essayer » link — smaller than the card-level links, right
    under the explanation it acts on. */
@@ -371,7 +371,7 @@ details[open] > summary > .guide__group-caret {
    browser's shouting yellow — that inherits the surrounding ink so it reads in
    every theme and inside soft/italic lines alike. */
 mark.hl {
-  background: color-mix(in srgb, var(--accent, var(--marigold-deep)) 24%, transparent);
+  background: color-mix(in srgb, var(--accent) 24%, transparent);
   color: inherit;
   border-radius: 3px;
   padding: 0 0.08em;
@@ -417,7 +417,7 @@ mark.hl {
      card clips its own overflow and no amount of viewport clamping escapes an ancestor.
      `top`/`left` are written by the layout effect from the WORD's rect. */
   position: fixed;
-  z-index: 45; /* above the undo toast (40), far below any scene (50+) or sheet (155+) */
+  z-index: var(--z-popover); /* above the undo toast (40), far below any scene (50+) or sheet (155+) */
   top: 0;
   left: 0;
   display: block;
@@ -443,6 +443,6 @@ mark.hl {
   align-items: center;
   gap: 4px;
   margin-top: 6px;
-  color: var(--marigold-deep, var(--accent));
+  color: var(--marigold-deep);
   font-weight: 600;
 }

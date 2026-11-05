@@ -13,7 +13,7 @@
 .devkit__bar {
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: var(--z-sticky);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -81,7 +81,7 @@
 }
 .devkit__seg-btn.is-on {
   background: var(--accent);
-  color: var(--accent-ink, #fff);
+  color: var(--accent-ink);
 }
 .devkit__warn {
   flex-basis: 100%;

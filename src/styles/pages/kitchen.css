@@ -502,7 +502,7 @@
 }
 .dnd-ghost {
   position: fixed;
-  z-index: 1200;
+  z-index: var(--z-drag);
   /* Sit just above-left of the finger so the label clears the fingertip. */
   transform: translate(-50%, calc(-100% - 0.6rem));
   pointer-events: none;
@@ -729,14 +729,14 @@
   align-self: stretch;
   justify-content: center;
   margin-top: 0.8rem;
-  border-color: color-mix(in srgb, var(--danger, #c0392b) 40%, transparent);
-  color: var(--danger, #c0392b);
+  border-color: color-mix(in srgb, var(--warn) 40%, transparent);
+  color: var(--warn);
 }
 .kitchen__clear-day:hover,
 .kitchen__clear-day:focus-visible {
-  border-color: var(--danger, #c0392b);
-  background: color-mix(in srgb, var(--danger, #c0392b) 10%, transparent);
-  color: var(--danger, #c0392b);
+  border-color: var(--warn);
+  background: color-mix(in srgb, var(--warn) 10%, transparent);
+  color: var(--warn);
 }
 /* The meal -> grocery staple confirm step (B3). Breaks the day row into a
    column: dish + chips + the two save actions. */

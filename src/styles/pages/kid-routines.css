@@ -224,7 +224,7 @@
   align-items: center;
   gap: 0.25rem;
   font-weight: 700;
-  color: var(--sage, #6b8a52);
+  color: var(--sage);
 }
 .kid__routine-prog {
   font-weight: 700;

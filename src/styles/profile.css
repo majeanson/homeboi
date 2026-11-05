@@ -225,7 +225,7 @@
   width: 11px;
   height: 11px;
   border-radius: 50%;
-  background: var(--marigold-deep, #d9842a);
+  background: var(--marigold-deep);
   box-shadow: 0 0 0 2px var(--card);
   pointer-events: none;
 }
@@ -256,7 +256,7 @@
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  color: var(--ink-soft, var(--muted));
+  color: var(--ink-soft);
 }
 /* Schedule (« Plus tard ») — the toggle + the revealed date/time inputs. */
 .mot-composer__sched {

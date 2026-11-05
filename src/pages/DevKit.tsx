@@ -1259,7 +1259,7 @@ export function DevKit() {
           </Demo>
           <Demo label="AVANCÉ, tinted per section — Notes teal, La liste marigold">
             <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
-              <ModeToggle advanced onToggle={() => {}} toSimple="Mode simple" toAdvanced="Mode avancé" tint="var(--teal-deep, #2a8f85)" />
+              <ModeToggle advanced onToggle={() => {}} toSimple="Mode simple" toAdvanced="Mode avancé" tint="var(--teal-deep)" />
               <ModeToggle advanced onToggle={() => {}} toSimple="Mode simple" toAdvanced="Mode avancé" tint="var(--marigold-deep)" />
             </div>
           </Demo>

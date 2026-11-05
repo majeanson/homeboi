@@ -72,7 +72,7 @@
   padding: 0.1rem 0.4rem;
   border-radius: var(--radius-pill);
   background: var(--berry-wash);
-  color: var(--berry-deep, var(--ink-soft));
+  color: var(--berry-deep);
 }
 
 /* A person row: a card holding the tap-to-open button + optional quick actions
@@ -133,7 +133,7 @@
   transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
 }
 .cercle-row__quick:hover {
-  color: var(--berry-deep, var(--ink));
+  color: var(--berry-deep);
   background: var(--berry-wash);
 }
 .cercle-row__main {
@@ -245,9 +245,9 @@
   padding: 1rem;
 }
 .cercle-kid__title {
-  font-family: var(--font-display, var(--display));
+  font-family: var(--font-display);
   font-size: clamp(1.6rem, 5vw, 2.6rem);
-  color: var(--berry-deep, var(--ink));
+  color: var(--berry-deep);
   margin: 0;
 }
 .cercle-kid__hint {
@@ -393,7 +393,7 @@
 }
 .ego-edge,
 .tree-edge {
-  stroke: var(--line-strong, var(--line));
+  stroke: var(--line-strong);
   stroke-width: 2;
 }
 /* A friendship that ties one family to another (Social ▸ Arbre) — dashed and faint, so
@@ -477,7 +477,7 @@
   outline: none;
 }
 .cf__input:focus {
-  border-color: var(--accent, var(--berry));
+  border-color: var(--accent);
 }
 .cf__textarea {
   resize: vertical;
@@ -666,7 +666,7 @@
   outline: none;
 }
 .cf-photos__caption:focus {
-  border-color: var(--accent, var(--berry));
+  border-color: var(--accent);
 }
 /* The Maisonnée face tile: read-only (the household owns it) — a flat, centred
    label instead of an editable caption field, and a soft accent ring on the image. */
@@ -827,8 +827,8 @@
 }
 .chip--toggle.is-on {
   background: var(--berry-wash);
-  color: var(--berry-deep, var(--ink));
-  border-color: var(--berry-deep, var(--line));
+  color: var(--berry-deep);
+  border-color: var(--berry-deep);
 }
 
 /* The Maisonnée card: its "Maisonnée" tag reads as a filled berry pill (like the
@@ -840,7 +840,7 @@
   background: var(--berry-wash);
   /* -ink on its own wash, the pairing the -ink tier is audited for. -deep here
      measured 4.26:1 by day and 3.03:1 at night (axe, 2026-09-15). */
-  color: var(--berry-ink, var(--ink-soft));
+  color: var(--berry-ink);
 }
 .cercle-group__delete {
   margin-left: auto;
@@ -1111,14 +1111,14 @@
   align-items: center;
   gap: 0.4rem;
   padding: 0.5rem 0.8rem;
-  border: 1px solid color-mix(in srgb, var(--teal-deep, #2a8f85) 35%, var(--line));
+  border: 1px solid color-mix(in srgb, var(--teal-deep) 35%, var(--line));
   border-radius: var(--radius-pill);
-  background: color-mix(in srgb, var(--teal-deep, #2a8f85) 9%, transparent);
+  background: color-mix(in srgb, var(--teal-deep) 9%, transparent);
   /* -ink, not -deep: this button is TEXT, and core.css states the rule in the palette
      itself. It measured 3.2:1 on the wall lens (axe, 2026-09-15) — found only once the
      contrast guard grew a KIOSK pass, since a phone hides this label entirely. The
      border and fill above stay -deep: they are non-text, held to 3:1, which they clear. */
-  color: var(--teal-ink, #22736a);
+  color: var(--teal-ink);
   font: inherit;
   font-weight: 600;
   font-size: 0.92rem;
@@ -1126,7 +1126,7 @@
   cursor: pointer;
 }
 .cercle-worldlaunch:hover {
-  background: color-mix(in srgb, var(--teal-deep, #2a8f85) 16%, transparent);
+  background: color-mix(in srgb, var(--teal-deep) 16%, transparent);
 }
 /* On a phone the view row is tight (3 segments + this launch button): drop the word
    and keep the sparkle + ↗ (the button stays aria-labelled « Voir notre monde ») so
@@ -1152,8 +1152,8 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background: var(--teal-wash, var(--paper-deep));
-  color: var(--teal-deep, var(--ink-soft));
+  background: var(--teal-wash);
+  color: var(--teal-deep);
 }
 .cercle-business__av img {
   width: 100%;
@@ -1307,7 +1307,7 @@
   text-align: center;
   padding: 1.6rem 0.8rem;
   border: 1px dashed var(--line);
-  border-radius: var(--radius-md, 14px);
+  border-radius: var(--radius-md);
   background: var(--surface);
 }
 /* --- The multi-card .vcf import picker (ContactForm Modal) -------------------- */
@@ -1332,7 +1332,7 @@
   align-items: center;
   gap: 0.6rem;
   padding: 0.3rem 0.4rem;
-  border-radius: var(--radius-sm, 8px);
+  border-radius: var(--radius-sm);
 }
 .pet-form__weight-kg {
   flex: 1 1 auto;
@@ -1360,7 +1360,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.2rem 0.3rem;
-  border-radius: var(--radius-sm, 8px);
+  border-radius: var(--radius-sm);
 }
 .pet-form__owner-name {
   flex: 1 1 auto;
@@ -1428,7 +1428,7 @@
   align-items: baseline;
   gap: 0.6rem;
   padding: 0.5rem 0.4rem;
-  border-radius: var(--radius-sm, 8px);
+  border-radius: var(--radius-sm);
   cursor: pointer;
 }
 .review__row:hover {
@@ -1473,7 +1473,7 @@
   padding: 0.6rem 0.85rem;
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
-  background: var(--teal-wash, var(--surface));
+  background: var(--teal-wash);
   color: var(--ink);
   font-weight: 700;
   text-align: left;
@@ -1492,7 +1492,7 @@
   margin: 0 auto 1rem;
   padding: 0.8rem 1.4rem;
   border: 2px solid var(--line);
-  border-radius: var(--radius-lg, 20px);
+  border-radius: var(--radius-lg);
   background: var(--surface);
   color: var(--ink);
   font-family: var(--display);
@@ -1533,7 +1533,7 @@
   gap: 0.4rem;
 }
 .cercle-world__tour.is-on {
-  background: var(--accent, #2a8f85);
+  background: var(--accent);
   color: #fff;
 }
 .cercle-world__hint {
@@ -1620,7 +1620,7 @@
   transition: stroke-opacity 0.25s ease, stroke-width 0.25s ease;
 }
 .world-bridge.is-active .world-bridge__line {
-  stroke: var(--accent, #2a8f85);
+  stroke: var(--accent);
   stroke-opacity: 1;
   stroke-width: 3.5;
   stroke-dasharray: none;
@@ -1667,7 +1667,7 @@
 .cercle-import__bar {
   width: 100%;
   height: 10px;
-  accent-color: var(--accent, #2a8f85);
+  accent-color: var(--accent);
 }
 
 /* « Joindre » (A-6) — the quick-dial rail atop Le cercle on mobile (JoindreRail.tsx).
@@ -1677,7 +1677,7 @@
   /* Now at the FOOT of a section: separate it from the list above with a hairline. */
   margin-top: var(--space-4, 16px);
   padding-top: var(--space-3, 12px);
-  border-top: 1px solid var(--hairline, rgba(0, 0, 0, 0.08));
+  border-top: 1px solid var(--hairline);
   margin-bottom: var(--space-3, 12px);
 }
 .joindre__title {

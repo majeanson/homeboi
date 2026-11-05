@@ -125,12 +125,12 @@
 .wg--editing .wg-slot.dnd-over {
   outline: none;
   border-radius: var(--radius-lg);
-  background: color-mix(in srgb, var(--marigold, currentColor) 10%, transparent);
+  background: color-mix(in srgb, var(--marigold) 10%, transparent);
 }
 /* The grid's own trailing space stays a distinct "append here" target — not a
    between-cards insertion, so it keeps the plain dashed ring. */
 .wg--editing.dnd-over {
-  outline: 2px dashed var(--marigold, currentColor);
+  outline: 2px dashed var(--marigold);
   outline-offset: 4px;
   border-radius: var(--radius-lg);
 }
@@ -201,7 +201,7 @@
    finger would). The card wobbles; its handles hold still. */
 @media (prefers-reduced-motion: no-preference) {
   .wg--editing .wg-slot:not(.is-dragging) .wg-slot__inner {
-    animation: wg-wiggle 0.34s var(--ease-soft, ease-in-out) infinite alternate;
+    animation: wg-wiggle 0.34s var(--ease-soft) infinite alternate;
   }
   /* Offset the phase so the whole board doesn't tick in lockstep like a metronome. */
   .wg--editing .wg-slot:nth-child(even) .wg-slot__inner {
@@ -361,7 +361,7 @@
   -webkit-tap-highlight-color: transparent;
 }
 .wg-slot .cardmini__corner:active {
-  box-shadow: var(--shadow-press, var(--shadow-sm));
+  box-shadow: var(--shadow-press);
 }
 /* Same wall-tablet halo as the edit badges: a ~30px disc reads fine but is a hard
    target from arm's length — grow the tap area to ~44px, visuals untouched. Two
@@ -387,7 +387,7 @@
   --sec-tint: var(--marigold-deep);
 }
 .wg-slot .cardmini:active {
-  box-shadow: var(--shadow-press, var(--shadow-sm));
+  box-shadow: var(--shadow-press);
 }
 /* The empty « always »-mode placeholder: same tinted tile as any other mini (its
    `--sec-tint` comes from `--wg-tint`, see `.wg-slot__placeholder` above), but its edge
@@ -749,10 +749,10 @@
    the property's value actually changes on the element. */
 @media (prefers-reduced-motion: no-preference) {
   .wg-slot .cardmini {
-    animation: wg-card-pop 0.18s var(--ease-soft, ease-out) both;
+    animation: wg-card-pop 0.18s var(--ease-soft) both;
   }
   .wg-slot .is-expanded {
-    animation: wg-card-pop 0.22s var(--ease-soft, ease-out) both;
+    animation: wg-card-pop 0.22s var(--ease-soft) both;
   }
 }
 @keyframes wg-card-pop {

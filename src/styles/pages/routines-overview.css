@@ -69,7 +69,7 @@
 }
 .routine-ring__fill {
   stroke: color-mix(in srgb, var(--tint) 78%, #000 4%);
-  transition: stroke-dashoffset var(--dur-slow, 0.4s) var(--ease-soft, ease);
+  transition: stroke-dashoffset var(--dur-slow) var(--ease-soft);
 }
 /* All steps done today — the ring settles to a soft filled check. Calm: a gentle
    "on y est", never a trophy/streak. */
@@ -243,7 +243,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-md, 12px);
+  border-radius: var(--radius-md);
   background: color-mix(in srgb, var(--ink) 5%, var(--card));
   border: 1px solid var(--line);
 }
@@ -262,7 +262,7 @@
   justify-content: center;
   border: 0;
   border-radius: 50%;
-  background: var(--danger, #c0392b);
+  background: var(--warn);
   color: #fff;
   cursor: pointer;
 }

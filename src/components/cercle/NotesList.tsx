@@ -186,7 +186,7 @@ export function NotesList({
     <>
       <ul className={'cnote-list' + (compact ? ' cnote-list--compact' : '')}>
         {shown.map((n, idx) => {
-          const tint = colorOf(n.author_member_id) ?? 'var(--teal-deep, #2a8f85)'
+          const tint = colorOf(n.author_member_id) ?? 'var(--teal-deep)'
           const css = { '--note-tint': tint } as React.CSSProperties
           const media = n.media_kind && n.media_key ? n.media_kind : null
           const scopeChip = n.member_id === null ? fn.forFamily : (nameOf(n.member_id) ?? fn.scopeSelf)

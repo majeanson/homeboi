@@ -15,7 +15,7 @@
   padding: 0;
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: var(--radius-md, 14px);
+  border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
   overflow: hidden;
 }
@@ -37,7 +37,7 @@
    a refresh. Opacity-only + gated. */
 @media (prefers-reduced-motion: no-preference) {
   .cnote {
-    animation: ambient-in var(--dur-slow, 0.45s) var(--ease-out, ease) both;
+    animation: ambient-in var(--dur-slow) var(--ease-out) both;
   }
 }
 /* An expanded note: its title may wrap, and the full body sits on its own row. */
@@ -235,10 +235,10 @@
    in the eager shell, so the lazy cercle.css can lean on them.) */
 .cercle-row.is-focus,
 .cnote.is-focus {
-  outline: 2px solid var(--accent, #2a8f85);
+  outline: 2px solid var(--accent);
   outline-offset: 1px;
   border-radius: var(--radius-md);
-  background: color-mix(in srgb, var(--accent, #2a8f85) 12%, transparent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
 @media (prefers-reduced-motion: no-preference) {
   .cercle-row.is-focus,
@@ -247,12 +247,12 @@
   }
   @keyframes cercle-focus-pulse {
     0% {
-      outline-color: var(--accent, #2a8f85);
-      background: color-mix(in srgb, var(--accent, #2a8f85) 22%, transparent);
+      outline-color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 22%, transparent);
     }
     100% {
-      outline-color: color-mix(in srgb, var(--accent, #2a8f85) 40%, transparent);
-      background: color-mix(in srgb, var(--accent, #2a8f85) 12%, transparent);
+      outline-color: color-mix(in srgb, var(--accent) 40%, transparent);
+      background: color-mix(in srgb, var(--accent) 12%, transparent);
     }
   }
 }
@@ -339,15 +339,15 @@
   width: 1.4rem;
   height: 1.4rem;
   margin-top: 0.05rem;
-  border: 2px solid color-mix(in srgb, var(--teal-deep, #2a8f85) 50%, var(--line));
+  border: 2px solid color-mix(in srgb, var(--teal-deep) 50%, var(--line));
   border-radius: 6px;
   background: var(--card);
   color: #fff;
   cursor: pointer;
 }
 .note-md__box.is-on {
-  background: var(--teal-deep, #2a8f85);
-  border-color: var(--teal-deep, #2a8f85);
+  background: var(--teal-deep);
+  border-color: var(--teal-deep);
 }
 .note-md__box:disabled {
   cursor: default;
@@ -359,7 +359,7 @@
 .note-md__quote {
   margin: 0 0 0.5rem;
   padding: 0.1rem 0 0.1rem 0.7rem;
-  border-left: 3px solid color-mix(in srgb, var(--teal-deep, #2a8f85) 40%, var(--line));
+  border-left: 3px solid color-mix(in srgb, var(--teal-deep) 40%, var(--line));
   color: var(--ink-soft);
   font-style: italic;
 }
@@ -398,7 +398,7 @@
 .note-editor {
   position: fixed;
   inset: 0;
-  z-index: 140; /* below DrawPad (150) so attaching a drawing layers on top */
+  z-index: var(--z-scene-note); /* below DrawPad (150) so attaching a drawing layers on top */
   display: flex;
   flex-direction: column;
   background: var(--paper);
@@ -441,7 +441,7 @@
 }
 .note-editor__scopelabel {
   font-size: 0.82rem;
-  color: var(--ink-soft, var(--muted));
+  color: var(--ink-soft);
 }
 .note-editor__toolbar {
   display: flex;
@@ -475,12 +475,12 @@
   cursor: pointer;
 }
 .note-editor__fmt:active {
-  background: color-mix(in srgb, var(--teal-deep, #2a8f85) 14%, var(--card));
+  background: color-mix(in srgb, var(--teal-deep) 14%, var(--card));
 }
 /* Toolbar button lit when the caret sits in that format (the editor stays WYSIWYG). */
 .note-editor__fmt.is-on {
-  border-color: var(--teal-deep, #2a8f85);
-  background: color-mix(in srgb, var(--teal-deep, #2a8f85) 18%, var(--card));
+  border-color: var(--teal-deep);
+  background: color-mix(in srgb, var(--teal-deep) 18%, var(--card));
   color: var(--ink);
 }
 .note-editor__glyph {
@@ -560,7 +560,7 @@
   border: 1px solid var(--line);
 }
 .note-editor__attachdel {
-  color: var(--danger, #c2563a);
+  color: var(--warn);
 }
 
 /* ── The rich editing surface (ProseMirror / TipTap) ───────────────────────────
@@ -612,7 +612,7 @@
 .note-tiptap blockquote {
   margin: 0.2rem 0;
   padding-left: 0.7rem;
-  border-left: 3px solid color-mix(in srgb, var(--teal-deep, #2a8f85) 40%, var(--line));
+  border-left: 3px solid color-mix(in srgb, var(--teal-deep) 40%, var(--line));
   color: var(--ink-soft);
   font-style: italic;
 }
@@ -638,7 +638,7 @@
 .note-tiptap ul[data-type='taskList'] input[type='checkbox'] {
   width: 1.2rem;
   height: 1.2rem;
-  accent-color: var(--teal-deep, #2a8f85);
+  accent-color: var(--teal-deep);
   cursor: pointer;
 }
 .note-tiptap ul[data-type='taskList'] > li > div {

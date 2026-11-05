@@ -238,7 +238,7 @@
   align-self: center;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: var(--surface-2, transparent);
+  background: var(--surface-2);
 }
 /* An untouched (auto-guessed) aisle stays quiet; a deliberate override reads as set. */
 .aisle-pip.is-auto {

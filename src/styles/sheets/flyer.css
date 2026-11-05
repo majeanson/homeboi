@@ -4,7 +4,7 @@
 .flyer-overlay {
   position: fixed;
   inset: 0;
-  z-index: 70;
+  z-index: var(--z-scene-flyer);
   background: var(--paper);
   display: flex;
   flex-direction: column;
@@ -102,7 +102,7 @@
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
-  color: var(--accent-ink, #fff);
+  color: var(--accent-ink);
   background: var(--accent);
   border-radius: var(--radius-pill);
   text-decoration: none;
@@ -137,8 +137,8 @@
   cursor: default;
 }
 .flyer-dl.is-done {
-  color: var(--sage-deep, #2f7d4f);
-  border-color: var(--sage-deep, #2f7d4f);
+  color: var(--sage-deep);
+  border-color: var(--sage-deep);
 }
 .flyer-dl:active:not(:disabled) {
   transform: scale(0.97);
@@ -149,7 +149,7 @@
 }
 /* Flyer validity span under the merchant name — the dates the cashier checks. */
 .flyer-bar__dates {
-  font-family: var(--mono, monospace);
+  font-family: var(--mono);
   font-weight: 700;
   font-size: 12.5px;
   letter-spacing: 0.01em;

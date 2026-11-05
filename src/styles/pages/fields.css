@@ -229,7 +229,7 @@
 }
 /* Recording: the terracotta stop button + its pulsing dot (from the old memo-row). */
 .memo-attach__rec {
-  color: var(--terracotta-deep, #c2563a);
+  color: var(--terracotta-deep);
 }
 .memo-attach__dot {
   display: inline-block;

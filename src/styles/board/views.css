@@ -394,7 +394,7 @@
   padding: 0.85rem 1rem 0.6rem;
   background: var(--marigold-wash);
   border: 1px solid color-mix(in srgb, var(--marigold-deep) 22%, transparent);
-  border-radius: var(--radius-lg, 18px);
+  border-radius: var(--radius-lg);
 }
 .tweek__regler > .tweek__col-h {
   margin: 0 0 0.5rem;
@@ -471,7 +471,7 @@
   margin-bottom: 0.4rem;
   padding: 8px 10px;
   gap: 9px;
-  border-radius: var(--radius-md, 12px);
+  border-radius: var(--radius-md);
 }
 .lane .act .tile {
   width: 36px;

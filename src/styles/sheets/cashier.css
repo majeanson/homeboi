@@ -14,7 +14,7 @@
      .scene / .recipe-modal. See src/lib/viewportVars.ts. */
   top: 0;
   height: 100dvh;
-  z-index: 50;
+  z-index: var(--z-scene);
   background: var(--paper);
   display: flex;
   flex-direction: column;
@@ -157,7 +157,7 @@
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: var(--sage, #88a36f);
+  background: var(--sage);
   color: #fff;
 }
 /* Present (the big proof peek) */
@@ -168,7 +168,7 @@
   display: flex;
   align-items: stretch;
   justify-content: center;
-  padding: 6px var(--gutter, 14px) 24px;
+  padding: 6px var(--gutter) 24px;
 }
 /* THE PROOF CARD — the item page a cashier already knows, in our colours.
    Rewritten 2026-09-10 to the composition of Flipp's item screen (verified in a real
@@ -377,7 +377,7 @@
 .flipp-pager {
   position: fixed;
   inset: 0;
-  z-index: 70;
+  z-index: var(--z-scene-flyer);
   background: var(--paper);
   display: flex;
   flex-direction: column;
@@ -387,7 +387,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px var(--gutter, 14px);
+  padding: 8px var(--gutter);
   border-bottom: 1.5px solid var(--line);
 }
 .flipp-pager__title {
@@ -399,7 +399,7 @@
 }
 .flipp-pager__count {
   font-size: 0.85rem;
-  color: var(--ink-soft, var(--muted));
+  color: var(--ink-soft);
 }
 .flipp-pager__for {
   font-family: var(--display);
@@ -464,7 +464,7 @@
 }
 .flipp-pager__nav {
   flex: 0 0 auto;
-  padding: 10px var(--gutter, 14px) max(10px, env(safe-area-inset-bottom));
+  padding: 10px var(--gutter) max(10px, env(safe-area-inset-bottom));
   border-top: 1.5px solid var(--line);
   justify-content: space-between;
   background: var(--paper);

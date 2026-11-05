@@ -327,7 +327,7 @@
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: var(--sage, #6b8a52);
+  background: var(--sage);
   color: #fff;
   font-size: 13px;
   font-weight: 800;
@@ -381,7 +381,7 @@
   color: var(--accent-ink);
 }
 .tdl-finish {
-  background: var(--sage, #88a36f);
+  background: var(--sage);
   color: #fff;
 }
 .tdl-start:active,
@@ -477,15 +477,15 @@
   max-width: min(30ch, calc(100vw - 2.5rem));
   padding: 8px 12px;
   border-radius: 14px 14px 4px 14px;
-  background: var(--surface, #fff);
-  color: var(--ink, #222);
+  background: var(--surface);
+  color: var(--ink);
   box-shadow: var(--shadow-float);
   font-size: var(--text-md);
   font-weight: 600;
   line-height: 1.35;
   text-align: right;
   text-wrap: pretty;
-  animation: buddy-bubble-in 0.22s var(--ease-soft, ease);
+  animation: buddy-bubble-in 0.22s var(--ease-soft);
 }
 @keyframes buddy-bubble-in {
   from {
@@ -510,7 +510,7 @@
   transform: scale(0.92);
 }
 .tdl-buddy.is-talking .companion {
-  animation: buddy-wiggle 0.55s var(--ease-soft, ease);
+  animation: buddy-wiggle 0.55s var(--ease-soft);
 }
 @keyframes buddy-wiggle {
   0%,
@@ -576,7 +576,7 @@
 .tdl-sticker__got {
   font-size: 2.6rem;
   line-height: 1;
-  animation: buddy-wiggle 0.55s var(--ease-soft, ease);
+  animation: buddy-wiggle 0.55s var(--ease-soft);
 }
 .tdl-sticker__wall {
   font-family: var(--display);
@@ -726,7 +726,7 @@
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  background: var(--sage, #6b8a52);
+  background: var(--sage);
   color: #fff;
   font-size: 15px;
   font-weight: 800;
@@ -742,7 +742,7 @@
    prefers-reduced-motion. */
 @media (prefers-reduced-motion: no-preference) {
   .tdl-illus:not(.tdl-illus--tap) {
-    animation: tdl-bloom 0.55s var(--ease-soft, ease-out) both;
+    animation: tdl-bloom 0.55s var(--ease-soft) both;
   }
   @keyframes tdl-bloom {
     from {
@@ -755,7 +755,7 @@
     }
   }
   .tdl-recap__step {
-    animation: tdl-pop 0.4s var(--ease-soft, ease-out) both;
+    animation: tdl-pop 0.4s var(--ease-soft) both;
   }
   .tdl-recap__step:nth-child(1) { animation-delay: 0.25s; }
   .tdl-recap__step:nth-child(2) { animation-delay: 0.35s; }
@@ -858,14 +858,14 @@
   font-size: 1.4rem;
   padding: 12px 14px;
   border: 2px solid color-mix(in srgb, var(--ink) 20%, transparent);
-  border-radius: var(--radius, 12px);
+  border-radius: var(--radius);
   background: var(--card);
   color: var(--ink);
   width: 100%;
 }
 .kid-exit-modal__wrong {
   margin: 10px 0 0;
-  color: var(--danger, #c2563a);
+  color: var(--warn);
   font-size: var(--text-md);
 }
 .kid-exit-modal__actions {
@@ -1031,7 +1031,7 @@
   width: 0.55rem;
   height: 0.55rem;
   border-radius: 50%;
-  background: var(--line-strong, var(--line));
+  background: var(--line-strong);
   opacity: 0.5;
 }
 .tbook__dot.is-on {
@@ -1197,7 +1197,7 @@
   transform: scale(0.96);
 }
 .seek-tile.is-right {
-  border-color: var(--ok, #3bb24a);
+  border-color: var(--success);
   transform: scale(1.05);
 }
 .seek-tile__face {
@@ -1229,7 +1229,7 @@
   position: absolute;
   top: 0.4rem;
   right: 0.4rem;
-  color: var(--ok, #3bb24a);
+  color: var(--success);
 }
 .seek__bravo {
   margin: 0;
@@ -1237,7 +1237,7 @@
   font-family: var(--display);
   font-weight: 800;
   font-size: 1.4rem;
-  color: var(--ok, #3bb24a);
+  color: var(--success);
 }
 
 /* --- Notre journée (the day timeline) --- */

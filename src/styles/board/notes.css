@@ -74,7 +74,7 @@
   text-align: left;
   border: 0;
   cursor: pointer;
-  font-family: var(--font-hand, inherit);
+  font-family: var(--font-hand);
   font-size: 1.15rem;
   line-height: 1.2;
   color: var(--ink);
@@ -278,7 +278,7 @@
 }
 .note-card__keep-badge.is-done {
   color: var(--paper);
-  background: var(--berry-deep, var(--accent, #4a8a5a));
+  background: var(--berry-deep);
 }
 
 /* The Record / Draw row that used to sit under the Note rapide capture is gone:

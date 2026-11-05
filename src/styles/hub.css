@@ -58,7 +58,7 @@
   position: absolute;
   bottom: 10px;
   left: 10px;
-  z-index: 25;
+  z-index: var(--z-chrome);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -104,7 +104,7 @@
   height: 7px;
   min-width: 0;
   border-radius: 50%;
-  background: var(--sage, #6b8a52);
+  background: var(--sage);
   margin-left: auto;
 }
 
@@ -257,7 +257,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 30;
+  z-index: var(--z-chrome-mobile);
   flex-direction: row;
   width: auto;
   gap: 4px;
@@ -372,7 +372,7 @@
 .welcome-steps {
   background: var(--marigold-wash);
   border: 1.5px solid color-mix(in srgb, var(--marigold) 35%, var(--card));
-  border-radius: var(--radius-lg, 18px);
+  border-radius: var(--radius-lg);
   padding: 14px 18px;
   margin-bottom: 1rem;
 }
@@ -497,13 +497,13 @@
   margin-top: 0.35rem;
   padding: 0.5rem 0.85rem;
   border: 1px dashed var(--line);
-  border-radius: var(--radius-md, 12px);
+  border-radius: var(--radius-md);
   color: var(--ink-faint);
   font-size: 0.72rem;
   text-align: center;
 }
 .board-layout__end.dnd-over {
-  border-color: var(--marigold, currentColor);
+  border-color: var(--marigold);
   color: var(--ink-soft);
 }
 
@@ -521,7 +521,7 @@
 .operator__voice input[type='range'] {
   flex: 1 1 12rem;
   max-width: 22rem;
-  accent-color: var(--accent, var(--ink));
+  accent-color: var(--accent);
 }
 .operator__voice .btn {
   align-self: flex-start;
@@ -647,7 +647,7 @@
   cursor: default;
 }
 .deck__clip-btn.is-on {
-  border-color: var(--accent, var(--terracotta-deep));
+  border-color: var(--accent);
   color: var(--ink);
 }
 .deck__clip-btn.is-recording {

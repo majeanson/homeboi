@@ -4,7 +4,7 @@
 .cook {
   position: fixed;
   inset: 0;
-  z-index: 90;
+  z-index: var(--z-scene-cook);
   display: flex;
   flex-direction: column;
   background: var(--paper);
@@ -165,11 +165,11 @@
 }
 .cook__ing-low:hover,
 .cook__ing-low:focus-visible {
-  color: var(--terracotta-deep, var(--ink));
+  color: var(--terracotta-deep);
   background: color-mix(in srgb, var(--ink) 7%, transparent);
 }
 .cook__ing-low.is-done {
-  color: var(--sage-deep, var(--ink-soft));
+  color: var(--sage-deep);
   cursor: default;
 }
 /* The method stays a single readable column (capped) even in the wide container —
@@ -186,7 +186,7 @@
   font-size: calc(1.15rem * var(--ds, 1));
   line-height: 1.45;
   padding-left: 0.3rem;
-  border-radius: var(--radius-sm, 0.4rem);
+  border-radius: var(--radius-sm);
   -webkit-tap-highlight-color: transparent;
 }
 /* The step TEXT is the read-aloud button (the <li> used to be a role="button"
@@ -538,7 +538,7 @@
 }
 .cook__timer-clock {
   border: none;
-  background: var(--sky-wash, #e6eef3);
+  background: var(--sky-wash);
   color: var(--ink);
   font-size: 1.6rem;
   font-weight: 600;
@@ -549,7 +549,7 @@
   min-width: 7rem;
 }
 .cook__timer.is-done .cook__timer-clock {
-  background: var(--sage, #6b8a52);
+  background: var(--sage);
   color: var(--paper);
 }
 @media (prefers-reduced-motion: no-preference) {
@@ -600,7 +600,7 @@
   text-overflow: ellipsis;
 }
 .cook__timer-item.is-done .cook__timer-label {
-  color: var(--sage-deep, #4f6b3a);
+  color: var(--sage-deep);
 }
 /* Compact the clock inside the rail (the in-step chips stay big). */
 .cook__timer-rail .cook__timer-clock {
@@ -615,8 +615,8 @@
 /* Hands-free mic: glows + pulses while listening so it's clearly "live". */
 .cook__voicectl.is-on {
   opacity: 1;
-  border-color: var(--terracotta-deep, #a8442b);
-  color: var(--terracotta-deep, #a8442b);
+  border-color: var(--terracotta-deep);
+  color: var(--terracotta-deep);
 }
 @media (prefers-reduced-motion: no-preference) {
   .cook__voicectl.is-on {
@@ -625,10 +625,10 @@
   @keyframes cook-mic-pulse {
     0%,
     100% {
-      box-shadow: 0 0 0 0 color-mix(in srgb, var(--terracotta-deep, #a8442b) 45%, transparent);
+      box-shadow: 0 0 0 0 color-mix(in srgb, var(--terracotta-deep) 45%, transparent);
     }
     70% {
-      box-shadow: 0 0 0 6px color-mix(in srgb, var(--terracotta-deep, #a8442b) 0%, transparent);
+      box-shadow: 0 0 0 6px color-mix(in srgb, var(--terracotta-deep) 0%, transparent);
     }
   }
 }
@@ -639,7 +639,7 @@
   font-size: var(--text-sm);
   color: var(--ink-soft);
   text-align: center;
-  background: var(--terracotta-wash, #f3e7e2);
+  background: var(--terracotta-wash);
   border-bottom: 1px solid var(--line);
 }
 /* Per-step timer chips in the parent full-recipe page — a row under the step. */
@@ -771,8 +771,8 @@
 /* Open, or narrowing: the button is lit so a short grid is never unexplained. */
 .recipe-filter.is-open,
 .recipe-filter.is-on {
-  border-color: color-mix(in srgb, var(--marigold-deep, #d9842a) 40%, var(--line));
-  background: color-mix(in srgb, var(--marigold-deep, #d9842a) 14%, var(--card));
+  border-color: color-mix(in srgb, var(--marigold-deep) 40%, var(--line));
+  background: color-mix(in srgb, var(--marigold-deep) 14%, var(--card));
   color: var(--ink);
 }
 /* How many filters are on — a count of CONTROLS, not of anything the household
@@ -785,7 +785,7 @@
   height: 1.15rem;
   padding: 0 0.25rem;
   border-radius: var(--radius-pill);
-  background: var(--marigold-deep, #d9842a);
+  background: var(--marigold-deep);
   color: #fffcf5;
   font-size: 0.68rem;
   font-weight: 700;
@@ -798,7 +798,7 @@
   margin: 0 0 0.7rem;
   padding: 0.6rem 0.7rem 0.5rem;
   border: 1px solid var(--line);
-  border-radius: var(--radius-md, 14px);
+  border-radius: var(--radius-md);
   background: var(--surface);
 }
 .recipe-filters .kitchen__recipe-tools {
@@ -843,14 +843,14 @@
   font-size: var(--text-md);
 }
 .recipe-card__ready {
-  color: var(--sage-deep, #4f6b3a);
+  color: var(--sage-deep);
   font-weight: 600;
 }
 .recipe-card__missing {
-  color: var(--terracotta-deep, #a8442b);
+  color: var(--terracotta-deep);
 }
 .recipe-card__uses {
-  color: var(--sage-deep, #4f6b3a);
+  color: var(--sage-deep);
   font-weight: 600;
 }
 /* #12 "Oubliées" subtitle — a quiet faint cue ("vu il y a 25 jours"), never a
@@ -969,10 +969,10 @@
   gap: 0.4rem;
 }
 .recipe-view__tag {
-  background: var(--berry-wash, #efe6ee);
+  background: var(--berry-wash);
   /* -ink on its own wash — the pairing that tier is audited for. -deep measured 4.26:1
      by day and 3.03:1 at night. */
-  color: var(--berry-ink, #7a3f6a);
+  color: var(--berry-ink);
 }
 
 /* --- Section markers ("## Glaçage") inside Cook mode ----------------------- */

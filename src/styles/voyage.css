@@ -55,7 +55,7 @@
    Opacity-only + gated. */
 @media (prefers-reduced-motion: no-preference) {
   .trip-note {
-    animation: ambient-in var(--dur-slow, 0.45s) var(--ease-out, ease) both;
+    animation: ambient-in var(--dur-slow) var(--ease-out) both;
   }
 }
 .trip-note__body {

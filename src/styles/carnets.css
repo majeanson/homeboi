@@ -65,7 +65,7 @@
   background: none;
   padding: 0.1rem 0.2rem;
   border-radius: 6px;
-  color: var(--accent, #2a8f85);
+  color: var(--accent);
   cursor: pointer;
   max-width: 14ch;
   overflow: hidden;
@@ -94,7 +94,7 @@
   width: 0.6rem;
   height: 0.6rem;
   border-radius: 50%;
-  background: var(--warn, #c98a3a);
+  background: var(--warn);
   flex: 0 0 auto;
   align-self: center;
   margin-inline-start: auto;
@@ -159,7 +159,7 @@
   list-style: none;
   margin: 0.4rem 0 0;
   padding: 0;
-  border-inline-start: 2px solid var(--line, #0002);
+  border-inline-start: 2px solid var(--line);
 }
 .carnet-horizon__row {
   display: flex;
@@ -177,10 +177,10 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--line-strong, #0004);
+  background: var(--line-strong);
 }
 .carnet-horizon__row.is-due::before {
-  background: var(--warn, #c98a3a);
+  background: var(--warn);
 }
 .carnet-horizon__thing {
   min-width: 0;
@@ -194,7 +194,7 @@
   flex: 0 0 auto;
 }
 .carnet-horizon__row.is-due .carnet-horizon__when {
-  color: var(--warn, #c98a3a);
+  color: var(--warn);
   opacity: 1;
 }
 
@@ -210,9 +210,9 @@
   align-items: center;
   gap: 0.45rem;
   padding: 0.4rem 0.7rem 0.4rem 0.4rem;
-  border: 1px solid var(--line, #0001);
+  border: 1px solid var(--line);
   border-radius: var(--radius-pill);
-  background: var(--card, #fff);
+  background: var(--card);
   cursor: pointer;
   font: inherit;
 }
@@ -276,7 +276,7 @@
   height: 48px;
   object-fit: cover;
   border-radius: 8px;
-  border: 1px solid var(--line, #0001);
+  border: 1px solid var(--line);
   position: relative;
   display: inline-block;
 }
@@ -294,7 +294,7 @@
   height: 20px;
   border-radius: 50%;
   border: none;
-  background: var(--ink, #222);
+  background: var(--ink);
   color: #fff;
   display: grid;
   place-items: center;
@@ -308,7 +308,7 @@
   border: none;
   border-radius: 8px;
   background: var(--surface-2);
-  color: var(--ink, #222);
+  color: var(--ink);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -336,7 +336,7 @@
   align-items: center;
   gap: 0.7rem;
   padding: 0.5rem;
-  border: 1px solid var(--line, #0001);
+  border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--surface-1, #fff);
 }
@@ -377,7 +377,7 @@
   gap: 2px;
 }
 .carnet-docs__name {
-  color: var(--ink, #222);
+  color: var(--ink);
   font-weight: 600;
   word-break: break-word;
 }
@@ -410,7 +410,7 @@
   width: 100%;
   flex: 1 1 auto; /* fill the space between the title and the pinned button */
   min-height: 0; /* let it shrink on a short screen so the button never gets pushed off */
-  border: 1px solid var(--line, #0001);
+  border: 1px solid var(--line);
   border-radius: 10px;
   background: #fff;
 }

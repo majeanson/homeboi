@@ -191,7 +191,7 @@
   height: 26px;
   border-radius: 50%;
   border: 1.5px solid var(--line);
-  background: var(--paper-deep, transparent);
+  background: var(--paper-deep);
   color: var(--ink-soft);
   font-family: var(--display);
   font-weight: 700;
@@ -199,7 +199,7 @@
   line-height: 1;
   text-decoration: none;
   cursor: pointer;
-  transition: color var(--dur-fast, 0.15s) ease, border-color var(--dur-fast, 0.15s) ease;
+  transition: color var(--dur-fast) ease, border-color var(--dur-fast) ease;
 }
 .help-dot:hover,
 .help-dot:focus-visible {
@@ -215,9 +215,9 @@
   margin: 4px 0 16px;
   padding: 14px 16px;
   border: 1px solid var(--line);
-  border-left: 3px solid var(--marigold-deep, var(--ink-soft));
+  border-left: 3px solid var(--marigold-deep);
   border-radius: 14px;
-  background: var(--paper-deep, transparent);
+  background: var(--paper-deep);
 }
 .section-intro__head {
   display: flex;
@@ -249,7 +249,7 @@
   color: var(--ink-soft);
   font-size: 0.82rem;
   cursor: pointer;
-  transition: color var(--dur-fast, 0.15s) ease, border-color var(--dur-fast, 0.15s) ease;
+  transition: color var(--dur-fast) ease, border-color var(--dur-fast) ease;
 }
 .section-intro__dismiss:hover,
 .section-intro__dismiss:focus-visible {
@@ -291,7 +291,7 @@
   cursor: pointer;
   /* -ink, not -deep: this is TEXT (the palette in core.css states the rule). It
      measured 3.03:1 on the Decouvrir card (axe, 2026-09-15). */
-  color: var(--marigold-ink, var(--ink));
+  color: var(--marigold-ink);
   font-weight: 600;
   font-size: 0.9rem;
   text-decoration: none;
@@ -321,7 +321,7 @@
   /* The ground goes to the TEXT tier so the cream on it clears 4.5:1 — it measured
      3.58:1 on -deep, which is the glyph tier (a 3:1 bar) and not meant to carry a
      word. Same fix shape as .empty-state__guide above it. */
-  background: var(--marigold-ink, var(--accent));
+  background: var(--marigold-ink);
   /* --paper, not a literal cream: the -ink tier FLIPS with the theme (dark on a pale
      day ground, light on a dark night one), so a fixed cream ink works by day and
      lands at 2.07:1 at night. --paper flips the same way and needs no new token — the
@@ -348,13 +348,13 @@
   margin: 4px 0 12px;
   padding: 12px 14px;
   border: 1px solid var(--line);
-  border-left: 3px solid var(--marigold-deep, var(--ink-soft));
+  border-left: 3px solid var(--marigold-deep);
   border-radius: 14px;
-  background: var(--paper-deep, transparent);
+  background: var(--paper-deep);
 }
 .sample-banner__icon {
   display: inline-flex;
-  color: var(--marigold-deep, var(--ink-soft));
+  color: var(--marigold-deep);
 }
 .sample-banner__text {
   display: flex;
@@ -381,9 +381,9 @@
   margin: 4px 0 16px;
   padding: 14px 16px;
   border: 1px solid var(--line);
-  border-left: 3px solid var(--marigold-deep, var(--ink-soft));
+  border-left: 3px solid var(--marigold-deep);
   border-radius: 14px;
-  background: var(--paper-deep, transparent);
+  background: var(--paper-deep);
 }
 .welcome-card__head {
   display: flex;
@@ -394,7 +394,7 @@
   flex: none;
   display: inline-grid;
   place-items: center;
-  color: var(--marigold-deep, var(--ink));
+  color: var(--marigold-deep);
 }
 .welcome-card__title {
   flex: 1 1 auto;
@@ -466,7 +466,7 @@
   flex: 0 0 auto;
   display: inline-grid;
   place-items: center;
-  color: var(--marigold-deep, var(--ink));
+  color: var(--marigold-deep);
 }
 .welcome-card__step-label {
   flex: 1 1 auto;
@@ -556,7 +556,7 @@
   cursor: pointer;
   text-decoration: none;
   -webkit-tap-highlight-color: transparent;
-  transition: transform var(--dur-fast, 0.15s) ease, box-shadow var(--dur-fast, 0.15s) ease;
+  transition: transform var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
 }
 .avatar--help:hover,
 .avatar--help:focus-visible {
@@ -575,7 +575,7 @@
 }
 .avatar-stack > .avatar {
   margin-inline-start: -0.3rem;
-  box-shadow: 0 0 0 2px var(--surface, #fff);
+  box-shadow: 0 0 0 2px var(--surface);
 }
 .avatar-stack > .avatar:first-child {
   margin-inline-start: 0;
@@ -717,7 +717,7 @@
 @media (prefers-reduced-motion: no-preference) {
   .now-card--clear .icn {
     transform-origin: center;
-    animation: clear-breathe 6s var(--ease-soft, ease-in-out) infinite;
+    animation: clear-breathe 6s var(--ease-soft) infinite;
   }
   @keyframes clear-breathe {
     0%,
@@ -1180,7 +1180,7 @@
   letter-spacing: 0.02em;
   padding: 1px 7px 1px 5px;
   border-radius: var(--radius-pill);
-  color: var(--marigold-ink, #8a5a00);
+  color: var(--marigold-ink);
   background: var(--marigold-faint, #f6e7c4);
 }
 /* THE tick. One shape for one idea: "I dealt with this". It was scoped to `.act`, so

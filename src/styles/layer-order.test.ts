@@ -54,14 +54,25 @@ function rules(css: string): { selector: string; body: string }[] {
 
 const files = cssFiles(stylesDir)
 
-/** Every `z-index: <n>` declaration in the stylesheets, by selector. */
+// The scale is TOKENS since 2026-11-05 (`--z-sheet: 156` in core.css's :root), so a
+// rule reads `z-index: var(--z-sheet)`. Resolve those through core.css; a literal is
+// still read as itself (the 0–9 local stacking orders). An unknown token resolves to
+// NaN and the overlay scan below then fails loudly on it, which is right.
+const zTokens = new Map<string, number>()
+for (const { selector, body } of rules(readFileSync(join(stylesDir, 'core.css'), 'utf8'))) {
+  if (selector !== ':root') continue
+  for (const m of body.matchAll(/--(z-[a-z-]+)\s*:\s*(\d+)/g)) zTokens.set(m[1], +m[2])
+}
+
+/** Every `z-index: <n | var(--z-x)>` declaration in the stylesheets, by selector. */
 const zBySelector = new Map<string, { z: number; file: string; body: string }>()
 for (const f of files) {
   for (const { selector, body } of rules(readFileSync(f, 'utf8'))) {
-    const m = /(?:^|;)\s*z-index\s*:\s*(-?\d+)/.exec(body)
+    const m = /(?:^|;)\s*z-index\s*:\s*(?:(-?\d+)|var\(--(z-[a-z-]+)\))/.exec(body)
     if (!m) continue
+    const z = m[1] != null ? +m[1] : (zTokens.get(m[2]) ?? NaN)
     // First declaration wins — a later `.hub .x` override tweaks size, not layer.
-    if (!zBySelector.has(selector)) zBySelector.set(selector, { z: +m[1], file: relative(stylesDir, f), body })
+    if (!zBySelector.has(selector)) zBySelector.set(selector, { z, file: relative(stylesDir, f), body })
   }
 }
 
@@ -85,6 +96,11 @@ const BELOW_SHEET = ['.flyer-overlay', '.flipp-pager', '.cook', '.note-editor', 
 describe('fixed-overlay layer order', () => {
   it('found the stylesheets', () => {
     expect(files.length).toBeGreaterThan(10)
+  })
+
+  it('reads the scale from core.css tokens (a renamed token would otherwise read as NaN)', () => {
+    expect(zTokens.get('z-sheet')).toBe(156)
+    for (const [sel, v] of zBySelector) expect(Number.isNaN(v.z), `${sel} (${v.file}) uses a --z- token core.css does not define`).toBe(false)
   })
 
   it('the sheet paints above its own scrim', () => {

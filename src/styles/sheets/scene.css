@@ -159,7 +159,7 @@
   font-size: 12px;
   font-weight: 700;
   /* -ink for text (3.8:1 as -deep). */
-  color: var(--sage-ink, var(--ink));
+  color: var(--sage-ink);
 }
 .deal__unit--none {
   font-weight: 500;

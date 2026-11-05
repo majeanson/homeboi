@@ -99,7 +99,7 @@
   max-height: clamp(var(--touch-target), calc((58dvh - 2rem) / 6), 200px);
   padding: 0.3rem 0.2rem;
   border: 1px solid var(--line);
-  border-radius: var(--radius-md, 12px);
+  border-radius: var(--radius-md);
   background: var(--card);
   color: var(--ink-soft);
   font: inherit;
@@ -163,7 +163,7 @@
   height: 1.5rem;
   border-radius: 50%;
   background: var(--accent);
-  color: var(--accent-ink, var(--ink));
+  color: var(--accent-ink);
 }
 .monthv__dots {
   display: flex;
@@ -256,7 +256,7 @@
   gap: 0.5rem;
   padding: 0.7rem 0.75rem 0.8rem;
   border: 1px solid var(--line);
-  border-radius: var(--radius-md, 12px);
+  border-radius: var(--radius-md);
   background: var(--card);
   /* A crisp hairline, not a lifted shadow. The grid still scrolls under this pane, and
      a hard 1px edge is what actually reads as "this is a layer above" on a phone — a
@@ -335,7 +335,7 @@
 }
 @media (hover: hover) {
   .monthv__day-btn:hover {
-    border-color: var(--accent, var(--ink-soft));
+    border-color: var(--accent);
     color: var(--ink);
     background: var(--card);
   }
@@ -363,7 +363,7 @@
    always), so an unscoped rule would leave it permanently highlighted. */
 .action-menu > .monthv__day-btn[aria-expanded='true'] {
   background: var(--card);
-  border-color: var(--accent, var(--ink-soft));
+  border-color: var(--accent);
   color: var(--ink);
 }
 /* Day page: the weather glance strip above the meal planner (today/tomorrow only). */
@@ -512,7 +512,7 @@
     max-height: calc(100dvh - 5rem);
     /* A column, not a tray on the bottom edge: full border, no lifted shadow. */
     border: 1px solid var(--line);
-    border-radius: var(--radius-md, 12px);
+    border-radius: var(--radius-md);
     box-shadow: none;
   }
   /* Folding is a narrow-screen affordance — there is nothing to reclaim in a column. */
@@ -560,7 +560,7 @@
   margin-bottom: 0.5rem;
   border: 0;
   border-left: 4px solid var(--sky-deep);
-  border-radius: var(--radius-md, 12px);
+  border-radius: var(--radius-md);
   background: var(--sky-wash);
   box-shadow: var(--shadow-sm);
   cursor: pointer;
@@ -568,7 +568,7 @@
 }
 .board-nextup:hover {
   transform: translateY(-1px);
-  box-shadow: var(--shadow-md, var(--shadow-sm));
+  box-shadow: var(--shadow-md);
 }
 .board-nextup:active {
   transform: translateY(0);
@@ -1021,7 +1021,7 @@
   gap: 1px;
   padding: 0.2rem 0;
   border: 0;
-  border-radius: var(--radius-md, 12px);
+  border-radius: var(--radius-md);
   /* A faint neutral chip — enough to read as a control (it IS the way back into the
      day) without competing with the rows' own coloured spines beside it. */
   background: color-mix(in oklab, var(--ink) 6%, transparent);
@@ -1031,7 +1031,7 @@
 }
 .monthv__rollup-date.is-today {
   background: var(--accent);
-  color: var(--accent-ink, var(--ink));
+  color: var(--accent-ink);
 }
 .monthv__rollup-dow {
   font-size: 0.6rem;

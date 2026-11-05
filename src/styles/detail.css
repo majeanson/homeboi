@@ -101,7 +101,7 @@
   overflow-wrap: anywhere;
 }
 .detail-sheet__text--hand {
-  font-family: var(--font-hand, inherit);
+  font-family: var(--font-hand);
   font-size: 1.2rem;
 }
 .detail-sheet__blocklabel {
