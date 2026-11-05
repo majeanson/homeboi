@@ -1285,6 +1285,9 @@ export function DevKit() {
           <Demo label="always open (the notes board — search IS the page's other job)">
             <SearchField value={search1} onChange={setSearch1} placeholder="Chercher une note…" ariaLabel="Chercher une note" />
           </Demo>
+          <Demo label="size='sm' (inside a picker) · onSubmit (Enter asks — the keyboard says « rechercher »). 2026-11-05: the five raw search inputs (emoji picker, guide, circulaires, ajout rapide, recherche) folded onto these; search-rule.test.ts refuses a new raw type='search'.">
+            <SearchField size="sm" value={search1} onChange={setSearch1} onSubmit={() => {}} placeholder="Chercher un emoji…" ariaLabel="Chercher un emoji" />
+          </Demo>
           <Demo label="collapsible — a loupe until tapped, then the field takes the row (the recipe book)">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
               <SearchField

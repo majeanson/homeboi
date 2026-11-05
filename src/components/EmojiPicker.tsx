@@ -1,3 +1,4 @@
+import { SearchField } from './SearchField'
 import { EmptyState } from './EmptyState'
 import { useState } from 'react'
 import { filterEmojis } from '../lib/emoji'
@@ -33,14 +34,7 @@ export function EmojiPicker({
   return (
     <div className="emoji-picker-wrap">
       {search && (
-        <input
-          className="input emoji-picker__search"
-          type="search"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder={t.common.emojiSearch}
-          aria-label={t.common.emojiSearch}
-        />
+        <SearchField size="sm" className="emoji-picker__search" value={q} onChange={setQ} placeholder={t.common.emojiSearch} ariaLabel={t.common.emojiSearch} />
       )}
       {list.length === 0 ? (
         <EmptyState size="cell" className="emoji-picker__empty">{t.common.emojiNoResult}</EmptyState>

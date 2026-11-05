@@ -4,14 +4,7 @@
 /* and tablet-friendly (single readable column).                                 */
 /* ========================================================================== */
 .guide__search {
-  width: 100%;
-  font-size: 1rem;
-  padding: 0.7rem 0.9rem;
   margin: 0 0 1.25rem;
-  border: 1.5px solid var(--line-strong);
-  border-radius: var(--radius);
-  background: var(--paper);
-  color: var(--ink);
 }
 /* The feature map: a calm grid of theme tiles — "everything Babillard does" at a
    glance. Shared (components/FeatureMap): the Guide, the Board WelcomeCard, and

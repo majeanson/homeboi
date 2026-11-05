@@ -1,3 +1,4 @@
+import { SearchField } from '../SearchField'
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type Ref } from 'react'
 import { tintScope } from '../../lib/colors'
 import { needsOperator } from '../../lib/device'
@@ -397,14 +398,7 @@ export function DiscoverSection() {
 
   return (
     <OperatorSection title={o18n.guideTitle} className="guide">
-      <input
-        type="search"
-        className="guide__search"
-        placeholder={o18n.guideSearch}
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        aria-label={o18n.guideSearch}
-      />
+      <SearchField className="guide__search" placeholder={o18n.guideSearch} value={query} onChange={setQuery} ariaLabel={o18n.guideSearch} />
 
       {/* The two calm discovery cards (bmad/08 B-14 + B-11): one « Quoi de
           neuf » line from the hand-maintained changelog, and ONE « Le

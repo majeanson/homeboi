@@ -77,7 +77,7 @@ test('disabling AI hides the search "Ask the AI" affordance', async ({ page }) =
 
   // AI on: typing a query in global search shows the "Ask" button.
   await page.goto('/search')
-  await page.locator('.search__input').fill('souper')
+  await page.locator('.search__input .searchfield__input').fill('souper')
   await expect(page.locator('.search__ask')).toBeVisible({ timeout: 15_000 })
 
   // Disable AI from settings.
@@ -95,6 +95,6 @@ test('disabling AI hides the search "Ask the AI" affordance', async ({ page }) =
   // Back in search, the Ask button is gone (AI affordances hidden); the local
   // fuzzy search still works (not AI).
   await page.goto('/search')
-  await page.locator('.search__input').fill('souper')
+  await page.locator('.search__input .searchfield__input').fill('souper')
   await expect(page.locator('.search__ask')).toHaveCount(0)
 })

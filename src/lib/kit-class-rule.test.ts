@@ -29,6 +29,10 @@ const OWNED = new Map<string, { owner: string; hint: string }>([
   ['avatar--disc', { owner: 'components/Avatar.tsx', hint: '<Avatar>' }],
   ['avatar--photo', { owner: 'components/Avatar.tsx', hint: '<Avatar>' }],
   ['avatar__initial', { owner: 'components/Avatar.tsx', hint: '<Avatar>' }],
+  ['searchfield', { owner: 'components/SearchField.tsx', hint: '<SearchField value onChange ariaLabel size? onSubmit? />' }],
+  ['searchfield__input', { owner: 'components/SearchField.tsx', hint: '<SearchField>' }],
+  ['searchfield__open', { owner: 'components/SearchField.tsx', hint: '<SearchField collapsible>' }],
+  ['searchfield__clear', { owner: 'components/SearchField.tsx', hint: '<SearchField>' }],
 ])
 
 // (token, file) → why this file may spell it. An entry says what makes hosting the

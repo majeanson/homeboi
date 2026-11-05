@@ -34,7 +34,6 @@
 }
 .search__input {
   margin-bottom: 0.4rem;
-  font-size: 1.05rem;
 }
 .search__hint {
   color: var(--ink-soft);

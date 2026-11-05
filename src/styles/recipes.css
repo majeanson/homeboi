@@ -795,7 +795,7 @@
   gap: 0.5rem;
   margin-bottom: 0.6rem;
 }
-.deals-search .input {
+.deals-search .searchfield {
   flex: 1;
   min-width: 0;
 }

@@ -36,7 +36,7 @@ test.beforeEach(async ({ page }) => {
 
 test('a query surfaces rows across sections, including the drawings gallery', async ({ page }) => {
   await page.goto('/search')
-  await page.locator('.search__input').fill('Léa')
+  await page.locator('.search__input .searchfield__input').fill('Léa')
 
   // An event (« Fête de Léa », from the board fixture) AND a drawing (dg1, drawn by Léa —
   // matched on its AUTHOR since a drawing carries no text) both surface.
@@ -50,19 +50,19 @@ test('the newly indexed carnet sections (care-log + home-pins) surface and link 
   await page.goto('/search')
 
   // « En cas de pépin » pin — matched on its label, links to the carnet's « Le carnet » tab.
-  await page.locator('.search__input').fill('valve')
+  await page.locator('.search__input .searchfield__input').fill('valve')
   await expect(page.getByRole('heading', { name: 'Repères de la maison' })).toBeVisible()
   await expect(page.locator('.search__row[href="/cercle/carnet/k1?seg=carnet"]').first()).toBeVisible()
 
   // Service-history entry — matched on its free-text note.
-  await page.locator('.search__input').fill('plomberie')
+  await page.locator('.search__input .searchfield__input').fill('plomberie')
   await expect(page.getByRole('heading', { name: 'Historique d’entretien' })).toBeVisible()
   await expect(page.getByText('Chauffe-eau installé')).toBeVisible()
 })
 
 test('a business hit deep-links to the item (opens its peek), not just the section', async ({ page }) => {
   await page.goto('/search')
-  await page.locator('.search__input').fill('vété')
+  await page.locator('.search__input .searchfield__input').fill('vété')
 
   const hit = page.locator('.search__row[href="/maison?section=business&item=b1"]')
   await expect(hit).toBeVisible()
@@ -88,30 +88,30 @@ test('Wave S — the six newly-indexed kinds each surface a section (habit/mot/m
   await page.goto('/search')
 
   // A habit — matched on its title, links to the daily check-in scene.
-  await page.locator('.search__input').fill('Marcher dehors')
+  await page.locator('.search__input .searchfield__input').fill('Marcher dehors')
   await expect(page.getByRole('heading', { name: 'Mes habitudes' })).toBeVisible()
   await expect(page.locator('.search__row[href="/board/habitudes"]').first()).toBeVisible()
 
   // A « mot » — no name, matched on its body text (secondary), links to the board.
-  await page.locator('.search__input').fill('Réunion de famille')
+  await page.locator('.search__input .searchfield__input').fill('Réunion de famille')
   await expect(page.getByRole('heading', { name: 'Les mots' })).toBeVisible()
 
   // A FREE-TEXT supper — « Salade César » (no recipe_id). The recipe-linked
   // « Spaghetti maison » deliberately does NOT show here (it's a recipe hit).
-  await page.locator('.search__input').fill('Salade César')
+  await page.locator('.search__input .searchfield__input').fill('Salade César')
   await expect(page.getByRole('heading', { name: 'Plan des repas' })).toBeVisible()
 
   // A free-text meal idea.
-  await page.locator('.search__input').fill('Soupe poulet')
+  await page.locator('.search__input .searchfield__input').fill('Soupe poulet')
   await expect(page.getByRole('heading', { name: 'Idées de repas' })).toBeVisible()
 
   // A named group — « Le hockey » (friends kind → Maison's social list).
-  await page.locator('.search__input').fill('hockey')
+  await page.locator('.search__input .searchfield__input').fill('hockey')
   await expect(page.getByRole('heading', { name: 'Les groupes' })).toBeVisible()
   await expect(page.locator('.search__row[href="/maison?section=social"]').first()).toBeVisible()
 
   // A trip — matched on its title, links to the trip notebook /voyage/:id.
-  await page.locator('.search__input').fill('Gaspésie')
+  await page.locator('.search__input .searchfield__input').fill('Gaspésie')
   await expect(page.getByRole('heading', { name: 'Voyages' })).toBeVisible()
   await expect(page.locator('.search__row[href="/voyage/tr1"]').first()).toBeVisible()
 })
@@ -120,7 +120,7 @@ test('a family-note hit deep-links to the note and pulses its row', async ({ pag
   // « Les notes » is its own hub tab now (split out of Le cercle) — the hit links
   // straight to /notes?item=<id>.
   await page.goto('/search')
-  await page.locator('.search__input').fill('tourtière')
+  await page.locator('.search__input .searchfield__input').fill('tourtière')
 
   const hit = page.locator('.search__row[href="/notes?item=n1"]')
   await expect(hit).toBeVisible()

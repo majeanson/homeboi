@@ -1,3 +1,4 @@
+import { SearchField } from '../components/SearchField'
 import { StatusMessage } from '../components/StatusMessage'
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
@@ -335,16 +336,15 @@ export function SearchPage() {
             already focused the user's own tap isn't a focus change, so the
             keyboard never appears at all. Letting the tap do the focusing is
             what summons it. */}
-        <input
-          className="input search__input"
+        <SearchField
+          className="search__input"
           value={q}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && aiEnabled) void ask()
+          onChange={setQuery}
+          onSubmit={() => {
+            if (aiEnabled) void ask()
           }}
           placeholder={t.search.placeholder}
-          aria-label={t.search.placeholder}
-          enterKeyHint="search"
+          ariaLabel={t.search.placeholder}
         />
 
         {/* #12 — the shared answer card (src/lib/askAnswer.tsx): AskSheet (E-22,

@@ -1,3 +1,4 @@
+import { SearchField } from '../components/SearchField'
 import { useRef, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
@@ -200,18 +201,14 @@ export function QuickAddPage() {
 
       <div className="scene__body qa">
         <div className="qa__search">
-          <input
-            className="input"
+          <SearchField
             value={q}
-            onChange={(e) => setQ(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && canAddTyped) {
-                e.preventDefault()
-                addTyped()
-              }
+            onChange={setQ}
+            onSubmit={() => {
+              if (canAddTyped) addTyped()
             }}
             placeholder={t.list.quickSearch}
-            aria-label={t.list.quickSearch}
+            ariaLabel={t.list.quickSearch}
           />
           <button
             type="button"

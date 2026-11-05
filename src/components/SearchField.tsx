@@ -23,6 +23,8 @@ export function SearchField({
   autoFocus = false,
   className,
   tour,
+  size,
+  onSubmit,
 }: {
   value: string
   onChange: (v: string) => void
@@ -36,6 +38,13 @@ export function SearchField({
   className?: string
   /** `data-tour` anchor id for the guided tour (same prop name SubTabs uses). */
   tour?: string
+  /** `sm`: the compact face inside a picker or a sheet (the emoji picker). */
+  size?: 'sm'
+  /** Enter SUBMITS (a search that asks the server, a quick-add that adds the typed
+   *  line) — the keyboard shows « rechercher ». Not needed inside a <form>: the form's
+   *  own submit already takes Enter. Added 2026-11-05 (solidify 2.4) with `size`, when
+   *  the five raw search inputs folded onto this; `search-rule.test.ts` refuses a new one. */
+  onSubmit?: () => void
 }) {
   const t = useT()
   const [open, setOpen] = useState(false)
@@ -73,7 +82,7 @@ export function SearchField({
     )
   }
   return (
-    <div className={'searchfield' + (className ? ` ${className}` : '')} id={id} data-tour={tour}>
+    <div className={'searchfield' + (size === 'sm' ? ' searchfield--sm' : '') + (className ? ' ' + className : '')} id={id} data-tour={tour}>
       <InlineIcon name="magnifying-glass-bold" size={16} />
       <input
         ref={inputRef}
@@ -82,11 +91,17 @@ export function SearchField({
         autoFocus={autoFocus}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => {
+          if (e.key === 'Enter' && onSubmit) {
+            e.preventDefault()
+            onSubmit()
+            return
+          }
           if (e.key !== 'Escape') return
           e.stopPropagation()
           onChange('')
           setOpen(false)
         }}
+        enterKeyHint={onSubmit ? 'search' : undefined}
         // Collapse only when nothing was typed: an empty box that lost focus is
         // just clutter, a filled one is the reason the list looks the way it does.
         onBlur={() => {

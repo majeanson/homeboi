@@ -642,6 +642,14 @@
 .searchfield__input::placeholder {
   color: var(--ink-faint);
 }
+/* The compact face (SearchField size="sm") — inside a picker or a sheet. */
+.searchfield--sm {
+  min-height: 2.1rem;
+  padding: 0.15rem 0.55rem;
+}
+.searchfield--sm .searchfield__input {
+  font-size: var(--text-sm);
+}
 .searchfield__clear {
   flex: none;
   display: inline-grid;
