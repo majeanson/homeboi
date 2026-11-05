@@ -326,7 +326,7 @@ export function PetForm({ value, onSaved, onCancel }: { value?: Pet | null; onSa
         <div className="pet-form__weight-add">
           <input className="input" type="date" value={wDate} onChange={(e) => setWDate(e.target.value)} aria-label={p.weightDate} />
           <input className="input" type="number" inputMode="decimal" step="0.1" min="0" value={wKg} onChange={(e) => setWKg(e.target.value)} placeholder={p.kg} aria-label={p.weightKg} />
-          <button type="button" className="btn btn--sm btn--ghost" onClick={addWeight} disabled={!wDate || !wKg}>
+          <button type="button" className="btn btn--ghost btn--sm" onClick={addWeight} disabled={!wDate || !wKg}>
             <Icon name="plus-bold" size={14} /> {p.weightAdd}
           </button>
         </div>
@@ -348,7 +348,7 @@ export function PetForm({ value, onSaved, onCancel }: { value?: Pet | null; onSa
         {vet && (
           <p className="pet-form__vet mono">
             <Icon name="storefront-bold" size={13} /> {vet.name}
-            <button type="button" className="btn btn--sm btn--ghost" onClick={() => setVetBusinessId(null)}>
+            <button type="button" className="btn btn--ghost btn--sm" onClick={() => setVetBusinessId(null)}>
               {t.common.cancel}
             </button>
           </p>

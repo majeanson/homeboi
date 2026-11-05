@@ -107,7 +107,7 @@ export function CompleteFamilies({
 
   return (
     <>
-      <button type="button" className="btn btn--sm btn--ghost cercle-complete" disabled={disabled} onClick={() => setOpen(true)}>
+      <button type="button" className="btn btn--ghost btn--sm cercle-complete" disabled={disabled} onClick={() => setOpen(true)}>
         <Icon name="users-three-bold" size={15} /> {t.cercle.completeFamilies}
         <span className="mono cercle-complete__n">{proposals.length}</span>
       </button>

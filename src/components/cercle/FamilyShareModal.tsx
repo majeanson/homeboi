@@ -120,7 +120,7 @@ export function FamilyShareModal({
           {url ? (
             <div className="sharesheet__link">
               <input className="input mono" readOnly value={url} onFocus={(e) => e.currentTarget.select()} aria-label={t.familyShare.copyLink} />
-              <button type="button" className="btn btn--sm btn--primary" onClick={() => void copy()}>
+              <button type="button" className="btn btn--primary btn--sm" onClick={() => void copy()}>
                 <Icon name={copied ? 'check-bold' : 'link-bold'} size={15} /> {copied ? t.familyShare.copied : t.familyShare.copyLink}
               </button>
               <p className="operator__hint mono">{t.familyShare.scanHint}</p>
@@ -144,7 +144,7 @@ export function FamilyShareModal({
             {shares.map((s) => (
               <li key={s.id} className="sharesheet__row">
                 <span className="review__name">{s.label || t.familyShare.importTitle}</span>
-                <button type="button" className="btn btn--sm btn--ghost" onClick={() => void revoke(s.id)}>
+                <button type="button" className="btn btn--ghost btn--sm" onClick={() => void revoke(s.id)}>
                   <Icon name="trash-bold" size={15} /> {t.familyShare.revoke}
                 </button>
               </li>

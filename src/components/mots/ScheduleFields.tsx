@@ -92,7 +92,7 @@ export function ScheduleFields({
     <div className="mot-composer__when">
       <div className="mot-composer__presets">
         {PRESETS.map((k) => (
-          <button key={k} type="button" className="btn btn--sm btn--ghost mono" onClick={() => pick(k)}>
+          <button key={k} type="button" className="btn btn--ghost btn--sm mono" onClick={() => pick(k)}>
             {fn.preset[k]}
           </button>
         ))}

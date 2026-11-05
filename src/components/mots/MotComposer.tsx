@@ -173,12 +173,12 @@ export function MotComposer({ onDone }: { onDone: () => void }) {
             extraPresets={
               <>
                 {canRemindMe && (
-                  <button type="button" className="btn btn--sm btn--ghost mono" onClick={remindMe}>
+                  <button type="button" className="btn btn--ghost btn--sm mono" onClick={remindMe}>
                     <Icon name="hourglass-high-bold" size={15} /> {fn.remindMe}
                   </button>
                 )}
                 {fete && (
-                  <button type="button" className="btn btn--sm btn--ghost mono" onClick={saFete}>
+                  <button type="button" className="btn btn--ghost btn--sm mono" onClick={saFete}>
                     <Icon name="cake-bold" size={15} /> {fn.birthdayPreset}
                   </button>
                 )}

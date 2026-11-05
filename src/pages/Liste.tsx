@@ -818,7 +818,7 @@ export function Liste() {
         />
         <button
           type="button"
-          className="btn btn--sm btn--ghost list-actions__icon help-pick"
+          className="btn btn--ghost btn--sm list-actions__icon help-pick"
           aria-label={t.list.quickAdd}
           title={t.list.quickAdd}
           onClick={help.pick('quick', () => nav('/liste/quick'))}
@@ -833,7 +833,7 @@ export function Liste() {
           // Collections tab uses.
           <ActionMenu
             triggerIcon="storefront-bold"
-            triggerClassName="btn btn--sm btn--ghost list-actions__icon help-pick"
+            triggerClassName="btn btn--ghost btn--sm list-actions__icon help-pick"
             label={t.list.aisleMenu}
             pick={(open) => help.pick('aisles', open)}
             items={sortItems}

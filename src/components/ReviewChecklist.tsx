@@ -66,7 +66,7 @@ export function ReviewChecklist<T>({
         <div className="review">
           <button
             type="button"
-            className="btn btn--sm btn--ghost review__all"
+            className="btn btn--ghost btn--sm review__all"
             onClick={() => setPicked(allOn ? new Set() : new Set(items.map((_, i) => i)))}
           >
             <Icon name={allOn ? 'square-bold' : 'check-square-bold'} size={16} />
@@ -94,12 +94,12 @@ export function ReviewChecklist<T>({
             ))}
           </ul>
           <div className="review__actions">
-            <button type="button" className="btn btn--sm btn--ghost" disabled={busy} onClick={() => onApply(items)}>
+            <button type="button" className="btn btn--ghost btn--sm" disabled={busy} onClick={() => onApply(items)}>
               {applyAllLabel(items.length)}
             </button>
             <button
               type="button"
-              className="btn btn--sm btn--primary"
+              className="btn btn--primary btn--sm"
               disabled={busy || picked.size === 0}
               onClick={() => onApply(items.filter((_, i) => picked.has(i)))}
             >

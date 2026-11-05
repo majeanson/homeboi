@@ -123,11 +123,11 @@ function PhotoPick({
       <Avatar kind={photoKey ? 'photo' : null} photo={photoKey} colour="#2A8F85" name={name || '?'} size={64} />
       <input ref={ref} type="file" accept="image/*" hidden onChange={(e) => pick(e.target.files?.[0])} />
       <div className="intake__photo-actions">
-        <button type="button" className="btn btn--sm btn--ghost" disabled={busy} onClick={() => ref.current?.click()}>
+        <button type="button" className="btn btn--ghost btn--sm" disabled={busy} onClick={() => ref.current?.click()}>
           <Icon name="camera-bold" size={15} /> {busy ? t.common.loading : photoKey ? t.intake.photoChange : t.intake.photoAdd}
         </button>
         {photoKey && (
-          <button type="button" className="btn btn--sm btn--ghost" onClick={() => onChange(null)}>
+          <button type="button" className="btn btn--ghost btn--sm" onClick={() => onChange(null)}>
             {t.intake.photoRemove}
           </button>
         )}
@@ -306,7 +306,7 @@ export function IntakeForm({ onSwitch }: { onSwitch?: () => void } = {}) {
               <div key={p.id} className="cf intake__person">
                 <div className="intake__person-head">
                   <span className="cf__label">{p.core.firstName.trim() || t.intake.personFallback}</span>
-                  <button type="button" className="btn btn--sm btn--ghost" onClick={() => removePerson(p.id)}>
+                  <button type="button" className="btn btn--ghost btn--sm" onClick={() => removePerson(p.id)}>
                     <Icon name="trash-bold" size={15} /> {t.intake.remove}
                   </button>
                 </div>
@@ -354,7 +354,7 @@ export function IntakeForm({ onSwitch }: { onSwitch?: () => void } = {}) {
               <div key={p.id} className="cf intake__person">
                 <div className="intake__person-head">
                   <span className="cf__label">{p.name.trim() || t.intake.petFallback}</span>
-                  <button type="button" className="btn btn--sm btn--ghost" onClick={() => removePet(p.id)}>
+                  <button type="button" className="btn btn--ghost btn--sm" onClick={() => removePet(p.id)}>
                     <Icon name="trash-bold" size={15} /> {t.intake.remove}
                   </button>
                 </div>

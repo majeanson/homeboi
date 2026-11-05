@@ -232,7 +232,7 @@ function ReviewDemo() {
   const items = ['Ajouter Aliss', 'Ajouter Félix', 'Préciser : Aliss · Sœur de Félix']
   return (
     <>
-      <button type="button" className="btn btn--sm btn--ghost" onClick={() => setOpen(true)}>
+      <button type="button" className="btn btn--ghost btn--sm" onClick={() => setOpen(true)}>
         Ouvrir la liste de révision
       </button>
       <ReviewChecklist
@@ -680,7 +680,7 @@ function HelpBubbleDemo() {
           onClose={() => setOpen(false)}
         />
       ) : (
-        <button type="button" className="btn btn--sm btn--ghost" onClick={() => setOpen(true)}>
+        <button type="button" className="btn btn--ghost btn--sm" onClick={() => setOpen(true)}>
           Revoir la bulle
         </button>
       )}
@@ -702,7 +702,7 @@ function FormSceneDemo() {
   const [open, setOpen] = useState(false)
   if (!open)
     return (
-      <button type="button" className="btn btn--sm btn--ghost" onClick={() => setOpen(true)}>
+      <button type="button" className="btn btn--ghost btn--sm" onClick={() => setOpen(true)}>
         Ouvrir une scène de formulaire
       </button>
     )
@@ -717,7 +717,7 @@ function FormSceneDemo() {
           </p>
           <button
             type="button"
-            className="btn btn--sm btn--ghost"
+            className="btn btn--ghost btn--sm"
             onClick={() => {
               setOpen(false)
               close()
@@ -735,7 +735,7 @@ function DrawPadDemo() {
   const [open, setOpen] = useState(false)
   return (
     <>
-      <button type="button" className="btn btn--sm btn--ghost" onClick={() => setOpen(true)}>
+      <button type="button" className="btn btn--ghost btn--sm" onClick={() => setOpen(true)}>
         Ouvrir le pad à dessin
       </button>
       <DrawPad
@@ -860,7 +860,7 @@ function FaceSheetDemo() {
   const picked = faces.find((f) => f.id === value)
   return (
     <>
-      <button type="button" className="btn btn--sm btn--ghost" onClick={() => setOpen(true)}>
+      <button type="button" className="btn btn--ghost btn--sm" onClick={() => setOpen(true)}>
         Ouvrir la feuille des visages
       </button>
       <p className="mono" style={{ color: 'var(--ink-soft)', margin: '.5rem 0 0' }}>
@@ -913,7 +913,7 @@ function BoundaryDemo() {
   const [attempt, setAttempt] = useState(0)
   if (!armed) {
     return (
-      <button type="button" className="btn btn--sm btn--danger" onClick={() => setArmed(true)}>
+      <button type="button" className="btn btn--danger btn--sm" onClick={() => setArmed(true)}>
         Déclencher l'erreur
       </button>
     )
@@ -925,7 +925,7 @@ function BoundaryDemo() {
       </ErrorBoundary>
       <button
         type="button"
-        className="btn btn--sm btn--ghost"
+        className="btn btn--ghost btn--sm"
         style={{ marginTop: '0.6rem' }}
         onClick={() => {
           setArmed(false)
@@ -2047,7 +2047,7 @@ export function DevKit() {
           </Demo>
           <Demo label="Cluster fill — buttons grow to share the row, then WRAP (the todo scope row)">
             <Cluster fill>
-              <button className="btn btn--sm btn--primary">En tout temps</button>
+              <button className="btn btn--primary btn--sm">En tout temps</button>
               <button className="btn btn--sm">Aujourd’hui</button>
               <button className="btn btn--sm">Une date</button>
             </Cluster>
@@ -2404,7 +2404,7 @@ export function DevKit() {
               <ActionMenu
                 triggerLabel="Allées"
                 triggerIcon="storefront-bold"
-                triggerClassName="btn btn--sm btn--primary"
+                triggerClassName="btn btn--primary btn--sm"
                 label="Trier la liste"
                 items={[
                   {

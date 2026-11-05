@@ -451,12 +451,12 @@ export function ContactForm({
                 <Icon name="camera-bold" size={16} /> {photoKey ? t.cercle.changePhoto : t.cercle.addPhoto}
               </button>
               {photoKey && (
-                <button type="button" className="btn btn--sm btn--ghost" onClick={() => setPhotoKey(null)}>
+                <button type="button" className="btn btn--ghost btn--sm" onClick={() => setPhotoKey(null)}>
                   {t.cercle.removePhoto}
                 </button>
               )}
               {hasContactPicker && !value && (
-                <button type="button" className="btn btn--sm btn--ghost" onClick={importFromContacts}>
+                <button type="button" className="btn btn--ghost btn--sm" onClick={importFromContacts}>
                   <Icon name="book-open-bold" size={15} /> {t.cercle.importContact}
                 </button>
               )}
@@ -469,7 +469,7 @@ export function ContactForm({
                     hidden
                     onChange={(e) => importVCard(e.target.files?.[0])}
                   />
-                  <button type="button" className="btn btn--sm btn--ghost" onClick={() => vcfRef.current?.click()}>
+                  <button type="button" className="btn btn--ghost btn--sm" onClick={() => vcfRef.current?.click()}>
                     <Icon name="envelope-bold" size={15} /> {t.cercle.importVcf}
                   </button>
                 </>

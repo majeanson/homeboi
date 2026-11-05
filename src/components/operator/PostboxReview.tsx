@@ -114,7 +114,7 @@ export function PostboxReview({ help }: { help?: HelpMode }) {
             <div className="row-actions">
               <button
                 type="button"
-                className="btn btn--sm btn--primary"
+                className="btn btn--primary btn--sm"
                 onClick={() => void review(m, 'accepted')}
                 disabled={busy === m.id}
               >
@@ -122,7 +122,7 @@ export function PostboxReview({ help }: { help?: HelpMode }) {
               </button>
               <button
                 type="button"
-                className="btn btn--sm btn--ghost"
+                className="btn btn--ghost btn--sm"
                 onClick={() => void review(m, 'dismissed')}
                 disabled={busy === m.id}
               >

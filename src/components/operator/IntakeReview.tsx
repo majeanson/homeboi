@@ -50,10 +50,10 @@ export function IntakeReview({ help }: { help?: HelpMode }) {
           <div key={sub.id} className="intake-review__row">
             <span className="intake-review__name">{displayName(sub.self)}</span>
             <div className="row-actions">
-              <Link className="btn btn--sm btn--primary" to={`/cercle/import?intake=${encodeURIComponent(sub.id)}`}>
+              <Link className="btn btn--primary btn--sm" to={`/cercle/import?intake=${encodeURIComponent(sub.id)}`}>
                 <Icon name="check-bold" size={15} /> {t.intake.reviewOne}
               </Link>
-              <button type="button" className="btn btn--sm btn--ghost" onClick={() => void dismiss(sub)}>
+              <button type="button" className="btn btn--ghost btn--sm" onClick={() => void dismiss(sub)}>
                 <Icon name="trash-bold" size={15} /> {t.intake.dismiss}
               </button>
             </div>

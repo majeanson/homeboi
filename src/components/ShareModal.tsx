@@ -122,11 +122,11 @@ export function ShareModal({
               aria-label={t.shareLink.copyLink}
             />
             <div className="sharesheet__linkbtns">
-              <button type="button" className="btn btn--sm btn--primary" onClick={() => void copy()}>
+              <button type="button" className="btn btn--primary btn--sm" onClick={() => void copy()}>
                 <Icon name={copied ? 'check-bold' : 'link-bold'} size={15} /> {copied ? t.shareLink.copied : t.shareLink.copyLink}
               </button>
               {canSystemShare && (
-                <button type="button" className="btn btn--sm btn--ghost" onClick={systemShare}>
+                <button type="button" className="btn btn--ghost btn--sm" onClick={systemShare}>
                   <Icon name="arrow-up-right-bold" size={15} /> {t.shareLink.shareVia}
                 </button>
               )}
