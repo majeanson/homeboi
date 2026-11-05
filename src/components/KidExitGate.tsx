@@ -124,8 +124,24 @@ export function KidExitGate({ requireMath = true }: { requireMath?: boolean }) {
           Esc). Security is unchanged — it lives in the 3s hold + the arithmetic answer
           below, not the presentation. `className="kid-exit-modal"` keeps the card's
           class so the inner __q/__input/__actions styling (+ the e2e gate test) hold. */}
-      <Modal open={gateOpen} onClose={() => setGateOpen(false)} className="kid-exit-modal" title={t.audience.exitTitle}>
-        <form onSubmit={submit}>
+      <Modal
+        open={gateOpen}
+        onClose={() => setGateOpen(false)}
+        className="kid-exit-modal"
+        title={t.audience.exitTitle}
+        footer={
+          <>
+            <button type="button" className="btn btn--ghost" onClick={() => setGateOpen(false)}>
+              {t.audience.exitCancel}
+            </button>
+            {/* Outside the <form> in the DOM (Modal's footer slot), tied to it by id. */}
+            <button type="submit" form="kid-exit-form" className="btn btn--primary">
+              {t.audience.exitConfirm}
+            </button>
+          </>
+        }
+      >
+        <form id="kid-exit-form" onSubmit={submit}>
           <label className="kid-exit-modal__q">
             <span>
               {t.audience.exitPrompt} {sum.a} + {sum.b}&nbsp;?
@@ -146,14 +162,6 @@ export function KidExitGate({ requireMath = true }: { requireMath?: boolean }) {
               {t.audience.exitWrong}
             </StatusMessage>
           )}
-          <div className="kid-exit-modal__actions">
-            <button type="button" className="btn btn--ghost" onClick={() => setGateOpen(false)}>
-              {t.audience.exitCancel}
-            </button>
-            <button type="submit" className="btn btn--primary">
-              {t.audience.exitConfirm}
-            </button>
-          </div>
         </form>
       </Modal>
     </>

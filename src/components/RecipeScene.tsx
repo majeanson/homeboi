@@ -40,7 +40,7 @@ import { ActionMenu, type ActionMenuItem } from './ActionMenu'
 // ingredients to the list, make a kid routine, share, edit, delete) folds into
 // the header's ⋯ overflow (ActionMenu), so the recipe keeps its reading space.
 // `week` is the Kitchen's 7-day window so planning lands on a real date.
-export function RecipeSheet({
+export function RecipeScene({
   recipe,
   week,
   onCook,

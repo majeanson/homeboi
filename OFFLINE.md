@@ -179,7 +179,7 @@ All data writes go through `useWrite()` / `writeWith()`:
 - **Kitchen:** `DayPlanPage`, `Leftovers`, `MealIdeas`, `mealMutations`,
   `useMealPlanning`, `PantryTab`, `ReserveSection`.
 - **Forms / recipes / deals:** `EventForm`, `ChoreForm`, `RoutineForm`,
-  `RecipeSheet`, `lib/picks`.
+  `RecipeScene`, `lib/picks`.
 - **Routine run (the toddler player):** a tick, a ← rewind, « Recommencer » and a step's
   countdown all go through `lib/routineWrites` — painted into the cache synchronously, sent
   in tap order, re-applied over any poll that beats the write to the server, and (when queued

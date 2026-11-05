@@ -113,7 +113,7 @@ se (Recherche has no table) — the anchors just tell the auditor where to look.
 | F6  | Mes habitudes (+ « Le défi du jour »)   | habits, habit_days (0112), habit_marks (0115)  | habits                                    | HabitudesPage, HabitFormPage, habits/\*, HabitudesCard, DefiBlock         | HABITS                |
 | F7  | Photos / cadre                          | photos (0006)                                  | photos                                    | operator/photos, AmbientScreen                                            | PHOTOS                |
 | F8  | Dessins (galerie)                       | drawings (0056)                                | drawings                                  | DrawingGalleryPage, DrawPad                                               | DRAWINGS              |
-| F9  | Capture (＋ / AddSheet / partage PWA)   | captures                                       | capture, ask, transcribe, a-regler        | AddSheet, AskSheet, CaptureForm, QuickAddPage, /share                     | A_REGLER              |
+| F9  | Capture (＋ / AddSheet / partage PWA)   | captures                                       | capture, ask, transcribe, a-regler        | AddSheet, AskDialog, CaptureForm, QuickAddPage, /share                     | A_REGLER              |
 | F10 | Recherche                               | — (client-side over caches)                    | —                                         | SearchPage, lib/searchIndex.ts                                            | (reads all)           |
 | F11 | Le babillard (widget space lui-même)    | household prefs (layout local)                 | board, today-changes, weather, wonder     | Board, WidgetGrid, CardSlot, lib/boardCards, operator/boardLayout         | BOARD, WEATHER        |
 
@@ -435,7 +435,7 @@ Footnotes (verdicts recorded so far):
     guide `mots`). **F8 Dessins** (`DrawingGalleryPage`) + **F29 Collants** (`StickerWallPage`)
     — a `SceneHead card=` `HelpDot` each (`drawings`/`routines`), the scene-appropriate on
     -surface « ? » (neither had any before). **F17 Vide-frigo** — a `HelpDot card="kitchen"`
-    on the `EmptyFridgeSheet` title (also already folded into the ＋ `ideas` bubble). **F6
+    on the `EmptyFridgeDialog` title (also already folded into the ＋ `ideas` bubble). **F6
     Habitudes** + **F31 Voyage** — **verdict correction**: both live surfaces ALREADY carry a
     `SceneHead card=` `HelpDot` (`HabitudesPage` card="habits", `VoyagePage` card="voyage");
     the Day-3 audit counted only the 7 help REGISTRIES and undercounted the `HelpDot` channel,

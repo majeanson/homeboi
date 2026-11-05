@@ -34,7 +34,7 @@ async function openAsk(page: Page) {
   // `.kit-modal` (not the generic dialog role): a few ALWAYS-MOUNTED `Sheet`s
   // (ProfilePicker, "Depuis ce matin", the ＋ AddSheet…) already carry
   // `role="dialog"` in the DOM even while closed (CSS-only show/hide), so a bare
-  // `getByRole('dialog')` is ambiguous — `.kit-modal` is AskSheet's own shell.
+  // `getByRole('dialog')` is ambiguous — `.kit-modal` is AskDialog's own shell.
   await expect(page.locator('.kit-modal.ask-sheet')).toBeVisible()
 }
 
@@ -49,7 +49,7 @@ test.beforeEach(async ({ page }) => {
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
 })
 
-test('the mic entry point opens AskSheet; the typed path answers with the domain-tagged card', async ({ page }) => {
+test('the mic entry point opens AskDialog; the typed path answers with the domain-tagged card', async ({ page }) => {
   await mockAsk(page, () => ({ answer: 'Spaghetti mercredi soir.', kind: 'meal' }))
   await openAsk(page)
 
@@ -175,7 +175,7 @@ test('the mic offers both « Demander » and « Classer », and switching modes 
 // which a scrollWidth check cannot. Checked with a long answer (the likeliest
 // place a new sheet bleeds) at both phone widths.
 for (const width of [360, 390]) {
-  test(`AskSheet never overflows sideways @${width}`, async ({ page }) => {
+  test(`AskDialog never overflows sideways @${width}`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 })
     await mockAsk(page, () => ({
       answer:
@@ -203,6 +203,6 @@ for (const width of [360, 390]) {
       }
       return { bleed: worst, culprit: who }
     })
-    expect(bleed, `"${culprit}" bleeds off the AskSheet's right edge`).toBeLessThanOrEqual(1)
+    expect(bleed, `"${culprit}" bleeds off the AskDialog's right edge`).toBeLessThanOrEqual(1)
   })
 }

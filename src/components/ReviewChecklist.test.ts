@@ -30,7 +30,7 @@ const props = (items: string[], open = true) => ({
   applySelectedLabel: (n: number) => `Ajouter la sélection (${n})`,
 })
 const boxes = () => Array.from(document.querySelectorAll<HTMLInputElement>('.review__row input[type="checkbox"]'))
-const selectedLabel = () => document.querySelector('.review__actions .btn--primary')?.textContent ?? ''
+const selectedLabel = () => document.querySelector('.kit-modal__footer .btn--primary')?.textContent ?? ''
 
 let root: Root
 let host: HTMLDivElement

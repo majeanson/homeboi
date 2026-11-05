@@ -25,7 +25,7 @@ interface FridgeRecipe {
   steps: string[]
 }
 
-export function EmptyFridgeSheet({
+export function EmptyFridgeDialog({
   open,
   onClose,
   soonItems,
@@ -139,11 +139,28 @@ export function EmptyFridgeSheet({
   // The items the rescue is built around — a calm "here's what we're using" subtitle.
   const context = [...soonItems, ...reserveItems]
 
+  // The button row of whichever step is showing, in Modal's one footer slot.
+  const footer = error ? undefined : phase === 'ideas' && !loading ? (
+    <>
+      <button type="button" className="btn btn--ghost mono" onClick={() => fetchIdeas(ideas)} disabled={loading}>
+        <InlineIcon name="repeat-bold" /> {f.moreIdeas}
+      </button>
+      <button type="button" className="btn btn--primary mono" onClick={buildRecipes} disabled={picked.size === 0 || building}>
+        {building ? f.cooking : f.seeRecipes(picked.size)}
+      </button>
+    </>
+  ) : phase === 'recipes' && !building ? (
+    <button type="button" className="btn btn--ghost mono" onClick={() => setPhase('ideas')}>
+      <Icon name="arrow-left-bold" size={16} /> {f.backToIdeas}
+    </button>
+  ) : undefined
+
   return (
     <Modal
       open={open}
       onClose={onClose}
       className="fridge-modal"
+      footer={footer}
       title={
         <>
           <InlineIcon name="carrot-bold" color="#6B8A52" /> {f.title} <HelpDot card="kitchen" />
@@ -189,24 +206,6 @@ export function EmptyFridgeSheet({
                       </Chip>
                     )
                   })}
-                </div>
-                <div className="fridge-modal__actions">
-                  <button
-                    type="button"
-                    className="btn btn--ghost mono"
-                    onClick={() => fetchIdeas(ideas)}
-                    disabled={loading}
-                  >
-                    <InlineIcon name="repeat-bold" /> {f.moreIdeas}
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn--primary mono"
-                    onClick={buildRecipes}
-                    disabled={picked.size === 0 || building}
-                  >
-                    {building ? f.cooking : f.seeRecipes(picked.size)}
-                  </button>
                 </div>
               </>
             )}
@@ -278,11 +277,6 @@ export function EmptyFridgeSheet({
                     </div>
                   )
                 })}
-                <div className="fridge-modal__actions">
-                  <button type="button" className="btn btn--ghost mono" onClick={() => setPhase('ideas')}>
-                    <Icon name="arrow-left-bold" size={16} /> {f.backToIdeas}
-                  </button>
-                </div>
               </>
             )}
           </>

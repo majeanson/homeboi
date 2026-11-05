@@ -148,7 +148,7 @@ export function useMemoAttach({
 
   // Stop a still-open mic if the composer unmounts mid-record (a sheet closed, a
   // route changed). Without this the track stays hot and the OS keeps the mic
-  // indicator lit — the same "under a finger only" rule AskSheet enforces.
+  // indicator lit — the same "under a finger only" rule AskDialog enforces.
   useEffect(
     () => () => {
       try {

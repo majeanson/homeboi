@@ -11,7 +11,7 @@ import { CATS } from '../lib/cats'
 import { tintInk } from '../lib/colors'
 import { useT, useLang } from '../i18n'
 import { Cluster } from '../components/Layout'
-import { FlippSheet } from '../components/FlippSheet'
+import { FlippDialog } from '../components/FlippDialog'
 import { ActionMenu, type ActionMenuItem } from '../components/ActionMenu'
 import { useAisleOrder, useAisleOverrides, useAisleTagsShown, setAisleTagsShown } from '../lib/aislePrefs'
 import { aisleFor, aisleRanks, AISLE_BY_ID } from '../lib/aisle'
@@ -1008,7 +1008,7 @@ export function Liste() {
           flyer from its OWN cashier and means nothing to Flipp, where browsing by store
           is the point. Passing pickList here demoted a hidden store's deals to typed
           words, silently (Marc's Maxi produce deal, 2026-09-12). */}
-      <FlippSheet open={flippOpen} onClose={() => setFlippOpen(false)} rows={list} picks={pickListFrom(list)} postal={postal} />
+      <FlippDialog open={flippOpen} onClose={() => setFlippOpen(false)} rows={list} picks={pickListFrom(list)} postal={postal} />
 
       {/* The floating drag label that trails the finger while reordering. */}
       <DragGhost ghost={dnd.ghost} />

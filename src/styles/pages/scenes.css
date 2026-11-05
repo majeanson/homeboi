@@ -784,7 +784,7 @@
   color: var(--ink-soft);
 }
 
-/* ---- E-22 « Demande à la maison » (components/AskSheet) --------------------- */
+/* ---- E-22 « Demande à la maison » (components/AskDialog) --------------------- */
 .ask-sheet__hint {
   color: var(--ink-soft);
   margin: 0 0 0.8rem;

@@ -741,10 +741,6 @@
   border-radius: var(--radius-sm);
   color: var(--ink);
 }
-.lc__actions {
-  display: flex;
-  gap: 0.4rem;
-}
 
 /* ── Named groups ──────────────────────────────────────────────────────────── */
 .cercle-group--named .cercle-section__label {
@@ -1425,12 +1421,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.review__actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  flex-wrap: wrap;
 }
 
 /* ===== « Notre monde » — the big-picture overview map ====================== */

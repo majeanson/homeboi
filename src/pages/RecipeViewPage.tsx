@@ -1,6 +1,6 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { StaleBounce } from '../components/StaleBounce'
-import { RecipeSheet } from '../components/RecipeSheet'
+import { RecipeScene } from '../components/RecipeScene'
 import { loadStateOf } from '../components/Fallback'
 import { useLang, useT } from '../i18n'
 import { useWeekLabeled } from '../components/kitchen/week'
@@ -30,7 +30,7 @@ export function RecipeViewPage() {
   if (!recipe)
     return loadStateOf(recipesQ) ?? <StaleBounce to="/kitchen" message={t.kitchen.recipeGone} />
   return (
-    <RecipeSheet
+    <RecipeScene
       recipe={recipe}
       week={week}
       onCook={(factor) => nav(`/kitchen/recipe/${recipe.id}/cook${factor !== 1 ? `?x=${factor}` : ''}`)}

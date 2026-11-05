@@ -382,7 +382,7 @@
   font-size: calc(1.05rem * var(--ds, 1));
   color: var(--ink);
 }
-/* RecipeSheet: per-step sentence bullets (the number is the marker for a lone
+/* RecipeScene: per-step sentence bullets (the number is the marker for a lone
    sentence) + a compact line of the step's ingredients. */
 .recipe-step__sentences {
   list-style: disc;

@@ -1,9 +1,9 @@
 // #12 / E-22 — the shared "ask the AI a question over your own data" answer card,
 // extracted from SearchPage so the global-search "Ask" box AND the board mic
-// (AskSheet, E-22) render the IDENTICAL card — same domain-coloured icon disc,
+// (AskDialog, E-22) render the IDENTICAL card — same domain-coloured icon disc,
 // same "not what you wanted?" related-section chips — instead of drifting into
 // two hand-rolled copies. SearchPage renders it inline in the search scene;
-// AskSheet renders it inside a Modal, optionally with a 🔊 replay control beside
+// AskDialog renders it inside a Modal, optionally with a 🔊 replay control beside
 // the domain tag (E-22's auto-speak-once + replay).
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
@@ -113,8 +113,8 @@ function AnswerBody({ text }: { text: string }) {
 }
 
 // THE shared answer card. `replay` slots an optional control beside the domain
-// tag (AskSheet's 🔊 replay button); `onRelatedClick` fires when a "not what you
-// wanted?" chip is tapped (AskSheet closes itself so the sheet doesn't linger
+// tag (AskDialog's 🔊 replay button); `onRelatedClick` fires when a "not what you
+// wanted?" chip is tapped (AskDialog closes itself so the sheet doesn't linger
 // over the page it just navigated away from — SearchPage, already a full page,
 // passes nothing).
 export function AskAnswerCard({

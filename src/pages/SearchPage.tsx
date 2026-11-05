@@ -347,7 +347,7 @@ export function SearchPage() {
           ariaLabel={t.search.placeholder}
         />
 
-        {/* #12 — the shared answer card (src/lib/askAnswer.tsx): AskSheet (E-22,
+        {/* #12 — the shared answer card (src/lib/askAnswer.tsx): AskDialog (E-22,
             the board mic) renders the SAME card, so the two "ask" entry points
             never drift into two answer looks. */}
         {(asking || answer || askErr || aiOff) && (

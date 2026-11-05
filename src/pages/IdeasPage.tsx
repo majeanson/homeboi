@@ -13,7 +13,7 @@ import { useMeals, useRecipes, usePantry, useLeftovers } from '../lib/queryHooks
 import { PairPrompt } from '../components/Fallback'
 import { SceneHead } from '../components/SceneHead'
 import { IdeasDrawer, IDEAS_CHIPS, type IdeasChip } from '../components/kitchen/IdeasDrawer'
-import { EmptyFridgeSheet } from '../components/kitchen/EmptyFridgeSheet'
+import { EmptyFridgeDialog } from '../components/kitchen/EmptyFridgeDialog'
 import { useAiWake } from '../components/kitchen/useAiWake'
 import { useWeekLabeled } from '../components/kitchen/week'
 import { type LowRow, type MealIdeasData, type ReserveData, MEAL_IDEAS_KEY, USE_SOON_KEY, RESERVE_KEY } from '../components/kitchen/types'
@@ -102,7 +102,7 @@ export function IdeasPage() {
           onOpenFridge={() => setFridgeOpen(true)}
         />
       </div>
-      <EmptyFridgeSheet
+      <EmptyFridgeDialog
         open={fridgeOpen}
         onClose={() => setFridgeOpen(false)}
         soonItems={soonItems}

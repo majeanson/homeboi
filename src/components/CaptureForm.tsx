@@ -24,7 +24,7 @@ import { StatusMessage } from './StatusMessage'
 // note tile is left to be a plain note that a memo can be clipped to.
 //
 // Extracted verbatim from AddSheet (state, offline write, degraded picker, re-route
-// cleanup, compensating undo) so BOTH surfaces can't drift — AskSheet renders it; the ＋
+// cleanup, compensating undo) so BOTH surfaces can't drift — AskDialog renders it; the ＋
 // sheet no longer has a capture tile at all.
 
 export type CaptureType = 'event' | 'meal' | 'task' | 'list-item' | 'pantry-low' | 'leftover' | 'upkeep' | 'note'

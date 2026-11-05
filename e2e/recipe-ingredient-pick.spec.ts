@@ -13,7 +13,7 @@ import { openKitEntry } from './kit'
 //
 // The commit deliberately is NOT in here: `onConfirm` hands the picked names back and
 // the HOST does the write, because whether an undo is reachable is a property of the
-// surface. `RecipeSheet`'s live path (immediate POST + label flip, since the sheet
+// surface. `RecipeScene`'s live path (immediate POST + label flip, since the sheet
 // stays painted over the undo toast) is covered by interactions.spec.ts › recipes.
 
 const SPECIMEN = ['500 g de bœuf haché', '1 oignon', '## Sauce', '2 gousses d’ail', '800 ml de tomates', 'Parmesan']

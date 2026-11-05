@@ -157,7 +157,7 @@ export function CashierMode({
               is contextual. The other three (send my list · send the words · empty the
               Flipp list) are LIST acts done at home before leaving, not at a register
               with someone waiting, and they moved to « Ma liste Flipp » on La liste
-              (components/FlippSheet). Marc: « discern montrer à la caisse and flipp
+              (components/FlippDialog). Marc: « discern montrer à la caisse and flipp
               actions ». The till is a grid you tap to show a price again. */}
           <ul className="cashier__grid">
             {picks.map((p) => {

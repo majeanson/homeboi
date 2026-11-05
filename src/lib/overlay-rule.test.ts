@@ -32,7 +32,7 @@ const DIALOG_ALLOWED = new Map<string, string>([
   ['src/components/FlippPager.tsx', 'the flipp.com pager, an overlay inside the till — useModal with history:true'],
   ['src/components/FlyerViewer.tsx', 'the flyer lightbox, an overlay inside the deals browser — useModal with history:true'],
   ['src/components/RecipeForm.tsx', 'a routed full-screen scene (recipe edit); same as cook'],
-  ['src/components/RecipeSheet.tsx', 'a routed full-screen scene (the recipe); same'],
+  ['src/components/RecipeScene.tsx', 'a routed full-screen scene (the recipe); same'],
   ['src/components/tour/TourOverlay.tsx', 'the guided tour: a teaching layer over the page; useModal for Esc/trap, no back entry (a tour step is not a place)'],
   ['src/components/ZoomableImg.tsx', 'the image zoom lightbox — useModal with history:true'],
 ])

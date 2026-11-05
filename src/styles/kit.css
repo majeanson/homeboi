@@ -293,12 +293,6 @@
   flex-wrap: wrap;
   gap: 0.5rem;
 }
-.fridge-modal__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-  justify-content: flex-end;
-}
 .fridge-recipe {
   padding: 0.9rem 1rem;
   border-radius: var(--radius-sm);

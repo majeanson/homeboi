@@ -58,7 +58,7 @@ import { RowActions } from '../RowActions'
 //                        the empty-day-tile "Léa propose 🍕" chip lands HERE
 //                        (never auto-plans — a glance chip never commits).
 // « Vide-frigo » keeps its OWN identity (not a source): a button that opens the
-// untouched EmptyFridgeSheet. It sits in the 🤖 IA tab's footer — it IS an AI ask, so
+// untouched EmptyFridgeDialog. It sits in the 🤖 IA tab's footer — it IS an AI ask, so
 // hanging it under every source (Favoris, Restants, 👧) read as a fifth, unrelated
 // action on tabs that never call the model. This is deliberately NOT a week-planner
 // (A-1 stays rejected) — planning a day is still the one-row MealPlanPicker each

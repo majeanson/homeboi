@@ -62,7 +62,7 @@ export const EN: typeof FR = {
     },
   },
   // E-22 — "Ask the household": the board-mic voice Q&A over the household's
-  // own data (AskSheet). Strictly on-demand — the mic opens under a finger,
+  // own data (AskDialog). Strictly on-demand — the mic opens under a finger,
   // period; it never listens ambiently.
   ask: {
     title: 'Talk to the household',

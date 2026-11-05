@@ -89,7 +89,7 @@ import { personKey } from '../lib/cercle'
 import { SeekGame } from '../components/jouer/SeekGame'
 import { buildSeekDecks } from '../lib/playContent'
 import { ReviewChecklist } from '../components/ReviewChecklist'
-import { AskSheet } from '../components/AskSheet'
+import { AskDialog } from '../components/AskDialog'
 import type { ContactGroup, Member, Person, PersonKind, World } from '../lib/cercle'
 import { VoiceButton, VoiceStatus } from '../components/VoiceButton'
 import { SoundToggle } from '../components/SoundToggle'
@@ -140,7 +140,7 @@ import { TimerRail } from '../components/cook/TimerRail'
 import { Sheet } from '../components/Sheet'
 import { RecipeIngredientPick } from '../components/RecipeIngredientPick'
 import { PhotoField } from '../components/PhotoField'
-import { EmptyFridgeSheet } from '../components/kitchen/EmptyFridgeSheet'
+import { EmptyFridgeDialog } from '../components/kitchen/EmptyFridgeDialog'
 import { IdeasDrawer, type IdeasChip } from '../components/kitchen/IdeasDrawer'
 import { MealIdeas } from '../components/kitchen/MealIdeas'
 import { useAiWake } from '../components/kitchen/useAiWake'
@@ -515,7 +515,7 @@ function FridgeSheetDemo() {
       <button type="button" className="btn btn--primary" onClick={() => setOpen(true)}>
         <Icon name="cooking-pot-bold" size={18} /> Ouvrir Vide-frigo
       </button>
-      <EmptyFridgeSheet
+      <EmptyFridgeDialog
         open={open}
         onClose={() => setOpen(false)}
         soonItems={['épinards', 'crème', 'champignons']}
@@ -527,7 +527,7 @@ function FridgeSheetDemo() {
 
 // « Un seul tiroir d'idées-repas » (C-14) — the ONE IdeasDrawer, a small fixture per
 // source so every tab has something to show (⭐/🧊/🤖/👧 read empty with no live API
-// — the chrome is what the gallery shows, same rule as EmptyFridgeSheet). In the app
+// — the chrome is what the gallery shows, same rule as EmptyFridgeDialog). In the app
 // it's the body of the /kitchen/idees scene, which owns the ?tab= source; here a
 // plain useState stands in (DevKit's own URL params are its search + category).
 const IDEAS_DEMO_RECIPE: Recipe = {
@@ -3479,8 +3479,8 @@ export function DevKit() {
     },
     {
       cat: 'Overlays & chrome',
-      name: 'AskSheet',
-      file: 'components/AskSheet.tsx',
+      name: 'AskDialog',
+      file: 'components/AskDialog.tsx',
       kw: 'ask demande maison voice mic question ia ai speak parler micro E-22',
       render: () => (
         <Demo label="« Demande à la maison » (E-22) — mic tap-to-talk over /api/ask (needs the live API + AI binding)">
@@ -3488,15 +3488,15 @@ export function DevKit() {
             <button className="btn" onClick={() => setAskSheetOpen(true)}>
               Ouvrir la demande
             </button>
-            {askSheetOpen && <AskSheet onClose={() => setAskSheetOpen(false)} />}
+            {askSheetOpen && <AskDialog onClose={() => setAskSheetOpen(false)} />}
           </div>
         </Demo>
       ),
     },
     {
       cat: 'Overlays & chrome',
-      name: 'EmptyFridgeSheet',
-      file: 'components/kitchen/EmptyFridgeSheet.tsx',
+      name: 'EmptyFridgeDialog',
+      file: 'components/kitchen/EmptyFridgeDialog.tsx',
       kw: 'vide-frigo empty fridge anti-gaspillage use up spoil recette idées ai pré-filtre pick souper restes use-soon réserve',
       render: () => (
         <Demo label="« Vide-frigo » (#5) — AI ideas from what's about to spoil → pick a few → full recipes (needs the live API)">

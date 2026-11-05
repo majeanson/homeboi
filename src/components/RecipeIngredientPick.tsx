@@ -18,7 +18,7 @@ import { Chip } from './Chip'
 // THE HOST OWNS THE COMMIT, and that is not laziness — it is the actual rule.
 // `onConfirm` hands back the picked names and the caller does the write, because
 // whether an undo is REACHABLE is a property of the surface, not of the checklist.
-// Today's only caller, `RecipeSheet`, stays open inside `.recipe-modal` (z-index 80)
+// Today's only caller, `RecipeScene`, stays open inside `.recipe-modal` (z-index 80)
 // while `.undo-toast` sits at 40, so an « Annuler » offered from there would be
 // painted underneath — it POSTs at once and flips its label instead (the cook-mode
 // lesson of 2026-08-27, third time). The deleted modal host did the opposite and was
@@ -30,7 +30,7 @@ import { Chip } from './Chip'
 // removed because its niche was closed on purpose, not because it was wrong: the
 // recipe PEEK it existed for was deleted under the rule in `detail/adapters.ts`
 // ("a peek that is really just a MENU of 'go to page X' is an inter-tap"), so every
-// path to a recipe now lands on `RecipeSheet`, which already carries this checklist.
+// path to a recipe now lands on `RecipeScene`, which already carries this checklist.
 // « 30 ml de graines de sésame (facultatif) » — the parenthesis at the END of the line
 // (the same shape IngredientLine wears as a tag).
 const OPTIONAL = /\s*\(\s*(?:facultati(?:f|ve)s?|optionnel(?:le)?s?|optional)\s*\)\s*$/i

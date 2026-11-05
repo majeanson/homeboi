@@ -14,7 +14,7 @@ export type AddSheetMode =
   // the AI router — whose field mic (dictate → the AI files it) sat directly above
   // « Mémo vocal » (record a clip → a note), two microphones meaning opposite
   // things. The AI router now lives on the header mic (« Parle à la maison » ▸
-  // Classer, see AskSheet), leaving this tile to be exactly what it says.
+  // Classer, see AskDialog), leaving this tile to be exactly what it says.
   | 'note'
   | 'event'
   // « L'auto » (#28) — a ride is an event that takes the car / carries passengers.

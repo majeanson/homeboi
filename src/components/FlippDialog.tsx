@@ -22,7 +22,7 @@ import { Modal } from './Modal'
 // WHAT TRAVELS is said BEFORE the tap, not after. `flippBundle` (lib/flippList) is the
 // ONE derivation, shared with anything else that sends: only rows still to buy go, and
 // the checked ones that stay home are counted out loud rather than left to guess.
-export function FlippSheet({
+export function FlippDialog({
   open,
   onClose,
   rows,

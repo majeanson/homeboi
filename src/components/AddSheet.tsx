@@ -318,7 +318,7 @@ export function AddSheet({
   }, [mode, open])
 
   // — « Note rapide » (board) — a plain fridge note: a line and/or ONE clipped memo.
-  // No AI here any more; the router moved to the header mic (AskSheet ▸ Classer).
+  // No AI here any more; the router moved to the header mic (AskDialog ▸ Classer).
   const [text, setText] = useState('')
   const noteVoice = useVoiceInput(setText)
   const noteMemo = useMemoAttach({ drawDraftId: 'memo' })

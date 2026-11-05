@@ -42,7 +42,7 @@ export function EntityDetailSheet({ model, onClose }: { model: DetailModel | nul
   // the sheet's head corner, beside the ✕ — a drop-DOWN, deliberately: `.sheet`
   // is the scroll container, so a drop-up from the footer row would hard-clip on
   // a short peek, while downward overflow just scrolls (and useModal's focus
-  // pull brings the panel into view). Danger rows keep the RecipeSheet grammar
+  // pull brings the panel into view). Danger rows keep the RecipeScene grammar
   // (warn tone + a divider above). Zero overflow actions → the menu hides
   // itself, so guest/toddler peeks (whose callers omit the gated opts) stay
   // ⋯-free with no extra wiring.
@@ -163,7 +163,7 @@ function Block({ block, onAction }: { block: DetailBlock; onAction: (a: DetailAc
           <span className="detail-sheet__chiprow">
             {block.chips.map((c, i) => {
               // A per-chip household tag colour (recipe peek) tints it the SAME way
-              // RecipeSheet/RecipesTab do; absent → the default berry chip.
+              // RecipeScene/RecipesTab do; absent → the default berry chip.
               const hex = block.tones?.[i]
               return (
                 <Chip key={i} style={hex ? { background: wash(hex), color: tintInk(hex), borderColor: edge(hex) } : undefined}>

@@ -46,7 +46,7 @@ export function VoiceButton({ voice, label }: { voice: VoiceInput; label: string
 //
 // `hint` overrides the "listening" line (default: the list-dictation copy, "say
 // them with and…") for a caller whose mic isn't collecting a list — e.g.
-// AskSheet's single-shot "I'm listening…" (E-22). The error copy stays shared
+// AskDialog's single-shot "I'm listening…" (E-22). The error copy stays shared
 // (denied/unsupported/no-speech reads the same everywhere).
 export function VoiceStatus({ voice, hint }: { voice: VoiceInput; hint?: string }) {
   const t = useT()

@@ -27,7 +27,7 @@ import { VoiceButton, VoiceStatus } from './VoiceButton'
 // and puts both AI mics on one surface where a segment says which one you're holding.
 //
 // The mic opens under a finger, period — never ambient, never a background listener.
-// Mounted ONLY while open (see HubHead: `{open && <AskSheet …/>}`, not an `open` prop that
+// Mounted ONLY while open (see HubHead: `{open && <AskDialog …/>}`, not an `open` prop that
 // hides-but-keeps-mounted like Sheet/AddSheet) — so closing UNMOUNTS this, which fires
 // useVoiceInput's own unmount cleanup and kills a still-listening mic. "Under a finger
 // only" has to hold even if the user backgrounds the app mid-listen.
@@ -39,7 +39,7 @@ import { VoiceButton, VoiceStatus } from './VoiceButton'
 // Hiding it would now take the write spine offline with it.
 type AskMode = 'ask' | 'file'
 
-export function AskSheet({ aiEnabled = true, onClose }: { aiEnabled?: boolean; onClose: () => void }) {
+export function AskDialog({ aiEnabled = true, onClose }: { aiEnabled?: boolean; onClose: () => void }) {
   const t = useT()
   const speak = useSpeak()
   const [mode, setMode] = useState<AskMode>(aiEnabled ? 'ask' : 'file')

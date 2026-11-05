@@ -8,10 +8,10 @@ import { SectionAvatar } from './SectionAvatar'
 import { Icon, type IconName } from './Icon'
 
 // E-22 — lazy: the mic is a rare tap, not a boot-path need, and HubHead is part
-// of the EAGER bundle (rendered by the eager Board page) — pulling AskSheet's
+// of the EAGER bundle (rendered by the eager Board page) — pulling AskDialog's
 // voice/speech/Modal chain into that chunk would tax every boot for a feature
 // most sessions never open (see check-bundle.mjs's eager-chunk budget).
-const AskSheet = lazy(() => import('./AskSheet').then((m) => ({ default: m.AskSheet })))
+const AskDialog = lazy(() => import('./AskDialog').then((m) => ({ default: m.AskDialog })))
 
 // The shared header for the four themed hub tabs (Board/Kitchen/Routines/Liste):
 // a big title on the left, the section's identity disc top-right. The disc is
@@ -60,7 +60,7 @@ export function HubHead({
   // It no longer hides when AI is off. It used to — the sheet only asked questions,
   // and an answer needs the model. But it now also carries « Classer », whose degraded
   // path (pick the type yourself) is precisely what you need WITHOUT AI. Hiding the
-  // whole mic on `!aiEnabled` would take the capture spine offline with it; AskSheet
+  // whole mic on `!aiEnabled` would take the capture spine offline with it; AskDialog
   // instead drops the « Demander » segment and opens straight on « Classer ».
   const showAsk = acts && !isGuest()
   return (
@@ -108,11 +108,11 @@ export function HubHead({
         {action}
         <SectionAvatar icon={icon} iconColor={iconColor} background={background} card={card} />
       </div>
-      {/* Mounted ONLY while open — closing unmounts AskSheet, which kills a
-          still-listening mic (see AskSheet's own header comment). */}
+      {/* Mounted ONLY while open — closing unmounts AskDialog, which kills a
+          still-listening mic (see AskDialog's own header comment). */}
       {askOpen && (
         <Suspense fallback={null}>
-          <AskSheet aiEnabled={aiEnabled} onClose={() => setAskOpen(false)} />
+          <AskDialog aiEnabled={aiEnabled} onClose={() => setAskOpen(false)} />
         </Suspense>
       )}
     </div>

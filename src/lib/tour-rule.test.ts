@@ -170,6 +170,11 @@ describe('tour rule', () => {
 // gained one (all naming cards that already exist — the 32-card ceiling holds), and
 // the rest are listed here with the reason.
 const SCENE_NO_CARD: Record<string, string> = {
+  'pages/FamilyWindowPage.tsx': 'a public guest page: its reader has no account and no guide',
+  'pages/HandoffPage.tsx': 'a public guest page for the sitter: no account, no guide',
+  'pages/WelcomePage.tsx': 'a public guest page for a visitor: no account, no guide',
+  'pages/IntakeForm.tsx': 'a public form reached by a link: no account, no guide',
+  'pages/Postbox.tsx': 'a public form reached by a link: no account, no guide',
   'pages/DevKit.tsx': 'the component gallery — a developer surface, never a household one',
   'pages/QuickAddPage.tsx': 'the ⚡ chips ARE the explanation; its guide door lives on the liste card it came from',
 }

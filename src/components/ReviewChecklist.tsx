@@ -59,7 +59,28 @@ export function ReviewChecklist<T>({
   const allOn = picked.size === items.length && items.length > 0
 
   return (
-    <Modal open={open} onClose={onClose} title={title}>
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={title}
+      footer={
+        items.length === 0 ? undefined : (
+          <>
+            <button type="button" className="btn btn--ghost btn--sm" disabled={busy} onClick={() => onApply(items)}>
+              {applyAllLabel(items.length)}
+            </button>
+            <button
+              type="button"
+              className="btn btn--primary btn--sm"
+              disabled={busy || picked.size === 0}
+              onClick={() => onApply(items.filter((_, i) => picked.has(i)))}
+            >
+              {applySelectedLabel(picked.size)}
+            </button>
+          </>
+        )
+      }
+    >
       {items.length === 0 ? (
         <EmptyState size="cell">{emptyLabel ?? ''}</EmptyState>
       ) : (
@@ -93,19 +114,6 @@ export function ReviewChecklist<T>({
               </li>
             ))}
           </ul>
-          <div className="review__actions">
-            <button type="button" className="btn btn--ghost btn--sm" disabled={busy} onClick={() => onApply(items)}>
-              {applyAllLabel(items.length)}
-            </button>
-            <button
-              type="button"
-              className="btn btn--primary btn--sm"
-              disabled={busy || picked.size === 0}
-              onClick={() => onApply(items.filter((_, i) => picked.has(i)))}
-            >
-              {applySelectedLabel(picked.size)}
-            </button>
-          </div>
         </div>
       )}
     </Modal>

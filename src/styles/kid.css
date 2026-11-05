@@ -868,12 +868,6 @@
   color: var(--warn);
   font-size: var(--text-md);
 }
-.kid-exit-modal__actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 18px;
-}
 
 /* ---- #45 (reframed) Toddler on-screen cookbook (ToddlerCookBook) ------------- */
 .tbook {

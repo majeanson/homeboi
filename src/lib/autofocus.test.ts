@@ -73,7 +73,7 @@ const ALLOWED: Record<string, string> = {
 
 // The surfaces that used to break the rule, named so a reintroduction reads as what it is.
 const NEVER = [
-  'components/AskSheet.tsx',
+  'components/AskDialog.tsx',
   'components/AddSheet.tsx',
   'components/CaptureForm.tsx',
   'components/RemarkComposer.tsx',

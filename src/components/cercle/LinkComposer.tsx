@@ -212,7 +212,7 @@ export function LinkComposer({
       {/* The composer is a Modal, not a panel unfolded under the links + suggestions —
           it used to open at the very bottom of both lists, i.e. off-screen on anyone with
           a few relatives. Short form, so an overlay (not a scene) per the convention. */}
-      <Modal open={adding} onClose={() => setAdding(false)} title={t.cercle.addRelationship}>
+      <Modal open={adding} onClose={() => setAdding(false)} title={t.cercle.addRelationship} footer={<><button type="button" className="btn btn--ghost btn--sm" onClick={() => setAdding(false)}>{t.common.cancel}</button><button type="button" className="btn btn--primary btn--sm" disabled={!otherPerson || busy} onClick={addLink}><Icon name="check-bold" size={14} /> {t.cercle.addRelationship}</button></>}>
         <div className="lc__compose">
           {/* The sentence: "{cette personne} est [ lien ] de [ qui ]". */}
           <p className="lc__sentence">
@@ -246,14 +246,6 @@ export function LinkComposer({
             typeaheadOnly
           />
           {preview && <p className="lc__preview mono">{preview}</p>}
-          <div className="lc__actions">
-            <button type="button" className="btn btn--primary btn--sm" disabled={!otherPerson || busy} onClick={addLink}>
-              <Icon name="check-bold" size={14} /> {t.cercle.addRelationship}
-            </button>
-            <button type="button" className="btn btn--ghost btn--sm" onClick={() => setAdding(false)}>
-              {t.common.cancel}
-            </button>
-          </div>
         </div>
       </Modal>
     </div>

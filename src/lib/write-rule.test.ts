@@ -152,10 +152,10 @@ const ALLOWED = new Set<string>([
   // 4. AI and network round trips. These are QUESTIONS, not writes: the point is
   //    the answer that comes back, and each already has a documented degraded path
   //    offline (NFR-DEGRADE-1) rather than a queue.
-  'components/AskSheet.tsx → ask',
+  'components/AskDialog.tsx → ask',
   'pages/SearchPage.tsx → ask',
   'components/kitchen/useMealSuggest.ts → suggest-meal',
-  'components/kitchen/EmptyFridgeSheet.tsx → empty-fridge',
+  'components/kitchen/EmptyFridgeDialog.tsx → empty-fridge',
   'components/RecipeForm.tsx → recipe-ocr',
   'components/RecipeForm.tsx → recipe-import',
   // The per-page transcript read (?only=transcript): the same question, one photo at a
@@ -223,7 +223,7 @@ const ALLOWED = new Set<string>([
   'lib/shareImport.ts → events',
   'lib/shareImport.ts → recipes',
   'lib/shareImport.ts → routines',
-  'components/kitchen/EmptyFridgeSheet.tsx → recipes',
+  'components/kitchen/EmptyFridgeDialog.tsx → recipes',
 
   // 10. Needs the new id synchronously to attach it to the row being saved.
   //     EventForm's « Créer la liste » must SELECT the list it just created, and a

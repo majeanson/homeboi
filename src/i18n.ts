@@ -71,7 +71,7 @@ export const FR = {
     },
   },
   // E-22 — « Demande à la maison » : the board-mic voice Q&A over the
-  // household's own data (AskSheet). Strictly on-demand — the mic opens under
+  // household's own data (AskDialog). Strictly on-demand — the mic opens under
   // a finger, period; never listens ambiently.
   ask: {
     title: 'Parle à la maison',
