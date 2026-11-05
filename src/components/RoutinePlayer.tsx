@@ -1,3 +1,4 @@
+import { Avatar } from './Avatar'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { SoundToggle } from './SoundToggle'
 import { soundOn } from '../lib/sound'
@@ -460,13 +461,7 @@ export function RoutinePlayer({
               header before. */}
           {onBack ? (
             <button type="button" className="tdl-face" onClick={onBack} aria-label={backLabel} title={backLabel}>
-              {routine.avatarPhoto ? (
-                <Img className="tdl-face__img" src={imgUrl(routine.avatarPhoto)} alt="" />
-              ) : (
-                <span className="tdl-face__initial" style={{ background: tint }} aria-hidden="true">
-                  {(routine.memberName ?? routine.name).slice(0, 1).toUpperCase()}
-                </span>
-              )}
+              <Avatar photoUrl={routine.avatarPhoto ? imgUrl(routine.avatarPhoto) : null} colour={tint} name={routine.memberName ?? routine.name} size={46} decorative />
             </button>
           ) : (
             <div style={{ width: 44 }} />

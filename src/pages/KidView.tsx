@@ -1,3 +1,4 @@
+import { Avatar } from '../components/Avatar'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -204,14 +205,9 @@ export function KidView() {
                   {/* Who it's for — only when several children share the device;
                       an identified device already knows, so we drop the avatar. */}
                   <span className="kid__routine-who">
-                    {!identified &&
-                      (r.avatarPhoto ? (
-                        <Img className="kid__routine-ava" src={imgUrl(r.avatarPhoto)} alt="" />
-                      ) : (
-                        <span className="kid__routine-ava kid__routine-ava--initial" style={{ background: tint }}>
-                          {(r.memberName ?? '?').slice(0, 1).toUpperCase()}
-                        </span>
-                      ))}
+                    {!identified && (
+                      <Avatar className="kid__routine-ava" photoUrl={r.avatarPhoto ? imgUrl(r.avatarPhoto) : null} colour={tint} name={r.memberName} size={37} decorative />
+                    )}
                     <span className="kid__face-name">
                       {identified ? r.name : r.memberName ? `${r.memberName} · ${r.name}` : r.name}
                     </span>
@@ -260,12 +256,8 @@ export function KidView() {
             <button type="button" className="kid__others" onClick={() => setMemberId(null)} aria-label={t.kid.pick} title={t.kid.pick}>
               {others.map((r) => {
                 const tint = colourFor('routine', r.color)
-                return r.avatarPhoto ? (
-                  <Img key={r.id} className="kid__others-face" src={imgUrl(r.avatarPhoto)} alt="" />
-                ) : (
-                  <span key={r.id} className="kid__others-face kid__others-face--initial" style={{ background: tint }} aria-hidden="true">
-                    {(r.memberName ?? '?').slice(0, 1).toUpperCase()}
-                  </span>
+                return (
+                  <Avatar key={r.id} className="kid__others-face" photoUrl={r.avatarPhoto ? imgUrl(r.avatarPhoto) : null} colour={tint} name={r.memberName} size={44} decorative />
                 )
               })}
             </button>

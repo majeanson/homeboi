@@ -1,3 +1,4 @@
+import { Avatar } from '../components/Avatar'
 import { Suspense, lazy, useCallback, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { isBoardStale } from '../lib/online'
 import { liveInterval } from '../lib/query'
@@ -45,7 +46,6 @@ import { weatherIcon, weatherTint, type Weather, type DayOutlook, type HourOutlo
 import { formatDay, formatDayMaybeYear, formatTime, weekdayShort } from '../lib/format'
 import { todayLocalDay, addLocalDays, daysUntilLocal } from '../lib/localDay'
 import { useNow, isPastSec, isNowSec } from '../lib/itemLife'
-import { imgUrl } from '../lib/image'
 import { SLOT_ICON_NAME, heroCardLabel, slotLabel as slotLabelFor, type MealSlot } from '../lib/mealSlots'
 import { Act, Section } from '../components/board/Act'
 import { type CompactRow } from '../components/board/BoardCard'
@@ -59,7 +59,6 @@ import { Notes } from '../components/board/Notes'
 import { DayNote } from '../components/board/DayNote'
 import { Skeleton } from '../components/Skeleton'
 import { BoardViewToggle, TodayFaceRow } from '../components/board/chrome'
-import { Img } from '../components/Img'
 // « Mois » and « Année » are BEHIND A VIEW SWITCH — the board opens on its widget
 // grid, so neither calendar is on the first-paint path, and together they were ~65 KB
 // of the eager entry chunk. Lazy, with the same Skeleton the board already shows while
@@ -1703,16 +1702,9 @@ export function Board() {
             data-tour="board-faces"
           >
             {me ? (
-              (() => {
-                // Show the real photo (small) when the member has one, like the
-                // kiosk member switcher — falls back to the coloured initial.
-                const photo = me.avatar_kind === 'photo' && me.avatar_ref ? imgUrl(me.avatar_ref) : null
-                return (
-                  <span className="profile-chip__av" style={{ background: photo ? undefined : me.colour }}>
-                    {photo ? <Img src={photo} alt="" /> : (me.display_name?.[0] ?? '?').toUpperCase()}
-                  </span>
-                )
-              })()
+              // The real photo (small) when the member has one, else the coloured initial —
+              // the ONE face primitive (Avatar), with the chip's own class for its size.
+              <Avatar className="profile-chip__av" kind={me.avatar_kind} photo={me.avatar_ref} colour={me.colour} name={me.display_name} size={34} decorative />
             ) : (
               <span className="profile-chip__ask mono">{t.profile.askShort}</span>
             )}

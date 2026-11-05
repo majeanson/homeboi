@@ -431,7 +431,7 @@ function DayEditor({
             style={holderId === m.id ? { borderColor: m.colour } : undefined}
             onClick={() => setHolderId(holderId === m.id ? null : m.id)}
           >
-            <span className="voiture__face" style={{ background: m.colour }}>{m.display_name.slice(0, 1)}</span>
+            <Avatar className="voiture__face" kind={m.avatar_kind} photo={m.avatar_ref} colour={m.colour} name={m.display_name} size={19} decorative />
             {m.display_name}
           </button>
         ))}

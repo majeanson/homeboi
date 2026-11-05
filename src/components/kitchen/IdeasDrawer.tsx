@@ -9,7 +9,6 @@ import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { useSingleOpen } from '../Disclosure'
 import { isGuest } from '../../lib/device'
 import { rankUseSoon } from '../../lib/cookable'
-import { imgUrl } from '../../lib/image'
 import { useLoves } from '../../lib/loves'
 import { type Member } from '../../lib/members'
 import { type MealSlot } from '../../lib/mealSlots'
@@ -38,7 +37,6 @@ import { Chip } from '../Chip'
 import { EmptyState } from '../EmptyState'
 import { LoadError } from '../LoadError'
 import { RowActions } from '../RowActions'
-import { Img } from '../Img'
 
 // « Un seul tiroir d'idées-repas » (C-14, bmad/10) — the ONE place every source of
 // "what's for supper" ideas lives, replacing four-plus scattered pools a family
@@ -382,14 +380,9 @@ function FavoritesChip({
         if (faces.length === 0) return null
         return (
           <span className="hearts__faces" aria-hidden="true">
-            {faces.slice(0, 4).map((m) => {
-              const photo = m.avatar_kind === 'photo' && m.avatar_ref ? imgUrl(m.avatar_ref) : null
-              return (
-                <span key={m.id} className="hearts__face" style={{ background: photo ? undefined : m.colour }}>
-                  {photo ? <Img src={photo} alt="" /> : (m.display_name?.[0] ?? '?').toUpperCase()}
-                </span>
-              )
-            })}
+            {faces.slice(0, 4).map((m) => (
+              <Avatar key={m.id} className="hearts__face" kind={m.avatar_kind} photo={m.avatar_ref} colour={m.colour} name={m.display_name} size={18} decorative />
+            ))}
           </span>
         )
       }}

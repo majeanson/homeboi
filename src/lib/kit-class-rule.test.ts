@@ -25,12 +25,16 @@ const SRC = join(__dirname, '..')
 // token → its owner file + what to reach for instead.
 const OWNED = new Map<string, { owner: string; hint: string }>([
   ['loading', { owner: 'components/Fallback.tsx', hint: '<Loading> (or loadStateOf(q) when the wait is a query’s)' }],
+  ['avatar', { owner: 'components/Avatar.tsx', hint: '<Avatar photoUrl|kind+photo colour name size className decorative />' }],
+  ['avatar--disc', { owner: 'components/Avatar.tsx', hint: '<Avatar>' }],
+  ['avatar--photo', { owner: 'components/Avatar.tsx', hint: '<Avatar>' }],
+  ['avatar__initial', { owner: 'components/Avatar.tsx', hint: '<Avatar>' }],
 ])
 
-// (token, file) → why this file may spell it. Empty today; an entry says what makes
-// hosting the component impossible, not merely inconvenient.
+// (token, file) → why this file may spell it. An entry says what makes hosting the
+// component impossible, not merely inconvenient.
 const ALLOWED = new Map<string, string>([
-  // (none today)
+  ['avatar @ components/SectionAvatar.tsx', 'a SECTION’s icon disc (not a person) that borrows the avatar box for its size — a different primitive sharing the shell class on purpose'],
 ])
 
 const files = sourceFiles(SRC)

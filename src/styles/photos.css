@@ -11,6 +11,9 @@
 .avatar--photo {
   object-fit: cover;
 }
+.avatar--square {
+  border-radius: var(--radius);
+}
 .avatar__initial {
   color: #fff;
   font-family: var(--display);

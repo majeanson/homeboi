@@ -1,7 +1,7 @@
+import { Avatar } from './Avatar'
 import { Icon } from './Icon'
 import { Sheet } from './Sheet'
 import { type MemberFace } from '../lib/faces'
-import { Img } from './Img'
 
 // THE "pick a face" bottom sheet — the grid of household faces plus the neutral
 // « tout le monde » tile, in one place.
@@ -65,9 +65,7 @@ export function FaceSheet({
               onClick={() => pick(f.id)}
               aria-pressed={sel}
             >
-              <span className="profile-face__av" style={{ background: f.photoUrl ? undefined : (f.colour ?? undefined) }}>
-                {f.photoUrl ? <Img src={f.photoUrl} alt="" /> : (f.name?.[0] ?? '?').toUpperCase()}
-              </span>
+              <Avatar className="profile-face__av" photoUrl={f.photoUrl} colour={f.colour} name={f.name} size={56} decorative />
               {f.dot && <span className="face-dot" aria-hidden="true" />}
               <span className="profile-face__name">{f.name}</span>
             </button>

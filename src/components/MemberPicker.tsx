@@ -1,5 +1,5 @@
+import { Avatar } from './Avatar'
 import { type MemberFace } from './MemberSwitcher'
-import { Img } from './Img'
 
 // The MULTI-select sibling of MemberSwitcher: tap household faces to select several
 // at once — a chore rotation, an event's passengers, a pet's owners, a routine's kids.
@@ -46,12 +46,7 @@ export function MemberPicker({
             aria-pressed={on}
             onClick={() => onToggle(f.id)}
           >
-            <span
-              className="mswitch__av"
-              style={{ background: f.photoUrl ? undefined : f.colour ?? undefined }}
-            >
-              {f.photoUrl ? <Img src={f.photoUrl} alt="" /> : (f.name?.[0] ?? '?').toUpperCase()}
-            </span>
+            <Avatar className="mswitch__av" photoUrl={f.photoUrl} colour={f.colour} name={f.name} size={32} decorative />
             {ordinals && on && (
               <span className="mswitch__ord" aria-hidden="true">
                 {idx + 1}

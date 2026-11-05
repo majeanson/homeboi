@@ -1,5 +1,5 @@
+import { Avatar } from './Avatar'
 import { Icon } from './Icon'
-import { Img } from './Img'
 
 // The shared "pick-a-face" row — the calm Maisonnée + member faces control from the
 // board's "Aujourd'hui" header (the kiosk member switcher), now generalized so any
@@ -73,9 +73,7 @@ export function MemberSwitcher({
             aria-pressed={on}
             onClick={() => onChange(on && toggleOff ? null : f.id)}
           >
-            <span className="mswitch__av" style={{ background: f.photoUrl ? undefined : f.colour ?? undefined }}>
-              {f.photoUrl ? <Img src={f.photoUrl} alt="" /> : (f.name?.[0] ?? '?').toUpperCase()}
-            </span>
+            <Avatar className="mswitch__av" photoUrl={f.photoUrl} colour={f.colour} name={f.name} size={32} decorative />
             {f.dot && <span className="face-dot" aria-hidden="true" />}
             <span className="mswitch__name">{f.name}</span>
           </button>

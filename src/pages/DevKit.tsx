@@ -2936,6 +2936,14 @@ export function DevKit() {
               <Avatar name="Rose" colour="#2A8F85" />
             </div>
           </Demo>
+          <Demo label="2026-11-05 — photoUrl (a URL already built) · className (the host's size/overlap class) · decorative (the name is written beside it: an empty alt, hidden from the a11y tree) · shape='square'. The eight hand-rolled discs (member switcher, face sheet, recipe hearts, kiosk chip, L'auto, kid routines) ride these; avatar-rule.test.ts refuses a new one.">
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <Avatar name="Marc" colour={PALETTE[4]} size={18} decorative />
+              <Avatar name="Camille" colour={PALETTE[2]} size={32} decorative />
+              <Avatar name="Léo" colour={PALETTE[0]} size={44} shape="square" />
+              <Avatar name="Photo" photoUrl="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44'%3E%3Crect width='44' height='44' fill='%23C2563A'/%3E%3C/svg%3E" size={44} />
+            </div>
+          </Demo>
         </>
       ),
     },
