@@ -1,7 +1,7 @@
 import { lazy, Suspense, useState, type ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useT } from '../i18n'
-import { useAudience } from '../lib/audience'
+import { useLens } from '../lib/audience'
 import { useAi } from '../lib/ai'
 import { isGuest } from '../lib/device'
 import { SectionAvatar } from './SectionAvatar'
@@ -49,20 +49,20 @@ export function HubHead({
   searchPick?: (run: () => void) => () => void
 }) {
   const t = useT()
-  const { audience } = useAudience()
+  const { acts } = useLens()
   const nav = useNavigate()
   const { enabled: aiEnabled } = useAi()
   const [askOpen, setAskOpen] = useState(false)
   // « Parle à la maison » — the ONE voice surface: ask a question (read) or file a
   // capture (write). A guest (read-only babysitter session) and the toddler lens
-  // never see it (the same `audience === 'parent'` gate as the loupe below).
+  // never see it (the same `acts` lens gate as the loupe below).
   //
   // It no longer hides when AI is off. It used to — the sheet only asked questions,
   // and an answer needs the model. But it now also carries « Classer », whose degraded
   // path (pick the type yourself) is precisely what you need WITHOUT AI. Hiding the
   // whole mic on `!aiEnabled` would take the capture spine offline with it; AskSheet
   // instead drops the « Demander » segment and opens straight on « Classer ».
-  const showAsk = audience === 'parent' && !isGuest()
+  const showAsk = acts && !isGuest()
   return (
     <div className="app-head">
       <div className="app-head__main">
@@ -88,7 +88,7 @@ export function HubHead({
         )}
         {/* #30 — global search, reachable from every hub tab. Parent-only (a toddler
             has nothing to search for). */}
-        {audience === 'parent' &&
+        {acts &&
           (searchPick ? (
             <button
               type="button"

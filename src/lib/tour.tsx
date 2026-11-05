@@ -6,7 +6,7 @@
 // Help (see main.tsx), guarded with try/catch so storage quirks never break boot.
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { useAudience } from './audience'
+import { useLens } from './audience'
 import { useAuth } from './auth'
 import { useSandbox } from './demo'
 import { isEmbedded } from './embedded'
@@ -134,7 +134,7 @@ export const useTour = () => useContext(TourContext)
 export function TourProvider({ children }: { children: ReactNode }) {
   const nav = useNavigate()
   const { pathname } = useLocation()
-  const { audience } = useAudience()
+  const { audience, interrupts } = useLens()
   const { signedIn } = useAuth()
   const sandbox = useSandbox()
   const { surface } = useSurface()
@@ -241,7 +241,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
   const autoTried = useRef(false)
   useEffect(() => {
     if (autoTried.current) return
-    if (audience !== 'parent') return
+    if (!interrupts) return
     if (!signedIn && !isPaired()) return
     // Never onboard a guest / cast surface — the tour is operator/kiosk-only. A sitter
     // / family / welcome / cast link carries a guest token (isGuest), and the « Diffuser

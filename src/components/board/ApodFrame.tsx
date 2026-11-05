@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { useApodEnabled } from '../../lib/apod'
-import { useAudience } from '../../lib/audience'
+import { useLens } from '../../lib/audience'
 import { useSpeak } from '../../lib/speak'
 import { useT } from '../../i18n'
 import { ZoomableImg } from '../ZoomableImg'
@@ -46,7 +46,7 @@ const SIX_HOURS = 6 * 60 * 60 * 1000
 export function WonderBand({ wonder, onShuffle }: { wonder: Wonder; onShuffle?: () => void }) {
   const t = useT()
   const speak = useSpeak()
-  const { audience } = useAudience()
+  const { toddler } = useLens()
   const [expanded, setExpanded] = useState(false)
   const kicker = t.board.wonderKicker[wonder.source]
   // Some sources (wiki) carry no separate blurb — the caption IS the title — so we
@@ -66,7 +66,7 @@ export function WonderBand({ wonder, onShuffle }: { wonder: Wonder; onShuffle?: 
     </button>
   )
 
-  if (audience === 'toddler') {
+  if (toddler) {
     return (
       <div className="photo-frame apod apod--kid-wrap">
         <button

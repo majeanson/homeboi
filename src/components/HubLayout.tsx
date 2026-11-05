@@ -5,7 +5,7 @@ import { useT } from '../i18n'
 import { api } from '../lib/api'
 import { BOARD_KEY, CERCLE_KEY } from '../lib/queryKeys'
 import { MEALS_KEY } from './kitchen/types'
-import { useAudience } from '../lib/audience'
+import { useAudience, useLens } from '../lib/audience'
 import { useSurface } from '../lib/surface'
 import { useProfile } from '../lib/profile'
 import { saveBoardView, DEFAULT_BOARD_VIEW } from '../lib/boardview'
@@ -84,7 +84,8 @@ const TAB_PREFETCH: Record<string, { key: string[]; path: string }> = {
 
 export function HubLayout() {
   const t = useT()
-  const { audience, locked, guestPreview } = useAudience()
+  const { guestPreview } = useAudience()
+  const { audience, locked, toddler, simple } = useLens()
   const { surface } = useSurface()
   // Keep the screen lit while the hub is open, so a wall tablet doesn't dim/sleep on
   // the board glance. Per-device opt-out (Réglages ▸ Affichage ▸ « Garder l'écran
@@ -398,8 +399,6 @@ export function HubLayout() {
     ambient.idleMin,
   ])
 
-  const toddler = audience === 'toddler'
-  const simple = audience === 'simple'
   // Both simplified lenses (pre-reader toddler + post-reader simple) drop Réglages,
   // the ＋ FAB and the collapsible rail, and get an exit gate — the difference is
   // only the math challenge (a child needs it, a grandma doesn't). `restricted`

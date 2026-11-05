@@ -9,7 +9,7 @@ import { Cluster } from '../components/Layout'
 import { Avatar } from '../components/Avatar'
 import { SectionIntro } from '../components/SectionIntro'
 import { useLang, useT } from '../i18n'
-import { useAudience } from '../lib/audience'
+import { useLens } from '../lib/audience'
 import { useProfile } from '../lib/profile'
 import { useTabParam } from '../lib/tabParam'
 import { api, isUnauthorized } from '../lib/api'
@@ -66,7 +66,7 @@ export function Kitchen() {
   const t = useT()
   const qc = useQueryClient()
   const { lang } = useLang()
-  const { audience } = useAudience()
+  const { toddler, acts } = useLens()
   const { memberId: profileId } = useProfile()
   // Per-slot meal visibility (Réglages ▸ Repas) trims the week's side-summary
   // glance. The full per-slot editor (DayPlanPage) still shows every slot, so a
@@ -319,7 +319,7 @@ export function Kitchen() {
   // "all the section's actions, whatever sub-tab you're on". Their results still land
   // on the Repas grid, so a handler fired from Garde-manger/Recettes first switches
   // to Repas (see the wrapped handlers below), then scrolls the result into view.
-  const kitchenActionsActive = audience === 'parent'
+  const kitchenActionsActive = acts
   // Push the current week-action availability up to the shell's ＋ Add sheet.
   // IDEMPOTENT by design: it only ever registers the CURRENT state (active
   // handlers + flags, or cleared when inactive), and HubLayout bails when the flag
@@ -365,7 +365,7 @@ export function Kitchen() {
   // rather than popping a whole week in over one centred line.
   if (!meals.data && !meals.error) return <Skeleton variant="card" count={4} />
 
-  if (audience === 'toddler') {
+  if (toddler) {
     return (
       <KidKitchen
         week={week}

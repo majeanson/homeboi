@@ -6,7 +6,7 @@ import { useWrite, writeFailed } from '../lib/write'
 import { BOARD_KEY, MONTH_KEY } from '../lib/queryKeys'
 import { type Recipe, type RecipeTagsData, RECIPES_KEY, RECIPE_TAGS_KEY, recipeImg, tagColor, useRecipeOriginal } from '../lib/recipes'
 import { isGuest } from '../lib/device'
-import { useAudience } from '../lib/audience'
+import { useLens } from '../lib/audience'
 import { wash, tintInk, edge } from '../lib/colors'
 import { Chip } from './Chip'
 import { formatDuration } from '../lib/duration'
@@ -57,7 +57,7 @@ export function RecipeSheet({
   const t = useT()
   const confirm = useConfirm()
   const write = useWrite()
-  const { audience } = useAudience()
+  const { acts, teaches } = useLens()
   // Recipe → toddler picture routine (#19): each step becomes a read-aloud card.
   // Moved here from the recipe peek (now skipped) so the browse path keeps the
   // action; parent-only, gated below with the other write controls (`!ro`).
@@ -67,7 +67,7 @@ export function RecipeSheet({
   // a guest AND for the toddler lens: a pre-reader who cooks from KidKitchen and taps
   // ✕ lands back on this sheet, and the toddler one-way-door must never expose the
   // parent's edit/delete/plan/share controls (NFR-KID: no escape hatch to admin).
-  const ro = isGuest() || audience === 'toddler'
+  const ro = isGuest() || !acts
   // A share link is minted by a server write (operator-only), so the « Partager » button
   // shows only for the signed-in operator — not a guest, a kiosk device, or the toddler
   // lens. (The old plain-text Web-Share was client-only; the real link needs an account.)
@@ -260,7 +260,7 @@ export function RecipeSheet({
   // « Partager » — mint a real /partage/<id> link (photo + ingredients + steps)
   // anyone can open, not an ugly text paste. A server write, so operator-only
   // (hidden for guests/kiosk/toddler — the one-way door stays closed).
-  if (signedIn && audience !== 'toddler')
+  if (signedIn && teaches)
     menuItems.push({ icon: 'arrow-up-right-bold', label: t.recipes.shareRecipe, onSelect: () => setSharing(true) })
   if (!ro) {
     menuItems.push({ icon: 'pencil-simple-bold', label: t.common.edit, onSelect: onEdit, separated: true })

@@ -17,7 +17,7 @@ import { aisleFor, aisleRanks, AISLE_BY_ID } from '../lib/aisle'
 import { rushRank } from '../lib/listOrder'
 import { mintTmpId } from '../lib/tmpIds'
 import { spliceListLine } from '../lib/listAdd'
-import { useAudience } from '../lib/audience'
+import { useLens } from '../lib/audience'
 import { useSurface } from '../lib/surface'
 import { api, isUnauthorized } from '../lib/api'
 import { useWrite, writeFailed } from '../lib/write'
@@ -371,7 +371,7 @@ function ListItemRow({
 export function Liste() {
   const t = useT()
   const { lang } = useLang()
-  const { audience } = useAudience()
+  const { toddler } = useLens()
   const { surface } = useSurface()
   const nav = useNavigate()
   const createWithUndo = useCreateWithUndo()
@@ -715,7 +715,7 @@ export function Liste() {
     reorderTo([...list].sort(byAisleThenRush).map((i) => i.id))
   }
 
-  if (audience === 'toddler') {
+  if (toddler) {
     // Read-only for toddlers: tapping a tile reads it aloud but never checks it
     // off. Show only what's still needed (un-ticked) — a kid sees what's left to
     // get. Each tile draws its own picture (milk/bread/apple…) so it's legible to

@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { Icon, type IconName } from './Icon'
 import { useT } from '../i18n'
 import { useHelp } from '../lib/help'
-import { useAudience } from '../lib/audience'
+import { useLens } from '../lib/audience'
 import { guideHref } from '../lib/settingsNav'
 
 // The section's identity glyph in the top-right of every themed tab's header.
@@ -31,9 +31,9 @@ export function SectionAvatar({
 }) {
   const t = useT()
   const { tutorial } = useHelp()
-  const { audience } = useAudience()
+  const { teaches } = useLens()
   const glyph = <Icon name={icon} size={26} color={iconColor} />
-  if (!tutorial || audience === 'toddler')
+  if (!tutorial || !teaches)
     return (
       <div className="avatar" style={{ background }}>
         {glyph}

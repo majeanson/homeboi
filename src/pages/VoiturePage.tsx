@@ -10,7 +10,7 @@ import { CAR_KEY, BOARD_KEY, MEMBERS_KEY, MONTH_KEY } from '../lib/queryKeys'
 import { useCarWeek, type CarDay, type CarRide, type CarModel } from '../lib/car'
 import { useCars } from '../lib/carPrefs'
 import { type Member } from '../lib/members'
-import { useAudience } from '../lib/audience'
+import { useLens } from '../lib/audience'
 import { todayLocalDay, addLocalDays, localDayOfWeek } from '../lib/localDay'
 import { formatWeekday, formatDay, formatTime } from '../lib/format'
 import { SceneHead } from '../components/SceneHead'
@@ -46,7 +46,7 @@ export function VoiturePage() {
   const nav = useNavigate()
   const close = useSceneClose('/board')
   useEscapeKey(close)
-  const { audience } = useAudience()
+  const { toddler } = useLens()
   const write = useWrite()
   const confirm = useConfirm()
   const { name: carName, color: carColorOf, primary } = useCars()
@@ -121,7 +121,7 @@ export function VoiturePage() {
   }
 
   // ── Toddler: a picture-first "who drives you today?" ───────────────────────────
-  if (audience === 'toddler') {
+  if (toddler) {
     const todayDay = car?.days.find((d) => d.day === today)
     const firstRide = todayDay?.rides[0]
     const driverId = firstRide?.memberId ?? null

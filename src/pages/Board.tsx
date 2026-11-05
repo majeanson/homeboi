@@ -28,7 +28,7 @@ import { TOD_ICON } from '../lib/cats'
 import { useMealPrefs } from '../lib/mealPrefs'
 import { useNextMeal } from '../lib/nextMeal'
 import { useLang, useT } from '../i18n'
-import { useAudience } from '../lib/audience'
+import { useLens } from '../lib/audience'
 import { useEventPeekActions } from '../components/detail/EventPeekActions'
 import { useSurface } from '../lib/surface'
 import { useProfile } from '../lib/profile'
@@ -206,7 +206,7 @@ export function Board() {
   const qc = useQueryClient()
   const ro = isGuest()
   const { lang } = useLang()
-  const { audience } = useAudience()
+  const { parent, toddler, simple, acts } = useLens()
   // Modify / Delete / Share for an event peek — gating + both modals owned by the hook.
   const eventActions = useEventPeekActions()
   const { surface } = useSurface()
@@ -542,11 +542,11 @@ export function Board() {
   // the household — so `ro` has no business here, and gating on it is what left the public
   // demo unable to touch the one feature that best shows off the widget space. See the note
   // on isGuest() in lib/device.
-  const canEdit = !isDisplay() && audience === 'parent'
+  const canEdit = !isDisplay() && parent
   const editing = canEdit && editParam === '1'
   const exitEdit = useCallback(() => setEditParam('0'), [setEditParam])
   // Editing always shows the whole board — you cannot arrange cards you cannot see.
-  const curated = sandbox && phoneWidth && !seeAll && !editing && audience === 'parent'
+  const curated = sandbox && phoneWidth && !seeAll && !editing && parent
   const shownCards = curated ? curateForTrial(boardCards) : boardCards
 
   // « Annuler » — edit mode is otherwise apply-as-you-go (every drag / ✕ / resize
@@ -659,7 +659,7 @@ export function Board() {
   // « Simple » lens (bmad/08 A-1) — the post-reader/grandma board: four giant
   // calm zones (Aujourd'hui · Souper · La liste · Notes) off the SAME data. The
   // other tabs inherit the parent views; only the board gets this bespoke glance.
-  if (audience === 'simple') {
+  if (simple) {
     const tod = timeOfDay(nowMs)
     const greet = me ? `${t.today[tod]}, ${greetName(me.display_name)}` : t.today[tod]
     return <SimpleBoard data={data} model={model} greet={greet} />
@@ -669,7 +669,7 @@ export function Board() {
   // the parent, kid UI. This is the ONLY code a locked kiosk (`?kid=1`, the
   // kid one-way door) ever runs, so its data hook (`useBoardModel` above) sits
   // ABOVE this early return — hook-order law.
-  if (audience === 'toddler') {
+  if (toddler) {
     const tod = timeOfDay(nowMs)
     const greet = me ? `${t.today[tod]}, ${greetName(me.display_name)}` : t.today[tod]
     return <ToddlerBoard data={data} model={model} greet={greet} weather={weather} openTodos={openTodos} />
@@ -1019,7 +1019,7 @@ export function Board() {
       cookLine={cookLine}
       weather={weather}
       hours={wxHours}
-      wonder={dayClear && audience === 'parent' ? null : wonder}
+      wonder={dayClear && parent ? null : wonder}
       onShuffleWonder={shuffleWonder}
       supperNow={focus === 'supper'}
       heroSlot={heroSlot}
@@ -1031,7 +1031,7 @@ export function Board() {
   // « Souvenirs » (C1) — the keepsake shelf. A guest sees the pictures, never another
   // face's kept mots (the board payload never carries an addressed one to a guest).
   nodes.souvenirs = <SouvenirsCard readOnly={ro} />
-  nodes.aRegler = <ARegler enabled={audience === 'parent' && !ro} variant="card" />
+  nodes.aRegler = <ARegler enabled={acts && !ro} variant="card" />
   // « L'auto » glance — the car's status today + today's rides. #28
   nodes.autoCard = <AutoCard />
   // « Aujourd'hui » (+ « Demain » bunched) — the day's agenda, AND the day's
@@ -1893,7 +1893,7 @@ export function Board() {
               in this exact case so the photo shows in ONE place, not two). Auto-hides
               when the feed/R2 is down or the device opted out (wonder === null).
               NFR-CALM: ambient, no data, no counts. Toddler keeps its own WonderFrame. */}
-          {dayClear && audience === 'parent' && wonder && (
+          {dayClear && parent && wonder && (
             <div className="board-focal-wonder">
               <WonderBand wonder={wonder} onShuffle={shuffleWonder} />
             </div>
@@ -1924,7 +1924,7 @@ export function Board() {
           {/* « Tout voir » — the trial phone shows five cards; this is the door to the rest, and
               (once open) back to the short board. A plain Chip-weight control at the foot of
               the grid, where the eye lands when it reaches the end of the five. */}
-          {sandbox && phoneWidth && !editing && audience === 'parent' && (
+          {sandbox && phoneWidth && !editing && parent && (
             <div className="board-edit-hint board-edit-hint--door">
               <button type="button" className="btn btn--ghost btn--sm" onClick={() => setSeeAll((v) => !v)} aria-expanded={seeAll}>
                 <InlineIcon name={seeAll ? 'caret-up-bold' : 'caret-down-bold'} size={14} /> {seeAll ? t.board.seeLess : t.board.seeAll}

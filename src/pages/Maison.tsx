@@ -10,7 +10,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useLang, useT } from '../i18n'
-import { useAudience } from '../lib/audience'
+import { useLens } from '../lib/audience'
 import { useSurface } from '../lib/surface'
 import { useTabParam } from '../lib/tabParam'
 import { useHScroll } from '../lib/hscroll'
@@ -142,9 +142,9 @@ const SECTION_ICON: Record<Section, IconName> = {
 // surface instead of the parent directory. Parent: MaisonParent below, unchanged
 // from the old Cercle page plus the Routines sub-tab.
 export function Maison() {
-  const { audience } = useAudience()
+  const { toddler } = useLens()
   const [params] = useSearchParams()
-  if (audience === 'toddler') {
+  if (toddler) {
     const section = params.get('section')
     return section && section !== 'routines' ? <CircleKidView /> : <KidView />
   }

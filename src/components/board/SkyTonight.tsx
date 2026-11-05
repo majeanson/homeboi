@@ -1,5 +1,5 @@
 import { useT } from '../../i18n'
-import { useAudience } from '../../lib/audience'
+import { useLens } from '../../lib/audience'
 import { useSpeak } from '../../lib/speak'
 import { moonPhase } from '../../lib/moonPhase'
 
@@ -16,11 +16,10 @@ import { moonPhase } from '../../lib/moonPhase'
 export function SkyTonight() {
   const t = useT()
   const speak = useSpeak()
-  const { audience } = useAudience()
+  const { toddler } = useLens()
   const moon = moonPhase(Date.now())
   const phase = t.board.sky.tonight.phase[moon.name]
   const heard = t.board.sky.tonight.heard[moon.name]
-  const kid = audience === 'toddler'
   const inner = (
     <>
       <span className="sky-tonight__emoji" aria-hidden="true">
@@ -34,7 +33,7 @@ export function SkyTonight() {
   )
   // Read-aloud is a toddler-only affordance: a pre-reader gets a big tap-to-hear
   // tile; a parent gets the same calm line as plain, non-speaking info.
-  if (!kid)
+  if (!toddler)
     return (
       <div className="sky-tonight" aria-label={`${t.board.sky.tonight.title}: ${phase}`}>
         {inner}

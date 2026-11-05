@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { createDeviceStore } from './createDeviceStore'
 import { useNow } from './itemLife'
-import { useAudience } from './audience'
+import { useLens } from './audience'
 import { useAuth } from './auth'
 import { isGuest, isPaired } from './device'
 import { useProfile } from './profile'
@@ -69,7 +69,7 @@ const isCalmSurface = (pathname: string) => pathname === '/board'
 export function useHabitCheckinTrigger(saverShowing: boolean): void {
   const nav = useNavigate()
   const { pathname } = useLocation()
-  const { audience } = useAudience()
+  const { interrupts } = useLens()
   const { signedIn } = useAuth()
   const { memberId: face } = useProfile()
   const settings = useHabitCheckin()
@@ -87,7 +87,7 @@ export function useHabitCheckinTrigger(saverShowing: boolean): void {
     // Same guards as the tour's auto-launch: a parent lens on a signed-in operator
     // or a paired wall kiosk. Never a guest, never the TV board, never a toddler /
     // simple lens (they have no business being handed someone's cigarette count).
-    if (audience !== 'parent') return
+    if (!interrupts) return
     if (!signedIn && !isPaired()) return
     if (isGuest() || pathname.startsWith('/cast')) return
 
@@ -153,7 +153,7 @@ export function useHabitCheckinTrigger(saverShowing: boolean): void {
       nav(SCENE)
       return
     }
-  }, [data, audience, signedIn, pathname, face, settings, now, saverShowing, nav])
+  }, [data, interrupts, signedIn, pathname, face, settings, now, saverShowing, nav])
 
   // Re-arm once the scene is left, so a later reminder can still fire today.
   useEffect(() => {

@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useT, useLang } from '../i18n'
 import { api } from '../lib/api'
 import { live } from '../lib/query'
-import { useAudience } from '../lib/audience'
+import { useLens } from '../lib/audience'
 import { isGuest } from '../lib/device'
 import { imgUrl } from '../lib/image'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
@@ -34,8 +34,7 @@ export function DrawingGalleryPage() {
   const { lang } = useLang()
   const close = useSceneClose('/board')
   useEscapeKey(close)
-  const { audience } = useAudience()
-  const toddler = audience === 'toddler'
+  const { toddler } = useLens()
   const ro = isGuest()
   const { data } = useGallery()
   // Who drew it + when — the gallery should credit the author and the date, not just

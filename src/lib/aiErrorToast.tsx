@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { useT } from '../i18n'
 import { api } from './api'
-import { useAudience } from './audience'
+import { useLens } from './audience'
 import { onAiError, type AiErrorEvent } from './aiErrorBus'
 
 // On-screen surfacing of AI failures. lib/api emits when a handler tagged a
@@ -20,7 +20,7 @@ export function AiErrorProvider({ children }: { children: ReactNode }) {
   // surface for someone who can't dismiss it — so it HOLDS while a non-parent
   // audience is active and drains the queue when a parent view returns. Nothing
   // is lost: events keep queueing (and coalescing) underneath.
-  const { audience } = useAudience()
+  const { interrupts } = useLens()
   const [queue, setQueue] = useState<AiErrorEvent[]>([])
   const [saving, setSaving] = useState(false)
 
@@ -35,7 +35,7 @@ export function AiErrorProvider({ children }: { children: ReactNode }) {
     [],
   )
 
-  const current = audience === 'parent' ? (queue[0] ?? null) : null
+  const current = interrupts ? (queue[0] ?? null) : null
 
   async function accept() {
     if (!current || saving) return

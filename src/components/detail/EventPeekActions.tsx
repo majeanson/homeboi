@@ -5,7 +5,7 @@ import { api } from '../../lib/api'
 import { useWrite } from '../../lib/write'
 import { useConfirm } from '../../lib/confirm'
 import { useAuth } from '../../lib/auth'
-import { useAudience } from '../../lib/audience'
+import { useLens } from '../../lib/audience'
 import { isGuest } from '../../lib/device'
 import { Modal } from '../Modal'
 import { StatusMessage } from '../StatusMessage'
@@ -41,12 +41,12 @@ export function useEventPeekActions(): EventPeekActions {
   const confirm = useConfirm()
   const write = useWrite()
   const { signedIn } = useAuth()
-  const { audience } = useAudience()
+  const { acts } = useLens()
   const [editId, setEditId] = useState<string | null>(null)
   const [share, setShare] = useState<{ id: string; title: string } | null>(null)
 
-  const canEdit = !isGuest() && audience === 'parent'
-  const canShare = signedIn && audience === 'parent'
+  const canEdit = !isGuest() && acts
+  const canShare = signedIn && acts
 
   async function del(e: PeekEvent) {
     if (!(await confirm({ message: t.detail.deleteEvent, confirmLabel: t.common.delete, tone: 'danger' }))) return

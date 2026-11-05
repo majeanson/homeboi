@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useT } from '../i18n'
-import { useAudience } from '../lib/audience'
+import { useLens } from '../lib/audience'
 import { useHelp } from '../lib/help'
 import { guideHref } from '../lib/settingsNav'
 
@@ -12,8 +12,8 @@ import { guideHref } from '../lib/settingsNav'
 export function HelpDot({ card }: { card: string }) {
   const t = useT()
   const { tutorial } = useHelp()
-  const { audience } = useAudience()
-  if (!tutorial || audience === 'toddler') return null
+  const { teaches } = useLens()
+  if (!tutorial || !teaches) return null
   return (
     <Link
       to={guideHref(card)}

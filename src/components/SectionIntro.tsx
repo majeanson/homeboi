@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useT, useLang } from '../i18n'
-import { useAudience } from '../lib/audience'
+import { useLens } from '../lib/audience'
 import { useHelp } from '../lib/help'
 import { useTour } from '../lib/tour'
 import { TOURS } from '../lib/tourContent'
@@ -68,7 +68,7 @@ export function SectionIntro({ card }: { card: string }) {
   const t = useT()
   const { lang } = useLang()
   const { tutorial } = useHelp()
-  const { audience } = useAudience()
+  const { teaches } = useLens()
   const { isActive, start } = useTour()
   const [seen, setSeen] = useState(() => hasIntroSeen(card))
   // #32 — this section has its own short guided tour when a Tour shares its id.
@@ -79,7 +79,7 @@ export function SectionIntro({ card }: { card: string }) {
   // (the list, Maison…) don't stack a section card on top of it. It returns once the
   // visitor puts that card away ("Plus tard").
   const sandbox = useSandbox()
-  if (!tutorial || audience === 'toddler' || isActive || seen || (sandbox && !welcomeDismissed())) return null
+  if (!tutorial || !teaches || isActive || seen || (sandbox && !welcomeDismissed())) return null
   const entry = GUIDE.find((e) => e.id === card)
   if (!entry) return null
 

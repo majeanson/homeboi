@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { createDeviceStore } from './createDeviceStore'
-import { useAudience } from './audience'
+import { useLens } from './audience'
 import { isGuest, isPaired } from './device'
 import { DISCOVERY_PROBES } from './discovery'
 
@@ -57,10 +57,10 @@ export function markTourOffered(): void {
 // Whether the quiet Réglages-tab dot should show right now.
 export function useTourOfferDot(): boolean {
   const qc = useQueryClient()
-  const { audience, locked } = useAudience()
+  const { interrupts, locked } = useLens()
   const writeCount = writes.use()
   const lastOffer = offeredAt.use()
-  if (audience !== 'parent' || locked || isGuest() || isPaired()) return false
+  if (!interrupts || locked || isGuest() || isPaired()) return false
   if (writeCount < WRITES_MIN) return false
   if (lastOffer && Date.now() - lastOffer < COOLDOWN_DAYS * 86_400_000) return false
   // Cache-only peek at the discovery probes: count features PROVABLY sleeping

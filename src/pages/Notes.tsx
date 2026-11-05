@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../i18n'
-import { useAudience } from '../lib/audience'
+import { useLens } from '../lib/audience'
 import { api, isUnauthorized } from '../lib/api'
 import { live } from '../lib/query'
 import { CERCLE_KEY } from '../lib/queryKeys'
@@ -33,8 +33,8 @@ import type { Contact, ContactLink, ContactGroupRaw, Member, Pet } from '../lib/
 // hear-first list (NotesKidView) — no composer, no edit, one-way door like every
 // other toddler lens.
 export function Notes() {
-  const { audience } = useAudience()
-  if (audience === 'toddler') return <NotesKidView />
+  const { toddler } = useLens()
+  if (toddler) return <NotesKidView />
   return <NotesParent />
 }
 

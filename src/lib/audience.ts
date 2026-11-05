@@ -52,3 +52,57 @@ export const AudienceContext = createContext<{
 })
 
 export const useAudience = () => useContext(AudienceContext)
+
+// THE lens flags — the one place that says what each audience may SEE and DO.
+//
+// Before 2026-11-05 every surface compared `audience === '…'` for itself (46 sites), and
+// the `simple` lens was gated by accident: three sites let it see the help layer
+// (`!== 'toddler'`), six hid the edit doors from it (`=== 'parent'`) — per-file
+// coincidences, not a rule. `lens-rule.test.ts` fails a new inline comparison; a surface
+// reads a FLAG here and names what it is gating:
+//
+//   • toddler / simple / parent — WHICH VIEW renders (ToddlerBoard vs SimpleBoard vs the
+//     full tab). Use these only to pick a view, never to hide a control.
+//   • teaches — the comprehension layer: « ? » dots, EmptyState guide links, section
+//     intros, the welcome card, the tour overlay. Off for a pre-reader (a dot she cannot
+//     read is clutter), ON for `simple` (she reads fine; an explanation is calm).
+//   • interrupts — things that arrive UNINVITED: the tour auto-offer, the habit check-in
+//     prompt, the AI-error toast. Parent only: `simple` is the calm lens by contract and
+//     a toddler cannot answer them.
+//   • acts — the doors that change the household: edit / share / « Demander » / the
+//     board's « À régler ». Off for a toddler; for `simple`, see the note on the flip.
+//   • spoken — tap-to-hear is armed (toddler + simple, the two read-aloud lenses).
+//
+// Marc's decision (2026-11-05): teaches + acts ON for simple, interrupts OFF. `acts`
+// lands in TWO commits so each is reviewable on its own: this one reproduces the old
+// per-site behaviour exactly (parent only); the next flips it to `!toddler` and
+// e2e/lens-gates.spec.ts asserts the table.
+export interface Lens {
+  audience: Audience
+  locked: boolean
+  toddler: boolean
+  simple: boolean
+  parent: boolean
+  teaches: boolean
+  interrupts: boolean
+  acts: boolean
+  spoken: boolean
+}
+
+export function useLens(): Lens {
+  const { audience, locked } = useAudience()
+  const toddler = audience === 'toddler'
+  const simple = audience === 'simple'
+  const parent = audience === 'parent'
+  return {
+    audience,
+    locked,
+    toddler,
+    simple,
+    parent,
+    teaches: !toddler,
+    interrupts: parent,
+    acts: parent,
+    spoken: toddler || simple,
+  }
+}

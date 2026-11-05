@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type TouchEvent as ReactTouchEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { useT, useLang } from '../i18n'
-import { useAudience } from '../lib/audience'
+import { useLens } from '../lib/audience'
 import { type Recipe } from '../lib/recipes'
 import { findDurations } from '../lib/duration'
 import { ingredientsForStep, stepSentences, stripStepOrdinal } from '../lib/recipeSteps'
@@ -102,8 +102,7 @@ export function CookMode({
   // one-way door — no in-cook escape), while a parent picks any of the three and
   // we remember the pick per recipe. A ref mirrors the resolved mode so the
   // keyboard / swipe handlers can ignore nav outside the stepper without rebinding.
-  const { audience } = useAudience()
-  const isToddler = audience === 'toddler'
+  const { toddler } = useLens()
   // « Il en manque » — flag an ingredient running low WITHOUT leaving the recipe
   // (bmad/11 tier-2 #10). You find out you're out of something with your hands in
   // the bowl; until now the only doors were La cuisine ▸ Garde-manger and the ＋
@@ -116,7 +115,7 @@ export function CookMode({
   const write = useWrite()
   const [flagged, setFlagged] = useState<Set<string>>(new Set())
   const [flagBusy, setFlagBusy] = useState<Set<string>>(new Set())
-  const canFlagLow = !isToddler && !isGuest()
+  const canFlagLow = !toddler && !isGuest()
   const mark = (setter: typeof setFlagged, item: string, on: boolean) =>
     setter((cur) => {
       const next = new Set(cur)
@@ -162,11 +161,11 @@ export function CookMode({
       .then(done)
       .catch(failed)
   }
-  const [view, setView] = useState<CookView>(() => (isToddler ? 'step' : loadCookView(recipe.id)))
+  const [view, setView] = useState<CookView>(() => (toddler ? 'step' : loadCookView(recipe.id)))
   // The layout / text-size / step-ingredient controls are set-once options — collapse
   // them behind an « Affichage » (…) toggle so they don't crowd the step at the stove.
   const [showDisplay, setShowDisplay] = useState(false)
-  const mode: CookView = isToddler ? 'step' : view
+  const mode: CookView = toddler ? 'step' : view
   const modeRef = useRef(mode)
   modeRef.current = mode
   function changeView(v: CookView) {
@@ -179,7 +178,7 @@ export function CookMode({
   // the instruction, in EVERY view — toggled from the bar's carrot button. The
   // toddler stepper always shows them regardless (it has no bar toggle to undo it).
   const showStepIngs = useShowStepIngredients()
-  const stepIngsOn = isToddler || showStepIngs
+  const stepIngsOn = toddler || showStepIngs
   // The toggle is only meaningful when there are both ingredients and steps to pair.
   const canPairIngs = recipe.ingredients.length > 0 && recipe.steps.length > 0
   // Split view: on a narrow phone the two panes collapse to a tab pair (ingredients
@@ -204,7 +203,7 @@ export function CookMode({
   // step ↔ ingredient pairing reads the picked lists. The toddler cooks the base.
   const versions = recipeVersions(recipe.ingredients, recipe.steps)
   const [version, setVersion] = useState<string | null>(null)
-  const pick = isToddler ? null : version
+  const pick = toddler ? null : version
   const applied = applyVersion(recipe.ingredients, recipe.steps, pick)
   const ingGroups = versionGroups(groupSections(recipe.ingredients), 'ingredients', versions, pick)
   const stepGroups = versionGroups(groupSections(recipe.steps), 'steps', versions, pick)
@@ -472,7 +471,7 @@ export function CookMode({
           <SoundToggle className="cook__sound" size={20} />
           {/* Parent-only « Affichage » toggle — opens the layout / text-size / step-
               ingredient options in a panel below (toddler is locked to the stepper). */}
-          {!isToddler && (
+          {!toddler && (
             <button
               type="button"
               className={'cook__autoread' + (showDisplay ? ' is-on' : '')}
@@ -527,7 +526,7 @@ export function CookMode({
 
       {/* « Affichage » panel — the layout / text-size / step-ingredient options,
           collapsed by default so the step owns the screen at the stove. */}
-      {!isToddler && showDisplay && (
+      {!toddler && showDisplay && (
         <div className="cook__display">
           <div className="cook__segctl" role="group" aria-label={t.recipes.cookViewLabel}>
             {VIEW_ORDER.map((v) => (
@@ -622,7 +621,7 @@ export function CookMode({
       >
         {/* The version switch (parent only; the toddler cooks the base): the page's own
             words for each alternative, « Recette » for the base. */}
-        {!isToddler && versions.length > 0 && (
+        {!toddler && versions.length > 0 && (
           <Cluster className="recipe-versions">
             <Chip selected={version == null} onClick={() => setVersion(null)}>
               {t.recipes.versionBase}

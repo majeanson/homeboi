@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useT } from '../i18n'
 import { useHelp } from '../lib/help'
-import { useAudience } from '../lib/audience'
+import { useLens } from '../lib/audience'
 import { isGuest } from '../lib/device'
 import { InlineIcon, type IconName } from './Icon'
 import { guideHref } from '../lib/settingsNav'
@@ -50,9 +50,9 @@ export function EmptyState({
 }) {
   const t = useT()
   const { tutorial } = useHelp()
-  const { audience } = useAudience()
+  const { teaches } = useLens()
   const to =
-    guide && tutorial && audience !== 'toddler'
+    guide && tutorial && teaches
       ? guideHref(guide.card, guide.point)
       : null
   return (

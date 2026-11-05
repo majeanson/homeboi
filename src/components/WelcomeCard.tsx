@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
 import { useT } from '../i18n'
 import { settingsHref } from '../lib/settingsNav'
-import { useAudience } from '../lib/audience'
+import { useLens } from '../lib/audience'
 import { useAuth } from '../lib/auth'
 import { useTour } from '../lib/tour'
 import { useSandbox } from '../lib/demo'
@@ -103,7 +103,7 @@ const DEMO_STEPS: { id: 'demoCook' | 'demoRoutine' | 'demoListe' | 'demoRearrang
 
 export function WelcomeCard({ members }: { members: { id: string }[] }) {
   const t = useT()
-  const { audience } = useAudience()
+  const { teaches } = useLens()
   const { signedIn } = useAuth()
   const sandbox = useSandbox()
   const { start } = useTour()
@@ -152,7 +152,7 @@ export function WelcomeCard({ members }: { members: { id: string }[] }) {
   // targets Réglages (operator surface). A kiosk (device token, not signed in)
   // can't act on it, and its "pair a tablet" step could never tick there — so it
   // simply doesn't show. The operator sees it on their own signed-in device.
-  if (audience === 'toddler' || !signedIn || state.dismissed) return null
+  if (!teaches || !signedIn || state.dismissed) return null
   // A real signup starts EMPTY (2026-09-23), so this checklist is the first thing a new
   // family sees. While examples are loaded (« Charger des exemples », below or in
   // Réglages ▸ Découvrir), the board shows only the explore banner (SampleBanner) —

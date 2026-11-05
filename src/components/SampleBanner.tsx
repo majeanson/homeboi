@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useT } from '../i18n'
-import { useAudience } from '../lib/audience'
+import { useLens } from '../lib/audience'
 import { useAuth } from '../lib/auth'
 import { useOnline } from '../lib/online'
 import { useConfirm } from '../lib/confirm'
@@ -49,7 +49,7 @@ function persistDismissed(key: string) {
 
 export function SampleBanner() {
   const t = useT()
-  const { audience } = useAudience()
+  const { teaches } = useLens()
   const { signedIn } = useAuth()
   const sandbox = useSandbox()
   const online = useOnline()
@@ -71,7 +71,7 @@ export function SampleBanner() {
   // "explore" act and this banner is the board's ONE onboarding card.
   const { hasSample } = useSampleStatus()
 
-  if (audience === 'toddler' || !signedIn) return null
+  if (!teaches || !signedIn) return null
 
   // The sandbox claim face — not gated on hasSample: a visitor who cleared or
   // outgrew the seed still deserves the way to keep what they built.

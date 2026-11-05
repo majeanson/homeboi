@@ -12,7 +12,7 @@ import { SceneHead } from '../components/SceneHead'
 import { Loading, PairPrompt } from '../components/Fallback'
 import { LoadError } from '../components/LoadError'
 import { CercleConstellation } from '../components/cercle/CercleConstellation'
-import { useAudience } from '../lib/audience'
+import { useLens } from '../lib/audience'
 import {
   type Contact,
   type Member,
@@ -47,7 +47,7 @@ interface CercleData {
 // it's for UNDERSTANDING the structure; editing stays in the normal cercle.
 export function CercleWorldPage() {
   const t = useT()
-  const { audience } = useAudience()
+  const { toddler } = useLens()
   const close = useSceneClose('/maison?section=family')
   useEscapeKey(close)
 
@@ -110,7 +110,7 @@ export function CercleWorldPage() {
     <div className="scene scene--world" aria-label={t.cercle.world.title}>
       <SceneHead title={t.cercle.world.title} icon="sparkle-bold" card="cercle" onClose={close} />
       <div className="scene__body scene__body--flush">
-        <CercleConstellation world={world} byKey={byKey} toddler={audience === 'toddler'} />
+        <CercleConstellation world={world} byKey={byKey} toddler={toddler} />
       </div>
     </div>
   )

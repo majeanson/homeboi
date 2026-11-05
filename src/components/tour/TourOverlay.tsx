@@ -2,7 +2,7 @@ import { useCallback, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { useLang, useT } from '../../i18n'
-import { useAudience } from '../../lib/audience'
+import { useLens } from '../../lib/audience'
 import { useSurface } from '../../lib/surface'
 import { useModal } from '../../lib/useModal'
 import { renderRich } from '../../lib/richText'
@@ -56,14 +56,14 @@ function placeCard(rect: Rect, cardW: number, cardH: number): Pos {
 
 export function TourOverlay() {
   const { activeTour, stepIndex, isActive, next, prev, end, branchTo } = useTour()
-  const { audience } = useAudience()
+  const { teaches } = useLens()
   const { surface } = useSurface()
   const t = useT()
   const { lang } = useLang()
   const nav = useNavigate()
 
   // Never over the toddler lens — belt-and-suspenders with the auto-start guard.
-  const live = isActive && audience !== 'toddler'
+  const live = isActive && teaches
 
   const cardRef = useRef<HTMLDivElement>(null)
   const skip = useCallback(() => end('skipped'), [end])

@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { createDeviceStore } from './createDeviceStore'
 import { useSpeak } from './speak'
-import { useAudience } from './audience'
+import { useLens } from './audience'
 
 // Tap-to-hear everywhere (bmad/08 A-2): in a SIMPLIFIED lens (toddler or
 // simple/grandma), a sustained ~500 ms press on any content row reads it aloud
@@ -41,10 +41,10 @@ const TARGETS = '[data-speak], .act, .listrow, .note-card, .bigtile, .today-hero
 const EXCLUDE = '[data-dnd-zone], .kid-exit-switch, input, textarea, select, [contenteditable="true"]'
 
 export function useTapToHearListener(): void {
-  const { audience } = useAudience()
+  const { spoken } = useLens()
   const enabled = useTapToHear()
   const speak = useSpeak()
-  const active = enabled && (audience === 'toddler' || audience === 'simple')
+  const active = enabled && spoken
 
   useEffect(() => {
     if (!active) return
