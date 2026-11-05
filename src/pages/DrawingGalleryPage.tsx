@@ -1,3 +1,4 @@
+import { useItemPulse } from '../lib/useItemPulse'
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useT, useLang } from '../i18n'
@@ -33,6 +34,7 @@ export function DrawingGalleryPage() {
   const t = useT()
   const { lang } = useLang()
   const close = useSceneClose('/board')
+  useItemPulse()
   useEscapeKey(close)
   const { toddler } = useLens()
   const ro = isGuest()
@@ -103,7 +105,7 @@ export function DrawingGalleryPage() {
                   const author = members.find((m) => m.id === d.member_id)
                   const age = author ? ageAt(author.birthday, d.created_at) : null
                   return (
-                  <div key={d.id} className="drawgallery__item">
+                  <div key={d.id} className="drawgallery__item" data-item={d.id}>
                     {ro ? (
                       // Read-only guest: can't open the pad, so the thumbnail IS the
                       // viewer — tap to inspect full-screen (pinch-zoom + drag to pan).

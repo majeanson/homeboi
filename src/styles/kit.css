@@ -697,6 +697,18 @@
     display: inline;
   }
 }
+/* The row a search hit landed on (lib/useItemPulse): same treatment as a deep-linked
+   cercle row, whose keyframes live in the eager cnote-list.css. */
+.is-item-target {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-radius: var(--radius-md);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .is-item-target {
+    animation: cercle-focus-pulse 1.8s var(--ease-out) 1;
+  }
+}
 /* The compact face (SearchField size="sm") — inside a picker or a sheet. */
 .searchfield--sm {
   min-height: 2.1rem;

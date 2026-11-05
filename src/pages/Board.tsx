@@ -1,3 +1,4 @@
+import { useItemPulse } from '../lib/useItemPulse'
 import { IconButton } from '../components/IconButton'
 import { StatusMessage } from '../components/StatusMessage'
 import { Avatar } from '../components/Avatar'
@@ -225,6 +226,7 @@ export function Board() {
   // The shared entity-detail peek (lib/detail) — tap a row to see picture/date/text
   // + smart actions. Parent audience only; the toddler lens stays hear-first below.
   const detail = useEntityDetail()
+  useItemPulse()
   // Resolves a tapped meal → its saved recipe, so the tap can jump straight to it.
   const recipeFor = useRecipeForMeal()
   // The board layout for this device (bento = Grille | month = Mois), remembered locally.

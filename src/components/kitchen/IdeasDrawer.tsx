@@ -614,7 +614,7 @@ function KidChip({
         const who = memberById(idea.suggested_by)
         const dayLabel = idea.date != null ? week.find((w) => w.date === idea.date)?.label : undefined
         return (
-          <li key={idea.id} className="kitchen__idea">
+          <li key={idea.id} data-item={idea.id} className="kitchen__idea">
             <div className="kitchen__idea-row">
               <Avatar kind={who?.avatar_kind} photo={who?.avatar_ref} colour={who?.colour} name={who?.display_name} size={28} />
               {readOnly ? (

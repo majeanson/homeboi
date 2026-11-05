@@ -338,7 +338,7 @@ export function TodoSection({
         limit={TODO_TITLE_MAX}
       />
     ) : (
-      <div key={todo.id} className={'act todo-row' + (isChecked(todo) ? ' done' : '')}>
+      <div key={todo.id} data-item={todo.id} className={'act todo-row' + (isChecked(todo) ? ' done' : '')}>
         {!ro ? (
           <CheckDisc
             className="todo-row__check"

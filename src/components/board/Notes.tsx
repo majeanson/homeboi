@@ -346,7 +346,7 @@ export function Notes({
             const editable = !ro && media === 'drawing'
             const isVisual = media === 'drawing' || media === 'image'
             return (
-              <div key={n.id} className={`note-card note-card--media${isVisual ? ' note-card--visual' : ''}`} style={css}>
+              <div key={n.id} data-item={n.id} className={`note-card note-card--media${isVisual ? ' note-card--visual' : ''}`} style={css}>
                 {play ? (
                   <button type="button" className="note-card__mediabtn" onClick={play} aria-label={t.notes.memo}>
                     {body}
@@ -426,6 +426,7 @@ export function Notes({
           return (
             <div
               key={n.id}
+              data-item={n.id}
               className={'note-card note-card--paper' + (waiting ? ' note-card--waiting' : '')}
               style={css}
             >

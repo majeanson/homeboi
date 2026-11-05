@@ -99,7 +99,7 @@ at all (❌).
 
 | Entity · action | Row | Gesture | Peek | Add path | Réglages / link | Undo | Non-touch |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Event · open | ✅ tap | — | ✅ `buildEvent` | — | `?item` via search | — | ✅ |
+| Event · open | ✅ tap | — | ✅ `buildEvent` | — | search lands on the day page (`lib/searchLanding`) | — | ✅ |
 | Event · edit / share | — | — | ✅ Modifier primaryᴳ / Partagerᴼ | — | board▸events (settings) | — | ✅ |
 | Event · delete | — | — | ✅ peek **visible danger button**ᴳ (out of the ⋯ since 2026-09-16¹²); also under the day page's inline edit form (« Supprimer le rendez-vous ») | — | — | confirm¹ | ✅ |
 | Event · create | — | — | — | ✅ ＋ `event`; day-page `SectionAdd` | — | — | ✅ |

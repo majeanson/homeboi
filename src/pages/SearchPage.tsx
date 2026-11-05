@@ -1,3 +1,4 @@
+import { landingFor } from '../lib/searchLanding'
 import { SearchField } from '../components/SearchField'
 import { StatusMessage } from '../components/StatusMessage'
 import { useMemo, useState } from 'react'
@@ -5,7 +6,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery, useIsFetching } from '@tanstack/react-query'
 import { useT, useLang } from '../i18n'
 import { api } from '../lib/api'
-import { settingsHref, guideHref } from '../lib/settingsNav'
+import { guideHref } from '../lib/settingsNav'
 import { useAi } from '../lib/ai'
 import { fold } from '../lib/normalize'
 import { SEARCH_INDEX, drawingFields, type SearchFields, type PantryRow } from '../lib/searchIndex'
@@ -32,7 +33,6 @@ import { recipeImg } from '../lib/recipes'
 import { GUIDE } from '../lib/guideContent'
 import { stripTokens, highlight } from '../lib/richText'
 import { pictoFor } from '../lib/picto'
-import { localDayStart } from '../lib/localDay'
 import { type EventRow } from '../components/board/types'
 import { SceneHead } from '../components/SceneHead'
 import { EmptyState } from '../components/EmptyState'
@@ -404,7 +404,7 @@ export function SearchPage() {
                 node: res!.recipes.items.length > 0 && (
               <Section key="recipes" label={t.search.recipes}>
                 {res!.recipes.items.map((r) => (
-                  <Link key={r.id} to={`/kitchen/recipe/${r.id}`} className="search__row">
+                  <Link key={r.id} to={landingFor({ kind: 'recipe', id: r.id })} className="search__row">
                     <span className="search__pic" aria-hidden="true">
                       {recipeImg(r.image) ? <Img src={recipeImg(r.image)!} alt="" /> : pictoFor(r.title, '🍳')}
                     </span>
@@ -424,7 +424,7 @@ export function SearchPage() {
                 node: res!.people.items.length > 0 && (
               <Section key="people" label={t.search.people}>
                 {res!.people.items.map((c) => (
-                  <Link key={c.id} to={`/cercle/person/${c.id}`} className="search__row">
+                  <Link key={c.id} to={landingFor({ kind: 'person', id: c.id })} className="search__row">
                     <span className="search__pic" aria-hidden="true">
                       <Avatar kind={c.photoKey ? 'photo' : null} photo={c.photoKey} colour={CATS.cercle.deep} name={c.firstName} size={34} />
                     </span>
@@ -444,7 +444,7 @@ export function SearchPage() {
                 node: res!.pets.items.length > 0 && (
               <Section key="pets" label={t.search.pets}>
                 {res!.pets.items.map((p) => (
-                  <Link key={p.id} to={`/cercle/pet/${p.id}`} className="search__row">
+                  <Link key={p.id} to={landingFor({ kind: 'pet', id: p.id })} className="search__row">
                     <span className="search__pic" aria-hidden="true">
                       <Avatar kind={p.photoKey ? 'photo' : null} photo={p.photoKey} colour={colourFor('pet', p.colour)} name={p.name} size={34} />
                     </span>
@@ -464,7 +464,7 @@ export function SearchPage() {
                 node: res!.businesses.items.length > 0 && (
               <Section key="businesses" label={t.search.businesses}>
                 {res!.businesses.items.map((b) => (
-                  <Link key={b.id} to={`/maison?section=business&item=${b.id}`} className="search__row">
+                  <Link key={b.id} to={landingFor({ kind: 'business', id: b.id })} className="search__row">
                     <span className="search__pic" aria-hidden="true" style={{ color: b.colour ?? BUSINESS_COLOUR }}>
                       <InlineIcon name="storefront-bold" />
                     </span>
@@ -484,7 +484,7 @@ export function SearchPage() {
                 node: res!.carnets.items.length > 0 && (
               <Section key="carnets" label={t.search.carnets}>
                 {res!.carnets.items.map((x) => (
-                  <Link key={x.id} to={`/cercle/carnet/${x.id}`} className="search__row">
+                  <Link key={x.id} to={landingFor({ kind: 'carnet', id: x.id })} className="search__row">
                     <span className="search__pic" aria-hidden="true" style={{ color: x.color ?? undefined }}>
                       <InlineIcon name="book-open-bold" />
                     </span>
@@ -505,7 +505,7 @@ export function SearchPage() {
                 {res!.projects.items.map((p) => (
                   <Link
                     key={p.id}
-                    to={p.carnet_id ? `/cercle/carnet/${p.carnet_id}` : settingsHref({ tab: 'maison', focus: 'chores' })}
+                    to={landingFor({ kind: 'project', carnetId: p.carnet_id ?? null })}
                     className="search__row"
                   >
                     <span className="search__pic" aria-hidden="true" style={{ color: p.color ?? undefined }}>
@@ -526,7 +526,7 @@ export function SearchPage() {
                 node: res!.care.items.length > 0 && (
               <Section key="care" label={t.search.careLog}>
                 {res!.care.items.map((e) => (
-                  <Link key={e.id} to={`/cercle/carnet/${e.carnetId}?seg=carnet`} className="search__row">
+                  <Link key={e.id} to={landingFor({ kind: 'carnetEntry', carnetId: e.carnetId })} className="search__row">
                     <span className="search__pic" aria-hidden="true" style={{ color: CATS.chore.deep }}>
                       <InlineIcon name="receipt-bold" />
                     </span>
@@ -546,7 +546,7 @@ export function SearchPage() {
                 node: res!.pins.items.length > 0 && (
               <Section key="pins" label={t.search.homePins}>
                 {res!.pins.items.map((p) => (
-                  <Link key={p.id} to={`/cercle/carnet/${p.carnetId}?seg=carnet`} className="search__row">
+                  <Link key={p.id} to={landingFor({ kind: 'carnetEntry', carnetId: p.carnetId })} className="search__row">
                     <span className="search__pic" aria-hidden="true">{PIN_EMOJI[p.kind]}</span>
                     <span className="search__main">
                       <span className="search__title">{hl(p.label)}</span>
@@ -564,7 +564,7 @@ export function SearchPage() {
                 node: res!.drawings.items.length > 0 && (
               <Section key="drawings" label={t.search.drawings}>
                 {res!.drawings.items.map((d) => (
-                  <Link key={d.id} to="/drawings" className="search__row">
+                  <Link key={d.id} to={landingFor({ kind: 'drawing', id: d.id })} className="search__row">
                     <span className="search__pic" aria-hidden="true">
                       <Img src={imgUrl(d.media_key)} alt="" />
                     </span>
@@ -583,7 +583,7 @@ export function SearchPage() {
                 node: res!.habits.items.length > 0 && (
               <Section key="habits" label={t.search.habits}>
                 {res!.habits.items.map((h) => (
-                  <Link key={h.id} to="/board/habitudes" className="search__row">
+                  <Link key={h.id} to={landingFor({ kind: 'habit', id: h.id })} className="search__row">
                     <span className="search__pic" aria-hidden="true">
                       {h.icon ? h.icon : <InlineIcon name="repeat-bold" />}
                     </span>
@@ -602,7 +602,7 @@ export function SearchPage() {
                 node: res!.mots.items.length > 0 && (
               <Section key="mots" label={t.search.mots}>
                 {res!.mots.items.map((m) => (
-                  <Link key={m.id} to="/board" className="search__row">
+                  <Link key={m.id} to={landingFor({ kind: 'mot', id: m.id })} className="search__row">
                     <span className="search__pic" aria-hidden="true" style={{ color: CATS.routine.deep }}>
                       <InlineIcon name="envelope-bold" />
                     </span>
@@ -621,7 +621,7 @@ export function SearchPage() {
                 node: res!.meals.items.length > 0 && (
               <Section key="meals" label={t.search.meals}>
                 {res!.meals.items.map((m) => (
-                  <Link key={m.id} to={`/kitchen/day/${m.date}?vue=repas`} className="search__row">
+                  <Link key={m.id} to={landingFor({ kind: 'meal', date: m.date })} className="search__row">
                     <span className="search__pic" aria-hidden="true" style={{ color: CATS.meal.deep }}>
                       <InlineIcon name="fork-knife-bold" />
                     </span>
@@ -640,7 +640,7 @@ export function SearchPage() {
                 node: res!.ideas.items.length > 0 && (
               <Section key="ideas" label={t.search.ideas}>
                 {res!.ideas.items.map((i) => (
-                  <Link key={i.id} to="/kitchen/idees" className="search__row">
+                  <Link key={i.id} to={landingFor({ kind: 'idea', id: i.id })} className="search__row">
                     <span className="search__pic" aria-hidden="true" style={{ color: CATS.meal.deep }}>
                       <InlineIcon name="cooking-pot-bold" />
                     </span>
@@ -659,7 +659,7 @@ export function SearchPage() {
                 node: res!.groups.items.length > 0 && (
               <Section key="groups" label={t.search.groups}>
                 {res!.groups.items.map((g) => (
-                  <Link key={g.id} to={g.kind === 'family' ? `/cercle/family/${g.id}` : '/maison?section=social'} className="search__row">
+                  <Link key={g.id} to={landingFor({ kind: 'group', id: g.id, family: g.kind === 'family' })} className="search__row">
                     <span className="search__pic" aria-hidden="true" style={{ color: g.colour ?? CATS.cercle.deep }}>
                       <InlineIcon name="users-three-bold" />
                     </span>
@@ -678,7 +678,7 @@ export function SearchPage() {
                 node: res!.trips.items.length > 0 && (
               <Section key="trips" label={t.search.trips}>
                 {res!.trips.items.map((tr) => (
-                  <Link key={tr.id} to={`/voyage/${tr.id}`} className="search__row">
+                  <Link key={tr.id} to={landingFor({ kind: 'trip', id: tr.id })} className="search__row">
                     <span className="search__pic" aria-hidden="true" style={{ color: tr.colour ?? CATS.event.deep }}>
                       <InlineIcon name={VOYAGE_ICON} />
                     </span>
@@ -698,7 +698,7 @@ export function SearchPage() {
                 node: res!.events.items.length > 0 && (
               <Section key="events" label={t.search.events}>
                 {res!.events.items.map((e) => (
-                  <Link key={e.id} to={`/kitchen/day/${localDayStart(new Date(e.start_at * 1000))}`} className="search__row">
+                  <Link key={e.id} to={landingFor({ kind: 'event', at: e.start_at })} className="search__row">
                     <span className="search__pic" aria-hidden="true">
                       <InlineIcon name={e.birthday ? 'cake-bold' : 'calendar-blank-bold'} />
                     </span>
@@ -718,7 +718,7 @@ export function SearchPage() {
                 node: res!.routines.items.length > 0 && (
               <Section key="routines" label={t.search.routines}>
                 {res!.routines.items.map((r) => (
-                  <Link key={r.id} to={`/routine/${r.id}`} className="search__row">
+                  <Link key={r.id} to={landingFor({ kind: 'routine', id: r.id })} className="search__row">
                     <span className="search__pic" aria-hidden="true" style={{ color: CATS.routine.deep }}>
                       <InlineIcon name="smiley-bold" />
                     </span>
@@ -738,7 +738,7 @@ export function SearchPage() {
                 node: res!.todos.items.length > 0 && (
               <Section key="todos" label={t.search.todos}>
                 {res!.todos.items.map((td) => (
-                  <Link key={td.id} to="/board" className="search__row">
+                  <Link key={td.id} to={landingFor({ kind: 'todo', id: td.id })} className="search__row">
                     <span className="search__pic" aria-hidden="true" style={{ color: CATS.chore.deep }}>
                       <InlineIcon name="check-square-bold" />
                     </span>
@@ -757,7 +757,7 @@ export function SearchPage() {
                 node: res!.listItems.items.length > 0 && (
               <Section key="listItems" label={t.search.listItems}>
                 {res!.listItems.items.map((li) => (
-                  <Link key={li.id} to={`/liste/item/${li.id}`} className="search__row">
+                  <Link key={li.id} to={landingFor({ kind: 'listItem', id: li.id })} className="search__row">
                     <span className="search__pic" aria-hidden="true">{pictoFor(li.text, '🛒')}</span>
                     <span className="search__main">
                       <span className="search__title">{hl(li.text)}</span>
@@ -774,7 +774,7 @@ export function SearchPage() {
                 node: res!.pantry.items.length > 0 && (
               <Section key="pantry" label={t.search.pantry}>
                 {res!.pantry.items.map((it) => (
-                  <Link key={(it.reserve ? 'r:' : 'l:') + it.id} to="/kitchen?tab=pantry" className="search__row">
+                  <Link key={(it.reserve ? 'r:' : 'l:') + it.id} to={landingFor({ kind: 'pantry' })} className="search__row">
                     <span className="search__pic" aria-hidden="true" style={{ color: CATS.pantry.deep }}>
                       <InlineIcon name={it.reserve ? 'cloud-snow-bold' : 'carrot-bold'} />
                     </span>
@@ -794,7 +794,7 @@ export function SearchPage() {
                 node: res!.cars.items.length > 0 && (
               <Section key="cars" label={t.search.auto}>
                 {res!.cars.items.map((c) => (
-                  <Link key={c.id} to="/voiture" className="search__row">
+                  <Link key={c.id} to={landingFor({ kind: 'car' })} className="search__row">
                     <span className="search__pic" aria-hidden="true" style={{ color: c.color ?? CATS.work.deep }}>
                       <InlineIcon name="car-bold" />
                     </span>
@@ -813,7 +813,7 @@ export function SearchPage() {
                 node: res!.notes.items.length > 0 && (
               <Section key="notes" label={t.search.notes}>
                 {res!.notes.items.map((n) => (
-                  <Link key={n.id} to={`/notes?item=${n.id}`} className="search__row">
+                  <Link key={n.id} to={landingFor({ kind: 'note', id: n.id })} className="search__row">
                     <span className="search__pic" aria-hidden="true">
                       <InlineIcon name="file-text-bold" />
                     </span>

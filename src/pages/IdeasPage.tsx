@@ -1,3 +1,4 @@
+import { useItemPulse } from '../lib/useItemPulse'
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useLang, useT } from '../i18n'
@@ -34,6 +35,7 @@ export function IdeasPage() {
   const { lang } = useLang()
   const { memberId: profileId } = useProfile()
   const close = useSceneClose('/kitchen')
+  useItemPulse()
   useEscapeKey(close)
 
   const [chip, setChip] = useTabParam<IdeasChip>('tab', 'ideas', IDEAS_CHIPS)

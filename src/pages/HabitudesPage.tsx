@@ -1,3 +1,4 @@
+import { useItemPulse } from '../lib/useItemPulse'
 import { useEffect, useState } from 'react'
 import { facesFromMembers } from '../lib/faces'
 import { useQuery } from '@tanstack/react-query'
@@ -46,6 +47,7 @@ export function HabitudesPage() {
   const t = useT()
   const fn = t.habits
   const close = useSceneClose('/board')
+  useItemPulse()
   useEscapeKey(close)
 
   const { memberId: face, setMemberId } = useProfile()
@@ -101,7 +103,7 @@ export function HabitudesPage() {
     void write('habits', { method: 'PATCH', body: { id: h.id, archived: false }, affectedKeys: [HABITS_KEY, BOARD_KEY, MONTH_KEY] })
 
   const renderRow = (h: Habit) => (
-    <div key={h.id} className="habitudes__item">
+    <div key={h.id} className="habitudes__item" data-item={h.id}>
       <HabitRow
         habit={h}
         status={habitStatusOn(h, days, today)}

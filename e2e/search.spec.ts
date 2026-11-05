@@ -43,7 +43,7 @@ test('a query surfaces rows across sections, including the drawings gallery', as
   await expect(page.getByRole('heading', { name: 'Rendez-vous' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Mes dessins' })).toBeVisible()
   // The drawing hit links to the gallery.
-  await expect(page.locator('.search__row[href="/drawings"]').first()).toBeVisible()
+  await expect(page.locator('.search__row[href^="/drawings"]').first()).toBeVisible()
 })
 
 test('the newly indexed carnet sections (care-log + home-pins) surface and link to the carnet', async ({ page }) => {
@@ -90,7 +90,7 @@ test('Wave S — the six newly-indexed kinds each surface a section (habit/mot/m
   // A habit — matched on its title, links to the daily check-in scene.
   await page.locator('.search__input .searchfield__input').fill('Marcher dehors')
   await expect(page.getByRole('heading', { name: 'Mes habitudes' })).toBeVisible()
-  await expect(page.locator('.search__row[href="/board/habitudes"]').first()).toBeVisible()
+  await expect(page.locator('.search__row[href^="/board/habitudes"]').first()).toBeVisible()
 
   // A « mot » — no name, matched on its body text (secondary), links to the board.
   await page.locator('.search__input .searchfield__input').fill('Réunion de famille')
