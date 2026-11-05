@@ -388,7 +388,7 @@ export function TodoSection({
       className={'todo-sec' + (bento ? ' bento' : '') + (bento && tint ? ' bento--tinted' : '')}
       style={tint ? ({ '--sec-tint': tint } as React.CSSProperties) : undefined}
     >
-      <SecLabel label={title} icon={icon} count={openCount && !loneFold ? openCount : undefined} action={action} />
+      <SecLabel nested label={title} icon={icon} count={openCount && !loneFold ? openCount : undefined} action={action} />
 
       {all.length === 0 && !ro ? (
         <EmptyState tone="calm">{emptyText ?? t.todos.empty}</EmptyState>

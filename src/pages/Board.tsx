@@ -231,7 +231,7 @@ export function Board() {
   // The view lives in the URL (?view=, linkable, survives a reload); localStorage is the
   // remembered default a bare /board opens on (solidify 4.1).
   const [rememberedView] = useState<BoardView>(() => readBoardView())
-  const [view, setView] = useTabParam<BoardView>('view', rememberedView, BOARD_VIEWS)
+  const [view] = useTabParam<BoardView>('view', rememberedView, BOARD_VIEWS)
   // Pull « Mois » and « Année » down once the board is quiet, so the first tap on the
   // view toggle does not wait for the network (see warmCalendars above).
   useEffect(warmCalendars, [])
@@ -294,22 +294,26 @@ export function Board() {
   // trip to the day page, which the old state did not. Switching views by hand clears it,
   // so « Mois » always opens on today unless you asked for a specific date.
   const [, setBoardParams] = useSearchParams()
-  const setMonthDate = useCallback(
-    (day: number | null) =>
+  // ONE setParams for the view and the date: two in a tick each start from the same
+  // render's params, so the second erased the first and a tapped mini-month opened on
+  // today instead of THAT month (e2e/year-to-month, 2026-11-05).
+  const showView = useCallback(
+    (v: BoardView, day: number | null) =>
       setBoardParams(
         (prev) => {
           const next = new URLSearchParams(prev)
           if (day == null) next.delete('date')
           else next.set('date', String(day))
+          if (v === rememberedView) next.delete('view')
+          else next.set('view', v)
           return next
         },
         { replace: true },
       ),
-    [setBoardParams],
+    [setBoardParams, rememberedView],
   )
   function changeView(v: BoardView) {
-    setMonthDate(null)
-    setView(v)
+    showView(v, null)
     saveBoardView(v)
   }
 
@@ -1828,8 +1832,7 @@ export function Board() {
             onOpenMonth={(monthStart) => {
               // Drill into Mois ON that month WITHOUT persisting the view — the
               // année stays this device's chosen glance across reloads.
-              setMonthDate(monthStart)
-              setView('month')
+              showView('month', monthStart)
             }}
           />
         </Suspense>

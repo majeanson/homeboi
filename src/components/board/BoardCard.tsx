@@ -54,6 +54,7 @@ export function SecLabel({
   action,
   help,
   helpKey,
+  nested = false,
 }: {
   label: string
   count?: number
@@ -71,11 +72,13 @@ export function SecLabel({
   action?: ReactNode
   help?: HelpMode
   helpKey?: string
+  /** A section INSIDE a card: the card's own header owns the reduce, not this one. */
+  nested?: boolean
 }) {
   const t = useT()
   const lens = useCardLens()
   const helpable = !!help && !!helpKey && help.active
-  const reducible = !!lens?.expanded
+  const reducible = !nested && !!lens?.expanded
   return (
     <>
       <div
