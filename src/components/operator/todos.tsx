@@ -4,12 +4,12 @@ import { useNavigate } from 'react-router-dom'
 import { useT } from '../../i18n'
 import { type HelpMode } from '../../lib/helpMode'
 import { api } from '../../lib/api'
-import { useWrite, writeFailed, writeOrNull } from '../../lib/write'
+import { useWrite, writeOrNull } from '../../lib/write'
 import { live } from '../../lib/query'
-import { useRecordUndo } from '../../lib/toast'
+import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { isGuest } from '../../lib/device'
 import { TODO_TEMPLATES_KEY } from '../../lib/queryKeys'
-import { type TemplatesData, type TodoTemplate, toStored, expandSectioned, TODO_TEMPLATE_TITLE_MAX } from '../../lib/todos'
+import { type TemplatesData, type TodoTemplate, expandSectioned, TODO_TEMPLATE_TITLE_MAX } from '../../lib/todos'
 import { EditField } from '../EditField'
 import { ListRow } from '../ListRow'
 import { RowActions } from '../RowActions'
@@ -33,7 +33,6 @@ export function TodoTemplatesSection({ help }: { help?: HelpMode }) {
   const t = useT()
   const nav = useNavigate()
   const write = useWrite()
-  const recordUndo = useRecordUndo()
   const ro = isGuest()
   const { data } = useQuery({
     queryKey: TODO_TEMPLATES_KEY,
@@ -41,7 +40,11 @@ export function TodoTemplatesSection({ help }: { help?: HelpMode }) {
     ...live,
     enabled: !ro,
   })
-  const templates = data?.templates ?? []
+  // A row whose delete is still held behind the undo toast is hidden here
+  // (useDeferredRemoval) — the list is live-polled, and a held row must not come
+  // back on the next frame.
+  const removal = useDeferredRemoval(TODO_TEMPLATES_KEY)
+  const templates = removal.visible(data?.templates ?? [])
 
   const [newName, setNewName] = useState('')
 
@@ -71,21 +74,17 @@ export function TodoTemplatesSection({ help }: { help?: HelpMode }) {
     if (id) nav(`/liste-modele/${id}`)
   }
 
-  // Delete now, with a COMPENSATING undo that re-creates the template (a new id,
-  // same title + items) — the list is live-polled, so a deferred hold would fight
-  // the refetch; re-create is the clean reversal. NOTE: a new id means any OTHER
-  // list that referenced this one keeps a now-dangling ref (skipped at instantiate).
+  // Delete HELD behind the undo toast, the row hidden meanwhile (useDeferredRemoval
+  // filters it out of every frame the poll brings, so the hold never fights the
+  // refetch — that was the reason this used to DELETE at once and re-CREATE on
+  // « Annuler », which minted a NEW id and left every other list that referenced this
+  // one with a dangling ref). Now « Annuler » un-hides the same row; nothing was
+  // written. The commit returns the write and lets it reject (a refused delete brings
+  // the row back and says so; a 404 reads as already gone).
   function removeTemplate(tpl: TodoTemplate) {
-    void write('todo-templates', { method: 'DELETE', body: { id: tpl.id }, affectedKeys: [TODO_TEMPLATES_KEY] }).catch(writeFailed)
-    recordUndo({
-      message: t.todos.removed(tpl.title),
-      onUndo: () =>
-        void write('todo-templates', {
-          method: 'POST',
-          body: { title: tpl.title, items: toStored(tpl.items) },
-          affectedKeys: [TODO_TEMPLATES_KEY],
-        }).catch(writeFailed),
-    })
+    removal.remove([tpl.id], t.todos.removed(tpl.title), () =>
+      write('todo-templates', { method: 'DELETE', body: { id: tpl.id }, affectedKeys: [TODO_TEMPLATES_KEY] }),
+    )
   }
 
   if (ro) return null

@@ -277,7 +277,34 @@ test('a list row opens its editor scene', async ({ page }) => {
   // screen meanwhile — the default 5 s ran out and read as « element not found »
   // (2026-09-23, CI run 35915715686; reproduced with a 6 s delay on the chunk). The
   // same first-visit budget the other scene specs give (meal-order, kitchen-meal-plan).
-  await expect(page.getByLabel('Ajouter un élément')).toBeVisible({ timeout: 15_000 })
+  // 15 s was not enough when this test ran EARLY in a shard on CI (run 42074538800,
+  // 2026-11-05) nor locally as the 11th test of a cold run — and it passes alone in 7 s,
+  // so the cost is the chunk, not the scene. Doubled.
+  await expect(page.getByLabel('Ajouter un élément')).toBeVisible({ timeout: 30_000 })
+})
+
+test('deleting a list template is HELD behind « Annuler » — the row hides at once, the DELETE waits, undo is the same row', async ({ page }) => {
+  // It used to DELETE at once and re-POST a copy on undo — a NEW id, so every other
+  // list that included this one was left with a dangling ref (2026-11-05, solidify
+  // 1.7). Now useDeferredRemoval: nothing is written until the toast commits.
+  const deletes: string[] = []
+  await page.route('**/api/todo-templates', (route) => {
+    if (route.request().method() === 'DELETE') deletes.push(JSON.parse(route.request().postData() || '{}').id)
+    return route.fallback()
+  })
+  await page.goto('/settings?tab=maison&focus=todoTemplates')
+  const section = page.locator('#operator-panel')
+  const row = section.getByRole('button', { name: 'Avant de partir', exact: true })
+  await expect(row).toBeVisible()
+  await section.getByRole('button', { name: 'Supprimer — Avant de partir' }).click()
+  await expect(row).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Annuler' })).toBeVisible()
+  expect(deletes).toEqual([])
+
+  await page.getByRole('button', { name: 'Annuler' }).click()
+  await expect(section.getByRole('button', { name: 'Avant de partir', exact: true })).toBeVisible()
+  await page.waitForTimeout(400)
+  expect(deletes).toEqual([])
 })
 
 test('renaming a todo template patches it by id', async ({ page }) => {

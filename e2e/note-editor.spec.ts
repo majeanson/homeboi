@@ -187,6 +187,50 @@ test('opening an existing note and actually changing it still saves', async ({ p
   expect(patched).toEqual(['Liste de rappel !'])
 })
 
+test('emptying an existing note deletes it HELD behind « Annuler » — the row hides at once, the DELETE waits, undo is the same note', async ({ page }) => {
+  // A select-all + backspace on a phone used to delete the note with not a word said
+  // (2026-11-05). The first fix deleted at once and re-POSTed a copy on undo (a new
+  // id); it now rides useDeferredRemoval like every other held delete: nothing is
+  // written until the toast commits, and « Annuler » un-hides the same row.
+  const writes: string[] = []
+  await page.route('**/api/family-notes**', async (route) => {
+    const m = route.request().method()
+    if (m === 'GET')
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ notes: [{ id: 'n1', title: '', text: 'Liste de rappel\nlaver l’auto', scope: 'family', member_id: null, media_kind: null, media_key: null, scene_key: null, position: 0, created_at: 1, updated_at: 1 }] }),
+      })
+    writes.push(m)
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) })
+  })
+
+  await page.goto('/notes')
+  await page.getByRole('button', { name: 'Modifier' }).first().click()
+  const body = page.locator('.note-editor .note-tiptap')
+  await expect(body).toBeVisible()
+  await expect(body).toContainText('laver')
+  await body.click()
+  await selectAll(page)
+  await page.keyboard.press('Backspace')
+  await expect(body).not.toContainText('laver')
+
+  await page.getByRole('button', { name: 'Terminé' }).click()
+  await expect(page.locator('.note-editor')).toHaveCount(0)
+  // Hidden now, undoable now — and NOT written yet. (The ROW, not the text: the toast's
+  // own message quotes the note's first line.)
+  await expect(page.locator('.cnote')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Annuler' })).toBeVisible()
+  expect(writes.filter((m) => m === 'DELETE')).toEqual([])
+
+  // « Annuler »: the same note is back, and nothing was ever written.
+  await page.getByRole('button', { name: 'Annuler' }).click()
+  await expect(page.locator('.cnote')).toHaveCount(1)
+  await expect(page.locator('.cnote')).toContainText('laver l’auto')
+  await page.waitForTimeout(400)
+  expect(writes).toEqual([])
+})
+
 test('inline buttons (bold / italic / strike) wrap the selected text', async ({ page }) => {
   const body = await openEditor(page)
   await body.click()

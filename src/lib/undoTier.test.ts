@@ -43,7 +43,51 @@ const RAW_TOAST_ALLOWED: Record<string, string> = {
   'pages/QuickAddPage.tsx': 'the ⚡ add chips — a compensating undo on a CREATE',
 }
 
+// A DELETE whose undo re-POSTs the same endpoint — allowed only where the endpoint
+// has no identity to keep, so the re-create IS the same row.
+const COMPENSATING_ALLOWED = new Map<string, string>([
+  ['pages/DayPlanPage.tsx', 'day-notes: keyed by DATE, not id — the re-POST writes the same note back under the same key, nothing can dangle'],
+])
+
 describe('undo tier — one mechanism per act', () => {
+  // A DELETE whose « Annuler » re-POSTs a copy is a compensating undo that mints a NEW
+  // identity: a new id, a new position, and any row that referenced the old one is left
+  // dangling (a list template included by another list; a meal the board had already
+  // dropped mid-undo). The honest shape for a live-polled list is useDeferredRemoval —
+  // the row hides, the DELETE waits behind the toast, and « Annuler » un-hides the SAME
+  // row. The day-page meal and the Réglages list template moved onto it 2026-11-05; the
+  // day note stays compensating, and says why above. Planted red with the template's
+  // old DELETE + re-POST pair back in place.
+  it('a DELETE answered by a re-POST of the same endpoint within reach is a listed exception', () => {
+    const offenders: string[] = []
+    for (const f of files) {
+      for (const m of f.raw.matchAll(/write\(\s*['"]([a-z-]+)['"]\s*,\s*\{[^}]*method:\s*['"]DELETE['"]/g)) {
+        const at = m.index ?? 0
+        const endpoint = m[1]
+        // The ~25 lines after the DELETE: an onUndo that POSTs the SAME endpoint.
+        const after = f.raw.slice(at, at + 25 * 110)
+        const re = new RegExp(String.raw`onUndo[\s\S]{0,400}?write\(\s*['"]${endpoint}['"]\s*,\s*\{[^}]*method:\s*['"]POST['"]`)
+        if (!re.test(after)) continue
+        if (COMPENSATING_ALLOWED.has(f.path)) continue
+        offenders.push(`${f.path}:${f.raw.slice(0, at).split('\n').length} (${endpoint})`)
+      }
+    }
+    expect(
+      offenders,
+      'hold the DELETE behind the undo toast with useDeferredRemoval (the row keeps its id); ' +
+        'a compensating re-create is only honest when the endpoint has no id to keep — list the file in COMPENSATING_ALLOWED with that reason',
+    ).toEqual([])
+  })
+
+  it('every COMPENSATING_ALLOWED entry still carries that shape (a stale entry exempts the next arrival)', () => {
+    const byPath = new Map(files.map((f) => [f.path, f.raw]))
+    const stale = [...COMPENSATING_ALLOWED.keys()].filter((p) => {
+      const raw = byPath.get(p)
+      return !raw || !/method:\s*['"]DELETE['"][\s\S]{0,2500}?onUndo[\s\S]{0,400}?method:\s*['"]POST['"]/.test(raw)
+    })
+    expect(stale, 'these files no longer DELETE-then-re-POST — drop them').toEqual([])
+  })
+
   it('the scan found the app (canary)', () => {
     expect(files.length).toBeGreaterThan(200)
     expect(files.some((f) => f.path === 'lib/useDeferredRemoval.ts'), 'the hook itself was not scanned').toBe(true)

@@ -36,6 +36,7 @@ import { EventForm, type EventInit } from '../components/forms/EventForm'
 import { ChoreForm, type ChoreInit } from '../components/forms/ChoreForm'
 import { useEventPeekActions } from '../components/detail/EventPeekActions'
 import { useChoreRemovals } from '../components/detail/EntityRemovals'
+import { useDeferredRemoval } from '../lib/useDeferredRemoval'
 import { DetailProvider, useEntityDetail } from '../components/detail/DetailProvider'
 import { buildChore, type DetailCtx } from '../components/detail/adapters'
 import { type Recipe, type RecipeTagsData, RECIPE_TAGS_KEY } from '../lib/recipes'
@@ -128,6 +129,12 @@ function DayPlanScene() {
   const qc = useQueryClient()
   const { memberId: profileId } = useProfile()
   const recordUndo = useRecordUndo()
+  // « Retirer le repas » is HELD behind the undo toast, the row hidden meanwhile
+  // (useDeferredRemoval, MEALS_KEY scope — the past-day read below shares the key's
+  // head, so a held row hides there too). Until 2026-11-05 this DELETEd at once and
+  // « Annuler » re-POSTed a copy: a new id, a new position, and a meal the board had
+  // already dropped mid-undo. Now the write does not happen until the toast commits.
+  const mealRemoval = useDeferredRemoval(MEALS_KEY)
   const write = useWrite()
   const createWithUndo = useCreateWithUndo()
   const close = useSceneClose('/kitchen')
@@ -287,7 +294,7 @@ function DayPlanScene() {
   }
 
   const recipes = recipesQ.data?.recipes ?? []
-  const days = isPast ? [...(meals.data?.days ?? []), ...(pastMealsQ.data?.days ?? [])] : (meals.data?.days ?? [])
+  const days = mealRemoval.visible(isPast ? [...(meals.data?.days ?? []), ...(pastMealsQ.data?.days ?? [])] : (meals.data?.days ?? []))
   const mealsFor = (d: number, slot: string) => days.filter((m) => m.date === d && m.slot === slot)
   const noteFor = (d: number) => dayNotesQ.data?.notes?.find((n) => n.date === d)
   const lowItems = useMemo(() => (pantry.data?.low ?? []).map((l) => l.item), [pantry.data])
@@ -376,22 +383,24 @@ function DayPlanScene() {
     }
   }
 
-  // Wipe a planned slot entirely (the ✕ beside the picker). The editor closes and
-  // the day goes back to its open "＋" state. On failure the editor stays open.
-  async function clearMeal(id: string) {
+  // Wipe a planned slot entirely (the ✕ beside the picker). The row hides at once,
+  // the editor closes and the day goes back to its open "＋" state; the DELETE itself
+  // is held behind the undo toast and « Annuler » simply un-hides (nothing was
+  // written). The commit RETURNS the write and lets it reject: a rejection means
+  // « the delete did not happen » (the row comes back, writeFailed says so), a 404
+  // « already gone » — never a swallowed refusal read as success.
+  function clearMeal(id: string) {
     // `days` (not a fresh MEALS_KEY read): the meal may live in the past-day query
     // instead, which a plain MEALS_KEY lookup would miss entirely.
     const meal = days.find((m) => m.id === id)
-    try {
-      await write('meals', { method: 'DELETE', body: { id }, affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY, MONTH_KEY] })
-      setEditDate(null)
-      setMealText('')
-      setEditSlot(null)
-      setSlotText('')
-      if (meal) recordUndo({ message: t.undo.mealRemoved(meal.title), onUndo: () => restoreMeals(qc, [meal]) })
-    } catch {
-      /* keep the editor open so the clear can be retried */
-    }
+    if (!meal) return
+    setEditDate(null)
+    setMealText('')
+    setEditSlot(null)
+    setSlotText('')
+    mealRemoval.remove([id], t.undo.mealRemoved(meal.title), () =>
+      write('meals', { method: 'DELETE', body: { id }, affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY, MONTH_KEY] }),
+    )
   }
 
   // Reorder one meal within its slot (↑/↓). The server renumbers the slot.

@@ -57,14 +57,23 @@ test('a slot holds several meals — both show, with an add-another', async ({ p
   await expect(sheet.getByRole('button', { name: 'Ajouter un autre — Souper' })).toBeVisible()
 })
 
-test('removing one meal deletes just that row', async ({ page }) => {
+test('removing one meal hides just that row at once, and deletes it on commit', async ({ page }) => {
   await boot(page)
   const sheet = await openManage(page)
-  const del = waitMeals(page, 'DELETE', (b) => typeof b.id === 'string')
+  const rows = sheet.locator('.kitchen__meal-row')
+  const before = await rows.count()
+  // The DELETE is HELD behind the undo toast (useDeferredRemoval, 2026-11-05 — it used
+  // to fire at once and « Annuler » re-created a copy under a new id), so it arrives
+  // after the undo window (15 s, toast.tsx DEFAULT_UNDO_MS).
+  const del = page.waitForRequest((r) => r.method() === 'DELETE' && r.url().includes('/api/meals'), { timeout: 20_000 })
   // A row's management verbs live behind its ⋯ overflow now (❤ + 📖 stay visible).
-  await sheet.locator('.kitchen__meal-row').first().locator('.action-menu__btn').click()
+  await rows.first().locator('.action-menu__btn').click()
   await page.getByRole('menuitem', { name: 'Retirer le repas' }).click()
-  await del
+  // Hidden now — before any write; « Annuler » is offered.
+  await expect(rows).toHaveCount(before - 1)
+  await expect(page.getByRole('button', { name: 'Annuler' })).toBeVisible()
+  const body = JSON.parse((await del).postData() || '{}')
+  expect(typeof body.id).toBe('string')
 })
 
 test('reorder posts a move; clear-day posts a clear', async ({ page }) => {

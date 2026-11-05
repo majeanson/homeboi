@@ -1,8 +1,9 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useT } from '../../i18n'
-import { useWrite, writeFailed } from '../../lib/write'
-import { useNotice, useRecordUndo } from '../../lib/toast'
+import { useWrite } from '../../lib/write'
+import { useNotice } from '../../lib/toast'
+import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { api } from '../../lib/api'
 import { useOnline } from '../../lib/online'
 import { useModal } from '../../lib/useModal'
@@ -63,7 +64,11 @@ export function NoteEditor({
   const fn = t.cercle.familyNotes
   const write = useWrite()
   const notice = useNotice()
-  const recordUndo = useRecordUndo()
+  // An emptied note's DELETE is HELD behind the undo toast (the list hides the row
+  // meanwhile — NotesList shares this FAMILY_NOTES_KEY scope), so « Annuler » un-hides
+  // the SAME note. The first fix (2026-11-05, morning) deleted at once and re-POSTed a
+  // copy on undo — a new id, and a note another surface had already dropped.
+  const removal = useDeferredRemoval(FAMILY_NOTES_KEY)
   const online = useOnline()
 
   const rootRef = useRef<HTMLDivElement>(null)
@@ -170,19 +175,13 @@ export function NoteEditor({
     if (empty) {
       // Emptied to nothing = deleted. Deliberately NOT announced as "saved" — the row
       // is gone, and saying so would read as a confirmation of the opposite. It IS
-      // announced as undoable (2026-11-05): a select-all + backspace on a phone deleted
-      // the note with not a word said, and nothing brought it back. The undo re-POSTs
-      // the note as it was when the editor opened (text + title + scope; `empty` means
-      // no media was left, so no freed blob is pointed at).
-      const was = { title: note.title, text: note.text, scope: (note.member_id ? 'self' : 'family') as NoteScope, member_id: note.member_id }
-      void write('family-notes', { method: 'DELETE', body: { id: note.id }, affectedKeys: [FAMILY_NOTES_KEY] })
-        .then(() =>
-          recordUndo({
-            message: t.undo.noteDeleted(was.title || was.text.slice(0, 40)),
-            onUndo: () => write('family-notes', { method: 'POST', body: { ...was, media_kind: null, media_key: null, scene_key: null }, affectedKeys: [FAMILY_NOTES_KEY] }).catch(writeFailed),
-          }),
-        )
-        .catch(writeFailed)
+      // undoable (2026-11-05): a select-all + backspace on a phone deleted the note with
+      // not a word said, and nothing brought it back. The DELETE waits behind the toast;
+      // « Annuler » un-hides the same note, text and title intact (nothing was written).
+      // The commit RETURNS the write and lets it reject — a refusal brings the row back.
+      removal.remove([note.id], t.undo.noteDeleted(note.title || note.text.slice(0, 40)), () =>
+        write('family-notes', { method: 'DELETE', body: { id: note.id }, affectedKeys: [FAMILY_NOTES_KEY] }),
+      )
       return
     }
     void write('family-notes', {
