@@ -1,7 +1,7 @@
 import { ok, withAiError } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { weeklyRecap, resolveLang } from '../_lib/ai'
-import { dayStart, nowSec } from '../_lib/ids'
+import { addLocalDays, dayStart, nowSec } from '../_lib/ids'
 
 // On-demand weekly recap. Reads the last 7 days of events / suppers / chores
 // done and asks for a gentle 2-sentence reflection (NFR-CALM: no stats). One
@@ -10,7 +10,10 @@ import { dayStart, nowSec } from '../_lib/ids'
 export const onRequestGet = authed(async (ctx, actor) => {
   const hh = actor.householdId
   const now = nowSec()
-  const since = dayStart(new Date(Date.now())) - 86400 * 7
+  // Seven LOCAL days back, not 7 × 86 400 s: a DST day is 23 or 25 hours long, so the
+  // fixed arithmetic off a local midnight landed at 23:00 / 01:00 twice a year (the
+  // documented trap — CLAUDE.md « Day arithmetic »; localDay-rule.test.ts holds it now).
+  const since = addLocalDays(dayStart(new Date(Date.now())), -7)
 
   const [events, meals, chores] = await Promise.all([
     // The week that HAPPENED — events already past, not upcoming ones.

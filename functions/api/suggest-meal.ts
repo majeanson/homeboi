@@ -21,7 +21,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   // (MAX(meals.date) grouped by recipe_id, this household), and keep the ones whose
   // last serving is older than the neglected cutoff (or never served). Bringing a
   // few of these back is a GENTLE preference passed to the suggester, never shame.
-  const NEGLECT_CUTOFF = today - 14 * 86400 // not served in > 14 days
+  const NEGLECT_CUTOFF = addLocalDays(today, -14) // not served in > 14 days (local days, never ×86400 off a midnight)
   const [low, recent, favs, neglected] = await Promise.all([
     ctx.env.DB.prepare('SELECT item FROM pantry_low WHERE household_id = ? ORDER BY marked_at DESC LIMIT 10')
       .bind(actor.householdId)

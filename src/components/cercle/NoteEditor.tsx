@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useT } from '../../i18n'
 import { useWrite, writeFailed } from '../../lib/write'
-import { useNotice } from '../../lib/toast'
+import { useNotice, useRecordUndo } from '../../lib/toast'
 import { api } from '../../lib/api'
 import { useOnline } from '../../lib/online'
 import { useModal } from '../../lib/useModal'
@@ -63,6 +63,7 @@ export function NoteEditor({
   const fn = t.cercle.familyNotes
   const write = useWrite()
   const notice = useNotice()
+  const recordUndo = useRecordUndo()
   const online = useOnline()
 
   const rootRef = useRef<HTMLDivElement>(null)
@@ -167,9 +168,21 @@ export function NoteEditor({
       return
     }
     if (empty) {
-      // Emptied to nothing = deleted. Deliberately NOT announced as "saved" — the
-      // row is gone, and saying so would read as a confirmation of the opposite.
-      void write('family-notes', { method: 'DELETE', body: { id: note.id }, affectedKeys: [FAMILY_NOTES_KEY] }).catch(writeFailed)
+      // Emptied to nothing = deleted. Deliberately NOT announced as "saved" — the row
+      // is gone, and saying so would read as a confirmation of the opposite. It IS
+      // announced as undoable (2026-11-05): a select-all + backspace on a phone deleted
+      // the note with not a word said, and nothing brought it back. The undo re-POSTs
+      // the note as it was when the editor opened (text + title + scope; `empty` means
+      // no media was left, so no freed blob is pointed at).
+      const was = { title: note.title, text: note.text, scope: (note.member_id ? 'self' : 'family') as NoteScope, member_id: note.member_id }
+      void write('family-notes', { method: 'DELETE', body: { id: note.id }, affectedKeys: [FAMILY_NOTES_KEY] })
+        .then(() =>
+          recordUndo({
+            message: t.undo.noteDeleted(was.title || was.text.slice(0, 40)),
+            onUndo: () => write('family-notes', { method: 'POST', body: { ...was, media_kind: null, media_key: null, scene_key: null }, affectedKeys: [FAMILY_NOTES_KEY] }).catch(writeFailed),
+          }),
+        )
+        .catch(writeFailed)
       return
     }
     void write('family-notes', {

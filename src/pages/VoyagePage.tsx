@@ -3,13 +3,13 @@
 import '../styles/voyage.css'
 import { facesFromMembers } from '../lib/faces'
 import { useMemo, useState } from 'react'
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
+import { Navigate, useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api, isUnauthorized } from '../lib/api'
 import { useWrite } from '../lib/write'
 import { useT, useLang } from '../i18n'
 import { live } from '../lib/query'
-import { isGuest } from '../lib/device'
+import { isGuest, needsOperator } from '../lib/device'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { todayLocalDay } from '../lib/localDay'
 import { useTabParam } from '../lib/tabParam'
@@ -95,6 +95,9 @@ function VoyageInner() {
   const packingQ = useTripPacking(isNew ? undefined : id)
 
   if (isUnauthorized(tripsQ.error)) return <PairPrompt />
+  // Every /api/trips method is operator-only: a kiosk or a guest has nothing to do here
+  // but meet a 403 behind each button — back to the board instead.
+  if (needsOperator()) return <Navigate to="/board" replace />
   if (isNew) return <VoyageForm faces={allFaces} onClose={close} />
 
   if (!trip) {

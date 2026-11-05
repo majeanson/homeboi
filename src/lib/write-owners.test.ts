@@ -196,4 +196,31 @@ describe('the ownership rule (a shared mutation flow is not re-implemented besid
       'every surface showing this data must be invalidated (the stale-until-next-poll drift, 2026-09-03) — add the key, or document in OWNED why this site is exempt',
     ).toEqual([])
   })
+
+  // THE UNDO HAS ONE OWNER TOO (2026-11-05). « Retirer du plan » on the board / the
+  // month panel undid by re-POSTing `{date, slot, title}` — a bare title — while the day
+  // scene's undo went through `restoreMeals` and kept `recipe_id`. Same gesture, two
+  // surfaces, two different losses: the drift class above, one layer up. A meal is put
+  // BACK by `restoreMeals` (components/kitchen/mealMutations.ts) and nowhere else: an
+  // `onUndo` that spells its own meals POST fails here. Planted red on the old
+  // EntityRemovals line before this test shipped.
+  it('a meal removal is undone by restoreMeals, never by a hand-rolled POST', () => {
+    const offenders: string[] = []
+    for (const f of sourceFiles(srcDir)) {
+      const file = relative(srcDir, f).split(sep).join('/')
+      if (file === 'components/kitchen/mealMutations.ts') continue
+      const src = readScanned(f)
+      for (const m of src.matchAll(/onUndo\s*:/g)) {
+        // The `onUndo:` line and the next one (a two-line arrow) — a wider window read
+        // the meals POST of the NEXT function on DayPlanPage, whose own undo is correct.
+        const nl1 = src.indexOf('\n', m.index)
+        const nl2 = nl1 < 0 ? -1 : src.indexOf('\n', nl1 + 1)
+        const window = src.slice(m.index, nl2 < 0 ? undefined : nl2)
+        if (/\b(?:write|writeWith|api)\s*\(\s*['"`]meals['"`]\s*,\s*\{[^}]*method:\s*['"`]POST['"`]/.test(window)) {
+          offenders.push(`${file}:${src.slice(0, m.index).split('\n').length}`)
+        }
+      }
+    }
+    expect(offenders, 'undo a meal removal with restoreMeals(qc, [row]) — it keeps recipe_id; a hand-rolled POST here is how the link got lost').toEqual([])
+  })
 })

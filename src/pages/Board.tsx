@@ -772,7 +772,8 @@ export function Board() {
   // ── Detail-sheet contextual actions for meals + leftovers ──────────────────
   // Remove a planned meal (compensating undo: re-add it at same day+slot). A plain
   // closure over the hook declared above the early return — see there for why.
-  const removeMealFromPlan = (id: string, title: string, slot: string, day: number) => removeMeal({ id, title, slot, day })
+  const removeMealFromPlan = (id: string, title: string, slot: string, day: number, recipe_id?: string | null) =>
+    removeMeal({ id, title, slot, day, recipe_id })
   // Plan a pool leftover as tonight's supper — see `planLeftover` above the early
   // return (it is a hook; this closure is not).
   const planLeftoverTonight = (l: { id: string; title: string; recipe_id?: string | null; source_meal_id?: string | null }) =>
@@ -1013,7 +1014,7 @@ export function Board() {
           slotLabel: heroCardLabel(heroSlot, t),
           daySec: todayDay,
           onLeftover: ro ? undefined : () => saveAsLeftover({ id: m.id, title: m.title }),
-          onRemove: ro ? undefined : () => removeMealFromPlan(m.id, m.title, m.slot ?? heroSlot, todayDay),
+          onRemove: ro ? undefined : () => removeMealFromPlan(m.id, m.title, m.slot ?? heroSlot, todayDay, m.recipe_id),
         })
       }
       cookLine={cookLine}
@@ -1059,7 +1060,7 @@ export function Board() {
           slotLabel: slotLabel(m.slot),
           daySec: todayDay,
           onLeftover: ro ? undefined : () => saveAsLeftover({ id: m.id, title: m.title }),
-          onRemove: ro ? undefined : () => removeMealFromPlan(m.id, m.title, m.slot, todayDay),
+          onRemove: ro ? undefined : () => removeMealFromPlan(m.id, m.title, m.slot, todayDay, m.recipe_id),
         })
       }
     />
@@ -1446,7 +1447,7 @@ export function Board() {
               slotLabel: slotLabel(heroSlot),
               daySec: tomorrowDay,
               onLeftover: ro ? undefined : () => saveAsLeftover({ id: data.tomorrowMeal!.id, title: data.tomorrowMeal!.title }),
-              onRemove: ro ? undefined : () => removeMealFromPlan(data.tomorrowMeal!.id, data.tomorrowMeal!.title, heroSlot, tomorrowDay),
+              onRemove: ro ? undefined : () => removeMealFromPlan(data.tomorrowMeal!.id, data.tomorrowMeal!.title, heroSlot, tomorrowDay, data.tomorrowMeal!.recipe_id),
             })
           }
         />
@@ -1466,7 +1467,7 @@ export function Board() {
               slotLabel: slotLabel(m.slot),
               daySec: tomorrowDay,
               onLeftover: ro ? undefined : () => saveAsLeftover({ id: m.id, title: m.title }),
-              onRemove: ro ? undefined : () => removeMealFromPlan(m.id, m.title, m.slot, tomorrowDay),
+              onRemove: ro ? undefined : () => removeMealFromPlan(m.id, m.title, m.slot, tomorrowDay, m.recipe_id),
             })
           }
         />

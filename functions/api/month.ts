@@ -59,7 +59,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     // each side so an entry near the window edge still lands, then re-bucket by
     // local day below and clip back to [from, to).
     ctx.env.DB.prepare(
-      `SELECT id, slot, title, cook_member_id, date, position, is_leftover FROM meals WHERE household_id = ? AND date >= ? AND date < ? ORDER BY date, ${MEAL_ORDER}`,
+      `SELECT id, slot, title, cook_member_id, date, position, is_leftover, recipe_id FROM meals WHERE household_id = ? AND date >= ? AND date < ? ORDER BY date, ${MEAL_ORDER}`,
     )
       .bind(hh, from - DAY, to + DAY)
       .all<{ id: string; slot: string; title: string; cook_member_id: string | null; date: number; position: number; is_leftover: number }>(),

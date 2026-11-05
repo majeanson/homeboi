@@ -1,4 +1,5 @@
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { needsOperator } from '../lib/device'
 import '../styles/virements.css'
 import { FormScene } from '../components/FormScene'
 import { Loading } from '../components/Fallback'
@@ -27,6 +28,10 @@ export function TransferFormPage() {
   const { data } = useTransfers()
   const transfer = id ? (data?.transfers.find((x) => x.id === id) ?? null) : null
 
+  // FormScene bounces a guest and a session-less device; a paired KIOSK has a session
+  // and would reach a form whose save can only 403 — the transfer endpoints are
+  // operator-only (2026-11-05).
+  if (needsOperator()) return <Navigate to={FALLBACK} replace />
   return (
     <FormScene card="notes" title={id ? t.virements.edit : t.virements.add} icon="receipt-bold" fallback={FALLBACK}>
       {(members, close) =>
@@ -70,6 +75,7 @@ export function TransferPlanFormPage() {
   // throwing, because this URL ends up in bookmarks and shared links.
   const template = id ? null : planTemplate(sp.get('modele'))
 
+  if (needsOperator()) return <Navigate to={FALLBACK} replace /> // see TransferFormPage
   return (
     <FormScene card="notes" title={id ? t.virements.editPlan : t.virements.addPlan} icon="receipt-bold" fallback={FALLBACK}>
       {(members, close) =>

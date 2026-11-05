@@ -1,7 +1,7 @@
 import { createContext, useContext } from 'react'
 import { useQuery, type QueryKey } from '@tanstack/react-query'
 import { api } from '../../lib/api'
-import { isGuest } from '../../lib/device'
+import { needsOperator } from '../../lib/device'
 import { live } from '../../lib/query'
 import { isSharedTripRealtimeConnected } from '../../lib/realtime'
 import {
@@ -119,9 +119,11 @@ export function useVoyageApi(): VoyageApi {
 // stranger walk on 2026-09-16 (e2e/stranger-live.spec.ts; the same shape as the
 // credential-less socket that walk found the first time). Don't ask when the answer is
 // known: `enabled` here covers every caller — the board card, the search page, the
-// voyage scene — rather than each of them remembering.
+// voyage scene — rather than each of them remembering. A paired KIOSK is refused the
+// same way (scope 'kiosk' ≠ operator), so the gate is needsOperator(), not isGuest()
+// (2026-11-05: a wall tablet asked on every board load and got its 403 too).
 export function useTrips() {
-  return useQuery({ queryKey: TRIPS_KEY, queryFn: () => api<{ trips: Trip[] }>('trips'), enabled: !isGuest(), ...live })
+  return useQuery({ queryKey: TRIPS_KEY, queryFn: () => api<{ trips: Trip[] }>('trips'), enabled: !needsOperator(), ...live })
 }
 
 export function useTripNotes(tripId: string | undefined) {
@@ -235,7 +237,7 @@ export function useSharedTrips() {
     queryKey: SHARED_TRIPS_KEY,
     queryFn: () => api<{ trips: SharedTrip[] }>('shared-trip'),
     // Operator-only on the server, like useTrips above — see its note.
-    enabled: !isGuest(),
+    enabled: !needsOperator(),
     ...live,
   })
 }

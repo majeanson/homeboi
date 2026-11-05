@@ -63,6 +63,9 @@ export interface MealRow {
   title: string
   cook_member_id: string | null
   is_leftover?: number // 1 = a planned leftover ("Restants" badge); migration 0035
+  // The linked recipe, so « Retirer du plan »'s undo can put it BACK with its link —
+  // until 2026-11-05 the board never carried it and the undo re-planned a bare title.
+  recipe_id?: string | null
 }
 // One undated leftover in the "Restants à finir" pool — a calm board reminder to
 // eat it before cooking the rest. Marking it "Fini" removes it.
@@ -83,6 +86,7 @@ export interface DayMealRow {
   cook_member_id: string | null
   position?: number
   is_leftover?: number // 1 = a planned leftover ("Restants" badge); migration 0035
+  recipe_id?: string | null // see MealRow
 }
 // Today's day note — the per-day memo set in La cuisine. Read-only on the board.
 export interface DayNote {

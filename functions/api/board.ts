@@ -111,12 +111,12 @@ export const onRequestGet = authed(async (ctx, actor) => {
     // First hero meal of today/tomorrow (the headline). ORDER BY position so
     // "first" is deterministic now that a slot can hold several meals.
     ctx.env.DB.prepare(
-      'SELECT id, title, cook_member_id, is_leftover FROM meals WHERE household_id = ? AND slot = ? AND date >= ? AND date < ? ORDER BY position, created_at, id LIMIT 1',
+      'SELECT id, title, cook_member_id, is_leftover, recipe_id FROM meals WHERE household_id = ? AND slot = ? AND date >= ? AND date < ? ORDER BY position, created_at, id LIMIT 1',
     )
       .bind(hh, heroSlot, mealToday, mealTomorrow)
       .all(),
     ctx.env.DB.prepare(
-      'SELECT id, title, cook_member_id, is_leftover FROM meals WHERE household_id = ? AND slot = ? AND date >= ? AND date < ? ORDER BY position, created_at, id LIMIT 1',
+      'SELECT id, title, cook_member_id, is_leftover, recipe_id FROM meals WHERE household_id = ? AND slot = ? AND date >= ? AND date < ? ORDER BY position, created_at, id LIMIT 1',
     )
       .bind(hh, heroSlot, mealTomorrow, mealDayAfter)
       .all(),
@@ -124,7 +124,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     // full day's table, not just tonight's supper hero. Ordered by time then
     // position; sorted again client-side by slot (stable, so position holds).
     ctx.env.DB.prepare(
-      'SELECT id, slot, title, cook_member_id, position, is_leftover FROM meals WHERE household_id = ? AND date >= ? AND date < ? ORDER BY position, created_at, id',
+      'SELECT id, slot, title, cook_member_id, position, is_leftover, recipe_id FROM meals WHERE household_id = ? AND date >= ? AND date < ? ORDER BY position, created_at, id',
     )
       .bind(hh, mealToday, mealTomorrow)
       .all(),
@@ -138,7 +138,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     // so prep that has to happen the night before (thaw the chicken, soak the
     // beans, "sortir le poulet") is visible TODAY, while there's still time.
     ctx.env.DB.prepare(
-      'SELECT id, slot, title, cook_member_id, position, is_leftover FROM meals WHERE household_id = ? AND date >= ? AND date < ? ORDER BY position, created_at, id',
+      'SELECT id, slot, title, cook_member_id, position, is_leftover, recipe_id FROM meals WHERE household_id = ? AND date >= ? AND date < ? ORDER BY position, created_at, id',
     )
       .bind(hh, mealTomorrow, mealDayAfter)
       .all(),

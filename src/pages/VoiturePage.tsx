@@ -4,6 +4,7 @@ import { useLang, useT } from '../i18n'
 import { api } from '../lib/api'
 import { live } from '../lib/query'
 import { useWrite } from '../lib/write'
+import { isGuest } from '../lib/device'
 import { useConfirm } from '../lib/confirm'
 import { LoadError } from '../components/LoadError'
 import { CAR_KEY, BOARD_KEY, MEMBERS_KEY, MONTH_KEY } from '../lib/queryKeys'
@@ -369,7 +370,10 @@ function DayRow({
         </ul>
       )}
 
-      {editing && (
+      {/* A read-only guest (a babysitter link) sees the week, not the editor: every door
+          in it is a car-day write the server refuses, and a door that only ever says
+          « Pas enregistré » is not a door (2026-11-05 — the one scene with no guard). */}
+      {editing && !isGuest() && (
         <DayEditor d={d} members={members} t={t} onSave={onSave} onClear={onClear} onAddRide={onAddRide} />
       )}
     </div>

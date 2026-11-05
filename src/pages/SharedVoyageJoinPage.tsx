@@ -6,7 +6,7 @@ import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useLang, useT } from '../i18n'
 import { api, ApiError, isUnauthorized } from '../lib/api'
-import { isGuest } from '../lib/device'
+import { needsOperator } from '../lib/device'
 import { formatDayLong, capitalize as cap } from '../lib/format'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { SceneHead } from '../components/SceneHead'
@@ -53,7 +53,7 @@ export function SharedVoyageJoinPage() {
   })
 
   // A read-only guest can't write into a household — bounce to the board.
-  if (isGuest()) return <Navigate to="/board" replace />
+  if (needsOperator()) return <Navigate to="/board" replace />
   // Joining needs your OWN account. A signed-out visitor signs in first (the link
   // still works once signed in).
   if (isUnauthorized(error)) return <Navigate to="/login" replace />

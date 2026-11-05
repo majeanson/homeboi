@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useLang, useT } from '../i18n'
 import { formatNextUtcMidnight } from '../lib/format'
 import { api, ApiError, hasSessionCookie, isStatus } from '../lib/api'
+import { needsOperator } from '../lib/device'
 import { useWrite } from '../lib/write'
 import { useConfirm } from '../lib/confirm'
 import { StatusMessage } from './StatusMessage'
@@ -155,7 +156,9 @@ export function RecipeForm({
   const cancel = () => {
     const keys = importedStepKeys.current
     importedStepKeys.current = []
-    if (keys.length) void write('recipe-step-image', { method: 'DELETE', body: { keys } }).catch(writeFailed)
+    // The free is operator-only on the server; a kiosk that imported and backed out
+    // leaves the orphan to the nightly sweep rather than asking for a 403.
+    if (keys.length && !needsOperator()) void write('recipe-step-image', { method: 'DELETE', body: { keys } }).catch(writeFailed)
     onCancel()
   }
   const requestClose = () => {

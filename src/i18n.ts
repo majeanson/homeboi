@@ -3047,6 +3047,7 @@ export const FR = {
     postponed: (s: string) => `« ${s} » reporté`,
     todoDone: (s: string) => `« ${s} » fait`,
     mealRemoved: (s: string) => `« ${s} » retiré du menu`,
+    noteDeleted: (s: string) => `Note « ${s} » supprimée`,
     // A meal planned from a pool (Idées, Favoris, IA, 👧, Historique) — names the day,
     // because the planning row sits in a scene where the week grid is not visible.
     mealPlanned: (s: string, day: string) => `« ${s} » planifié — ${day}`,

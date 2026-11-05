@@ -2,14 +2,14 @@
 // scene classes); load it whenever this page renders instead.
 import '../styles/voyage.css'
 import { useEffect, useState } from 'react'
-import { Link, useParams, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useParams, useNavigate } from 'react-router-dom'
 import { ApiError, isUnauthorized } from '../lib/api'
 import { queryClient } from '../lib/query'
 import { useWrite } from '../lib/write'
 import { useConfirm } from '../lib/confirm'
 import { useT, useLang } from '../i18n'
 import { formatDayLong, capitalize as cap } from '../lib/format'
-import { isGuest } from '../lib/device'
+import { isGuest, needsOperator } from '../lib/device'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { useTabParam } from '../lib/tabParam'
 import { SHARED_TRIPS_KEY, SHARED_TRIP_NOTES_KEY, SHARED_TRIP_PACKING_KEY, TRIPS_KEY, BOARD_KEY, MONTH_KEY } from '../lib/queryKeys'
@@ -107,6 +107,8 @@ function SharedVoyageInner() {
 
   // A signed-out visitor (401) needs to sign in — the pair/sign-in door, like VoyagePage.
   if (isUnauthorized(tripQ.error)) return <PairPrompt />
+  // Every /api/shared-trip* method is operator-only — see VoyagePage.
+  if (needsOperator()) return <Navigate to="/board" replace />
 
   const trip = tripQ.data?.trip
   const myHouseholdId = tripQ.data?.myHouseholdId ?? ''

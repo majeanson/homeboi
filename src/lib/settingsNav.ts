@@ -50,7 +50,9 @@ export const SETTINGS_TREE = {
   board: {
     // Agenda & la semaine: the rendez-vous + « La rentrée », then the calm week
     // glance + the AI recap — everything the board's timeline is made of.
-    events: [s('events', 'household'), s('schoolYear', 'household'), s('thisWeek', 'household'), s('recap', 'household')],
+    // `thisWeek` reads /api/this-week, operator-only on the server — a kiosk opening the
+    // pill met a card that could only ever 403 (2026-11-05). access derives the pill row.
+    events: [s('events', 'household'), s('schoolYear', 'household'), s('thisWeek', 'operator'), s('recap', 'household')],
     layout: [s('boardLayout', 'device')],
   },
   kitchen: {

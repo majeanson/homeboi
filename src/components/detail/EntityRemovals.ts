@@ -1,10 +1,12 @@
 import { useT } from '../../i18n'
-import { useWrite, wrote, writeFailed } from '../../lib/write'
+import { useWrite, wrote } from '../../lib/write'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { useRecordUndo } from '../../lib/toast'
 import { settingsHref } from '../../lib/settingsNav'
 import { BOARD_KEY, CHORES_KEY, HOME_PROJECTS_KEY, MONTH_KEY, CARNETS_KEY } from '../../lib/queryKeys'
-import { MEALS_KEY, MEAL_HISTORY_KEY } from '../kitchen/types'
+import { useQueryClient } from '@tanstack/react-query'
+import { MEALS_KEY, MEAL_HISTORY_KEY, type MealRow } from '../kitchen/types'
+import { restoreMeals } from '../kitchen/mealMutations'
 
 // « Remove it from where you SEE it » — the delete doors a calendar row's peek offers,
 // in ONE place (Marc, 2026-09-16: « make sure we can remove/delete easily from detail
@@ -63,19 +65,38 @@ export function useChoreRemovals() {
   }
 }
 
+// What « Retirer du plan » removed, as the owner's `restoreMeals` wants it back. Pure,
+// so the one fact that matters is unit-tested: the recipe link SURVIVES the round trip.
+// Until 2026-11-05 this undo re-POSTed `{date, slot, title}` — a bare title — while the
+// day scene's undo (`restoreMeals`) kept `recipe_id`; the same gesture on two surfaces
+// lost different things, which is the drift write-owners.test.ts now refuses.
+export interface RemovedMeal {
+  id: string
+  title: string
+  slot: string
+  day: number
+  recipe_id?: string | null
+}
+export function restoredMealRow(m: RemovedMeal): MealRow {
+  return { id: m.id, date: m.day, slot: m.slot, title: m.title, cook_member_id: null, recipe_id: m.recipe_id ?? null }
+}
+
 // Take a planned meal off the plan, with a compensating undo that re-plans it on the
-// same day + slot. Extracted from Board.tsx so the month panel offers the same door.
+// same day + slot — through the OWNER (`restoreMeals`, components/kitchen/mealMutations),
+// so the board, the month panel and the day scene undo the same way. Extracted from
+// Board.tsx so the month panel offers the same door.
 export function useRemoveMealFromPlan() {
   const t = useT()
+  const qc = useQueryClient()
   const write = useWrite()
   const recordUndo = useRecordUndo()
-  return async (m: { id: string; title: string; slot: string; day: number }) => {
+  return async (m: RemovedMeal) => {
     const keys = [BOARD_KEY, MEALS_KEY, MEAL_HISTORY_KEY, MONTH_KEY]
     // No « Annuler » for a removal that did not happen (it would re-plan a meal never removed).
     if (!(await wrote(write('meals', { method: 'DELETE', body: { id: m.id }, affectedKeys: keys })))) return
     recordUndo({
       message: t.undo.mealRemoved(m.title),
-      onUndo: () => write('meals', { method: 'POST', body: { date: m.day, slot: m.slot, title: m.title }, affectedKeys: keys }).catch(writeFailed),
+      onUndo: () => void restoreMeals(qc, [restoredMealRow(m)]),
     })
   }
 }

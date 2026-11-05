@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useT, useLang } from '../../i18n'
 import { api } from '../../lib/api'
+import { needsOperator } from '../../lib/device'
 import { useConfirm } from '../../lib/confirm'
 import { useWrite } from '../../lib/write'
 import { BUSINESSES_KEY } from '../../lib/queryKeys'
@@ -143,7 +144,9 @@ export function BusinessForm({
     <form className="operator__inline-form" onSubmit={submit}>
       {/* Import from a shared Google Maps link — only when adding a new card (an edit
           already has its fields). Paste → fills name + address for review. */}
-      {!value && (
+      {/* The place import is operator-only on the server (it fetches a third-party
+          page): a kiosk types the business in by hand. */}
+      {!value && !needsOperator() && (
         <div className="business-form__import">
           <div className="business-form__import-row">
             <input

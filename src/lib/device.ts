@@ -34,6 +34,17 @@ export function clearDeviceToken(): void {
 
 export const isPaired = () => !!getDeviceToken()
 
+// « This door needs the operator account. » THE client-side mirror of a handler's
+// `authed(…, 'operator')`: a guest (read-only link) AND a paired kiosk (the wall tablet,
+// scope 'kiosk') are both refused by the server, so a surface that writes — or even
+// reads — one of the 36 operator-only endpoints (transfers, trips, habits DELETE,
+// members admin, guest links…) hides that door on this, not on `isGuest()` alone.
+// Until 2026-11-05 Virements and Habitudes gated on `isGuest()` only, so a kiosk saw
+// « Modifier » / « Supprimer » and got a 403 behind it. `operator-doors.test.ts`
+// (functions/_lib) pairs every operator-only (path, method) with every client call site
+// and fails one whose file does not reach for this.
+export const needsOperator = () => isGuest() || isPaired()
+
 // A 'display' is a PERMANENT read-only TV (a living-room screen showing /cast). It rides
 // the DEVICE-token path above (revocable, never expires) but — unlike a wall-tablet
 // kiosk — must always show the shared Maisonnée view, so we flag it here for CastPage to

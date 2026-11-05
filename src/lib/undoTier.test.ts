@@ -56,6 +56,28 @@ describe('undo tier — one mechanism per act', () => {
     expect(refs, 'lib/undoRemove.ts was folded into useDeferredRemoval on 2026-09-09').toEqual([])
   })
 
+  // A family note DELETE is never SILENT (2026-11-05): the editor deleted a note the
+  // moment its body was emptied, with no undo and no confirm — a select-all + backspace
+  // on a phone, and it was gone. Every DELETE of this endpoint is either held behind the
+  // undo toast (useDeferredRemoval) or followed by a compensating recordUndo nearby.
+  // Planted red on the editor's old line before this shipped.
+  it('a family-notes DELETE is held or undoable — never silent', () => {
+    const offenders: string[] = []
+    for (const f of files) {
+      const deferred = /useDeferredRemoval\s*\(/.test(f.raw)
+      for (const m of f.raw.matchAll(/write\(\s*['"]family-notes['"]\s*,\s*\{[^}]*method:\s*['"]DELETE['"]/g)) {
+        const at = m.index ?? 0
+        // Held: the DELETE is the commit callback of the deferred removal's `remove(…)`
+        // (NotesList declares the hook sixty lines above the call — file-wide, then the
+        // wrapping call). Undoable: a recordUndo within the same handler.
+        const held = deferred && /\.remove\(\s*\[?[^)]*\)?[^;]*$/.test(f.raw.slice(Math.max(0, at - 300), at))
+        const undoable = /recordUndo\s*\(/.test(f.raw.slice(at, at + 900))
+        if (!held && !undoable) offenders.push(`${f.path}:${f.raw.slice(0, at).split('\n').length}`)
+      }
+    }
+    expect(offenders, 'hold the DELETE behind the undo toast (useDeferredRemoval) or record a compensating undo beside it').toEqual([])
+  })
+
   it('only the listed files reach for the raw undo toast', () => {
     // A held DELETE belongs to useDeferredRemoval. The raw hook is for the other undo
     // tier — compensating (a move, an edit, a create) — and each such site says so.

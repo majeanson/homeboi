@@ -17,6 +17,7 @@ import { useHScroll } from '../lib/hscroll'
 import { useEntityDetail } from '../components/detail/DetailProvider'
 import { buildContact, buildMemberPerson, buildPet } from '../components/detail/adapters'
 import { api, isUnauthorized } from '../lib/api'
+import { needsOperator } from '../lib/device'
 import { live } from '../lib/query'
 import { useWrite, writeFailed } from '../lib/write'
 import { useConfirm } from '../lib/confirm'
@@ -1029,8 +1030,9 @@ function MaisonParent() {
                         >
                           <InlineIcon name="tree-bold" size={12} />
                         </button>
-                        {/* Hand the Maisonnée to a friend on their own account. */}
-                        {!ro && (
+                        {/* Hand the Maisonnée to a friend on their own account — family-share
+                            POST is operator-only, so no door on a kiosk either. */}
+                        {!ro && !needsOperator() && (
                           <button
                             type="button"
                             className="row-actions__btn"
@@ -1103,7 +1105,8 @@ function MaisonParent() {
                                       onSelect: help.pick('groupConnect', () => setConnect({})),
                                     },
                                     // Share this family with a friend on their own account.
-                                    ...(!ro
+                                    // family-share POST is operator-only: no share door on a kiosk.
+                                    ...(!ro && !needsOperator()
                                       ? [
                                           {
                                             icon: 'link-bold' as const,

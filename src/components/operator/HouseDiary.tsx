@@ -5,6 +5,7 @@ import { useOperatorT } from '../../i18n.operator'
 import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
 import { api } from '../../lib/api'
+import { needsOperator } from '../../lib/device'
 import { Avatar } from '../Avatar'
 import { EmptyState } from '../EmptyState'
 import { Disclosure } from '../Disclosure'
@@ -97,8 +98,10 @@ export function HouseDiarySection({ help }: { help?: HelpMode }) {
   const trips = useQuery({
     queryKey: TRIPS_KEY,
     queryFn: () => api<{ trips: Trip[] }>('trips'),
-    // Trips are operator-scoped server-side; on a kiosk this read 403s — fail
-    // soft (no retry storm), the diary simply shows no trips there.
+    // Trips are operator-scoped server-side; on a kiosk the diary simply shows no
+    // trips — and does not ask (a known 403 is not a question). `retry: false` stays
+    // for the day the answer is a surprise.
+    enabled: !needsOperator(),
     retry: false,
     ...cold,
   })

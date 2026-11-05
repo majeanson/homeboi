@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type Ref } from 'react'
 import { tintScope } from '../../lib/colors'
+import { needsOperator } from '../../lib/device'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useLang, useT } from '../../i18n'
 import { useOperatorT } from '../../i18n.operator'
@@ -464,7 +465,8 @@ export function DiscoverSection() {
       {/* Manage the first-run demo data (onboarding Phase 1): clear the examples or
           load them onto an empty household. Mirrors the board banner. Kept at the
           very bottom — operator maintenance, not part of the manual you read. */}
-      {!q && <SampleDataControls />}
+      {/* seed POST/DELETE are operator-only — a kiosk never sees the examples switch. */}
+      {!q && !needsOperator() && <SampleDataControls />}
     </OperatorSection>
   )
 }

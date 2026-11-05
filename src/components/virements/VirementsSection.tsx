@@ -7,7 +7,7 @@ import { useT, useLang } from '../../i18n'
 import { isUnauthorized } from '../../lib/api'
 import { useProfile } from '../../lib/profile'
 import { useSurface } from '../../lib/surface'
-import { isGuest } from '../../lib/device'
+import { needsOperator } from '../../lib/device'
 import { facesFromCercleMembers } from '../../lib/faces'
 import { formatMoneyExact } from '../../lib/money'
 import { formatDayMaybeYear } from '../../lib/format'
@@ -49,7 +49,10 @@ export function VirementsSection({ members }: { members: Member[] }) {
   const nav = useNavigate()
   const { surface } = useSurface()
   const { memberId: face, setMemberId: setFace } = useProfile()
-  const ro = isGuest()
+  // Every transfer write is operator-only on the server: a paired kiosk is refused like
+  // a guest, so it sees no « Modifier » / « Supprimer » / « Ajouter » either (2026-11-05 —
+  // it gated on isGuest() alone and tapped into 403s).
+  const ro = needsOperator()
   const v = t.virements
 
   const { data, error, refetch } = useTransfers()

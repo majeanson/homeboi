@@ -25,7 +25,7 @@ const DAY = 86400
 // ── The /api/month payload, already bucketed onto a local `day` key by the server ──
 
 export interface MEvent { id: string; title: string; at: number; all_day: number; member_id: string | null; passengers?: string | null; contact_name?: string | null; contact_address?: string | null; business_name?: string | null; business_id?: string | null; business_colour?: string | null; business_address?: string | null; end_at?: number | null; car_id?: string | null; day: number; birthday?: boolean; age?: number | null; work?: boolean; end?: number; color?: string | null; holds_car?: number }
-export interface MMeal { id: string; slot: string; title: string; cook_member_id: string | null; day: number; position?: number }
+export interface MMeal { id: string; slot: string; title: string; cook_member_id: string | null; day: number; position?: number; recipe_id?: string | null }
 export interface MChore { id: string; title: string; color: string | null; who: string | null; day: number }
 export interface MNote { id: string; text: string; member_id: string | null; day: number }
 export interface MTodo { id: string; title: string; member_id: string | null; day: number; section: string | null }

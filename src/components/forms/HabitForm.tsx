@@ -11,6 +11,7 @@ import { Cluster } from '../Layout'
 import { RecurPicker, type RecurValue } from '../RecurPicker'
 import { StatusMessage } from '../StatusMessage'
 import { FormFooter } from '../FormFooter'
+import { needsOperator } from '../../lib/device'
 import { MemberSwitcher, type MemberFace } from '../MemberSwitcher'
 import { ReminderTimesField, minutesToHhmm, hhmmToMinutes } from '../habits/ReminderTimesField'
 import { recurOf } from '../../lib/recurLabel'
@@ -391,7 +392,8 @@ export function HabitForm({
         saveDisabled={!title.trim()}
         busy={busy}
         onCancel={onCancel}
-        onDelete={value ? remove : undefined}
+        // DELETE /api/habits is operator-only (a kiosk may add and pause, not erase).
+        onDelete={value && !needsOperator() ? remove : undefined}
         extra={
           value ? (
             <button type="button" className="btn btn--ghost btn--sm" onClick={pause} disabled={busy}>

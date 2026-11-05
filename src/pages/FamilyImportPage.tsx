@@ -8,7 +8,7 @@ import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLang, useT } from '../i18n'
 import { api, ApiError, isUnauthorized } from '../lib/api'
-import { isGuest } from '../lib/device'
+import { needsOperator } from '../lib/device'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { CERCLE_KEY, BOARD_KEY, INTAKE_KEY } from '../lib/queryKeys'
 import { SceneHead } from '../components/SceneHead'
@@ -123,7 +123,7 @@ export function FamilyImportPage() {
   const [done, setDone] = useState(false)
 
   // A read-only guest can't write into a household — bounce to the circle.
-  if (isGuest()) return <Navigate to="/maison?section=family" replace />
+  if (needsOperator()) return <Navigate to="/maison?section=family" replace />
   // Reading a shared family needs your OWN account (it's how you merge into it). A
   // signed-out visitor is sent to log in first (the link still works once signed in).
   if (isUnauthorized(error)) return <Navigate to="/login" replace />

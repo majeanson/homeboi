@@ -447,7 +447,7 @@ export function MonthView({
                 color: mealPrefs.color(m.slot),
                 slotLabel: slotLabel(m.slot),
                 daySec: day,
-                onRemove: ro ? undefined : () => void removeMeal({ id: m.id, title: m.title, slot: m.slot, day }),
+                onRemove: ro ? undefined : () => void removeMeal({ id: m.id, title: m.title, slot: m.slot, day, recipe_id: m.recipe_id }),
               })
             }
           />
