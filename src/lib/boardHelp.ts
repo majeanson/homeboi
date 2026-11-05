@@ -120,4 +120,66 @@ export const BOARD_HELP = {
       en: 'The magnifier: one search for everything — recipes, people, lists, appointments… and the guide.',
     },
   },
+  // One entry per card with no heading of its own to arm: an armed tap ANYWHERE on the card
+  // explains it (CardSlot's `explain`, solidify 4.3). helpRegistry.test.ts holds every card.
+  'card-heroes': {
+    card: 'board',
+    body: { fr: 'Le souper de ce soir et la météo : les deux choses qu’on regarde en passant.', en: 'Tonight’s supper and the weather: the two things you glance at in passing.' },
+  },
+  'card-souvenirs': {
+    card: 'board',
+    body: { fr: 'Un souvenir de la maisonnée qui revient : une photo ou une note d’il y a quelque temps.', en: 'A household memory coming back: a photo or a note from a while ago.' },
+  },
+  'card-aRegler': {
+    card: 'board',
+    body: { fr: '« À régler » : ce qui attend une petite décision. Une fois réglé, ça disparaît.', en: '“To settle”: what is waiting on a small decision. Once settled, it goes away.' },
+  },
+  'card-autoCard': {
+    card: 'auto',
+    body: { fr: 'L’auto : qui l’a aujourd’hui, et les trajets du jour.', en: 'The car: who has it today, and the day’s rides.' },
+  },
+  'card-routineNext': {
+    card: 'routines',
+    body: { fr: 'La prochaine routine de la journée. Touche-la pour la lancer.', en: 'The day’s next routine. Tap it to start.' },
+  },
+  'card-habitudes': {
+    card: 'habits',
+    body: { fr: 'Tes habitudes du jour, à cocher quand c’est fait. Aucun score, aucune série.', en: 'Today’s habits, ticked when done. No score, no streak.' },
+  },
+  'card-tomorrow': {
+    card: 'board',
+    body: { fr: 'Demain en un coup d’œil, pour ne pas être pris de court.', en: 'Tomorrow at a glance, so nothing catches you off guard.' },
+  },
+  'card-countdown': {
+    card: 'board',
+    body: { fr: 'Le prochain grand moment et les dodos qu’il reste.', en: 'The next big moment and the sleeps left.' },
+  },
+  'card-cercleNotes': {
+    card: 'notes',
+    body: { fr: 'Les notes de la famille qui comptent en ce moment. Touche-en une pour l’ouvrir.', en: 'The family notes that matter right now. Tap one to open it.' },
+  },
+  'card-voyage': {
+    card: 'voyage',
+    body: { fr: 'Votre prochain voyage : les dates et ce qu’il reste à préparer.', en: 'Your next trip: the dates and what is left to prepare.' },
+  },
+  'card-carnets': {
+    card: 'carnets',
+    body: { fr: 'Les carnets de la maison, de l’auto et de vos choses : leur prochain entretien.', en: 'The logbooks for the house, the car and your things: what is due next.' },
+  },
+  'card-seasonUpkeep': {
+    card: 'carnets',
+    body: { fr: 'L’entretien de la saison : ce qui revient à ce temps-ci de l’année.', en: 'This season’s upkeep: what comes back at this time of year.' },
+  },
+  'card-drawings': {
+    card: 'board',
+    body: { fr: 'Les dessins épinglés au babillard par la famille.', en: 'Drawings the family pinned to the board.' },
+  },
+  'card-photos': {
+    card: 'board',
+    body: { fr: 'Une photo de la maisonnée qui change de temps en temps.', en: 'A household photo that changes from time to time.' },
+  },
+  'card-remarks': {
+    card: 'settings',
+    body: { fr: 'Tes remarques envoyées sur l’application, et leurs réponses.', en: 'The remarks you sent about the app, and their replies.' },
+  },
 } satisfies Record<string, HelpEntry>

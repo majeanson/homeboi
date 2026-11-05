@@ -129,3 +129,16 @@ test('an armed bubble lands clear of the bottom nav, doors and all', async ({ pa
   const b = await boxOf(doors.nth(1))
   expect(b.x - (a.x + a.width), 'the two doors are touching').toBeGreaterThan(3)
 })
+
+// Every board card answers the « ? » (solidify 4.3): armed, a tap on a card with no heading
+// of its own explains it, in place, and does NOT do what the card normally does.
+test('armed, a tap on a board card explains it right under the card', async ({ page }) => {
+  await boot(page, '/board')
+  await page.locator('.help-toggle').first().click()
+  const slot = page.locator('.wg-slot--explain').first()
+  await expect(slot).toBeVisible()
+  const url = page.url()
+  await slot.click()
+  await expect(page.locator('.wg-help .help-bubble')).toBeVisible()
+  expect(page.url()).toBe(url)
+})

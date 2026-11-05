@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { GUIDE, GUIDE_CARD_ALIAS } from './guideContent'
 import { ADD_HELP } from './addHelp'
 import { BOARD_HELP } from './boardHelp'
+import { BOARD_CARDS } from './boardCards'
 import { CERCLE_HELP } from './cercleHelp'
 import { KITCHEN_TAB_HELP } from './kitchenTabHelp'
 import { LISTE_HELP } from './listeHelp'
@@ -106,5 +107,18 @@ describe('help/guide integrity (P2-9)', () => {
     type Exact<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false
     const narrow: Exact<PickKey, keyof typeof LISTE_HELP> = true
     expect(narrow).toBe(true)
+  })
+})
+
+// Every board card answers the « ? » (solidify 4.3): fifteen were dark, so an armed board
+// went silent on most of what it shows. Either the card arms its own heading (an entry
+// named after it), or a tap anywhere on it explains it (`card-<id>`). Planted red by
+// removing `card-voyage`.
+describe('board help — every card answers the « ? »', () => {
+  const OWN_KEY: Record<string, string> = { notes: 'mots' }
+  it('every BOARD_CARDS id has an entry', () => {
+    const keys = new Set(Object.keys(BOARD_HELP))
+    const dark = BOARD_CARDS.map((c) => c.id).filter((id) => !keys.has(id) && !keys.has(`card-${id}`) && !keys.has(OWN_KEY[id] ?? ''))
+    expect(dark, 'add `card-<id>` to BOARD_HELP').toEqual([])
   })
 })

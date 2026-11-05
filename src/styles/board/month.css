@@ -709,7 +709,7 @@
    are `position: fixed` (pinned to the viewport, hidden off-screen until opened); forcing
    them `relative` dropped the closed "Qui es-tu ?" sheet back into flow at the bottom of
    the board, so it sat there permanently. They carry their own stacking (sheets/scene.css). */
-.board-wall > :not(.board-canvas):not(.scrim):not(.sheet),
+.board-wall > :not(.board-canvas):not(.scrim):not(.sheet):not(.wg-help),
 .today-kid > :not(.board-canvas):not(.scrim):not(.sheet) {
   position: relative;
   z-index: 1;

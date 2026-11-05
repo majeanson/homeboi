@@ -249,6 +249,7 @@ export function Board() {
   // learn what it shows instead of switching. Label = the view's own name.
   const help = useHelpMode(BOARD_HELP, (k) => {
     if (k.startsWith('view-')) return t.boardView[k.slice(5) as 'bento' | 'semaine' | 'month' | 'annee']
+    if (k.startsWith('card-')) return t.boardCard[k.slice(5) as BoardCardId]
     const titles: Record<string, string> = {
       todos: t.board.todos,
       today: t.board.today,
@@ -259,6 +260,13 @@ export function Board() {
     }
     return titles[k] ?? k
   })
+  // A card with its own entry explains itself when help is armed. Its bubble is a fixed
+  // panel above the nav: the masonry's 8px rows cannot hold a row of its own (it sat behind
+  // the next card), and at the top of the page a low card would explain itself off screen.
+  const explainCard = (id: BoardCardId) => {
+    const key = `card-${id}` as const
+    return help.active && !editing && key in BOARD_HELP ? () => help.pick(key as keyof typeof BOARD_HELP, () => {})() : undefined
+  }
   // The shared minute clock (lib/itemLife): re-renders the board every minute so past
   // strike-throughs, « Bientôt » chips and the day-part drift advance on their own, not
   // only when a poll lands. Used by every time-derived value below.
@@ -1733,7 +1741,7 @@ export function Board() {
         </p>
       )}
       {help.hint && <HelpHint card="board" />}
-      {help.bubble}
+      {help.key?.startsWith('card-') ? <div className="wg-help">{help.bubble}</div> : help.bubble}
 
       {/* The board poll failed but we're still rendering the last good frame —
           say so AT THE TOP with "how old" (the newest successful fetch), not as
@@ -1882,7 +1890,7 @@ export function Board() {
             data-tour="board-cards"
           >
             {visibleCards(shownCards, 'band').map((id) => (
-              <CardSlot key={id} id={id} zone="band" empty={slotEmpty(nodes[id])}>
+              <CardSlot key={id} id={id} zone="band" empty={slotEmpty(nodes[id])} explain={explainCard(id)}>
                 {nodes[id]}
               </CardSlot>
             ))}
@@ -1918,7 +1926,7 @@ export function Board() {
                 Réglages ▸ Affichage or by long-pressing a card). The card JSX is
                 unchanged — just addressable. */}
             {visibleCards(shownCards, 'grid').map((id) => (
-              <CardSlot key={id} id={id} zone="grid" empty={slotEmpty(nodes[id])}>
+              <CardSlot key={id} id={id} zone="grid" empty={slotEmpty(nodes[id])} explain={explainCard(id)}>
                 {nodes[id]}
               </CardSlot>
             ))}

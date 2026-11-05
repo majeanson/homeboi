@@ -248,7 +248,26 @@
 .help-armed .help-pick {
   animation: help-armed-pulse 1.6s ease-in-out infinite;
 }
+/* A board card ready to explain itself (CardSlot `explain`), and its bubble's panel. */
+.wg-slot--explain {
+  border-radius: var(--radius-md);
+  animation: help-armed-pulse 1.6s ease-in-out infinite;
+  cursor: help;
+}
+.wg-help {
+  position: fixed;
+  left: var(--gutter);
+  right: var(--gutter);
+  bottom: 6rem;
+  z-index: var(--z-toast);
+  max-width: 30rem;
+  margin-inline: auto;
+}
 @media (prefers-reduced-motion: reduce) {
+  .wg-slot--explain {
+    animation: none;
+    box-shadow: 0 0 0 2px var(--accent);
+  }
   .help-armed .cat-pick,
   .help-armed .segmented__opt,
   .help-armed .subtabs__opt,

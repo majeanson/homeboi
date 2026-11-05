@@ -71,12 +71,16 @@ export function CardSlot({
   id,
   zone,
   empty,
+  explain,
   children,
 }: {
   id: BoardCardId
   zone: CardZone
   /** Lens-computed emptiness. Omit to let the card report its own. */
   empty?: boolean
+  /** Help mode is armed and this card has its own entry: a tap anywhere EXPLAINS the card
+   *  instead of acting on what is under the finger. Set by Board, one place for all cards. */
+  explain?: () => void
   children: ReactNode
 }) {
   const t = useT()
@@ -282,7 +286,8 @@ export function CardSlot({
         'wg-slot' +
         (editing ? ' wg-slot--editing' : '') +
         (dnd?.activeId === id ? ' is-dragging' : '') +
-        (dropHere ? ' dnd-over' : '')
+        (dropHere ? ' dnd-over' : '') +
+        (explain ? ' wg-slot--explain' : '')
       }
       ref={slotRef}
       style={style}
@@ -306,6 +311,15 @@ export function CardSlot({
       data-expanded={expanded ? '' : undefined}
       hidden={collapsed}
       onPointerDown={grabBody}
+      onClickCapture={
+        explain
+          ? (e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              explain()
+            }
+          : undefined
+      }
     >
       {dropEdge && <span className={`dnd-drop dnd-drop--${dropEdge}`} aria-hidden="true" />}
       <CardEmptyContext.Provider value={report}>

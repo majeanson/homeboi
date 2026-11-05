@@ -89,6 +89,7 @@ export function useHelpMode<K extends string>(
     toggle,
     reset,
     pick,
+    key, // which entry is open, for a surface that places its bubbles itself
     bubble, // render once after the header: the in-place box for whatever was tapped
     // Render the in-place box NEXT TO a specific control (so a heading deep in the
     // page explains right there, not scrolled off at the top). Only the tapped key
@@ -115,6 +116,7 @@ export interface HelpMode<K extends string = string> {
   toggle: () => void
   reset: () => void
   pick(k: K, run: () => void): () => void
+  key: string | null
   bubble: ReactNode
   bubbleFor(k: K): ReactNode
   hint: boolean
