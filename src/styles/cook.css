@@ -865,7 +865,7 @@
    Collections segments sit bare inside it, so they read as a single segmented
    control rather than two detached boxes. (A third segment used to jump straight
    to the toddler picture cookbook — removed: that book is the KID lens's door
-   (KidKitchen's « Mon livre » tile), plus the kitchen ＋ ▸ « Faire un livre ».) */
+   (ToddlerKitchen's « Mon livre » tile), plus the kitchen ＋ ▸ « Faire un livre ».) */
 .recipe-view-toggle {
   display: inline-flex;
   align-items: stretch;

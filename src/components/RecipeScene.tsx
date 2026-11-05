@@ -65,7 +65,7 @@ export function RecipeScene({
   const makeRoutine = useRecipeToRoutine()
   // Read-only: the recipe stays fully readable + cookable (reads), but the write
   // actions — add-to-list, plan-a-supper, edit, delete, share — are hidden. True for
-  // a guest AND for the toddler lens: a pre-reader who cooks from KidKitchen and taps
+  // a guest AND for the toddler lens: a pre-reader who cooks from ToddlerKitchen and taps
   // ✕ lands back on this sheet, and the toddler one-way-door must never expose the
   // parent's edit/delete/plan/share controls (NFR-KID: no escape hatch to admin).
   const ro = isGuest() || !acts

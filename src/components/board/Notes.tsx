@@ -475,7 +475,7 @@ export function Notes({
       )}
       {outbox.modal}
       {/* Ask how to continue a kept drawing before opening the pad (#14). */}
-      <DrawEditChoice open={draw.chooserOpen} onCancel={draw.cancelChoice} onPick={draw.pick} />
+      <DrawEditChoice open={draw.chooserOpen} onCancel={draw.cancelChoice} onSelect={draw.pick} />
       {draw.editing && (
         <DrawPad
           open

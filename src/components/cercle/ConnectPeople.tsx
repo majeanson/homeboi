@@ -109,7 +109,7 @@ export function ConnectPeople({
           setAKey(null)
         }}
         options={optionsExcept(bKey)}
-        onPick={(opt) => {
+        onSelect={(opt) => {
           setAText(opt.label)
           setAKey(opt.id)
         }}
@@ -142,7 +142,7 @@ export function ConnectPeople({
           setBKey(null)
         }}
         options={optionsExcept(aKey)}
-        onPick={(opt) => {
+        onSelect={(opt) => {
           setBText(opt.label)
           setBKey(opt.id)
         }}

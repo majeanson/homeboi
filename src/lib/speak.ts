@@ -1,4 +1,4 @@
-// On-device read-aloud, extracted from the original KidView so every toddler
+// On-device read-aloud, extracted from the original ToddlerView so every toddler
 // surface can use it. Browser SpeechSynthesis only — ZERO Workers AI Neurons,
 // nothing leaves the device (brief tenet 2, architecture "Narration is NOT
 // Workers AI"). Narration is a nicety: it must never block or throw on a tap.
@@ -266,7 +266,7 @@ function spokenOnly(text: string): string {
 // narration here, it must never block or throw on a tap. The returned cleanup
 // stops the audio (used when leaving a narrated surface).
 //
-// Lives here, beside speak(), so BigTiles + KidView share ONE play-or-TTS path.
+// Lives here, beside speak(), so BigTiles + ToddlerView share ONE play-or-TTS path.
 export function playNarration(
   audioKey: string | null | undefined,
   fallbackText: string | undefined,

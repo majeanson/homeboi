@@ -471,7 +471,7 @@ export function TodoSection({
           // departure card / scene now, so no template options are offered here.
           options={picker === 'templates' ? templateOptions(templates, t) : []}
           onSubmit={(v) => add(v)}
-          onPick={(opt) => {
+          onSelect={(opt) => {
             setAddText('')
             void instantiate(opt.data.id)
           }}

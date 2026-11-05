@@ -140,7 +140,7 @@ export function Operator() {
 
   // Child sections call this after a write. Invalidate the settings reads plus
   // ['board'] so member/chore/routine/event edits surface on the wall at once
-  // (the ['routines'] key is shared with the Routines/KidView pages too).
+  // (the ['routines'] key is shared with the Routines/ToddlerView pages too).
   // CERCLE_KEY too: a member is a person in Le cercle, so a rename/recolour/delete
   // must refresh the circle (which reads /api/cercle, not /api/members).
   const load = useCallback(() => {

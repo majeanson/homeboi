@@ -21,11 +21,11 @@ const OPTS: { mode: DrawEditMode; icon: IconName }[] = [
 
 export function DrawEditChoice({
   open,
-  onPick,
+  onSelect,
   onCancel,
 }: {
   open: boolean
-  onPick: (mode: DrawEditMode) => void
+  onSelect: (mode: DrawEditMode) => void
   onCancel: () => void
 }) {
   const t = useT()
@@ -38,7 +38,7 @@ export function DrawEditChoice({
       <p className="draw-choice__sub">{t.memo.editChoiceSub}</p>
       <div className="draw-choice__opts">
         {OPTS.map((o) => (
-          <button key={o.mode} type="button" className="draw-choice__opt" onClick={() => onPick(o.mode)}>
+          <button key={o.mode} type="button" className="draw-choice__opt" onClick={() => onSelect(o.mode)}>
             <Icon name={o.icon} size={26} />
             <span className="draw-choice__label">{label(o.mode)}</span>
             <span className="draw-choice__hint">{hint(o.mode)}</span>

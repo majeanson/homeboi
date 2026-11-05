@@ -6,7 +6,7 @@ import { type Recipe, recipeImg, allTags, orderTags } from '../../lib/recipes'
 //
 // The PARENT recipe book renders collections inline as an "Aa vs Collections" view
 // toggle (RecipesTab) — no separate picker component. This helper is shared with
-// the TODDLER hear-first flow (KidCollections / KidKitchen), which still groups by
+// the TODDLER hear-first flow (ToddlerCollections / ToddlerKitchen), which still groups by
 // tag into BigTiles.
 
 export interface Collection {

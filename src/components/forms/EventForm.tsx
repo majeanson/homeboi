@@ -345,7 +345,7 @@ export function EventForm({
             ...businesses.map((b): ComboOption<WhoPick> => ({ id: b.id, label: b.name, data: { kind: 'business' }, icon: 'storefront-bold' })),
           ]}
           frequentsKey="event-who"
-          onPick={(opt) => {
+          onSelect={(opt) => {
             if (opt.data?.kind === 'business') {
               setBusinessId(opt.id)
               setContactId(null)

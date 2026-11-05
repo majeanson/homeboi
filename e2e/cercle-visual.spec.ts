@@ -198,7 +198,7 @@ for (const theme of THEMES) {
     await page.setViewportSize({ width: 390, height: 844 })
     await mockApi(page)
     await seedState(page, { theme, audience: 'toddler', lang: 'fr', calm: true, surface: 'mobile' })
-    // A bare toddler /maison renders KidView (Routines' picture-story run, the
+    // A bare toddler /maison renders ToddlerView (Routines' picture-story run, the
     // default section) — ?section=family is what shows the circle faces grid.
     await page.goto('/maison?section=family')
     await settle(page, '.cercle-kid__grid')

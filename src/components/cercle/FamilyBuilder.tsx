@@ -394,7 +394,7 @@ export function FamilyBuilder({
           value={addText}
           onChange={setAddText}
           options={addOptions}
-          onPick={(opt) => {
+          onSelect={(opt) => {
             addToRoster(opt.id)
             setAddText('')
           }}
@@ -545,7 +545,7 @@ export function FamilyBuilder({
             value={petText}
             onChange={setPetText}
             options={addPetOptions}
-            onPick={(opt) => {
+            onSelect={(opt) => {
               addToRoster(opt.id)
               setPetText('')
             }}

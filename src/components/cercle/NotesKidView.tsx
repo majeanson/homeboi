@@ -21,13 +21,13 @@ import { Img } from '../Img'
 // view's face row defaults to): a toddler has no face picker here, so there's no
 // scope to narrow by and no author to attribute a new note to. Tap a note to hear
 // it — an audio memo plays its recorded clip via the SAME shared helper BigTiles/
-// KidView already use for parent-voice clips (`playNarration`, lib/speak), which
+// ToddlerView already use for parent-voice clips (`playNarration`, lib/speak), which
 // falls back to on-device TTS of the title/text if the clip can't load (R2 off,
 // offline, autoplay blocked); every other note is just TTS, with the Markdown
 // stripped first (`plainText`, lib/noteMarkdown — a checklist/heading/bullet line
 // would otherwise be read out with its literal `- [ ]`/`##`/`*` characters). No
 // composer, no edit, no delete, no navigation away — a one-way door, like every
-// other toddler surface (KidView, CircleKidView).
+// other toddler surface (ToddlerView, CircleKidView).
 export function NotesKidView() {
   const t = useT()
   const speak = useSpeak()

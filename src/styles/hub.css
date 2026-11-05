@@ -173,7 +173,7 @@
    tiles) straight into the hub body. Without a height it clumps at the very top,
    leaving a vast empty band on a wall screen. Fill the body so kid__main's own
    centering (justify/align center) sits the tiles in the middle — matching the
-   toddler Routines face-picker. KidView wraps in .kid, so it's unaffected. */
+   toddler Routines face-picker. ToddlerView wraps in .kid, so it's unaffected. */
 .hub__body > .kid__main {
   min-height: 100%;
 }

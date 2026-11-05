@@ -3,7 +3,7 @@
 // "FC", "Marie-Christine" → "MC") so two people who share a first name still read
 // apart; a lone first name stays a single letter ("Francis" → "F") — the disc's
 // colour is the tiebreaker when even the initials collide (two "Francis C.").
-// Shared so the same rule holds wherever a face appears (Avatar, KidView, …).
+// Shared so the same rule holds wherever a face appears (Avatar, ToddlerView, …).
 export function initialsFor(name?: string | null): string {
   const parts = (name ?? '').split(/[\s-]+/).filter(Boolean)
   if (parts.length === 0) return '?'

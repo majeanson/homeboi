@@ -1333,7 +1333,7 @@ export function RecipeForm({
             <StepPhoto
               imgKey={stepImages[i] ?? ''}
               uploading={stepUploading === i}
-              onPick={(f) => uploadStepPhoto(i, f)}
+              onSelect={(f) => uploadStepPhoto(i, f)}
               onClear={() => clearStepPhoto(i)}
               quiet={!isActive('steps', i)}
               t={t}
@@ -1685,7 +1685,7 @@ export function RecipeForm({
               value={tagInput}
               onChange={setTagInput}
               options={tagSuggestions}
-              onPick={(o) => {
+              onSelect={(o) => {
                 toggleTag(o.data)
                 setTagInput('')
               }}
@@ -1768,14 +1768,14 @@ export function RecipeForm({
 function StepPhoto({
   imgKey,
   uploading,
-  onPick,
+  onSelect,
   onClear,
   quiet = false,
   t,
 }: {
   imgKey: string
   uploading: boolean
-  onPick: (file: File) => void
+  onSelect: (file: File) => void
   onClear: () => void
   // The step is not the one being edited: show the photo, not its controls.
   quiet?: boolean
@@ -1797,7 +1797,7 @@ function StepPhoto({
               disabled={uploading}
               onChange={(e) => {
                 const f = e.target.files?.[0]
-                if (f) onPick(f)
+                if (f) onSelect(f)
                 e.target.value = ''
               }}
             />
@@ -1814,7 +1814,7 @@ function StepPhoto({
             disabled={uploading}
             onChange={(e) => {
               const f = e.target.files?.[0]
-              if (f) onPick(f)
+              if (f) onSelect(f)
               e.target.value = ''
             }}
           />

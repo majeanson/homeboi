@@ -104,7 +104,7 @@ import { TodoSection } from '../components/todos/TodoSection'
 import { RecurPicker, type RecurValue } from '../components/RecurPicker'
 import { LeadPicker } from '../components/LeadPicker'
 import { BigTiles, Sayable } from '../components/BigTiles'
-import { KidCollections } from '../components/kitchen/KidCollections'
+import { ToddlerCollections } from '../components/kitchen/ToddlerCollections'
 import { type WeekDay } from '../components/kitchen/types'
 import { type Recipe } from '../lib/recipes'
 import { todayLocalDay, addLocalDays } from '../lib/localDay'
@@ -1467,7 +1467,7 @@ export function DevKit() {
                 value={comboVal}
                 onChange={setComboVal}
                 options={opts}
-                onPick={(o) => setComboVal(o.label)}
+                onSelect={(o) => setComboVal(o.label)}
                 onSubmit={() => setComboVal('')}
                 submitLabel={t.kitchen.setMeal}
                 placeholder={t.kitchen.plan}
@@ -1479,7 +1479,7 @@ export function DevKit() {
                 value={tagDemo}
                 onChange={setTagDemo}
                 options={tagOpts}
-                onPick={(o) => setTagDemo(o.label)}
+                onSelect={(o) => setTagDemo(o.label)}
                 onSubmit={() => setTagDemo('')}
                 submitIcon="plus-bold"
                 placeholder={t.recipes.tagAdd}
@@ -1607,14 +1607,14 @@ export function DevKit() {
       kw: 'emoji picto glyph pick palette routine carnet card icon tap grid search recherche champ field',
       render: () => (
         // The shared tap-to-pick emoji control — a routine card, a carnet, anything.
-        // Controlled: value highlighted, onPick returns the glyph. Search filters by
+        // Controlled: value highlighted, onSelect returns the glyph. Search filters by
         // keyword (« eau », « outil »). EmojiField is the compact tap-to-open trigger.
         <>
           <Demo label="EmojiField — tap the glyph to open the searchable picker (big surface)">
-            <EmojiField value={emoji} onPick={setEmoji} ariaLabel="Choisir un emoji" fallback="📦" />
+            <EmojiField value={emoji} onSelect={setEmoji} ariaLabel="Choisir un emoji" fallback="📦" />
           </Demo>
           <Demo label="EmojiPicker inline — search + broad shared set, scrollable">
-            <EmojiPicker value={emoji} onPick={setEmoji} ariaLabel="Choisir un emoji" />
+            <EmojiPicker value={emoji} onSelect={setEmoji} ariaLabel="Choisir un emoji" />
           </Demo>
         </>
       ),
@@ -3078,8 +3078,8 @@ export function DevKit() {
     },
     {
       cat: 'Affichage',
-      name: 'KidCollections',
-      file: 'components/kitchen/KidCollections.tsx',
+      name: 'ToddlerCollections',
+      file: 'components/kitchen/ToddlerCollections.tsx',
       kw: 'toddler bambin collections étiquettes tags recettes hear-first cuisine #11',
       render: () => {
         // A tiny fixture: three tagged recipes + an empty week so the 3-stage
@@ -3105,7 +3105,7 @@ export function DevKit() {
         const week: WeekDay[] = Array.from({ length: 7 }, (_, i) => ({ date: addLocalDays(now, i), meal: undefined }))
         return (
           <Demo label="3-stage hear-first picker (flip Audience → Bambin; tap a tile twice to commit)">
-            <KidCollections recipes={recipes} week={week} onSuggest={() => {}} onBack={() => {}} />
+            <ToddlerCollections recipes={recipes} week={week} onSuggest={() => {}} onClose={() => {}} />
           </Demo>
         )
       },
@@ -3541,7 +3541,7 @@ export function DevKit() {
             <DrawEditChoice
               open={drawChoiceOpen}
               onCancel={() => setDrawChoiceOpen(false)}
-              onPick={(m) => {
+              onSelect={(m) => {
                 setDrawChoiceMode(m)
                 setDrawChoiceOpen(false)
               }}

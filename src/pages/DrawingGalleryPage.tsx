@@ -172,7 +172,7 @@ export function DrawingGalleryPage() {
       </div>
       {/* Ask how to continue a kept drawing before opening the pad (#14): modify in
           place, an independent copy, or a faded calque. */}
-      <DrawEditChoice open={draw.chooserOpen} onCancel={draw.cancelChoice} onPick={draw.pick} />
+      <DrawEditChoice open={draw.chooserOpen} onCancel={draw.cancelChoice} onSelect={draw.pick} />
       {(adding || draw.editing) && (
         <DrawPad
           open

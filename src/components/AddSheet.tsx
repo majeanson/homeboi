@@ -1126,7 +1126,7 @@ export function AddSheet({
               onChange={setTodoText}
               options={templateOptions(todoTemplates, t)}
               onSubmit={(v) => void submitTodo(v)}
-              onPick={(opt) => {
+              onSelect={(opt) => {
                 setTodoText('')
                 void quickAddTemplate(opt.data.id)
               }}
@@ -1274,7 +1274,7 @@ export function AddSheet({
             value={leftoverText}
             onChange={setLeftoverText}
             options={leftoverMealOpts}
-            onPick={(o) => postLeftover(o.data.title, o.data.recipe_id ?? null, o.data.id)}
+            onSelect={(o) => postLeftover(o.data.title, o.data.recipe_id ?? null, o.data.id)}
             onSubmit={(v) => postLeftover(v)}
             submitLabel={t.kitchen.leftoversToPool}
             submitLeadingIcon="plus-bold"

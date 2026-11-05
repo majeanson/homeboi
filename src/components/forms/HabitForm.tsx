@@ -192,7 +192,7 @@ export function HabitForm({
           a Modal surface); a div, not a label, so the picker button isn't a
           control nested in a label that would re-trigger it. */}
       <Field as="div" inline className="mono" label={fn.iconLabel}>
-        <EmojiField value={icon} onPick={setIcon} ariaLabel={fn.iconLabel} fallback="🚶" />
+        <EmojiField value={icon} onSelect={setIcon} ariaLabel={fn.iconLabel} fallback="🚶" />
       </Field>
 
       {/* Whose habit? « Toute la maisonnée » (null) is the neutral default; a face

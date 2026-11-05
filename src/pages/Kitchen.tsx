@@ -26,7 +26,7 @@ import { useMeals, useRecipes, useDayNotes, usePantry, useLeftovers } from '../l
 import { type RecipeTagsData, RECIPE_TAGS_KEY } from '../lib/recipes'
 import { DEFAULT_PILLS } from '../lib/recipePills'
 import { useLoves } from '../lib/loves'
-import { KidKitchen } from '../components/kitchen/KidKitchen'
+import { ToddlerKitchen } from '../components/kitchen/ToddlerKitchen'
 import { HistoryTab } from '../components/kitchen/HistoryTab'
 import { PantryTab } from '../components/kitchen/PantryTab'
 import { ReserveSection } from '../components/kitchen/ReserveSection'
@@ -370,7 +370,7 @@ export function Kitchen() {
 
   if (toddler) {
     return (
-      <KidKitchen
+      <ToddlerKitchen
         week={week}
         recipes={recipes}
         recipeFor={recipeForMeal}
@@ -644,7 +644,7 @@ export function Kitchen() {
                       value={planText}
                       onChange={setPlanText}
                       options={mealOpts}
-                      onPick={(o: ComboOption<MealPick>) => {
+                      onSelect={(o: ComboOption<MealPick>) => {
                         closePlan()
                         if (o.data.kind === 'recipe') planMealRecipe(qc, date, heroSlot, o.data.recipe)
                         else void planLeftover(o.data.leftover, date, heroSlot)
@@ -760,7 +760,7 @@ export function Kitchen() {
           // One recipe book. "Quoi cuisiner?" is a pill filter and #11 collections
           // a browse-by-tag toggle group — both live INSIDE RecipesTab now, so the
           // recipes area is a single flat view (no second-level sub-tabs). The
-          // toddler lens renders KidKitchen wholesale (handled above).
+          // toddler lens renders ToddlerKitchen wholesale (handled above).
           <RecipesTab
             recipes={recipes}
             lowItems={lowItems}

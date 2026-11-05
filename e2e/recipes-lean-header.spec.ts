@@ -5,7 +5,7 @@ import { mockApi, seedState } from './mocks'
 // above already says the word), a COLLAPSED magnifier that becomes the search field
 // on tap, a « Filtrer » button that pops the pills + tag chips (shut by default), an
 // ICON-ONLY Collections segment, and no third "livre de cuisine" segment (that book
-// is the toddler lens's door — KidKitchen's « Mon livre » tile — plus the kitchen ＋
+// is the toddler lens's door — ToddlerKitchen's « Mon livre » tile — plus the kitchen ＋
 // ▸ « Faire un livre » and its guide card). Locks the things a later "let's make room
 // for X" edit would quietly undo: the loupe still opens AND lands the caret, a live
 // query still keeps the field on screen, the filters still hide until asked for and

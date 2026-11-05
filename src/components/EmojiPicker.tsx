@@ -7,7 +7,7 @@ import { Modal } from './Modal'
 
 // Tap-to-pick emoji grid — the one shared control for choosing a glyph (a routine
 // card, a carnet, anything). Controlled: pass the current `value` (highlighted) and
-// an `onPick`. Renders the broad shared EMOJI_SET (lib/emoji) as a scrollable grid
+// an `onSelect`. Renders the broad shared EMOJI_SET (lib/emoji) as a scrollable grid
 // with a search box on top (type « eau », « outil », « chien » to filter — accent-
 // insensitive), so a person taps a picture instead of summoning their keyboard's
 // emoji panel. Replaces the per-place hand-rolled palettes / bare emoji text inputs.
@@ -15,14 +15,14 @@ import { Modal } from './Modal'
 // For a compact field that OPENS this on a bigger surface, use <EmojiField> below.
 export function EmojiPicker({
   value,
-  onPick,
+  onSelect,
   ariaLabel,
   className,
   search = true,
 }: {
   // The currently-picked emoji (highlighted), or null/'' for none.
   value?: string | null
-  onPick: (emoji: string) => void
+  onSelect: (emoji: string) => void
   ariaLabel: string
   className?: string
   // Show the search box (default). Turn off for a tiny always-tiny inline use.
@@ -51,7 +51,7 @@ export function EmojiPicker({
               className={'emoji-picker__opt' + (value === e ? ' is-on' : '')}
               aria-label={e}
               aria-pressed={value === e}
-              onClick={() => onPick(e)}
+              onClick={() => onSelect(e)}
             >
               {e}
             </button>
@@ -68,12 +68,12 @@ export function EmojiPicker({
 // tapping the glyph itself opens the picker — "tap the emoji to change it".
 export function EmojiField({
   value,
-  onPick,
+  onSelect,
   ariaLabel,
   fallback,
 }: {
   value?: string | null
-  onPick: (emoji: string) => void
+  onSelect: (emoji: string) => void
   ariaLabel: string
   // Shown (dimmed) in the trigger when nothing is picked yet — e.g. the kind's
   // default glyph. Purely presentational; an empty pick still means "no emoji".
@@ -96,8 +96,8 @@ export function EmojiField({
       <Modal open={open} onClose={() => setOpen(false)} title={ariaLabel}>
         <EmojiPicker
           value={value}
-          onPick={(e) => {
-            onPick(e)
+          onSelect={(e) => {
+            onSelect(e)
             setOpen(false)
           }}
           ariaLabel={ariaLabel}
@@ -108,7 +108,7 @@ export function EmojiField({
             type="button"
             className="btn btn--ghost emoji-field__clear"
             onClick={() => {
-              onPick('')
+              onSelect('')
               setOpen(false)
             }}
           >

@@ -228,7 +228,7 @@ export function PetForm({ value, onSaved, onCancel }: { value?: Pet | null; onSa
         value={species}
         onChange={setSpecies}
         options={PET_SPECIES.map((s): ComboOption<string> => ({ id: s[lang], label: s[lang], data: s[lang], icon: 'smiley-bold' }))}
-        onPick={(opt) => setSpecies(opt.label)}
+        onSelect={(opt) => setSpecies(opt.label)}
         placeholder={p.species}
         submitIcon={null}
         typeaheadOnly
@@ -248,7 +248,7 @@ export function PetForm({ value, onSaved, onCancel }: { value?: Pet | null; onSa
         options={ownerPeople
           .filter((pp) => !ownerKeys.has(pp.key))
           .map((pp): ComboOption<Person> => ({ id: pp.key, label: pp.name, data: pp, icon: pp.kind === 'member' ? 'users-three-bold' : 'user-bold' }))}
-        onPick={(opt) => {
+        onSelect={(opt) => {
           if (opt.data) setOwnerKeys((s) => new Set(s).add(opt.data!.key))
           setOwnerQuery('')
         }}
@@ -331,7 +331,7 @@ export function PetForm({ value, onSaved, onCancel }: { value?: Pet | null; onSa
           value={vetQuery}
           onChange={setVetQuery}
           options={businesses.map((b): ComboOption<Business> => ({ id: b.id, label: b.name, badge: b.category ?? undefined, data: b, icon: 'storefront-bold' }))}
-          onPick={(opt) => {
+          onSelect={(opt) => {
             setVetBusinessId(opt.data?.id ?? null)
             setVetQuery('')
           }}

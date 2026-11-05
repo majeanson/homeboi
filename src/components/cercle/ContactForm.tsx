@@ -494,7 +494,7 @@ export function ContactForm({
               if (!v.trim()) setMemberId('')
             }}
             options={members.map((m): ComboOption<Member> => ({ id: m.id, label: m.displayName, data: m, icon: 'users-three-bold' }))}
-            onPick={(opt) => { setMemberId(opt.id); setMemberText(opt.label) }}
+            onSelect={(opt) => { setMemberId(opt.id); setMemberText(opt.label) }}
             placeholder="—"
             submitIcon={null}
             typeaheadOnly
@@ -550,7 +550,7 @@ export function ContactForm({
             value={tagDraft}
             onChange={setTagDraft}
             options={tagOptions}
-            onPick={(o) => addTagValue(o.data)}
+            onSelect={(o) => addTagValue(o.data)}
             onSubmit={(v) => addTagValue(v)}
             submitIcon="plus-bold"
             placeholder={t.cercle.tags}

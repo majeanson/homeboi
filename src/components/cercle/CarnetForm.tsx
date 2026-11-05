@@ -147,7 +147,7 @@ export function CarnetForm({
       {/* Tap the glyph to open the searchable EmojiPicker on a roomy sheet (EmojiField);
           empty selection → the kind's default disc glyph (KIND_EMOJI) shown as fallback. */}
       <Field as="div" inline label={c.emoji}>
-        <EmojiField value={emoji} onPick={setEmoji} ariaLabel={c.emoji} fallback={KIND_EMOJI[kind]} />
+        <EmojiField value={emoji} onSelect={setEmoji} ariaLabel={c.emoji} fallback={KIND_EMOJI[kind]} />
       </Field>
 
       <ColorPicker value={colour} onChange={setColour} label={c.colour} />

@@ -237,7 +237,7 @@ export function LinkComposer({
               setOtherKey(null)
             }}
             options={options}
-            onPick={(opt) => {
+            onSelect={(opt) => {
               setOtherKey(opt.id)
               setOtherText(opt.label)
             }}

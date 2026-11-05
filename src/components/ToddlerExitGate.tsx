@@ -35,7 +35,7 @@ function newSum() {
   return { a: 2 + Math.floor(Math.random() * 7), b: 2 + Math.floor(Math.random() * 7) }
 }
 
-export function KidExitGate({ requireMath = true }: { requireMath?: boolean }) {
+export function ToddlerExitGate({ requireMath = true }: { requireMath?: boolean }) {
   const t = useT()
   const { unlock } = useAudience()
   // requireMath=false is the simple/grandma lens; label it as such.

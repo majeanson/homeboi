@@ -134,7 +134,7 @@ export function CareLogForm({
           setBusinessId(null)
         }}
         options={options}
-        onPick={(opt) => {
+        onSelect={(opt) => {
           setBusinessId(opt.data.id)
           setInstaller(opt.label)
         }}

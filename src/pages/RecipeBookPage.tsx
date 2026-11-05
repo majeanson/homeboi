@@ -21,7 +21,7 @@ export function RecipeBookPage() {
       <ToddlerCookBook
         recipes={recipesQ.data.recipes}
         onCook={(r) => nav(`/kitchen/recipe/${r.id}/cook`)}
-        onBack={close}
+        onClose={close}
       />
     </div>
   )

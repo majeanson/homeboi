@@ -1,5 +1,5 @@
 /* ========================================================================== */
-/* Pip toddler — calm full-screen "right now / then" picture story (KidView).   */
+/* Pip toddler — calm full-screen "right now / then" picture story (ToddlerView).   */
 /* One big card at a time; tap to settle it done; dots for rhythm; ends on a    */
 /* handwritten "sweet dreams". No idle motion, no rewards.                      */
 /* ========================================================================== */
@@ -777,7 +777,7 @@
 }
 
 /* ========================================================================== */
-/* Kid-exit parental gate (KidExitGate). A visible exit switch in the hub footer/ */
+/* Kid-exit parental gate (ToddlerExitGate). A visible exit switch in the hub footer/ */
 /* nav that arms a fill bar on a sustained ~3s long-press, then a small           */
 /* arithmetic challenge. The way out of the toddler lens on an installed PWA.     */
 /* The switch must survive a long touch: suppress the OS callout / selection so   */
@@ -813,7 +813,7 @@
   display: none;
 }
 /* The fill bar grows left→right over HOLD_MS so the hold has feedback. The
-   duration mirrors HOLD_MS (3s) in KidExitGate. */
+   duration mirrors HOLD_MS (3s) in ToddlerExitGate. */
 .kid-exit-switch__fill {
   position: absolute;
   left: 0;

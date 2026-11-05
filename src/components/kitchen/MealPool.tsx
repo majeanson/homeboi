@@ -185,7 +185,7 @@ export function MealPool<T extends { id: string; title: string }, O>({
       value={text}
       onChange={setText}
       options={options}
-      onPick={(o) => add(o.label, o)}
+      onSelect={(o) => add(o.label, o)}
       onSubmit={(v) => add(v, null)}
       submitIcon="plus-bold"
       placeholder={options.length > 0 ? t.combo.typeOrPick : labels.addPlaceholder}

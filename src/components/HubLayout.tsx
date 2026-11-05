@@ -29,7 +29,7 @@ import { useGuestKind } from '../lib/guestKind'
 import { Icon, InlineIcon, type IconName } from './Icon'
 import { AddSheet } from './AddSheet'
 import { DetailProvider } from './detail/DetailProvider'
-import { KidExitGate } from './KidExitGate'
+import { ToddlerExitGate } from './ToddlerExitGate'
 import { OfflineBanner } from './OfflineBanner'
 import { AddSheetContext, FORM_ROUTES, ADD_MODES, OPERATOR_MODES, modesFor, voiceModeFor, type AddSheetMode } from '../lib/addSheet'
 import { useAuth } from '../lib/auth'
@@ -592,13 +592,13 @@ export function HubLayout() {
 
         {/* Entering the toddler lens lives in Réglages ▸ Display now (the audience
             switch there), not in the nav — a parent flips to Enfant from settings.
-            Coming back OUT is still a deliberate adult act via KidExitGate below. */}
+            Coming back OUT is still a deliberate adult act via ToddlerExitGate below. */}
 
         {/* The way back OUT of a simplified lens: a visible footer switch behind an
             exit gate. Toddler needs the full parental gate (3s hold + a math
             challenge a pre-reader can't clear); the simple/grandma lens is a capable
             adult, so a 3s hold alone lets her out (no condescending arithmetic). */}
-        {restricted && <KidExitGate requireMath={toddler} />}
+        {restricted && <ToddlerExitGate requireMath={toddler} />}
 
         {/* "Tuck the rail away" caret — lives at the BOTTOM of the kiosk column
             (pushed down by margin-top:auto) so it sits out of the way under the

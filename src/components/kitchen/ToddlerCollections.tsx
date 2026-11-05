@@ -21,26 +21,26 @@ import { type WeekDay } from './types'
 //      to choose → the day picker. A big, obvious ← back tile returns to stage 1.
 //   3. Day — this week's seven days; an already-planned day is greyed/read-only,
 //      an empty day accepts the pick. Committing calls `onSuggest` (the SAME
-//      meal-plan plumbing KidKitchen uses — useMealPlanning.kidSuggest), so the
+//      meal-plan plumbing ToddlerKitchen uses — useMealPlanning.kidSuggest), so the
 //      child's choice lands as a suggestion exactly like the all-recipes flow.
 //
-// Mirrors KidKitchen's grammar deliberately (BigTiles, Sayable headings, days7,
+// Mirrors ToddlerKitchen's grammar deliberately (BigTiles, Sayable headings, days7,
 // the suggestion-not-decision day picker) — collections are just a different DOOR
 // into the same pick-a-recipe-onto-a-day act, not a new interaction model.
-export function KidCollections({
+export function ToddlerCollections({
   recipes,
   week,
   onSuggest,
-  onBack,
+  onClose,
 }: {
   recipes: Recipe[]
   week: WeekDay[]
   // Plan the chosen recipe onto a day — the shared kidSuggest write (fills an
-  // empty day only, records "suggested by"). Identical to KidKitchen's onSuggest.
+  // empty day only, records "suggested by"). Identical to ToddlerKitchen's onSuggest.
   onSuggest: (date: number, recipe: Recipe) => void
-  // Leave the collections flow back to KidKitchen's main supper view. Optional —
+  // Leave the collections flow back to ToddlerKitchen's main supper view. Optional —
   // when absent (e.g. collections-only surfacing) the back tile is hidden.
-  onBack?: () => void
+  onClose?: () => void
 }) {
   const t = useT()
   const { lang } = useLang()
@@ -55,7 +55,7 @@ export function KidCollections({
   const tagOrder = useMemo(() => tagOptions(tagsData?.presets ?? [], [], t.recipes.tagPresets), [tagsData?.presets, t.recipes.tagPresets])
   const collections = useMemo(() => buildCollections(recipes, tagOrder), [recipes, tagOrder])
 
-  // The same single, unambiguous week KidKitchen uses (two "Mardi" tiles would
+  // The same single, unambiguous week ToddlerKitchen uses (two "Mardi" tiles would
   // confuse a pre-reader picking a day by sight + sound).
   const days7 = week.slice(0, 7)
 
@@ -94,7 +94,7 @@ export function KidCollections({
 
   // Stage 3 — this week's days. A planned day is "taken" (greyed, read-only —
   // tapping just reads what's already there); an empty day accepts the pick and
-  // fires onSuggest, the same write KidKitchen uses.
+  // fires onSuggest, the same write ToddlerKitchen uses.
   const dayTiles: Tile[] = kidRecipe
     ? days7.map(({ date, meal }) => ({
         key: String(date),
@@ -145,7 +145,7 @@ export function KidCollections({
         </div>
         <BigTiles tiles={recipeTiles} empty={t.kid.collectionPick} />
         {/* Big, obvious back to the collections — a pre-reader needs an unmistakable
-            way out, so it's a full-width text row like KidKitchen's back. */}
+            way out, so it's a full-width text row like ToddlerKitchen's back. */}
         <button type="button" className="kid-pick__back mono" onClick={() => setOpenTag(null)}>
           <InlineIcon name="arrow-left-bold" /> {t.kid.backCollections}
         </button>
@@ -161,8 +161,8 @@ export function KidCollections({
         <Sayable className="kid-head__title" text={t.kid.whichCollection} />
       </div>
       <BigTiles tiles={collectionTiles} empty={t.recipes.collectionsEmpty} />
-      {onBack && (
-        <button type="button" className="kid-pick__back mono" onClick={onBack}>
+      {onClose && (
+        <button type="button" className="kid-pick__back mono" onClick={onClose}>
           <InlineIcon name="arrow-left-bold" /> {t.common.back}
         </button>
       )}

@@ -1973,7 +1973,7 @@ export function Board() {
         tomorrow={tomorrowWx}
         wonder={wonder}
         onShuffle={shuffleWonder}
-        onPick={pickWonder}
+        onSelect={pickWonder}
       />
       {eventActions.node}
     </main>

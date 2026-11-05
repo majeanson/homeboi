@@ -6,7 +6,7 @@ import { blankComments, sourceFiles } from './buildGuardScan'
 
 // THE KEYBOARD OPENS ON A TAP, NEVER ON ITS OWN (2026-09-24).
 //
-// The rule was already written down — useModal.ts, SearchPage, KidExitGate and RecipeForm
+// The rule was already written down — useModal.ts, SearchPage, ToddlerExitGate and RecipeForm
 // each said « the keyboard only ever opens on an explicit tap, never when a scene
 // mounts » — and a dozen surfaces broke it anyway, because a comment in four files holds
 // nothing in the other forty. Marc, on a phone: the keyboard popped up uninvited. Opening

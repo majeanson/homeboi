@@ -223,7 +223,7 @@ test.describe('navigation', () => {
 
     // The gated exit: a sustained ~3s hold on the footer switch. A capable
     // post-reader adult holds deliberately — so NO math challenge follows
-    // (KidExitGate requireMath={false}); the hold itself unlocks back to parent.
+    // (ToddlerExitGate requireMath={false}); the hold itself unlocks back to parent.
     const sw = page.locator('.kid-exit-switch')
     await expect(sw).toBeVisible()
     const box = await sw.boundingBox()

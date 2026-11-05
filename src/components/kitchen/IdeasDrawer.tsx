@@ -272,7 +272,7 @@ export function IdeasDrawer({
           week={week}
           readOnly={ro}
           onPlan={planIdea}
-          onDismiss={dismissKidIdea}
+          onRemove={dismissKidIdea}
         />
       )}
     </>
@@ -592,14 +592,14 @@ function KidChip({
   week,
   readOnly,
   onPlan,
-  onDismiss,
+  onRemove,
 }: {
   ideas: MealIdea[]
   memberById: (id: string | null | undefined) => Member | undefined
   week: { date: number; label: string }[]
   readOnly: boolean
   onPlan: (idea: MealIdea, date: number, slot: MealSlot) => void
-  onDismiss: (idea: MealIdea) => void
+  onRemove: (idea: MealIdea) => void
 }) {
   const t = useT()
   const { isOpen, toggle, close } = useSingleOpen()
@@ -635,7 +635,7 @@ function KidChip({
                   </span>
                 </Chip>
               )}
-              <RowActions onDelete={() => onDismiss(idea)} deleteLabel={t.kitchen.removeIdea} readOnly={readOnly} />
+              <RowActions onDelete={() => onRemove(idea)} deleteLabel={t.kitchen.removeIdea} readOnly={readOnly} />
             </div>
             {!readOnly && isOpen(idea.id) && (
               <MealPlanPicker

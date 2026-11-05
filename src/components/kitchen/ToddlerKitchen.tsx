@@ -7,7 +7,7 @@ import { isGuest } from '../../lib/device'
 import { BigTiles, Sayable, type Tile } from '../BigTiles'
 import { InlineIcon } from '../Icon'
 import { buildCollections } from './CollectionPicker'
-import { KidCollections } from './KidCollections'
+import { ToddlerCollections } from './ToddlerCollections'
 import { ToddlerCookBook } from './ToddlerCookBook'
 import { type MealRow, type WeekDay } from './types'
 
@@ -16,7 +16,7 @@ import { type MealRow, type WeekDay } from './types'
 // picture (pictoFor) so a pre-reader sees pizza/soup/chicken — not seven
 // identical plates. A child's pick is a SUGGESTION (onSuggest) — it only fills
 // an empty day; planned days grey out and stay read-only.
-export function KidKitchen({
+export function ToddlerKitchen({
   week,
   recipes,
   recipeFor,
@@ -39,7 +39,7 @@ export function KidKitchen({
   // browsing the recipe shelf).
   const [kidRecipe, setKidRecipe] = useState<Recipe | null>(null)
   // #11 toddler collections: false = the normal supper view (this week + the flat
-  // recipe shelf), true = the hear-first collections flow (KidCollections). A door
+  // recipe shelf), true = the hear-first collections flow (ToddlerCollections). A door
   // INTO the same pick-a-recipe-onto-a-day act, surfaced as one extra big tile so
   // the existing abilities (hear the week, pick any recipe) are never displaced.
   const [browsing, setBrowsing] = useState(false)
@@ -145,7 +145,7 @@ export function KidKitchen({
   if (bookOpen) {
     return (
       <main className="kid__main kid__main--feed">
-        <ToddlerCookBook recipes={recipes} onCook={onStartRecipe} onBack={() => setBookOpen(false)} />
+        <ToddlerCookBook recipes={recipes} onCook={onStartRecipe} onClose={() => setBookOpen(false)} />
       </main>
     )
   }
@@ -155,7 +155,7 @@ export function KidKitchen({
   if (browsing) {
     return (
       <main className="kid__main kid__main--feed">
-        <KidCollections recipes={recipes} week={week} onSuggest={onSuggest} onBack={() => setBrowsing(false)} />
+        <ToddlerCollections recipes={recipes} week={week} onSuggest={onSuggest} onClose={() => setBrowsing(false)} />
       </main>
     )
   }

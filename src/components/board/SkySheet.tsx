@@ -23,7 +23,7 @@ export function SkySheet({
   tomorrow,
   wonder,
   onShuffle,
-  onPick,
+  onSelect,
 }: {
   open: boolean
   onClose: () => void
@@ -32,7 +32,7 @@ export function SkySheet({
   tomorrow: DayOutlook | null
   wonder: Wonder | null
   onShuffle: () => void
-  onPick: (s: WonderSource) => void
+  onSelect: (s: WonderSource) => void
 }) {
   const t = useT()
   return (
@@ -41,7 +41,7 @@ export function SkySheet({
       {/* Body only while open (TodayChangesSheet's idiom) so the gallery's five
           source fetches don't run for a sheet nobody opened. */}
       {open && (
-        <SkyBody weather={weather} hours={hours} tomorrow={tomorrow} wonder={wonder} onShuffle={onShuffle} onPick={onPick} />
+        <SkyBody weather={weather} hours={hours} tomorrow={tomorrow} wonder={wonder} onShuffle={onShuffle} onSelect={onSelect} />
       )}
     </Sheet>
   )
@@ -53,14 +53,14 @@ function SkyBody({
   tomorrow,
   wonder,
   onShuffle,
-  onPick,
+  onSelect,
 }: {
   weather: Weather | null
   hours: HourOutlook[] | null
   tomorrow: DayOutlook | null
   wonder: Wonder | null
   onShuffle: () => void
-  onPick: (s: WonderSource) => void
+  onSelect: (s: WonderSource) => void
 }) {
   const t = useT()
   const tip = weatherTip(weather)
@@ -114,7 +114,7 @@ function SkyBody({
           {/* The full band the toddler board already renders: image (tap-to-zoom),
               source kicker, title, expandable blurb, credit, ⟳ shuffle. */}
           <WonderBand wonder={wonder} onShuffle={onShuffle} />
-          <WonderGallery current={wonder} onPick={onPick} />
+          <WonderGallery current={wonder} onSelect={onSelect} />
         </>
       )}
     </div>
@@ -126,7 +126,7 @@ function SkyBody({
 // through (['wonder', source]), so a source the board already showed costs nothing.
 // The endpoint falls back to a reliable feed when one is down, so two requests can
 // answer with the same picture — dedupe by image URL, and mark the showing one.
-function WonderGallery({ current, onPick }: { current: Wonder; onPick: (s: WonderSource) => void }) {
+function WonderGallery({ current, onSelect }: { current: Wonder; onSelect: (s: WonderSource) => void }) {
   const t = useT()
   const results = useQueries({
     queries: WONDER_SOURCES.map((source) => ({
@@ -156,7 +156,7 @@ function WonderGallery({ current, onPick }: { current: Wonder; onPick: (s: Wonde
               type="button"
               className={'sky-thumb' + (active ? ' is-active' : '')}
               style={{ backgroundImage: `url("${w.imgUrl}")` }}
-              onClick={() => onPick(source)}
+              onClick={() => onSelect(source)}
               aria-pressed={active}
               aria-label={t.board.sky.pickImage(t.board.wonderKicker[w.source])}
             >

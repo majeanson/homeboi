@@ -31,9 +31,9 @@ import { VoiceButton, VoiceStatus } from './VoiceButton'
 export interface ComboOption<T = unknown> {
   /** Stable id — list keys + active-row tracking. */
   id: string
-  /** Visible text; also what `onPick` hands back as the label. */
+  /** Visible text; also what `onSelect` hands back as the label. */
   label: string
-  /** The underlying entity (a Recipe, Leftover, MealRow…) handed to `onPick`. */
+  /** The underlying entity (a Recipe, Leftover, MealRow…) handed to `onSelect`. */
   data: T
   /** Optional group heading — consecutive options sharing one render under it. */
   group?: string
@@ -91,7 +91,7 @@ export interface EntityComboboxProps<T> {
   onChange: (v: string) => void
   options: ComboOption<T>[]
   /** Picked an existing option from the dropdown. */
-  onPick: (opt: ComboOption<T>) => void
+  onSelect: (opt: ComboOption<T>) => void
   /** Committed the free text (Enter, the submit button, or commitOnBlur). */
   onSubmit?: (text: string) => void
   /** Provide → a labelled submit button. Omit → an icon-only ✓ (unless submitIcon null). */
@@ -147,7 +147,7 @@ export function EntityCombobox<T>({
   value,
   onChange,
   options,
-  onPick,
+  onSelect,
   onSubmit,
   submitLabel,
   submitIcon = 'check-bold',
@@ -244,7 +244,7 @@ export function EntityCombobox<T>({
     setOpen(false)
     setActive(-1)
     if (frequentsKey) bumpFrequent(frequentsKey, opt.id)
-    onPick(opt)
+    onSelect(opt)
   }
 
   const clear = () => {

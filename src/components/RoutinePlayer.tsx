@@ -26,9 +26,9 @@ import { tipFor } from '../lib/routineTips'
 import { Img } from './Img'
 
 // The RUN of one routine — the calm "right now / then" picture story extracted
-// from KidView so it can play on EVERY surface, not just the locked toddler
+// from ToddlerView so it can play on EVERY surface, not just the locked toddler
 // kiosk: a parent on their phone, the wall tablet, a guest, all run the same UI
-// off the same data (KidView mounts it after its face-picker; the /routine/:id/run
+// off the same data (ToddlerView mounts it after its face-picker; the /routine/:id/run
 // scene mounts it directly). ONE big hero card at a time, narrated on tap, with
 // the whole routine beneath as a picture filmstrip (current step lifted, done
 // ones ✓). Tapping the card (or the arrow) speaks it and settles it done — the
@@ -63,7 +63,7 @@ export interface PlayerRoutine {
   memberId?: string | null
   memberName: string | null
   color: string | null
-  // The owning member's photo, when the caller has it (KidView) — drawn in the
+  // The owning member's photo, when the caller has it (ToddlerView) — drawn in the
   // header's "whose routine?" face chip so a pre-reader can switch kids.
   avatarPhoto?: string | null
   name: string
@@ -99,7 +99,7 @@ export function RoutinePlayer({
   routine,
   ro,
   exitTo = '/board',
-  onBack,
+  onClose,
   backLabel,
 }: {
   routine: PlayerRoutine
@@ -109,8 +109,8 @@ export function RoutinePlayer({
   // Where the top-left exit goes (the kiosk leaves to /board; the parent scene
   // returns to the Routines tab).
   exitTo?: string
-  // When present (KidView with several routines), a bottom "← back to faces" link.
-  onBack?: () => void
+  // When present (ToddlerView with several routines), a bottom "← back to faces" link.
+  onClose?: () => void
   backLabel?: string
 }) {
   const t = useT()
@@ -147,7 +147,7 @@ export function RoutinePlayer({
   // §D): a step's own countdown serves the task, but timing the whole routine is
   // the raw material a personal-best score would be built from.
   const [running, setRunning] = useState(false)
-  // Switching to another routine (KidView picker, or a deep-link change) resets it.
+  // Switching to another routine (ToddlerView picker, or a deep-link change) resets it.
   useEffect(() => {
     setRunning(false)
   }, [routine.id])
@@ -459,8 +459,8 @@ export function RoutinePlayer({
               to the picker so kid B can reach their own routine, even on a kiosk
               identified to kid A. Falls back to the 44px spacer that balanced the
               header before. */}
-          {onBack ? (
-            <button type="button" className="tdl-face" onClick={onBack} aria-label={backLabel} title={backLabel}>
+          {onClose ? (
+            <button type="button" className="tdl-face" onClick={onClose} aria-label={backLabel} title={backLabel}>
               <Avatar photoUrl={routine.avatarPhoto ? imgUrl(routine.avatarPhoto) : null} colour={tint} name={routine.memberName ?? routine.name} size={46} decorative />
             </button>
           ) : (
@@ -718,8 +718,8 @@ export function RoutinePlayer({
           )}
         </div>
 
-        {onBack && (
-          <button type="button" className="kid__exit mono" onClick={onBack}>
+        {onClose && (
+          <button type="button" className="kid__exit mono" onClick={onClose}>
             <InlineIcon name="arrow-left-bold" /> {backLabel}
           </button>
         )}

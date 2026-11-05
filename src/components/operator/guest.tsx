@@ -433,7 +433,7 @@ export function GuestSection({ help }: { help?: HelpMode }) {
                 setLink(null)
               }}
               options={people.map((p): ComboOption<Person> => ({ id: p.key, label: p.name, data: p, icon: 'user-bold' }))}
-              onPick={(opt) => {
+              onSelect={(opt) => {
                 setTargetKey(opt.id)
                 setTargetText(opt.label)
                 setLink(null)

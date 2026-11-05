@@ -16,11 +16,11 @@ import { Img } from '../Img'
 export function ToddlerCookBook({
   recipes,
   onCook,
-  onBack,
+  onClose,
 }: {
   recipes: Recipe[]
   onCook: (recipe: Recipe) => void
-  onBack: () => void
+  onClose: () => void
 }) {
   const t = useT()
   const speak = useSpeak()
@@ -58,7 +58,7 @@ export function ToddlerCookBook({
   return (
     <section className="tbook" onPointerDown={onDown} onPointerUp={onUp}>
       {/* Small, quiet exit back to the kitchen — the kid surface keeps one way out. */}
-      <button type="button" className="tbook__close" onClick={onBack} aria-label={t.common.back}>
+      <button type="button" className="tbook__close" onClick={onClose} aria-label={t.common.back}>
         <Icon name="x-bold" size={22} />
       </button>
 
@@ -101,7 +101,7 @@ export function ToddlerCookBook({
         </button>
       </div>
 
-      <button type="button" className="kid-pick__back mono tbook__back" onClick={onBack}>
+      <button type="button" className="kid-pick__back mono tbook__back" onClick={onClose}>
         <InlineIcon name="arrow-left-bold" /> {t.common.back}
       </button>
     </section>

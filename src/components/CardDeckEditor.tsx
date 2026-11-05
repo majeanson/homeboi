@@ -278,7 +278,7 @@ export function CardDeckEditor({
         {paletteFor !== null && (
           <EmojiPicker
             value={cards[paletteFor]?.icon}
-            onPick={(e) => {
+            onSelect={(e) => {
               update(paletteFor, { icon: e })
               setPaletteFor(null)
             }}
@@ -556,7 +556,7 @@ function PhotoControl({
   // a `hidden` input isn't keyboard-reachable (the label can't take focus and the
   // hidden input is out of the tab order), so keyboard users couldn't attach a photo.
   const fileRef = useRef<HTMLInputElement>(null)
-  const onPick = (e: ChangeEvent<HTMLInputElement>) => {
+  const onSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]
     if (f) void upload(f)
     e.target.value = ''
@@ -597,7 +597,7 @@ function PhotoControl({
         hidden
         aria-hidden="true"
         tabIndex={-1}
-        onChange={onPick}
+        onChange={onSelect}
       />
       {photoKey ? (
         <>

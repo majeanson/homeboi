@@ -19,7 +19,7 @@ export function DocUploadButton({
   mediaEndpoint,
   affectedKey,
   extraBody,
-  onDone,
+  onUploaded,
 }: {
   label: string
   /** Where each note POSTs (e.g. `trip-notes`). */
@@ -30,7 +30,7 @@ export function DocUploadButton({
   affectedKey: QueryKey
   /** Merged into every note body (tripId, category, date, member scope…). */
   extraBody?: Record<string, unknown>
-  onDone?: () => void
+  onUploaded?: () => void
 }) {
   const qc = useQueryClient()
   const [busy, setBusy] = useState(false)
@@ -62,7 +62,7 @@ export function DocUploadButton({
         }
       }
       qc.invalidateQueries({ queryKey: affectedKey })
-      onDone?.()
+      onUploaded?.()
     } finally {
       setBusy(false)
     }

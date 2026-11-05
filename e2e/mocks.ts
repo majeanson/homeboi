@@ -4,7 +4,7 @@ import { addLocalDays, localDayStart } from '../src/lib/localDay'
 
 // Deterministic API stubs so screenshots render populated, calm surfaces with
 // no backend. Shapes mirror the page-level interfaces (Board.tsx, Kitchen.tsx,
-// Routines/KidView.tsx, Liste.tsx, Operator.tsx). Timestamps are fixed unix
+// Routines/ToddlerView.tsx, Liste.tsx, Operator.tsx). Timestamps are fixed unix
 // seconds — the server already buckets events into today/tomorrow/upcoming, so
 // the client renders them under those headings regardless of the wall clock.
 
@@ -179,7 +179,7 @@ const PANTRY = {
 }
 
 // Cards store an emoji (the CardDeckEditor palette / DECK_EMOJIS), NOT a named
-// icon — KidView renders card.icon as text, so the fixture must use real emoji.
+// icon — ToddlerView renders card.icon as text, so the fixture must use real emoji.
 const ROUTINE_CARDS = [
   { icon: '👕', label: 'Habille-toi', narration: "C'est l'heure de s'habiller" },
   { icon: '🥞', label: 'Déjeuner' },

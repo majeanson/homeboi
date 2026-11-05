@@ -70,9 +70,9 @@ import { CERCLE_HELP } from '../lib/cercleHelp'
 import { ROUTINES_HELP } from '../lib/routinesHelp'
 // Routines — self-contained (own ROUTINES_KEY query, own help.hint/HelpHint,
 // data-tour="routines-grid"), the SAME component the merged tab's default section
-// renders; the toddler picture-story run stays KidView (the original /kid surface).
+// renders; the toddler picture-story run stays ToddlerView (the original /kid surface).
 import { RoutinesTab } from '../components/maison/RoutinesTab'
-import { KidView } from './KidView'
+import { ToddlerView } from './ToddlerView'
 import {
   type Contact,
   type ContactLink,
@@ -138,7 +138,7 @@ const SECTION_ICON: Record<Section, IconName> = {
 // « Maison » — the merged household tab: Routines (kid picture-card routines),
 // the people directory (Famille/Social — Liste/Liens/Arbre), Business (services/
 // vendors) and Les carnets (cared-for things). Toddler: Routines' default section
-// shows the picture-story run (KidView, the original /kid surface); any OTHER
+// shows the picture-story run (ToddlerView, the original /kid surface); any OTHER
 // section shows the faces grid (CircleKidView, the old toddler cercle lens) — so a
 // toddler landing on ?section=family/social/business/carnets still gets a toddler
 // surface instead of the parent directory. Parent: MaisonParent below, unchanged
@@ -148,7 +148,7 @@ export function Maison() {
   const [params] = useSearchParams()
   if (toddler) {
     const section = params.get('section')
-    return section && section !== 'routines' ? <CircleKidView /> : <KidView />
+    return section && section !== 'routines' ? <CircleKidView /> : <ToddlerView />
   }
   return <MaisonParent />
 }
@@ -1263,7 +1263,7 @@ function MaisonParent() {
 // Pets are part of "who's who" a toddler learns (the family dog reads its owner as
 // « Propriétaire »). No view switch, no add/edit (one-way door). Reached on the
 // Maison tab whenever a toddler lands on any section OTHER than Routines — Routines
-// itself keeps the picture-story run (KidView), unchanged from the old /kid surface.
+// itself keeps the picture-story run (ToddlerView), unchanged from the old /kid surface.
 function CircleKidView() {
   const t = useT()
   const { lang } = useLang()

@@ -9,7 +9,7 @@ import { isGuest } from '../lib/device'
 import { RoutinePlayer, type PlayerRoutine } from '../components/RoutinePlayer'
 
 // /routine/:id/run — RUN one routine on ANY surface. The toddler kiosk reaches the
-// player through KidView's face-picker; this standalone scene is the door for a
+// player through ToddlerView's face-picker; this standalone scene is the door for a
 // parent on their phone (or any device) who taps ▶ "Faire la routine" on the
 // Routines tab. Same shared RoutinePlayer, same data, no audience lock — exits back
 // to La maison rather than /board.

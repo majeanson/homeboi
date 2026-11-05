@@ -180,7 +180,7 @@ export function BusinessForm({
         value={category}
         onChange={setCategory}
         options={BUSINESS_CATEGORIES.map((c): ComboOption<string> => ({ id: c[lang], label: c[lang], data: c[lang], icon: 'storefront-bold' }))}
-        onPick={(opt) => setCategory(opt.label)}
+        onSelect={(opt) => setCategory(opt.label)}
         placeholder={bz.category}
         submitIcon={null}
         typeaheadOnly

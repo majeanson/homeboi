@@ -233,7 +233,7 @@ export function DayEditor({
                 value={slotText}
                 onChange={setSlotText}
                 options={mealOptsFor(slot)}
-                onPick={pickMeal(date, slot)}
+                onSelect={pickMeal(date, slot)}
                 onSubmit={(v) => saveSlot(date, slot, v)}
                 noMatchLabel={t.combo.noMatch}
                 frequentsKey="meal"
@@ -296,7 +296,7 @@ export function DayEditor({
             value={mealText}
             onChange={setMealText}
             options={mealOptsFor(hero)}
-            onPick={pickMeal(date, hero)}
+            onSelect={pickMeal(date, hero)}
             onSubmit={() => beginSetMeal(date, hero)}
             noMatchLabel={t.combo.noMatch}
             frequentsKey="meal"

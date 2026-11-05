@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 
 // The ONE shared long-press gesture (P2-x). Three bespoke holds already existed —
 // `usePointerDnd`'s `holdMs` (lib/dnd, arms a drag), `useTapToHearListener`
-// (lib/tapToHear, speaks a row) and `KidExitGate` (a 3 s exit hold) — each
+// (lib/tapToHear, speaks a row) and `ToddlerExitGate` (a 3 s exit hold) — each
 // re-solving the same three hard parts: abort on finger travel, suppress the OS
 // context menu, and swallow the ONE click the lifting finger still fires.
 // This folds that into a shell-level listener you point at a selector.
@@ -24,7 +24,7 @@ import { useEffect, useRef } from 'react'
 // read a `data-` attribute off it (the board reads the card id).
 
 // A deliberate hold: longer than `DND_HOLD_MS` (400 ms, which only arms a drag on a
-// grip you already meant to grab) and shorter than KidExitGate's 3 s escape hatch.
+// grip you already meant to grab) and shorter than ToddlerExitGate's 3 s escape hatch.
 export const LONG_PRESS_MS = 500
 const MOVE_PX = 8
 

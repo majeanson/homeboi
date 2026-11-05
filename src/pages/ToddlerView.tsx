@@ -22,7 +22,7 @@ import { Img } from '../components/Img'
 
 // The pre-reader surface: a face/routine PICKER, then the calm picture-story RUN.
 // The run itself lives in the shared RoutinePlayer (so a parent's phone + the
-// /routine/:id/run scene play the very same thing); KidView owns only what's
+// /routine/:id/run scene play the very same thing); ToddlerView owns only what's
 // special to the locked toddler kiosk — auto-identifying the child, ordering by
 // the moment of day, and drifting back to the picker after a finished routine.
 interface Card {
@@ -52,7 +52,7 @@ interface Routine {
 }
 type RoutinesData = { routines: Routine[] }
 
-export function KidView() {
+export function ToddlerView() {
   const t = useT()
   // Read-only guest (toddler kiosk handed to a sitter): the player hides the
   // progress-committing controls when ro, so a guest can still browse + hear steps.
@@ -285,7 +285,7 @@ export function KidView() {
       routine={picked as PlayerRoutine}
       ro={ro}
       exitTo="/board"
-      onBack={visible.length > 1 || (identified && routines.length > 1) ? backToFaces : undefined}
+      onClose={visible.length > 1 || (identified && routines.length > 1) ? backToFaces : undefined}
       backLabel={t.kid.pick}
     />
   )
