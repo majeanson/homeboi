@@ -48,6 +48,19 @@ describe('recipeVersions / applyVersion', () => {
     // No versions at all: the lists come back untouched.
     expect(applyVersion(['a'], ['b'], null)).toEqual({ ingredients: ['a'], steps: ['b'] })
   })
+  it('an ordinary sectioned recipe — the same part names heading BOTH lists — has NO versions', () => {
+    // « Biscuits » / « Glaçage » in the ingredients and again in the steps is one dish in
+    // two parts, the commonest sectioned shape there is. Read as versions, the base view
+    // lost every line (CI 2026-11-05: the ingredient picker offered « Ajouter (0) »).
+    const ing = ['## Biscuits', '250 g de farine', '## Glaçage', '30 ml de lait']
+    const st = ['## Biscuits', 'Crémer.', '## Glaçage', 'Fouetter.']
+    expect(recipeVersions(ing, st)).toEqual([])
+    expect(applyVersion(ing, st, null)).toEqual({ ingredients: ing, steps: st })
+    // A pair only becomes a version when its title SAYS so (the import's figure included).
+    expect(recipeVersions(['## Version 2', 'x'], ['## Version 2', 'y']).map((v) => v.title)).toEqual(['Version 2'])
+    expect(recipeVersions(['## Bowl version', 'x'], ['## Bowl version', 'y']).map((v) => v.title)).toEqual(['Bowl version'])
+    expect(recipeVersions(['## Variante — Sauce', 'x'], ['## Variante', 'y']).map((v) => v.title)).toEqual(['Variante'])
+  })
   it('a chip label is the page’s word for the version, without its « pour une version » preamble', () => {
     expect(versionLabel('pour une version bol')).toBe('Bol')
     expect(versionLabel('Version au barbecue')).toBe('Au barbecue')

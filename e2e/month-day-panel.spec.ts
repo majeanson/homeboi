@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test'
 import { mockApi, seedState } from './mocks'
 import { boxOf } from './measure'
+import { addLocalDays } from '../src/lib/localDay'
 
 // The Mois (calendar) day panel — the surface behind two reported frictions:
 //
@@ -32,18 +33,23 @@ const SEED_IDX = 20
 // (Playwright tries routes newest-first).
 const EVENT_TITLE = 'Dentiste'
 const MEAL_TITLE = 'Pâté chinois'
+// The seeded cell's day is `from` walked SEED_IDX local days on — `addLocalDays`, the
+// household zone's own arithmetic (America/Toronto, DST-aware; the lib pins the zone, so
+// Node's UTC on CI does not matter), never `from + SEED_IDX * 86400`: the November grid
+// starts in October and crosses the fall-back Sunday, after which a fixed-86400 day lands
+// at 23:00 the day before, and the cell that bucketed by LOCAL midnight (lib/monthgrid)
+// never matches it. Red on CI from 2026-11-01 until this — the documented trap
+// (CLAUDE.md « Day arithmetic on a local midnight »).
 async function seedMonthOnCell(page: Page) {
-  const DAY = 86400
   await page.route('**/api/month**', async (route) => {
     const from = Number(new URL(route.request().url()).searchParams.get('from'))
+    const day = addLocalDays(from, SEED_IDX)
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
-        events: [
-          { id: 'ev1', title: EVENT_TITLE, at: from + SEED_IDX * DAY + 14 * 3600, all_day: 0, member_id: null, day: from + SEED_IDX * DAY },
-        ],
-        meals: [{ id: 'ml1', slot: 'souper', title: MEAL_TITLE, cook_member_id: null, day: from + SEED_IDX * DAY }],
+        events: [{ id: 'ev1', title: EVENT_TITLE, at: day + 14 * 3600, all_day: 0, member_id: null, day }],
+        meals: [{ id: 'ml1', slot: 'souper', title: MEAL_TITLE, cook_member_id: null, day }],
         chores: [],
         dayNotes: [],
         todos: [],

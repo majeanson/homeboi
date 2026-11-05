@@ -88,6 +88,15 @@ const partOf = (title: string): string | null => {
   const i = title.indexOf(VERSION_SEP)
   return i < 0 ? null : title.slice(i + VERSION_SEP.length)
 }
+// A title READS as a version only when it says so — the import's « Version 2 », a
+// page's « pour une version bol » / « Variante » / « Bowl version » (every title
+// recipeDraft emits matches, by construction: VERSION_LABEL or the figure). WITHOUT
+// the word, a matched pair is the ordinary sectioned recipe: « Biscuits » / « Glaçage »
+// heading BOTH lists is one dish in two parts, not two dishes — and reading it as
+// versions emptied the base view (no ingredients, no steps, « Ajouter (0) ») on every
+// such recipe (CI red, 2026-11-05).
+const VERSION_WORD = /\b(?:version|variante|variation|variant|alternative)\b|\bautre\s+fa[çc]on\b/i
+export const isVersionTitle = (title: string): boolean => VERSION_WORD.test(versionOf(title))
 const flatten = (groups: RecipeSection[]): string[] => groups.flatMap((g) => [...(g.title ? [makeSectionHeading(g.title)] : []), ...g.items.map((i) => i.text)])
 
 export function recipeVersions(ingredients: string[], steps: string[]): RecipeVersion[] {
@@ -97,7 +106,7 @@ export function recipeVersions(ingredients: string[], steps: string[]): RecipeVe
   const out: RecipeVersion[] = []
   const seen = new Set<string>()
   for (const g of stepGroups) {
-    if (!g.title) continue
+    if (!g.title || !isVersionTitle(g.title)) continue
     const title = versionOf(g.title)
     const k = key(title)
     if (seen.has(k) || !ingKeys.has(k)) continue
