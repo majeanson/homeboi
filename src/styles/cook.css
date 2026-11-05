@@ -1020,44 +1020,6 @@
   flex-wrap: wrap;
   justify-content: flex-end;
 }
-/* Segmented control shared by the view switcher (Recette/Côte à côte/Focus) and
-   the density control (A / A / A). */
-.cook__segctl {
-  display: inline-flex;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-pill);
-  overflow: hidden;
-  background: var(--card);
-  flex: none;
-}
-.cook__segbtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 2.4rem;
-  height: 2.4rem;
-  padding: 0 0.5rem;
-  border: 0;
-  background: transparent;
-  color: var(--ink-soft);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: background 0.12s ease, color 0.12s ease;
-}
-.cook__segbtn + .cook__segbtn {
-  border-left: 1px solid var(--line);
-}
-.cook__segbtn.is-on {
-  background: color-mix(in srgb, var(--accent) 16%, transparent);
-  color: var(--ink);
-}
-.cook__segbtn:active {
-  transform: scale(0.95);
-}
-.cook__segbtn:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: -2px;
-}
 /* The density "A" glyphs at three sizes, so the control reads as small/normal/big. */
 .cook__dens-a {
   font-family: var(--display);
@@ -1089,41 +1051,6 @@
 }
 
 /* --- "Cuisiner ensemble" dish switcher (#43) ------------------------------- */
-/* A full-width sub-tab row under the bar that flips between the dishes; each tab is
-   a whole cook view of its own. Underline-style like the split phone tabs, but it
-   scrolls sideways when the titles don't fit (a tablet may cook 3+ dishes). */
-.cook__siblings {
-  display: flex;
-  gap: 1px;
-  background: var(--line);
-  border-bottom: 1px solid var(--line);
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  -webkit-overflow-scrolling: touch;
-  flex: none;
-}
-.cook__sibling {
-  flex: 1 0 auto;
-  min-width: max-content;
-  padding: 0.7rem 1.1rem;
-  border: 0;
-  background: var(--card);
-  color: var(--ink-soft);
-  font-weight: 600;
-  white-space: nowrap;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: color 0.12s ease, background 0.12s ease;
-}
-.cook__sibling.is-on {
-  background: var(--paper);
-  color: var(--ink);
-  box-shadow: inset 0 -3px 0 var(--accent);
-}
-.cook__sibling:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: -2px;
-}
 
 /* --- Split view: ingredients pinned beside the steps ----------------------- */
 /* The split stage doesn't centre a card — it fills, and each pane scrolls on its
@@ -1142,6 +1069,16 @@
 }
 .cook__split-tabs {
   display: none; /* tablet shows both panes; the tab pair is a phone-only fallback */
+}
+/* A SubTabs row used as a strip across the top of the cook scene. */
+.cook__tabstrip {
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid var(--line);
+  flex: none;
+}
+.cook__tabstrip .subtabs-row,
+.cook__tabstrip .subtabs {
+  margin: 0;
 }
 .cook__split-pane {
   min-width: 0;
@@ -1175,25 +1112,7 @@
     grid-template-rows: auto 1fr;
   }
   .cook__split-tabs {
-    display: flex;
-    gap: 1px;
-    background: var(--line);
-    border-bottom: 1px solid var(--line);
-  }
-  .cook__split-tab {
-    flex: 1;
-    padding: 0.8rem;
-    border: 0;
-    background: var(--card);
-    color: var(--ink-soft);
-    font-weight: 600;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .cook__split-tab.is-on {
-    background: var(--paper);
-    color: var(--ink);
-    box-shadow: inset 0 -3px 0 var(--accent);
+    display: block;
   }
   .cook__split-ings {
     border-right: 0;
@@ -1311,7 +1230,7 @@
   font-size: var(--text-lg);
 }
 
-/* #43 "Cuisiner ensemble" is now CookMode itself (tabbed via .cook__siblings,
+/* #43 "Cuisiner ensemble" is now CookMode itself (tabbed via SubTabs,
    above), so the old side-by-side .multicook__* columns + the standalone
    .kitchen__cook-together button were removed. */
 

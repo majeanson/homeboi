@@ -1,8 +1,9 @@
+import { Segmented } from '../Segmented'
 import { useProfile } from '../../lib/profile'
 import { facesFromMembers } from '../../lib/faces'
 import { useFaceHasWaiting } from '../../lib/mots'
 import { type BoardView } from '../../lib/boardview'
-import { Icon, type IconName } from '../Icon'
+import { type IconName } from '../Icon'
 import { MemberSwitcher } from '../MemberSwitcher'
 import { type Dict, type Member } from './types'
 
@@ -35,22 +36,17 @@ export function BoardViewToggle({
     { v: 'annee', k: 'view-annee', icon: 'sun-horizon-bold', label: t.boardView.annee },
   ]
   return (
-    <div className={'boardview' + (armed ? ' help-armed' : '')} role="group" aria-label={t.boardView.label} data-tour="board-views">
-      {opts.map((o) => (
-        <button
-          key={o.v}
-          type="button"
-          className={'boardview__opt' + (view === o.v ? ' is-on' : '')}
-          aria-pressed={view === o.v}
-          aria-label={o.label}
-          title={o.label}
-          onClick={pick ? pick(o.k, () => onChange(o.v)) : () => onChange(o.v)}
-        >
-          <Icon name={o.icon} size={18} />
-          <span className="boardview__label">{o.label}</span>
-        </button>
-      ))}
-    </div>
+    <Segmented
+      className="boardview"
+      collapse
+      ariaLabel={t.boardView.label}
+      tour="board-views"
+      armed={armed}
+      value={view}
+      onChange={onChange}
+      pick={pick ? (key, run) => pick(opts.find((o) => o.v === key)!.k, run) : undefined}
+      options={opts.map((o) => ({ key: o.v, icon: o.icon, label: o.label, ariaLabel: o.label }))}
+    />
   )
 }
 

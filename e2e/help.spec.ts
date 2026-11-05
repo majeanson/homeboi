@@ -82,7 +82,7 @@ test('tutorial vs expert mode shows / hides the ? dots', async ({ page }) => {
   // Flip to expert in Réglages ▸ Affichage.
   await page.goto('/settings?tab=display')
   await page.locator('.operator__tabs').waitFor({ state: 'visible' })
-  await page.getByRole('button', { name: /Expert/ }).click()
+  await page.getByRole('radio', { name: /Expert/ }).click()
 
   // Back on a hub page, every dot is gone.
   await page.goto('/liste')

@@ -56,8 +56,8 @@ test('the « Données : Exemple » switch flips both ways without emptying the g
   await page.goto('/dev/kit')
   await expect(page.locator('.kit-entry').first()).toBeVisible({ timeout: 15_000 })
 
-  const onBtn = page.getByRole('button', { name: 'Exemple', exact: true })
-  const offBtn = page.getByRole('button', { name: 'Réelles', exact: true })
+  const onBtn = page.getByRole('radio', { name: 'Exemple', exact: true })
+  const offBtn = page.getByRole('radio', { name: 'Réelles', exact: true })
   await expect(onBtn).toBeVisible()
 
   await onBtn.click()

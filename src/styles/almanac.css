@@ -76,7 +76,7 @@
    nothing escalates, nothing surprises. */
 .btn,
 .tabbar__tab,
-.audience-switch__opt,
+.segmented__opt,
 .bigtile,
 .board__list-item,
 .chip,
@@ -89,7 +89,6 @@
 }
 .btn:active,
 .tabbar__tab:active,
-.audience-switch__opt:active,
 .board__list-item:active,
 .chip:active,
 .kitchen__day-meal:active {

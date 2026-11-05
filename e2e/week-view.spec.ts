@@ -111,7 +111,7 @@ test('the view survives a reload — it is this device’s chosen glance', async
   await page.goto('/board')
 
   // Pick it from the toggle rather than seeding it, so this covers the SAVE too.
-  await page.locator('.boardview__opt', { hasText: 'La semaine' }).click()
+  await page.locator('.boardview .segmented__opt', { hasText: 'La semaine' }).click()
   await expect(page.locator('.weekv')).toBeVisible()
 
   await page.reload()

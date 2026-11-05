@@ -109,17 +109,17 @@ test('a parent gets the « Affichage » switcher and can leave the stepper for a
   await expect(gear).toHaveAttribute('aria-expanded', 'true')
 
   // Focus = the stepper. Land there first so the switch away is a real transition.
-  await page.getByRole('button', { name: 'Focus', exact: true }).click()
+  await page.getByRole('radio', { name: 'Focus', exact: true }).click()
   await expect(page.locator('.cook__nav')).toBeVisible()
 
   // Switching to a scroll layout retires the stepper furniture: no arrows, no
   // "n / total" — a scroll page's way out is the small ✕ in the bar instead.
-  await page.getByRole('button', { name: 'Recette', exact: true }).click()
+  await page.getByRole('radio', { name: 'Recette', exact: true }).click()
   await expect(page.locator('.cook__nav')).toHaveCount(0)
   await expect(page.locator('.cook__count')).toHaveCount(0)
 
   // …and back, so the switch isn't one-way.
-  await page.getByRole('button', { name: 'Focus', exact: true }).click()
+  await page.getByRole('radio', { name: 'Focus', exact: true }).click()
   await expect(page.locator('.cook__nav')).toBeVisible()
 })
 

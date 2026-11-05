@@ -798,7 +798,8 @@
 }
 /* « Demander » vs « Classer » — the segment that says which of the two things the
    mic is about to do (ask a question, or file what you said). Sits above the hint. */
-.ask-sheet__modes {
+.segmented.ask-sheet__modes {
+  display: flex;
   margin-bottom: 0.7rem;
 }
 /* « Classer » — the capture spine, moved here from the ＋ sheet. Stacks its field,

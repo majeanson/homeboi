@@ -1,3 +1,5 @@
+import { SubTabs } from './SubTabs'
+import { Segmented } from './Segmented'
 import { IconButton } from './IconButton'
 import { StatusMessage } from './StatusMessage'
 import { useCallback, useEffect, useRef, useState, type TouchEvent as ReactTouchEvent } from 'react'
@@ -10,7 +12,6 @@ import { ingredientsForStep, stepSentences, stripStepOrdinal } from '../lib/reci
 import { applyVersion, groupSections, recipeVersions, versionGroups, versionLabel } from '../lib/recipeSections'
 import { Chip } from './Chip'
 import { Cluster } from './Layout'
-import { useHScroll } from '../lib/hscroll'
 import { imgUrl } from '../lib/image'
 import { spokenIngredient } from '../lib/measure'
 import { useSpeak, stopSpeaking } from '../lib/speak'
@@ -207,8 +208,6 @@ export function CookMode({
   const versions = recipeVersions(recipe.ingredients, recipe.steps)
   const [version, setVersion] = useState<string | null>(null)
   const pick = toddler ? null : version
-  // The sibling-dish tabs scroll sideways: the wheel maps onto them (lib/hscroll).
-  const siblingsScroll = useHScroll<HTMLDivElement>()
   const applied = applyVersion(recipe.ingredients, recipe.steps, pick)
   const ingGroups = versionGroups(groupSections(recipe.ingredients), 'ingredients', versions, pick)
   const stepGroups = versionGroups(groupSections(recipe.steps), 'steps', versions, pick)
@@ -531,38 +530,29 @@ export function CookMode({
           collapsed by default so the step owns the screen at the stove. */}
       {!toddler && showDisplay && (
         <div className="cook__display">
-          <div className="cook__segctl" role="group" aria-label={t.recipes.cookViewLabel}>
-            {VIEW_ORDER.map((v) => (
-              <button
-                key={v}
-                type="button"
-                className={'cook__segbtn' + (view === v ? ' is-on' : '')}
-                onClick={() => changeView(v)}
-                aria-pressed={view === v}
-                title={t.recipes.cookView[v]}
-                aria-label={t.recipes.cookView[v]}
-              >
-                <Icon name={VIEW_ICON[v]} size={18} />
-              </button>
-            ))}
-          </div>
-          <div className="cook__segctl cook__density" role="group" aria-label={t.recipes.cookDensityLabel}>
-            {DENSITY_ORDER.map((d) => (
-              <button
-                key={d}
-                type="button"
-                className={'cook__segbtn' + (density === d ? ' is-on' : '')}
-                onClick={() => setCookDensity(d)}
-                aria-pressed={density === d}
-                title={t.recipes.cookDensity[d]}
-                aria-label={t.recipes.cookDensity[d]}
-              >
+          <Segmented
+            size="sm"
+            ariaLabel={t.recipes.cookViewLabel}
+            value={view}
+            onChange={changeView}
+            options={VIEW_ORDER.map((v) => ({ key: v, icon: VIEW_ICON[v], ariaLabel: t.recipes.cookView[v] }))}
+          />
+          <Segmented
+            size="sm"
+            className="cook__density"
+            ariaLabel={t.recipes.cookDensityLabel}
+            value={density}
+            onChange={setCookDensity}
+            options={DENSITY_ORDER.map((d) => ({
+              key: d,
+              ariaLabel: t.recipes.cookDensity[d],
+              label: (
                 <span className={`cook__dens-a cook__dens-a--${d}`} aria-hidden="true">
                   A
                 </span>
-              </button>
-            ))}
-          </div>
+              ),
+            }))}
+          />
           {/* Show / hide each step's own ingredients ("what you need right now")
               across every view. Only offered when the recipe has both lists. */}
           {canPairIngs && (
@@ -585,19 +575,13 @@ export function CookMode({
           of its own. Sits below the bar so the layout/size controls govern whichever
           dish is showing. */}
       {siblings && siblings.titles.length > 1 && (
-        <div ref={siblingsScroll.ref} className="cook__siblings" role="tablist" aria-label={t.kitchen.cookTogether}>
-          {siblings.titles.map((title, i) => (
-            <button
-              key={i}
-              type="button"
-              role="tab"
-              aria-selected={i === siblings.active}
-              className={'cook__sibling' + (i === siblings.active ? ' is-on' : '')}
-              onClick={() => siblings.onSwitch(i)}
-            >
-              {title}
-            </button>
-          ))}
+        <div className="cook__tabstrip">
+          <SubTabs
+            ariaLabel={t.kitchen.cookTogether}
+            value={String(siblings.active)}
+            onSelect={(k) => siblings.onSwitch(Number(k))}
+            options={siblings.titles.map((title, i) => ({ key: String(i), label: title }))}
+          />
         </div>
       )}
 
@@ -716,25 +700,16 @@ export function CookMode({
           // Ingredients pinned beside the steps. On a tablet both panes show; on a
           // narrow phone the tab pair flips between them (CSS owns the breakpoint).
           <div className="cook__split" data-tab={splitTab}>
-            <div className="cook__split-tabs" role="tablist" aria-label={t.recipes.cookView.split}>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={splitTab === 'ings'}
-                className={'cook__split-tab' + (splitTab === 'ings' ? ' is-on' : '')}
-                onClick={() => setSplitTab('ings')}
-              >
-                {t.recipes.ingredients}
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={splitTab === 'steps'}
-                className={'cook__split-tab' + (splitTab === 'steps' ? ' is-on' : '')}
-                onClick={() => setSplitTab('steps')}
-              >
-                {t.recipes.steps}
-              </button>
+            <div className="cook__split-tabs cook__tabstrip">
+              <SubTabs
+                ariaLabel={t.recipes.cookView.split}
+                value={splitTab}
+                onSelect={setSplitTab}
+                options={[
+                  { key: 'ings' as const, label: t.recipes.ingredients },
+                  { key: 'steps' as const, label: t.recipes.steps },
+                ]}
+              />
             </div>
             <aside className="cook__split-pane cook__split-ings">
               <h2 className="cook__full-h">{t.recipes.ingredients}</h2>

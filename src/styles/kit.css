@@ -632,6 +632,77 @@
 .searchfield__input::placeholder {
   color: var(--ink-faint);
 }
+/* THE value picker (components/Segmented.tsx, 2026-11-05) — the .subtabs track and pill,
+   as a radiogroup. Wraps rather than overflows: two labelled options do not fit a 360px
+   settings row, and the shell's overflow-x:hidden would CLIP the second (the OCR pair,
+   62px over). */
+.segmented {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  max-width: 100%;
+  padding: 3px;
+  border-radius: var(--radius-md);
+  background: var(--paper-deep);
+  border: 1px solid var(--line);
+}
+.segmented__opt {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 2.75rem;
+  padding: 0.25rem 0.8rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.segmented__opt.is-on {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.segmented__opt:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+.segmented__opt:active {
+  transform: translateY(1px);
+}
+.segmented__label {
+  white-space: nowrap;
+}
+.segmented--sm .segmented__opt {
+  min-width: 2.4rem;
+  min-height: 2.4rem;
+  padding: 0 0.5rem;
+}
+/* On a tight phone only the selected option keeps its word: same-shaped glyphs in a
+   pill are unguessable, so the control always says what it currently shows. */
+@media (max-width: 520px) {
+  .segmented--collapse .segmented__opt {
+    width: 40px;
+    flex: none;
+    padding: 0;
+  }
+  .segmented--collapse .segmented__label {
+    display: none;
+  }
+  .segmented--collapse .segmented__opt.is-on {
+    width: auto;
+    padding: 0 0.7rem;
+  }
+  .segmented--collapse .segmented__opt.is-on .segmented__label {
+    display: inline;
+  }
+}
 /* The compact face (SearchField size="sm") — inside a picker or a sheet. */
 .searchfield--sm {
   min-height: 2.1rem;

@@ -242,7 +242,7 @@
   }
 }
 .help-armed .cat-pick,
-.help-armed .boardview__opt,
+.help-armed .segmented__opt,
 .help-armed .subtabs__opt,
 .help-armed .help-title,
 .help-armed .help-pick {
@@ -250,7 +250,7 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .help-armed .cat-pick,
-  .help-armed .boardview__opt,
+  .help-armed .segmented__opt,
   .help-armed .subtabs__opt,
   .help-armed .help-title,
   .help-armed .help-pick {

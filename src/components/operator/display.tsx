@@ -1,3 +1,4 @@
+import { Segmented } from '../Segmented'
 import { SettingsRow } from './SettingsRow'
 import { useEffect, useState } from 'react'
 import { SoundToggle } from '../SoundToggle'
@@ -215,34 +216,16 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
         </SettingsRow>
         {(cloudOcrAvailable || aiOn) && (
           <SettingsRow label={o18n.ocrLabel}>
-            <div className="audience-switch mono" role="group" aria-label={o18n.ocrLabel}>
-              <button
-                type="button"
-                className={`audience-switch__opt${ocrChoice !== 'device' && ocrChoice !== 'cloud' ? ' is-active' : ''}`}
-                onClick={() => setOcrEngine('auto')}
-                aria-pressed={ocrChoice !== 'device' && ocrChoice !== 'cloud'}
-              >
-                <InlineIcon name="arrow-clockwise-bold" /> {o18n.ocrAuto}
-              </button>
-              <button
-                type="button"
-                className={`audience-switch__opt${ocrChoice === 'device' ? ' is-active' : ''}`}
-                onClick={() => setOcrEngine('device')}
-                aria-pressed={ocrChoice === 'device'}
-              >
-                <InlineIcon name="camera-bold" /> {o18n.ocrDevice}
-              </button>
-              {cloudOcrAvailable && (
-                <button
-                  type="button"
-                  className={`audience-switch__opt${ocrChoice === 'cloud' ? ' is-active' : ''}`}
-                  onClick={() => setOcrEngine('cloud')}
-                  aria-pressed={ocrChoice === 'cloud'}
-                >
-                  <InlineIcon name="sparkle-bold" /> {o18n.ocrCloud}
-                </button>
-              )}
-            </div>
+            <Segmented
+              ariaLabel={o18n.ocrLabel}
+              value={ocrChoice === 'device' || ocrChoice === 'cloud' ? ocrChoice : 'auto'}
+              onChange={setOcrEngine}
+              options={[
+                { key: 'auto' as const, icon: 'arrow-clockwise-bold' as const, label: o18n.ocrAuto },
+                { key: 'device' as const, icon: 'camera-bold' as const, label: o18n.ocrDevice },
+                ...(cloudOcrAvailable ? [{ key: 'cloud' as const, icon: 'sparkle-bold' as const, label: o18n.ocrCloud }] : []),
+              ]}
+            />
             <p className="operator__seg-hint mono">
               {ocrChoice !== 'device' && ocrChoice !== 'cloud' ? `${o18n.ocrAutoHint} ` : ''}
               {ocrEngine === 'cloud' ? o18n.ocrCloudHint : ocrEngine === 'vision' ? o18n.ocrVisionHint : o18n.ocrDeviceHint}
@@ -255,114 +238,57 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
           </button>
         </SettingsRow>
         <SettingsRow label={o18n.contrastLabel}>
-          <div className="audience-switch mono" role="group" aria-label={o18n.contrastLabel}>
-            <button
-              type="button"
-              className={`audience-switch__opt${contrast === 'normal' ? ' is-active' : ''}`}
-              onClick={() => pickContrast('normal')}
-              aria-pressed={contrast === 'normal'}
-            >
-              <InlineIcon name="sparkle-bold" /> {o18n.contrastNormal}
-            </button>
-            <button
-              type="button"
-              className={`audience-switch__opt${contrast === 'high' ? ' is-active' : ''}`}
-              onClick={() => pickContrast('high')}
-              aria-pressed={contrast === 'high'}
-            >
-              <InlineIcon name="sparkle-bold" /> {o18n.contrastHigh}
-            </button>
-          </div>
+          <Segmented
+            ariaLabel={o18n.contrastLabel}
+            value={contrast}
+            onChange={pickContrast}
+            options={[
+              { key: 'normal' as const, icon: 'sparkle-bold' as const, label: o18n.contrastNormal },
+              { key: 'high' as const, icon: 'sparkle-bold' as const, label: o18n.contrastHigh },
+            ]}
+          />
         </SettingsRow>
         <SettingsRow label={o18n.textScaleLabel}>
-          {/* Mapped rather than hand-written, now that there are three: the third
-              copy of a nine-line button block is where one of them quietly stops
-              matching its siblings. TEXT_SCALES is the order. */}
-          <div className="audience-switch mono" role="group" aria-label={o18n.textScaleLabel}>
-            {TEXT_SCALES.map((s) => (
-              <button
-                key={s}
-                type="button"
-                className={`audience-switch__opt${textScale === s ? ' is-active' : ''}`}
-                onClick={() => pickTextScale(s)}
-                aria-pressed={textScale === s}
-              >
-                <InlineIcon name="magnifying-glass-bold" /> {o18n.textScale[s]}
-              </button>
-            ))}
-          </div>
+          <Segmented
+            ariaLabel={o18n.textScaleLabel}
+            value={textScale}
+            onChange={pickTextScale}
+            options={TEXT_SCALES.map((s) => ({ key: s, icon: 'magnifying-glass-bold' as const, label: o18n.textScale[s] }))}
+          />
         </SettingsRow>
         <SettingsRow label={o18n.viewLabel}>
-          <div
-            className="audience-switch mono"
-            role="group"
-            aria-label={t.audience.parent + ' / ' + t.audience.kid + ' / ' + t.audience.simple + ' / ' + t.audience.guest}
-          >
-            <button
-              type="button"
-              className={`audience-switch__opt${audience === 'parent' && !guestPreview ? ' is-active' : ''}`}
-              onClick={() => {
-                setGuestPreview(false)
-                setAudience('parent')
-              }}
-              aria-pressed={audience === 'parent' && !guestPreview}
-            >
-              <InlineIcon name="user-bold" /> {t.audience.parent}
-            </button>
-            <button
-              type="button"
-              className={`audience-switch__opt${audience === 'toddler' && !guestPreview ? ' is-active' : ''}`}
-              onClick={() => {
-                setGuestPreview(false)
-                setAudience('toddler')
-              }}
-              aria-pressed={audience === 'toddler' && !guestPreview}
-            >
-              <InlineIcon name="baby-bold" /> {t.audience.kid}
-            </button>
-            {/* bmad/08 A-1 — the post-reader « Simple » lens (grandma). */}
-            <button
-              type="button"
-              className={`audience-switch__opt${audience === 'simple' && !guestPreview ? ' is-active' : ''}`}
-              onClick={() => {
-                setGuestPreview(false)
-                setAudience('simple')
-              }}
-              aria-pressed={audience === 'simple' && !guestPreview}
-            >
-              <InlineIcon name="hand-heart-bold" /> {t.audience.simple}
-            </button>
-            <button
-              type="button"
-              className={`audience-switch__opt${guestPreview ? ' is-active' : ''}`}
-              onClick={() => setGuestPreview(true)}
-              aria-pressed={guestPreview}
-            >
-              <InlineIcon name="user-bold" /> {t.audience.guest}
-            </button>
-          </div>
+          {/* « Simple » (bmad/08 A-1) is the post-reader lens (grandma). */}
+          <Segmented
+            ariaLabel={t.audience.parent + ' / ' + t.audience.kid + ' / ' + t.audience.simple + ' / ' + t.audience.guest}
+            value={guestPreview ? 'guest' : audience}
+            onChange={(k) => {
+              if (k === 'guest') {
+                setGuestPreview(true)
+                return
+              }
+              setGuestPreview(false)
+              setAudience(k)
+            }}
+            options={[
+              { key: 'parent' as const, icon: 'user-bold' as const, label: t.audience.parent },
+              { key: 'toddler' as const, icon: 'baby-bold' as const, label: t.audience.kid },
+              { key: 'simple' as const, icon: 'hand-heart-bold' as const, label: t.audience.simple },
+              { key: 'guest' as const, icon: 'user-bold' as const, label: t.audience.guest },
+            ]}
+          />
           {guestPreview && <p className="operator__seg-hint mono">{t.audience.guestPreviewHint}</p>}
           {audience === 'simple' && !guestPreview && <p className="operator__seg-hint mono">{t.audience.simpleHint}</p>}
         </SettingsRow>
         <SettingsRow label={o18n.tutorialLabel}>
-          <div className="audience-switch mono" role="group" aria-label={o18n.tutorialTitle}>
-            <button
-              type="button"
-              className={`audience-switch__opt${tutorial ? ' is-active' : ''}`}
-              onClick={() => setTutorial(true)}
-              aria-pressed={tutorial}
-            >
-              <InlineIcon name="graduation-cap-bold" /> {o18n.tutorialOn}
-            </button>
-            <button
-              type="button"
-              className={`audience-switch__opt${!tutorial ? ' is-active' : ''}`}
-              onClick={() => setTutorial(false)}
-              aria-pressed={!tutorial}
-            >
-              <InlineIcon name="lightning-bold" /> {o18n.tutorialOff}
-            </button>
-          </div>
+          <Segmented
+            ariaLabel={o18n.tutorialTitle}
+            value={tutorial ? 'on' : 'off'}
+            onChange={(k) => setTutorial(k === 'on')}
+            options={[
+              { key: 'on' as const, icon: 'graduation-cap-bold' as const, label: o18n.tutorialOn },
+              { key: 'off' as const, icon: 'lightning-bold' as const, label: o18n.tutorialOff },
+            ]}
+          />
         </SettingsRow>
         {/* The calm "Récents" session log (#38) — a quiet look back at what just
             happened, with a late Annuler. Reachable here even after the toast fades. */}

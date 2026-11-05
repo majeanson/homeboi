@@ -1,3 +1,4 @@
+import { Segmented } from '../components/Segmented'
 import { SettingsRow } from '../components/operator/SettingsRow'
 import { Field } from '../components/Field'
 import { IconButton } from '../components/IconButton'
@@ -650,20 +651,31 @@ function AxisToggle<T extends string>({
   return (
     <div className="devkit__axis">
       <span className="devkit__axis-label mono">{label}</span>
-      <div className="devkit__seg">
-        {options.map((o) => (
-          <button
-            key={o.v}
-            type="button"
-            className={'devkit__seg-btn mono' + (value === o.v ? ' is-on' : '')}
-            onClick={() => onChange(o.v)}
-            aria-pressed={value === o.v}
-          >
-            {o.label}
-          </button>
-        ))}
-      </div>
+      <Segmented size="sm" ariaLabel={label} value={value} onChange={onChange} options={options.map((o) => ({ key: o.v, label: o.label }))} />
     </div>
+  )
+}
+
+// A VALUE picker (radiogroup), not tabs: SubTabs switches panels. Arrow keys move + select.
+function SegmentedDemo() {
+  const [v, setV] = useState<'a' | 'b' | 'c'>('a')
+  const opts = [
+    { key: 'a' as const, icon: 'sun-bold' as const, label: 'Jour' },
+    { key: 'b' as const, icon: 'moon-stars-bold' as const, label: 'Nuit' },
+    { key: 'c' as const, icon: 'sparkle-bold' as const, label: 'Auto' },
+  ]
+  return (
+    <>
+      <Demo label="labelled">
+        <Segmented ariaLabel="Thème" value={v} onChange={setV} options={opts} />
+      </Demo>
+      <Demo label="size='sm', icon-only: ariaLabel names each option">
+        <Segmented size="sm" ariaLabel="Thème" value={v} onChange={setV} options={opts.map((o) => ({ key: o.key, icon: o.icon, ariaLabel: o.label }))} />
+      </Demo>
+      <Demo label="collapse: on a phone only the selected option keeps its word">
+        <Segmented collapse ariaLabel="Thème" value={v} onChange={setV} options={opts.map((o) => ({ ...o, ariaLabel: o.label }))} />
+      </Demo>
+    </>
   )
 }
 
@@ -1093,6 +1105,13 @@ export function DevKit() {
       ),
     },
     // ── Inputs ──────────────────────────────────────────────────────────
+    {
+      cat: 'Saisie',
+      name: 'Segmented',
+      file: 'components/Segmented.tsx',
+      kw: 'segmented radiogroup radio choix valeur mode bascule picker',
+      render: () => <SegmentedDemo />,
+    },
     {
       cat: 'Saisie',
       name: 'Field',

@@ -63,26 +63,6 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
-/* A small segmented control — the gallery's own toggle, kept minimal. */
-.devkit__seg {
-  display: inline-flex;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-pill);
-  overflow: hidden;
-}
-.devkit__seg-btn {
-  border: 0;
-  background: transparent;
-  color: var(--ink-soft);
-  padding: 0.3rem 0.7rem;
-  font-size: 0.8rem;
-  min-height: 36px;
-  cursor: pointer;
-}
-.devkit__seg-btn.is-on {
-  background: var(--accent);
-  color: var(--accent-ink);
-}
 .devkit__warn {
   flex-basis: 100%;
   margin: 0;

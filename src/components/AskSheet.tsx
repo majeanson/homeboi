@@ -1,3 +1,4 @@
+import { Segmented } from './Segmented'
 import { IconButton } from './IconButton'
 import { useEffect, useRef, useState } from 'react'
 import { useT } from '../i18n'
@@ -6,11 +7,9 @@ import { useSpeak } from '../lib/speak'
 import { useVoiceInput } from '../lib/useVoiceInput'
 import { AskAnswerCard, speakableAnswer, type AnswerKind, type AskAnswerStatus } from '../lib/askAnswer'
 import { CaptureForm } from './CaptureForm'
-import { Cluster } from './Layout'
 import { EditField } from './EditField'
 import { Modal } from './Modal'
 import { VoiceButton, VoiceStatus } from './VoiceButton'
-import { Icon } from './Icon'
 
 // E-22 — « Parle à la maison » : the ONE voice surface, reachable from every hub tab's
 // header. Two things you can say to the house, told apart by an explicit segment rather
@@ -109,24 +108,16 @@ export function AskSheet({ aiEnabled = true, onClose }: { aiEnabled?: boolean; o
       {/* Which of the two things you're about to say. Hidden when AI is off — only
           « Classer » remains, and a one-option segment is noise. */}
       {aiEnabled && (
-        <Cluster fill className="ask-sheet__modes" role="group" aria-label={t.ask.title}>
-          <button
-            type="button"
-            className={'btn btn--sm' + (mode === 'ask' ? ' btn--primary' : '')}
-            aria-pressed={mode === 'ask'}
-            onClick={() => pick('ask')}
-          >
-            <Icon name="magnifying-glass-bold" size={16} /> {t.ask.modeAsk}
-          </button>
-          <button
-            type="button"
-            className={'btn btn--sm' + (mode === 'file' ? ' btn--primary' : '')}
-            aria-pressed={mode === 'file'}
-            onClick={() => pick('file')}
-          >
-            <Icon name="sparkle-bold" size={16} /> {t.ask.modeFile}
-          </button>
-        </Cluster>
+        <Segmented
+          className="ask-sheet__modes"
+          ariaLabel={t.ask.title}
+          value={mode}
+          onChange={pick}
+          options={[
+            { key: 'ask' as const, icon: 'magnifying-glass-bold' as const, label: t.ask.modeAsk },
+            { key: 'file' as const, icon: 'sparkle-bold' as const, label: t.ask.modeFile },
+          ]}
+        />
       )}
 
       <p className="ask-sheet__hint mono">{mode === 'ask' ? t.ask.hint : t.ask.fileHint}</p>

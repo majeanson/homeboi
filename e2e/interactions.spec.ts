@@ -144,7 +144,7 @@ test.describe('navigation', () => {
     await mockApi(page)
     await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, boardView: 'month' })
     await page.goto('/board')
-    const on = page.locator('.boardview__opt[aria-pressed="true"]')
+    const on = page.locator('.boardview .segmented__opt[aria-checked="true"]')
     await expect(on).toHaveAttribute('aria-label', 'Mois', { timeout: 15_000 })
     await page.locator('.hubnav a[href="/board"]').click()
     await expect(on).toHaveAttribute('aria-label', 'Grille')
@@ -175,8 +175,8 @@ test.describe('navigation', () => {
     // text-scale, view, tutorial); scope to the parent/kid/guest "view" group and
     // click its "Enfant" option rather than a global .nth(1).
     await page
-      .getByRole('group', { name: /Parent.*Enfant.*Invité/ })
-      .getByRole('button', { name: 'Enfant' })
+      .getByRole('radiogroup', { name: /Parent.*Enfant.*Invité/ })
+      .getByRole('radio', { name: 'Enfant' })
       .click()
     // The toddler lens comes up (bounced to /board) and Réglages leaves the nav.
     await expect(page).toHaveURL(/\/board$/)
@@ -325,8 +325,8 @@ test.describe('toggles', () => {
     // Scope to the parent/kid/guest "view" group (the Affichage tab has several
     // .audience-switch groups now) and click its "Enfant" option.
     await page
-      .getByRole('group', { name: /Parent.*Enfant.*Invité/ })
-      .getByRole('button', { name: 'Enfant' })
+      .getByRole('radiogroup', { name: /Parent.*Enfant.*Invité/ })
+      .getByRole('radio', { name: 'Enfant' })
       .click()
     // Flipping to the kid lens in Réglages bounces out of settings (the one-way
     // door): the hub comes up in the toddler layer on the board.

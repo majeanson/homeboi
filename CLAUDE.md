@@ -90,7 +90,7 @@ Before implementing ANY change, do this first — it's faster than the rework it
 | A read that FAILED with nothing cached | **`LoadError`** — one line + « Réessayer », and it drops the error TONE when the device is merely offline (that is weather, not a surprise; the board already says it once at the top). Never a bare `<p role="alert">`, never a silent empty state: an empty list where a fetch failed quietly hides real data | `components/LoadError.tsx` |
 | A small pill / tag / badge (toggle · action · link · label · expander) | **`Chip`** — pick the shape with the prop (`selected` / `onClick` / `to` / neither / `expanded`); a **test** enforces it (`src/lib/chip-rule.test.ts`): a hand-rolled `className="chip"` fails the build. If a call site does not fit, EXTEND Chip — that is how the five shapes got there | `components/Chip.tsx` |
 | Collapse a secondary group (calm) | **`Disclosure`** / `useSingleOpen` | `components/Disclosure.tsx` |
-| In-page segmented sub-tabs ("one job at a time") | **`SubTabs`** (the `.subtabs` family) | `components/SubTabs.tsx` (help-mode aware; used by La cuisine + Maison) |
+| In-page sub-tabs that switch PANELS · a VALUE picker (one of a few) | **`SubTabs`** · **`Segmented`** (`role=radiogroup`; `segmented-rule.test.ts`) | `components/SubTabs.tsx` (help-mode aware; used by La cuisine + Maison) |
 | A horizontal row of buttons / chips / controls | **`Cluster`** (wraps) / **`Rail`** (scrolls one line) — never a hand-rolled flex row | `components/Layout.tsx` (`.cluster`/`.rail` in `core.css`; see [Horizontal overflow](#horizontal-overflow)) |
 | A row that scrolls sideways with a hidden scrollbar | **`useHScroll()`** — maps the mouse wheel onto it, reports `overflowing`/`atStart`/`atEnd` | `lib/hscroll.ts` (`Rail`/`SubTabs` wire it already; see [Horizontal overflow](#horizontal-overflow)) |
 | A dialog / bottom sheet | **`Modal`** (`title`→its a11y name, `footer` = THE button row, `size`) / **`Sheet`** (`title`) — both own the phone's back button through `useModal({ history: true })`; a ROUTED scene never passes it (the router owns its entry). `overlay-rule.test.ts` fails a `role="dialog"` or a `useModal(` outside the shells without a reason | `components/Modal.tsx`, `components/Sheet.tsx`, `lib/useModal.ts` |
@@ -674,7 +674,7 @@ scroller. Réglages ▸ Régler ▸ Système's (then) nine subs were simply uncl
   `keyboard-fit`, `write-rule`, `write-owners`, `swallow-rule`, `intl-rule`, `nested-interactive`,
   `discovery`, `demoHousehold`, `realtime`, `layer-order`, `chip-rule`, `img-rule`, `glossary`,
   `undoTier`, `tour-rule`, `docCounts`, `devkitParity`, `link-button-rule`, `autofocus`,
-  `usageRule`, `csrfExempt`, `schemaRefs`, `deadCopy`, `keyShape`, `load-error-rule`, `dnd-mirror`, `hscroll-rule`, `kit-class-rule`, `avatar-rule`, `empty-rule`, `status-rule`, `search-rule`, `icon-button-rule`, `btn-order` — are the best thing in this codebase, and a green one
+  `usageRule`, `csrfExempt`, `schemaRefs`, `deadCopy`, `keyShape`, `load-error-rule`, `dnd-mirror`, `hscroll-rule`, `kit-class-rule`, `avatar-rule`, `empty-rule`, `status-rule`, `search-rule`, `icon-button-rule`, `btn-order`, `field-rule`, `segmented-rule` — are the best thing in this codebase, and a green one
   proves nothing on its own: `nested-interactive` once reported green over the very
   defect it was written for (STATE.md §5 has the story). Plant the violation (or stash
   the fix), watch the guard fail, restore. **And check that the plant actually landed**

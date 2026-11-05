@@ -79,24 +79,6 @@
   align-items: center;
   gap: 0.4rem;
 }
-/* Mode switch — a little segmented row of tool icons. */
-.drawpad__mode {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.1rem;
-  height: 2.1rem;
-  border: 2px solid var(--line);
-  border-radius: 0.6rem;
-  background: var(--card);
-  color: var(--ink-soft);
-  cursor: pointer;
-}
-.drawpad__mode.is-on {
-  border-color: var(--accent);
-  color: var(--ink);
-  box-shadow: 0 0 0 2px var(--accent);
-}
 /* Brush-size picker: a centred dot whose diameter previews the stroke. */
 .drawpad__size {
   display: inline-flex;
@@ -412,7 +394,8 @@
   text-align: center;
 }
 /* Toddler lens: bigger, friendlier targets across the whole pad. */
-.drawpad--kid .drawpad__mode,
+.drawpad--kid .drawpad__modes .segmented__opt,
+.drawpad--kid .drawpad__modes .btn--icon,
 .drawpad--kid .drawpad__size,
 .drawpad--kid .drawpad__pack,
 .drawpad--kid .drawpad__sticker,
@@ -475,7 +458,8 @@
   min-height: 2.4rem;
 }
 /* Smaller default targets (toddler keeps its bigger ones from .drawpad--kid). */
-.drawpad:not(.drawpad--kid) .drawpad__mode,
+.drawpad:not(.drawpad--kid) .drawpad__modes .segmented__opt,
+.drawpad:not(.drawpad--kid) .drawpad__modes .btn--icon,
 .drawpad:not(.drawpad--kid) .drawpad__size,
 .drawpad:not(.drawpad--kid) .drawpad__pack,
 .drawpad:not(.drawpad--kid) .drawpad__tool,
@@ -600,3 +584,12 @@
   padding-top: 0.15rem;
 }
 
+
+/* The tool picker (Segmented) in the pad's bar: the size rules above own the box, so
+   its own floors step aside (a 1.85rem tool in a one-line bar; 2.9rem for the toddler). */
+.drawpad__modes .segmented__opt,
+.drawpad__modes .btn--icon {
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+}

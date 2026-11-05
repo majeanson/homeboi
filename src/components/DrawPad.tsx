@@ -1,3 +1,5 @@
+import { IconButton } from './IconButton'
+import { Segmented } from './Segmented'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -1702,15 +1704,16 @@ export function DrawPad({
           hidden, so useHScroll maps the wheel — a mouse otherwise can't reach the tools
           past the right edge. */}
       <div className="drawpad__bar drawpad__bar--tools" ref={toolsScroll.ref}>
-        <div className="drawpad__modes" role="group" aria-label={t.memo.tool}>
-          {MODES.map((m) => (
-            <button key={m.key} type="button" className={'drawpad__mode' + (mode === m.key ? ' is-on' : '')} onClick={() => setMode(m.key)} aria-label={m.label} aria-pressed={mode === m.key}>
-              <Icon name={m.icon} size={18} />
-            </button>
-          ))}
-          <button type="button" className={'drawpad__mode' + (symmetry ? ' is-on' : '')} onClick={() => setSymmetry((v) => !v)} aria-label={t.memo.symmetry} aria-pressed={symmetry}>
-            <Icon name="sparkle-bold" size={18} />
-          </button>
+        <div className="drawpad__modes">
+          <Segmented
+            size="sm"
+            ariaLabel={t.memo.tool}
+            value={mode}
+            onChange={setMode}
+            options={MODES.map((m) => ({ key: m.key, icon: m.icon, ariaLabel: m.label }))}
+          />
+          {/* Symmetry is an independent ON/OFF beside the tool, not a fifth tool. */}
+          <IconButton icon="sparkle-bold" label={t.memo.symmetry} size="sm" iconSize={18} pressed={symmetry} onClick={() => setSymmetry((v) => !v)} />
         </div>
         <div className="drawpad__sizes" role="group" aria-label={t.memo.size}>
           {SIZES.map((s, i) => (

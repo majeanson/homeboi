@@ -121,7 +121,7 @@ test('a guest can flip this device to English and to the toddler lens', async ({
   await expect(page.getByRole('button', { name: 'English', exact: true })).toBeVisible()
 
   // The audience lens likewise — a demo that can't show the toddler view shows half the app.
-  await expect(page.locator('.audience-switch__opt').first()).toBeVisible()
+  await expect(page.locator('.segmented__opt').first()).toBeVisible()
 })
 
 test('a tab with no device-local sub drops the lens toggle and stands on the guide', async ({ page }) => {
