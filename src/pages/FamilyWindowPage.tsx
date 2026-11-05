@@ -1,3 +1,4 @@
+import { SceneHead } from '../components/SceneHead'
 import { Loading } from '../components/Fallback'
 // B-11 (bmad/10) — handoff.css moved out of the eager shell (uniquely-named
 // .handoff__/.welcome__ classes); load it whenever this page renders instead.
@@ -53,14 +54,7 @@ export function FamilyWindowPage() {
   return (
     <div className="scene family-window" aria-label={t.shareMode.familyTitle}>
       {preview && <SharePreviewBar />}
-      <header className="scene__head">
-        <div className="scene__head-titles">
-          <h2 className="pm-sheet__title">
-            <InlineIcon name="hand-heart-bold" /> {t.shareMode.familyTitle}
-          </h2>
-          {data?.householdName && <span className="scene__head-sub mono">{data.householdName}</span>}
-        </div>
-      </header>
+      <SceneHead icon="hand-heart-bold" title={t.shareMode.familyTitle} subtitle={data?.householdName} />
 
       <div className="scene__body welcome__body">
         {isLoading && !data ? (

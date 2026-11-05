@@ -1,3 +1,4 @@
+import { SceneHead } from '../components/SceneHead'
 import { Loading } from '../components/Fallback'
 // B-11 (bmad/10) — handoff.css moved out of the eager shell (uniquely-named
 // .welcome__ classes); load it whenever this page renders instead.
@@ -43,19 +44,11 @@ export function WelcomePage() {
   return (
     <div className="scene welcome" aria-label={t.shareMode.welcomeTitle}>
       {preview && <SharePreviewBar />}
-      <header className="scene__head">
-        <div className="scene__head-titles">
-          <h2 className="pm-sheet__title">
-            <InlineIcon name="hand-heart-bold" /> {t.shareMode.welcomeTitle}
-          </h2>
-          {data?.householdName && <span className="scene__head-sub mono">{data.householdName}</span>}
-        </div>
-        {/* Print the visitor card to tape on the fridge / by the door (#35). The
-            @media print block (handoff.css) strips app chrome to a clean card. */}
-        <button type="button" className="btn btn--sm no-print" onClick={() => window.print()}>
-          <InlineIcon name="printer-bold" /> {t.shareMode.print}
-        </button>
-      </header>
+      <SceneHead icon="hand-heart-bold" title={t.shareMode.welcomeTitle} subtitle={data?.householdName} action={
+          <button type="button" className="btn btn--sm no-print" onClick={() => window.print()}>
+            <InlineIcon name="printer-bold" /> {t.shareMode.print}
+          </button>
+        } />
 
       <div className="scene__body welcome__body">
         {isLoading && !data ? (

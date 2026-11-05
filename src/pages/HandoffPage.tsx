@@ -1,3 +1,4 @@
+import { SceneHead } from '../components/SceneHead'
 import { Loading } from '../components/Fallback'
 // B-11 (bmad/10) — carnets.css moved out of the eager shell; this page only needs
 // its lone .handoff__pin-img rule (the « En cas de pépin » pin photo), unmoved to
@@ -74,18 +75,11 @@ export function HandoffPage() {
   return (
     <div className="scene handoff" aria-label={t.shareMode.handoffTitle}>
       {preview && <SharePreviewBar />}
-      <header className="scene__head">
-        <div className="scene__head-titles">
-          <h2 className="pm-sheet__title">
-            <InlineIcon name="heart-bold" /> {t.shareMode.handoffTitle}
-          </h2>
-          {data?.householdName && <span className="scene__head-sub mono">{data.householdName}</span>}
-        </div>
-        {/* A printed handoff on the fridge is genuinely useful (#34). */}
-        <button type="button" className="btn btn--sm no-print" onClick={() => window.print()}>
-          <InlineIcon name="printer-bold" /> {t.shareMode.print}
-        </button>
-      </header>
+      <SceneHead icon="heart-bold" title={t.shareMode.handoffTitle} subtitle={data?.householdName} action={
+          <button type="button" className="btn btn--sm no-print" onClick={() => window.print()}>
+            <InlineIcon name="printer-bold" /> {t.shareMode.print}
+          </button>
+        } />
 
       <div className="scene__body handoff__body">
         {isLoading && !data ? (

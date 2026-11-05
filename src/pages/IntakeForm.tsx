@@ -1,3 +1,4 @@
+import { SceneHead } from '../components/SceneHead'
 import { Field } from '../components/Field'
 // B-11 (bmad/10) — cercle.css moved out of the eager shell (position-immaterial
 // .cercle-*/.cf-* classes); load it whenever this page renders instead.
@@ -258,14 +259,7 @@ export function IntakeForm({ onSwitch }: { onSwitch?: () => void } = {}) {
   return (
     <div className="scene intake" aria-label={t.intake.title}>
       {preview && <SharePreviewBar />}
-      <header className="scene__head">
-        <div className="scene__head-titles">
-          <h2 className="pm-sheet__title">
-            <InlineIcon name="hand-heart-bold" /> {hello}
-          </h2>
-          {data?.householdName && <span className="scene__head-sub mono">{data.householdName}</span>}
-        </div>
-      </header>
+      <SceneHead icon="hand-heart-bold" title={hello} subtitle={data?.householdName} />
 
       <div className="scene__body intake__body">
         <p className="intake__intro mono">{t.intake.intro}</p>

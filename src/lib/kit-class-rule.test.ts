@@ -34,6 +34,9 @@ const OWNED = new Map<string, { owner: string; hint: string }>([
   ['searchfield__open', { owner: 'components/SearchField.tsx', hint: '<SearchField collapsible>' }],
   ['searchfield__clear', { owner: 'components/SearchField.tsx', hint: '<SearchField>' }],
   ['btn--icon', { owner: 'components/IconButton.tsx', hint: '<IconButton icon label variant? size? />' }],
+  ['scene__head', { owner: 'components/SceneHead.tsx', hint: '<SceneHead title subtitle? icon? card? onClose? backTo? action? />' }],
+  ['segmented', { owner: 'components/Segmented.tsx', hint: '<Segmented options value onChange ariaLabel />' }],
+  ['segmented__opt', { owner: 'components/Segmented.tsx', hint: '<Segmented>' }],
   ['operator__seg', { owner: 'components/operator/SettingsRow.tsx', hint: '<SettingsRow label hint? as? />' }],
   ['operator__seg-label', { owner: 'components/operator/SettingsRow.tsx', hint: '<SettingsRow label>' }],
 ])

@@ -1,3 +1,4 @@
+import { SceneHead } from '../components/SceneHead'
 import { Field } from '../components/Field'
 // B-11 (bmad/10) — cercle.css moved out of the eager shell (position-immaterial
 // .cercle-*/.cf-* classes); load it whenever this page renders instead.
@@ -14,7 +15,7 @@ import { EditField } from '../components/EditField'
 import { useMemoAttach } from '../components/MemoAttach'
 import { SharePreviewBar, useSharePreview } from '../components/SharePreviewBar'
 import { GuestExpired } from '../components/GuestExpired'
-import { Icon, InlineIcon } from '../components/Icon'
+import { Icon } from '../components/Icon'
 import { StatusMessage } from '../components/StatusMessage'
 import { IntakeForm } from './IntakeForm'
 
@@ -178,14 +179,7 @@ export function Postbox({ onSwitch }: { onSwitch?: () => void }) {
   return (
     <div className="scene intake" aria-label={t.postbox.title}>
       {preview && <SharePreviewBar />}
-      <header className="scene__head">
-        <div className="scene__head-titles">
-          <h2 className="pm-sheet__title">
-            <InlineIcon name="hand-heart-bold" /> {t.postbox.greeting}
-          </h2>
-          {data?.householdName && <span className="scene__head-sub mono">{data.householdName}</span>}
-        </div>
-      </header>
+      <SceneHead icon="hand-heart-bold" title={t.postbox.greeting} subtitle={data?.householdName} />
 
       <div className="scene__body intake__body">
         {/* D-18 reçu-✓ — a quiet confirmation on the NEXT visit that a prior message
