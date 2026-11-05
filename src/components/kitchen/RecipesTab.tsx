@@ -6,6 +6,7 @@ import { api } from '../../lib/api'
 import { HeartButton } from '../HeartButton'
 import { useLoves } from '../../lib/loves'
 import { useKept } from '../../lib/useKept'
+import { useHScroll } from '../../lib/hscroll'
 import { type Recipe, type RecipeTagsData, RECIPE_TAGS_KEY, recipeImg, allTags, orderTags, tagOptions, recipeTotalMin, tagColor } from '../../lib/recipes'
 import { type Pill, type BuiltinKey, DEFAULT_PILLS, isBuiltinPill, isSortKey, pillKey, matchesCustom } from '../../lib/recipePills'
 import { wash, tintInk, edge } from '../../lib/colors'
@@ -78,6 +79,10 @@ export function RecipesTab({
   // The active SORT pill (mutually exclusive — one orders the grid) and the set of
   // active FILTER pills (≤30 min / Favoris / custom — they stack, AND).
   const [sort, setSort] = useKept<string | null>('recipes.sort', null)
+  // The two side-scrolling filter rows map the mouse wheel (lib/hscroll) — a desktop
+  // otherwise cannot reach the pills past the edge (hscroll-rule.test.ts).
+  const toolsScroll = useHScroll<HTMLDivElement>()
+  const tagsScroll = useHScroll<HTMLDivElement>()
   const [filters, setFilters] = useKept<Set<string>>('recipes.filters', () => new Set())
   // The pills + tag chips used to sit permanently under the search, two wrapping
   // rows of chrome above the very recipes you came to look at. They're behind a
@@ -390,7 +395,7 @@ export function RecipesTab({
       {hasFilterUi && filtersOpen && (
       <div className="recipe-filters" id={FILTERS_ID}>
       {shownPills.length > 0 && (
-        <div className="kitchen__recipe-tools">
+        <div ref={toolsScroll.ref} className="kitchen__recipe-tools">
           {shownPills.map((p) => {
             const on = pillOn(p)
             if (isBuiltinPill(p)) {
@@ -418,7 +423,7 @@ export function RecipesTab({
         </div>
       )}
       {tags.length > 0 && (
-        <div className="kitchen__tag-filter">
+        <div ref={tagsScroll.ref} className="kitchen__tag-filter">
           <Chip selected={tagFilter.length === 0} onClick={() => setTagFilter([])}>
             {t.recipes.allTag}
           </Chip>

@@ -510,6 +510,9 @@ export function DrawPad({
   // a mouse can reach the tools / stickers past the right edge.
   const toolsScroll = useHScroll<HTMLDivElement>()
   const ctxScroll = useHScroll<HTMLDivElement>()
+  // The template picker rows (trace · coloring · sticker) — one mounts at a time, so
+  // one ref serves all three; the wheel maps onto whichever is open (lib/hscroll).
+  const pickScroll = useHScroll<HTMLDivElement>()
   const canvasRef = useRef<HTMLCanvasElement>(null)
   // Committed freehand strokes (source of truth; rendered by perfect-freehand).
   const strokesRef = useRef<Stroke[]>([])
@@ -1820,7 +1823,7 @@ export function DrawPad({
             <Chip key={tp.key} selected={tpl === tp.key} onClick={() => setTpl(tp.key)}>{tp.label}</Chip>
           ))}
           {tpl === 'trace' && (
-            <div className="drawpad__tracepick" role="group" aria-label={t.memo.tplTrace}>
+            <div ref={pickScroll.ref} className="drawpad__tracepick" role="group" aria-label={t.memo.tplTrace}>
               {/* Capital + lowercase shown together (Aa Bb…) — one tap traces the pair. */}
               {TRACE_PAIRS.map((pair) => (
                 <button key={pair} type="button" className={'drawpad__trace' + (traceCh === pair ? ' is-on' : '')} onClick={() => setTraceCh(pair)} aria-label={pair} aria-pressed={traceCh === pair}>{pair}</button>
@@ -1841,7 +1844,7 @@ export function DrawPad({
             </div>
           )}
           {tpl === 'coloring' && (
-            <div className="drawpad__tracepick" role="group" aria-label={t.memo.tplColoring}>
+            <div ref={pickScroll.ref} className="drawpad__tracepick" role="group" aria-label={t.memo.tplColoring}>
               {COLORING.map((sh) => (
                 <Chip key={sh} selected={shape === sh} onClick={() => setShape(sh)}>{t.memo.shapes[sh]}</Chip>
               ))}
@@ -1850,7 +1853,7 @@ export function DrawPad({
           {/* Trace-a-sticker — pick a big faint emoji to trace over. Big picture pack-tabs
               + chunky sticker tiles, same wrapping board as the toddler stamp picker. */}
           {tpl === 'sticker' && (
-            <div className="drawpad__tracepick drawpad__stickerpick" role="group" aria-label={t.memo.tplSticker}>
+            <div ref={pickScroll.ref} className="drawpad__tracepick drawpad__stickerpick" role="group" aria-label={t.memo.tplSticker}>
               <div className="drawpad__packs drawpad__packs--tray">
                 {PACKS.map((p, i) => (
                   <button key={p.key} type="button" className={'drawpad__pack' + (pack === i ? ' is-on' : '')} onClick={() => setPack(i)} aria-label={t.memo.packs[p.key as keyof typeof t.memo.packs]} aria-pressed={pack === i}>{p.icon}</button>

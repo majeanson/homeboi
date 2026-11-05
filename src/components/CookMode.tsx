@@ -8,6 +8,7 @@ import { ingredientsForStep, stepSentences, stripStepOrdinal } from '../lib/reci
 import { applyVersion, groupSections, recipeVersions, versionGroups, versionLabel } from '../lib/recipeSections'
 import { Chip } from './Chip'
 import { Cluster } from './Layout'
+import { useHScroll } from '../lib/hscroll'
 import { imgUrl } from '../lib/image'
 import { spokenIngredient } from '../lib/measure'
 import { useSpeak, stopSpeaking } from '../lib/speak'
@@ -204,6 +205,8 @@ export function CookMode({
   const versions = recipeVersions(recipe.ingredients, recipe.steps)
   const [version, setVersion] = useState<string | null>(null)
   const pick = toddler ? null : version
+  // The sibling-dish tabs scroll sideways: the wheel maps onto them (lib/hscroll).
+  const siblingsScroll = useHScroll<HTMLDivElement>()
   const applied = applyVersion(recipe.ingredients, recipe.steps, pick)
   const ingGroups = versionGroups(groupSections(recipe.ingredients), 'ingredients', versions, pick)
   const stepGroups = versionGroups(groupSections(recipe.steps), 'steps', versions, pick)
@@ -582,7 +585,7 @@ export function CookMode({
           of its own. Sits below the bar so the layout/size controls govern whichever
           dish is showing. */}
       {siblings && siblings.titles.length > 1 && (
-        <div className="cook__siblings" role="tablist" aria-label={t.kitchen.cookTogether}>
+        <div ref={siblingsScroll.ref} className="cook__siblings" role="tablist" aria-label={t.kitchen.cookTogether}>
           {siblings.titles.map((title, i) => (
             <button
               key={i}
