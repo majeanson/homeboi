@@ -32,6 +32,60 @@ const sel = (over: Partial<LineSelection>): LineSelection => ({
   ...over,
 })
 
+describe('a blog page: its list’s name and its footer are not the recipe', () => {
+  const page = [
+    'Pudding', // 0
+    'Ingredients', // 1
+    '2 cups milk', // 2
+    '1/2 cup chia seeds', // 3
+    'Preparation', // 4
+    'Abonnez-vous à notre infolettre', // 5 — a slot BETWEEN two steps
+    'Whisk the milk and the chia.', // 6
+    'Chill it for four hours in the fridge.', // 7
+    'Keeps three days in the fridge, covered.', // 8 — a stray the model filed nowhere
+    'Disclaimer: parts of this article were written by a machine.', // 9
+    'Leave a Comment Cancel reply', // 10
+    'Hey There! I am Molly and I love my blog very much.', // 11
+    '© example.test - 2026 - Privacy Policy', // 12
+  ]
+  const none = { title: null, servings: null, servingsUnit: null, times: { prep: null, cook: null, total: null }, notes: null }
+  const pick = (over: Partial<LineSelection>): LineSelection => ({
+    title: 0,
+    servings: null,
+    prep: null,
+    cook: null,
+    ingredients: [2, 3],
+    steps: [6, 7],
+    notes: [],
+    ingredientSections: [],
+    stepSections: [],
+    ...over,
+  })
+  const read = (over: Partial<LineSelection> = {}) => draftFromSelection(page, pick(over), none)!
+
+  it('a label that only names the list heads nothing', () => {
+    const r = read({ ingredientSections: [{ line: 1, before: 2 }], stepSections: [{ line: 4, before: 6 }] })
+    expect(r.ingredients).toEqual(['2 cups milk', '1/2 cup chia seeds'])
+    expect(r.steps).toEqual(['Whisk the milk and the chia.', 'Chill it for four hours in the fridge.'])
+  })
+  it('a label that says more is a part', () => {
+    const lines = [...page]
+    lines[1] = 'Ingredients for the base'
+    expect(draftFromSelection(lines, pick({ ingredientSections: [{ line: 1, before: 2 }] }), none)!.ingredients[0]).toBe('## Ingredients for the base')
+  })
+  it('a stray above the footer stays a note; from the footer on, nothing is', () => {
+    expect(read().notes).toBe('Keeps three days in the fridge, covered.')
+  })
+  it('the model’s own note stays, past the footer too — unless the line IS footer', () => {
+    expect(read({ notes: [11, 12] }).notes).toBe('Keeps three days in the fridge, covered.\nHey There! I am Molly and I love my blog very much.')
+  })
+  it('an end marker inside the method ends nothing', () => {
+    const r = read({ steps: [5, 6, 7] })
+    expect(r.steps).toContain('Abonnez-vous à notre infolettre')
+    expect(r.notes).toContain('Keeps three days')
+  })
+})
+
 describe('a model selection vs the text read', () => {
   it('the TITLE is the model’s pick; the text read’s first line only when the model picked none', () => {
     expect(draftFromSelection(lines, sel({}), known)!.title).toBe('Muffins au citron')

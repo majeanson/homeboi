@@ -260,6 +260,13 @@ export function fullerSteps(modelSteps: string[], pageSteps: string[] | undefine
   return kept.every((l) => have.has(normLoose(l))) ? pageSteps : modelSteps
 }
 
+// A note that is, word for word, a step says nothing new. Lines a model left unfiled go
+// to the notes, so the very lines `fullerSteps` put back in the method sat there twice.
+export function notesWithoutSteps(notes: string | null | undefined, steps: string[]): string | null {
+  const said = new Set(real(steps).map(normLoose))
+  return (notes ?? '').split('\n').filter((l) => !said.has(normLoose(l))).join('\n') || null
+}
+
 // The recipe's name. The structured data's, unless it is the page's printed name with
 // an SEO tail glued on — « Boeuf bourguignon : la vraie recette : la meilleure recette »
 // (Marmiton), « Côtelettes de porc, sauce aux pommes | IGA »: then the printed one.

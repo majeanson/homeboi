@@ -1,7 +1,7 @@
 import type { Env } from './env'
 import { type AiAttempt, SELECTION_MODEL, type LineSelection, type Lang, selectRecipeLines, selectionLines } from './ai'
 import { detectLang } from './langDetect'
-import { MAX_NOTES_LEN, MAX_STEPS, NO_TIMES, NOTE_HEADING, PAGE_FOOTER, type RecipeTimes, STEP_MARKED, VERSION_LABEL, isMetaLine, parseRecipeText, parseYield, refineSteps, textToMinutes } from './recipeImport'
+import { ING_HEADING, MAX_NOTES_LEN, MAX_STEPS, NOISE_END, NO_TIMES, NOTE_HEADING, PAGE_FOOTER, type RecipeTimes, STEP_HEADING, STEP_MARKED, VERSION_LABEL, isMetaLine, parseRecipeText, parseYield, refineSteps, textToMinutes } from './recipeImport'
 import { jsonFragmentsToText, repairRecipeRead, stripTranscriptPreamble } from './recipeRepair'
 import { dropDanglingHeadings, makeSectionHeading } from './recipeSections'
 
@@ -137,8 +137,13 @@ export function draftFromSelection(lines: string[], sel: LineSelection, known: K
   // (« Pour la marinade » was put above the whole list, 2026-10-30). A label with no
   // picked line after it heads nothing and is dropped.
   type Part = { line: number; before: number; title?: string }
+  // A label that only names the list itself (« Ingredients », « Préparation ») heads
+  // nothing: the form already says which list this is (« ## Ingredients » over the whole
+  // list, 2026-11-05). A part that says more (« Ingrédients de la sauce ») is a part.
+  const namesTheList = (l: string) => ING_HEADING.exec(l)?.[1] === '' || STEP_HEADING.exec(l)?.[1] === ''
   const withParts = (items: number[], parts: Part[]): string[] => {
     const pending = parts
+      .filter((p) => p.title != null || !namesTheList(label(p.line)))
       .map((p) => ({ line: p.line, before: items.find((i) => i > p.line) ?? -1, title: p.title ?? label(p.line) }))
       .filter((p) => p.before >= 0)
       .sort((a, b) => a.before - b.before)
@@ -248,9 +253,16 @@ export function draftFromSelection(lines: string[], sel: LineSelection, known: K
   // A label heading nothing: a colon, or a short capitalised line — « Servir chaud avec du
   // pain » (five words, no period) is a step, so a bare label stays under four words.
   const isBareLabel = (i: number) => isLabel(i) && (/:\s*$/.test(lines[i]) || lines[i].split(/\s+/).length <= 4)
+  // The page's FOOTER starts at the first end marker after the method (a disclaimer, the
+  // comment form, © — the same NOISE_END that ends a pasted recipe): the rule above keeps
+  // a printed line because it might be the recipe's, and these never are. Only after the
+  // last step: an « Abonnez-vous » slot between two steps ends nothing.
+  const isFooterMark = (i: number) => lastStep >= 0 && i > lastStep && NOISE_END.test(bare(i))
+  const footerAt = lines.findIndex((_, i) => isFooterMark(i))
   const isFurniture = (i: number) => {
     const l = lines[i]
     return (
+      (footerAt >= 0 && i >= footerAt) ||
       (sel.title != null && i < sel.title) ||
       l === known.title ||
       isMetaLine(l) ||
@@ -300,7 +312,7 @@ export function draftFromSelection(lines: string[], sel: LineSelection, known: K
   // A bare figure joinLoneNumbers glued onto a note (a site's « 1 » heading its tip) comes
   // off: a note needs no number — a numbered line that IS a step went to the steps above.
   const notes =
-    [...noteIdx.filter((i) => !numberedNotes.includes(i)), ...strayNotes]
+    [...noteIdx.filter((i) => !numberedNotes.includes(i) && !isFooterMark(i)), ...strayNotes]
       .sort((a, b) => a - b)
       .map((i) => bare(i).replace(/^\d{1,2}\s+(?=[A-ZÀ-ÖŒ«])/, ''))
       .join('\n')

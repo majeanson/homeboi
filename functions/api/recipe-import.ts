@@ -3,7 +3,7 @@ import { badRequest, ok, readJson, serviceUnavailable } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { resolveLang } from '../_lib/ai'
 import { aiUsable } from '../_lib/aiPref'
-import { type CapturedPage, type PageSource, fullerSteps, halfRead, readPage, sourceFromCapture, sourceFromHtml } from '../_lib/recipeImportPage'
+import { type CapturedPage, type PageSource, fullerSteps, halfRead, notesWithoutSteps, readPage, sourceFromCapture, sourceFromHtml } from '../_lib/recipeImportPage'
 import { isRefusalPage, renderPage } from '../_lib/renderPage'
 import { fetchPublic, publicHttpUrl } from '../_lib/publicUrl'
 import { withAudit } from '../_lib/recipeAudit'
@@ -158,7 +158,8 @@ export const onRequestPost = authed(async (ctx, actor) => {
   if (aiOn) {
     const read = await draftByModel(ctx.env, r.window, lang, { ...r.known, title: null }, hint)
     if (read && !(r.draft && halfRead(read))) {
-      const whole = { ...read, title: r.title ?? read.title, steps: fullerSteps(read.steps, r.draft?.steps) }
+      const steps = fullerSteps(read.steps, r.draft?.steps)
+      const whole = { ...read, title: r.title ?? read.title, steps, notes: notesWithoutSteps(read.notes, steps) }
       return ok({ ...withAudit(whole, r.window), image: r.image, source: src.url, fetched })
     }
   }

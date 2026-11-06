@@ -995,8 +995,8 @@ export interface PastedRecipe {
 // The optional capture is the heading's qualifier ("Ingrédients POUR LE
 // GLAÇAGE :") — when a paste has several ingredient/step blocks, the qualifier
 // becomes that block's "## " section marker.
-const ING_HEADING = /^(?:les\s+)?ingr[ée]dients?\b\s*([^.!?]{0,30}?)\s*:?$/i
-const STEP_HEADING =
+export const ING_HEADING = /^(?:les\s+)?ingr[ée]dients?\b\s*([^.!?]{0,30}?)\s*:?$/i
+export const STEP_HEADING =
   /^(?:pr[ée]paration|instructions?|m[ée]thode|method|directions?|[ée]tapes?(?!\s*\d)|steps?(?!\s*\d)|marche\s+[àa]\s+suivre|mode\s+d['’]emploi)\b\s*([^.!?]{0,30}?)\s*:?$/i
 // A notes heading may carry a short qualifier — « Note de l'équipe Ricardo », « Recipe
 // Notes: », « Conseils du chef » — but never a colon mid-line: « Note : bien mélanger » is

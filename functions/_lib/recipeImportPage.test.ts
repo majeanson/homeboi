@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { diffExpected, expectedOf, loadCorpus } from '../test/recipeCorpus'
 import { htmlToText, parsePastedRecipe, parseRecipeMicrodata, pageMeta, tidyIngredientLine } from './recipeImport'
-import { fullerSteps, halfRead, importFromHtml, pageListFillsIngredients, readPage, regroupSteps, sourceFromCapture, sourceFromHtml, stepHeadedMethod } from './recipeImportPage'
+import { fullerSteps, halfRead, importFromHtml, notesWithoutSteps, pageListFillsIngredients, readPage, regroupSteps, sourceFromCapture, sourceFromHtml, stepHeadedMethod } from './recipeImportPage'
 
 const real = (l: string[]) => l.filter((x) => !x.startsWith('## '))
 
@@ -165,6 +165,20 @@ describe('fullerSteps — the page’s lines replace a model’s only to add', (
     expect(fullerSteps(['Mix it.'], undefined)).toEqual(['Mix it.'])
     expect(fullerSteps(['Mix it.'], [])).toEqual(['Mix it.'])
     expect(fullerSteps([], page)).toEqual([])
+  })
+})
+
+describe('notesWithoutSteps — a note that is a step goes, nothing else', () => {
+  const steps = ['## Service', 'Serve it cold.']
+  it('the repeated line goes; a real note stays', () => {
+    expect(notesWithoutSteps('Keeps three days.\nServe it cold!', steps)).toBe('Keeps three days.')
+  })
+  it('a heading is not a step: a note that repeats it stays', () => {
+    expect(notesWithoutSteps('Service', steps)).toBe('Service')
+  })
+  it('nothing left → null, never an empty note', () => {
+    expect(notesWithoutSteps('Serve it cold.', steps)).toBeNull()
+    expect(notesWithoutSteps(null, steps)).toBeNull()
   })
 })
 
