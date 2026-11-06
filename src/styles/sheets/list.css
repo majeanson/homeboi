@@ -369,28 +369,6 @@
   font-size: 24px;
   line-height: 1;
 }
-/* The price-tag affordance: a quiet, self-contained button — bordered, not a
-   solid marigold block, so it reads as its own control rather than a tab clipped
-   onto the row. Fills sage only once a deal is actually picked. */
-.list-row__proof {
-  flex: 0 0 auto;
-  width: 44px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  background: transparent;
-  opacity: 0.7;
-  cursor: pointer;
-  font-size: 20px;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: var(--shadow-sm);
-  transition: transform var(--dur-fast) var(--ease-soft);
-}
-.list-row__proof:active {
-  transform: scale(0.94);
-}
 
 /* --- List item edit sheet ------------------------------------------------- */
 /* Rides on .pm-overlay/.pm-sheet (keyboard-safe). Rename, manage flyer-search
@@ -442,7 +420,6 @@
 .li-edit__danger {
   color: var(--clay, #b3463a);
 }
-
 
 /* The till peek's unit price — the number a price-match actually turns on, since the
    sizes rarely match exactly. Sits under the big price, quieter than it but still

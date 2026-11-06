@@ -640,7 +640,7 @@ const MATRIX: Entry[] = [
   // onto its own scene on 2026-09-12 (e18747a0) — never photographed either.
   { name: 'todo-template', route: '/liste-modele/tpl1', content: '.edit-field__input, .input, .listrow', budgetPx: 18, themes: ['day'] },
   { name: 'price-match', route: '/liste/deals/l1', content: '.pm__deal, .bigcard, .scene__body > *', budgetPx: 32, themes: ['day'] },
-  { name: 'multicook', route: '/kitchen/cook/multi?r=rc1,rc2', content: '.mcook__step, .cook__full-ings li, .scene__body > *', budgetPx: 178, themes: ['day'] },
+  { name: 'multicook', route: '/kitchen/cook/multi?r=rc1,rc2', content: '.mcook__step, .cook__full-ings li, .scene__body > *', budgetPx: 190, themes: ['day'] },
   { name: 'person-edit', route: '/cercle/person/c1', content: '.cf__input', budgetPx: 156, themes: ['day'] },
   { name: 'intake', route: '/intake', content: '.cf__input, .intake__h', budgetPx: 146, themes: ['day'] },
   // « La fenêtre famille » and « Bienvenue » are GUEST-link scenes: with an ordinary

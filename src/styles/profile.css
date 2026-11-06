@@ -251,13 +251,6 @@
 .mot-composer__face {
   display: flex;
 }
-/* « En réponse à … » — the reply context line (recipient locked to the original sender). */
-.mot-composer__reply {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  color: var(--ink-soft);
-}
 /* Schedule (« Plus tard ») — the toggle + the revealed date/time inputs. */
 .mot-composer__sched {
   display: flex;
@@ -288,15 +281,3 @@
 }
 /* « Me le rappeler » is no longer a top-level button — it is a preset chip inside
    « Plus tard » (ScheduleFields extraPresets), so it needs no rule of its own. */
-
-/* « Transformer » (A6, MotsCard): the capture form inside a mot's modal, with its one-line
-   hint above and the « retirer / garder le mot » pair once a route has landed. */
-.mot-transform {
-  display: grid;
-  gap: 0.7rem;
-}
-.mot-transform__hint {
-  margin: 0;
-  color: var(--ink-soft);
-  font-size: 0.9rem;
-}

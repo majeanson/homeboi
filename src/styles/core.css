@@ -578,8 +578,7 @@ input,
 textarea,
 select,
 [contenteditable='true'],
-[contenteditable=''],
-.allow-select {
+[contenteditable=''] {
   -webkit-user-select: text;
   user-select: text;
   -webkit-touch-callout: default;
@@ -903,15 +902,6 @@ textarea.input {
 }
 /* A tag that's also the on/off control (the IA switch in the Réglages header):
    inherits the pill look but behaves as a tappable button. */
-.tag--btn {
-  background: none;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-}
-.tag--btn:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
 .eyebrow {
   color: var(--ink-soft);
   text-transform: uppercase;
@@ -1122,24 +1112,6 @@ html[data-embedded] .home {
   padding-top: 1.25rem;
   padding-bottom: 2rem;
 }
-.home__values {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
-  gap: var(--gap);
-  margin: 3rem 0;
-}
-.home__value {
-  padding: 1.25rem;
-}
-.home__value h2 {
-  font-size: 1.05rem;
-  margin: 0 0 0.4rem;
-}
-.home__value p {
-  margin: 0;
-  color: var(--ink-soft);
-  font-size: var(--text-md);
-}
 /* Skeleton welcome blocks: wordmark, "what it's for" tiles, the calm promise. */
 .home__wordmark {
   display: inline-flex;
@@ -1160,51 +1132,6 @@ html[data-embedded] .home {
   text-transform: uppercase;
   color: var(--ink-faint);
   margin: 0 0 0.9rem;
-}
-.home__sections {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
-  gap: 0.75rem;
-}
-.home__section {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.55rem;
-  padding: 1rem;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  background: var(--card);
-  box-shadow: var(--shadow-sm);
-}
-.home__section-ic {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.home__section-label {
-  font-weight: 600;
-  font-size: var(--text-md);
-}
-.home__promise {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  max-width: 48ch;
-}
-.home__promise li {
-  font-size: 1.05rem;
-  line-height: 1.4;
-  color: var(--ink);
 }
 /* "Everything it does" — themed feature cards (icon + title + concrete line). */
 .home__features {
@@ -1273,19 +1200,6 @@ html[data-embedded] .home {
   color: var(--ink-faint);
   max-width: 52ch;
 }
-.home__foot {
-  margin: 3rem 0 0;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.9rem;
-}
-.home__fine {
-  font-size: var(--text-sm);
-  color: var(--ink-faint);
-  max-width: 46ch;
-  margin: 0;
-}
 /* First-run role choice: two honest cards, wall display vs personal device. */
 .setup__choices {
   display: grid;
@@ -1346,13 +1260,6 @@ html[data-embedded] .home {
 .capture {
   margin: 1rem 0 1.5rem;
 }
-.capture__row {
-  display: flex;
-  gap: 0.5rem;
-}
-.capture__input {
-  flex: 1;
-}
 /* The shared "speak it" mic while listening: filled accent + a soft pulse so the
    "I'm hearing you" state reads at a glance on the wall tablet. */
 .capture__voice.is-listening {
@@ -1375,180 +1282,17 @@ html[data-embedded] .home {
 @media (prefers-reduced-motion: reduce) {
   .capture__voice.is-listening { animation: none; }
 }
-.capture__picker {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  align-items: center;
-  margin-top: 0.6rem;
-}
-.capture__picker-label {
-  color: var(--warn);
-  margin-right: 0.3rem;
-}
 /* Calm hint under the capture bar when offline — the AI router can't run. */
-.capture__offline {
-  margin: 0.4rem 0 0;
-  font-size: var(--text-xs);
-  color: var(--ink-soft);
-}
-.capture__ack {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.2rem 0.6rem;
-}
 .capture__routed {
   margin-top: 0.6rem;
   color: var(--accent);
 }
-.capture__routed-kind {
-  color: var(--ink-soft);
-}
-/* "Non, plutôt…" — a quiet inline correction affordance next to the ack. Calm by
-   default (faint underline), the accent only on hover/focus so it never competes
-   with the confirmation it sits beside. */
-.capture__reroute {
-  margin-top: 0.6rem;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--ink-soft);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  cursor: pointer;
-  font: inherit;
-}
-.capture__reroute:hover,
-.capture__reroute:focus-visible {
-  color: var(--accent);
-}
-.capture__reroute[disabled] {
-  opacity: 0.5;
-  cursor: default;
-}
-/* When the corrector is open the picker grid wants the full row under the ack. */
-.capture__ack .capture__picker {
-  flex-basis: 100%;
-}
 
 /* --- Board ---------------------------------------------------------------- */
-.board__main {
-  max-width: 64rem;
-  margin: 0 auto;
-  padding: 1rem 1.25rem 3rem;
-}
-.board__clock {
-  font-size: var(--text-2xl);
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  text-align: center;
-  margin: 0.5rem 0;
-}
-.board__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
-  gap: var(--gap);
-}
-.board__zone {
-  padding: 1.1rem;
-}
-.board__zone--wide {
-  grid-column: 1 / -1;
-}
-.board__zone--tonight {
-  background: var(--accent);
-  color: var(--accent-ink);
-  border-color: var(--accent);
-}
-.board__zone-title {
-  font-size: var(--text-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--ink-soft);
-  margin: 0 0 0.75rem;
-}
-.board__zone--tonight .board__zone-title {
-  color: var(--accent-ink);
-  opacity: 0.85;
-}
 /* The guest note under the hub's offline bar (HubLayout) — a StatusMessage, centred. */
 .hub__guest-note {
   justify-content: center;
   opacity: 0.8;
-}
-.board__events,
-.board__list,
-.board__chores,
-.board__upcoming {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
-}
-.board__events li {
-  display: flex;
-  gap: 0.6rem;
-  align-items: baseline;
-}
-.board__event-time {
-  color: var(--ink-soft);
-  min-width: 4.5rem;
-}
-.board__event-who {
-  color: var(--ink-soft);
-  margin-left: auto;
-}
-.board__tonight-meal {
-  font-size: var(--text-xl);
-  font-weight: 600;
-  margin: 0;
-}
-.board__tonight-cook {
-  margin: 0.3rem 0 0;
-  opacity: 0.9;
-}
-.board__list-item {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  width: 100%;
-  text-align: left;
-  background: none;
-  border: none;
-  color: inherit;
-  font: inherit;
-  padding: 0.3rem 0;
-  cursor: pointer;
-}
-.board__list-item:hover .board__check {
-  color: var(--accent);
-}
-.board__check {
-  font-size: var(--text-lg);
-  color: var(--ink-soft);
-}
-.board__chore {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-.board__chore-title {
-  display: block;
-}
-.board__chore-turn {
-  color: var(--ink-soft);
-}
-.board__upcoming {
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 0.75rem 1.5rem;
-}
-.board__upcoming span {
-  color: var(--ink-soft);
 }
 .board__synced {
   justify-content: center;
@@ -1780,10 +1524,6 @@ html[data-embedded] .home {
 .subtabs[data-hs] {
   --hs-fade: 48px;
 }
-.kitchen__day-empty {
-  font-size: var(--text-md);
-  opacity: 0.7;
-}
 /* "💡 Léa" — a kid suggested this supper into an empty slot. Quiet, so it reads as
    a note beside the meal, not a second meal. */
 .kitchen__day-sugg {
@@ -1812,11 +1552,7 @@ html[data-embedded] .home {
    feedback (translate + shadow) is untouched; this only paints for keyboard
    focus. Kit / hub primitives carry the same rule in their own files. */
 .btn:focus-visible,
-.tag--btn:focus-visible,
 .subtabs__opt:focus-visible,
-.board__list-item:focus-visible,
-/* .chip is defined across kitchen/almanac/cercle — the shared ring lives HERE
-   (affordance audit 2026-07-14: chips are primary nav yet had no focus cue). */
 .chip:focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
@@ -1882,7 +1618,6 @@ html[data-embedded] .home {
 :is(.cf, .recipe-modal__body, .habitudes__body) > .disclosure,
 .cf > :is(.cf__rels, .lc),
 .field > .cercle-fam__newrow,
-.cercle-fam > .cf__rels-empty,
 .reminders > .reminders__sub,
 fieldset > .operator__seg-hint,
 .operator__seg > .operator__hint,

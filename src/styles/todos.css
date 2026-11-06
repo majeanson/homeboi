@@ -316,15 +316,6 @@
 .addsheet__scope-date {
   width: 100%;
 }
-.addsheet__todo-templates {
-  border-top: 1px solid var(--line);
-  padding-top: 0.6rem;
-}
-.addsheet__todo-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-}
 
 /* ── « Avant de partir » split (mig 0116) ──────────────────────────────────────
    The folded groups the agglomerators (Aujourd'hui / Demain) and the departure

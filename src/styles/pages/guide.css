@@ -76,31 +76,11 @@
   color: var(--ink-soft);
   font-size: 0.9rem;
 }
-/* A themed sub-cluster inside the (large) concepts group, so it reads as a map
-   rather than a flat wall. Each cluster wears its section's colour (--theme-ink /
-   --theme-wash set inline from SECTION_TINT): a quiet left accent spine ties the
-   block to its section, and the heading glyph is inked to match. */
-.guide__theme {
-  margin: 0 0 1.25rem;
-  scroll-margin-top: 0.75rem;
-  border-left: 3px solid color-mix(in srgb, var(--theme-ink, var(--line)) 55%, transparent);
-  padding-left: 0.7rem;
-}
-.guide__theme-title {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--ink-soft);
-  margin: 0 0 0.5rem;
-}
 /* The manual lands as a table of contents: each group + concept-theme is a collapsed
    <details>, its heading the clickable summary. Drop the native marker and give the
    summary a calm rotating caret (matching the guide cards), so the whole thing reads
    as an openable list, not a wall of cards. */
-details.guide__group > summary.guide__group-title,
-details.guide__theme > summary.guide__theme-title {
+details.guide__group > summary.guide__group-title {
   cursor: pointer;
   list-style: none;
 }
@@ -109,20 +89,8 @@ details.guide__group > summary.guide__group-title {
   align-items: center;
   gap: 0.4rem;
 }
-details.guide__group > summary::-webkit-details-marker,
-details.guide__theme > summary::-webkit-details-marker {
+details.guide__group > summary::-webkit-details-marker {
   display: none;
-}
-.guide__group-caret {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  color: var(--ink-soft);
-  transition: transform 0.18s ease;
-}
-details[open] > summary > .guide__group-caret {
-  transform: rotate(180deg);
-  color: var(--accent);
 }
 .guide__cards {
   display: flex;
@@ -369,7 +337,6 @@ mark.hl {
   border-radius: 3px;
   padding: 0 0.08em;
 }
-
 
 /* ── The lexicon: a word you can tap, in the manual only ─────────────────────
    Deliberately QUIETER than `.guide-link` (which navigates): a term explains

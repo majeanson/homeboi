@@ -16,26 +16,6 @@
   text-align: center;
 }
 
-/* Search */
-.cercle-search {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.55rem 0.8rem;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-pill);
-  color: var(--ink-soft);
-}
-.cercle-search input {
-  flex: 1;
-  border: 0;
-  background: transparent;
-  font: inherit;
-  color: var(--ink);
-  outline: none;
-}
-
 /* Section headings (a family group / "others" / birthdays) */
 .cercle-section__label {
   display: flex;
@@ -211,7 +191,6 @@
   color: var(--ink-soft);
   white-space: nowrap;
 }
-
 
 /* Wider screens: two columns for the directory rows */
 @media (min-width: 720px) {
@@ -537,14 +516,6 @@
   color: inherit;
   padding: 0;
 }
-.cf__tagadd {
-  display: flex;
-  gap: 0.4rem;
-  align-items: center;
-}
-.cf__tagadd .cf__input {
-  flex: 1;
-}
 .cf__save {
   display: flex;
   justify-content: flex-end;
@@ -698,16 +669,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.cf__rels-add {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  align-items: center;
-}
-.cf__rels-add .cf__input {
-  flex: 0 0 auto;
-  width: auto;
-}
 
 /* LinkComposer — the sentence builder */
 .lc {
@@ -816,26 +777,7 @@
      measured 4.26:1 by day and 3.03:1 at night (axe, 2026-09-15). */
   color: var(--berry-ink);
 }
-.cercle-group__delete {
-  margin-left: auto;
-  opacity: 0.5;
-}
-/* Full strength on hover AND focus — the twin pattern (undo-toast precedent): a
-   hover-only reveal is unreachable on touch and invisible to a keyboard user. */
-.cercle-group__delete:hover,
-.cercle-group__delete:focus-visible {
-  opacity: 1;
-}
-.cercle-group__delete:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: 2px;
-}
 /* On a touch screen there is no hover — never rest below legible strength. */
-@media (hover: none) {
-  .cercle-group__delete {
-    opacity: 0.8;
-  }
-}
 .cercle-group__empty {
   font-size: 0.82rem;
   padding: 0.5rem 0;
@@ -843,9 +785,6 @@
 }
 
 /* Create-group inline form */
-.cercle-add-group {
-  padding-top: 0.5rem;
-}
 .cercle-new-group {
   display: flex;
   flex-direction: column;
@@ -939,12 +878,6 @@
 /* ── Family builder (FamilyBuilder.tsx) ──────────────────────────────────────
    Define a whole family at once: drop faces into generation bands, or set each
    person's relation to one anchor in a list. */
-.cercle-build-family {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  margin: 0.2rem 0 0.6rem;
-}
 .cercle-fam {
   display: flex;
   flex-direction: column;
@@ -1112,10 +1045,6 @@
 }
 
 /* --- Business tab (BusinessesTab) ------------------------------------------- */
-.cercle-business__hint {
-  color: var(--ink-soft);
-  margin: 0.1rem 0 0.5rem;
-}
 /* The row avatar — a card photo or the storefront glyph on a tinted disc. */
 .cercle-business__av {
   flex: 0 0 auto;
@@ -1208,10 +1137,6 @@
    kiosk face ROW (.mswitch above) genuinely wants the width, so target the chip. */
 .cercle-focus .profile-chip {
   align-self: flex-start;
-}
-.cercle-focus__hint {
-  margin: 0 0 0.9rem;
-  color: var(--ink-soft);
 }
 
 /* --- Notes tab → "Notes & recommandations" (CercleNotes) --------------------- */
@@ -1424,29 +1349,6 @@
 }
 
 /* ===== « Notre monde » — the big-picture overview map ====================== */
-
-/* Entry button in the cercle directory (parent) — a calm, full-width CTA above the
-   per-section views, with a one-line subtitle. */
-.cercle-world-cta {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.1rem;
-  width: 100%;
-  margin: 0 0 0.7rem;
-  padding: 0.6rem 0.85rem;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-md);
-  background: var(--teal-wash);
-  color: var(--ink);
-  font-weight: 700;
-  text-align: left;
-  cursor: pointer;
-}
-.cercle-world-cta__hint {
-  font-weight: 400;
-  color: var(--ink-soft);
-}
 
 /* Toddler entry — a big friendly tile on the « Qui est-ce ? » grid. */
 .cercle-kid__world {

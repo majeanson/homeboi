@@ -338,11 +338,6 @@
 .sheet__back:active {
   transform: scale(0.94);
 }
-.sheet__hint {
-  color: var(--ink-soft);
-  font-size: 14px;
-  margin: 0 0 16px;
-}
 /* .sheet__field is gone — the ＋ sheet's four hand-rolled "icon + input + mic +
    full-width submit" forms (note/list/pantry/reserve) now use the shared EditField,
    whose box already owns the border, the inline mic and the compact submit. Its leading
@@ -499,16 +494,6 @@
 .addsheet__reserve-loc {
   width: 100%;
   margin-bottom: 0.6rem;
-}
-/* The meal planner's day + slot selects, side by side above the title field. */
-.sheet__row {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-.sheet__row .input {
-  flex: 1;
-  min-width: 0;
 }
 /* NOTE: there is deliberately no `.sheet .btn` rule here any more. It set
    width:100%;padding:15px on every descendant button, which (same 0,2,0

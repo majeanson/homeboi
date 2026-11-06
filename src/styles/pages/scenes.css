@@ -232,13 +232,6 @@
   color: var(--ink-soft);
   font-size: var(--text-sm);
 }
-.departure__head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.6rem;
-  margin-bottom: 0.4rem;
-}
 .departure__h {
   margin: 0;
   color: var(--ink-soft);
@@ -278,74 +271,6 @@
   color: var(--ink-soft);
   font-size: 0.9rem;
 }
-.departure__count {
-  color: var(--ink-soft);
-  font-variant-numeric: tabular-nums;
-}
-.departure__picks {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin-bottom: 0.6rem;
-}
-.departure__rows {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-.departure__section {
-  margin: 0.6rem 0 0.2rem;
-  color: var(--ink-soft);
-  font-weight: 700;
-}
-.departure__row {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  width: 100%;
-  padding: 0.7rem 0.8rem;
-  border: 0;
-  border-radius: var(--radius-md);
-  background: var(--card);
-  box-shadow: inset 0 0 0 1.5px var(--line);
-  color: var(--ink);
-  font-size: var(--text-lg);
-  text-align: left;
-  cursor: pointer;
-}
-.departure__row:active {
-  transform: scale(0.995);
-}
-.departure__check {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.7rem;
-  height: 1.7rem;
-  border-radius: 0.5rem;
-  background: var(--paper);
-  box-shadow: inset 0 0 0 2.5px var(--line-strong);
-  color: var(--accent-ink);
-}
-.departure__row.is-done {
-  background: color-mix(in srgb, var(--sage-deep) 12%, var(--card));
-}
-.departure__row.is-done .departure__check {
-  background: var(--sage-deep);
-  box-shadow: none;
-  color: #fff;
-}
-.departure__row.is-done .departure__label {
-  text-decoration: line-through;
-  color: var(--ink-soft);
-}
-.departure__label {
-  flex: 1 1 auto;
-}
 .departure__agenda {
   list-style: none;
   margin: 0;
@@ -375,10 +300,6 @@
   flex: none;
   color: var(--ink-soft);
   font-size: var(--text-sm);
-}
-.departure__empty {
-  color: var(--ink-soft);
-  padding: 0.4rem 0.2rem;
 }
 
 /* « L'auto » board glance card — a calm strip above the day (status + today's rides),

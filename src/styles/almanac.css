@@ -13,15 +13,8 @@
   font-weight: 600;
   letter-spacing: -0.01em;
 }
-.board__clock {
-  font-family: var(--display);
-  font-weight: 500;
-  font-variant-numeric: tabular-nums; /* digits don't jitter as time ticks */
-}
-.board__greet,
 .today-kid__greet,
-.today-hero__label,
-.board__tonight-meal {
+.today-hero__label {
   font-family: var(--display);
 }
 
@@ -29,10 +22,6 @@
    the softer radius is cut paper. (Kept flat — depth is tint + grain, no lift.) */
 .bigtile {
   border-radius: var(--radius-lg);
-}
-.board__zone--tonight {
-  /* the one warm focal card: tonight's supper, stamped in sage */
-  border-bottom-color: var(--line-strong);
 }
 
 /* One calm arrival: surfaces fade in once on load, gently staggered so the eye
@@ -47,25 +36,19 @@
       opacity: 1;
     }
   }
-  .board__zone,
   .bigtile,
-  .home__value,
-  .today-hero {
+.today-hero {
     animation: lac-fade-in 0.5s ease both;
   }
-  .board__zone:nth-child(2),
   .bigtile:nth-child(2) {
     animation-delay: 0.06s;
   }
-  .board__zone:nth-child(3),
   .bigtile:nth-child(3) {
     animation-delay: 0.12s;
   }
-  .board__zone:nth-child(4),
   .bigtile:nth-child(4) {
     animation-delay: 0.18s;
   }
-  .board__zone:nth-child(n + 5),
   .bigtile:nth-child(n + 5) {
     animation-delay: 0.24s;
   }
@@ -75,10 +58,8 @@
    acknowledgment, never a reward (NFR-CALM-2). A toddler feels the tile "press";
    nothing escalates, nothing surprises. */
 .btn,
-.tabbar__tab,
 .segmented__opt,
 .bigtile,
-.board__list-item,
 .chip,
 .kitchen__day-meal,
 .today-hero {
@@ -88,8 +69,6 @@
     opacity 0.18s ease;
 }
 .btn:active,
-.tabbar__tab:active,
-.board__list-item:active,
 .chip:active,
 .kitchen__day-meal:active {
   transform: translateY(1px);

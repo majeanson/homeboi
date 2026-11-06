@@ -45,11 +45,6 @@
   color: var(--tint-ink);
   font-weight: 700;
 }
-.weather-tip {
-  margin-top: 0.35rem;
-  font-size: 0.9rem;
-  color: var(--ink-soft);
-}
 .tomorrow-wx {
   display: inline-flex;
   align-items: center;
@@ -66,143 +61,11 @@
   color: var(--ink-soft);
 }
 
-
 /* The board's view switch: a Segmented (components/board/chrome.tsx), one notch tighter
    than the default so it sits in the header line. */
 .boardview .segmented__opt {
   min-height: 40px;
   padding: 0 0.85rem;
-}
-
-/* "Now & Next" focus view. */
-.nownext {
-  max-width: 46rem;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-/* The tinted cards read their accent from a `--tint` custom property (set inline
-   from the event/meal colour). Moving the alpha into color-mix keeps the maths in
-   CSS and stays valid even if `--tint` is unset or a CSS var — unlike the old
-   `hex + '55'` string, which silently produced no border. 33% ≈ the old 0x55. */
-.nownext__focus {
-  background: var(--card);
-  border: 2px solid color-mix(in srgb, var(--tint, var(--line)) 33%, transparent);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  padding: clamp(1.5rem, 5vw, 3rem);
-  text-align: center;
-}
-/* No accent on the empty card — keep the plain full-strength hairline. */
-.nownext__focus--empty {
-  border-color: var(--line);
-}
-.nownext__when {
-  font-size: clamp(1rem, 2.5vw, 1.6rem);
-  color: var(--ink-soft);
-}
-.nownext__title {
-  font-family: var(--display);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  font-size: clamp(2rem, 8vw, 5rem);
-  line-height: 1.05;
-  margin: 0.25rem 0;
-}
-.nownext__who {
-  font-size: clamp(1rem, 2.5vw, 1.5rem);
-  color: var(--ink-soft);
-}
-.nownext__focus--empty .nownext__title {
-  font-size: clamp(1.4rem, 4vw, 2.2rem);
-  color: var(--ink-faint);
-}
-.nownext__then {
-  display: flex;
-  align-items: baseline;
-  gap: 0.6rem;
-  justify-content: center;
-  flex-wrap: wrap;
-  color: var(--ink-soft);
-}
-.nownext__then-when {
-  font-weight: 700;
-}
-.nownext__then-title {
-  font-size: 1.15rem;
-}
-/* "Préparer le repas" — a calm, tappable CTA to jump into cook mode for the next
-   meal due. Reads as a card (matches .nownext__focus), spined with the souper
-   colour so it belongs to the day's meals. */
-.nownext__cook {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.6rem;
-  align-self: center;
-  background: var(--card);
-  border: 2px solid color-mix(in srgb, var(--tint, var(--line)) 33%, transparent);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  padding: 0.85rem 1.4rem;
-  cursor: pointer;
-  font-family: var(--sans);
-  color: var(--ink);
-  transition: border-color var(--dur-fast);
-}
-.nownext__cook:hover {
-  border-color: var(--ink-faint);
-}
-/* Leftover note: not a button — nothing to cook, nothing to tap. Dashed, calm,
-   no pointer/hover so it reads as a glance, not an action. */
-.nownext__cook--leftover {
-  cursor: default;
-  border-style: dashed;
-  box-shadow: none;
-}
-.nownext__cook--leftover:hover {
-  border-color: color-mix(in srgb, var(--tint, var(--line)) 33%, transparent);
-}
-.nownext__cook-label {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  line-height: 1.2;
-  font-weight: 700;
-  font-size: 1.05rem;
-}
-.nownext__cook-meal {
-  font-weight: 500;
-  font-size: 0.9rem;
-  color: var(--ink-soft);
-}
-/* Who's cooking — a quiet third line under the meal, dotted in their colour. */
-.nownext__cook-who {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-weight: 500;
-  font-size: 0.8rem;
-  color: var(--ink-soft);
-}
-.nownext__cook-dot {
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 50%;
-  flex: 0 0 auto;
-}
-.nownext__allday {
-  text-align: center;
-  color: var(--ink-faint);
-  font-size: 0.9rem;
-}
-/* « Avant de partir » door at the foot of the Maintenant view — centred, with a
-   breath of space above the glance footers. */
-.nownext__depart {
-  display: flex;
-  align-self: center;
-  margin: 0.5rem auto 0;
 }
 
 /* The status band: « À régler » + « Moments » as hero-style cards, sitting directly
@@ -333,10 +196,6 @@
   color: var(--ink);
   text-decoration: none;
 }
-.a-regler__more {
-  color: var(--ink-faint);
-  font-size: 0.8rem;
-}
 /* « À régler » in « Cette semaine » is prevalent enough to stand on its own — give it
    a distinct marigold heads-up card (the same warm identity as the board's À régler hero)
    instead of bare links jammed above the week columns. */
@@ -366,30 +225,6 @@
 .tweek__regler--clear > .tweek__col-h {
   color: var(--ink-soft);
 }
-/* The day's meals as a centred row of colour-coded slot chips (.meal-chip, shared
-   — see misc.css), with a quiet label. Wraps on a narrow phone. */
-.nownext__meals {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-}
-.nownext__meals-label {
-  color: var(--ink-faint);
-  font-size: 0.9rem;
-}
-/* Today's chores stacked as the same colour-spined Act cards used in the lanes
-   view, with a quiet label — no longer a bare line of text. */
-.nownext__chores {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-.nownext__chores .nownext__meals-label {
-  text-align: center;
-  margin-bottom: 0.1rem;
-}
 
 /* Per-person "lanes": columns of each member's day. */
 .lanes {
@@ -397,21 +232,6 @@
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
   gap: 1rem;
   align-items: start;
-}
-.lane__head {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-family: var(--display);
-  font-weight: 700;
-  font-size: var(--text-lg);
-  margin-bottom: 0.4rem;
-}
-.lane__dot {
-  width: 0.85rem;
-  height: 0.85rem;
-  border-radius: 50%;
-  flex: none;
 }
 /* Lane entries are compact rows, not waist-high cards. The base .act stacks a
    big icon tile over a 19px title that wraps token-by-token in a narrow column
@@ -446,14 +266,6 @@
   padding: 0.6rem 0.7rem;
   border-radius: var(--radius-lg);
 }
-.lane--mine {
-  box-shadow: inset 0 0 0 2px var(--accent);
-  background: color-mix(in srgb, var(--accent) 7%, transparent);
-}
-.lane__head--shared {
-  color: var(--ink-soft);
-}
-
 
 /* « Plus tard » on a friction row (migration 0122). The row becomes a link PLUS a
    sibling button — never a button inside the link, which is a nested interactive

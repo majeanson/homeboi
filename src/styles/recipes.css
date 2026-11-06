@@ -571,15 +571,6 @@
   color: var(--ink-soft);
   padding: 0.4rem 0;
 }
-
-/* Kitchen: the meal-plan recipe picker under a day's edit form. */
-.kitchen__day-edit-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  flex: 1;
-  min-width: 0;
-}
 /* (The slot's recipe/leftover toggle buttons + their wrapping row moved into
    EntityCombobox; `.kitchen__day-recipes*` / `.kitchen__pick-recipe` removed.) */
 /* Quiet destructive cue — only warms to a danger tint on hover/focus, so a full
@@ -590,11 +581,6 @@
 .kitchen__clear-meal:hover,
 .kitchen__clear-meal:focus-visible {
   color: var(--warn);
-}
-/* The ✕ that empties the meal input — square and unobtrusive, beside the field. */
-.kitchen__clear-text {
-  flex: none;
-  padding-inline: 0.6rem;
 }
 /* (The shared recipe/leftover picker list — `.recipe-picker*` — was replaced by
    EntityCombobox's dropdown; see `.combobox*` in pages/fields.css.) */
@@ -610,20 +596,6 @@
 /* The "general ideas" pool below the week grid — a reusable shortlist. */
 .kitchen__ideas {
   margin-top: 1.4rem;
-}
-.kitchen__ideas-hint,
-.kitchen__ideas-empty {
-  color: var(--ink-faint);
-  margin: 0.2rem 0 0.6rem;
-}
-.kitchen__ideas-add {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 0.6rem;
-}
-.kitchen__ideas-add .input {
-  flex: 1;
-  min-width: 0;
 }
 /* Breathing room between the add combobox and the list of ideas/leftovers below. */
 .kitchen__ideas-combo {
@@ -724,21 +696,6 @@
 .kitchen__idea-name.is-open .kitchen__idea-caret {
   transform: rotate(180deg);
 }
-.kitchen__idea-del {
-  flex: none;
-  width: 2.75rem;
-  height: 2.75rem;
-  border: none;
-  background: none;
-  color: var(--ink-faint);
-  cursor: pointer;
-  font-size: 1rem;
-  line-height: 1;
-  border-radius: 0.6rem;
-}
-.kitchen__idea-del:hover {
-  color: var(--ink);
-}
 
 /* ---- Phones: give text editors a full line ------------------------------- *
    The kitchen/recipe inline editors are "text field + button" rows. On a narrow
@@ -750,25 +707,8 @@
      picker, or the staples confirm) drop below the day's tile+name and span the
      full card width — otherwise it's pinned to a ~60% column on the right and
      the text field is needlessly narrow. */
-  .kitchen__day-edit-wrap,
   .kitchen__staples {
     flex-basis: 100%;
-  }
-  .kitchen__day-edit,
-  .kitchen__slot-edit,
-  .kitchen__ideas-add {
-    flex-wrap: wrap;
-  }
-  .kitchen__day-edit > .input,
-  .kitchen__slot-edit > .input,
-  .kitchen__ideas-add > .input {
-    flex: 1 1 100%;
-  }
-  /* The day/slot editors' submit button then sits on its own line, full-width
-     and easy to hit, instead of pinned to the right of a squished field. */
-  .kitchen__day-edit > .btn,
-  .kitchen__slot-edit > .btn {
-    flex: 1 1 100%;
   }
   /* The recipe modal's primary actions go full-width so the main action is a
      big, unambiguous tap at the bottom of the sheet. */

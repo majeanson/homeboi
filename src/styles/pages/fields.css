@@ -575,10 +575,6 @@
 .event-bring__build .tags .tag {
   cursor: pointer;
 }
-.operator__cards {
-  min-width: 100%;
-}
-
 
 /* EntityCombobox: the dropdown's optional header row (the souper « + ingrédients »
    opt-in). `display: contents` on purpose — the wrapper exists ONLY to catch the

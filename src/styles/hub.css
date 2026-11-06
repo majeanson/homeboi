@@ -180,22 +180,6 @@
 /* Parent ⇄ Enfant, living IN the nav (never floating). On the kiosk column it
    sinks to the bottom, visually apart from the section buttons; quieter chrome
    (no card, no shadow) so it reads as a mode, not a destination. */
-.hubnav__peek {
-  margin-top: auto;
-  border: 0;
-  cursor: pointer;
-  font: inherit;
-  font-family: var(--display);
-  font-weight: 700;
-  font-size: 1rem;
-  background: transparent;
-  box-shadow: none;
-  color: var(--ink-faint);
-}
-.hubnav__peek-pic {
-  font-size: 20px;
-  line-height: 1;
-}
 @media (max-width: 560px) {
   .hub {
     flex-direction: column;
@@ -329,15 +313,6 @@
   background: var(--accent);
   color: var(--accent-ink);
 }
-/* In the bottom bar the switch rides inline with the tabs: compact (it shouldn't
-   crowd five tabs on a narrow phone) and icon-led like them. */
-.hub[data-surface='mobile'] .hubnav__peek {
-  margin-top: 0;
-  flex: 0 0 auto;
-  padding: 6px 8px;
-  border-left: 1px solid var(--line);
-  border-radius: 0;
-}
 /* Lift the ＋ quick-add clear of the bottom bar. */
 .hub[data-surface='mobile'] .add-fab {
   bottom: calc(80px + env(safe-area-inset-bottom, 0px));
@@ -392,13 +367,6 @@
 .welcome-steps__list a {
   color: inherit;
   font-weight: 600;
-}
-
-.operator__toc {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 1.25rem;
 }
 .operator__display {
   display: flex;
@@ -813,7 +781,6 @@
    they tie the `.hub[data-surface='kiosk'] .today-feed` rule on specificity and win
    on source order — hub.css is @imported right after today.css (styles.css). */
 .hub .today-feed.kitchen,
-.hub .today-feed.routines-parent,
 .hub .today-feed.cercle {
   max-width: none;
   margin-inline: 0;

@@ -320,9 +320,6 @@
 /* The Flipp loop under the grid hint (2026-09-10): the stepper + the list door on
    ONE centred row (labels kept short so both fit a 390px phone), no hint line —
    the grid is scanned at a till; every pixel above the tiles is paid for. */
-.cashier__flipp {
-  margin: 0 0 16px;
-}
 .cashier__flipp-row {
   justify-content: center;
 }
@@ -330,23 +327,6 @@
    that covers the page (a toast does not). */
 .cashier__refresh-row {
   margin: 0 0 12px;
-}
-.cashier__open-flipp {
-  padding: 4px 10px;
-  font-size: 0.85rem;
-  vertical-align: middle;
-}
-.cashier__flipp-hint {
-  margin: 8px 0 0;
-  text-align: center;
-  font-size: 0.85rem;
-  color: var(--ink-soft);
-}
-/* The reset's compact size (8px 12px, .9rem): at that size the two labels share
-   one line on a 390px phone (measured: they wrapped at the .btn default). */
-.cashier__flipp .btn {
-  padding: 8px 12px;
-  font-size: 0.9rem;
 }
 
 /* An ENDED deal at the till (2026-09-10): the tile dims and says so; on the card

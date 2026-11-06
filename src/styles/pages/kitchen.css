@@ -233,29 +233,8 @@
   min-width: 7rem;
   overflow-wrap: anywhere;
 }
-.kitchen__day-empty {
-  color: var(--ink-soft);
-}
-/* The lighter slots (déjeuner / dîner / collation) under the souper — a compact
-   row of chips, each its planned title or just the picture + label. Full-width
-   so they sit on their own line below the souper on any screen. */
-.kitchen__slots {
-  flex-basis: 100%;
-  min-width: 0;
-  display: flex;
-  /* Stack the side slots full-width — each is now a list with per-item controls,
-     too wide to sit three-across on a phone. */
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0.5rem;
-  margin-top: 0.3rem;
-}
 /* The day's free-text note — a memo line under the slots. Full-width so it sits
    on its own row; a quiet dashed "+ note" when empty, a tinted chip when set. */
-.kitchen__note {
-  flex-basis: 100%;
-  margin-top: 0.3rem;
-}
 .kitchen__note-add {
   border: 1px dashed var(--line);
   background: transparent;
@@ -284,83 +263,6 @@
 }
 .kitchen__note-text {
   overflow-wrap: anywhere;
-}
-.kitchen__note-edit {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-}
-.kitchen__note-edit .input {
-  flex: 1;
-  min-width: 9rem;
-}
-.kitchen__slot {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  border: 1px dashed var(--line);
-  background: transparent;
-  color: var(--ink-soft);
-  border-radius: var(--radius-pill);
-  padding: 0.35rem 0.8rem;
-  min-height: 2.6rem;
-  font: inherit;
-  font-size: 0.9rem;
-  cursor: pointer;
-  max-width: 100%;
-  /* Let the chip shrink so its label can ellipsize instead of overrunning. */
-  min-width: 0;
-}
-.kitchen__slot.is-set {
-  border-style: solid;
-  color: var(--ink);
-  background: var(--paper-deep);
-}
-.kitchen__slot-label {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.kitchen__slot-edit {
-  flex-basis: 100%;
-  display: flex;
-  gap: 0.5rem;
-}
-/* A side slot in edit mode now stacks its title row + the recipe picker. */
-.kitchen__slot-edit-wrap {
-  flex-basis: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-/* A set side slot + its little "open the linked recipe" button, kept together. */
-.kitchen__slot-wrap {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.15rem;
-  max-width: 100%;
-  min-width: 0;
-}
-.kitchen__slot-recipe-link {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 2.4rem;
-  min-height: 2.4rem;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-  font-size: 1.05rem;
-  line-height: 1;
-  border-radius: var(--radius-pill);
-}
-.kitchen__day-edit {
-  flex: 1;
-  display: flex;
-  gap: 0.5rem;
 }
 
 /* The week's three actions (shop the week / AI ideas / ideas from the book) live
@@ -593,24 +495,6 @@
   justify-content: space-between;
   gap: 0.5rem;
 }
-/* Each side slot is now a small stack: an icon+label header, the list of planned
-   meals, and an add control (was a single inline chip). */
-.kitchen__slot-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0.3rem;
-  width: 100%;
-  min-width: 0;
-}
-.kitchen__slot-head {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  color: var(--ink-soft);
-  font-size: var(--text-sm);
-  font-weight: 600;
-}
 /* (The dashed « ＋ Ajouter » slot pill is gone — every add affordance on the day
    scene is the shared SectionAdd ＋ chip now; see DayEditor.) */
 /* The planned meals in one slot — a stacked list of rows with per-item controls. */
@@ -690,36 +574,8 @@
   align-items: center;
   gap: 0.1rem;
 }
-.kitchen__meal-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 2rem;
-  /* 44px tall touch target (the calm icon stays small); width stays compact so the
-     up-to-6-button cluster doesn't overflow a 320px row. */
-  min-height: 2.75rem;
-  border: 0;
-  background: transparent;
-  color: var(--ink-soft);
-  cursor: pointer;
-  border-radius: 0.4rem;
-}
-.kitchen__meal-btn:disabled {
-  opacity: 0.3;
-  cursor: default;
-}
-.kitchen__meal-remove {
-  color: var(--ink-faint);
-  font-size: var(--text-md);
-}
 .kitchen__meal-clearall {
   margin-top: 0.15rem;
-}
-.kitchen__day-add-more {
-  color: var(--ink-faint);
-}
-.kitchen__add-cancel {
-  align-self: flex-start;
 }
 /* "Vider les repas" — the day’s meal-only clear (it lives on the « Repas » face).
    Pinned last and full-width,
@@ -805,28 +661,9 @@
   gap: 0.5rem;
   flex-wrap: wrap;
 }
-.kitchen__low-add,
-.kitchen__soon-add,
-.kitchen__reserve-add,
 .kitchen__low,
 .kitchen__soon {
   margin-top: 0.75rem;
-}
-.kitchen__low-add,
-.kitchen__soon-add,
-.kitchen__reserve-add {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  /* input + mic + add: let the field take the slack and wrap on a narrow phone
-     so the third control never pushes "Ajouter" off the row. */
-  flex-wrap: wrap;
-}
-.kitchen__low-add .input,
-.kitchen__soon-add .input,
-.kitchen__reserve-add .input {
-  flex: 1 1 10rem;
-  min-width: 0;
 }
 .kitchen__low,
 .kitchen__soon {
@@ -866,10 +703,6 @@
   border: none;
   color: inherit;
   cursor: pointer;
-}
-.checkrow__check:hover .board__check,
-.checkrow__check:active .board__check {
-  color: var(--accent);
 }
 .checkrow__check:active {
   transform: translateY(1px);
@@ -968,7 +801,6 @@
 .kitchen__day-kidsuggest:focus-visible {
   color: var(--ink);
 }
-
 
 /* ── « Historique » (the past, month by month) ──────────────────────────────
    The day rows reuse the whole .kitchen__day family above and each month heads

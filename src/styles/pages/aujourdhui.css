@@ -1,22 +1,4 @@
 /* --- Aujourd'hui: time-of-day greeting + per-member colour --------------- */
-.board__topline {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
-}
-.board__greet {
-  font-size: 1.3rem;
-  font-weight: 650;
-}
-.board__who-dot {
-  display: inline-block;
-  width: 0.6rem;
-  height: 0.6rem;
-  border-radius: 50%;
-  margin-right: 0.35rem;
-  vertical-align: middle;
-}
 .bigtile__dot {
   position: absolute;
   top: 0.6rem;

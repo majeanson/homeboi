@@ -1,27 +1,4 @@
 /* --- Hub: tab bar + the Parent/Toddler audience switch -------------------- */
-.tabbar {
-  display: flex;
-  gap: 0.25rem;
-  padding: 0.4rem 1.25rem;
-  border-bottom: 1px solid var(--line);
-  overflow-x: auto;
-}
-.tabbar__tab {
-  padding: 0.45rem 0.85rem;
-  border-radius: var(--radius);
-  text-decoration: none;
-  color: var(--ink-soft);
-  white-space: nowrap;
-  border-bottom: 2px solid transparent;
-}
-.tabbar__tab:hover {
-  background: var(--surface);
-}
-.tabbar__tab.is-active {
-  color: var(--ink);
-  background: var(--surface);
-  border-bottom-color: var(--accent);
-}
 
 /* --- Kiosk scale ---------------------------------------------------------- */
 /* The hub is a wall tablet read and tapped from across the kitchen — an app
@@ -62,41 +39,10 @@
   font-size: 1.25rem;
 }
 
-/* App-style tab bar: full-width segments, each a fat tap target, active one
-   filled (the clearest app convention) rather than a thin web underline. */
-.hub .tabbar {
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-}
-.hub .tabbar__tab {
-  flex: 1 1 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 3.5rem;
-  font-size: 1.05rem;
-  border-radius: 12px;
-  border-bottom: none;
-}
-.hub .tabbar__tab.is-active {
-  background: var(--accent);
-  color: var(--accent-ink);
-}
-
 .hub .segmented:not(.segmented--sm, .boardview) .segmented__opt {
   min-height: 3rem;
   padding: 0.55rem 1.1rem;
   font-size: 1rem;
-}
-
-/* Board: rows tickable from a step back; a bigger check to aim at. */
-.hub .board__list-item {
-  min-height: 3.25rem;
-  padding: 0.5rem 0.4rem;
-  font-size: 1.2rem;
-}
-.hub .board__check {
-  font-size: 1.8rem;
 }
 /* Check-list rows on the wall tablet: a roomy check target + larger title. The
    square glyph keeps its .hub .board__check size (it still lives inside). */
@@ -105,12 +51,6 @@
   min-height: 3.25rem;
 }
 .hub .checkrow__title {
-  font-size: 1.2rem;
-}
-.hub .board__chore {
-  min-height: 3.25rem;
-}
-.hub .board__events li {
   font-size: 1.2rem;
 }
 
@@ -324,18 +264,6 @@
   line-height: 1;
   color: var(--sage);
 }
-.board__chore-helped {
-  display: block;
-  color: var(--ink-soft);
-  margin-top: 0.2rem;
-}
 
 /* --- Focus-visible ring (a11y) — see core.css for the rationale ----------- */
-/* The hub tab bar is a primary nav target on every surface; keyboard / guest /
-   desktop-operator users get the same 2px --focus-ring. Offset clears the 12px
-   radius (and the marigold fill of the active tab). Additive only. */
-.tabbar__tab:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: 2px;
-}
 

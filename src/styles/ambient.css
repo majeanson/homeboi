@@ -156,13 +156,6 @@
 .ambient__next:first-of-type {
   margin-top: 1.6rem;
 }
-.ambient__wake {
-  position: absolute;
-  bottom: max(1.2rem, env(safe-area-inset-bottom));
-  z-index: 1;
-  opacity: 0.5;
-  font-size: var(--text-sm);
-}
 
 /* Settings: the "show X" screensaver-element toggles wrap on a narrow phone. */
 .ambient-set__shows {

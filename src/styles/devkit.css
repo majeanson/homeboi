@@ -78,12 +78,6 @@
   flex-direction: column;
   gap: 1rem;
 }
-.devkit__section {
-  padding: 1rem 1.1rem 1.25rem;
-}
-.devkit__h2 {
-  margin: 0 0 0.2rem;
-}
 .devkit__hint {
   margin: 0 0 0.9rem;
   font-size: var(--text-sm);

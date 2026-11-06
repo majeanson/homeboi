@@ -355,14 +355,6 @@
   }
 }
 
-/* Add sheet: the quick-capture / event / chore / routine mode chooser. */
-.sheet__modes {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin: 0.25rem 0 0.75rem;
-}
-
 /* A FAILED deal/flyer lookup (shop seam #3): its own face — an error line + a
    « Réessayer » — distinct from the genuine "no deals" EmptyState. */
 .deal-error {

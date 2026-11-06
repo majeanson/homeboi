@@ -98,9 +98,6 @@
 .trip-note-add {
   margin: 6px 0 14px;
 }
-.trip-note-add .memo-row {
-  margin-top: 6px;
-}
 
 /* — Infos tab — */
 .voyage-infos__who,
@@ -159,10 +156,6 @@
 /* — Bagages tab — */
 .voyage-packing__group {
   margin-bottom: 14px;
-}
-.voyage-packing__empty {
-  color: var(--ink-faint);
-  padding: 12px 4px;
 }
 
 /* — Documents tab — */

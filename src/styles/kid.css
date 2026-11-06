@@ -79,21 +79,6 @@
   align-items: center;
   justify-content: center;
 }
-.tdl-face__img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.tdl-face__initial {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 800;
-  font-size: 20px;
-  color: #fff;
-}
 .tdl-stage {
   flex: 1;
   min-height: 0; /* let this flex child shrink so its own overflow can scroll */
@@ -168,14 +153,6 @@
       transform: translateY(-10px);
     }
   }
-}
-.tdl-now {
-  font-family: var(--sans);
-  font-weight: 700;
-  font-size: 14px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--ink-soft);
 }
 /* The step name — a borderless button so it reads aloud on tap too (the picture
    above it does the same). It's the one piece of text; everything else is picture. */
@@ -335,30 +312,6 @@
   align-items: center;
   justify-content: center;
   box-shadow: var(--shadow-sm);
-}
-.tdl-tap {
-  margin-top: 24px;
-  width: 78px;
-  height: 78px;
-  border-radius: 50%;
-  background: var(--card);
-  border: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: var(--shadow-md);
-  color: var(--ink);
-  transition: transform var(--dur-fast) var(--ease-soft);
-}
-.tdl-tap:active {
-  transform: scale(0.92);
-}
-/* Tap-to-hear cue under the picture (the picture only reads aloud now). */
-.tdl-hear {
-  margin-top: 10px;
-  font-size: 13px;
-  color: var(--ink-soft);
 }
 /* One ▶ to start, then a running clock + → (or ✓ on the last step). Icon-only,
    big — a toddler taps a picture, not a word. */
