@@ -167,6 +167,27 @@ describe('/dev/kit ↔ COMPONENTS.md parity', () => {
   })
 })
 
+// Every top-level component is named somewhere in COMPONENTS.md, as a primitive or an
+// orchestrator (solidify 6.5). The inventory is how the next session finds a thing before
+// rebuilding it, so a missing row is a future duplicate. Planted red by deleting a row.
+describe('COMPONENTS.md names every top-level component', () => {
+  it('no exported component is missing', () => {
+    const dir = path.join(ROOT, 'src/components')
+    const scanned: string[] = []
+    const missing = fs
+      .readdirSync(dir)
+      .filter((f) => f.endsWith('.tsx') && !f.includes('.test.'))
+      .flatMap((f) =>
+        [...fs.readFileSync(path.join(dir, f), 'utf8').matchAll(/^export function ([A-Z][A-Za-z0-9_]+)/gm)]
+          .map((m) => (scanned.push(m[1]), m[1]))
+          .filter((name) => !md.includes(name))
+          .map((name) => `${f}: ${name}`),
+      )
+    expect(scanned.length, 'the export scan found nothing: it broke').toBeGreaterThan(50)
+    expect(missing, 'add a row to COMPONENTS.md').toEqual([])
+  })
+})
+
 const norm = (s: string) =>
   s
     .toLowerCase()

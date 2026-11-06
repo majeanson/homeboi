@@ -243,7 +243,7 @@ this table fails the build, which is how « Champs & saisie » quietly grew besi
 Need live data/route context, so they're catalogued but not rendered as specimens:
 `AddSheet`,
 `SharePage` (the `/share` PWA share-target landing → capture, #13),
-`HubLayout`, `RecipeScene`, `RecipeForm`, `CookMode`,
+`HubLayout`, `RecipeScene`, `RecipeForm`, `CookMode`, `FlippDialog`, `FlippPager`, `InstallHint`,
 `CashierMode` (the « Montrer à la caisse » till surface — a **grid** of picked deals;
 tap the one being scanned → a full-screen `.bigcard` proof peek with `‹ Retour`; tapped
 tiles dim with an ephemeral ✓. Random-access, NOT a sequential stepper — the user holds
