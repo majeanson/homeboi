@@ -104,3 +104,12 @@ export function idsOf(t: Takeout): string[] {
   for (const rows of Object.values(t.tables)) for (const r of rows) if (typeof r.id === 'string' && r.id) out.add(r.id)
   return [...out]
 }
+
+// A read or write a test relies on: anything but a 2xx throws with the body, so a refused
+// request reads as what it is rather than as a confusing `undefined` two lines later.
+export async function okJson<T = { ok: boolean }>(res: Promise<Response>): Promise<T> {
+  const r = await res
+  const text = await r.text()
+  if (!r.ok) throw new Error(`${r.status}: ${text.slice(0, 300)}`)
+  return JSON.parse(text) as T
+}
