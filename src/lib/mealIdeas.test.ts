@@ -18,7 +18,7 @@ describe('ideasForDay', () => {
   it('excludes a plain undated pool idea, even with the same suggested_by', () => {
     const ideas = [
       { id: 'a', suggested_by: 'm3', date: null },
-      { id: 'b', suggested_by: 'm3', date: undefined },
+      { id: 'b', suggested_by: 'm3' },
     ]
     expect(ideasForDay(ideas, DAY)).toEqual([])
   })

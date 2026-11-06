@@ -9,17 +9,17 @@ export interface DeckCard {
   label: string // the word, narrated on tap
   // Optional per-step countdown in seconds — the player offers a tap-to-start
   // timer on this step (e.g. 120 = a 2-minute teeth brush). Absent/0 = no timer.
-  seconds?: number
+  seconds?: number | undefined
   // Optional « truc » — what the child's companion says for this step when they tap
   // it. Absent → the built-in trick for the card's picture (lib/routineTips), then a
   // warm line. Templates leave it unset on purpose: the catalog already covers 🪥 and
   // 🛁 better than a duplicate string here would, and it stays in ONE place.
-  tip?: string
+  tip?: string | undefined
   // The parent-voice clip and the card photo live ON the card (PARITY Wave D,
   // 2026-09-08) — R2 keys, '' or absent = none (the player falls back to TTS /
   // the emoji). They used to be two side arrays kept positional to the deck.
-  clipKey?: string
-  photoKey?: string
+  clipKey?: string | undefined
+  photoKey?: string | undefined
 }
 
 interface RawTemplate {
@@ -28,7 +28,7 @@ interface RawTemplate {
   // The implied time-of-day cue ('morning'|'afternoon'|'evening'; undefined =
   // anytime) — picking the template pre-fills the form's moment picker.
   tod?: 'morning' | 'afternoon' | 'evening'
-  cards: { icon: string; label: Record<Lang, string>; seconds?: number }[]
+  cards: { icon: string; label: Record<Lang, string>; seconds?: number | undefined }[]
 }
 
 // `seconds` (optional, last arg) seeds the step's tap-to-start timer — e.g. the

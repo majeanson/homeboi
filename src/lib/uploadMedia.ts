@@ -35,9 +35,9 @@ export interface UploadMediaOpts {
    *  `false` → upload the blob as-is (audio clips, already-small blobs). Default true. */
   resize?: boolean | number
   /** Throw MediaTooLargeError if the (resized) blob exceeds this many bytes. */
-  maxBytes?: number
+  maxBytes?: number | undefined
   /** Filename when promoting a raw Blob to a File before resize (e.g. a drawing PNG). */
-  filename?: string
+  filename?: string | undefined
 }
 
 // POST one media blob to /api/<endpoint> and return the endpoint's FULL reply.

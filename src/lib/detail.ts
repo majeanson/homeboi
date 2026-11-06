@@ -55,7 +55,7 @@ export interface DetailListRow {
 
 // A face to attribute the entity to — drawn with the shared <Avatar>.
 export interface DetailWho {
-  role?: string // a quiet label before the face ("Cuisine", "Tour de")
+  role?: string | undefined // a quiet label before the face ("Cuisine", "Tour de")
   name?: string | null
   colour?: string | null
   avatarKind?: string | null // member.avatar_kind
@@ -83,12 +83,12 @@ export interface DetailModel {
   title: string
   accent?: string // hex spine/accent colour (member/slot/category)
   icon?: IconName // a Phosphor control glyph for the header tile
-  emoji?: string // OR a content picto (a meal's food, a routine face) — content only
+  emoji?: string | undefined // OR a content picto (a meal's food, a routine face) — content only
   photo?: string | null // an already-resolved image src (imgUrl()/recipeImg()) for the header
-  when?: string // a preformatted date/time label ("Ce soir", "mar. 18 juin · 17 h 30")
-  whoLabel?: string // a quiet sub-line under the title (e.g. a meal slot)
+  when?: string | undefined // a preformatted date/time label ("Ce soir", "mar. 18 juin · 17 h 30")
+  whoLabel?: string | undefined // a quiet sub-line under the title (e.g. a meal slot)
   who?: DetailWho | null // a single face chip
-  whoStack?: DetailWho[] // several faces (an event's « Qui » — the people it concerns); takes precedence over `who`
-  blocks?: DetailBlock[]
+  whoStack?: DetailWho[] | undefined // several faces (an event's « Qui » — the people it concerns); takes precedence over `who`
+  blocks?: DetailBlock[] | undefined
   actions?: DetailAction[]
 }

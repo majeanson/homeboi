@@ -44,7 +44,7 @@ async function uploadDrawing(png: Blob, scene: string): Promise<{ media_key: str
       /* scene optional — the PNG stands on its own */
     }
   }
-  return { media_key, scene_key }
+  return { media_key, ...(scene_key !== undefined && { scene_key }) }
 }
 
 // NB on the save/update writes below: they stay on `api()` ON PURPOSE. Each is

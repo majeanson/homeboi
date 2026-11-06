@@ -27,7 +27,8 @@ describe('handoffGaps', () => {
 
   it('flags emergency alone when it is empty', () => {
     expect(handoffGaps({ ...FULL, emergency: [] })).toEqual(['emergency'])
-    expect(handoffGaps({ ...FULL, emergency: undefined })).toEqual(['emergency'])
+    const { emergency: _emergency, ...noEmergency } = FULL
+    expect(handoffGaps(noEmergency)).toEqual(['emergency'])
   })
 
   it('flags toKnow alone when it is empty', () => {

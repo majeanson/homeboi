@@ -1612,7 +1612,7 @@ export function DrawPad({
       const base = baseSrc?.startsWith('data:') ? baseSrc
         : (baseImgRef.current && !hasPhoto) ? baseToDataUrl()
         : undefined
-      const scene: Scene = { v: 1, strokes: strokesRef.current, stamps: stampsRef.current, pixels: [...pixelsRef.current], shapes: shapesRef.current, fills: fillsRef.current, base, template: tplRef.current }
+      const scene: Scene = { v: 1, strokes: strokesRef.current, stamps: stampsRef.current, pixels: [...pixelsRef.current], shapes: shapesRef.current, fills: fillsRef.current, ...(base !== undefined && { base }), template: tplRef.current }
       const json = JSON.stringify(scene)
       return json.length > SCENE_MAX ? '' : json
     } catch {

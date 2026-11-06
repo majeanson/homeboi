@@ -189,7 +189,7 @@ const TIPS: Record<string, Bi> = {
 //      dents"), reusing the app's ONE word→picture vocabulary rather than forking it.
 //   4. nothing — and the caller says a warm generic line instead. A step with no trick
 //      worth knowing gets company, not filler dressed up as advice.
-export function tipFor(card: { icon?: string; label?: string; tip?: string }, lang: Lang): string | null {
+export function tipFor(card: { icon?: string | undefined; label?: string | undefined; tip?: string | undefined }, lang: Lang): string | null {
   const own = card.tip?.trim()
   if (own) return own
   const byIcon = card.icon && TIPS[card.icon.trim()]

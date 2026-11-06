@@ -49,7 +49,7 @@ export interface WriteSpec {
   affectedKeys?: QueryKey[]
   // Optimistic cache mutation applied immediately. Offline creates should write a
   // temp row (e.g. id `tmp-${something}`); invalidate reconciles it after replay.
-  optimistic?: (qc: QueryClient) => void
+  optimistic?: ((qc: QueryClient) => void) | undefined
   // Re-apply `optimistic` to any fresh frame that lands for an affected key WHILE the
   // write is still travelling. Opt-in, and only for an IDEMPOTENT change (set a flag,
   // not insert a row — spliceListLine run twice would add the line twice). The case
@@ -61,7 +61,7 @@ export interface WriteSpec {
   // ends up queued, the outbox uses it to rewrite later queued ops that target the
   // tmp id once the create replays and the real id is known — so "add offline,
   // then act on it offline" no longer drops the follow-up.
-  tmpId?: string
+  tmpId?: string | undefined
   // Override api()'s default timeout (20s) for a write whose handler legitimately
   // runs long (e.g. capture's inline AI classification before the DB write) — a
   // caller that lets this time out gets the SAME transport-failure/outbox-queue
@@ -138,7 +138,7 @@ export async function writeWith<T = unknown>(
   const key = uuid()
 
   const queue = async (): Promise<WriteResult<T>> => {
-    await enqueue({ id: uuid(), key, path: target, method, body, affectedKeys, createdAt: Date.now(), tmpId: spec.tmpId })
+    await enqueue({ id: uuid(), key, path: target, method, body, affectedKeys, createdAt: Date.now(), ...(spec.tmpId !== undefined && { tmpId: spec.tmpId }) })
     return { data: null, queued: true }
   }
 

@@ -29,7 +29,7 @@ export interface JoindreCandidate {
   colour: string | null
   // Contacts only — drives the `urgence` cold-start boost. Members/pets/businesses
   // carry no tags today, so omit or leave undefined.
-  tags?: string[]
+  tags?: string[] | undefined
 }
 
 // The subset of `lib/businesses` `Business` the ranking needs — matches the wire

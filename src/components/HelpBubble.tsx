@@ -44,7 +44,7 @@ export function HelpBubble({
   body: string
   card?: string
   // Optional 0-based index of the card's sub-point to open + highlight + scroll to.
-  point?: number
+  point?: number | undefined
   // The help-registry key this bubble is explaining. Present → the « Signaler » door
   // shows and carries it, so a report names the SECTION rather than the URL.
   reportKey?: string

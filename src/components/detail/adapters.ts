@@ -545,13 +545,13 @@ export interface MealLike {
 }
 
 export interface MealOpts {
-  color?: string
+  color?: string | undefined
   slotLabel?: string
   daySec?: number
   /** The recipe this meal resolves to (useOpenMeal resolves it) — adds the 📖 / 🍲 doors. */
   recipeId?: string | null
-  onLeftover?: () => void
-  onRemove?: () => void
+  onLeftover?: (() => void) | undefined
+  onRemove?: (() => void) | undefined
 }
 
 // — A planned meal. EVERY tapped meal reaches this builder now (Marc, 2026-09-02):
