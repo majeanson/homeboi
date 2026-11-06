@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest'
 // « named » by `/api/car-day`. TABLE has two key shapes, `'quoted': mod` and the shorthand
 // `events,`; both are read, because the first version of this file saw only the quoted
 // ones and so left out 45 routes (the regex is the whole of the bug, the canary pins it).
-const UNTESTED_MAX = 71
+const UNTESTED_MAX = 65
 
 const here = __dirname
 const routes = readFileSync(join(here, 'routes.ts'), 'utf8')

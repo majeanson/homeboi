@@ -23,6 +23,11 @@ export interface Session {
 
 let seq = 0
 
+// Each signup or login stands for one person, so each comes from its own address: the real
+// LIMIT_IP binding is live here, and a shared bucket would 429 the thirty-first household
+// of a file. A test about the limiter itself sends its own CF-Connecting-IP.
+export const freshIp = (): Record<string, string> => ({ 'CF-Connecting-IP': `10.77.${++seq >> 8}.${seq & 255}` })
+
 // The raw Worker fetch — no session, no CSRF.
 export function anon(path: string, init?: FetchInit): Promise<Response> {
   const headers = new Headers(init?.headers)
@@ -72,7 +77,7 @@ export async function household(
   opts: { empty?: boolean } = {},
 ): Promise<Session & { password: string }> {
   const email = `${label}-${Date.now()}-${++seq}@d1.test`
-  const res = await anon('/api/auth/signup', { method: 'POST', body: { email, password, householdName: `Maisonnée ${label}` } })
+  const res = await anon('/api/auth/signup', { method: 'POST', body: { email, password, householdName: `Maisonnée ${label}` }, headers: freshIp() })
   if (res.status !== 201) throw new Error(`signup ${res.status}: ${await res.text()}`)
   const c = cookiesFrom(res)
   const me = await anon('/api/auth/me', { headers: { Cookie: c.cookie } })
@@ -88,7 +93,7 @@ export async function household(
 
 // Re-sign an existing account (a second device).
 export async function login(email: string, password: string): Promise<Session> {
-  const res = await anon('/api/auth/login', { method: 'POST', body: { email, password } })
+  const res = await anon('/api/auth/login', { method: 'POST', body: { email, password }, headers: freshIp() })
   if (res.status !== 200) throw new Error(`login ${res.status}: ${await res.text()}`)
   const c = cookiesFrom(res)
   const me = await anon('/api/auth/me', { headers: { Cookie: c.cookie } })
