@@ -3774,8 +3774,8 @@ export function DevKit() {
           <HouseholdListSection
             field="devkitList"
             seed={() => [
-              { id: 'a', name: 'Garde-manger', color: PALETTE[0] },
-              { id: 'b', name: 'Congélateur', color: PALETTE[2] },
+              { id: 'a', name: 'Garde-manger', color: PALETTE[0] ?? '' },
+              { id: 'b', name: 'Congélateur', color: PALETTE[2] ?? '' },
             ]}
             labels={{ title: 'Liste (démo)', name: 'Nom', add: 'Ajouter un emplacement…', empty: 'Vide' }}
           />

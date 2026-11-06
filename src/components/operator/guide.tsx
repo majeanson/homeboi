@@ -42,25 +42,25 @@ function GuideCard({
   entry: GuideEntry
   open?: boolean
   isTarget?: boolean
-  cardRef?: Ref<HTMLDetailsElement>
+  cardRef?: Ref<HTMLDetailsElement> | undefined
   // The section colour (SECTION_TINT ink) this card belongs to. Applied as a local
   // `--accent` override so the card's icon, chevron, target-ring and "go there"
   // link all adopt the section's hue — they already read `var(--accent)`. Undefined
   // (start cards, inline section guides) keeps the default marigold accent.
-  tint?: string
+  tint?: string | undefined
   pointsOpen?: boolean
   showGoTo?: boolean
   // The active search words — every fold-match in the title/what/points gets a
   // calm <mark> so the reader sees WHY this card surfaced (lib/richText highlight).
-  highlight?: string
+  highlight?: string | undefined
   // A specific sub-point to open + highlight + scroll to (contextual "?" deep-link).
-  targetPoint?: number
+  targetPoint?: number | undefined
   // The deep-link owner's ref for that sub-point. The SCROLL lives up there, not here:
   // a card that scrolls itself and a point that scrolls itself are two scrolls racing,
   // and React runs the child's effect FIRST — so the card's landing always overwrote
   // the point's, dumping the reader at the top of a card instead of on the line they
   // asked for. One owner, one target. See useGuideCardTarget.
-  pointRef?: Ref<HTMLDetailsElement>
+  pointRef?: Ref<HTMLDetailsElement> | undefined
   // Replay a guided tour by id (the card names it via entry.tour). Generalized so
   // EVERY tour — the essentials one AND each section tour — is re-doable here, not
   // just on first run.

@@ -182,13 +182,13 @@ function ListItemRow({
   itemId: string
   text: string
   picto: string
-  dealImage?: string | null
+  dealImage?: string | null | undefined
   dealLabel?: React.ReactNode
   /** The staged deal spelled out, shown under the picture once it's zoomed. */
   dealDetail?: React.ReactNode
   /** AVANCÉ (lib/listeMode): put the explicit ✏️/🗑 back on the row. */
   advanced?: boolean
-  adder?: ListMember | null
+  adder?: ListMember | null | undefined
   checked?: boolean
   // « Pas pressé »: only worth buying on a deal. Purely a presentation state.
   noRush?: boolean
@@ -203,10 +203,10 @@ function ListItemRow({
   aisleTag?: React.ReactNode
   // Drag-and-drop reorder: the shared pointer-DnD handle + this row's position. The
   // zone id and the drag id are both the index (a drop = "move dragged row here").
-  dnd?: ReturnType<typeof usePointerDnd>
+  dnd?: ReturnType<typeof usePointerDnd> | undefined
   // The grip's KEYBOARD mirror (focus it, ↑/↓): the drag is invisible to a
   // keyboard, so the same handle answers arrows too. Only passed with `dnd`.
-  onMove?: (dir: 'up' | 'down') => void
+  onMove?: ((dir: 'up' | 'down') => void) | undefined
   index: number
   // Read-only guest: no check toggle, no ✏️, no swipe-to-delete, no delete pane,
   // no drag grip. The picture/name taps stay — for a guest the name NAVIGATES to

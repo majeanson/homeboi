@@ -22,7 +22,7 @@ import { recurLabel } from '../../lib/recurLabel'
 import { CHORES_KEY, MEMBERS_KEY, ROUTINES_KEY, BOARD_KEY, MONTH_KEY } from '../../lib/queryKeys'
 import { type Chore, type Routine } from './types'
 
-export function ChoresSection({ chores, onChange, help }: { chores: Chore[]; onChange: () => void; help?: HelpMode }) {
+export function ChoresSection({ chores, onChange, help }: { chores: Chore[]; onChange: () => void; help?: HelpMode | undefined }) {
   const t = useT()
   const o18n = useOperatorT()
   const { open } = useAddSheet()

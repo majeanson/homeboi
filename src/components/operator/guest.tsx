@@ -765,7 +765,7 @@ interface ShareFields {
 }
 const EMPTY: ShareFields = { wifiSsid: '', wifiPassword: '', houseRules: '', binDay: '' }
 
-function ShareInfoEditor({ help }: { help?: HelpMode }) {
+function ShareInfoEditor({ help }: { help?: HelpMode | undefined }) {
   const t = useT()
   const [fields, setFields] = useState<ShareFields>(EMPTY)
   const [saving, setSaving] = useState(false)
@@ -867,7 +867,7 @@ const CAST_SCENES: Record<
   welcome: { cred: 'guest', kind: 'welcome', link: (o, tk) => `${o}/welcome?guest=${encodeURIComponent(tk)}` },
 }
 
-function CastTvSection({ help }: { help?: HelpMode }) {
+function CastTvSection({ help }: { help?: HelpMode | undefined }) {
   const o18n = useOperatorT()
   const t = useT()
   // Minting a link is operator-only — a read-only guest can't hand out access.

@@ -72,7 +72,7 @@ export function ChoresTabPanel({ chores, onChange, help }: { chores: Chore[]; on
 // kind; the dated upkeep rows ALSO surface on the board/month. Mirrors
 // ChoresSection: in-section add (not the ＋ FAB), edit in place, deferred-undo
 // delete; hidden writes for a read-only guest.
-function HomeProjectsSection({ kind, help }: { kind: 'plan' | 'upkeep'; help?: HelpMode }) {
+function HomeProjectsSection({ kind, help }: { kind: 'plan' | 'upkeep'; help?: HelpMode | undefined }) {
   const o18n = useOperatorT()
   const t = useT()
   const { lang } = useLang()
