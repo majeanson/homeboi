@@ -17,6 +17,7 @@
     "perf:door": "node scripts/coldstart.mjs",
     "knip": "knip",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "test:d1": "vitest run -c vitest.d1.config.ts",
     "e2e": "playwright test",
