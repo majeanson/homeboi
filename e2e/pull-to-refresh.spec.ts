@@ -67,12 +67,14 @@ test.describe('pull to refresh', () => {
 
     // Short pull — under the threshold. Nothing refetches.
     await drag(page, 40)
+    // Proving no refetch left: nothing marks an absence, so give it the time it would have taken.
     await page.waitForTimeout(200)
     expect(listCalls).toBe(0)
 
     // Mostly sideways: a Rail / SubTabs swipe living inside the body must never
     // be swallowed by the pull.
     await drag(page, 60, 200)
+    // Proving no refetch left: nothing marks an absence, so give it the time it would have taken.
     await page.waitForTimeout(200)
     expect(listCalls).toBe(0)
 

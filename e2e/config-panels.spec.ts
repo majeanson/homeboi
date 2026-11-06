@@ -300,6 +300,7 @@ test('deleting a list template is HELD behind « Annuler » — the row hides at
 
   await page.getByRole('button', { name: 'Annuler' }).click()
   await expect(section.getByRole('button', { name: 'Avant de partir', exact: true })).toBeVisible()
+  // Proving nothing happened: nothing marks an absence, so give it the time it would have taken.
   await page.waitForTimeout(400)
   expect(deletes).toEqual([])
 })

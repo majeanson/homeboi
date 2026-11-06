@@ -227,6 +227,7 @@ test('emptying an existing note deletes it HELD behind « Annuler » — the row
   await page.getByRole('button', { name: 'Annuler' }).click()
   await expect(page.locator('.cnote')).toHaveCount(1)
   await expect(page.locator('.cnote')).toContainText('laver l’auto')
+  // Proving no write was sent: nothing marks an absence, so give it the time it would have taken.
   await page.waitForTimeout(400)
   expect(writes).toEqual([])
 })

@@ -119,7 +119,8 @@ Three read-only audits (components/CSS · flows · tests/guards) on 2026-11-05 f
 ## 4. What still needs improvement — consolidated and ranked
 
 **Ouvert depuis le plan de solidification (2026-11-05)**, chacun tenu par un cliquet ou un test :
-- [ ] 44 specs gardent leur propre `boot`, et 199 `waitForTimeout` restent (`e2e-rule.test.ts`). `interactions.spec` et `config-panels.spec` ne sont pas scindés.
+- [x] Les specs passent à `app.boot` : plus aucun `boot` local, et `waitForTimeout` tombe de 199 à 80 (`e2e-rule.test.ts`, BOOT_MAX 0). Une photo ou une mesure finale attend `settled()` (`e2e/measure.ts`) : la page a cessé de bouger. Ceux qui restent sont une durée voulue : un appui maintenu, ou la preuve que rien n'arrive, chacun avec sa raison en commentaire.
+- [ ] `realdata.spec` (16) et `flipp-live.spec` (4) gardent des attentes sans raison écrite : l'un veut un vrai compte, l'autre le vrai flipp.com, donc ni l'un ni l'autre n'a pu tourner ici. `interactions.spec` et `config-panels.spec` ne sont pas scindés.
 - [ ] 67 routes sans test positif sur vrai D1 (`worker/d1Coverage.test.ts`). Le type `Wire` des mocks n'est pas fini.
 - [ ] `noUncheckedIndexedAccess` (802 erreurs) et `exactOptionalPropertyTypes` (353). Le relèvement d'oxlint n'est pas fait.
 - [ ] 7.1 : 13 modules sans test (`viewportVars`, `toast`, `persist`, `query`, `tabParam`...). Pas de seuils de couverture, pas de `@testing-library`.

@@ -51,6 +51,7 @@ const hold = async (page: Page, sel: ReturnType<Page['locator']>) => {
   const b = await boxOf(sel) // never a bare boundingBox() (CLAUDE.md: it throws on a re-resolved node)
   await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2)
   await page.mouse.down()
+  // The hold IS the gesture: a press lasts a duration, and no signal stands in for one.
   await page.waitForTimeout(HOLD_MS)
   await page.mouse.up()
 }

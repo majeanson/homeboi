@@ -146,6 +146,7 @@ test('a double-tap on ▶ does not tick step one — the → takes its place und
   // A real double-click at the ▶'s coordinates: the second click lands on whatever is there
   // by then — the → button, in the same spot.
   await page.mouse.dblclick(x, y)
+  // Proving no step was ticked: nothing marks an absence, so give it the time it would have taken.
   await page.waitForTimeout(400)
   expect(server.patches.filter((p) => p.done === true)).toHaveLength(0)
   await expect(checks(page)).toHaveCount(0)
@@ -172,6 +173,7 @@ test('← then → in a flurry leaves the story consistent: no tick behind a gap
     ;(document.querySelector('.tdl-prev') as HTMLButtonElement).click()
     ;(document.querySelector('.tdl-finish') as HTMLButtonElement)?.click()
   })
+  // Proving no step was ticked: nothing marks an absence, so give it the time it would have taken.
   await page.waitForTimeout(300)
   // ← rewound step 2 and the same-instant → was swallowed by the rest — so [0] and the story
   // is on step 2, never [0, 2] with step 1 unticked and the screen on 1 «done» for nobody.
@@ -198,6 +200,7 @@ test('a poll that leaves AFTER the tap but BEFORE the slow write lands does not 
   const seen: number[] = []
   for (let i = 0; i < 24; i++) {
     seen.push(await checks(page).count())
+    // Proving no step was ticked: nothing marks an absence, so give it the time it would have taken.
     await page.waitForTimeout(100)
   }
   expect(Math.min(...seen)).toBe(1)
@@ -257,6 +260,7 @@ test('a read-only guest can hear steps but never commits one', async ({ page }) 
   await expect(page.locator('.tdl-start, .tdl-finish, .tdl-prev')).toHaveCount(0)
   await page.locator('.tdl-illus--tap').click()
   await page.locator('.tdl-strip .tdl-step').nth(2).click()
+  // Proving no step was ticked: nothing marks an absence, so give it the time it would have taken.
   await page.waitForTimeout(300)
   expect(server.patches).toHaveLength(0)
   await expect(checks(page)).toHaveCount(0)

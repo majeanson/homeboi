@@ -229,6 +229,7 @@ test.describe('navigation', () => {
     const box = await sw.boundingBox()
     await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2)
     await page.mouse.down()
+    // The hold IS the gesture: past 3 s, a press lasts a duration and no signal stands in for one.
     await page.waitForTimeout(3300)
     await page.mouse.up()
     await expect(page.locator('.kid-exit-modal')).toHaveCount(0)
@@ -247,6 +248,7 @@ test.describe('navigation', () => {
     const box = await sw.boundingBox()
     await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2)
     await page.mouse.down()
+    // The hold IS the gesture: past 3 s, a press lasts a duration and no signal stands in for one.
     await page.waitForTimeout(3300)
     await page.mouse.up()
 
@@ -1476,6 +1478,7 @@ test.describe('list', () => {
     // (force: Playwright itself refuses an aria-disabled click, which is half the
     // proof; the forced tap proves the handler is gone too, not just the ARIA.)
     await btn.click({ force: true })
+    // Proving the second tap wrote nothing: nothing marks an absence, so give it the time it would have taken.
     await page.waitForTimeout(400)
     await expect(btn).toHaveText(/Ajouté à la liste/)
     expect(listWrites).toHaveLength(1)

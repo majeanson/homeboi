@@ -63,6 +63,7 @@ test('tapping a tile reads it aloud and writes nothing — the board is hear-fir
   // touch can't become a confirmation by accident.
   await chore.click()
   await expect(chore).not.toHaveClass(/is-armed/)
+  // Proving no write was sent: nothing marks an absence, so give it the time it would have taken.
   await page.waitForTimeout(300)
   expect(writes, 'the toddler board must not write from a tile tap').toEqual([])
   // …and the chore is still not marked done.
@@ -141,6 +142,7 @@ test('the leaving tiles are hear-first too — tapping one writes nothing', asyn
   await expect(tile).toHaveClass(/is-speaking/)
   await tile.click()
   await expect(tile).not.toHaveClass(/is-armed/)
+  // Proving no write was sent: nothing marks an absence, so give it the time it would have taken.
   await page.waitForTimeout(300)
   expect(writes, 'the leaving checklist must not be tickable from the kid board').toEqual([])
 })

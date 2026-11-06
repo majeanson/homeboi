@@ -147,6 +147,7 @@ test('a read-only guest can run the timer locally but never writes it to the hou
   await expect(ring).toBeVisible() // the babysitter still gets a working timer…
   await ring.click()
   await expect(ring).toHaveClass(/is-running/)
+  // Proving no write was sent: nothing marks an absence, so give it the time it would have taken.
   await page.waitForTimeout(300)
   expect(patched).toBe(false) // …but nothing of theirs lands in the household's day
 })

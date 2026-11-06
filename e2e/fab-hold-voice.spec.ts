@@ -22,6 +22,7 @@ async function hold(page: Page, ms = 700) {
   const y = box.y + box.height / 2
   await page.mouse.move(x, y)
   await page.mouse.down()
+  // The hold IS the gesture: a press lasts a duration, and no signal stands in for one.
   await page.waitForTimeout(ms)
   await page.mouse.up()
 }

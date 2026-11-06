@@ -37,6 +37,7 @@ async function hold(page: Page, card: string, ms = HOLD) {
   const box = await scrolledBox(page, `.wg-slot[data-card="${card}"]`)
   await page.mouse.move(box.x + box.width / 2, box.y + 12)
   await page.mouse.down()
+  // The hold IS the gesture: a press lasts a duration, and no signal stands in for one.
   await page.waitForTimeout(ms)
   await page.mouse.up()
 }

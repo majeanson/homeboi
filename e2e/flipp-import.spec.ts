@@ -50,6 +50,7 @@ test('shows what would change, and writes NOTHING until « Rapporter » is confi
   // The hash is consumed even before the answer: a refresh must not ask twice.
   expect(new URL(page.url()).hash).toBe('')
   await dialog.getByRole('button', { name: /Annuler/ }).click()
+  // Proving nothing was written: nothing marks an absence, so give it the time it would have taken.
   await page.waitForTimeout(500)
   expect(writes, 'nothing written after « Annuler »').toEqual([])
 })
@@ -89,6 +90,7 @@ test('a guest is read-only: the hash is dropped, nothing is asked, nothing is wr
   await page.addInitScript(() => localStorage.setItem('babillard-guest-preview', '1'))
   await page.goto('/liste#flipp=' + encodeFlippExport(EXPORT))
   await page.locator('.list-row').first().waitFor({ state: 'visible', timeout: 15_000 })
+  // Proving nothing was written: nothing marks an absence, so give it the time it would have taken.
   await page.waitForTimeout(800)
   await expect(page.locator('.confirm')).toHaveCount(0)
   expect(writes).toEqual([])

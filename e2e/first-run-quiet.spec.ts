@@ -46,6 +46,7 @@ test('a brand-new device lands on the board under the welcome — never on the h
   // Scoped to the card: the board's own « Le point du jour » card offers a « Passer » too.
   await page.locator('.tour').getByRole('button', { name: 'Passer' }).click()
   await expect(page.locator('.tour')).toHaveCount(0)
+  // Proving nothing pulled the page away: nothing marks an absence, so give it the time it would have taken.
   await page.waitForTimeout(400)
   await expect(page).toHaveURL(/\/board(\?|$)/)
   await page.reload()
@@ -141,6 +142,7 @@ test('…and when the BOARD CHUNK is what arrives late — the shape production 
 
   // Now let the hub arrive. The board must be what lands, not the habits scene.
   await expect(page.locator('.wg-slot').first()).toBeVisible({ timeout: 15_000 })
+  // Proving nothing pulled the page away: nothing marks an absence, so give it the time it would have taken.
   await page.waitForTimeout(600)
   await expect(page).toHaveURL(/\/board(\?|$)/)
   await expect(page.locator('.habitudes')).toHaveCount(0)

@@ -52,6 +52,7 @@ test('the virements section shows no add / edit / delete door to a kiosk (the op
   await kiosk(app)
   await page.goto('/notes?section=virements')
   await page.locator('.hub').waitFor({ state: 'visible', timeout: 15_000 })
+  // Proving no door appeared: nothing marks an absence, so give it the time it would have taken.
   await page.waitForTimeout(400)
   await expect(doors()).toHaveCount(0)
 })

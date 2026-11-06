@@ -47,6 +47,7 @@ test('it redeems ONCE — the double mount must not spend the token twice', asyn
 
   await page.goto('/verifier?t=once')
   await expect(page.locator('main')).toContainText('confirmé')
+  // Proving the token was not redeemed twice: nothing marks an absence, so give it the time it would have taken.
   await page.waitForTimeout(400)
   expect(calls, 'the token was redeemed more than once').toBe(1)
 })
