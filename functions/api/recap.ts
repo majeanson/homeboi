@@ -22,8 +22,10 @@ export const onRequestGet = authed(async (ctx, actor) => {
     )
       .bind(hh, since, now)
       .all<{ title: string }>(),
-    ctx.env.DB.prepare('SELECT title FROM meals WHERE household_id = ? AND date >= ? ORDER BY date LIMIT 20')
-      .bind(hh, since)
+    // Same bound as the events: a planned supper has not happened. Today's sits at local
+    // midnight, so tonight's is in; next Tuesday's tacos are not a memory of this week.
+    ctx.env.DB.prepare('SELECT title FROM meals WHERE household_id = ? AND date >= ? AND date <= ? ORDER BY date LIMIT 20')
+      .bind(hh, since, now)
       .all<{ title: string }>(),
     ctx.env.DB.prepare('SELECT title FROM tasks WHERE household_id = ? AND last_done_at >= ? LIMIT 20')
       .bind(hh, since)
