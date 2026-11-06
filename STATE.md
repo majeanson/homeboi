@@ -121,7 +121,7 @@ Three read-only audits (components/CSS · flows · tests/guards) on 2026-11-05 f
 **Ouvert depuis le plan de solidification (2026-11-05)**, chacun tenu par un cliquet ou un test :
 - [ ] 44 specs gardent leur propre `boot`, et 199 `waitForTimeout` restent (`e2e-rule.test.ts`). `interactions.spec` et `config-panels.spec` ne sont pas scindés.
 - [ ] 67 routes sans test positif sur vrai D1 (`worker/d1Coverage.test.ts`). Le type `Wire` des mocks n'est pas fini.
-- [ ] `noUncheckedIndexedAccess` (802 erreurs) et `exactOptionalPropertyTypes` (353). Le relèvement d'oxlint n'est pas fait.
+- [ ] `noUncheckedIndexedAccess` (802 erreurs) et `exactOptionalPropertyTypes` (353). oxlint reste en `correctness` : `suspicious` + `perf` donnent 8 441 faux positifs d'une seule règle, et `iframe-missing-sandbox` casserait le lecteur PDF de `CarnetDocs`. Décision prise, à ne pas rouvrir sans nouvelle mesure.
 - [ ] 7.1 : 13 modules sans test (`viewportVars`, `toast`, `persist`, `query`, `tabParam`...). Pas de seuils de couverture, pas de `@testing-library`.
 - [ ] PARITY : les ➖ nus et les 🔶 restent à annoter. Les 4 rangées ajoutées sont ❓, non notées.
 
