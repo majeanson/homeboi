@@ -87,7 +87,7 @@ describe('same-name adds are serialized (the double-tap twin)', () => {
     const qc = freshQc()
     await Promise.all([ensureListLine(qc, 'pommes'), stageDeal(qc, 'pommes', deal)])
     expect(server.lines).toHaveLength(1)
-    expect(server.lines[0].deal).toBeDefined()
+    expect(server.lines[0]?.deal).toBeDefined()
   })
 
   it('different names do not wait on each other (both insert)', async () => {
@@ -105,6 +105,6 @@ describe('the stale-cache fallback (a matched line deleted server-side)', () => 
     const on = await stageDeal(qc, 'pommes', deal)
     expect(on).toBeNull() // a NEW line — never « Sur « Pommes » » with nothing behind it
     expect(server.lines.map((l) => l.text)).toEqual(['pommes'])
-    expect(server.lines[0].deal).toBeDefined()
+    expect(server.lines[0]?.deal).toBeDefined()
   })
 })

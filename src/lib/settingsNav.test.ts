@@ -69,8 +69,8 @@ describe('SETTINGS_TREE is well-formed', () => {
       for (const sub of SETTINGS_SUBS[tab]) {
         const key = (SUB_LABEL_KEY[tab] as Record<string, string>)[sub]
         expect(key, `${tab}/${sub} has no SUB_LABEL_KEY`).toBeTruthy()
-        expect((FR_OPERATOR as Record<string, unknown>)[key], `o18n.${key} (fr) for ${tab}/${sub}`).toBeTypeOf('string')
-        expect((EN_OPERATOR as Record<string, unknown>)[key], `o18n.${key} (en) for ${tab}/${sub}`).toBeTypeOf('string')
+        expect((FR_OPERATOR as Record<string, unknown>)[key!], `o18n.${key} (fr) for ${tab}/${sub}`).toBeTypeOf('string')
+        expect((EN_OPERATOR as Record<string, unknown>)[key!], `o18n.${key} (en) for ${tab}/${sub}`).toBeTypeOf('string')
       }
     }
   })
@@ -78,14 +78,14 @@ describe('SETTINGS_TREE is well-formed', () => {
   it('SETTINGS_FOCUS and subOfFocus agree, for every section', () => {
     for (const [key, keys] of Object.entries(SETTINGS_FOCUS)) {
       const [tab, sub] = key.split('/')
-      for (const k of keys) expect(subOfFocus(tab, k), `subOfFocus(${tab}, ${k})`).toBe(sub)
+      for (const k of keys) expect(subOfFocus(tab!, k), `subOfFocus(${tab}, ${k})`).toBe(sub)
     }
   })
 
   it('SUB_GOTO keys name live pills', () => {
     for (const key of Object.keys(SUB_GOTO)) {
       const [tab, sub] = key.split('/')
-      expect(isLiveSub(tab, sub), `SUB_GOTO["${key}"] names no live pill`).toBe(true)
+      expect(isLiveSub(tab!, sub!), `SUB_GOTO["${key}"] names no live pill`).toBe(true)
     }
   })
 })
@@ -155,7 +155,7 @@ describe('who sees what — derived from access, never an allowlist', () => {
     for (const tab of TABS) {
       expect(visibleSubs(tab, operator)).toEqual([...SETTINGS_SUBS[tab]])
       for (const sub of SETTINGS_SUBS[tab]) {
-        expect(visibleSections(tab, sub, operator).length).toBe((SETTINGS_TREE[tab] as Record<string, readonly unknown[]>)[sub].length)
+        expect(visibleSections(tab, sub, operator).length).toBe((SETTINGS_TREE[tab] as Record<string, readonly unknown[]>)[sub]!.length)
       }
     }
   })
@@ -222,8 +222,8 @@ describe('prose breadcrumbs name live Réglages destinations', () => {
   const navKey: Record<string, string> = { liste: 'list', notes: 'notes', maison: 'maison' }
   const opKey: Record<string, string> = { decouvrir: 'secDiscover', board: 'secBoard', kitchen: 'secKitchen', settings: 'secSystem' }
   for (const [L, O] of [[FR, FR_OPERATOR], [EN, EN_OPERATOR]] as const) {
-    for (const [tab, k] of Object.entries(opKey)) tabLabels.set((O as unknown as Record<string, string>)[k], tab)
-    for (const [tab, k] of Object.entries(navKey)) tabLabels.set((L.nav as unknown as Record<string, string>)[k], tab)
+    for (const [tab, k] of Object.entries(opKey)) tabLabels.set((O as unknown as Record<string, string>)[k]!, tab)
+    for (const [tab, k] of Object.entries(navKey)) tabLabels.set((L.nav as unknown as Record<string, string>)[k]!, tab)
   }
   const pillLabels = new Map<string, Set<string>>() // tab → its pill labels (both languages)
   const pillOwners = new Map<string, Set<string>>() // pill label → tabs that own it
@@ -232,7 +232,7 @@ describe('prose breadcrumbs name live Réglages destinations', () => {
     for (const sub of SETTINGS_SUBS[tab]) {
       const k = (SUB_LABEL_KEY[tab] as Record<string, string>)[sub]
       for (const O of [FR_OPERATOR, EN_OPERATOR]) {
-        const label = (O as unknown as Record<string, string>)[k]
+        const label = (O as unknown as Record<string, string>)[k!]!
         set.add(label)
         if (!pillOwners.has(label)) pillOwners.set(label, new Set())
         pillOwners.get(label)!.add(tab)

@@ -51,7 +51,7 @@ describe.each(HOOKS)('%s', (_name, useHook, key, endpoint) => {
     renderHook(() => useHook(), { wrapper })
     const query = qc.getQueryCache().find({ queryKey: key })
     expect(query?.meta?.live).toBe(true)
-    expect(query?.observers[0].options.refetchInterval).toBe(liveInterval)
+    expect(query?.observers[0]?.options.refetchInterval).toBe(liveInterval)
   })
 
   it('two surfaces mounted together cost one request', async () => {
@@ -76,6 +76,6 @@ describe.each(HOOKS)('%s', (_name, useHook, key, endpoint) => {
   it('a caller override wins over the defaults', () => {
     const { qc, wrapper } = client()
     renderHook(() => useHook({ retry: false }), { wrapper })
-    expect(qc.getQueryCache().find({ queryKey: key })?.observers[0].options.retry).toBe(false)
+    expect(qc.getQueryCache().find({ queryKey: key })?.observers[0]?.options.retry).toBe(false)
   })
 })

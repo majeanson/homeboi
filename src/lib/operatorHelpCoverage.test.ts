@@ -56,7 +56,7 @@ for (const file of FILES) {
   for (const tag of openTags(readFileSync(file, 'utf8'), 'OperatorSection')) {
     const key = /helpKey="([^"]+)"/.exec(tag)?.[1]
     if (!key) continue
-    sites.push({ file: file.split(/[\\/]/).slice(-1)[0], key, hasHelp: /(^|\s)help=\{/.test(tag) })
+    sites.push({ file: file.split(/[\\/]/).slice(-1)[0]!, key, hasHelp: /(^|\s)help=\{/.test(tag) })
   }
 }
 

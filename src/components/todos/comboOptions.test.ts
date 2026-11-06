@@ -31,14 +31,14 @@ describe('templateOptions (the « Modèles : » dropdown rows)', () => {
       item('Souliers'),
     ])
     const [opt] = templateOptions([t1], t)
-    expect(opt.label).toBe('Avant de partir')
-    expect(opt.hint).toBe('Clés · Portefeuille · Bouteille d’eau · Manteau · +2')
-    expect(opt.badge).toBeTruthy()
+    expect(opt?.label).toBe('Avant de partir')
+    expect(opt?.hint).toBe('Clés · Portefeuille · Bouteille d’eau · Manteau · +2')
+    expect(opt?.badge).toBeTruthy()
   })
 
   it('drops the +N when the list fits entirely in the hint', () => {
     const t1 = tpl('t1', 'Court', [item('Sac à dos'), item('Collation')])
-    expect(templateOptions([t1], t)[0].hint).toBe('Sac à dos · Collation')
+    expect(templateOptions([t1], t)[0]?.hint).toBe('Sac à dos · Collation')
   })
 
   it('previews what will ACTUALLY be added: refs expanded, deduped', () => {
@@ -55,8 +55,8 @@ describe('templateOptions (the « Modèles : » dropdown rows)', () => {
 
   it('stays quiet for an empty list rather than badging it "0 éléments"', () => {
     const [opt] = templateOptions([tpl('t1', 'Vide', [])], t)
-    expect(opt.hint).toBeUndefined()
-    expect(opt.badge).toBeUndefined()
+    expect(opt!.hint).toBeUndefined()
+    expect(opt!.badge).toBeUndefined()
   })
 
   it('groups every row under the Modèles heading', () => {

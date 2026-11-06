@@ -72,7 +72,7 @@ describe('day + range lookups', () => {
   it('holidaysInRange returns the window sorted, and spans a year boundary', () => {
     const dec = holidaysInRange(day(2026, 12, 20), 20) // Dec 20 2026 → Jan 8 2027
     expect(dec.map((x) => x.holiday.id)).toEqual(['veille-de-noel', 'noel', 'veille-jour-de-lan', 'jour-de-lan'])
-    expect(dec.every((x, i, xs) => i === 0 || xs[i - 1].at <= x.at)).toBe(true)
+    expect(dec.every((x, i, xs) => i === 0 || xs[i - 1]!.at <= x.at)).toBe(true)
   })
 
   it('groupByYear labels years only once a second year exists', () => {
@@ -87,7 +87,7 @@ describe('day + range lookups', () => {
     const more = [...rows, { id: 'c', at: sec(2025, 12, 25) }]
     const groups = groupByYear(more, (r) => r.at)
     expect(groups.map(([y]) => y)).toEqual([2026, 2025])
-    expect(groups[1][1].map((r) => r.id)).toEqual(['c'])
+    expect(groups[1]![1].map((r) => r.id)).toEqual(['c'])
     expect(groupByYear([], (r: { at: number }) => r.at)).toEqual([])
   })
 
@@ -106,7 +106,7 @@ describe('day + range lookups', () => {
     )
     // Sorted ascending, fêtes present (Canada Day excluded — before the window? no:
     // July 1 IS the window start), and every household point included once.
-    expect(pts.every((p, i, xs) => i === 0 || xs[i - 1].day <= p.day)).toBe(true)
+    expect(pts.every((p, i, xs) => i === 0 || xs[i - 1]!.day <= p.day)).toBe(true)
     expect(pts.find((p) => p.kind === 'fete' && p.label === 'Fête du Canada')?.day).toBe(sec(2026, 7, 1))
     expect(pts.find((p) => p.kind === 'fete' && p.label === 'Noël')?.day).toBe(sec(2026, 12, 25))
     expect(pts.filter((p) => p.kind === 'birthday')).toHaveLength(1)
@@ -139,7 +139,7 @@ describe('day + range lookups', () => {
     const groups = groupByMonth(rows, (r) => r.at)
     expect(groups.map(([k]) => k)).toEqual([sec(2026, 7, 1), sec(2026, 5, 1), sec(2025, 12, 1)])
     // Input order is preserved inside a month (caller pre-sorts the merged list).
-    expect(groups[0][1].map((r) => r.id)).toEqual(['a', 'b'])
+    expect(groups[0]![1].map((r) => r.id)).toEqual(['a', 'b'])
     expect(groupByMonth([], (r: { at: number }) => r.at)).toEqual([])
   })
 

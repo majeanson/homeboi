@@ -148,7 +148,7 @@ const glossaryTerms = () => new Set([...read('src/lib/glossary.ts').matchAll(/^ 
 const PATHS = /[A-Za-z0-9_/.-]+\.(?:tsx?|css)/g
 const kitFiles = () =>
   new Set(
-    [...read('src/pages/DevKit.tsx').matchAll(/\n\s+file: '([^']+)',/g)].flatMap((m) => m[1].match(PATHS) ?? []),
+    [...read('src/pages/DevKit.tsx').matchAll(/\n\s+file: '([^']+)',/g)].flatMap((m) => m[1]!.match(PATHS) ?? []),
   )
 const primitiveRows = () => {
   const lines = read('COMPONENTS.md').split(/\r?\n/)
@@ -159,12 +159,12 @@ const primitiveRows = () => {
   let specimens = 0
   for (let i = a; i < b; i++) {
     const l = lines[i]
-    if (!l.startsWith('|')) continue
-    const cells = l.split('|').map((c) => c.trim())
+    if (!l!.startsWith('|')) continue
+    const cells = l!.split('|').map((c) => c.trim())
     if (cells.length < 4) continue
-    const name = cells[1].replace(/\*\*/g, '').trim()
+    const name = cells[1]!.replace(/\*\*/g, '').trim()
     if (!name || /^-+$/.test(name) || name === 'Component') continue
-    const files = cells[2].match(PATHS) ?? []
+    const files = cells[2]!.match(PATHS) ?? []
     if (!files.length) continue
     rows++
     if (files.some((f) => kit.has(f))) specimens++

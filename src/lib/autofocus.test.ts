@@ -118,7 +118,7 @@ describe('the keyboard opens on a tap, never on its own', () => {
 
   it('the rich-text editor never focuses itself either (TipTap spells it `autofocus:`)', () => {
     const src = blankComments(readFileSync(join(srcDir, 'components/cercle/NoteEditorTiptap.tsx'), 'utf8'))
-    const opts = [...src.matchAll(/\bautofocus:\s*([^,\n]+)/g)].map((m) => m[1].trim())
+    const opts = [...src.matchAll(/\bautofocus:\s*([^,\n]+)/g)].map((m) => m[1]!.trim())
     expect(opts).toEqual(['false'])
   })
 

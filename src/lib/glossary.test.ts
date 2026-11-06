@@ -242,7 +242,7 @@ describe('glossary — the ratchets (they only go down)', () => {
       expect(
         n,
         `« ${form} » now appears ${n}× (ceiling ${ceiling}). Target is 0 — lower the ceiling in the same commit that removes one`,
-      ).toBeLessThanOrEqual(ceiling)
+      ).toBeLessThanOrEqual(ceiling!)
     })
   }
 
@@ -438,7 +438,7 @@ describe('glossary — the ratchets (they only go down)', () => {
       const src = readFileSync(f, 'utf8')
       if (!/lang: 'en'|'en'\s*as Lang|\['fr', 'en'\]/.test(src)) continue
       const re = /(?:getByText\(|toHaveText\(|hasText:\s*|name:\s*)'([^'\n]+)'/g
-      for (const m of src.matchAll(re)) if (enCopy.has(m[1])) asserting.push(`${f.split(/[\\/]/).pop()}: « ${m[1]} »`)
+      for (const m of src.matchAll(re)) if (enCopy.has(m[1]!)) asserting.push(`${f.split(/[\\/]/).pop()}: « ${m[1]} »`)
     }
     expect(
       asserting,
@@ -501,11 +501,11 @@ describe('e2e asserts labels the app can render', () => {
     const raw = readFileSync(f, 'utf8')
     const path = f.split('/').pop()!
     for (const m of raw.matchAll(/name:\s*'([^']{3,60})'/g)) {
-      if (!allLiterals.has(m[1])) allLiterals.set(m[1], new Set())
-      allLiterals.get(m[1])!.add(path)
-      if (!FRENCH.test(m[1])) continue
-      if (!literals.has(m[1])) literals.set(m[1], new Set())
-      literals.get(m[1])!.add(path)
+      if (!allLiterals.has(m[1]!)) allLiterals.set(m[1]!, new Set())
+      allLiterals.get(m[1]!)!.add(path)
+      if (!FRENCH.test(m[1]!)) continue
+      if (!literals.has(m[1]!)) literals.set(m[1]!, new Set())
+      literals.get(m[1]!)!.add(path)
     }
   }
   const dict = [...frValues, ...enValues]
@@ -544,7 +544,7 @@ describe('e2e asserts labels the app can render', () => {
       // A composed accessible name — « Supprimer le groupe — Les cousins » — is the
       // dictionary label plus a row's own name. Judge it on the part the copy owns.
       const owned = lit.split(' — ')[0]
-      if (!dict.some((v) => v === lit || v.includes(lit) || v === owned || v.includes(owned))) {
+      if (!dict.some((v) => v === lit || v.includes(lit) || v === owned || v.includes(owned!))) {
         stale.push(`« ${lit} » (${[...files].join(', ')})`)
       }
     }
@@ -575,7 +575,7 @@ describe('the in-app lexicon', () => {
 
   it('every [[mot:…]] names a live term', () => {
     const ids = new Set(GLOSSARY.map((t) => t.id))
-    expect(tokens.filter((id) => !ids.has(id))).toEqual([])
+    expect(tokens.filter((id) => !ids.has(id!))).toEqual([])
   })
 
   it('the mark never reaches a hub surface', () => {

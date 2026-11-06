@@ -371,8 +371,8 @@ describe('summariseYear', () => {
   it('groups by agreement AND by person, counting the dates each one covered', () => {
     const s = summariseYear(all, [hypo, garderie], 2026, RENFLOU)
     expect(s.plans.map((p) => p.title)).toEqual(['Hypothèque', 'Garderie'])
-    expect(s.plans[0].byMember).toEqual([{ memberId: 'marc', payments: 2, cents: 111282 }])
-    expect(s.plans[1].byMember).toEqual([{ memberId: 'camille', payments: 1, cents: 10000 }])
+    expect(s.plans[0]?.byMember).toEqual([{ memberId: 'marc', payments: 2, cents: 111282 }])
+    expect(s.plans[1]?.byMember).toEqual([{ memberId: 'camille', payments: 1, cents: 10000 }])
   })
 
   it('totals each named extra per person, and the whole year once', () => {
@@ -437,15 +437,15 @@ describe('summariseYear', () => {
     const s = summariseYear([marcAug, named], [hypo], 2026, RENFLOU)
     expect(s.extras.map((x) => x.label)).toEqual([RENFLOU, 'Frais de maman'])
     // The legacy line from marcAug and the one from `named` are the SAME group.
-    expect(s.extras[0].cents).toBe(400000)
-    expect(s.extras[1].byMember).toEqual([{ memberId: 'marc', payments: 0, cents: 20000 }])
+    expect(s.extras[0]?.cents).toBe(400000)
+    expect(s.extras[1]?.byMember).toEqual([{ memberId: 'marc', payments: 0, cents: 20000 }])
   })
 
   it('keeps an amount nobody ever named in the total, under its own empty group', () => {
     const tr = transfer({ id: 'f', sentAt: d(2026, 7, 14), lines: [{ kind: 'other', label: '', amountCents: 5000 }] })
     const s = summariseYear([tr], [hypo], 2026, RENFLOU)
     expect(s.extras).toHaveLength(1)
-    expect(s.extras[0].label).toBe('')
+    expect(s.extras[0]?.label).toBe('')
     expect(s.totalCents).toBe(5000)
   })
 
@@ -455,7 +455,7 @@ describe('summariseYear', () => {
     const s = summariseYear([marcAug], [], 2026, RENFLOU)
     expect(s.totalCents).toBe(311282)
     expect(s.plans).toHaveLength(1)
-    expect(s.plans[0].title).toBe('')
+    expect(s.plans[0]?.title).toBe('')
   })
 
   it('reports the span the year actually covers', () => {
@@ -507,7 +507,7 @@ describe('catchupSeries — the gap, drawn', () => {
     // A gap small enough for the rhythm to close: 58 payments of 300 $ against 17 400 $.
     const s = catchupSeries(proj({ gapCents: 1800000, remainingCents: 1740000, projectedRemainingCents: 0 }), d(2026, 8, 12))!
     expect(s.zeroAt).not.toBeNull()
-    expect(s.ahead[s.ahead.length - 1].cents).toBe(0)
+    expect(s.ahead[s.ahead.length - 1]?.cents).toBe(0)
     expect(s.zeroAt!).toBeGreaterThan(d(2026, 8, 12))
     expect(s.zeroAt!).toBeLessThanOrEqual(d(2028, 7, 24))
   })
@@ -517,7 +517,7 @@ describe('catchupSeries — the gap, drawn', () => {
   it('does not reach zero when the rhythm cannot close the gap', () => {
     const s = catchupSeries(proj(), d(2026, 8, 12))!
     expect(s.zeroAt).toBeNull()
-    expect(s.ahead[s.ahead.length - 1].cents).toBe(5340000)
+    expect(s.ahead[s.ahead.length - 1]?.cents).toBe(5340000)
   })
 
   it('an already-closed gap is at zero from today on', () => {
@@ -528,9 +528,9 @@ describe('catchupSeries — the gap, drawn', () => {
 
   it('never draws outside its own box when today sits beyond the term', () => {
     const s = catchupSeries(proj(), d(2030, 0, 1))!
-    expect(s.past[1].at).toBe(d(2028, 7, 24))
+    expect(s.past[1]?.at).toBe(d(2028, 7, 24))
     const s2 = catchupSeries(proj(), d(2020, 0, 1))!
-    expect(s2.past[1].at).toBe(d(2026, 1, 1))
+    expect(s2.past[1]?.at).toBe(d(2026, 1, 1))
   })
 
   it('is nothing to draw without a gap', () => {

@@ -57,8 +57,8 @@ const addAnchor = (id: string, path: string) => {
   anchors.set(id, list)
 }
 for (const f of files) {
-  for (const m of f.raw.matchAll(/data-tour="([a-z0-9-]+)"/g)) addAnchor(m[1], f.path)
-  for (const m of f.raw.matchAll(/(?<![\w-])tour="([a-z0-9-]+)"/g)) addAnchor(m[1], f.path)
+  for (const m of f.raw.matchAll(/data-tour="([a-z0-9-]+)"/g)) addAnchor(m[1]!, f.path)
+  for (const m of f.raw.matchAll(/(?<![\w-])tour="([a-z0-9-]+)"/g)) addAnchor(m[1]!, f.path)
 }
 
 // Every surface a « ? » can be armed on — the five hub tabs plus Réglages, whose
@@ -122,7 +122,7 @@ describe('tour rule', () => {
     for (const f of files) {
       if (f.path === 'lib/helpMode.tsx') continue // the definition itself
       for (const m of f.raw.matchAll(/<HelpHint([^>]*?)\/>/g)) {
-        if (!m[1].includes('card=')) bare.push(`${f.path}: <HelpHint${m[1]}/>`)
+        if (!m[1]!.includes('card=')) bare.push(`${f.path}: <HelpHint${m[1]}/>`)
       }
     }
     expect(bare, 'pass card="<guide id>" (or a computed one, as Maison and the ＋ sheet do)').toEqual([])
@@ -189,24 +189,24 @@ function sceneHeadTags(src: string): string[] {
   const lines = src.split('\n')
   const out: string[] = []
   for (let i = 0; i < lines.length; i++) {
-    const at = lines[i].indexOf('<SceneHead')
+    const at = lines[i]!.indexOf('<SceneHead')
     if (at < 0) continue
     let tag = lines[i]
     // Only a one-line tag ends on its opening line; otherwise walk until the close
     // that belongs to THIS element. The test is per APPENDED LINE, never on the
     // accumulated text — testing the whole tag is what let a nested `<Icon … />`
     // terminate the walk mid-element (this reader's own first bug).
-    if (!/\/>\s*$/.test(lines[i])) {
+    if (!/\/>\s*$/.test(lines[i]!)) {
       for (let j = i + 1; j < lines.length; j++) {
         tag += '\n' + lines[j]
         // A nested element sits further right than the opening tag; this element's
         // own close is at or left of it.
-        if (/\/>\s*$/.test(lines[j]) && lines[j].search(/\S/) <= at) break
+        if (/\/>\s*$/.test(lines[j]!) && lines[j]!.search(/\S/) <= at) break
         // `<SceneHead …>` with children: the close is a bare `>`.
-        if (/^\s*>\s*$/.test(lines[j])) break
+        if (/^\s*>\s*$/.test(lines[j]!)) break
       }
     }
-    out.push(tag)
+    out.push(tag!)
   }
   return out
 }
@@ -241,7 +241,7 @@ describe('scene help', () => {
     for (const f of files.filter((x) => x.path.endsWith('.tsx'))) {
       for (const tag of sceneHeadTags(f.raw)) {
         const m = tag.match(/card="([a-z0-9-]+)"/)
-        if (m && !ids.has(m[1])) dead.push(`${f.path} → card="${m[1]}"`)
+        if (m && !ids.has(m[1]!)) dead.push(`${f.path} → card="${m[1]}"`)
       }
     }
     expect(dead, 'a « ? » that opens nothing is worse than none').toEqual([])

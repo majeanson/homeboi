@@ -44,7 +44,7 @@ function cssFiles(dir: string): string[] {
 function rules(css: string): { selector: string; body: string }[] {
   const bare = css.replace(/\/\*[\s\S]*?\*\//g, '')
   const out: { selector: string; body: string }[] = []
-  for (const m of bare.matchAll(/([^{}]+)\{([^{}]*)\}/g)) out.push({ selector: m[1].trim(), body: m[2] })
+  for (const m of bare.matchAll(/([^{}]+)\{([^{}]*)\}/g)) out.push({ selector: m[1]!.trim(), body: m[2]! })
   return out
 }
 

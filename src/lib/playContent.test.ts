@@ -70,15 +70,15 @@ describe('bucketDay', () => {
   const [matin, midi, soir, dodo] = bucketDay(meals, events)
 
   it('buckets meals by slot (breakfast→matin, lunch+snack→midi, supper+dessert→soir)', () => {
-    expect(matin.mealTitles).toEqual(['Œufs'])
-    expect(midi.mealTitles).toEqual(['Soupe', 'Biscuit'])
-    expect(soir.mealTitles).toEqual(['Pâtes', 'Gâteau'])
-    expect(dodo.mealTitles).toEqual([])
+    expect(matin?.mealTitles).toEqual(['Œufs'])
+    expect(midi?.mealTitles).toEqual(['Soupe', 'Biscuit'])
+    expect(soir?.mealTitles).toEqual(['Pâtes', 'Gâteau'])
+    expect(dodo!.mealTitles).toEqual([])
   })
   it('buckets events by local hour, with all-day events in the morning', () => {
-    expect(matin.eventTitles).toEqual(expect.arrayContaining(['Fête', 'Parc']))
-    expect(soir.eventTitles).toContain('Souper-fête')
-    expect(dodo.eventTitles).toContain('Histoire')
+    expect(matin?.eventTitles).toEqual(expect.arrayContaining(['Fête', 'Parc']))
+    expect(soir?.eventTitles).toContain('Souper-fête')
+    expect(dodo?.eventTitles).toContain('Histoire')
   })
   it('always returns the four parts in order', () => {
     expect(bucketDay([], []).map((p) => p.key)).toEqual(['matin', 'midi', 'soir', 'dodo'])

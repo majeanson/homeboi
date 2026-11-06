@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { findMeasures } from './measure'
 import { measureColor, measureScoops, DEFAULT_MEASURE_COLORS, DEFAULT_UNIT_FALLBACK } from './measureColors'
 
-const m = (line: string) => findMeasures(line)[0]
+const m = (line: string) => findMeasures(line)[0]!
 
 describe('measureColor — whole multiples inherit the base tool colour', () => {
   it('tints a whole multiple with its 1-unit tool colour, not the mauve fallback', () => {

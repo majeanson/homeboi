@@ -54,7 +54,7 @@ describe('aisleRanks — saved order → sortable ranks', () => {
 
   it('null/empty falls back to the default order', () => {
     const ranks = aisleRanks(null)
-    expect(ranks[DEFAULT_AISLE_ORDER[0]]).toBe(0)
+    expect(ranks[DEFAULT_AISLE_ORDER[0]!]).toBe(0)
   })
 })
 

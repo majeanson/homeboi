@@ -57,10 +57,10 @@ function classesByTag(): { button: Map<string, Set<string>>; link: Map<string, S
     const src = readScanned(f)
     const where = relative(ROOT, f).replace(/\\/g, '/')
     for (const m of src.matchAll(/<(button|Link|a)\b([^>]*)>/gs)) {
-      const cn = m[2].match(/className="([^"{]+)"/)
+      const cn = m[2]!.match(/className="([^"{]+)"/)
       if (!cn) continue
       const bag = m[1] === 'button' ? button : link
-      for (const cls of cn[1].split(/\s+/).filter(Boolean)) {
+      for (const cls of cn[1]!.split(/\s+/).filter(Boolean)) {
         if (!bag.has(cls)) bag.set(cls, new Set())
         bag.get(cls)!.add(where)
       }

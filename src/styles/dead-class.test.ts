@@ -46,7 +46,7 @@ function classesOf(css: string): string[] {
   // Only selectors: drop the declaration bodies, keep what sits before each `{`.
   const selectors = noComments.replace(/\{[^{}]*\}/g, '{}').replace(/url\([^)]*\)/g, '')
   const out = new Set<string>()
-  for (const m of selectors.matchAll(/\.(-?[a-zA-Z_][a-zA-Z0-9_-]*)/g)) out.add(m[1])
+  for (const m of selectors.matchAll(/\.(-?[a-zA-Z_][a-zA-Z0-9_-]*)/g)) out.add(m[1]!)
   return [...out]
 }
 
@@ -55,7 +55,7 @@ function dead(): string[] {
   for (const f of cssFiles) {
     for (const c of classesOf(readFileSync(f, 'utf8'))) {
       if (words.has(c) || c in ALLOWED) continue
-      if (dynamicPrefixes.some((p) => c.startsWith(p))) continue
+      if (dynamicPrefixes.some((p) => c.startsWith(p!))) continue
       found.push(`${relative(here, f).split(sep).join('/')}: .${c}`)
     }
   }

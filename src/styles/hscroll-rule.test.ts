@@ -36,7 +36,7 @@ function walk(dir: string, ext: RegExp): string[] {
 function rules(css: string): { selector: string; body: string }[] {
   const bare = css.replace(/\/\*[\s\S]*?\*\//g, '')
   const out: { selector: string; body: string }[] = []
-  for (const m of bare.matchAll(/([^{}]+)\{([^{}]*)\}/g)) out.push({ selector: m[1].trim().split('\n').pop()!.trim(), body: m[2] })
+  for (const m of bare.matchAll(/([^{}]+)\{([^{}]*)\}/g)) out.push({ selector: m[1]!.trim().split('\n').pop()!.trim(), body: m[2]! })
   return out
 }
 
@@ -48,7 +48,7 @@ export function hscrollClasses(): Map<string, string> {
     for (const r of rules(readFileSync(f, 'utf8'))) {
       const m = /^\.([A-Za-z0-9_-]+)$/.exec(r.selector)
       if (!m) continue
-      if (/overflow-x\s*:\s*(auto|scroll)/.test(r.body) && /display\s*:\s*(flex|grid)/.test(r.body)) out.set(m[1], relative(SRC, f).split(sep).join('/'))
+      if (/overflow-x\s*:\s*(auto|scroll)/.test(r.body) && /display\s*:\s*(flex|grid)/.test(r.body)) out.set(m[1]!, relative(SRC, f).split(sep).join('/'))
     }
   }
   return out

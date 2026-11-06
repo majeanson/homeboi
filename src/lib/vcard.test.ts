@@ -72,20 +72,20 @@ describe('parseVCard (#44 import)', () => {
       tags: ['famille', 'marraine'],
     }
     const [p] = parseVCard(toVCard(c))
-    expect(p.firstName).toBe('Marie')
-    expect(p.lastName).toBe('Tremblay')
-    expect(p.nickname).toBe('Mimi')
-    expect(p.phone).toBe('514-555-0143')
-    expect(p.email).toBe('marie@example.ca')
-    expect(p.birthday).toBe('1985-07-02')
-    expect(p.address).toEqual({ street: '12 rue des Érables', city: 'Québec', state: 'QC', postalCode: 'G1A 1A1' })
-    expect(p.notes).toBe('Allergique aux arachides; aime le thé.')
-    expect(p.tags).toEqual(['famille', 'marraine'])
+    expect(p?.firstName).toBe('Marie')
+    expect(p?.lastName).toBe('Tremblay')
+    expect(p?.nickname).toBe('Mimi')
+    expect(p?.phone).toBe('514-555-0143')
+    expect(p?.email).toBe('marie@example.ca')
+    expect(p?.birthday).toBe('1985-07-02')
+    expect(p?.address).toEqual({ street: '12 rue des Érables', city: 'Québec', state: 'QC', postalCode: 'G1A 1A1' })
+    expect(p?.notes).toBe('Allergique aux arachides; aime le thé.')
+    expect(p?.tags).toEqual(['famille', 'marraine'])
   })
 
   it('preserves escaped punctuation/newlines in NOTE', () => {
     const [p] = parseVCard(toVCard({ ...base, notes: 'Ligne 1\nLigne 2; avec, ponctuation' }))
-    expect(p.notes).toBe('Ligne 1\nLigne 2; avec, ponctuation')
+    expect(p?.notes).toBe('Ligne 1\nLigne 2; avec, ponctuation')
   })
 
   it('parses MANY cards from one file (a phone export)', () => {
@@ -96,18 +96,18 @@ describe('parseVCard (#44 import)', () => {
 
   it('falls back to FN when there is no structured N', () => {
     const [p] = parseVCard('BEGIN:VCARD\r\nVERSION:3.0\r\nFN:Jean Untel\r\nEND:VCARD\r\n')
-    expect(p.firstName).toBe('Jean')
-    expect(p.lastName).toBe('Untel')
+    expect(p?.firstName).toBe('Jean')
+    expect(p?.lastName).toBe('Untel')
   })
 
   it('yields a null birthday when the export omitted the 0000 sentinel', () => {
     const [p] = parseVCard(toVCard({ ...base, birthday: '0000-03-14' }))
-    expect(p.birthday).toBeNull()
+    expect(p!.birthday).toBeNull()
   })
 
   it('takes the first TEL when several are present', () => {
     const card = 'BEGIN:VCARD\r\nVERSION:3.0\r\nN:Roy;Ana;;;\r\nTEL;TYPE=CELL:111\r\nTEL;TYPE=HOME:222\r\nEND:VCARD\r\n'
-    expect(parseVCard(card)[0].phone).toBe('111')
+    expect(parseVCard(card)[0]?.phone).toBe('111')
   })
 
   it('ignores blocks with no name', () => {

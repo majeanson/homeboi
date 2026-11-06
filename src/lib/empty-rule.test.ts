@@ -41,7 +41,7 @@ function emptyTokensOf(tag: string): string[] {
   if (!m) return []
   const value = m[1] ?? m[2] ?? m[3] ?? ''
   const lits = m[3] !== undefined ? [...value.matchAll(/['"`]([^'"`]*)['"`]/g)].map((x) => x[1]) : [value]
-  return lits.flatMap((l) => l.trim().split(/\s+/)).filter((tok) => EMPTY_TOKEN.test(tok))
+  return lits.flatMap((l) => l!.trim().split(/\s+/)).filter((tok) => EMPTY_TOKEN.test(tok))
 }
 
 describe('empty rule — an empty message is an EmptyState', () => {

@@ -95,7 +95,7 @@ describe('no anonymous swallow on a write', () => {
   })
 
   it('no file keeps more swallows than it was allowed (a ratchet: lower it, never raise it)', () => {
-    const over = found.filter((f) => ALLOWED[f.rel] && f.n > ALLOWED[f.rel].max).map((f) => `${f.rel}: ${f.n} > ${ALLOWED[f.rel].max}`)
+    const over = found.filter((f) => ALLOWED[f.rel] && f.n > ALLOWED[f.rel]!.max).map((f) => `${f.rel}: ${f.n} > ${ALLOWED[f.rel]!.max}`)
     expect(over).toEqual([])
   })
 

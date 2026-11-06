@@ -194,7 +194,7 @@ describe('parallel-array rule', () => {
       for (const m of raw.matchAll(
         /\[\s*[A-Za-z0-9_]+\s*,\s*(set[A-Za-z0-9_]*(?:Image|Photo|Narration|Clip)[A-Za-z0-9_]*)\s*\]\s*=\s*useState<string\[\]>/g,
       )) {
-        if (!known.has(m[1])) suspects.add(m[1])
+        if (!known.has(m[1]!)) suspects.add(m[1]!)
       }
     }
     expect(

@@ -52,7 +52,7 @@ const checkLink = (link: string, where: string): string | null => {
       if (!home) return `${where}: focus "${focus}" is no section of tab "${tab}" in "${link}"`
       if (sub && sub !== home) return `${where}: focus "${focus}" lives under "${tab}/${home}", not "${tab}/${sub}" in "${link}"`
     } else if (tab && sub && (SETTINGS_FOCUS[`${tab}/${sub}`] ?? []).length > 1) {
-      return `${where}: "${tab}/${sub}" stacks ${SETTINGS_FOCUS[`${tab}/${sub}`].length} cards — name one with ?focus= in "${link}"`
+      return `${where}: "${tab}/${sub}" stacks ${SETTINGS_FOCUS[`${tab}/${sub}`]!.length} cards — name one with ?focus= in "${link}"`
     }
     if (card && !guideById.has(card) && !GUIDE_CARD_ALIAS[card]) return `${where}: unknown card "${card}" in "${link}"`
     return null
@@ -107,7 +107,7 @@ describe('guide links resolve (the guide is a launcher now)', () => {
     const problems: string[] = []
     for (const m of tokens) {
       const id = m[1]
-      if (!guideById.has(id) && !GUIDE_CARD_ALIAS[id]) problems.push(`[[card:${id}]] names no live or aliased card`)
+      if (!guideById.has(id!) && !GUIDE_CARD_ALIAS[id!]) problems.push(`[[card:${id}]] names no live or aliased card`)
     }
     expect(problems, problems.join('\n')).toEqual([])
   })
@@ -117,7 +117,7 @@ describe('guide links resolve (the guide is a launcher now)', () => {
     for (const key of [...Object.keys(SETTINGS_FOCUS), ...Object.keys(SUB_GOTO)]) {
       const [tab, sub] = key.split('/')
       const subs: readonly string[] = SETTINGS_SUBS[tab as keyof typeof SETTINGS_SUBS] ?? []
-      if (!subs.includes(sub)) problems.push(`settingsNav key "${key}" names no real tab/sub`)
+      if (!subs.includes(sub!)) problems.push(`settingsNav key "${key}" names no real tab/sub`)
     }
     for (const [key, to] of Object.entries(SUB_GOTO)) {
       const p = checkLink(to, `SUB_GOTO["${key}"]`)
@@ -163,7 +163,7 @@ describe('every /settings link in src/ lands', () => {
   const links = files(srcDir).flatMap((f) =>
     [...readFileSync(f, 'utf8').matchAll(/['`](\/settings\?[^'`\s]*)['`]/g)].map((m) => ({
       where: relative(srcDir, f).split(sep).join('/'),
-      link: m[1].replace(/\$\{[^}]*\}/g, 'x'),
+      link: m[1]!.replace(/\$\{[^}]*\}/g, 'x'),
     })),
   )
 

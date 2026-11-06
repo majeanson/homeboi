@@ -81,7 +81,7 @@ describe('kit class ownership — a primitive’s class is spelled by the primit
   it('every ALLOWED entry still spells the token (a stale entry exempts the next arrival)', () => {
     const stale = [...ALLOWED.keys()].filter((k) => {
       const [token, file] = k.split(' @ ')
-      return !spellings(token).some((s) => s.file === file)
+      return !spellings(token!).some((s) => s.file === file)
     })
     expect(stale, 'drop these').toEqual([])
   })

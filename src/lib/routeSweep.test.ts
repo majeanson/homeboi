@@ -12,7 +12,7 @@ const router = readFileSync(join(root, 'src/router.tsx'), 'utf8').replace(/\{\/\
 const sweep = readFileSync(join(root, 'e2e/routes.ts'), 'utf8')
 
 const paths = [...new Set([...router.matchAll(/<Route\b[^>]*\bpath="([^"]+)"/g)].map((m) => m[1]))]
-const swept = [...sweep.matchAll(/['`](\/[^'`]*)['`]/g)].map((m) => m[1].replace(/\$\{[^}]+\}/g, 'x').split('?')[0])
+const swept = [...sweep.matchAll(/['`](\/[^'`]*)['`]/g)].map((m) => m[1]!.replace(/\$\{[^}]+\}/g, 'x').split('?')[0])
 
 // A route the sweep cannot use, each with why.
 const ALLOWED: Record<string, string> = {
@@ -41,7 +41,7 @@ describe('route sweep ↔ router', () => {
     expect(paths.length).toBeGreaterThan(50)
   })
   it('every route is in e2e/routes.ts or ALLOWED with a reason', () => {
-    const missing = paths.filter((p) => !(p in ALLOWED) && !swept.some((s) => reach(p).test(s)))
+    const missing = paths.filter((p) => !(p! in ALLOWED) && !swept.some((s) => reach(p!).test(s!)))
     expect(missing).toEqual([])
   })
   it('ALLOWED holds no stale entry', () => {

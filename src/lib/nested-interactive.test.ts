@@ -90,8 +90,8 @@ function interactiveComponents(srcs: Src[]): Set<string> {
   const out = new Set<string>()
   for (const f of srcs) {
     if (!RENDERS_CONTROL.test(f.text)) continue
-    for (const m of f.text.matchAll(/export\s+(?:default\s+)?function\s+([A-Z]\w*)/g)) out.add(m[1])
-    for (const m of f.text.matchAll(/export\s+const\s+([A-Z]\w*)\s*[:=]/g)) out.add(m[1])
+    for (const m of f.text.matchAll(/export\s+(?:default\s+)?function\s+([A-Z]\w*)/g)) out.add(m[1]!)
+    for (const m of f.text.matchAll(/export\s+const\s+([A-Z]\w*)\s*[:=]/g)) out.add(m[1]!)
   }
   return out
 }
@@ -102,17 +102,17 @@ function roleButtonContainers(srcs: Src[]): { path: string; line: number; tag: s
   for (const f of srcs) {
     const lines = f.text.split('\n')
     for (let i = 0; i < lines.length; i++) {
-      if (!/\brole="button"/.test(lines[i])) continue
+      if (!/\brole="button"/.test(lines[i]!)) continue
       let start = i
-      while (start > 0 && !/^\s*<[A-Za-z]/.test(lines[start])) start--
-      const tag = /^\s*<([A-Za-z][\w.]*)/.exec(lines[start])?.[1]
+      while (start > 0 && !/^\s*<[A-Za-z]/.test(lines[start]!)) start--
+      const tag = /^\s*<([A-Za-z][\w.]*)/.exec(lines[start]!)?.[1]
       if (!tag) continue
       let depth = 0
       let end = -1
       for (let j = start; j < lines.length; j++) {
-        const opens = (lines[j].match(new RegExp(`<${tag}\\b`, 'g')) ?? []).length
-        const closes = (lines[j].match(new RegExp(`</${tag}>`, 'g')) ?? []).length
-        const selfClosed = opens > 0 && /^\s*<[A-Za-z][^>]*\/>\s*$/.test(lines[j]) ? 1 : 0
+        const opens = (lines[j]!.match(new RegExp(`<${tag}\\b`, 'g')) ?? []).length
+        const closes = (lines[j]!.match(new RegExp(`</${tag}>`, 'g')) ?? []).length
+        const selfClosed = opens > 0 && /^\s*<[A-Za-z][^>]*\/>\s*$/.test(lines[j]!) ? 1 : 0
         depth += opens - closes - selfClosed
         if (j > start && depth <= 0) {
           end = j
@@ -132,7 +132,7 @@ function nestedComponentOffenders(srcs: Src[]): string[] {
   for (const c of roleButtonContainers(srcs)) {
     // The literal case is the `it` below; this one is about the child COMPONENT.
     if (/<button\b/.test(c.body) || /<a\s+href/.test(c.body) || /<Link\b/.test(c.body)) continue
-    const kids = [...new Set([...c.body.matchAll(/<([A-Z]\w*)/g)].map((m) => m[1]))].filter((k) => interactive.has(k))
+    const kids = [...new Set([...c.body.matchAll(/<([A-Z]\w*)/g)].map((m) => m[1]))].filter((k) => interactive.has(k!))
     if (kids.length) out.push(`${c.path}:${c.line} — role="button" <${c.tag}> contains <${kids.join('>, <')}>, which renders a control`)
   }
   return out
@@ -150,12 +150,12 @@ describe('nested interactives', () => {
     for (const f of files) {
       const lines = f.text.split('\n')
       for (let i = 0; i < lines.length; i++) {
-        if (!/\brole="button"/.test(lines[i])) continue
+        if (!/\brole="button"/.test(lines[i]!)) continue
         // Walk back to the element's opening tag (prettier puts one attribute per
         // line, so `role=` always sits inside a multi-line open tag).
         let start = i
-        while (start > 0 && !/^\s*<[A-Za-z]/.test(lines[start])) start--
-        const tag = /^\s*<([A-Za-z][\w.]*)/.exec(lines[start])?.[1]
+        while (start > 0 && !/^\s*<[A-Za-z]/.test(lines[start]!)) start--
+        const tag = /^\s*<([A-Za-z][\w.]*)/.exec(lines[start]!)?.[1]
         if (!tag) continue
         // Then forward by TAG DEPTH, not by indentation. The indentation walk this
         // started as reported GREEN over the very defect it was written for — worth
@@ -169,10 +169,10 @@ describe('nested interactives', () => {
           // lookahead finds nothing after it. That miscount made the walk end on the
           // element's own opening line and skip every subtree — the reason this
           // guard first reported green over the defect it was written for.
-          const opens = (lines[j].match(new RegExp(`<${tag}\\b`, 'g')) ?? []).length
-          const closes = (lines[j].match(new RegExp(`</${tag}>`, 'g')) ?? []).length
+          const opens = (lines[j]!.match(new RegExp(`<${tag}\\b`, 'g')) ?? []).length
+          const closes = (lines[j]!.match(new RegExp(`</${tag}>`, 'g')) ?? []).length
           // A one-line self-closing element opens and closes on the same line.
-          const selfClosed = opens > 0 && /^\s*<[A-Za-z][^>]*\/>\s*$/.test(lines[j]) ? 1 : 0
+          const selfClosed = opens > 0 && /^\s*<[A-Za-z][^>]*\/>\s*$/.test(lines[j]!) ? 1 : 0
           depth += opens - closes - selfClosed
           if (j > start && depth <= 0) {
             end = j

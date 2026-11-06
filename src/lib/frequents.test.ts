@@ -15,7 +15,7 @@ describe('frequents', () => {
     bumpFrequent('meal', 'tacos')
     bumpFrequent('meal', 'soupe')
     const s = frequentScores('meal')
-    expect(s.tacos).toBeGreaterThan(s.soupe)
+    expect(s.tacos).toBeGreaterThan(s.soupe!)
     expect(s.soupe).toBeGreaterThan(0)
   })
 

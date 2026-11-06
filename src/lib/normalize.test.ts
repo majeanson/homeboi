@@ -32,7 +32,7 @@ describe('foldRanges', () => {
     const s = 'déjà vu'.normalize('NFD')
     expect(fold(s)).toBe('deja vu')
     const [range] = foldRanges(s, 'déjà')
-    expect(s.slice(range[0], range[1])).toBe('déjà'.normalize('NFD'))
+    expect(s.slice(range![0], range![1])).toBe('déjà'.normalize('NFD'))
   })
 
   it('returns nothing for an empty needle or no match', () => {

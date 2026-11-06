@@ -126,7 +126,7 @@ describe('tintInk keeps a coloured label readable', () => {
     const c = hex.replace('#', '')
     return [0, 2, 4].map((i) => parseInt(c.slice(i, i + 2), 16))
   }
-  const lumOf = (c: number[]) => 0.2126 * lin(c[0] / 255) + 0.7152 * lin(c[1] / 255) + 0.0722 * lin(c[2] / 255)
+  const lumOf = (c: number[]) => 0.2126 * lin(c[0]! / 255) + 0.7152 * lin(c[1]! / 255) + 0.0722 * lin(c[2]! / 255)
   const ratioOf = (a: number[], b: number[]) => {
     const [x, y] = [lumOf(a), lumOf(b)]
     return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05)
@@ -134,12 +134,12 @@ describe('tintInk keeps a coloured label readable', () => {
   // What the browser's color-mix(in srgb, …) produces for the pct tintInk chose.
   const mixed = (hex: string) => {
     const p = tintInkPct(hex) / 100
-    return rgb(hex).map((v, i) => Math.round(v * (1 - p) + rgb(DAY_INK)[i] * p))
+    return rgb(hex).map((v, i) => Math.round(v * (1 - p) + rgb(DAY_INK)[i]! * p))
   }
 
   // wash(hex) is `hex + '22'` — 0x22/255 ≈ 13.3% of the tint composited over the page.
   const washOver = (hex: string, page: string) =>
-    rgb(hex).map((v, i) => Math.round(v * 0.1333 + rgb(page)[i] * (1 - 0.1333)))
+    rgb(hex).map((v, i) => Math.round(v * 0.1333 + rgb(page)[i]! * (1 - 0.1333)))
 
   it('clears WCAG AA on cream for every colour the household can wear', () => {
     const short = PALETTE.map((c) => ({ c, r: ratioOf(mixed(c), rgb(CREAM)) }))

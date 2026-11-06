@@ -34,7 +34,7 @@ function sources(dir: string): string[] {
 }
 
 const constArrays = (src: string) =>
-  new Map([...src.matchAll(/\bconst\s+([A-Z][A-Z0-9_]*_KEY)\s*=\s*(\[[^\]]*\])/g)].map((m) => [m[1], m[2].replace(/\s+/g, '')]))
+  new Map([...src.matchAll(/\bconst\s+([A-Z][A-Z0-9_]*_KEY)\s*=\s*(\[[^\]]*\])/g)].map((m) => [m[1], m[2]!.replace(/\s+/g, '')]))
 
 /** key value → endpoint → files */
 function keyEndpoints(): Map<string, Map<string, Set<string>>> {
@@ -46,7 +46,7 @@ function keyEndpoints(): Map<string, Map<string, Set<string>>> {
     const valueOf = (name: string) => local.get(name) ?? shared.get(name) ?? `?${name}`
     const rel = relative(root, f).split(sep).join('/')
     const add = (name: string, path: string) => {
-      const endpoint = path.split('?')[0].split('${')[0].replace(/\/$/, '')
+      const endpoint = path.split('?')[0]!.split('${')[0]!.replace(/\/$/, '')
       const key = valueOf(name)
       const byEndpoint = out.get(key) ?? new Map<string, Set<string>>()
       byEndpoint.set(endpoint, new Set([...(byEndpoint.get(endpoint) ?? []), rel]))
@@ -54,11 +54,11 @@ function keyEndpoints(): Map<string, Map<string, Set<string>>> {
     }
     // `queryKey: X_KEY, … queryFn: () => api('path')` inside one options object.
     for (const m of src.matchAll(/queryKey:\s*([A-Z][A-Z0-9_]*_KEY)\b([\s\S]{0,400}?)(?:\}\s*\)|\n\s*\}\))/g)) {
-      const api = m[2].match(/queryFn:[\s\S]*?\bapi(?:<[\s\S]*?>)?\(\s*[`'"]([^`'"]+)[`'"]/)
-      if (api) add(m[1], api[1])
+      const api = m[2]!.match(/queryFn:[\s\S]*?\bapi(?:<[\s\S]*?>)?\(\s*[`'"]([^`'"]+)[`'"]/)
+      if (api) add(m[1]!, api[1]!)
     }
     // The discovery probes: `{ key: X_KEY, path: 'endpoint' }` (lib/discovery).
-    for (const m of src.matchAll(/key:\s*([A-Z][A-Z0-9_]*_KEY)\s*,\s*path:\s*'([^']+)'/g)) add(m[1], m[2])
+    for (const m of src.matchAll(/key:\s*([A-Z][A-Z0-9_]*_KEY)\s*,\s*path:\s*'([^']+)'/g)) add(m[1]!, m[2]!)
   }
   return out
 }

@@ -214,7 +214,7 @@ describe('columnizeOcrPage', () => {
     // body type: one word sits ON the gutter (x 400–600 zone). The old code only
     // exempted display-size lines and chopped this one mid-phrase into the two
     // columns; the crossing word is the tell that it's real spanning text.
-    page.blocks[0].paragraphs[0].lines.push({
+    page.blocks[0]!.paragraphs[0]!.lines.push({
       words: [
         { text: 'Préparation', confidence: 90, bbox: { x0: 40, y0: 300, x1: 340, y1: 320 } },
         { text: '20', confidence: 90, bbox: { x0: 360, y0: 300, x1: 430, y1: 320 } },
@@ -232,7 +232,7 @@ describe('columnizeOcrPage', () => {
   it('emits a big straddling title first, not sliced into the columns', () => {
     const page = twoColumnPage()
     // A display-size title (height 60 ≫ 1.8 × the 20px body) spanning both columns.
-    page.blocks[0].paragraphs[0].lines.unshift({
+    page.blocks[0]!.paragraphs[0]!.lines.unshift({
       words: [
         { text: 'Salade', confidence: 90, bbox: { x0: 100, y0: -80, x1: 400, y1: -20 } },
         { text: 'de', confidence: 90, bbox: { x0: 420, y0: -80, x1: 560, y1: -20 } },

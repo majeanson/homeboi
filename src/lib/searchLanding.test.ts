@@ -27,6 +27,6 @@ describe('search landing — one table', () => {
     // carry a `to` built by guideHref, so that one literal is the only exception.
     const rows = [...search.matchAll(/<Link\b[^>]*?\bto=\{?([^\s>]+)[\s\S]*?className="search__row"/g)].map((m) => m[1])
     expect(rows.length).toBeGreaterThan(15)
-    expect(rows.filter((to) => !to.startsWith('landingFor(') && to !== 'g.to}')).toEqual([])
+    expect(rows.filter((to) => !to!.startsWith('landingFor(') && to !== 'g.to}')).toEqual([])
   })
 })

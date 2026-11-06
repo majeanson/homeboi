@@ -5,7 +5,7 @@ const keys = (line: string) => findMeasures(line).map((m) => m.key)
 const one = (line: string) => {
   const ms = findMeasures(line)
   expect(ms).toHaveLength(1)
-  return ms[0]
+  return ms[0]!
 }
 
 describe('findMeasures — units', () => {
