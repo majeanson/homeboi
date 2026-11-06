@@ -344,7 +344,7 @@ describe('e2e/axe-allow.json', () => {
 // ➖ in the Part 3 matrix now carries a footnote or a class letter, and no 🔶 is left.
 // Planted red by stripping one marker.
 describe('PARITY Part 3 explains every cell', () => {
-  const part3 = read('PARITY.md').split('## Part 3')[1].split('## Part 4')[0]
+  const part3 = read('PARITY.md').split('## Part 3')[1]?.split('## Part 4')[0] ?? ''
   const cells = part3
     .split('\n')
     .filter((l) => /^\| F\d+/.test(l))
