@@ -9,21 +9,29 @@ import { dumpHousehold, type Takeout } from '../_lib/takeout'
 
 export const ORIGIN = 'https://babillard.test'
 
+// `body` is JSON-encoded; `raw` goes as it is (an upload's bytes), content-type in `headers`.
+type FetchInit = { method?: string; body?: unknown; raw?: BodyInit; headers?: Record<string, string> }
+
 export interface Session {
   email: string
   householdId: string
   cookie: string
   csrf: string
   // A fetch that carries the session cookie + the CSRF echo (and JSON-encodes a body).
-  fetch: (path: string, init?: { method?: string; body?: unknown; headers?: Record<string, string> }) => Promise<Response>
+  fetch: (path: string, init?: FetchInit) => Promise<Response>
 }
 
 let seq = 0
 
+// Each signup or login stands for one person, so each comes from its own address: the real
+// LIMIT_IP binding is live here, and a shared bucket would 429 the thirty-first household
+// of a file. A test about the limiter itself sends its own CF-Connecting-IP.
+export const freshIp = (): Record<string, string> => ({ 'CF-Connecting-IP': `10.77.${++seq >> 8}.${seq & 255}` })
+
 // The raw Worker fetch — no session, no CSRF.
-export function anon(path: string, init?: { method?: string; body?: unknown; headers?: Record<string, string> }): Promise<Response> {
+export function anon(path: string, init?: FetchInit): Promise<Response> {
   const headers = new Headers(init?.headers)
-  let body: string | undefined
+  let body: BodyInit | undefined = init?.raw
   if (init?.body !== undefined) {
     headers.set('content-type', 'application/json')
     body = JSON.stringify(init.body)
@@ -69,7 +77,7 @@ export async function household(
   opts: { empty?: boolean } = {},
 ): Promise<Session & { password: string }> {
   const email = `${label}-${Date.now()}-${++seq}@d1.test`
-  const res = await anon('/api/auth/signup', { method: 'POST', body: { email, password, householdName: `Maisonnée ${label}` } })
+  const res = await anon('/api/auth/signup', { method: 'POST', body: { email, password, householdName: `Maisonnée ${label}` }, headers: freshIp() })
   if (res.status !== 201) throw new Error(`signup ${res.status}: ${await res.text()}`)
   const c = cookiesFrom(res)
   const me = await anon('/api/auth/me', { headers: { Cookie: c.cookie } })
@@ -85,7 +93,7 @@ export async function household(
 
 // Re-sign an existing account (a second device).
 export async function login(email: string, password: string): Promise<Session> {
-  const res = await anon('/api/auth/login', { method: 'POST', body: { email, password } })
+  const res = await anon('/api/auth/login', { method: 'POST', body: { email, password }, headers: freshIp() })
   if (res.status !== 200) throw new Error(`login ${res.status}: ${await res.text()}`)
   const c = cookiesFrom(res)
   const me = await anon('/api/auth/me', { headers: { Cookie: c.cookie } })
@@ -103,4 +111,13 @@ export function idsOf(t: Takeout): string[] {
   const out = new Set<string>([t.householdId])
   for (const rows of Object.values(t.tables)) for (const r of rows) if (typeof r.id === 'string' && r.id) out.add(r.id)
   return [...out]
+}
+
+// A read or write a test relies on: anything but a 2xx throws with the body, so a refused
+// request reads as what it is rather than as a confusing `undefined` two lines later.
+export async function okJson<T = { ok: boolean }>(res: Promise<Response>): Promise<T> {
+  const r = await res
+  const text = await r.text()
+  if (!r.ok) throw new Error(`${r.status}: ${text.slice(0, 300)}`)
+  return JSON.parse(text) as T
 }

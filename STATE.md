@@ -82,7 +82,7 @@ interchangeable. Read this table before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md` is now
-> a number you can trust. It reads **4** — §4-K's last box (the retired
+> a number you can trust. It reads **6** — §4-K's last box (the retired
 > `LOGIN_PASSWORD` secret) closed 2026-09-29. **Asserted from the boxes themselves** by
 > `src/lib/docCounts.test.ts`, so this sentence cannot drift the way `REVIEW-PASS.md`'s
 > banner once did — it claimed 15 for twelve days against a single box.
@@ -121,12 +121,14 @@ Three read-only audits (components/CSS · flows · tests/guards) on 2026-11-05 f
 **Ouvert depuis le plan de solidification (2026-11-05)**, chacun tenu par un cliquet ou un test :
 - [x] Les specs passent à `app.boot` : plus aucun `boot` local, et `waitForTimeout` tombe de 199 à 80 (`e2e-rule.test.ts`, BOOT_MAX 0). Une photo ou une mesure finale attend `settled()` (`e2e/measure.ts`) : la page a cessé de bouger. Ceux qui restent sont une durée voulue : un appui maintenu, ou la preuve que rien n'arrive, chacun avec sa raison en commentaire.
 - [ ] `realdata.spec` (16) et `flipp-live.spec` (4) gardent des attentes sans raison écrite : l'un veut un vrai compte, l'autre le vrai flipp.com, donc ni l'un ni l'autre n'a pu tourner ici. `interactions.spec` et `config-panels.spec` ne sont pas scindés.
-- [ ] 67 routes sans test positif sur vrai D1 (`worker/d1Coverage.test.ts`). Le type `Wire` des mocks n'est pas fini.
+- [ ] 17 routes sans test positif sur vrai D1 (`worker/d1Coverage.test.ts`), toutes hors d'atteinte du harnais : neuf exigent une IA (`AI: ''`), huit sortent sur le réseau (`OUTBOUND`). Le chiffre « 67 » d'avant était faux : la regex ne lisait pas les 45 clés raccourcies de TABLE, le vrai compte était 97. Le type `Wire` des mocks n'est pas fini.
+- [ ] Un visage effacé fait répondre 500 : `X-Profile` entre tel quel dans une FK (`day-notes`, `family-notes`, `notes`, `recipe-loves` reproduits ; une dizaine de sites en tout, `profileMemberId`). `Board.tsx:418` efface le visage périmé au chargement du babillard, mais pas un téléphone qui ouvre directement Notes ni un rejeu d'outbox. Décision à prendre : valider une fois au centre ou par handler, et laisser tomber l'attribution ou refuser l'écriture.
+- [ ] Lu dans le code, pas testé : le DELETE d'un animal (doux) laisse ses `contact_links` et ses `contact_group_members`, que `/api/cercle` renvoie ; le DELETE d'un voyage efface ses notes sans libérer leurs blobs, malgré son commentaire.
 - [ ] `noUncheckedIndexedAccess` (802 erreurs) et `exactOptionalPropertyTypes` (353). oxlint reste en `correctness` : `suspicious` + `perf` donnent 8 441 faux positifs d'une seule règle, et `iframe-missing-sandbox` casserait le lecteur PDF de `CarnetDocs`. Décision prise, à ne pas rouvrir sans nouvelle mesure.
 - [x] 7.1 : les 13 modules ont leurs tests, chacun vu rouge. `@testing-library/react` est là, et `npm run test:coverage` tient un plancher par dossier (`src/lib` 62,58 % de lignes) dans `vitest.config.ts`. Hors CI : personne n'a demandé d'en faire une barrière. Deux vrais bogues trouvés : un instantané effacé à la perte d'auth se réécrivait (`persist`), une écriture retenue partait deux fois au démontage (`toast`).
 - [ ] PARITY : les ➖ nus et les 🔶 restent à annoter. Les 4 rangées ajoutées sont ❓, non notées.
 
-> **Quatre cases ouvertes** (2026-11-05, en tête de §4). Avant elles, 2026-09-29 : §K's six waves and §L are all closed; what is left is §M
+> **Six cases ouvertes** (2026-11-05, en tête de §4). Avant elles, 2026-09-29 : §K's six waves and §L are all closed; what is left is §M
 > (needs a device) and F37's review (~12-29). New work starts from what real households do.
 >
 > **The standing work since 2026-11-05 is `plans/2026-11-05-SOLIDIFY.md`** — nine waves of
