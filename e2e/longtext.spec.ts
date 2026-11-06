@@ -1,5 +1,6 @@
 import { test as base, expect, type Page } from '@playwright/test'
 import { mockApi, seedState, type Surface } from './mocks'
+import { settled } from './measure'
 
 // Screenshot-review loop, iteration 5: LONG-TEXT stress. Every text field carries
 // a long phrase + an unbreakable long word (mockApi({ longText: true })). Catches
@@ -91,7 +92,7 @@ for (const f of FORMATS) {
       await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: f.surface })
       await page.goto(path)
       await page.locator('.hub__body').waitFor({ state: 'visible', timeout: 15_000 })
-      await page.waitForTimeout(700)
+      await settled(page)
       await page.screenshot({ path: `e2e/screenshots/lt-${f.name}-${name}.png`, fullPage: false })
       if (path !== OVERFLOW_EXEMPT)
         await expect.poll(() => noHOverflow(page), { timeout: 6000, intervals: [200, 400, 800] }).toBe('ok')
@@ -105,7 +106,7 @@ for (const f of FORMATS) {
       await seedState(page, { theme: 'day', audience: 'toddler', lang: 'fr', calm: true, surface: f.surface })
       await page.goto(path)
       await page.locator('.hub__body').waitFor({ state: 'visible', timeout: 15_000 })
-      await page.waitForTimeout(700)
+      await settled(page)
       await page.screenshot({ path: `e2e/screenshots/lt-${f.name}-${name}-toddler.png`, fullPage: false })
       if (path !== OVERFLOW_EXEMPT)
         await expect.poll(() => noHOverflow(page), { timeout: 6000, intervals: [200, 400, 800] }).toBe('ok')
@@ -141,10 +142,10 @@ for (const w of [360, 390]) {
     await page.goto('/kitchen')
     await page.locator('.hub__body').waitFor({ state: 'visible', timeout: 15_000 })
     await page.getByRole('tab', { name: /Recettes/ }).click().catch(() => {})
-    await page.waitForTimeout(400)
+    await settled(page)
     await page.locator('.recipe-card').first().click() // → recipe view directly (peek removed)
     await page.locator('.recipe-modal').waitFor({ state: 'visible' })
-    await page.waitForTimeout(400)
+    await settled(page)
     await page.screenshot({ path: `e2e/screenshots/lt-recipe-sheet${sfx}.png`, fullPage: false })
     await expect.poll(() => docOverflow(page, '.recipe-modal'), { timeout: 6000, intervals: [200, 400, 800] }).toBe('ok')
   })
@@ -157,7 +158,7 @@ for (const w of [360, 390]) {
     await page.locator('.hub__body').waitFor({ state: 'visible', timeout: 15_000 })
     await page.getByRole('button', { name: /Montrer/ }).first().click()
     await page.locator('.cashier__tile').first().waitFor({ state: 'visible', timeout: 15_000 })
-    await page.waitForTimeout(400)
+    await settled(page)
     await page.screenshot({ path: `e2e/screenshots/lt-cashier-grid${sfx}.png`, fullPage: false })
     // Long deal names must ellipsize inside the tile, not blow out the grid.
     await expect.poll(() => docOverflow(page, '.cashier'), { timeout: 6000, intervals: [200, 400, 800] }).toBe('ok')
@@ -170,7 +171,7 @@ for (const w of [360, 390]) {
     // Straight to cook mode for rc1 (long ingredients/steps under longText).
     await page.goto('/kitchen/recipe/rc1/cook')
     await page.locator('.cook').waitFor({ state: 'visible', timeout: 15_000 })
-    await page.waitForTimeout(400)
+    await settled(page)
     await page.screenshot({ path: `e2e/screenshots/lt-cook-full${sfx}.png`, fullPage: false })
     await expect.poll(() => docOverflow(page, '.cook'), { timeout: 6000, intervals: [200, 400, 800] }).toBe('ok')
   })
@@ -183,7 +184,7 @@ for (const w of [360, 390]) {
     await page.locator('.hub__body').waitFor({ state: 'visible', timeout: 15_000 })
     await page.locator('.kitchen__day').first().getByRole('button', { name: /Gérer/ }).click()
     await page.locator('.scene .day-mng__sec').first().waitFor({ state: 'visible', timeout: 15_000 })
-    await page.waitForTimeout(400)
+    await settled(page)
     await page.screenshot({ path: `e2e/screenshots/lt-day-editor${sfx}.png`, fullPage: false })
     await expect.poll(() => docOverflow(page, '.scene'), { timeout: 6000, intervals: [200, 400, 800] }).toBe('ok')
   })
@@ -195,7 +196,7 @@ for (const w of [360, 390]) {
     await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: 'mobile' })
     await page.goto('/cercle/monde')
     await page.locator('.scene').first().waitFor({ state: 'visible', timeout: 15_000 })
-    await page.waitForTimeout(500)
+    await settled(page)
     await page.screenshot({ path: `e2e/screenshots/lt-cercle-monde${sfx}.png`, fullPage: false })
     await expect.poll(() => docOverflow(page, '.scene'), { timeout: 6000, intervals: [200, 400, 800] }).toBe('ok')
   })

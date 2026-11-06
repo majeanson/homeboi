@@ -1,4 +1,5 @@
 import { expect, type Page, type Locator } from '@playwright/test'
+import { settled } from './measure'
 import { mockApi, seedState } from './mocks'
 
 // Shared fake-keyboard rig (extracted from keyboard.spec.ts so the state-matrix
@@ -53,7 +54,7 @@ export async function openKeyboard(page: Page, kb: number, pan = 0) {
     }
     el.style.cssText = `position:fixed;left:0;right:0;bottom:0;height:${kbH}px;z-index:99999;pointer-events:none;background:rgba(38,38,64,0.4);border-top:2px solid #6c7bff;`
   }, { kbH: kb, pan })
-  await page.waitForTimeout(450)
+  await settled(page)
 }
 
 // Element fully inside the visible (above-keyboard) area.

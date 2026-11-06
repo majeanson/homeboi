@@ -1,5 +1,6 @@
 import { test as base, expect, type Page } from '@playwright/test'
 import { mockApi, seedState, type Theme } from './mocks'
+import { settled } from './measure'
 
 // Mid-session sweep: the OPEN states the first-paint screenshots never show —
 // bottom sheets, full-screen portals, the cashier stepper, cook mode. Mock-based
@@ -23,11 +24,13 @@ async function open(page: Page, path: string, theme: Theme = 'day') {
   await seedState(page, { theme, audience: 'parent', lang: 'fr', calm: true, surface: 'mobile' })
   await page.goto(path)
   await page.locator('.hub').first().waitFor({ state: 'visible', timeout: 15_000 })
-  await page.waitForTimeout(500)
+  await settled(page)
 }
 
-const shot = (page: Page, name: string) =>
-  page.screenshot({ path: `e2e/screenshots/ms-${name}.png`, fullPage: false })
+const shot = async (page: Page, name: string) => {
+  await settled(page)
+  await page.screenshot({ path: `e2e/screenshots/ms-${name}.png`, fullPage: false })
+}
 
 // --- Liste overlays -------------------------------------------------------
 test('ms: liste add sheet', async ({ page }) => {
@@ -35,7 +38,6 @@ test('ms: liste add sheet', async ({ page }) => {
   await open(page, '/liste')
   await page.locator('.add-fab').click()
   await page.locator('.sheet.show').first().waitFor({ timeout: 5000 }).catch(() => {})
-  await page.waitForTimeout(500)
   await shot(page, 'liste-addsheet')
 })
 
@@ -44,7 +46,7 @@ test('ms: liste quick add panel', async ({ page }) => {
   await open(page, '/liste')
   await page.locator('.add-fab').click() // Ajout rapide lives in the ＋ sheet now
   await page.getByRole('dialog').getByRole('button', { name: /Ajout rapide/ }).click() // scope to sheet (page has its own shortcut behind the scrim)
-  await page.waitForTimeout(600)
+  await page.locator('.scene .qa__list').waitFor({ state: 'visible' })
   await shot(page, 'liste-quickadd')
 })
 
@@ -53,7 +55,7 @@ test('ms: liste deals browser', async ({ page }) => {
   await open(page, '/liste')
   await page.locator('.add-fab').click() // flyer browser lives in the ＋ sheet now
   await page.getByRole('dialog').getByRole('button', { name: /Parcourir les circulaires/ }).click()
-  await page.waitForTimeout(800)
+  await page.locator('.deal-stores').first().waitFor({ state: 'visible' })
   await shot(page, 'liste-deals-browser')
 })
 
@@ -62,12 +64,10 @@ test('ms: cashier grid + proof peek', async ({ page }) => {
   await open(page, '/liste')
   await page.getByRole('button', { name: /Montrer à la caisse/ }).click()
   await page.locator('.cashier').waitFor({ timeout: 5000 })
-  await page.waitForTimeout(400)
   await shot(page, 'cashier-grid')
   // Tap a tile → the big proof peek (random-access, no sequential stepper).
   await page.locator('.cashier__tile').first().click()
   await page.locator('.bigcard').waitFor({ timeout: 5000 })
-  await page.waitForTimeout(400)
   await shot(page, 'cashier-peek')
 })
 
@@ -77,7 +77,7 @@ test('ms: liste edit item sheet', async ({ page }) => {
   // The ✏️ pencil is the edit affordance now (the name/centre toggles the check);
   // it navigates to the edit scene /liste/item/:id.
   await page.locator('.list-row', { hasText: 'Pain' }).locator('.list-row__img').click()
-  await page.waitForTimeout(500)
+  await page.locator('.scene .li-edit').waitFor({ state: 'visible' })
   await shot(page, 'liste-item-sheet')
 })
 
@@ -87,7 +87,6 @@ test('ms: kitchen add sheet', async ({ page }) => {
   await open(page, '/kitchen')
   await page.locator('.add-fab').click()
   await page.locator('.sheet.show').first().waitFor({ timeout: 5000 }).catch(() => {})
-  await page.waitForTimeout(500)
   await shot(page, 'kitchen-addsheet')
 })
 
@@ -96,17 +95,16 @@ test('ms: recipe sheet + cook mode', async ({ page }) => {
   await open(page, '/kitchen')
   // Switch to the Recettes tab (role="tab"), open the first recipe card.
   await page.getByRole('tab', { name: /Recettes/ }).click().catch(() => {})
-  await page.waitForTimeout(400)
+  await settled(page)
   const card = page.locator('.recipe-card').first()
   if (await card.count()) {
     // A card now navigates STRAIGHT to the full recipe view (.recipe-modal) — the old
     // browse-path detail peek was removed. Cook mode is reached from the view's Cuisiner.
     await card.click()
     await page.locator('.recipe-modal').waitFor({ state: 'visible', timeout: 15_000 })
-    await page.waitForTimeout(300)
     await shot(page, 'recipe-sheet')
     await page.locator('.recipe-actions .btn--primary').first().click() // Cuisiner
-    await page.waitForTimeout(600)
+    await page.locator('.cook').waitFor({ state: 'visible' })
     await shot(page, 'cook-mode')
   }
 })
@@ -117,7 +115,6 @@ test('ms: board add sheet', async ({ page }) => {
   await open(page, '/board')
   await page.locator('.add-fab').click()
   await page.locator('.sheet.show').first().waitFor({ timeout: 5000 }).catch(() => {})
-  await page.waitForTimeout(500)
   await shot(page, 'board-addsheet')
 })
 
@@ -127,7 +124,6 @@ test('ms: cashier grid night', async ({ page }) => {
   await open(page, '/liste', 'night')
   await page.getByRole('button', { name: /Montrer à la caisse/ }).click()
   await page.locator('.cashier').waitFor({ timeout: 5000 })
-  await page.waitForTimeout(400)
   await shot(page, 'cashier-grid-night')
 })
 
@@ -136,6 +132,5 @@ test('ms: liste add sheet night', async ({ page }) => {
   await open(page, '/liste', 'night')
   await page.locator('.add-fab').click()
   await page.locator('.sheet.show').first().waitFor({ timeout: 5000 }).catch(() => {})
-  await page.waitForTimeout(500)
   await shot(page, 'liste-addsheet-night')
 })
