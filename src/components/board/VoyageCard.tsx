@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { needsOperator } from '../../lib/device'
 import { useT } from '../../i18n'
 import { daysUntilLocal, todayLocalDay } from '../../lib/localDay'
 import { useTrips, useSharedTrips, VOYAGE_ICON } from '../voyage/voyage'
@@ -63,7 +64,7 @@ export function VoyageCard() {
       icon={VOYAGE_ICON}
       label={t.voyage.nextTrip}
       compactLabel={t.voyage.nextTripShort}
-      action={<Chip to="/voyage">{t.voyage.allTrips}</Chip>}
+      action={needsOperator() ? undefined : <Chip to="/voyage">{t.voyage.allTrips}</Chip>}
       compactHint={rows[0]?.title}
       // The mini names the next trip; tapping it opens THAT trip's notebook straight away
       // (a shared row → the shared scene) instead of growing to a one-row list of the same

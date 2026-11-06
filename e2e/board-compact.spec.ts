@@ -289,7 +289,7 @@ test.describe('board compact lens', () => {
     // l'instant » shell: the tile is an anchor, not a grow-button (BOARD_CARDS[].emptyTo
     // → CardSlot → compactTo).
     await expect(tile).toHaveJSProperty('tagName', 'A')
-    await expect(tile).toHaveAttribute('href', '/maison?section=carnets')
+    await expect(tile).toHaveAttribute('href', '/maison?section=carnets&plus=carnet')
 
     const look = await slot.evaluate((el) => ({
       tint: getComputedStyle(el).getPropertyValue('--wg-tint').trim(),

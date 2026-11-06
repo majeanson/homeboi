@@ -1,6 +1,6 @@
-import { useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { useLang, useT } from '../i18n'
-import { isGuest } from '../lib/device'
+import { needsOperator } from '../lib/device'
 import { todayLocalDay } from '../lib/localDay'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { Chip } from '../components/Chip'
@@ -38,6 +38,9 @@ export function TripsPage() {
     .sort((a, b) => (a.start_at ?? Number.MAX_SAFE_INTEGER) - (b.start_at ?? Number.MAX_SAFE_INTEGER))
   const past = all.filter(isPast).sort((a, b) => (b.end_at ?? 0) - (a.end_at ?? 0))
 
+  // Every /api/trips method is operator-only, the same gate as the trip scene.
+  if (needsOperator()) return <Navigate to="/board" replace />
+
   const row = (tr: Row) => (
     <ListRow
       key={tr.id}
@@ -56,16 +59,14 @@ export function TripsPage() {
         <LoadState q={trips} shape="row" count={3}>
           {() =>
             all.length === 0 ? (
-              <EmptyState tone="calm" action={isGuest() ? undefined : { to: '/voyage/new', label: t.voyage.newTrip }}>
+              <EmptyState tone="calm" action={{ to: '/voyage/new', label: t.voyage.newTrip }}>
                 {t.voyage.noTrips}
               </EmptyState>
             ) : (
               <>
-                {!isGuest() && (
-                  <Chip to="/voyage/new" icon="plus-bold">
-                    {t.voyage.newTrip}
-                  </Chip>
-                )}
+                <Chip to="/voyage/new" icon="plus-bold">
+                  {t.voyage.newTrip}
+                </Chip>
                 {ahead.map(row)}
                 {past.length > 0 && <Disclosure label={t.voyage.pastTrips}>{past.map(row)}</Disclosure>}
               </>
