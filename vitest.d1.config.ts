@@ -32,9 +32,11 @@ export default defineConfig(async () => {
             SESSION_SECRET: 'd1-test-secret-d1-test-secret-d1-test-secret',
             // Skips the force-HTTPS bounce in worker/index.ts, exactly as .dev.vars does.
             ENVIRONMENT: 'development',
-            AI: '',
-            // Browser Run never starts from a test (_lib/renderPage treats '' as unbound).
-            BROWSER: '',
+            // AI and BROWSER are NOT listed: wrangler.toml's [ai] and [browser] blocks win
+            // over an entry here, so the `AI: ''` that sat here did nothing. The real AI
+            // binding answers `.run` with « Binding AI needs to be run remotely », which
+            // reads as a model failure and costs nothing. A test that wants a model scripts
+            // one with functions/test/fakes.ts, which also unbinds BROWSER.
             MISTRAL_API_KEY: '',
             RESEND_API_KEY: '',
             NASA_APOD_KEY: '',

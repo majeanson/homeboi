@@ -179,7 +179,7 @@ npm run build          # tsc -b (typechecks SPA + Worker + Functions) then vite 
 npm run typecheck      # tsc -b --noEmit · npm run lint = oxlint, CORRECTNESS rules only (.oxlintrc.json says why each `off`)
 npm test               # vitest run (pure-logic unit tests; *.d1.test.ts excluded)
 npm run test:d1        # the REAL-RUNTIME suite: the Worker in workerd against a real D1 +
-                       #   R2 + the DO (vitest.d1.config.ts; helpers functions/test/d1.ts).
+                       #   R2 + the DO (vitest.d1.config.ts; helpers functions/test/d1.ts + fakes.ts).
                        #   Needs dist/ → run after a build. CI runs it after check:bundle.
 npm run test:watch     # vitest watch · npm run test:coverage = the same run + v8 floors per directory (vitest.config.ts; not a CI step)
 npm run e2e            # Playwright (boots its own Vite, stubs every /api/* — no D1/secrets)
