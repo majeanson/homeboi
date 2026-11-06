@@ -82,7 +82,7 @@ interchangeable. Read this table before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md` is now
-> a number you can trust. It reads **2** — §4-K's last box (the retired
+> a number you can trust. It reads **1** — §4-K's last box (the retired
 > `LOGIN_PASSWORD` secret) closed 2026-09-29. **Asserted from the boxes themselves** by
 > `src/lib/docCounts.test.ts`, so this sentence cannot drift the way `REVIEW-PASS.md`'s
 > banner once did — it claimed 15 for twelve days against a single box.
@@ -124,7 +124,7 @@ Three read-only audits (components/CSS · flows · tests/guards) on 2026-11-05 f
 - [x] `noUncheckedIndexedAccess` et `exactOptionalPropertyTypes` sont allumés dans les trois tsconfig. oxlint reste en `correctness` : `suspicious` + `perf` donnent 8 441 faux positifs d'une seule règle, et `iframe-missing-sandbox` casserait le lecteur PDF de `CarnetDocs`. Décision prise, à ne pas rouvrir sans nouvelle mesure.
 - [x] 7.1 : les 13 modules ont leurs tests, chacun vu rouge. `@testing-library/react` est là, et `npm run test:coverage` tient un plancher par dossier (`src/lib` 62,58 % de lignes) dans `vitest.config.ts`. Hors CI : personne n'a demandé d'en faire une barrière. Deux vrais bogues trouvés : un instantané effacé à la perte d'auth se réécrivait (`persist`), une écriture retenue partait deux fois au démontage (`toast`).
 
-> **Deux cases ouvertes** (2026-11-05, en tête de §4). Avant elles, 2026-09-29 : §K's six waves and §L are all closed; what is left is §M
+> **Une case ouverte** (2026-11-05, en tête de §4). Avant elles, 2026-09-29 : §K's six waves and §L are all closed; what is left is §M
 > (needs a device) and F37's review (~12-29). New work starts from what real households do.
 >
 > **The standing work since 2026-11-05 is `plans/2026-11-05-SOLIDIFY.md`** — nine waves of
