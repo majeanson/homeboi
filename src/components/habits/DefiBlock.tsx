@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { NO_ROWS } from '../../lib/queryHooks'
 import { useQuery } from '@tanstack/react-query'
 import { useT, useLang } from '../../i18n'
 import { api } from '../../lib/api'
@@ -59,7 +60,7 @@ export function DefiBlock({
   const committed = todaysDefi(payload, today)
   const recent = useMemo(() => recentDefiTexts(payload), [payload])
 
-  const members = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: Member[] }>('members') }).data?.members ?? []
+  const members = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: Member[] }>('members') }).data?.members ?? NO_ROWS
   const memberById = useMemo(() => new Map(members.map((m) => [m.id, m])), [members])
 
   // The deck, loaded on mount into its own chunk. `pige` needs it; `loc()` uses it to

@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { NO_ROWS } from '../../lib/queryHooks'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { monthGrid, inMonth } from '../../lib/monthgrid'
@@ -74,7 +75,7 @@ export function YearView({
     () => (data ? yearPoints(data, { lang, holidays, from, to, schoolYear }) : []),
     [data, lang, holidays, from, to, schoolYear],
   )
-  const trips = data?.trips ?? []
+  const trips = data?.trips ?? NO_ROWS
 
   // One colour per day for the mini-grids: the day's first point wins; trip
   // days fill in around them so a fête inside a trip keeps its own tint.

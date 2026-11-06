@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { NO_ROWS } from '../../lib/queryHooks'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { RECIPES_KEY, type Recipe } from '../../lib/recipes'
@@ -19,7 +20,7 @@ export function useRecipeForMeal(recipes?: Recipe[]): (m: MealLink) => Recipe | 
     queryFn: () => api<{ recipes: Recipe[] }>('recipes'),
     enabled: recipes === undefined,
   })
-  const list = recipes ?? data?.recipes ?? []
+  const list = recipes ?? data?.recipes ?? NO_ROWS
   return useMemo(() => {
     const byId = new Map<string, Recipe>()
     const byTitle = new Map<string, Recipe>()

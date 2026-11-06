@@ -29,7 +29,7 @@ import { useCars } from '../lib/carPrefs'
 import { useHabits } from '../lib/habits'
 import { useAllMots } from '../lib/mots'
 import { useTrips, tripDateLabel, VOYAGE_ICON } from '../components/voyage/voyage'
-import { useRecipes, useBoardData, usePantry, useMeals } from '../lib/queryHooks'
+import { NO_ROWS, useRecipes, useBoardData, usePantry, useMeals } from '../lib/queryHooks'
 import { recipeImg } from '../lib/recipes'
 import { GUIDE } from '../lib/guideContent'
 import { stripTokens, highlight } from '../lib/richText'
@@ -121,7 +121,7 @@ export function SearchPage() {
     }
   }
 
-  const recipesData = useRecipes().data?.recipes ?? []
+  const recipesData = useRecipes().data?.recipes ?? NO_ROWS
   const board = useBoardData().data
   // /api/cercle carries BOTH the people directory and the household animals (#pets):
   // read both off the one shared cache — no extra fetch — and search each as its own
@@ -130,61 +130,64 @@ export function SearchPage() {
   // all three off the one shared cache, no extra fetch. Groups had no SEARCH_INDEX
   // entry, so a named « Les cousins » returned nothing (Wave S).
   const cercleData = useQuery({ queryKey: CERCLE_KEY, queryFn: () => api<{ contacts: Contact[]; pets: Pet[]; groups?: ContactGroupRaw[] }>('cercle') }).data
-  const contacts = cercleData?.contacts ?? []
-  const pets = cercleData?.pets ?? []
-  const groups = cercleData?.groups ?? []
+  const contacts = cercleData?.contacts ?? NO_ROWS
+  const pets = cercleData?.pets ?? NO_ROWS
+  const groups = cercleData?.groups ?? NO_ROWS
   // Le cercle → Famille → "Notes & recommandations" — searchable too (text only;
   // media-only notes carry no text so they don't surface here).
-  const familyNotes = useQuery({ queryKey: FAMILY_NOTES_KEY, queryFn: () => api<{ notes: FamilyNote[] }>('family-notes') }).data?.notes ?? []
+  const familyNotes = useQuery({ queryKey: FAMILY_NOTES_KEY, queryFn: () => api<{ notes: FamilyNote[] }>('family-notes') }).data?.notes ?? NO_ROWS
   // Le cercle → Business: the services / vendors directory (vet, plumber…).
-  const businesses = useQuery({ queryKey: BUSINESSES_KEY, queryFn: () => api<{ businesses: Business[] }>('businesses') }).data?.businesses ?? []
+  const businesses = useQuery({ queryKey: BUSINESSES_KEY, queryFn: () => api<{ businesses: Business[] }>('businesses') }).data?.businesses ?? NO_ROWS
   // Kid routines — the same ROUTINES_KEY cache the Routines tab + Réglages fill.
-  const routines = useQuery({ queryKey: ROUTINES_KEY, queryFn: () => api<{ routines: Routine[] }>('routines') }).data?.routines ?? []
+  const routines = useQuery({ queryKey: ROUTINES_KEY, queryFn: () => api<{ routines: Routine[] }>('routines') }).data?.routines ?? NO_ROWS
   // À compléter — the board glance's open todos (global + today) under TODOS_KEY.
-  const todos = useQuery({ queryKey: TODOS_KEY, queryFn: () => api<TodosData>('todos') }).data?.todos ?? []
+  const todos = useQuery({ queryKey: TODOS_KEY, queryFn: () => api<TodosData>('todos') }).data?.todos ?? NO_ROWS
   // À faire — the recurring chores. PARITY's last 🔶: they had no entry here at all.
-  const chores = useQuery({ queryKey: CHORES_KEY, queryFn: () => api<{ chores: Chore[] }>('chores') }).data?.chores ?? []
+  const chores = useQuery({ queryKey: CHORES_KEY, queryFn: () => api<{ chores: Chore[] }>('chores') }).data?.chores ?? NO_ROWS
   // Garde-manger: "ce qui s'achève" (running-low) + La réserve (the stash). Both
   // live under the kitchen Pantry tab; each item links there.
-  const low = usePantry().data?.low ?? []
-  const reserve = useQuery({ queryKey: RESERVE_KEY, queryFn: () => api<ReserveData>('reserve') }).data?.reserve ?? []
+  const low = usePantry().data?.low ?? NO_ROWS
+  const reserve = useQuery({ queryKey: RESERVE_KEY, queryFn: () => api<ReserveData>('reserve') }).data?.reserve ?? NO_ROWS
   // « L'auto » — the household car(s); a name match jumps to the /voiture week view.
   const cars = useCars().cars
   // « Les carnets » (cared-for things: house/car/appliances) — name/notes match jumps
   // to the carnet scene. Home projects (Projets & Entretien) — a title/notes match jumps
   // to its carnet (if linked) or Réglages ▸ Corvées. Both were missing from search.
-  const carnets = useQuery({ queryKey: CARNETS_KEY, queryFn: () => api<{ carnets: Carnet[] }>('carnets') }).data?.carnets ?? []
-  const homeProjects = useQuery({ queryKey: HOME_PROJECTS_KEY, queryFn: () => api<{ projects: HomeProject[] }>('home-projects') }).data?.projects ?? []
+  const carnets = useQuery({ queryKey: CARNETS_KEY, queryFn: () => api<{ carnets: Carnet[] }>('carnets') }).data?.carnets ?? NO_ROWS
+  const homeProjects = useQuery({ queryKey: HOME_PROJECTS_KEY, queryFn: () => api<{ projects: HomeProject[] }>('home-projects') }).data?.projects ?? NO_ROWS
   // A carnet's SERVICE HISTORY (care_log) and its « en cas de pépin » map pins
   // (home_pins) — both were missing from search (a water-heater invoice note or the
   // "où est la valve d'eau" pin returned nothing). Read the WHOLE household at once
   // (no `?carnet=` → every entry), keyed on the bare CARE_LOG_KEY / HOME_PINS_KEY so
   // this global index never collides with the per-carnet [...KEY, id] caches the scene
   // uses. A hit links to its carnet's « Le carnet » tab (?seg=carnet).
-  const careLog = useQuery({ queryKey: CARE_LOG_KEY, queryFn: () => api<{ entries: CareLog[] }>('care-log') }).data?.entries ?? []
-  const homePins = useQuery({ queryKey: HOME_PINS_KEY, queryFn: () => api<{ pins: HomePin[] }>('home-pins') }).data?.pins ?? []
+  const careLog = useQuery({ queryKey: CARE_LOG_KEY, queryFn: () => api<{ entries: CareLog[] }>('care-log') }).data?.entries ?? NO_ROWS
+  const homePins = useQuery({ queryKey: HOME_PINS_KEY, queryFn: () => api<{ pins: HomePin[] }>('home-pins') }).data?.pins ?? NO_ROWS
   // « Mes dessins » (the kept-drawing gallery) — a drawing carries no text of its own,
   // so it's matched by its AUTHOR's name ("les dessins de Léa"); members give us the
   // name behind each member_id. A hit links to the gallery (/drawings).
-  const drawings = useQuery({ queryKey: DRAWINGS_KEY, queryFn: () => api<{ drawings: GalleryDrawing[] }>('drawings') }).data?.drawings ?? []
-  const members = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: Member[] }>('members') }).data?.members ?? []
+  const drawings = useQuery({ queryKey: DRAWINGS_KEY, queryFn: () => api<{ drawings: GalleryDrawing[] }>('drawings') }).data?.drawings ?? NO_ROWS
+  const members = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: Member[] }>('members') }).data?.members ?? NO_ROWS
   // Wave S — five more persistent kinds that were dark to Recherche. Each reads a
   // warm cache (or its shared hook) so no page pays a new fetch on this scene.
   // « Mes habitudes » (live:false — a search scene shouldn't add to the poll cadence).
   // 'defi' is never an ordinary habit row (visibleHabits invariant) — the standing
   // défi carrier must not surface as a searchable « habitude » either.
-  const habits = (useHabits({ live: false }).data?.habits ?? []).filter((h) => h.kind !== 'defi')
+  const allHabits = useHabits({ live: false }).data?.habits ?? NO_ROWS
+  const habits = useMemo(() => allHabits.filter((h) => h.kind !== 'defi'), [allHabits])
   // « Mots » — every paper on the fridge since 0142 (the fridge memos and the old « Laisse
   // un mot » are one table): scheduled-but-unsurfaced ones are still the household's own
   // content, so they stay findable; a voice one by its transcript; media-only carry none.
   const mots = useAllMots()
   // Plan des repas — only the FREE-TEXT suppers; recipe-linked ones surface via the
   // recipe section, so filter them out to avoid a duplicate hit.
-  const meals = (useMeals().data?.days ?? []).filter((m: MealRow) => !m.recipe_id)
+  const allMeals = useMeals().data?.days ?? NO_ROWS
+  const meals = useMemo(() => allMeals.filter((m: MealRow) => !m.recipe_id), [allMeals])
   // Idées de repas — same free-text-only rule.
-  const mealIdeas = (useQuery({ queryKey: MEAL_IDEAS_KEY, queryFn: () => api<MealIdeasData>('meal-ideas') }).data?.ideas ?? []).filter((i: MealIdea) => !i.recipe_id)
+  const allIdeas = useQuery({ queryKey: MEAL_IDEAS_KEY, queryFn: () => api<MealIdeasData>('meal-ideas') }).data?.ideas ?? NO_ROWS
+  const mealIdeas = useMemo(() => allIdeas.filter((i: MealIdea) => !i.recipe_id), [allIdeas])
   // Voyage (privé) — the trip notebooks; a hit jumps to /voyage/:id.
-  const trips = useTrips().data?.trips ?? []
+  const trips = useTrips().data?.trips ?? NO_ROWS
   // Name lookups for the row subtitles / drawing-author match.
   const carnetName = useMemo(() => new Map(carnets.map((c) => [c.id, c.name])), [carnets])
   const memberName = useMemo(() => new Map(members.map((m) => [m.id, m.display_name])), [members])

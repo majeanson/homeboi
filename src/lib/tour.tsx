@@ -263,7 +263,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
     if (sandbox || isEmbedded()) return
     autoTried.current = true
     if (!hasTourSeen('essentials')) start('essentials')
-  }, [audience, signedIn, surface, start, pathname, sandbox])
+  }, [interrupts, audience, signedIn, surface, start, pathname, sandbox])
 
   const value: TourValue = {
     activeTour,

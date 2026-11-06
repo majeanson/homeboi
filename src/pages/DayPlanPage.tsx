@@ -300,7 +300,8 @@ function DayPlanScene() {
   const recipes = recipesQ.data?.recipes ?? []
   const days = mealRemoval.visible(isPast ? [...(meals.data?.days ?? []), ...(pastMealsQ.data?.days ?? [])] : (meals.data?.days ?? []))
   const mealsFor = (d: number, slot: string) => days.filter((m) => m.date === d && m.slot === slot)
-  const noteFor = (d: number) => dayNotesQ.data?.notes?.find((n) => n.date === d)
+  const dayNotes = dayNotesQ.data?.notes
+  const noteFor = useCallback((d: number) => dayNotes?.find((n) => n.date === d), [dayNotes])
   const lowItems = useMemo(() => (pantry.data?.low ?? []).map((l) => l.item), [pantry.data])
   const listItems = useMemo(() => (boardQ.data?.list ?? []).map((i) => i.text), [boardQ.data])
   const recipeForMeal = useRecipeForMeal(recipes)
@@ -535,7 +536,7 @@ function DayPlanScene() {
       }
     }
     setFocusParam(null)
-  }, [focus, date, heroSlot, dayNotesQ.data, noteFor, setFocusParam])
+  }, [focus, date, heroSlot, dayNotesQ.data, noteFor, setFocusParam, setEditDate, setMealText])
 
   // A bad date in the URL → back to the grid rather than an empty editor.
   if (bad) return <StaleBounce to="/kitchen" message={t.kitchen.dayGone} />

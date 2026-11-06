@@ -27,6 +27,10 @@ import type { BoardData } from '../components/board/types'
 // keep their own queries — don't route them through useRecipes.
 type ReadOpts = { enabled?: boolean; retry?: boolean | number }
 
+/** The one empty list for `data?.rows ?? NO_ROWS`. A literal `?? []` is a new array on every
+ *  render, so a useMemo that depends on it recomputes every time while the query loads. */
+export const NO_ROWS: never[] = []
+
 export function useBoardData(opts?: ReadOpts) {
   return useQuery({ queryKey: BOARD_KEY, queryFn: () => api<BoardData>('board'), ...live, ...opts })
 }

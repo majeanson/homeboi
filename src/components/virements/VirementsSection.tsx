@@ -1,6 +1,7 @@
 // B-11 (bmad/10): this section's styles are NOT in the eager shell — loaded here,
 // by their only consumer, so a household that never opens the tab never pays for it.
 import '../../styles/virements.css'
+import { NO_ROWS } from '../../lib/queryHooks'
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useT, useLang } from '../../i18n'
@@ -66,7 +67,7 @@ export function VirementsSection({ members }: { members: Member[] }) {
   const faces: MemberFace[] = useMemo(() => facesFromCercleMembers(members), [members])
 
   const plans = data?.plans ?? []
-  const allTransfers = data?.transfers ?? []
+  const allTransfers = data?.transfers ?? NO_ROWS
   // A face narrows the history to its own sends; Maisonnée shows the whole account.
   const visible = useMemo(
     () => removal.visible(face ? allTransfers.filter((x) => x.memberId === face) : allTransfers),

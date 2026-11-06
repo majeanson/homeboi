@@ -1,4 +1,5 @@
 import { IconButton } from '../components/IconButton'
+import { NO_ROWS } from '../lib/queryHooks'
 // B-11 (bmad/10) — cercle.css moved out of the eager shell (position-immaterial
 // .cercle-*/.cf-* classes); load it whenever this page renders instead. « Maison »
 // merged the old Le cercle tab with Routines into ONE hub tab (Routines · Famille ·
@@ -1272,10 +1273,10 @@ function CircleKidView() {
   const [focused, setFocused] = useState<Person | null>(null)
   const { data } = useQuery({ queryKey: CERCLE_KEY, queryFn: () => api<CercleData>('cercle'), ...live })
 
-  const contacts = data?.contacts ?? []
-  const members = data?.members ?? []
-  const rawLinks = data?.links ?? []
-  const pets = data?.pets ?? []
+  const contacts = data?.contacts ?? NO_ROWS
+  const members = data?.members ?? NO_ROWS
+  const rawLinks = data?.links ?? NO_ROWS
+  const pets = data?.pets ?? NO_ROWS
   // Same dedup as the parent view: a member + its linked contact are one face. Pets
   // join as their own faces (never absorbed).
   const unified = useMemo(() => unifyCircle(contacts, members, rawLinks, [], pets), [contacts, members, rawLinks, pets])

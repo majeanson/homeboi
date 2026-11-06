@@ -1320,6 +1320,8 @@ export function DrawPad({
       redoRef.current = []
       // Reset the viewport so re-opening the pad starts fitted at 1×.
       viewRef.current = { ...IDENTITY }
+      // The Map is made once and never swapped, so the cleanup clears the live one.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       pointersRef.current.clear()
       gestureRef.current = 'idle'
       pinchRef.current = null

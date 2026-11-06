@@ -32,9 +32,10 @@ export function RecurPicker({
   // snaps back to 1 the instant it empties, forcing a backspace-first dance. We
   // clamp to the real value only on blur; sync down when the parent value changes.
   const [draft, setDraft] = useState(String(value?.interval ?? 1))
+  const interval = value?.interval
   useEffect(() => {
-    if (value) setDraft(String(value.interval))
-  }, [value?.interval])
+    if (interval !== undefined) setDraft(String(interval))
+  }, [interval])
 
   function setFreq(f: string) {
     if (f === 'none') return onChange(null)

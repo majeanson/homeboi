@@ -62,6 +62,9 @@ import { scrollBehavior } from '../lib/motion'
 // same component the drawer's first source renders), since it's the one a family
 // adds to daily. « Plus d'idées » opens the drawer for the other four sources.
 
+// A `?? {}` here was a new object on every render, and the meal options memo keys on it.
+const NO_TAG_SLOTS = {}
+
 export function Kitchen() {
   const t = useT()
   const qc = useQueryClient()
@@ -144,12 +147,12 @@ export function Kitchen() {
   const leftoverPool = useMemo(() => leftoversQ.data?.leftovers ?? [], [leftoversQ.data])
   const pills = pillsQ.data?.pills ?? DEFAULT_PILLS
   // Per-tag meal preferences (Réglages ▸ Recettes ▸ Étiquettes) — same query as the pills.
-  const tagSlots = pillsQ.data?.tagSlots ?? {}
+  const tagSlots = pillsQ.data?.tagSlots ?? NO_TAG_SLOTS
   // mealPrefs.hero, not the `heroSlot` const below — that's declared further down,
   // after the grid-building section, and this memo runs before it exists.
   const mealOpts = useMemo(
     () => mealPickOptions(recipes, lowItems, listItems, leftoverPool, t, { slot: mealPrefs.hero, pills, loved: lovedSet, tagSlots }),
-    [recipes, lowItems, listItems, leftoverPool, t, mealPrefs.hero, pills, lovedSet],
+    [recipes, lowItems, listItems, leftoverPool, t, mealPrefs.hero, pills, lovedSet, tagSlots],
   )
   const planLeftover = usePlanLeftover()
   // #12 "Haven't had in a while": recipe id → the most recent local-midnight day a
