@@ -1,0 +1,10 @@
+[
+  {
+    "path": "guest/window",
+    "why": "Polymorphic: its shape depends on the link kind (sitter, family, welcome, postbox). Each guest spec stubs the kind it tests; Réglages reads ?kind=sitter only for the gap notice, and {} means no gaps to name."
+  },
+  {
+    "path": "share-public",
+    "why": "Polymorphic: the payload depends on the share kind. partage-public.spec stubs each; console-clean only asks that /partage/s1 paints."
+  }
+]

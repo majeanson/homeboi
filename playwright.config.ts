@@ -45,7 +45,7 @@ export default defineConfig({
   // override with PW_WORKERS=2 for a flaky full-suite run on a constrained box.
   workers: process.env.CI ? 1 : Number(process.env.PW_WORKERS) || 4,
   timeout: 45_000,
-  reporter: [['list'], ['html', { open: 'never', outputFolder: 'e2e/report' }]],
+  reporter: [['list'], ['html', { open: 'never', outputFolder: 'e2e/report' }], ['./e2e/unknownGets.reporter.ts']],
   outputDir: 'e2e/test-results',
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
