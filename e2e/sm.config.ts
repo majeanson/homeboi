@@ -6,6 +6,9 @@ import { fileURLToPath } from 'node:url'
 // playwright.config.ts; only e2e/state-matrix.spec.ts runs, and a global
 // teardown merges the per-state fragments into screenshots/matrix/manifest.json.
 const REPO_ROOT = fileURLToPath(new URL('..', import.meta.url))
+// A second checkout needs its own server, same as playwright.config.ts:
+// `reuseExistingServer` would otherwise photograph whichever Vite already holds 5173.
+const PORT = Number(process.env.PW_PORT) || 5173
 
 export default defineConfig({
   testDir: './',
@@ -18,7 +21,7 @@ export default defineConfig({
   reporter: [['list']],
   outputDir: 'test-results-matrix',
   use: {
-    baseURL: 'http://127.0.0.1:5173',
+    baseURL: `http://127.0.0.1:${PORT}`,
     trace: 'on-first-retry',
     navigationTimeout: 20_000,
     actionTimeout: 15_000,
@@ -26,9 +29,9 @@ export default defineConfig({
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
-    command: 'npm run dev -- --host 127.0.0.1 --port 5173',
+    command: `npm run dev -- --host 127.0.0.1 --port ${PORT}`,
     cwd: REPO_ROOT,
-    url: 'http://127.0.0.1:5173',
+    url: `http://127.0.0.1:${PORT}`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },
