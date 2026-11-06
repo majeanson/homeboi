@@ -9,21 +9,24 @@ import { dumpHousehold, type Takeout } from '../_lib/takeout'
 
 export const ORIGIN = 'https://babillard.test'
 
+// `body` is JSON-encoded; `raw` goes as it is (an upload's bytes), content-type in `headers`.
+type FetchInit = { method?: string; body?: unknown; raw?: BodyInit; headers?: Record<string, string> }
+
 export interface Session {
   email: string
   householdId: string
   cookie: string
   csrf: string
   // A fetch that carries the session cookie + the CSRF echo (and JSON-encodes a body).
-  fetch: (path: string, init?: { method?: string; body?: unknown; headers?: Record<string, string> }) => Promise<Response>
+  fetch: (path: string, init?: FetchInit) => Promise<Response>
 }
 
 let seq = 0
 
 // The raw Worker fetch — no session, no CSRF.
-export function anon(path: string, init?: { method?: string; body?: unknown; headers?: Record<string, string> }): Promise<Response> {
+export function anon(path: string, init?: FetchInit): Promise<Response> {
   const headers = new Headers(init?.headers)
-  let body: string | undefined
+  let body: BodyInit | undefined = init?.raw
   if (init?.body !== undefined) {
     headers.set('content-type', 'application/json')
     body = JSON.stringify(init.body)
