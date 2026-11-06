@@ -199,9 +199,19 @@ export const onRequestDelete = authed(async (ctx, actor) => {
   const owns = await ctx.env.DB.prepare('SELECT media_key AS photo_key FROM pets WHERE id = ? AND household_id = ? AND deleted_at IS NULL')
     .bind(body.id, actor.householdId)
     .first<{ photo_key: string | null }>()
-  await deleteR2Blob(ctx.env.PHOTOS, owns?.photo_key)
+  if (!owns) return ok({ ok: true })
   await ctx.env.DB.prepare('UPDATE pets SET deleted_at = ? WHERE id = ? AND household_id = ?')
     .bind(nowSec(), body.id, actor.householdId)
     .run()
+  // There is no undo, so nothing may keep pointing here: /api/cercle would serve these as
+  // edges to nobody. No FK on either table, so nothing else clears them. Guarded by `owns`
+  // above, since contact_group_members has no household column.
+  await ctx.env.DB.batch([
+    ctx.env.DB.prepare(
+      "DELETE FROM contact_links WHERE household_id = ? AND ((person_a_id = ? AND person_a_kind = 'pet') OR (person_b_id = ? AND person_b_kind = 'pet'))",
+    ).bind(actor.householdId, body.id, body.id),
+    ctx.env.DB.prepare("DELETE FROM contact_group_members WHERE person_kind = 'pet' AND person_id = ?").bind(body.id),
+  ])
+  await deleteR2Blob(ctx.env.PHOTOS, owns.photo_key)
   return ok({ ok: true })
 })

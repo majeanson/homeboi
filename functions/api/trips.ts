@@ -144,14 +144,19 @@ export const onRequestDelete = authed(async (ctx, actor) => {
   const body = await readJson<{ id?: string }>(ctx.request)
   const id = body?.id?.trim()
   if (!id) return badRequest('id requis.')
-  // Free the cover blob; the trip's notes/packing media is freed as those rows are
-  // cleared. Best-effort R2 delete never blocks the soft-delete.
+  // The cover and every note's files are freed below, once the rows are hidden. There is no
+  // undo. Best-effort R2 delete never blocks the soft-delete.
   const row = await ctx.env.DB.prepare(
     'SELECT media_key FROM trips WHERE id = ? AND household_id = ? AND deleted_at IS NULL',
   )
     .bind(id, actor.householdId)
     .first<{ media_key: string | null }>()
-  await deleteR2Blob(ctx.env.PHOTOS, row?.media_key)
+  if (!row) return ok({ ok: true })
+  const notes = await ctx.env.DB.prepare(
+    'SELECT media_key, scene_key FROM trip_notes WHERE trip_id = ? AND household_id = ? AND deleted_at IS NULL LIMIT 1000',
+  )
+    .bind(id, actor.householdId)
+    .all<{ media_key: string | null; scene_key: string | null }>()
   const ts = nowSec()
   await ctx.env.DB.prepare('UPDATE trips SET deleted_at = ? WHERE id = ? AND household_id = ?')
     .bind(ts, id, actor.householdId)
@@ -161,5 +166,7 @@ export const onRequestDelete = authed(async (ctx, actor) => {
     ctx.env.DB.prepare('UPDATE trip_notes SET deleted_at = ? WHERE trip_id = ? AND household_id = ? AND deleted_at IS NULL').bind(ts, id, actor.householdId),
     ctx.env.DB.prepare('UPDATE trip_packing SET deleted_at = ? WHERE trip_id = ? AND household_id = ? AND deleted_at IS NULL').bind(ts, id, actor.householdId),
   ])
+  const blobs = [row.media_key, ...notes.results.flatMap((n) => [n.media_key, n.scene_key])]
+  await Promise.all(blobs.map((key) => deleteR2Blob(ctx.env.PHOTOS, key)))
   return ok({ ok: true })
 }, 'operator')
