@@ -82,7 +82,7 @@ interchangeable. Read this table before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md` is now
-> a number you can trust. It reads **5** — §4-K's last box (the retired
+> a number you can trust. It reads **8** — §4-K's last box (the retired
 > `LOGIN_PASSWORD` secret) closed 2026-09-29. **Asserted from the boxes themselves** by
 > `src/lib/docCounts.test.ts`, so this sentence cannot drift the way `REVIEW-PASS.md`'s
 > banner once did — it claimed 15 for twelve days against a single box.
@@ -120,12 +120,15 @@ Three read-only audits (components/CSS · flows · tests/guards) on 2026-11-05 f
 
 **Ouvert depuis le plan de solidification (2026-11-05)**, chacun tenu par un cliquet ou un test :
 - [ ] 44 specs gardent leur propre `boot`, et 199 `waitForTimeout` restent (`e2e-rule.test.ts`). `interactions.spec` et `config-panels.spec` ne sont pas scindés.
-- [ ] 67 routes sans test positif sur vrai D1 (`worker/d1Coverage.test.ts`). Le type `Wire` des mocks n'est pas fini.
+- [ ] 17 routes sans test positif sur vrai D1 (`worker/d1Coverage.test.ts`), toutes hors d'atteinte du harnais : neuf exigent une IA (`AI: ''`), huit sortent sur le réseau (`OUTBOUND`). Le chiffre « 67 » d'avant était faux : la regex ne lisait pas les 45 clés raccourcies de TABLE, le vrai compte était 97. Le type `Wire` des mocks n'est pas fini.
+- [ ] Un visage effacé fait répondre 500 : `X-Profile` entre tel quel dans une FK (`day-notes`, `family-notes`, `notes`, `recipe-loves` reproduits ; une dizaine de sites en tout, `profileMemberId`). `Board.tsx:418` efface le visage périmé au chargement du babillard, mais pas un téléphone qui ouvre directement Notes ni un rejeu d'outbox. Décision à prendre : valider une fois au centre ou par handler, et laisser tomber l'attribution ou refuser l'écriture.
+- [ ] `guestToken.test.ts` « rejects a tampered token » échoue environ une fois sur 1024 : un jeton finissant par `aY` devient `aa`, le dernier caractère ne porte que quatre bits utiles, la signature décodée est identique. Le vérificateur est correct, c'est le test qu'il faut changer (altérer un caractère du milieu).
+- [ ] Lu dans le code, pas testé : le DELETE d'un animal (doux) laisse ses `contact_links` et ses `contact_group_members`, que `/api/cercle` renvoie ; le DELETE d'un voyage efface ses notes sans libérer leurs blobs, malgré son commentaire.
 - [ ] `noUncheckedIndexedAccess` (802 erreurs) et `exactOptionalPropertyTypes` (353). Le relèvement d'oxlint n'est pas fait.
 - [ ] 7.1 : 13 modules sans test (`viewportVars`, `toast`, `persist`, `query`, `tabParam`...). Pas de seuils de couverture, pas de `@testing-library`.
 - [ ] PARITY : les ➖ nus et les 🔶 restent à annoter. Les 4 rangées ajoutées sont ❓, non notées.
 
-> **Cinq cases ouvertes** (2026-11-05, en tête de §4). Avant elles, 2026-09-29 : §K's six waves and §L are all closed; what is left is §M
+> **Huit cases ouvertes** (2026-11-05, en tête de §4). Avant elles, 2026-09-29 : §K's six waves and §L are all closed; what is left is §M
 > (needs a device) and F37's review (~12-29). New work starts from what real households do.
 >
 > **The standing work since 2026-11-05 is `plans/2026-11-05-SOLIDIFY.md`** — nine waves of
