@@ -999,7 +999,7 @@ export function DevKit() {
   const [comboVal, setComboVal] = useState('')
   const [cfDemo, setCfDemo] = useState<ContactCoreValue>(EMPTY_CONTACT_CORE)
   const [tagDemo, setTagDemo] = useState('')
-  const [color, setColor] = useState(PALETTE[0])
+  const [color, setColor] = useState<string>(PALETTE[0] ?? '')
   const [cards, setCards] = useState(['toilette', 'rince', 'pyjama'])
   const [recur, setRecur] = useState<RecurValue | null>({ freq: 'weekly', interval: 1, weekdays: [3] })
   const [lead, setLead] = useState<number | null>(10800)
@@ -1045,8 +1045,7 @@ export function DevKit() {
     if (from < 0 || to < 0 || from >= dragPills.length || to >= dragPills.length) return
     setDragPills((ps) => {
       const next = [...ps]
-      const [moved] = next.splice(from, 1)
-      next.splice(to, 0, moved)
+      next.splice(to, 0, ...next.splice(from, 1))
       return next
     })
   }
@@ -1534,7 +1533,7 @@ export function DevKit() {
               value={color}
               onChange={setColor}
               label="Couleur"
-              taken={[PALETTE[1], PALETTE[3]]}
+              taken={PALETTE.filter((_, i) => i === 1 || i === 3)}
               takenLabel="déjà utilisée"
             />
           </Demo>
@@ -4289,7 +4288,6 @@ export function DevKit() {
 function swap<T>(arr: T[], a: number, b: number): T[] {
   if (b < 0 || b >= arr.length) return arr
   const next = [...arr]
-  const [m] = next.splice(a, 1)
-  next.splice(b, 0, m)
+  next.splice(b, 0, ...next.splice(a, 1))
   return next
 }
