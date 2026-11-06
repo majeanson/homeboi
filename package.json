@@ -63,7 +63,7 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
     "@vitest/coverage-v8": "^4.1.11",
-    "happy-dom": "^20.14.6",
+    "happy-dom": "^21.0.4",
     "knip": "^6.44.0",
     "oxlint": "^1.91.0",
     "postcss": "^8.5.31",
