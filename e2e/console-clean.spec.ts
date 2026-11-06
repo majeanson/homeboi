@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { mockApi, seedState } from './mocks'
 import { ROUTES } from './routes'
+import { settled } from './measure'
 
 // EVERY ROUTE OPENS WITH A SILENT CONSOLE — a ratchet at zero (2026-09-30).
 //
@@ -58,7 +59,7 @@ for (const lens of LENSES) {
       await page.goto(route)
       await expect(page.locator('.loading, .skeleton'), `${at} finished loading`).toHaveCount(0, { timeout: 15_000 })
       // Settle: a lazy scene bounces, and an effect warns, only after its first render.
-      await page.waitForTimeout(500)
+      await settled(page)
       const u = new URL(page.url())
       expect(u.pathname + u.search, `${at} stayed put`).toBe(route)
       const painted = await page.evaluate(() => (document.body?.innerText ?? '').trim().length)

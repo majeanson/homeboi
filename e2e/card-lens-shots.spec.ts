@@ -1,6 +1,7 @@
 import { test, type Page } from '@playwright/test'
 import { mockApi, seedState, BASE } from './mocks'
 import { BOARD_CARDS, type BoardCardId } from '../src/lib/boardCards'
+import { settled } from './measure'
 
 // A VISUAL harness (not a pixel-regression suite) for the board's compact lens: it
 // shoots every board card, one at a time, at its three widths —
@@ -50,7 +51,7 @@ async function shoot(page: Page, card: BoardCardId, f: Face) {
   const slot = page.locator(`.wg-slot[data-card="${card}"]`)
   await slot.first().waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {})
   await page.evaluate(() => document.fonts?.ready).catch(() => {})
-  await page.waitForTimeout(400)
+  await settled(page)
   await slot
     .first()
     .screenshot({ path: `e2e/screenshots/cards/${card}-${f.face}.png` })

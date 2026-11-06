@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import AxeBuilder from '@axe-core/playwright'
 import { mockApi, seedState, MMID } from './mocks'
+import { settled } from './measure'
 
 // WCAG AA CONTRAST, ACROSS THE APP, IN BOTH THEMES AND BOTH DEVICE ROLES — a ratchet
 // at zero.
@@ -123,7 +124,7 @@ for (const theme of ['day', 'night'] as const) {
           await expect(page.locator('.loading, .skeleton'), `${s.name} finished loading`).toHaveCount(0, {
             timeout: 15_000,
           })
-          await page.waitForTimeout(700)
+          await settled(page)
           // A route that bounces measures some OTHER page and reads green (day-plan did).
           // Read AFTER the page settled: a lazy scene bounces only once it has loaded and
           // judged its params, so a check right after goto() passes on the old URL.

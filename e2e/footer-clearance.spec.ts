@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { mockApi, seedState, type Audience } from './mocks'
+import { settled } from './measure'
 
 // Mid-session footer-clearance sweep. The earlier screenshots.spec shoots each
 // surface fullPage at FIRST PAINT — which never reveals the real bug: on a phone
@@ -37,7 +38,7 @@ const FORMATS = [
 async function settle(page: Page) {
   await page.locator('.hub').first().waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {})
   await page.evaluate(() => document.fonts?.ready).catch(() => {})
-  await page.waitForTimeout(400)
+  await settled(page)
 }
 
 // Scroll the hub body (the inner scroller) all the way down and let it settle.
@@ -49,7 +50,7 @@ async function scrollToBottom(page: Page) {
     const root = document.getElementById('root')
     if (root) root.scrollTop = root.scrollHeight
   })
-  await page.waitForTimeout(300)
+  await settled(page)
 }
 
 // Returns the list of interactive elements a phone user can't reach after scrolling
@@ -116,6 +117,7 @@ async function occludedControls(page: Page): Promise<string[]> {
 for (const f of FORMATS) {
   for (const c of CASES) {
     test(`footer-clearance ${f.name} ${c.name}-${c.audience}`, async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: 'reduce' }) // the toddler lens floats forever otherwise
       await page.setViewportSize({ width: f.width, height: f.height })
       await mockApi(page)
       await seedState(page, { theme: 'day', audience: c.audience, lang: 'fr', calm: true, surface: 'mobile' })

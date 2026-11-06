@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { mockApi, seedState, type Audience, type Lang, type Surface, type Theme } from './mocks'
+import { settled } from './measure'
 
 // Visual sweep: every surface × theme × format (and a language spot-check).
 // These are NOT pixel-regression snapshots — they write PNGs to e2e/screenshots
@@ -50,7 +51,7 @@ const FORMATS = [
 async function settle(page: Page, ready: string) {
   await page.locator(ready).first().waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {})
   await page.evaluate(() => document.fonts?.ready).catch(() => {})
-  await page.waitForTimeout(500)
+  await settled(page)
 }
 
 // The device role maps to the format: a phone shoots the MOBILE surface (glance +
@@ -182,7 +183,8 @@ test('board layout panel toggle hides a card', async ({ page }) => {
   // Hide « À faire » (the unified to-do card) via its show/hide toggle.
   const row = page.locator('.board-layout__row', { hasText: 'À faire' }).first()
   await row.locator('.board-layout__toggle').click()
-  await page.waitForTimeout(150)
+  // The layout lives in this browser's localStorage: the goto must not outrun the write.
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('babillard-card-prefs'))).toContain('todos')
   await page.goto('/board')
   await page.locator('.board-grid').first().waitFor({ timeout: 8000 })
   // The card itself is gone — see the note above on why `.todo-sec` no longer says that.

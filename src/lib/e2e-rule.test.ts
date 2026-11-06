@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest'
 // flake it causes reads as noise. `as any` hides a real type from the one layer that
 // would have caught a renamed field. Planted red with one more of each.
 const BOOT_MAX = 0
-const WAIT_MAX = 150
+const WAIT_MAX = 125
 
 const dir = join(__dirname, '../../e2e')
 const specs = readdirSync(dir)

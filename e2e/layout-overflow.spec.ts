@@ -1,6 +1,7 @@
 import { test as base, expect, type Page } from '@playwright/test'
 import { SETTINGS_SUBS } from '../src/lib/settingsNav'
 import { mockApi, seedState, type Audience, type Lang, type Surface } from './mocks'
+import { settled } from './measure'
 
 // "All platforms" layout guard. screenshots.spec.ts already hard-asserts no
 // horizontal overflow on the PHONE (390px) for every tab; footer-clearance.spec
@@ -61,7 +62,7 @@ const TABS: Tab[] = [
 async function settle(page: Page) {
   await page.locator('.hub__body').first().waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {})
   await page.evaluate(() => document.fonts?.ready).catch(() => {})
-  await page.waitForTimeout(500)
+  await settled(page)
 }
 
 // doc OR the inner hub scroller wider than its client box = a real horizontal
@@ -109,7 +110,7 @@ async function scrollToBottom(page: Page) {
     const body = document.querySelector('.hub__body') as HTMLElement | null
     if (body) body.scrollTop = body.scrollHeight
   })
-  await page.waitForTimeout(300)
+  await settled(page)
 }
 
 for (const format of FORMATS) {

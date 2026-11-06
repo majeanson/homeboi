@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { mockApi, seedState } from './mocks'
+import { settled } from './measure'
 
 // Real-flow coverage for the recipe photo-import path (RecipeForm). The companion
 // recipe-read-review spec drives the dialog in isolation via /dev/kit; THIS one
@@ -64,7 +65,7 @@ test('photo import: read → verify dialog → apply draft to the form', async (
   await page.goto('/kitchen/recipe/new')
   await expect(page.locator('.recipe-title-input')).toBeVisible({ timeout: 15_000 })
   await healthDone
-  await page.waitForTimeout(150) // let React apply cloudOcrAvailable=true
+  await settled(page) // React has applied cloudOcrAvailable=true
 
   // Trigger the read by handing the hidden OCR file input a photo.
   // Scanner/Importer live inside the « Remplir vite » Disclosure now — two buttons and
@@ -141,7 +142,7 @@ test('« Auto » with no usable cloud key: the vision reader goes first, the dev
   await page.goto('/kitchen/recipe/new')
   await expect(page.locator('.recipe-title-input')).toBeVisible({ timeout: 15_000 })
   await healthDone
-  await page.waitForTimeout(150)
+  await settled(page)
   await page.getByRole('button', { name: 'Remplir vite' }).click()
   await page.locator('.recipe-helpers input[type=file]').setInputFiles({ name: 'carte.png', mimeType: 'image/png', buffer: PNG_1x1 })
 

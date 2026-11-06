@@ -53,7 +53,7 @@ async function holdDrag(page: Page, from: ReturnType<Page['locator']>, toZoneDat
   await page.waitForTimeout(HOLD)
   await page.mouse.move(sx + 2, sy + 2)
   await page.mouse.move(b.x + b.width / 2, b.y + 20, { steps: 12 })
-  await page.waitForTimeout(100)
+  await expect(target).toHaveClass(/is-droptarget/)
   await page.mouse.up()
 }
 

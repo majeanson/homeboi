@@ -1,5 +1,6 @@
 import { test as base, expect, type Page } from '@playwright/test'
 import { mockApi, seedState, type Audience, type Surface } from './mocks'
+import { settled } from './measure'
 
 // Standalone full-screen SCENES (real routes, no hub chrome) that none of the
 // other sweeps reach: « L'auto », departure mode, the toddler play space, global
@@ -72,7 +73,7 @@ for (const format of FORMATS) {
       // missing root, just settle.
       await page.locator('.scene, .cook, main, .page, .ambient').first().waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {})
       await page.evaluate(() => document.fonts?.ready).catch(() => {})
-      await page.waitForTimeout(600)
+      await settled(page)
       await page.screenshot({ path: `e2e/screenshots/scene-${scene.name}-${format.name}.png`, fullPage: true })
       await expect.poll(() => docOverflow(page), { timeout: 6000, intervals: [200, 400, 800] }).toBe('ok')
     })
