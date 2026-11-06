@@ -54,9 +54,9 @@ describe('templateOptions (the « Modèles : » dropdown rows)', () => {
   })
 
   it('stays quiet for an empty list rather than badging it "0 éléments"', () => {
-    const [opt] = templateOptions([tpl('t1', 'Vide', [])], t)
-    expect(opt!.hint).toBeUndefined()
-    expect(opt!.badge).toBeUndefined()
+    const opt = (templateOptions([tpl('t1', 'Vide', [])], t))[0]!
+    expect(opt.hint).toBeUndefined()
+    expect(opt.badge).toBeUndefined()
   })
 
   it('groups every row under the Modèles heading', () => {

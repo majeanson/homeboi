@@ -222,11 +222,11 @@ describe('columnizeOcrPage', () => {
         { text: 'environ', confidence: 90, bbox: { x0: 660, y0: 300, x1: 840, y1: 320 } },
       ],
     })
-    const out = columnizeOcrPage(page as never)
+    const out = columnizeOcrPage(page as never)!
     expect(out).toBeTruthy()
-    expect(out!.split('\n')).toContain('Préparation 20 minutes environ')
+    expect(out.split('\n')).toContain('Préparation 20 minutes environ')
     // The 2-column un-merge itself still happened around it.
-    expect(out!.split('\n')).toContain('soupe) de miel')
+    expect(out.split('\n')).toContain('soupe) de miel')
   })
 
   it('emits a big straddling title first, not sliced into the columns', () => {

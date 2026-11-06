@@ -158,9 +158,9 @@ const primitiveRows = () => {
   let rows = 0
   let specimens = 0
   for (let i = a; i < b; i++) {
-    const l = lines[i]
-    if (!l!.startsWith('|')) continue
-    const cells = l!.split('|').map((c) => c.trim())
+    const l = lines[i]!
+    if (!l.startsWith('|')) continue
+    const cells = l.split('|').map((c) => c.trim())
     if (cells.length < 4) continue
     const name = cells[1]!.replace(/\*\*/g, '').trim()
     if (!name || /^-+$/.test(name) || name === 'Component') continue
@@ -226,10 +226,10 @@ describe('the docs quote the real counts', () => {
 
   for (const c of claims) {
     it(`${c.file} — ${c.what}`, () => {
-      const m = read(c.file).match(c.re)
+      const m = read(c.file).match(c.re)!
       // Not a skip: a claim that vanished is a claim nobody is checking any more.
       expect(m, `${c.file}: the sentence stating ${c.what} no longer matches ${c.re}. If you reworded it, update the regex here — do not delete the claim.`).not.toBeNull()
-      expect(Number(m![1]), `${c.file} says ${m![1]} for ${c.what}; the code has ${c.actual()}`).toBe(c.actual())
+      expect(Number(m[1]), `${c.file} says ${m[1]} for ${c.what}; the code has ${c.actual()}`).toBe(c.actual())
     })
   }
 

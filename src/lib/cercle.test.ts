@@ -893,8 +893,9 @@ describe('layoutIslands', () => {
       'Autres',
     )
     const l = layoutIslands(world, byKey, OPTS)!
-    const [a, b] = l.placed
-    expect(dist(mid(a!), mid(b!))).toBeGreaterThanOrEqual(a!.outerR + b!.outerR)
+    const a = l.placed[0]!
+    const b = l.placed[1]!
+    expect(dist(mid(a), mid(b))).toBeGreaterThanOrEqual(a.outerR + b.outerR)
     for (const isl of l.placed) for (const f of isl.faces) expect(Math.hypot(f.x, f.y) + OPTS.face / 2).toBeLessThanOrEqual(isl.outerR + 0.01)
   })
 
@@ -986,8 +987,9 @@ describe('layoutFamilyForest', () => {
       expect(inside).toHaveLength(f.count)
     }
     // Two frames never overlap.
-    const [a, b] = l.frames
-    expect(a!.x < b!.x + b!.w && b!.x < a!.x + a!.w && a!.y < b!.y + b!.h && b!.y < a!.y + a!.h).toBe(false)
+    const a = l.frames[0]!
+    const b = l.frames[1]!
+    expect(a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h).toBe(false)
   })
 
   it('ignores a friendship inside one family — it adds nothing to read', () => {

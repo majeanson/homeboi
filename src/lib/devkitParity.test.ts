@@ -58,15 +58,15 @@ const secStart = mdLines.findIndex((l) => l.startsWith('## Shared primitives'))
 const secEnd = mdLines.findIndex((l) => l.startsWith('### Page orchestrators'))
 const ROWS: Row[] = []
 for (let i = secStart; i < secEnd; i++) {
-  const l = mdLines[i]
-  if (!l!.startsWith('|')) continue
-  const cells = l!.split('|').map((c) => c.trim())
+  const l = mdLines[i]!
+  if (!l.startsWith('|')) continue
+  const cells = l.split('|').map((c) => c.trim())
   if (cells.length < 4) continue
   const name = cells[1]!.replace(/\*\*/g, '').trim()
   if (!name || /^-+$/.test(name) || name === 'Component') continue
   const files = pathsIn(cells[2]!)
   if (!files.length) continue
-  ROWS.push({ line: i + 1, name, files, excused: /\*\(no specimen: .+?\)\*/.test(l!) })
+  ROWS.push({ line: i + 1, name, files, excused: /\*\(no specimen: .+?\)\*/.test(l) })
 }
 
 describe('/dev/kit ↔ COMPONENTS.md parity', () => {
