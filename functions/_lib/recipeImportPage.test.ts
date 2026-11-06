@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { diffExpected, expectedOf, loadCorpus } from '../test/recipeCorpus'
 import { htmlToText, parsePastedRecipe, parseRecipeMicrodata, pageMeta, tidyIngredientLine } from './recipeImport'
-import { importFromHtml, pageListFillsIngredients, readPage, regroupSteps, sourceFromCapture } from './recipeImportPage'
+import { halfRead, importFromHtml, pageListFillsIngredients, readPage, regroupSteps, sourceFromCapture } from './recipeImportPage'
 
 // The page seam (_lib/recipeImportPage) and the parser fixes the corpus forced
 // (2026-10-27). The corpus test scores whole pages; these pin each rule on its own.
@@ -12,7 +12,9 @@ describe('a page the cook’s browser captured reads like the page we fetched', 
   // HTML. For every corpus page with JSON-LD, that capture must read EXACTLY as the
   // fetched HTML does — same parsers, same result.
   const blocksOf = (html: string) =>
-    [...html.matchAll(/<script\b[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)].map((m) => m[1])
+    [...html.matchAll(/<script\b[^>]*type=["']application\/(ld\+)?json["'][^>]*>([\s\S]*?)<\/script>/gi)]
+      .filter((m) => m[1] || m[2].includes('"Recipe"')) // the bookmark's own filter
+      .map((m) => m[2])
   const withLd = loadCorpus().filter((e) => e.expected?.structuring === 'jsonld')
 
   it('there are JSON-LD pages to compare', () => expect(withLd.length).toBeGreaterThanOrEqual(6))
@@ -67,6 +69,55 @@ describe('a page the cook’s browser captured reads like the page we fetched', 
       notes: 'Meilleur tiède.',
       structuring: 'headings',
     })
+  })
+})
+
+describe('a read never stops at half a recipe', () => {
+  const printed = 'Pouding\nIngrédients\n500 ml de cassonade\n500 ml d’eau\nPréparation\nMélanger le tout.\nCuire 40 minutes.'
+  const html = (head: string, body: string) => `<html><head><title>Pouding</title>${head}</head><body>${body}</body></html>`
+  const lines = printed.split('\n').map((l) => `<p>${l}</p>`).join('')
+  const url = 'https://www.example.test/r'
+  const ld = (type: string, node: object) => `<script type="${type}">${JSON.stringify(node)}</script>`
+  const node = { '@context': 'https://schema.org', '@type': 'Recipe', name: 'Pouding', recipeIngredient: ['500 ml de cassonade'], recipeInstructions: ['Tout cuire.'] }
+
+  it('microdata with the ingredients only → the printed steps fill the method (instantpot.com)', () => {
+    const tagged = '<p itemprop="recipeIngredient">500 ml de cassonade</p><p itemprop="recipeIngredient">500 ml d’eau</p>'
+    expect(importFromHtml(html('', tagged + lines), url)).toMatchObject({
+      steps: ['Mélanger le tout.', 'Cuire 40 minutes.'],
+      structuring: 'microdata',
+    })
+  })
+  it('JSON-LD with no steps → the printed steps too', () => {
+    const { recipeInstructions: _, ...noSteps } = node
+    expect(importFromHtml(html(ld('application/ld+json', noSteps), lines), url).steps).toEqual(['Mélanger le tout.', 'Cuire 40 minutes.'])
+  })
+  it('a site’s own steps are never swapped for the printed ones', () => {
+    expect(importFromHtml(html(ld('application/ld+json', node), lines), url).steps).toEqual(['Tout cuire.'])
+  })
+  it('a Recipe in a plain application/json block reads like JSON-LD, its notes field included', () => {
+    const d = importFromHtml(html(ld('application/json', { ...node, notes: 'Meilleur tiède.' }), lines), url)
+    expect(d).toMatchObject({ steps: ['Tout cuire.'], notes: 'Meilleur tiède.', structuring: 'jsonld' })
+  })
+  it('a plain JSON block that is not a Recipe is not even parsed', () => {
+    const blob = '<script type="application/json">{"recipes":["Recipe"]</script>'
+    expect(importFromHtml(html(blob, lines), url).structuring).toBe('headings')
+  })
+  it('halfRead: a missing half, section headings not counting as content', () => {
+    expect(halfRead({ ingredients: ['1 œuf'], steps: ['Cuire.'] })).toBe(false)
+    expect(halfRead({ ingredients: ['1 œuf'], steps: [] })).toBe(true)
+    expect(halfRead({ ingredients: ['1 œuf'], steps: ['## Sauce'] })).toBe(true)
+    expect(halfRead({ ingredients: [], steps: ['Cuire.'] })).toBe(true)
+  })
+  it('the share bar ends the notes; a bare « Partager » button does not end the recipe', () => {
+    const r = parsePastedRecipe(
+      'Pouding\nIngrédients\n500 ml de cassonade\n500 ml d’eau\nPartager\nPréparation\nMélanger le tout.\nCuire 40 minutes.\nNotes\nMeilleur tiède.\nPartager:\nPartager sur Instagram\nBOUTIQUE\nTout acheter',
+    )
+    expect(r.steps).toEqual(['Mélanger le tout.', 'Cuire 40 minutes.'])
+    expect(r.notes).toBe('Meilleur tiède.')
+  })
+  it('a share bar with no « Partager : » line above it ends the notes too', () => {
+    const r = parsePastedRecipe('Pouding\nIngrédients\n500 ml de cassonade\n500 ml d’eau\nPréparation\nMélanger le tout.\nNotes\nMeilleur tiède.\nPartager sur Facebook\nBOUTIQUE')
+    expect(r.notes).toBe('Meilleur tiède.')
   })
 })
 

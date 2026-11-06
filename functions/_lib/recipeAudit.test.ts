@@ -17,6 +17,13 @@ const kinds = (d: typeof base, src: string | null = null) => auditDraft(d, src).
 describe('auditDraft — one flag per thing a read can miss', () => {
   it('a clean read has none', () => expect(kinds(base, 'Étape 1\nÉtape 2\nÉtape 3\nÉtape 4')).toEqual([]))
 
+  it('no-steps / no-ingredients: half a recipe is never handed over in silence', () => {
+    expect(kinds({ ...base, steps: [] })).toEqual(['no-steps'])
+    expect(kinds({ ...base, steps: ['## Sauce'] })).toContain('no-steps')
+    expect(kinds({ ...base, ingredients: [] })).toEqual(['no-ingredients'])
+    expect(kinds({ ...base, ingredients: [], steps: [] })).toEqual([])
+  })
+
   it('step-count: the page printed « Étape 6 », the draft has 4', () => {
     expect(auditDraft(base, 'Étape 1\nÉtape 2\nÉtape 3\nÉtape 4\nÉtape 5\nÉtape 6\nServir.')).toEqual([{ kind: 'step-count', line: '4/6' }])
   })

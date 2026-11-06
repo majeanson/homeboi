@@ -11,7 +11,8 @@
 // (functions/_lib/recipeImportPage, sourceFromCapture).
 //
 // What it collects: the address, the title, og:image, every `application/ld+json`
-// block's RAW text (parsed server-side, never here), Ricardo's `data-react-app-props`
+// block's RAW text (parsed server-side, never here) and any plain `application/json`
+// block naming a "Recipe" (Instant Pot's theme), Ricardo's `data-react-app-props`
 // (its ingredient/step groups) and WPRM's group names when present, and as the text
 // fallback the WHOLE page's text — every text node under <body>, visible OR NOT, with a
 // line break at each block element (the server's htmlToText, done on the live DOM),
@@ -37,9 +38,9 @@
 export const RECIPE_BOOKMARKLET_BODY =
   '(function(B){var d=document,l=location;if(l.origin===B){alert("Ce signet s’utilise sur la page d’une recette, pas dans Babillard.");return}' +
   'var cap=function(s,n){s=String(s||"");return s.length>n?s.slice(0,n):s};' +
-  'var p={v:1,url:l.href,title:cap(d.title,300),image:"",jsonld:[],text:""},i,x;' +
+  'var p={v:1,url:l.href,title:cap(d.title,300),image:"",jsonld:[],text:""},i,x,y;' +
   'var ms=d.getElementsByTagName("meta");for(i=0;i<ms.length;i++){if(ms[i].getAttribute("property")==="og:image"){p.image=cap(ms[i].getAttribute("content"),600);break}}' +
-  'var ss=d.getElementsByTagName("script");for(i=0;i<ss.length&&p.jsonld.length<20;i++){x=ss[i];if(String(x.type||"").toLowerCase()==="application/ld+json"&&String(x.textContent||"").trim()){p.jsonld.push(cap(x.textContent,150000))}}' +
+  'var ss=d.getElementsByTagName("script");for(i=0;i<ss.length&&p.jsonld.length<20;i++){x=ss[i];y=String(x.textContent||"");if(/ld.json/i.test(x.type)?y.trim():/json/i.test(x.type)&&/"Recipe"/.test(y)){p.jsonld.push(cap(y,150000))}}' +
   'var ex={},rp=d.querySelectorAll("[data-react-app-props]");for(i=0;i<rp.length;i++){if(rp[i].getAttribute("data-react-app")==="recipeCookingMode"){ex.ricardo=cap(rp[i].getAttribute("data-react-app-props"),100000)}}' +
   'var g=function(c){var a=[],n=d.querySelectorAll(c),k;for(k=0;k<n.length;k++){a.push(String(n[k].textContent||"").trim())}return a};' +
   'var wi=g(".wprm-recipe-ingredient-group-name"),ws=g(".wprm-recipe-instruction-group-name");if(wi.length||ws.length){ex.wprm={ingredients:wi,steps:ws}}' +

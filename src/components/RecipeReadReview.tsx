@@ -85,7 +85,7 @@ export interface AiAttemptView {
 
 /** One audit finding, as the import endpoints send it (`audit` on every response). */
 export interface AuditFlagView {
-  kind: 'step-count' | 'step-gap' | 'missing-ingredient' | 'title-junk' | 'dup-step' | 'empty-section' | 'no-quantity'
+  kind: 'no-steps' | 'no-ingredients' | 'step-count' | 'step-gap' | 'missing-ingredient' | 'title-junk' | 'dup-step' | 'empty-section' | 'no-quantity'
   line?: string
 }
 
@@ -106,7 +106,11 @@ const photoWarnText = (k: PhotoWarningKind, t: ReturnType<typeof useT>): string 
 
 // The audit finding, in words — the panel's hint line and the « Rapport » tab.
 const auditText = (f: AuditFlagView, t: ReturnType<typeof useT>): string =>
-  f.kind === 'step-count'
+  f.kind === 'no-steps'
+    ? t.recipes.auditNoSteps
+    : f.kind === 'no-ingredients'
+    ? t.recipes.auditNoIngredients
+    : f.kind === 'step-count'
     ? t.recipes.auditStepCount(f.line ?? '')
     : f.kind === 'step-gap'
       ? t.recipes.auditStepGap(f.line ?? '')

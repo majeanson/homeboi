@@ -1277,6 +1277,8 @@ export const EN: typeof FR = {
     auditMissing: (l: string) => `“${l}” is in the steps, not in the ingredients.`,
     auditTitle: 'The title looks like a site label.',
     auditDup: 'A step appears twice.',
+    auditNoSteps: 'No steps found on this page — worth a check.',
+    auditNoIngredients: 'No ingredients found on this page — worth a check.',
     auditEmpty: 'A part has no lines.',
     auditNoQty: 'Most ingredients have no amount.',
     reviewTabReport: 'Report',

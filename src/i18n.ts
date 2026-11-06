@@ -1495,6 +1495,8 @@ export const FR = {
     auditMissing: (l: string) => `« ${l} » est dans les étapes, pas dans les ingrédients.`,
     auditTitle: 'Le titre ressemble à une étiquette du site.',
     auditDup: 'Une étape revient deux fois.',
+    auditNoSteps: 'Aucune étape trouvée sur cette page — à vérifier.',
+    auditNoIngredients: 'Aucun ingrédient trouvé sur cette page — à vérifier.',
     auditEmpty: 'Une partie n’a aucune ligne.',
     auditNoQty: 'La plupart des ingrédients n’ont pas de quantité.',
     // The « Rapport » tab: what read the photo, what organized the text, what was

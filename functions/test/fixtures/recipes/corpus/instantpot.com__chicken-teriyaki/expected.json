@@ -1,0 +1,29 @@
+{
+  "title": "Poulet Teriyaki",
+  "servings": 6,
+  "servingsUnit": null,
+  "times": {
+    "prep": 5,
+    "cook": 45,
+    "total": 50
+  },
+  "ingredients": [
+    "3/4 tasse de bouillon de poulet",
+    "1/2 tasse de sauce soja ou de tamari ordinaire ou à teneur réduite en sodium",
+    "1/2 tasse d'oignon haché surgelé",
+    "3 cuillères à soupe de sucre brun clair",
+    "2 cuillères à soupe de gingembre frais",
+    "1 cuillère à soupe d'ail",
+    "3 livres de cuisses de poulet désossées et sans peau surgelées"
+  ],
+  "steps": [
+    "Mélangez le bouillon, la sauce soja ou le tamari, l'oignon, la cassonade, le gingembre et l'ail dans un Instant Pot. Ajoutez le bloc ou les morceaux de poulet congelé, remuez bien et fermez le couvercle.",
+    "Autocuiseur 1 Max en option Appuyez sur Cuisson sous pression à pression maximale pendant 17 minutes avec le réglage Maintien au chaud désactivé.",
+    "Option 2 Tous les autocuiseurs Appuyez sur Volaille, Cuisson sous pression ou Manuel sur Haute pression pendant 20 minutes avec le réglage Maintien au chaud désactivé.",
+    "Une fois la cuisson terminée, éteignez l'appareil et laissez la pression revenir naturellement à la normale, environ 25 minutes. Déverrouillez le couvercle et ouvrez l'autocuiseur. À l'aide d'une pince ou d'une écumoire, transférez les cuisses de poulet dans un bol.",
+    "Appuyez sur le bouton « Sauté » . Réglez la puissance sur « ÉLEVÉ », « PLUS » ou « PERSONNALISÉ » à 200 °C. Réglez le temps sur 15 minutes et, si nécessaire, appuyez sur « DÉMARRER ».",
+    "Porter la sauce à ébullition en remuant régulièrement. Laisser mijoter en remuant de plus en plus fréquemment jusqu'à obtenir une sauce épaisse et glacée, environ 7 minutes. Éteindre la fonction SAUTÉ . Remettre les cuisses de poulet et leur jus dans la cocotte. Remuer jusqu'à ce que le poulet soit bien enrobé de glaçage. Transférer les morceaux dans un plat de service ou des assiettes."
+  ],
+  "notes": "Au-delà • Pour un Instant Pot de 8 litres, vous devez augmenter tous les ingrédients de 50 pour cent. • Garnir le poulet d’oignons verts hachés et/ou de graines de sésame. • Ou arroser d’huile de sésame grillé. • Servez le poulet teriyaki sur du riz blanc à grains courts, cuit et collant (comme du riz à sushi) ou du millet cuit et égoutté., *Vous utilisez un CONGÉLATEUR COFFRE à -20°F ? Il n'y a aucune différence dans les temps de cuisson.",
+  "structuring": "jsonld"
+}

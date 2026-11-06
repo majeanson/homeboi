@@ -27,6 +27,13 @@ import {
 //   · sourceFromHtml   — a page the Worker fetched (its raw HTML);
 //   · sourceFromCapture — a page the cook's browser captured (the bookmarklet sends the
 //     JSON-LD blocks' raw text and the page's innerText, never the HTML).
+//
+// A READ NEVER STOPS AT HALF A RECIPE (2026-11-05). Structured data can mark up only one
+// half: instantpot.com's microdata tags the seven ingredients and not one step, which
+// counted as a recipe, so the eight steps printed on the same page were read and thrown
+// away. Each half now takes the page's printed one when its own is missing, and a read
+// still missing a half is `halfRead`: api/recipe-import asks the model for the whole,
+// and the audit (no-steps / no-ingredients) tells the cook if nothing could.
 
 export interface CapturedPage {
   url: string
@@ -117,7 +124,10 @@ export function readPage(src: PageSource, pick = 0): PageRead {
     // page's printed ones (C2).
     const site = adaptPage(src.html, src.extras)
     const glued = unglueStepHeadings(parsed.steps, src.text)
-    const steps = applyGroups(glued, site?.stepGroups, site?.exact ?? false) ?? (printedOk ? regroupSteps(glued, printed.steps) : glued)
+    const steps =
+      printedOk && !real(glued).length
+        ? printed.steps
+        : (applyGroups(glued, site?.stepGroups, site?.exact ?? false) ?? (printedOk ? regroupSteps(glued, printed.steps) : glued))
     // The site's step photos follow their step through any part heading added above.
     const photoOf = new Map(parsed.steps.map((s, i) => [s, parsed.stepImageUrls?.[i] ?? null]))
     const stepImageUrls = parsed.stepImageUrls ? steps.map((s) => (isSectionHeading(s) ? null : (photoOf.get(s) ?? null))) : undefined
@@ -133,9 +143,9 @@ export function readPage(src: PageSource, pick = 0): PageRead {
               regroupIngredientsInText(src.text, parsed.ingredients)),
         steps,
         title,
-        // schema.org carries no notes: the page's own « Notes » block, word for word
-        // (only its notes — the page text's ingredients and steps are not trusted over
-        // the site's structured data).
+        // schema.org carries no notes: a site's own field when it sends one, else the
+        // page's « Notes » block, word for word (only its notes — when both halves are
+        // there, the page text's lines are not trusted over the site's structured data).
         notes: parsed.notes ?? text.known.notes ?? null,
         source: src.url,
         structuring: parsed === ld ? 'jsonld' : 'microdata',
@@ -160,6 +170,9 @@ export function readPage(src: PageSource, pick = 0): PageRead {
 }
 
 const real = (lines: string[]) => lines.filter((l) => !isSectionHeading(l))
+
+// Ingredients with no method, or a method with no ingredients: not yet a recipe.
+export const halfRead = (d: { ingredients: string[]; steps: string[] }): boolean => !real(d.ingredients).length || !real(d.steps).length
 
 // The recipe's name. The structured data's, unless it is the page's printed name with
 // an SEO tail glued on — « Boeuf bourguignon : la vraie recette : la meilleure recette »

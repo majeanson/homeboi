@@ -12,7 +12,16 @@ import { ingredientsFromMethod } from './recipeRepair'
 // ignore the panel. `recipeCorpus.test` holds every corpus page — hand-verified correct —
 // at ZERO flags, so a rule that fires on a real good page fails the build.
 
-export type AuditKind = 'step-count' | 'step-gap' | 'missing-ingredient' | 'title-junk' | 'dup-step' | 'empty-section' | 'no-quantity'
+export type AuditKind =
+  | 'no-steps'
+  | 'no-ingredients'
+  | 'step-count'
+  | 'step-gap'
+  | 'missing-ingredient'
+  | 'title-junk'
+  | 'dup-step'
+  | 'empty-section'
+  | 'no-quantity'
 
 export interface AuditFlag {
   kind: AuditKind
@@ -73,6 +82,11 @@ export function auditDraft(d: Auditable, sourceText: string | null): AuditFlag[]
   const flags: AuditFlag[] = []
   const steps = real(d.steps)
   const ings = real(d.ingredients)
+
+  // Half a recipe: the one thing a read must never hand over in silence (Poulet Teriyaki,
+  // 2026-11-05 — seven ingredients, no method, saved without a word).
+  if (ings.length && !steps.length) flags.push({ kind: 'no-steps' })
+  if (steps.length && !ings.length) flags.push({ kind: 'no-ingredients' })
 
   // The page numbered more steps than the draft holds — or skipped a number.
   if (sourceText) {

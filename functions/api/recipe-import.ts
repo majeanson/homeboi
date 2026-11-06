@@ -3,7 +3,7 @@ import { badRequest, ok, readJson, serviceUnavailable } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { resolveLang } from '../_lib/ai'
 import { aiUsable } from '../_lib/aiPref'
-import { type CapturedPage, type PageSource, readPage, sourceFromCapture, sourceFromHtml } from '../_lib/recipeImportPage'
+import { type CapturedPage, type PageSource, halfRead, readPage, sourceFromCapture, sourceFromHtml } from '../_lib/recipeImportPage'
 import { isRefusalPage, renderPage } from '../_lib/renderPage'
 import { fetchPublic, publicHttpUrl } from '../_lib/publicUrl'
 import { withAudit } from '../_lib/recipeAudit'
@@ -143,19 +143,24 @@ export const onRequestPost = authed(async (ctx, actor) => {
   // The no-model read (site data, then the page's printed headings) — the same seam
   // the corpus test scores (_lib/recipeImportPage).
   const r = readPage(src, pick)
-  if (r.draft) {
+  const shipRead = async (found: NonNullable<typeof r.draft>) => {
     // The site's step photos (C3) are fetched once and kept, keyed like the cook's own
     // uploads (_lib/stepImageImport); the URLs never reach the client.
-    const { stepImageUrls, ...d } = r.draft
+    const { stepImageUrls, ...d } = found
     const stepImages = stepImageUrls?.some(Boolean) ? await importStepImages(ctx.env, stepImageUrls) : undefined
     return ok({ ...withAudit(d, r.window), ...(stepImages?.some(Boolean) ? { stepImages } : {}), fetched })
   }
+  if (r.draft && !(aiOn && halfRead(r.draft))) return shipRead(r.draft)
 
-  // Only the model can organise this page's text, guided by the cook's hint.
+  // Only the model can organise this page's text, guided by the cook's hint — or finish
+  // a read that found one half of the recipe. It replaces that half read only if it
+  // found both; otherwise the half read stands, its audit flag telling the cook.
   if (aiOn) {
     const read = await draftByModel(ctx.env, r.window, lang, { ...r.known, title: null }, hint)
-    if (read) return ok({ ...withAudit({ ...read, title: r.title ?? read.title }, r.window), image: r.image, source: src.url, fetched })
+    if (read && !(r.draft && halfRead(read)))
+      return ok({ ...withAudit({ ...read, title: r.title ?? read.title }, r.window), image: r.image, source: src.url, fetched })
   }
+  if (r.draft) return shipRead(r.draft)
 
   // We read the page fine, there was just no recipe in it (an article or a listicle
   // — /recettes/article/… rather than /recettes/recette/… — lands here). Let the UI

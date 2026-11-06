@@ -41,6 +41,14 @@ const sent = (href: string): CapturedRecipePage => {
 }
 
 describe('the « Envoyer à Babillard » bookmark, run on a fake page', () => {
+  it('sends a plain JSON block only when it names a Recipe — a framework’s state blob stays home', () => {
+    const recipe = '{"@context":"https://schema.org","@type":"Recipe","name":"Poulet Teriyaki"}'
+    const p = fakePage({
+      scripts: [{ type: 'application/json', textContent: '{"state":"not this one"}' }, { type: 'application/json', textContent: recipe }],
+    })
+    p.run('https://babillard.marcportal.com')
+    expect(sent(p.loc.href).jsonld).toEqual([recipe])
+  })
   it('sends every ld+json block raw, og:image, the title and the page text — home, in the address', () => {
     const ld1 = '{"@context":"https://schema.org","@type":"WebSite","name":"Recettes du Québec"}'
     const ld2 = '{"@type":"Recipe","name":"Chili con carne","recipeIngredient":["1 kg viande hachée"]}'

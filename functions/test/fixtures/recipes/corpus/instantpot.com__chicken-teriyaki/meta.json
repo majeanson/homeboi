@@ -1,0 +1,7 @@
+{
+  "url": "https://instantpot.com/fr/blogs/recipes/chicken-teriyaki",
+  "capturedAt": "2026-11-06",
+  "reach": "direct",
+  "via": "playwright",
+  "notes": "Verified by reading 2026-11-05. The Recipe lives in <script type=application/json id=recipeStructuredData>, not ld+json, and the microdata tags the ingredients only: it used to read as 7 ingredients, 0 steps, footer in the notes. CHOICE: the site's own 6 steps stand (the printed page splits « Option 2 Tous les autocuiseurs » onto its own line; a heading there would be a reading, not the source). (worker fetch: 200)"
+}

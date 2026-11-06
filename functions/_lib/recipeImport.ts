@@ -69,14 +69,22 @@ export function parseJsonLdText(raw: string): unknown {
   }
 }
 
-// Grab every JSON-LD <script> block's parsed JSON (objects or arrays). Tolerates
-// attribute order/spacing and extra script attributes; skips unparseable blocks.
+// A schema.org Recipe published under the plain JSON type: Instant Pot's Shopify theme
+// prints <script type="application/json" id="recipeStructuredData"> — the whole recipe,
+// and no search engine sees it (2026-11-05). Plain JSON is every framework's state blob,
+// so only a block that names itself a Recipe is even parsed.
+const NAMES_A_RECIPE = /"@type"\s*:\s*(?:\[[^\]]*)?"Recipe"/i
+
+// Grab every JSON-LD <script> block's parsed JSON (objects or arrays), and a plain JSON
+// block that is a Recipe. Tolerates attribute order/spacing and extra script attributes;
+// skips unparseable blocks.
 export function extractJsonLdBlocks(html: string): unknown[] {
   const out: unknown[] = []
-  const re = /<script\b[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi
+  const re = /<script\b[^>]*type=["']application\/(ld\+)?json["'][^>]*>([\s\S]*?)<\/script>/gi
   let m: RegExpExecArray | null
   while ((m = re.exec(html))) {
-    const v = parseJsonLdText(m[1])
+    if (!m[1] && !NAMES_A_RECIPE.test(m[2])) continue
+    const v = parseJsonLdText(m[2])
     if (v !== undefined) out.push(v)
   }
   return out
@@ -768,6 +776,9 @@ function parseRecipeNode(node: Record<string, unknown>): ParsedRecipe | null {
       cook: isoToMinutes(node.cookTime),
       total: isoToMinutes(node.totalTime),
     },
+    // Not schema.org, but a site that bothers to send its notes knows where they end;
+    // the printed text does not.
+    ...(typeof node.notes === 'string' && clean(node.notes) ? { notes: clean(node.notes).slice(0, MAX_NOTES_LEN) } : {}),
     ...(stepImageUrls.some(Boolean) ? { stepImageUrls } : {}),
   }
 }
@@ -1087,8 +1098,10 @@ const INLINE_NOTE = /^(?:notes?|remarques?|conseils?|astuces?|tips?|bon\s+[àa]\
 // « Catégories » / « Mots-clés » / « Tags »: the taxonomy block that follows the method
 // on recettes.qc.ca and most blogs — pasted whole, its four lines became steps 7–10
 // (Marc, 2026-10-27). Whole-word (a letter lookahead, since JS \b dies after an é).
+// A share bar only with its colon or its network: a bare « Partager » button can sit
+// between the ingredients and the method, and ending there would eat the method.
 export const NOISE_END =
-  /^(?:recettes?\s+(?:populaires?|similaires?|sugg[ée]r[ée]es?|du\s+moment)|popular\s+recipes?|related\s+recipes?|more\s+recipes?|vous\s+aimerez|you\s+(?:may|might)\s+also\s+like|[àa]\s+lire\s+aussi|voir\s+aussi|see\s+also|(?:commentaires?|comments?)(?:\s*\(\d+\)|\s*:)?\s*$|[\d,.\s]+(?:commentaires?|comments?)\s*$|(?:laisser|leave)\s+(?:un|a)\s+(?:commentaire|comment)|abonnez|newsletter|s['’]abonner|subscribe|tous\s+droits|all\s+rights|©|(?:cat[ée]gories?|mots?[- ]cl[ée]s?|[ée]tiquettes?|tags?|keywords?)\s*:?\s*$|keywords?\s*:|note\s+personnelle|personal\s+note|cr[ée]er\s+une\s+note|nutrition\s+(?:information|facts)\b|nutrition\s*:?\s*$|valeurs?\s+nutritives?|informations?\s+nutritionnelles?|recette\s+publi[ée]e|[àa]\s+voir\s+(?:[ée]galement|aussi)|d['’]autres\s+recettes|imprimer\s+cette\s+recette|avis\s+de\s+non[- ]responsabilit[ée]|disclaimer|je\s+m['’]inscris|adresse\s+(?:mail|courriel)|qu['’]est[- ]ce\s+qu['’]on\s+mange|.*\b(?:get|download)\s+the\s+app\b)/i
+  /^(?:recettes?\s+(?:populaires?|similaires?|sugg[ée]r[ée]es?|du\s+moment)|popular\s+recipes?|related\s+recipes?|more\s+recipes?|vous\s+aimerez|you\s+(?:may|might)\s+also\s+like|[àa]\s+lire\s+aussi|voir\s+aussi|see\s+also|(?:commentaires?|comments?)(?:\s*\(\d+\)|\s*:)?\s*$|[\d,.\s]+(?:commentaires?|comments?)\s*$|(?:laisser|leave)\s+(?:un|a)\s+(?:commentaire|comment)|abonnez|newsletter|s['’]abonner|subscribe|tous\s+droits|all\s+rights|©|(?:cat[ée]gories?|mots?[- ]cl[ée]s?|[ée]tiquettes?|tags?|keywords?)\s*:?\s*$|keywords?\s*:|note\s+personnelle|personal\s+note|cr[ée]er\s+une\s+note|nutrition\s+(?:information|facts)\b|nutrition\s*:?\s*$|valeurs?\s+nutritives?|informations?\s+nutritionnelles?|recette\s+publi[ée]e|(?:partager|share)\s*:\s*$|(?:partager|share)\s+(?:sur|par|on|via)\s+(?:instagram|facebook|pinterest|tiktok|twitter|e-?mail|courriel)|[àa]\s+voir\s+(?:[ée]galement|aussi)|d['’]autres\s+recettes|imprimer\s+cette\s+recette|avis\s+de\s+non[- ]responsabilit[ée]|disclaimer|je\s+m['’]inscris|adresse\s+(?:mail|courriel)|qu['’]est[- ]ce\s+qu['’]on\s+mange|.*\b(?:get|download)\s+the\s+app\b)/i
 // A side block that is not the recipe and not its notes — trivia, a FAQ, the gear, a
 // video: its lines are skipped until the next real heading (a « Variante » after a «
 // Saviez-vous ? » is still read). Never the end: notes often follow.
