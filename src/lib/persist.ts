@@ -108,6 +108,13 @@ export async function restorePersistedCache(qc: QueryClient): Promise<void> {
   }
 }
 
+// Set by the wipe, lifted by the next answer from a live (household) query. The wipe
+// empties IndexedDB, not the query cache, so without this the save already pending, or
+// the next cache event (the 401 polls themselves fire one), wrote the whole household
+// straight back onto a revoked device. A public feed answering, or an optimistic write,
+// proves no session, so neither lifts it.
+let wiped = false
+
 // Snapshot the cache on changes, debounced. Dehydrates every query that HOLDS
 // DATA — not `status === 'success'`: when the network drops while the app is
 // open, the active tab's next poll fails and flips its status to 'error' even
@@ -132,13 +139,17 @@ export function startPersistingCache(qc: QueryClient): void {
         } catch {
           /* unreadable outbox — save unfiltered */
         }
+        if (wiped) return
         await idbSet({ at: Date.now(), state: keep ? stripOrphanTmpRows(state, keep) : state })
       })()
     } catch {
       /* noop */
     }
   }
-  qc.getQueryCache().subscribe(() => {
+  qc.getQueryCache().subscribe((event) => {
+    if (event.type === 'updated' && event.action.type === 'success' && !event.action.manual && event.query.meta?.live) {
+      wiped = false
+    }
     if (timer) return
     timer = setTimeout(save, 1500)
   })
@@ -147,5 +158,6 @@ export function startPersistingCache(qc: QueryClient): void {
 // Wipe persisted data — call when this device loses auth, so a revoked kiosk or a
 // logged-out phone keeps no household snapshot on disk.
 export function clearPersistedCache(): void {
+  wiped = true
   void idbDel()
 }

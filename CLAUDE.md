@@ -181,7 +181,7 @@ npm test               # vitest run (pure-logic unit tests; *.d1.test.ts exclude
 npm run test:d1        # the REAL-RUNTIME suite: the Worker in workerd against a real D1 +
                        #   R2 + the DO (vitest.d1.config.ts; helpers functions/test/d1.ts).
                        #   Needs dist/ → run after a build. CI runs it after check:bundle.
-npm run test:watch     # vitest watch
+npm run test:watch     # vitest watch · npm run test:coverage = the same run + v8 floors per directory (vitest.config.ts; not a CI step)
 npm run e2e            # Playwright (boots its own Vite, stubs every /api/* — no D1/secrets)
 npm run e2e:ci         # …in CI's shape (workers 1, retries 0). Run THIS before pushing
                        #   anything that touches shared machinery — see the note below.

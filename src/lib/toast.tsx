@@ -384,6 +384,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       entriesRef.current.forEach((e) => {
         if (e.kind === 'deferred') e.onCommit?.()
       })
+      // Their timers are still armed: an entry left in the stack would commit a second time.
+      entriesRef.current = []
       if (dismissTimer.current) clearTimeout(dismissTimer.current)
     },
     [],

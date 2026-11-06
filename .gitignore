@@ -4,6 +4,7 @@ node_modules/
 
 # build
 dist/
+coverage/
 .vite/
 .wrangler/
 .wrangler-e2e/
