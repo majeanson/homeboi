@@ -120,7 +120,7 @@ describe('ce qu’on y écrit ensemble', () => {
     expect(await notes(b, id)).toEqual([expect.objectContaining({ id: n, text: 'Hôtel', category: 'hotel', author_household_id: a.householdId, author_label: 'Maisonnée st-notes-a' })])
 
     await okJson(b.fetch('/api/shared-trip-notes', { method: 'PATCH', body: { id: n, text: 'Hôtel Percé' } }))
-    expect((await notes(a, id))[0].text, 'last write wins, any member').toBe('Hôtel Percé')
+    expect((await notes(a, id))[0]!.text, 'last write wins, any member').toBe('Hôtel Percé')
 
     await okJson(b.fetch('/api/shared-trip-notes', { method: 'DELETE', body: { id: n } }))
     expect(await notes(a, id)).toEqual([])
@@ -177,8 +177,8 @@ describe('partir', () => {
 
     const copy = (await okJson<{ notes: { text: string; media_key: string | null; member_id: string | null }[] }>(b.fetch(`/api/trip-notes?tripId=${left.id}`))).notes
     expect(copy[0]).toMatchObject({ text: 'Hôtel', member_id: null })
-    expect(copy[0].media_key, 'self-contained').not.toBe(doc.key)
-    expect(await stored(copy[0].media_key!)).toBe(true)
+    expect(copy[0]!.media_key, 'self-contained').not.toBe(doc.key)
+    expect(await stored(copy[0]!.media_key!)).toBe(true)
     const items = (await okJson<{ items: { text: string }[] }>(b.fetch(`/api/trip-packing?tripId=${left.id}`))).items
     expect(items.map((i) => i.text), 'only this household’s bags return').toEqual(['Tente'])
   })

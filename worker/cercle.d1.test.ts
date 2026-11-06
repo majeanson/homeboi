@@ -127,7 +127,7 @@ describe('la galerie d’une personne', () => {
     expect(await gallery(s, id)).toEqual([expect.objectContaining({ id: pic.id, photoKey: key, caption: 'Carte' })])
 
     await okJson(s.fetch('/api/cercle-photos', { method: 'PATCH', body: { id: pic.id, caption: 'Carte d’assurance' } }))
-    expect((await gallery(s, id))[0].caption).toBe('Carte d’assurance')
+    expect((await gallery(s, id))[0]?.caption).toBe('Carte d’assurance')
 
     await okJson(s.fetch('/api/cercle-photos', { method: 'DELETE', body: { id: pic.id } }))
     expect(await gallery(s, id)).toEqual([])
@@ -212,13 +212,13 @@ describe('les groupes', () => {
 
     await join(s, id, a, 'contact')
     await join(s, id, a, 'contact')
-    expect((await circle(s)).groups[0].memberKeys, 'joining twice is one membership').toEqual([{ personId: a, personKind: 'contact' }])
+    expect((await circle(s)).groups[0]!.memberKeys, 'joining twice is one membership').toEqual([{ personId: a, personKind: 'contact' }])
 
     await okJson(s.fetch('/api/cercle-groups', { method: 'PATCH', body: { id, name: 'Les Tremblay', kind: 'pas-un-genre' } }))
     expect((await circle(s)).groups[0]).toMatchObject({ name: 'Les Tremblay', kind: 'family' })
 
     await okJson(s.fetch('/api/cercle-groups', { method: 'DELETE', body: { groupId: id, personId: a, personKind: 'contact' } }))
-    expect((await circle(s)).groups[0].memberKeys).toEqual([])
+    expect((await circle(s)).groups[0]!.memberKeys).toEqual([])
 
     await join(s, id, a, 'contact')
     await okJson(s.fetch('/api/cercle-groups', { method: 'DELETE', body: { id } }))
@@ -248,7 +248,7 @@ describe('les groupes', () => {
     expect(await colours()).toMatchObject({ lea: '#445566', rex: '#445566' })
 
     await okJson(s.fetch('/api/cercle-groups', { method: 'PATCH', body: { id, colour: null } }))
-    expect((await circle(s)).groups[0].colour).toBeNull()
+    expect((await circle(s)).groups[0]!.colour).toBeNull()
     expect((await colours()).lea, 'their prior colour is unknowable').toBe('#445566')
   })
 
@@ -270,6 +270,6 @@ describe('les groupes', () => {
     const id = await group(s, { name: 'Amis' })
     await join(s, id, a, 'contact')
     await okJson(s.fetch('/api/cercle', { method: 'DELETE', body: { id: a } }))
-    expect((await circle(s)).groups[0].memberKeys).toEqual([])
+    expect((await circle(s)).groups[0]!.memberKeys).toEqual([])
   })
 })

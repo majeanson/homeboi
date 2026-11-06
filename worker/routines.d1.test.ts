@@ -39,7 +39,7 @@ describe('une routine', () => {
   it('is built, read with its owner, edited, and deleted with its runs', async () => {
     const s = await household('routines-crud', undefined, { empty: true })
     const zoe = await kid(s)
-    const id = await make(s, zoe, { timeOfDay: 'evening' })
+    const id = (await make(s, zoe, { timeOfDay: 'evening' }))!
     expect(await one(s, id)).toMatchObject({ memberId: zoe, memberName: 'Zoé', name: 'Dodo', timeOfDay: 'evening', doneIdx: [], timers: {} })
 
     await patch(s, { routineId: id, name: ' Grand dodo ', timeOfDay: 'pas-une-heure', cards: [{ label: 'Histoire' }] })
@@ -60,7 +60,7 @@ describe('une routine', () => {
     expect((await s.fetch('/api/routines', { method: 'POST', body: { memberId: zoe, name: '  ' } })).status).toBe(400)
     const id = await make(s, zoe)
     expect((await other.fetch('/api/routines', { method: 'PATCH', body: { routineId: id, cardIdx: 0 } })).status).toBe(404)
-    expect((await one(s, id)).doneIdx).toEqual([])
+    expect((await one(s, id!)).doneIdx).toEqual([])
   })
 
   it('assigned to two kids, it is two routines: Maya ticking her teeth does not tick Léo’s', async () => {
@@ -70,8 +70,8 @@ describe('une routine', () => {
     const { ids } = await okJson<{ ids: string[] }>(s.fetch('/api/routines', { method: 'POST', body: { memberIds: [maya, leo], name: 'Dodo', cards: [{ label: 'Dents' }] } }))
     expect(ids).toHaveLength(2)
     await patch(s, { routineId: ids[0], cardIdx: 0 })
-    expect((await one(s, ids[0])).doneIdx).toEqual([0])
-    expect((await one(s, ids[1])).doneIdx).toEqual([])
+    expect((await one(s, ids[0]!)).doneIdx).toEqual([0])
+    expect((await one(s, ids[1]!)).doneIdx).toEqual([])
   })
 
   it('a deck is cleaned on the way in: the timer in range, the tip short, a bad media key dropped', async () => {
@@ -83,11 +83,11 @@ describe('une routine', () => {
         { label: 'Texte', seconds: 'beaucoup' },
       ],
     })
-    const [long, zero, text] = (await one(s, id)).cards
-    expect(long.seconds).toBe(3600)
-    expect(long.tip).toHaveLength(200)
-    expect(long.clipKey).toBeUndefined()
-    expect(long.photoKey).toBe('rcp_ok-1')
+    const [long, zero, text] = (await one(s, id!)).cards
+    expect(long?.seconds).toBe(3600)
+    expect(long?.tip).toHaveLength(200)
+    expect(long!.clipKey).toBeUndefined()
+    expect(long?.photoKey).toBe('rcp_ok-1')
     expect(zero).toEqual({ label: 'Zéro' })
     expect(text).toEqual({ label: 'Texte' })
   })
@@ -96,7 +96,7 @@ describe('une routine', () => {
 describe('la journée d’une routine', () => {
   it('a tap ticks and unticks a card, and « Recommencer » wipes the day', async () => {
     const s = await household('routines-day', undefined, { empty: true })
-    const id = await make(s, await kid(s))
+    const id = (await make(s, await kid(s)))!
     expect((await patch(s, { routineId: id, cardIdx: 1 })).doneIdx).toEqual([1])
     await patch(s, { routineId: id, cardIdx: 0 })
     await patch(s, { routineId: id, cardIdx: 0 })
@@ -111,7 +111,7 @@ describe('la journée d’une routine', () => {
 
   it('the day empties at local midnight: yesterday’s ticks are not today’s', async () => {
     const s = await household('routines-midnight', undefined, { empty: true })
-    const id = await make(s, await kid(s))
+    const id = (await make(s, await kid(s)))!
     await patch(s, { routineId: id, cardIdx: 0 })
     const today = localDayStart(new Date())
     await env.DB.prepare('UPDATE routine_runs SET date = ? WHERE routine_id = ?').bind(addLocalDays(today, -1), id).run()
@@ -122,7 +122,7 @@ describe('la journée d’une routine', () => {
 
   it('a timer survives the app closing, sits beside the ticks, and clears', async () => {
     const s = await household('routines-timer', undefined, { empty: true })
-    const id = await make(s, await kid(s))
+    const id = (await make(s, await kid(s)))!
     await patch(s, { routineId: id, cardIdx: 0, timer: { endsAt: 2000000000 } })
     await patch(s, { routineId: id, cardIdx: 1 })
     await patch(s, { routineId: id, cardIdx: 1, timer: { left: 90 } })

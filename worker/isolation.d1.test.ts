@@ -100,7 +100,7 @@ describe('tenant isolation', () => {
     let next = 0
     await Promise.all(
       Array.from({ length: WORKERS }, async () => {
-        while (next < jobs.length) await jobs[next++]()
+        while (next < jobs.length) await jobs[next++]!()
       }),
     )
 

@@ -606,7 +606,7 @@ export function pageMeta(html: string): { title: string | null; image: string | 
   // <title> are written for a share card or a tab (« Recette de carrés au sucre |
   // Recettes du Québec ») — they lose their « | Site » tail and serve only without an h1.
   const h1s = [...html.matchAll(/<h1\b[^>]*>([\s\S]*?)<\/h1>/gi)].map((m) => clean(m[1] ?? '')).filter((t) => t.length >= 2 && t.length <= 120)
-  let title = h1s.length === 1 ? h1s[0] : null
+  let title = h1s.length === 1 ? (h1s[0] ?? null) : null
   if (!title) {
     const o = og('title')
     title = o ? stripTitleTail(o) : null

@@ -87,7 +87,7 @@ describe('C4 — several recipes on one page', () => {
     expect(parseRecipeJsonLdBlocks(two, 9)?.title).toBe('Sauce au caramel')
   })
   it('one recipe repeated is not a choice', () => {
-    expect(parseRecipeJsonLdBlocks([two[0]['@graph'][0], two[0]['@graph'][2]])?.candidates).toBeUndefined()
+    expect(parseRecipeJsonLdBlocks([two[0]!['@graph'][0], two[0]!['@graph'][2]])?.candidates).toBeUndefined()
   })
 })
 

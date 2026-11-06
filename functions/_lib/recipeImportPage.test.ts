@@ -15,8 +15,8 @@ describe('a page the cook’s browser captured reads like the page we fetched', 
   // fetched HTML does — same parsers, same result.
   const blocksOf = (html: string) =>
     [...html.matchAll(/<script\b[^>]*type=["']application\/(ld\+)?json["'][^>]*>([\s\S]*?)<\/script>/gi)]
-      .filter((m) => m[1] || m[2].includes('"Recipe"')) // the bookmark's own filter
-      .map((m) => m[2])
+      .filter((m) => m[1] || m[2]!.includes('"Recipe"')) // the bookmark's own filter
+      .map((m) => m[2]!)
   const withLd = loadCorpus().filter((e) => e.expected?.structuring === 'jsonld')
 
   it('there are JSON-LD pages to compare', () => expect(withLd.length).toBeGreaterThanOrEqual(6))

@@ -44,7 +44,7 @@ function unknownTables(files: string[], live: Set<string>): Map<string, string[]
       .join('\n')
     const ctes = new Set([...code.matchAll(/\bWITH\s+(?:RECURSIVE\s+)?([a-z_]\w*)\s*(?:\([^)]*\))?\s+AS\b/g)].map((m) => m[1]))
     for (const m of code.matchAll(/\b(?:FROM|INTO|UPDATE|JOIN)\s+([a-z_][a-z0-9_]*)\b/g)) {
-      const name = m[1]
+      const name = m[1]!
       if (live.has(name) || ctes.has(name) || SQLITE_OWN.has(name)) continue
       const rel = relative(root, f).split(sep).join('/')
       unknown.set(name, [...new Set([...(unknown.get(name) ?? []), rel])])

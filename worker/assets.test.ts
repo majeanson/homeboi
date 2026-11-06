@@ -22,7 +22,7 @@ function assetsStub(files: Record<string, { body: string; type: string }>) {
       const hit = files[path]
       if (hit) return new Response(hit.body, { status: 200, headers: { 'content-type': hit.type } })
       // not_found_handling = "single-page-application"
-      return new Response(files['/index.html'].body, {
+      return new Response(files['/index.html']!.body, {
         status: 200,
         headers: { 'content-type': 'text/html' },
       })

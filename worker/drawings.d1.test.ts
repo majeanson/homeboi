@@ -83,7 +83,7 @@ describe('la galerie', () => {
     expect(await stored(scene.key)).toBe(false)
     expect(await stored(next.key)).toBe(true)
     await env.DB.prepare('UPDATE drawings SET created_at = created_at - 200 WHERE id = ?').bind(other).run()
-    expect((await gallery(s))[0].id, 'a continued drawing leads').toBe(id)
+    expect((await gallery(s))[0]!.id, 'a continued drawing leads').toBe(id)
 
     // Continued with a scene, so the DELETE below has both blobs to free.
     const nextScene = await blob(s, 'application/json')

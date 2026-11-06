@@ -42,19 +42,19 @@ describe('les remarques', () => {
     expect(res.status).toBe(200)
 
     const [r] = await list(a)
-    expect(r.status).toBe('open')
-    expect(r.kind).toBe('bug')
-    expect(r.seen_build).toBe('a3f21c9bb')
-    expect(r.seen_path).toBe('/kitchen?sub=recettes')
+    expect(r?.status).toBe('open')
+    expect(r?.kind).toBe('bug')
+    expect(r?.seen_build).toBe('a3f21c9bb')
+    expect(r?.seen_path).toBe('/kitchen?sub=recettes')
     // The opening entry exists from the start, so the journal is never empty.
-    expect(r.events.map((e) => e.kind)).toEqual(['filed'])
+    expect(r!.events.map((e) => e.kind)).toEqual(['filed'])
   })
 
   it('defaults an unknown kind to a bug rather than refusing the report', async () => {
     // Someone trying to tell us something broke must not be stopped by a bad enum.
     const a = await household('rm-kind')
     await file(a, { kind: 'catastrophe', title: 'Quelque chose' })
-    expect((await list(a))[0].kind).toBe('bug')
+    expect((await list(a))[0]?.kind).toBe('bug')
   })
 
   it('refuses a remark with no title', async () => {
@@ -69,7 +69,7 @@ describe('les remarques', () => {
     // explanation. Which is the one thing the feature exists to keep.
     const a = await household('rm-journal')
     await file(a, { title: 'La liste saute' })
-    const id = (await list(a))[0].id
+    const id = (await list(a))[0]!.id
     // The events usually land in the SAME SECOND — which is the point. Timestamps here
     // are unix seconds, so a journal ordered on created_at alone comes back shuffled (it
     // did: « shipped, shipped, filed, reopened, confirmed »). The handler tiebreaks on
@@ -96,7 +96,7 @@ describe('les remarques', () => {
       body: { id, action: 'reopen', note: 'ça le fait encore avec les demi-portions' },
     })
     expect(no.status).toBe(200)
-    expect((await list(a))[0].status).toBe('open')
+    expect((await list(a))[0]?.status).toBe('open')
 
     await env.DB.prepare(
       "INSERT INTO remark_events (id, remark_id, kind, text, sha, author_member_id, created_at) VALUES ('ev_s2', ?1, 'shipped', 'deuxième tentative', 'bbbbbbb', NULL, ?2)",
@@ -108,8 +108,8 @@ describe('les remarques', () => {
     const yes = await a.fetch('/api/remarks', { method: 'PATCH', body: { id, action: 'confirm' } })
     expect(yes.status).toBe(200)
 
-    const r = (await list(a))[0]
-    expect(r.status).toBe('confirmed')
+    const r = (await list(a))[0]!
+    expect(r?.status).toBe('confirmed')
     expect(r.events.map((e) => e.kind)).toEqual(['filed', 'shipped', 'reopened', 'shipped', 'confirmed'])
     // Both explanations AND the rejection survived, in order.
     const said = r.events.map((e) => e.text).filter(Boolean)
@@ -123,13 +123,13 @@ describe('les remarques', () => {
     // possible way.
     const a = await household('rm-face')
     await file(a, { title: 'Quelque chose' })
-    const id = (await list(a))[0].id
+    const id = (await list(a))[0]!.id
     await env.DB.prepare(
       "INSERT INTO remark_events (id, remark_id, kind, text, sha, author_member_id, created_at) VALUES ('ev_face', ?1, 'shipped', 'x', 'ccccccc', NULL, ?2)",
     )
       .bind(id, Math.floor(Date.now() / 1000))
       .run()
-    const shipped = (await list(a))[0].events.find((e) => e.kind === 'shipped')!
+    const shipped = (await list(a))[0]!.events.find((e) => e.kind === 'shipped')!
     expect(shipped.author_member_id).toBeNull()
   })
 
@@ -138,7 +138,7 @@ describe('les remarques', () => {
     // handler remembering to check. A re-run of the workflow must write nothing.
     const a = await household('rm-once')
     await file(a, { title: 'Quelque chose' })
-    const id = (await list(a))[0].id
+    const id = (await list(a))[0]!.id
     const at = Math.floor(Date.now() / 1000)
     const ins = (evId: string) =>
       env.DB.prepare(
@@ -150,7 +150,7 @@ describe('les remarques', () => {
     await ins('ev_once_1')
     const second = await ins('ev_once_2')
     expect(second.meta.changes).toBe(0)
-    expect((await list(a))[0].events.filter((e) => e.kind === 'shipped')).toHaveLength(1)
+    expect((await list(a))[0]!.events.filter((e) => e.kind === 'shipped')).toHaveLength(1)
 
     // …but a DIFFERENT commit on the same remark is allowed: a second fix attempt is
     // the normal case, and over-tightening this is how the second explanation is lost.
@@ -159,13 +159,13 @@ describe('les remarques', () => {
     )
       .bind(id, at + 1)
       .run()
-    expect((await list(a))[0].events.filter((e) => e.kind === 'shipped')).toHaveLength(2)
+    expect((await list(a))[0]!.events.filter((e) => e.kind === 'shipped')).toHaveLength(2)
   })
 
   it('a deleted remark reads as gone, and stays gone through a poll', async () => {
     const a = await household('rm-del')
     await file(a, { title: 'À supprimer' })
-    const id = (await list(a))[0].id
+    const id = (await list(a))[0]!.id
     expect((await a.fetch('/api/remarks', { method: 'DELETE', body: { id } })).status).toBe(200)
     expect(await list(a)).toHaveLength(0)
     // Soft, so the row is still there — which is what lets the deploy callback answer

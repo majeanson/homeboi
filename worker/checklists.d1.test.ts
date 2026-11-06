@@ -32,7 +32,7 @@ describe('un modèle « Avant de partir »', () => {
     const other = await household('tpl-b', undefined, { empty: true })
     expect((await s.fetch('/api/todo-templates', { method: 'POST', body: { title: ' ' } })).status).toBe(400)
     const id = await add(s, 'Gros', Array.from({ length: 80 }, (_, i) => `Item ${i}`))
-    expect((await templates(s))[0].items).toHaveLength(50)
+    expect((await templates(s))[0]?.items).toHaveLength(50)
     await okJson(other.fetch('/api/todo-templates', { method: 'PATCH', body: { id, title: 'Volé', items: [] } }))
     await okJson(other.fetch('/api/todo-templates', { method: 'DELETE', body: { id } }))
     expect((await templates(s))[0]).toMatchObject({ title: 'Gros' })

@@ -18,8 +18,8 @@ describe('isolation sweep — id field names', () => {
     for (const file of sourceFiles(join(root, 'functions', 'api'))) {
       const src = readScanned(file)
       const names = new Set<string>()
-      for (const m of src.matchAll(/\bbody\??\.(\w+Id|id)\b/g)) names.add(m[1])
-      for (const m of src.matchAll(/searchParams\.get\('(\w+Id|id)'\)/g)) names.add(m[1])
+      for (const m of src.matchAll(/\bbody\??\.(\w+Id|id)\b/g)) names.add(m[1]!)
+      for (const m of src.matchAll(/searchParams\.get\('(\w+Id|id)'\)/g)) names.add(m[1]!)
       for (const n of names) if (!known.has(n)) missing.set(n, [...(missing.get(n) ?? []), relative(root, file)])
     }
     expect(

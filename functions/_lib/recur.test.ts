@@ -168,14 +168,14 @@ describe('expandRange', () => {
     const start = localDayStart(new Date(WED * 1000))
     const occ = expandRange(WED, r, start, start + 21 * 86400)
     expect(occ).toHaveLength(3)
-    expect(occ[0]).toBeLessThan(occ[1])
+    expect(occ[0]).toBeLessThan(occ[1]!)
   })
   it('lists a yearly series across a 2-year window (anchor year + next)', () => {
     const r = { freq: 'yearly' as const }
     const start = localDayStart(new Date(WED * 1000))
     const occ = expandRange(WED, r, start, start + 400 * 86400)
     expect(occ).toHaveLength(2)
-    expect(occ[0]).toBeLessThan(occ[1])
+    expect(occ[0]).toBeLessThan(occ[1]!)
   })
 })
 

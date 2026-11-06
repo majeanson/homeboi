@@ -97,10 +97,10 @@ describe('upgradeTakeout (a pre-0142 copy)', () => {
   it('turns each live mot into an addressed fridge note — author and recipient the right way round', () => {
     const t = upgradeTakeout({ ...base, tables: { mots: [MOT, { ...MOT, id: 'm2', deleted_at: 7 }], notes: [{ id: 'n1', text: 'lait' }] } })
     expect(t.tables.mots).toBeUndefined()
-    const moved = t.tables.notes.find((n) => n.id === 'm1')!
+    const moved = t.tables.notes!.find((n) => n.id === 'm1')!
     expect(moved).toMatchObject({ member_id: 'papa', for_member_id: 'lea', saved_at: 9, text: 'Bravo' })
     expect(moved).not.toHaveProperty('reply_to') // the threads went with the table
-    expect(t.tables.notes.map((n) => n.id).sort()).toEqual(['m1', 'n1']) // the deleted one stays gone
+    expect(t.tables.notes!.map((n) => n.id).sort()).toEqual(['m1', 'n1']) // the deleted one stays gone
   })
 
   it('leaves a copy taken after 0142 exactly as it is', () => {

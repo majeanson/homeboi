@@ -63,10 +63,10 @@ describe('les rendez-vous', () => {
     const start = inDays(1)
     const { id } = await add(mine, { title: 'À moi', startAt: start })
     expect((await edit(other, { id, title: 'Volé', startAt: start })).status).toBe(404)
-    expect((await byId(mine, id)).title).toBe('À moi')
+    expect((await byId(mine, id))?.title).toBe('À moi')
     expect(await byId(other, id), 'and the stranger cannot read it').toBeUndefined()
     await okJson(other.fetch('/api/events', { method: 'DELETE', body: { id } }))
-    expect((await byId(mine, id)).title, 'nor delete it').toBe('À moi')
+    expect((await byId(mine, id))?.title, 'nor delete it').toBe('À moi')
   })
 
   it('« Avec » is one answer — a business wins over a contact, and it never clears « Qui »', async () => {
@@ -75,8 +75,8 @@ describe('les rendez-vous', () => {
     const lea = await okJson<{ id: string }>(s.fetch('/api/members', { method: 'POST', body: { name: 'Léa' } }))
     const tante = await okJson<{ id: string }>(s.fetch('/api/cercle', { method: 'POST', body: { firstName: 'Tante' } }))
     const { id } = await add(s, { businessId: biz.id, contactId: tante.id, memberId: lea.id })
-    const row = await byId(s, id)
-    expect(row.business_id).toBe(biz.id)
+    const row = (await byId(s, id))!
+    expect(row?.business_id).toBe(biz.id)
     expect(row.business_name, 'the join names the business on the read').toBe('Clinique du Parc')
     expect(row.contact_id, 'exactly one external counterpart').toBeNull()
     expect(row.member_id, 'the vet is still FOR someone').toBe(lea.id)
@@ -89,7 +89,7 @@ describe('les rendez-vous', () => {
   it('a window is under a day, after the start, and means nothing on an all-day event', async () => {
     const s = await household('events-window', undefined, { empty: true })
     const start = inDays(2)
-    const endOf = async (endAt: unknown, allDay = false) => (await byId(s, (await add(s, { startAt: start, endAt, allDay })).id)).end_at
+    const endOf = async (endAt: unknown, allDay = false) => (await byId(s, (await add(s, { startAt: start, endAt, allDay })).id))!.end_at
     expect(await endOf(start + 5400), 'ninety minutes is a window').toBe(start + 5400)
     expect(await endOf(start + 24 * 3600), 'exactly a day still is').toBe(start + 24 * 3600)
     expect(await endOf(start + 24 * 3600 + 1), 'a span past a day is a Voyage, not an event').toBeNull()
@@ -106,13 +106,13 @@ describe('les rendez-vous', () => {
       leadSeconds: 30 * 86400,
       notes: 'x'.repeat(2500),
     })
-    const row = await byId(s, id)
-    expect(row.car_id).toBe('auto-1')
+    const row = (await byId(s, id))!
+    expect(row?.car_id).toBe('auto-1')
     const riders = JSON.parse(row.passengers!) as string[]
     expect(riders.slice(0, 3), 'deduped, trimmed, strings only').toEqual(['a', 'b', 'k0'])
     expect(riders).toHaveLength(12)
     expect(row.lead_seconds, 'a longer lead has nothing to highlight against').toBe(7 * 86400)
-    expect(row.notes).toHaveLength(2000)
+    expect(row?.notes).toHaveLength(2000)
 
     await okJson(edit(s, { id, title: row.title, startAt: row.start_at, carId: '   ', passengers: [], leadSeconds: 0, notes: '  ' }))
     expect(await byId(s, id), 'each one clears back to « not set », never a blank string').toMatchObject({
@@ -130,8 +130,8 @@ describe('les rendez-vous', () => {
     const future = await add(s, { title: 'Demain', startAt: inDays(1) })
 
     expect((await list(s)).map((e) => e.title), 'ordered by start, the anchor first').toEqual(['Bac bleu', 'Demain'])
-    expect((await byId(s, past.id)).title, 'the peek still finds a past rendez-vous by id').toBe('Hier')
-    expect(JSON.parse((await byId(s, weekly.id)).recur_json!)).toMatchObject({ freq: 'weekly' })
+    expect((await byId(s, past.id))?.title, 'the peek still finds a past rendez-vous by id').toBe('Hier')
+    expect(JSON.parse((await byId(s, weekly.id))!.recur_json!)).toMatchObject({ freq: 'weekly' })
     expect(future.id).toBeTruthy()
   })
 

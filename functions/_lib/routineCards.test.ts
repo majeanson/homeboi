@@ -22,19 +22,19 @@ describe('foldCardMedia', () => {
       { icon: '⭐', label: 'cleared', clipKey: '', photoKey: '' },
     ])
     const out = foldCardMedia(deck, JSON.stringify(['rn_col', 'rn_col2']), JSON.stringify(['rcp_col', 'rcp_col2']))
-    expect(out[0].clipKey).toBe('rn_own')
-    expect(out[0].photoKey).toBe('rcp_own')
+    expect(out[0]?.clipKey).toBe('rn_own')
+    expect(out[0]?.photoKey).toBe('rcp_own')
     // The field was PRESENT and empty: the column must not resurrect it.
-    expect(out[1].clipKey).toBeUndefined()
-    expect(out[1].photoKey).toBeUndefined()
+    expect(out[1]!.clipKey).toBeUndefined()
+    expect(out[1]!.photoKey).toBeUndefined()
   })
 
   it('junk never becomes a key, and missing columns read as none', () => {
     const deck = JSON.stringify([{ icon: '⭐', label: 'x', clipKey: 42, photoKey: '../etc' }])
     const out = foldCardMedia(deck, null, undefined)
-    expect(out[0].clipKey).toBeUndefined()
-    expect(out[0].photoKey).toBeUndefined()
-    expect(out[0].label).toBe('x')
+    expect(out[0]!.clipKey).toBeUndefined()
+    expect(out[0]!.photoKey).toBeUndefined()
+    expect(out[0]?.label).toBe('x')
   })
 
   it('a short or corrupt side column reads as all-none, never throws', () => {

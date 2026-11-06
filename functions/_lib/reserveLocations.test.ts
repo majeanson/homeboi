@@ -33,8 +33,8 @@ describe('cleanReserveLocations', () => {
   it('trims and caps the name and id length', () => {
     const long = 'x'.repeat(80)
     const [out] = cleanReserveLocations([{ id: '  a  ', name: `  ${long}  ` }])
-    expect(out.id).toBe('a')
-    expect(out.name.length).toBe(40)
+    expect(out?.id).toBe('a')
+    expect(out?.name.length).toBe(40)
   })
 
   it('caps the list at 12 entries', () => {

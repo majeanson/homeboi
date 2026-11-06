@@ -72,7 +72,7 @@ describe('account', () => {
     expect((await phone.fetch('/api/board')).status).toBe(401)
     expect(((await (await phone.fetch('/api/auth/me')).json()) as { signedIn: boolean }).signedIn).toBe(false)
     expect((await laptop.fetch('/api/board')).status).toBe(401)
-    const fresh = (res.headers as unknown as { getSetCookie(): string[] }).getSetCookie().map((c: string) => c.split(';')[0])
+    const fresh = (res.headers as unknown as { getSetCookie(): string[] }).getSetCookie().map((c: string) => c.split(';')[0]!)
     const cookie = fresh.join('; ')
     const csrf = fresh.find((c: string) => c.startsWith('bb_csrf='))!.slice('bb_csrf='.length)
     expect((await anon('/api/board', { headers: { Cookie: cookie, 'X-CSRF-Token': csrf } })).status).toBe(200)

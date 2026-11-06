@@ -58,10 +58,10 @@ describe('minting the credential', () => {
   it('lands in the paired-devices list as kind=agent, revocable like any device', async () => {
     const res = await op.fetch('/api/pair/devices')
     const { devices } = (await res.json()) as { devices: { label: string; kind: string; revoked_at: number | null }[] }
-    const row = devices.find((d) => d.label === 'Agent test')
+    const row = devices.find((d) => d.label === 'Agent test')!
     expect(row).toBeDefined()
-    expect(row!.kind).toBe('agent')
-    expect(row!.revoked_at).toBeNull()
+    expect(row.kind).toBe('agent')
+    expect(row.revoked_at).toBeNull()
   })
 })
 
@@ -208,7 +208,7 @@ describe('the tools actually read the household', () => {
       result: { isError: boolean; content: { type: string; text: string }[]; structuredContent: Record<string, unknown> }
     }
     expect(out.result.isError).toBe(false)
-    expect(out.result.content[0].type).toBe('text')
+    expect(out.result.content[0]?.type).toBe('text')
     // The harness loads the examples into every household (functions/test/d1.ts), so
     // this is real data.
     expect(Object.keys(out.result.structuredContent).length).toBeGreaterThan(0)
@@ -218,7 +218,7 @@ describe('the tools actually read the household', () => {
     await op.fetch('/api/list', { method: 'POST', body: { text: 'sirop d’érable' } })
     const res = await rpc(msg('tools/call', { name: 'shopping_list' }))
     const out = (await res.json()) as { result: { content: { text: string }[] } }
-    expect(out.result.content[0].text).toContain('sirop d’érable')
+    expect(out.result.content[0]?.text).toContain('sirop d’érable')
   })
 
   it('household_snapshot renders dated lines without spending an AI call', async () => {
@@ -226,7 +226,7 @@ describe('the tools actually read the household', () => {
     expect(res.status).toBe(200)
     const out = (await res.json()) as { result: { isError: boolean; content: { text: string }[] } }
     expect(out.result.isError).toBe(false)
-    expect(out.result.content[0].text.length).toBeGreaterThan(0)
+    expect(out.result.content[0]?.text.length).toBeGreaterThan(0)
   })
 
   it('household_snapshot names a text-less drawing instead of printing a blank note', async () => {
@@ -240,7 +240,7 @@ describe('the tools actually read the household', () => {
       .run()
     const res = await rpc(msg('tools/call', { name: 'household_snapshot' }))
     const out = (await res.json()) as { result: { content: { text: string }[] } }
-    expect(out.result.content[0].text).toContain('(un dessin)')
+    expect(out.result.content[0]?.text).toContain('(un dessin)')
   })
 
   it('calendar_range accepts YYYY-MM-DD and refuses nonsense as a TOOL error', async () => {
@@ -254,7 +254,7 @@ describe('the tools actually read the household', () => {
     expect(bad.status).toBe(200)
     const out = (await bad.json()) as { result: { isError: boolean; content: { text: string }[] } }
     expect(out.result.isError).toBe(true)
-    expect(out.result.content[0].text).toContain('from')
+    expect(out.result.content[0]?.text).toContain('from')
   })
 
   it('recipes_search folds accents, and recipe_get returns the full card', async () => {
@@ -270,7 +270,7 @@ describe('the tools actually read the household', () => {
 
     const one = await rpc(msg('tools/call', { name: 'recipe_get', arguments: { id: card!.id } }))
     const full = (await one.json()) as { result: { content: { text: string }[] } }
-    expect(full.result.content[0].text).toContain('farine')
+    expect(full.result.content[0]?.text).toContain('farine')
   })
 
   it('cannot reach ANOTHER household’s data', async () => {
@@ -278,6 +278,6 @@ describe('the tools actually read the household', () => {
     await other.fetch('/api/list', { method: 'POST', body: { text: 'secret du voisin' } })
     const res = await rpc(msg('tools/call', { name: 'shopping_list' }))
     const out = (await res.json()) as { result: { content: { text: string }[] } }
-    expect(out.result.content[0].text).not.toContain('secret du voisin')
+    expect(out.result.content[0]!.text).not.toContain('secret du voisin')
   })
 })

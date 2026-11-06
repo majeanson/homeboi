@@ -24,9 +24,9 @@ describe('sanitizeIntake', () => {
   })
 
   it('normalises a bad birthday/gender to null', () => {
-    const out = sanitizeIntake({ self: { firstName: 'Bo', birthday: 'soon', gender: 'x' } })
-    expect(out!.self.birthday).toBeNull()
-    expect(out!.self.gender).toBeNull()
+    const out = sanitizeIntake({ self: { firstName: 'Bo', birthday: 'soon', gender: 'x' } })!
+    expect(out.self.birthday).toBeNull()
+    expect(out.self.gender).toBeNull()
   })
 
   it('drops unnamed household entries but keeps named ones', () => {
@@ -35,7 +35,7 @@ describe('sanitizeIntake', () => {
       household: [{ firstName: 'Kid' }, { firstName: '' }, { lastName: 'noFirst' }],
     })
     expect(out!.household).toHaveLength(1)
-    expect(out!.household[0].firstName).toBe('Kid')
+    expect(out!.household[0]?.firstName).toBe('Kid')
   })
 
   it('keeps only valid links (in-range indices, known type, no self-loop)', () => {
@@ -106,8 +106,8 @@ describe('sanitizeIntake', () => {
     const owned = new Set(['ik_self', 'ik_rex'])
     const clean = redactUnownedIntakeMedia(out, owned)
     expect(clean.self.photoKey).toBe('ik_self')
-    expect(clean.pets[0].photoKey).toBe('ik_rex')
-    expect(clean.household[0].photoKey).toBeNull() // dropped — not owned
+    expect(clean.pets[0]?.photoKey).toBe('ik_rex')
+    expect(clean.household[0]!.photoKey).toBeNull() // dropped — not owned
   })
 
   it('redactUnownedIntakeMedia drops everything when nothing is owned', () => {

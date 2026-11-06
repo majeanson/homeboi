@@ -151,7 +151,7 @@ describe('healTruncatedSteps', () => {
   it('MAX_STEP_LEN is 1000 and does not chop a long real step', () => {
     expect(MAX_STEP_LEN).toBe(1000)
     const long = 'A'.repeat(700) + '.'
-    expect(refineSteps([long])[0].length).toBe(701)
+    expect(refineSteps([long])[0]?.length).toBe(701)
   })
 })
 
@@ -333,14 +333,14 @@ describe('parseRecipeJsonLd', () => {
       totalTime: 'PT45M',
       image: 'https://x.com/spag.jpg',
     })
-    const r = parseRecipeJsonLd(html)
+    const r = parseRecipeJsonLd(html)!
     expect(r).not.toBeNull()
-    expect(r!.title).toBe('Spaghetti maison')
-    expect(r!.ingredients).toHaveLength(3)
-    expect(r!.steps).toEqual(['Faire bouillir les pâtes.', 'Mijoter la sauce.'])
-    expect(r!.image).toBe('https://x.com/spag.jpg')
-    expect(r!.servings).toBe(4)
-    expect(r!.times).toEqual({ prep: 15, cook: 30, total: 45 })
+    expect(r.title).toBe('Spaghetti maison')
+    expect(r.ingredients).toHaveLength(3)
+    expect(r.steps).toEqual(['Faire bouillir les pâtes.', 'Mijoter la sauce.'])
+    expect(r.image).toBe('https://x.com/spag.jpg')
+    expect(r.servings).toBe(4)
+    expect(r.times).toEqual({ prep: 15, cook: 30, total: 45 })
   })
 
   it('returns null for a page with no Recipe JSON-LD', () => {

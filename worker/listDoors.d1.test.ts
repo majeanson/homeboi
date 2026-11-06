@@ -35,7 +35,7 @@ describe('the doors onto the list', () => {
     const r = await capture(s, 'œufs')
     const after = await lines(s)
     expect(after.map((l) => l.text), 'no twin beside « Oeufs »').toEqual(['Oeufs'])
-    expect(after[0].checked_at, 'the ticked line comes back to buy').toBeNull()
+    expect(after[0]!.checked_at, 'the ticked line comes back to buy').toBeNull()
     expect(r.routed.cleanup, 'a correction must not delete a line this capture did not make').toEqual([])
 
     // Running low goes the same way: the flag is new, the line is the one already there.

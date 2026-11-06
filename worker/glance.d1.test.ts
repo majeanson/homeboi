@@ -106,8 +106,8 @@ describe('le journal d’IA', () => {
     await okJson(s.fetch('/api/ai-errors', { method: 'POST', body: { feature: '  recap  ', message: 'x'.repeat(600) } }))
     await okJson(other.fetch('/api/ai-errors', { method: 'POST', body: { feature: 'ask', message: 'ailleurs' } }))
     const [row] = await log(s)
-    expect(row.feature).toBe('recap')
-    expect(row.message).toHaveLength(500)
+    expect(row?.feature).toBe('recap')
+    expect(row?.message).toHaveLength(500)
     expect((await s.fetch('/api/ai-errors', { method: 'POST', body: { feature: 'x' } })).status).toBe(400)
 
     await okJson(s.fetch('/api/ai-errors', { method: 'DELETE' }))
@@ -154,7 +154,7 @@ describe('partager une famille', () => {
     const made = await okJson<{ id: string }>(share(s, { payload: { self: { firstName: 'Marie', photoKey: mine }, household: [{ firstName: 'Volé', photoKey: theirs }] } }))
     const { payload: p } = await okJson<{ payload: { self: { photoKey: string | null }; household: { photoKey: string | null }[] } }>(s.fetch(`/api/family-share?s=${made.id}`))
     expect(p.self.photoKey, 'a share-owned copy').toMatch(/^fs_/)
-    expect(p.household[0].photoKey, 'an arbitrary key cannot be smuggled in').toBeNull()
+    expect(p.household[0]!.photoKey, 'an arbitrary key cannot be smuggled in').toBeNull()
     expect(await env.PHOTOS!.head(mine), 'the original stays with its contact').not.toBeNull()
   })
 

@@ -26,13 +26,13 @@ async function fileOne(label: string) {
   const { remarks } = (await (await a.fetch('/api/remarks')).json()) as {
     remarks: { id: string; status: string; events: { kind: string; text: string; sha: string | null }[] }[]
   }
-  return { a, id: remarks[0].id }
+  return { a, id: remarks[0]!.id }
 }
 
 const read = async (a: Awaited<ReturnType<typeof household>>) =>
   ((await (await a.fetch('/api/remarks')).json()) as {
     remarks: { id: string; status: string; events: { kind: string; text: string; sha: string | null }[] }[]
-  }).remarks[0]
+  }).remarks[0]!
 
 describe('POST /api/remarks/shipped', () => {
   it('refuses with NO secret at all — checked first, because everything else assumes it', async () => {
@@ -63,8 +63,8 @@ describe('POST /api/remarks/shipped', () => {
     expect(res.status).toBe(200)
 
     const r = await read(a)
-    expect(r.status).toBe('shipped')
-    const shipped = r.events.find((e) => e.kind === 'shipped')!
+    expect(r?.status).toBe('shipped')
+    const shipped = r!.events.find((e) => e.kind === 'shipped')!
     // Lower-cased on the way in, so a link built from it is stable.
     expect(shipped.sha).toBe('a3f21c9')
     expect(shipped.text).toBe('la sweep lisait la mauvaise colonne')
@@ -119,8 +119,8 @@ describe('POST /api/remarks/shipped', () => {
     expect(((await res.json()) as { code?: string }).code).toBe('already-confirmed')
 
     const r = await read(a)
-    expect(r.status).toBe('confirmed')
-    expect(r.events.map((e) => e.text)).not.toContain('trop tard')
+    expect(r?.status).toBe('confirmed')
+    expect(r!.events.map((e) => e.text)).not.toContain('trop tard')
   })
 
   it('treats a soft-deleted remark as unknown — a deploy never resurrects one', async () => {

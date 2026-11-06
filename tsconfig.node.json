@@ -13,6 +13,7 @@
     "noImplicitOverride": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
+    "noUncheckedIndexedAccess": true,
     "types": ["@cloudflare/workers-types", "vite/client", "node", "@cloudflare/vitest-plugin/types"]
   },
   "include": ["functions", "worker", "vite.config.ts", "vitest.d1.config.ts"]

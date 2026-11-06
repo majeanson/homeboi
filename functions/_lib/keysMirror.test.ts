@@ -65,8 +65,8 @@ function keyNames(): Record<string, string> {
     // convention one step further in. Plus inline queryKey literals, for the queries
     // that never named a constant at all. Anything the server broadcasts that matches
     // none of these is genuinely heard by nobody.
-    for (const m of read(f).matchAll(/const ([A-Z][A-Z0-9_]*KEY)\s*=\s*\[\s*'([^']+)'/g)) out[m[1]] = m[2]
-    for (const m of read(f).matchAll(/queryKey:\s*\[\s*'([^']+)'/g)) out['inline:' + m[1]] = m[1]
+    for (const m of read(f).matchAll(/const ([A-Z][A-Z0-9_]*KEY)\s*=\s*\[\s*'([^']+)'/g)) out[m[1]!] = m[2]!
+    for (const m of read(f).matchAll(/queryKey:\s*\[\s*'([^']+)'/g)) out['inline:' + m[1]] = m[1]!
   }
   return out
 }
@@ -86,12 +86,12 @@ function clientKeys(): Map<string, Set<string>> {
       if (!/method:\s*['"](POST|PATCH|PUT|DELETE)['"]/.test(scope)) continue
       const declared = scope.match(/affectedKeys:\s*\[([^\]]*)\]/)
       if (!declared) continue
-      const set = out.get(m[1]) ?? new Set<string>()
-      for (const id of declared[1].matchAll(/([A-Z][A-Z0-9_]+_KEY)/g)) {
-        const name = names[id[1]]
+      const set = out.get(m[1]!) ?? new Set<string>()
+      for (const id of declared[1]!.matchAll(/([A-Z][A-Z0-9_]+_KEY)/g)) {
+        const name = names[id[1]!]
         if (name) set.add(name)
       }
-      out.set(m[1], set)
+      out.set(m[1]!, set)
     }
   }
   return out
@@ -155,8 +155,8 @@ describe('the client and the server invalidate the same things', () => {
     const INLINE = new Set<string>([])
     const unheard: string[] = []
     for (const path of PATHS_TO_CHECK) {
-      for (const [key] of keysForPath(path)) {
-        if (!known.has(key) && !INLINE.has(key)) unheard.push(`${path} → broadcasts '${key}', which no query reads`)
+      for (const [key] of keysForPath(path!)) {
+        if (!known.has(key!) && !INLINE.has(key!)) unheard.push(`${path} → broadcasts '${key}', which no query reads`)
       }
     }
     expect(

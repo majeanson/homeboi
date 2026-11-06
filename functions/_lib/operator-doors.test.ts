@@ -110,8 +110,8 @@ function clientSites(ops: Map<string, Set<string>>): Site[] {
       const next = after.slice(6).search(/\b(?:write|writeWith|api)\s*(?:<[^>]*>)?\s*\(/)
       const scope = next >= 0 ? after.slice(0, next + 6) : after
       const method = /method:\s*['"](GET|POST|PATCH|PUT|DELETE)['"]/.exec(scope)?.[1] ?? 'GET'
-      if (!ops.get(m[1])!.has(method)) continue
-      out.push({ file: rel(f), line: src.slice(0, m.index).split('\n').length, path: m[1], method })
+      if (!ops.get(m[1]!)!.has(method)) continue
+      out.push({ file: rel(f), line: src.slice(0, m.index).split('\n').length, path: m[1]!, method })
     }
   }
   return out

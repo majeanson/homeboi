@@ -162,7 +162,7 @@ describe('le carnet d’entretien', () => {
     expect(pdf, 'the viewer tells a PDF from the key alone').toMatch(/^cl_.*\.pdf$/)
     const jpg = await upload(s, '/api/care-log', 'image/jpeg')
     const id = await log(s, c, { mediaKeys: [pdf, jpg, 7, '  '] })
-    expect((await entries(s, `?carnet=${c}`))[0].mediaKeys).toEqual([pdf, jpg])
+    expect((await entries(s, `?carnet=${c}`))[0]?.mediaKeys).toEqual([pdf, jpg])
 
     await okJson(s.fetch('/api/care-log', { method: 'PATCH', body: { id, mediaKeys: [jpg] } }))
     expect(await stored(pdf)).toBe(false)

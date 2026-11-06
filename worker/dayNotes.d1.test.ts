@@ -18,7 +18,7 @@ describe('le mot du jour', () => {
   it('is written, read back, overwritten in place, and cleared', async () => {
     const s = await household('daynotes-crud', undefined, { empty: true })
     await okJson(save(s, day(1), '  Apporter la tarte  '))
-    const [made] = await notes(s)
+    const made = (await notes(s))[0]!
     expect(made).toMatchObject({ date: day(1), text: 'Apporter la tarte' })
 
     await okJson(save(s, day(1), 'Apporter le gâteau'))
@@ -55,8 +55,8 @@ describe('le mot du jour', () => {
     expect((await save(s, day(1), '   ')).status).toBe(400)
     await okJson(save(s, day(1), 'x'.repeat(400), { 'X-Profile': lea.id }))
     const [n] = await notes(s)
-    expect(n.text).toHaveLength(280)
-    expect(n.member_id).toBe(lea.id)
+    expect(n?.text).toHaveLength(280)
+    expect(n?.member_id).toBe(lea.id)
   })
 
   it('stays inside its household, and reaches the calendar, today’s board and « Depuis ce matin »', async () => {
