@@ -83,20 +83,17 @@ describe('a control glyph is an Icon', () => {
   })
 })
 
-// A `!` is a claim the compiler cannot check (solidify 7.3, 2026-11-06). The plan counted 7;
+// A `!` is a claim the compiler cannot check (solidify 7.3, 2026-11-06). The plan counted 7,
 // oxlint counts 337 in production, 73 of them the `res!` of SearchPage, safe by its own guard.
-// Making the rule an error would rewrite them for little, so the count only falls. Scans src
-// only: the Worker has its own `body!` idiom after a validator. Planted red with one more.
+// Making the rule an error would rewrite them for little, so the count only falls. Scans
+// comment-free src; a stray « ! » inside a string only makes the ceiling a little loose.
+// Planted red with one more in format.ts.
 describe('non-null assertions only fall', () => {
-  const NON_NULL_MAX = 
-  it(`at most ${NON_NULL_MAX} in src`, () => {
-    const bang = /[w)]]!(?=[.[(,;)s])(?!=)/g
-    const n = files.reduce((sum, { text }) => {
-      const noStrings = text.replace(/'(?:[^'\
-]|\.)*'|"(?:[^"\
-]|\.)*"|`[^`]*`/g, "''")
-      return sum + (noStrings.match(bang) ?? []).length
-    }, 0)
+  const NON_NULL_MAX = 283
+  it('src holds no more than the ceiling', () => {
+    const bang = /[\w)\]]!(?=[.[(,;) ])/g
+    const n = files.reduce((sum, { text }) => sum + (text.match(bang) ?? []).length, 0)
+    expect(n, 'the scan found almost nothing: it broke').toBeGreaterThan(50)
     expect(n).toBeLessThanOrEqual(NON_NULL_MAX)
   })
 })
