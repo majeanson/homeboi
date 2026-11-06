@@ -28,7 +28,7 @@ const slot = (page: Page, card: string) => page.locator(`.wg-slot[data-card="${c
 // "il va pleuvoir demain" is a real thing to say about tomorrow even when the
 // agenda is bare. Emptying only the events is not emptying the card.
 const NO_TOMORROW = { tomorrow: [], tomorrowMeal: null, tomorrowMeals: [], tomorrowNote: null }
-const wxNoTomorrow = () => ({ ...(ROUTES.weather as Record<string, unknown>), tomorrow: null })
+const wxNoTomorrow = () => ({ ...ROUTES.weather, tomorrow: null })
 
 // THE CLOCK IS FROZEN, and it has to be: "empty" here means the fixture is empty, and
 // the board's own idea of a day is WIDER than the fixture. Holidays and school-year

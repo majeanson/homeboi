@@ -422,7 +422,7 @@ Footnotes (verdicts recorded so far):
     Both read non-polling (`useMots({live:false})` — a new opt mirroring `useHabits` — and
     `useHabits({live:false})`) so a locked kiosk adds no poll (the free-tier lever); both
     self-hide when nothing waits/asks. `t.mots.kidTitle` added (FR/EN). Guard:
-    `e2e/interactions.spec.ts` « Mes habitudes » test asserts the toddler board renders a
+    `e2e/interactions-board.spec.ts` « Mes habitudes » test asserts the toddler board renders a
     due household habit as a tile and a tap does NOT fire a habits write. typecheck + 1436
     unit tests green. [F5/F6×D8]
 53. **Wave H SHIPPED 2026-07-10** — the D7 « ? »/guide gaps closed via the two channels
@@ -452,7 +452,7 @@ Footnotes (verdicts recorded so far):
     `routine-stickers`; the wall (`/routine/stickers`, seeded via override) renders two
     stickers and edit-mode ✕ asserts the **DELETE**. **Entry 10** (smoke→happy): **F23**
     pet create → `cercle-crud.spec` (`/cercle/pet/new` POST `pets`); **F3** todo + **F14**
-    restants → `interactions.spec` (board ＋ « À compléter » POST `todos`; kitchen ＋
+    restants → `interactions-add-sheet.spec` (board ＋ « À compléter » POST `todos`; kitchen ＋
     « Restants » POST `meal-leftovers`); **F30** jouer + **F32** voiture →
     `e2e/play-and-car.spec.ts` (the find-it game reaches « Bravo »; the car week-editor
     POSTs `car-day`). **Entry 11** (F10/F18×D9): `/search` + `/liste/circulaires` added to
@@ -480,7 +480,7 @@ Footnotes (verdicts recorded so far):
     deleted from `lib/ghost.ts` (it stays read-only: `fetchGhosts`/`fetchGhostManage`), so
     the bypass can't be re-introduced by importing a wrapper. `affectedKeys` refreshes the
     Liste quick-add panel; the section's local `load()` still refreshes the manage view.
-    typecheck + 1436 unit tests + `interactions.spec` ghost PATCH tests green; knip shows no
+    typecheck + 1436 unit tests + `interactions-settings.spec` ghost PATCH tests green; knip shows no
     new dead exports (3 fewer). F21 stayed raw by design (➖, footnote 20). [F20×D4]
 57. **Wave P SHIPPED 2026-07-10** — the last D2 ❌ resolved to a **deliberate ➖**.
     **F6 Habitudes** had no `useEntityDetail` peek. Verdict: **no `buildHabit` adapter** —
@@ -1019,7 +1019,7 @@ F31: D6 search) plus a D7 🔶. Neither is a gold standard; both are Wave target
        (track/save/remove/add) now go through `write('ghost', …)`; the raw wrappers
        (+`GhostPatch`) deleted. 🔶→✅ (footnote 56).
 10. [x] 🟡 **F3/F14/F23/F30/F32×D16** — smoke-rendered only, no happy-path spec.
-        **DONE (Wave E) 2026-07-10** — todo/restants (`interactions.spec`), pet
+        **DONE (Wave E) 2026-07-10** — todo/restants (`interactions-add-sheet.spec`), pet
         (`cercle-crud.spec`), jouer/voiture (`play-and-car.spec`); 🔶→✅ (footnote 54).
 11. [x] 🟡 **F10×D9 / F18×D9** — SearchPage & CirculairesPage weren't in any phone
         -overflow sweep. **DONE (Wave E) 2026-07-10** — `/search` + `/liste/circulaires`
@@ -1103,7 +1103,7 @@ order: 🔴 waves first (**S → T → H → E**), then 🟡 (**U → O**), then
         the clip, text read aloud), sender-tinted, guest-hidden. (footnote 52)
   - [x] **F6 Habitudes** — folded into `ToddlerBoard` as « Mes habitudes »: the habits
         still asking today, read-aloud tiles carrying the parent `habitReading` line.
-  - _Verified:_ `e2e/interactions.spec.ts` « Mes habitudes » renders a due habit tile +
+  - _Verified:_ `e2e/interactions-board.spec.ts` « Mes habitudes » renders a due habit tile +
     asserts a tap fires no write; both sections reuse the `BigTiles` grid (no
     hand-rolled flex → no 360px overflow); typecheck + 1436 unit tests green.
 - [x] **Wave H — Help/tour/guide** _(entries 3, 5, 6; SHIPPED 2026-07-10)_. Merged into
@@ -1150,7 +1150,7 @@ order: 🔴 waves first (**S → T → H → E**), then 🟡 (**U → O**), then
         `patchGhost`/`deleteGhost` wrappers, matching QuickAddPage's ghost-mute precedent;
         the now-dead wrappers + `GhostPatch` type deleted from `lib/ghost.ts` (kept
         read-only). (footnote 56)
-  - _Verified:_ typecheck + 1436 unit tests green; `interactions.spec` ghost tests (add
+  - _Verified:_ typecheck + 1436 unit tests green; `interactions-settings.spec` ghost tests (add
     staple → PATCH, track candidate → PATCH) pass through the new `write()` path; knip
     shows no new dead exports (3 removed).
 - [x] **Wave P — Peek verdicts** _(~XS — one cell)_. **DONE 2026-07-10 → ➖ (no-peek).**

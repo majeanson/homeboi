@@ -2,7 +2,7 @@ name: Flake hunt
 
 # EVERY TEST, THREE TIMES, ONCE A WEEK (2026-09-30). A flake shows itself on the push E2E
 # run once in a while, on somebody else's commit, and gets re-run until it is green — the
-# `config-panels` « a list row opens its editor scene » red came back four times that way
+# `config-panels-maison` « a list row opens its editor scene » red came back four times that way
 # and was never read. This run goes looking instead: the whole browser suite with
 # `--repeat-each=3`, in CI's strict shape (workers 1, retries 0 — playwright.config.ts
 # under CI), on the current main. A test that passes on push but fails one repeat in

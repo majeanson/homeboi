@@ -334,6 +334,16 @@ describe('STATE.md stays a front door', () => {
 })
 
 // The allow list only shrinks (solidify 7.4): a new entry is a decision, so it edits this.
+// The GET paths the mock answers `{}` for (e2e/unknownGets.reporter.ts fails a run on one
+// outside this file). A path leaves by getting a fixture, and this number follows it down.
+describe('e2e/unknown-gets.json', () => {
+  it('only shrinks, and says why each path stays', () => {
+    const listed = JSON.parse(read('e2e/unknown-gets.json')) as { path: string; why: string }[]
+    expect(listed.length).toBeLessThanOrEqual(2)
+    for (const l of listed) expect(l.why.length, l.path).toBeGreaterThan(20)
+  })
+})
+
 describe('e2e/axe-allow.json', () => {
   it('holds at most 1 entry', () => {
     expect(JSON.parse(read('e2e/axe-allow.json')).length).toBeLessThanOrEqual(1)

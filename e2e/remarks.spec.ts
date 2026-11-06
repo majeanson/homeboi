@@ -4,7 +4,7 @@ import { mockApi, seedState, ROUTES } from './mocks'
 // « Les remarques » (0136) — the household's side of the loop, through the real UI.
 //
 // What this file is for is the SEAM, not the rendering: a report that renders beautifully
-// and posts nothing is the settings-panel failure mode config-panels.spec.ts exists to
+// and posts nothing is the settings-panel failure mode config-panels-*.spec.ts exist to
 // catch, and this surface has the same shape (a modal that closes on submit looks
 // successful whether or not the write left).
 //

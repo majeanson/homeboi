@@ -18,8 +18,8 @@ const swept = [...sweep.matchAll(/['`](\/[^'`]*)['`]/g)].map((m) => m[1]!.replac
 const ALLOWED: Record<string, string> = {
   '*': 'the catch-all: it redirects to the board',
   '/': 'the smart entry: it redirects by session',
-  '/login': 'signed-out only: interactions.spec walks it',
-  '/signup': 'signed-out only: interactions.spec walks it',
+  '/login': 'signed-out only: interactions-navigation.spec walks it',
+  '/signup': 'signed-out only: interactions-navigation.spec walks it',
   '/pair': 'signed-out only: pairing has its own specs',
   '/routine/stickers': 'a redirect kept for old links',
   '/intake': 'a redirect kept for old links, to /courrier',

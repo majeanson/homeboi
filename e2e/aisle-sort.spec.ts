@@ -3,7 +3,7 @@ import { mockApi, seedState, type Audience, type Lang } from './mocks'
 
 // Aisle sort (« Par allée ») — closes the §1 P1 gap: a core, logic-heavy list feature
 // (the emoji→aisle classifier + the household's saved aisle order + per-item overrides)
-// that shipped with ZERO e2e. Frontend-only harness, same as interactions.spec.ts:
+// that shipped with ZERO e2e. Frontend-only harness, same as interactions-*.spec.ts:
 // Vite + stubbed /api/**. The seeded list (Lait / Pain / Pommes / Couches) spans several
 // aisles, so « Par allée » produces more than one group header.
 //

@@ -7,7 +7,7 @@ import { test, expect } from './fixtures'
 // the matching modal (group / business / carnet), page-level so it works from any
 // Maison subtab.
 // Each test fills the form and asserts the CORRECT write fires (method + path), the
-// same discipline interactions.spec.ts uses (every mock write returns { ok:true }, so
+// same discipline interactions-*.spec.ts use (every mock write returns { ok:true }, so
 // we assert the request, not a refetched outcome). Closes the §424 gap: group /
 // business / carnet CRUD had zero behavioural coverage (screenshots only).
 

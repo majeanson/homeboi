@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import type { HealthWire } from '../functions/_lib/wire'
+import type { BoardEvent, BoardMealBrief, BoardNote, CercleContact, DealRow, EventsWire, HabitsWire, HealthWire, MealRow, MemberRow, RecipeWireRow, Wire } from '../functions/_lib/wire'
 import { addLocalDays, localDayStart } from '../src/lib/localDay'
 
 // Deterministic API stubs so screenshots render populated, calm surfaces with
@@ -44,12 +44,48 @@ export function notesFromMots(mots: Record<string, unknown>[]): { notes: Record<
 }
 export const flyerIso = (days: number): string => new Date(Date.now() + days * DAY * 1000).toISOString()
 
+const member = (id: string, display_name: string, colour: string, is_child: number): MemberRow => ({
+  id, display_name, avatar_kind: 'color', avatar_ref: colour, colour, is_child,
+})
 const MEMBERS = [
-  { id: 'm1', display_name: 'Maman', colour: '#B06A93', is_child: 0 },
-  { id: 'm2', display_name: 'Papa', colour: '#5891AC', is_child: 0 },
-  { id: 'm3', display_name: 'Léa', colour: '#88A36F', is_child: 1 },
-  { id: 'm4', display_name: 'Noah', colour: '#F2A03D', is_child: 1 },
+  member('m1', 'Maman', '#B06A93', 0),
+  member('m2', 'Papa', '#5891AC', 0),
+  member('m3', 'Léa', '#88A36F', 1),
+  member('m4', 'Noah', '#F2A03D', 1),
 ]
+
+// A row builder per wire shape that has more columns than a spec cares about: a fixture
+// row names what matters to it and the rest stays what the Worker answers for an unset
+// column. Written after the 2026-11-06 pass over the real wire, which found the rows
+// here several keys short of what D1 serves. A `null` read differently from `undefined`
+// is exactly the bug a mock like this would hide.
+const boardEvent = (e: Pick<BoardEvent, 'id' | 'title' | 'start_at' | 'all_day' | 'member_id'> & Partial<BoardEvent>): BoardEvent => ({
+  end_at: null, car_id: null, passengers: null, contact_id: null, contact_name: null, contact_address: null,
+  business_id: null, business_name: null, business_colour: null, business_address: null,
+  bring_template_id: null, notes: null, soon: false,
+  ...e,
+})
+const mealBrief = (m: Pick<BoardMealBrief, 'id' | 'title' | 'cook_member_id'> & Partial<BoardMealBrief>): BoardMealBrief => ({ is_leftover: 0, recipe_id: null, ...m })
+const boardMeal = (m: Pick<BoardMealBrief, 'id' | 'title' | 'cook_member_id'> & { slot: string; position: number; recipe_id?: string | null }) => ({ is_leftover: 0, recipe_id: null, ...m })
+const mealRow = (m: Omit<MealRow, 'suggested_by' | 'recipe_id' | 'is_leftover'> & Partial<MealRow>): MealRow => ({ suggested_by: null, recipe_id: null, is_leftover: 0, ...m })
+const fridgeNote = (n: Pick<BoardNote, 'id' | 'text' | 'member_id' | 'created_at'>): BoardNote => ({
+  media_kind: null, media_key: null, scene_key: null, author_label: null, for_member_id: null, opened_at: null, saved_at: null, transcript: null,
+  ...n,
+})
+const eventRow = (e: Pick<BoardEvent, 'id' | 'title' | 'start_at' | 'all_day' | 'member_id'>): EventsWire['events'][number] => ({
+  end_at: null, contact_id: null, business_id: null, recur_json: null, lead_seconds: null, car_id: null, passengers: null,
+  bring_template_id: null, notes: null, contact_name: null, business_name: null, business_colour: null,
+  ...e,
+})
+const recipeRow = (r: Pick<RecipeWireRow, 'id' | 'title' | 'ingredients' | 'steps' | 'updatedAt'> & Partial<RecipeWireRow>): RecipeWireRow => ({
+  servings: null, servingsUnit: null, prepMin: null, cookMin: null, totalMin: null, notes: null, source: null, image: null,
+  tags: [], stepImages: [], lang: null, // null = unset: read aloud in the UI's language
+  ...r,
+})
+const listRow = (id: string, text: string, source = 'manual') => ({
+  id, text, source, added_by: null as string | null, deal_json: null as string | null, search_terms: null, checked_at: null, non_urgent: null,
+})
+const dealRow = (d: Omit<DealRow, 'cutout' | 'merchantId' | 'box'>): DealRow => ({ ...d, cutout: d.image, merchantId: null, box: null })
 
 // Exported so a spec can clone it and serve a richer variant via its own route
 // override (e.g. the cashier spec stages deals on several list lines for a true
@@ -60,40 +96,41 @@ export const BOARD = {
   scope: 'today',
   members: MEMBERS,
   today: [
-    { id: 'e0', title: 'Rappel: facture', start_at: BASE + 2 * 3600, all_day: 0, member_id: null },
-    { id: 'e1', title: 'Garderie', start_at: BASE + 3600, all_day: 0, member_id: 'm3' },
+    boardEvent({ id: 'e0', title: 'Rappel: facture', start_at: BASE + 2 * 3600, all_day: 0, member_id: null }),
+    boardEvent({ id: 'e1', title: 'Garderie', start_at: BASE + 3600, all_day: 0, member_id: 'm3' }),
     // The dentist rendez-vous rides a BUSINESS with an address, so its peek offers
     // « Itinéraire » (turn-by-turn directions) — event-peek-actions.spec exercises it.
-    { id: 'e2', title: 'Rendez-vous dentiste', start_at: BASE + 6 * 3600, all_day: 0, member_id: 'm4', business_id: 'b1', business_name: 'Clinique dentaire Sourire', business_colour: '#4A90A4', business_address: '18 boul. Jacques-Cartier, Sherbrooke' },
-    { id: 'e3', title: 'Soccer', start_at: BASE + 9 * 3600, all_day: 0, member_id: 'm3' },
+    boardEvent({ id: 'e2', title: 'Rendez-vous dentiste', start_at: BASE + 6 * 3600, all_day: 0, member_id: 'm4', business_id: 'b1', business_name: 'Clinique dentaire Sourire', business_colour: '#4A90A4', business_address: '18 boul. Jacques-Cartier, Sherbrooke' }),
+    boardEvent({ id: 'e3', title: 'Soccer', start_at: BASE + 9 * 3600, all_day: 0, member_id: 'm3' }),
   ],
-  tomorrow: [{ id: 'e4', title: 'Épicerie', start_at: BASE + DAY + 4 * 3600, all_day: 0, member_id: 'm1' }],
-  upcoming: [{ id: 'e5', title: 'Fête de Léa', start_at: BASE + 5 * DAY, all_day: 1, member_id: 'm3' }],
-  tonight: { id: 'meal1', title: 'Spaghetti maison', cook_member_id: 'm2' },
+  tomorrow: [boardEvent({ id: 'e4', title: 'Épicerie', start_at: BASE + DAY + 4 * 3600, all_day: 0, member_id: 'm1' })],
+  upcoming: [boardEvent({ id: 'e5', title: 'Fête de Léa', start_at: BASE + 5 * DAY, all_day: 1, member_id: 'm3' })],
+  // Nobody's shift falls on the fixture's day: the board's work line stays off.
+  work: [],
+  tonight: mealBrief({ id: 'meal1', title: 'Spaghetti maison', cook_member_id: 'm2' }),
   // ALL of today's suppers — "Ce soir" lists every one (two here, to exercise it).
   tonightMeals: [
-    { id: 'meal1', slot: 'supper', title: 'Spaghetti maison', cook_member_id: 'm2', position: 0 },
-    { id: 'meal5', slot: 'supper', title: 'Salade César', cook_member_id: null, position: 1 },
+    boardMeal({ id: 'meal1', slot: 'supper', title: 'Spaghetti maison', cook_member_id: 'm2', position: 0 }),
+    boardMeal({ id: 'meal5', slot: 'supper', title: 'Salade César', cook_member_id: null, position: 1 }),
   ],
-  tomorrowMeal: { id: 'meal2', title: 'Tacos', cook_member_id: 'm1' },
+  tomorrowMeal: mealBrief({ id: 'meal2', title: 'Tacos', cook_member_id: 'm1' }),
   // The full per-day meal table + day memo (new board fields; the Now/Next and
   // per-person Lanes views read these). Absent → those views must not crash.
   // Time-ordered (breakfast → supper) with a slot holding two meals.
   todayMeals: [
-    { id: 'meal4', slot: 'breakfast', title: 'Crêpes', cook_member_id: null, position: 0 },
-    { id: 'meal1', slot: 'supper', title: 'Spaghetti maison', cook_member_id: 'm2', position: 0 },
-    { id: 'meal5', slot: 'supper', title: 'Salade César', cook_member_id: null, position: 1 },
+    boardMeal({ id: 'meal4', slot: 'breakfast', title: 'Crêpes', cook_member_id: null, position: 0 }),
+    boardMeal({ id: 'meal1', slot: 'supper', title: 'Spaghetti maison', cook_member_id: 'm2', position: 0 }),
+    boardMeal({ id: 'meal5', slot: 'supper', title: 'Salade César', cook_member_id: null, position: 1 }),
   ],
+  heroSlot: 'supper',
   dayNote: { id: 'dn1', text: 'Sans gluten ce soir', member_id: 'm1' },
-  tomorrowMeals: [{ id: 'meal2', slot: 'supper', title: 'Tacos', cook_member_id: 'm1' }],
+  tomorrowMeals: [boardMeal({ id: 'meal2', slot: 'supper', title: 'Tacos', cook_member_id: 'm1', position: 0 })],
   tomorrowNote: null,
   list: [
     // l1 carries a staged flyer deal (deal_json) — the cashier set now lives on the
     // list, so this is what drives the "show the cashier" button and the row's ✓.
     {
-      id: 'l1',
-      text: 'Lait',
-      source: 'manual',
+      ...listRow('l1', 'Lait'),
       added_by: 'm1',
       // Its dates ride flyerIso (the LIVE clock, like the flyer fixtures) rather than
       // BASE: they are the thing a cashier checks, and a deal dated a year back reads
@@ -102,9 +139,9 @@ export const BOARD = {
       // be read by someone else across a counter, was photographed with no validity.
       deal_json: JSON.stringify({ id: 101, flyerId: 5001, name: 'Lait 2% 4L', price: 4.99, wasPrice: 6.49, unitPrice: 1.25, unitLabel: '/L', unitKind: 'volume', unitApprox: false, merchant: 'Super C', logo: 'data:image/svg+xml,%3Csvg xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22 viewBox%3D%220 0 96 24%22%3E%3Crect width%3D%2296%22 height%3D%2224%22 rx%3D%224%22 fill%3D%22%23d33%22%2F%3E%3Ctext x%3D%2248%22 y%3D%2217%22 font-size%3D%2214%22 font-weight%3D%22700%22 fill%3D%22%23fff%22 text-anchor%3D%22middle%22 font-family%3D%22sans-serif%22%3ESUPER C%3C%2Ftext%3E%3C%2Fsvg%3E', premium: true, image: 'data:image/svg+xml,%3Csvg xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22 viewBox%3D%220 0 60 60%22%3E%3Crect width%3D%2260%22 height%3D%2260%22 fill%3D%22%23cfe8d6%22%2F%3E%3Ctext x%3D%2230%22 y%3D%2235%22 font-size%3D%2210%22 text-anchor%3D%22middle%22%3E🥛%3C%2Ftext%3E%3C%2Fsvg%3E', validFrom: flyerIso(-2), validTo: flyerIso(4) }),
     },
-    { id: 'l2', text: 'Pain', source: 'manual' },
-    { id: 'l3', text: 'Pommes', source: 'ghost' },
-    { id: 'l4', text: 'Couches', source: 'manual' },
+    listRow('l2', 'Pain'),
+    listRow('l3', 'Pommes', 'ghost'),
+    listRow('l4', 'Couches'),
   ],
   chores: [
     {
@@ -114,6 +151,11 @@ export const BOARD = {
       current_idx: 0,
       last_done_at: null,
       color: '#88A36F',
+      recur_json: null,
+      recur_start: null,
+      lead_seconds: null,
+      announce_evening: null,
+      created_at: BASE - 30 * DAY,
       helpers: [{ name: 'Léa', role: 'child' }],
     },
     {
@@ -123,26 +165,35 @@ export const BOARD = {
       current_idx: 1,
       last_done_at: BASE - DAY,
       color: '#7BB0C9',
+      recur_json: null,
+      recur_start: null,
+      lead_seconds: null,
+      announce_evening: null,
+      created_at: BASE - 30 * DAY,
       helpers: [],
     },
   ],
   // Two notes, so the strip's « Tout effacer » (shown only past one note) is
   // exercised alongside the per-note tap-to-clear.
   notes: [
-    { id: 'n1', text: 'Bonne chance à ton examen !', member_id: 'm1', created_at: BASE },
-    { id: 'n2', text: 'Rendez-vous dentiste jeudi', member_id: 'm2', created_at: BASE },
+    fridgeNote({ id: 'n1', text: 'Bonne chance à ton examen !', member_id: 'm1', created_at: BASE }),
+    fridgeNote({ id: 'n2', text: 'Rendez-vous dentiste jeudi', member_id: 'm2', created_at: BASE }),
   ],
   // A recurring chore due today (Léa's turn) + one coming up later this week.
   choresToday: [{ id: 'c1', title: 'Sortir les poubelles', color: '#88A36F', at: BASE, who: 'Léa', who_id: 'm3' }],
   choresUpcoming: [{ id: 'c2', title: 'Vaisselle', color: '#7BB0C9', at: BASE + 3 * DAY, who: 'Papa', who_id: 'm2' }],
+  // The carnets' upkeep rows ride the same read; none is due on the fixture's day.
+  homeToday: [],
+  homeUpcoming: [],
+  homeOverdue: [],
   // One-off to-dos (ChoreInstance shape) — the Aujourd'hui "À faire" card + the
   // alternate board views (Now/Next, Lanes) iterate these, so absent → crash.
   todos: [
-    { id: 't1', title: 'Appeler le garagiste', color: null, at: BASE, who: 'Maman', who_id: 'm1' },
-    { id: 't2', title: 'Sortir le recyclage', color: '#88A36F', at: BASE, who: null, who_id: null },
+    { id: 't1', title: 'Appeler le garagiste', color: null, at: BASE, soon: false, who: 'Maman', who_id: 'm1', team: [], announce_evening: false },
+    { id: 't2', title: 'Sortir le recyclage', color: '#88A36F', at: BASE, soon: false, who: null, who_id: null, team: [], announce_evening: false },
   ],
   // Undated leftovers to finish — the "Restants à finir" reminder card.
-  leftovers: [{ id: 'lo1', title: 'Pâté chinois' }],
+  leftovers: [{ id: 'lo1', title: 'Pâté chinois', recipe_id: null, source_meal_id: null }],
 }
 
 export const MEALS = {
@@ -150,23 +201,23 @@ export const MEALS = {
   windowDays: 10, // full 10-day countdown block (see functions/api/meals.ts)
   days: [
     // Linked to the saved recipe rc1 (recipe_id) — the grid's 📖 opens it exactly.
-    { id: 'meal1', date: MMID, slot: 'supper', title: 'Spaghetti maison', cook_member_id: 'm2', recipe_id: 'rc1', position: 0 },
+    mealRow({ id: 'meal1', date: MMID, slot: 'supper', title: 'Spaghetti maison', cook_member_id: 'm2', recipe_id: 'rc1', position: 0 }),
     // A SECOND supper in the same slot (N per slot) — the grid lists both, each
     // with its own ✕ / ↑↓.
-    { id: 'meal5', date: MMID, slot: 'supper', title: 'Salade César', cook_member_id: null, position: 1 },
-    { id: 'meal2', date: MMID + DAY, slot: 'supper', title: 'Tacos', cook_member_id: 'm1', position: 0 },
+    mealRow({ id: 'meal5', date: MMID, slot: 'supper', title: 'Salade César', cook_member_id: null, position: 1 }),
+    mealRow({ id: 'meal2', date: MMID + DAY, slot: 'supper', title: 'Tacos', cook_member_id: 'm1', position: 0 }),
     // A kid-suggested supper (Léa, m3) sitting in a slot that was empty — shows the
     // "💡 Léa" note in the parent week. cook is null until a parent decides.
-    { id: 'meal3', date: MMID + 3 * DAY, slot: 'supper', title: 'Saumon & riz', cook_member_id: null, suggested_by: 'm3', position: 0 },
+    mealRow({ id: 'meal3', date: MMID + 3 * DAY, slot: 'supper', title: 'Saumon & riz', cook_member_id: null, suggested_by: 'm3', position: 0 }),
     // A déjeuner (breakfast) side slot on day one.
-    { id: 'meal4', date: MMID, slot: 'breakfast', title: 'Crêpes', cook_member_id: null, position: 0 },
+    mealRow({ id: 'meal4', date: MMID, slot: 'breakfast', title: 'Crêpes', cook_member_id: null, position: 0 }),
   ],
   // The last few days of non-leftover meals (deduped by title) — the Restants
   // "Suggestions" quick-pick source (see functions/api/meals.ts `recent`).
   recent: [
-    { id: 'meal1', date: MMID, slot: 'supper', title: 'Spaghetti maison', cook_member_id: 'm2', recipe_id: 'rc1', position: 0 },
-    { id: 'meal5', date: MMID, slot: 'supper', title: 'Salade César', cook_member_id: null, position: 1 },
-    { id: 'meal4', date: MMID, slot: 'breakfast', title: 'Crêpes', cook_member_id: null, position: 0 },
+    mealRow({ id: 'meal1', date: MMID, slot: 'supper', title: 'Spaghetti maison', cook_member_id: 'm2', recipe_id: 'rc1', position: 0 }),
+    mealRow({ id: 'meal5', date: MMID, slot: 'supper', title: 'Salade César', cook_member_id: null, position: 1 }),
+    mealRow({ id: 'meal4', date: MMID, slot: 'breakfast', title: 'Crêpes', cook_member_id: null, position: 0 }),
   ],
 }
 
@@ -198,7 +249,8 @@ const ROUTINE_CARDS = [
 // reminders — 08:00 · 12:00 · 16:00 · 20:00.
 const HABITS = {
   today: MMID,
-  days: [] as unknown[],
+  days: [] as HabitsWire['days'],
+  marks: [] as HabitsWire['marks'],
   habits: [
     { id: 'hb1', member_id: null, title: 'Marcher dehors', icon: '🚶', colour: '#88A36F', kind: 'do', target: null, unit: '', cadence: 'recur', recur: null, week_times: null, day_times: null, every_hours: null, window_start: null, window_end: null, reminders: [540], position: 0, archived: false, due_days: [MMID - DAY, MMID, MMID + DAY] },
     { id: 'hb2', member_id: 'm1', title: 'Boire de l’eau', icon: '💧', colour: '#5891AC', kind: 'count', target: 8, unit: 'verres', cadence: 'recur', recur: null, week_times: null, day_times: null, every_hours: null, window_start: null, window_end: null, reminders: [], position: 1, archived: false, due_days: [MMID - DAY, MMID, MMID + DAY] },
@@ -219,11 +271,15 @@ const ROUTINES = {
     {
       id: 'r1',
       name: 'Matin',
+      memberId: 'm3',
       memberName: 'Léa',
       color: '#88A36F',
       avatarPhoto: null,
       timeOfDay: 'morning',
       cards: ROUTINE_CARDS,
+      cardsNarration: ROUTINE_CARDS.map(() => ''),
+      cardsPhoto: ROUTINE_CARDS.map(() => ''),
+      timers: {},
       doneIdx: [0],
       // Léa picked the fox. Without a companion the buddy simply doesn't render, so
       // the fixture has to carry one for any spec that drives « le truc » (or the
@@ -233,21 +289,27 @@ const ROUTINES = {
     {
       id: 'r2',
       name: 'Dodo',
+      memberId: 'm4',
       memberName: 'Noah',
       color: '#F2A03D',
       avatarPhoto: null,
       timeOfDay: 'evening',
       cards: ROUTINE_CARDS.slice(0, 3),
+      cardsNarration: ['', '', ''],
+      cardsPhoto: ['', '', ''],
+      timers: {},
       doneIdx: [],
+      companion: null,
     },
   ],
+  date: MMID,
 }
 
 // image null → the card shows the 🍳 placeholder (offline-safe; a remote URL
 // wouldn't load in the frontend-only harness).
 const RECIPES = {
   recipes: [
-    {
+    recipeRow({
       id: 'rc1',
       title: 'Spaghetti maison',
       ingredients: ['400 g de pâtes', '1 pot de sauce tomate', '500 g de bœuf haché', '1 oignon', '15 ml (1 c. à soupe) d’huile d’olive', '1 c. à thé de sel', '1/4 c. à thé de poivre'],
@@ -261,10 +323,10 @@ const RECIPES = {
       image: null,
       tags: ['rapide', 'préféré'],
       updatedAt: BASE - DAY,
-    },
+    }),
     // Sectioned recipe ("## " markers) + a named yield unit — exercises the
     // grouped sheet/cook-mode rendering and the "24 biscuits" servings label.
-    {
+    recipeRow({
       id: 'rc4',
       title: 'Biscuits glacés',
       ingredients: [
@@ -296,8 +358,8 @@ const RECIPES = {
       image: null,
       tags: ['dessert'],
       updatedAt: BASE - DAY / 2,
-    },
-    {
+    }),
+    recipeRow({
       id: 'rc2',
       title: 'Tacos au poulet',
       ingredients: ['Tortillas', 'Poitrines de poulet', 'Salsa', 'Laitue', 'Fromage râpé'],
@@ -308,8 +370,8 @@ const RECIPES = {
       image: null,
       tags: ['rapide'],
       updatedAt: BASE - 2 * DAY,
-    },
-    {
+    }),
+    recipeRow({
       id: 'rc3',
       title: 'Saumon & riz',
       ingredients: ['Filets de saumon', 'Riz', 'Citron', 'Brocoli'],
@@ -320,7 +382,7 @@ const RECIPES = {
       image: null,
       tags: [],
       updatedAt: BASE - 3 * DAY,
-    },
+    }),
   ],
 }
 
@@ -331,6 +393,7 @@ const GHOSTS = {
     // Tracked but nowhere near renewal — rendered as a quiet untagged chip.
     { key: 'cafe', label: 'Café', status: 'later', cadenceDays: 14, lastAt: BASE - 2 * DAY, count: 3 },
   ],
+  staples: [],
 }
 
 // list?view=history — everything the household has added/bought before; feeds
@@ -360,15 +423,15 @@ const GHOST_MANAGE = {
 
 const CHORES = {
   chores: [
-    { id: 'c1', title: 'Sortir les poubelles', rotation_json: JSON.stringify(['m1', 'm2']), current_idx: 0, last_done_at: null, color: '#88A36F' },
-    { id: 'c2', title: 'Vaisselle', rotation_json: JSON.stringify(['m2', 'm1']), current_idx: 1, last_done_at: BASE - DAY, color: '#7BB0C9' },
+    { id: 'c1', title: 'Sortir les poubelles', rotation_json: JSON.stringify(['m1', 'm2']), current_idx: 0, last_done_at: null, last_done_by: null, color: '#88A36F', recur_json: null, recur_start: null, lead_seconds: null, announce_evening: null },
+    { id: 'c2', title: 'Vaisselle', rotation_json: JSON.stringify(['m2', 'm1']), current_idx: 1, last_done_at: BASE - DAY, last_done_by: null, color: '#7BB0C9', recur_json: null, recur_start: null, lead_seconds: null, announce_evening: null },
   ],
 }
 
 const EVENTS = {
   events: [
-    { id: 'e1', title: 'Garderie', start_at: BASE + 3600, all_day: 0, member_id: 'm3' },
-    { id: 'e5', title: 'Fête de Léa', start_at: BASE + 5 * DAY, all_day: 1, member_id: 'm3' },
+    eventRow({ id: 'e1', title: 'Garderie', start_at: BASE + 3600, all_day: 0, member_id: 'm3' }),
+    eventRow({ id: 'e5', title: 'Fête de Léa', start_at: BASE + 5 * DAY, all_day: 1, member_id: 'm3' }),
   ],
 }
 
@@ -464,10 +527,10 @@ export const CAR = {
 const TODAY_DAY = localDayStart(new Date())
 const TODOS = {
   todos: [
-    { id: 'td1', title: 'Clés + téléphone + portefeuille', day: null, member_id: null, done_at: null, position: 0, section: null, source_template_id: null },
-    { id: 'td2', title: 'Boîte à lunch des enfants', day: null, member_id: 'm1', done_at: null, position: 1, section: null, source_template_id: null },
-    { id: 'td3', title: 'Vérifier les portes', day: TODAY_DAY, member_id: null, done_at: null, position: 0, section: 'Avant de partir', source_template_id: 'tpl1' },
-    { id: 'td4', title: 'Bouteille d’eau', day: TODAY_DAY, member_id: null, done_at: null, position: 1, section: 'Avant de partir', source_template_id: 'tpl1' },
+    { id: 'td1', title: 'Clés + téléphone + portefeuille', day: null, member_id: null, done_at: null, position: 0, section: null, source_template_id: null, created_at: BASE },
+    { id: 'td2', title: 'Boîte à lunch des enfants', day: null, member_id: 'm1', done_at: null, position: 1, section: null, source_template_id: null, created_at: BASE },
+    { id: 'td3', title: 'Vérifier les portes', day: TODAY_DAY, member_id: null, done_at: null, position: 0, section: 'Avant de partir', source_template_id: 'tpl1', created_at: BASE },
+    { id: 'td4', title: 'Bouteille d’eau', day: TODAY_DAY, member_id: null, done_at: null, position: 1, section: 'Avant de partir', source_template_id: 'tpl1', created_at: BASE },
   ],
 }
 
@@ -553,12 +616,20 @@ const CERCLE_GROUPS = [
   { id: 'g2', name: 'Le hockey', kind: 'friends', colour: '#5891AC', memberKeys: [{ personId: 'c12', personKind: 'contact' }, { personId: 'c13', personKind: 'contact' }, { personId: 'c14', personKind: 'contact' }] },
   { id: 'g3', name: 'Collègues', kind: 'work', colour: '#7BB0C9', memberKeys: [{ personId: 'c15', personKind: 'contact' }] },
 ]
-const CERCLE = { members: CERCLE_MEMBERS, contacts: CERCLE_CONTACTS, links: CERCLE_LINKS, groups: CERCLE_GROUPS }
+const CERCLE = {
+  members: CERCLE_MEMBERS,
+  contacts: CERCLE_CONTACTS.map((c): CercleContact => ({ ...c, giftIdeas: null })),
+  links: CERCLE_LINKS,
+  groups: CERCLE_GROUPS,
+  pets: [],
+}
 
 const AUTH_ME = {
   signedIn: true,
   email: 'famille@exemple.ca',
   household: { id: 'h1', name: 'Maison Tremblay', tier: 'free' },
+  memberId: null,
+  verified: true,
 }
 
 // « Les virements » read model (`/api/transfers`, mig 0126) — ONE composed shape:
@@ -598,6 +669,7 @@ const TRANSFER_PLAN = {
 }
 const TRANSFERS = {
   today: MMID,
+  more: false,
   plans: [TRANSFER_PLAN],
   transfers: [
     {
@@ -655,7 +727,7 @@ const HEALTH: HealthWire = {
   contact: null,
 }
 
-export const ROUTES: Record<string, unknown> = {
+export const ROUTES: Partial<Wire> = {
   'auth/me': AUTH_ME,
   board: BOARD,
   weather: {
@@ -677,10 +749,10 @@ export const ROUTES: Record<string, unknown> = {
   // a fixture — a same-month trio keeps the grouping assertion simple.
   'meal-history': {
     days: [
-      { id: 'meal1', date: MMID, slot: 'supper', title: 'Spaghetti maison', cook_member_id: 'm2', recipe_id: 'rc1', position: 0, is_leftover: 0 },
-      { id: 'mh1', date: MMID - DAY, slot: 'supper', title: 'Tacos', cook_member_id: 'm1', position: 0, is_leftover: 0 },
-      { id: 'mh2', date: MMID - 2 * DAY, slot: 'supper', title: 'Soupe poulet-nouilles', cook_member_id: null, position: 0, is_leftover: 1 },
-      { id: 'mh3', date: MMID - 2 * DAY, slot: 'breakfast', title: 'Gruau', cook_member_id: null, position: 0, is_leftover: 0 },
+      mealRow({ id: 'meal1', date: MMID, slot: 'supper', title: 'Spaghetti maison', cook_member_id: 'm2', recipe_id: 'rc1', position: 0 }),
+      mealRow({ id: 'mh1', date: MMID - DAY, slot: 'supper', title: 'Tacos', cook_member_id: 'm1', position: 0 }),
+      mealRow({ id: 'mh2', date: MMID - 2 * DAY, slot: 'supper', title: 'Soupe poulet-nouilles', cook_member_id: null, position: 0, is_leftover: 1 }),
+      mealRow({ id: 'mh3', date: MMID - 2 * DAY, slot: 'breakfast', title: 'Gruau', cook_member_id: null, position: 0 }),
     ],
     nextBefore: null,
     // ?summary=1 (« Déjà mangé », the IdeasDrawer's 🕰 source) hits the SAME fixture
@@ -694,9 +766,9 @@ export const ROUTES: Record<string, unknown> = {
   },
   'meal-ideas': {
     ideas: [
-      { id: 'idea1', title: 'Soupe poulet-nouilles', recipe_id: null, suggested_by: null, created_at: BASE - DAY },
+      { id: 'idea1', title: 'Soupe poulet-nouilles', recipe_id: null, suggested_by: null, date: null, created_at: BASE - DAY },
       // A recipe-linked idea (rc1) — shows the 📖 marker in the pool.
-      { id: 'idea2', title: 'Spaghetti maison', recipe_id: 'rc1', suggested_by: 'm3', created_at: BASE - 2 * DAY },
+      { id: 'idea2', title: 'Spaghetti maison', recipe_id: 'rc1', suggested_by: 'm3', date: null, created_at: BASE - 2 * DAY },
     ],
   },
   pantry: PANTRY,
@@ -712,7 +784,7 @@ export const ROUTES: Record<string, unknown> = {
   // Voyage's trip list. Empty by default (voyage.spec stubs its own); the shape
   // matters, because the `{}` fallback crashed /voyage/new into the ErrorBoundary.
   trips: { trips: [] },
-  carnets: { carnets: [] },
+  carnets: { carnets: [], soon: [] },
   recipes: RECIPES,
   // ONE recipe’s as-imported snapshot, fetched only when the sheet’s « Original »
   // toggle is tapped. It is deliberately NOT part of `recipes` above: that payload is
@@ -737,6 +809,11 @@ export const ROUTES: Record<string, unknown> = {
       { tag: 'Collation', count: 1 },
     ],
     colors: { rapide: '#88a36f' },
+    // What the handler answers for a household that never touched them: the built-in
+    // pills all on, no per-tag slot. An absent `pills` let the client fall back to its
+    // own DEFAULT_PILLS, which is a different code path from production's.
+    pills: [{ k: 'cookable' }, { k: 'useSoon' }, { k: 'fast' }, { k: 'neglected' }, { k: 'favorites' }, { k: 'recent' }],
+    tagSlots: {},
   },
   routines: ROUTINES,
   habits: HABITS,
@@ -762,7 +839,9 @@ export const ROUTES: Record<string, unknown> = {
       { id: 'hb2#1', habit_id: 'hb2', title: 'Boire de l’eau', icon: '💧', colour: '#5891AC', kind: 'count', member_id: 'm1', day: MMID - DAY, done: true },
     ],
   },
-  members: { members: MEMBERS },
+  members: {
+    members: MEMBERS.map((m, i) => ({ ...m, sort_order: i, email: null, phone: null, birthday: null, notes: null, gender: null, companion: null })),
+  },
   'pair/devices': DEVICES,
   chores: CHORES,
   events: EVENTS,
@@ -772,21 +851,51 @@ export const ROUTES: Record<string, unknown> = {
   // shared fixture is a household, not a backup history; takeout-restore.spec.ts
   // registers its own route when it wants rows.
   'takeout/backups': { backups: [] },
-  household: { name: 'Maison Tremblay', tz: 'America/Toronto', postal: 'H2X 1Y4', includedStores: [], aiEnabled: true },
+  // Every key the handler answers, at the value a household that changed nothing reads.
+  household: {
+    name: 'Maison Tremblay',
+    tz: 'America/Toronto',
+    postal: 'H2X 1Y4',
+    flippLang: null,
+    includedStores: [],
+    cashierExcludedStores: [],
+    mealColors: {},
+    mealHidden: [],
+    mealOrder: ['breakfast', 'lunch', 'snack', 'supper', 'dessert'],
+    mealHero: 'supper',
+    mealHours: { breakfast: 420, lunch: 720, snack: 900, supper: 1050, dessert: 1200 },
+    mealWindowDays: 10,
+    measureColors: {},
+    reserveLocations: null,
+    cars: null,
+    aisleOrder: null,
+    aisleOverrides: {},
+    aiEnabled: true,
+    schoolYear: null,
+    wifiSsid: null,
+    wifiPassword: null,
+    houseRules: null,
+    binDay: null,
+  },
   // « Le cercle » people graph (members + contacts + links + coloured groups).
   cercle: CERCLE,
   // Business sub-tab — isolated services directory. Empty is the calm default.
   businesses: { businesses: [] },
   deals: {
+    query: 'lait',
+    postal: 'H2X1Y4',
+    count: 2,
     deals: [
-      { id: 101, flyerId: 5001, name: 'Lait 2% 4L', price: 4.99, wasPrice: 6.49, unitPrice: 1.25, unitLabel: '/L', unitKind: 'volume', unitApprox: false, merchant: 'Super C', logo: 'data:image/svg+xml,%3Csvg xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22 viewBox%3D%220 0 96 24%22%3E%3Crect width%3D%2296%22 height%3D%2224%22 rx%3D%224%22 fill%3D%22%23d33%22%2F%3E%3Ctext x%3D%2248%22 y%3D%2217%22 font-size%3D%2214%22 font-weight%3D%22700%22 fill%3D%22%23fff%22 text-anchor%3D%22middle%22 font-family%3D%22sans-serif%22%3ESUPER C%3C%2Ftext%3E%3C%2Fsvg%3E', premium: true, image: 'data:image/svg+xml,%3Csvg xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22 viewBox%3D%220 0 60 60%22%3E%3Crect width%3D%2260%22 height%3D%2260%22 fill%3D%22%23cfe8d6%22%2F%3E%3Ctext x%3D%2230%22 y%3D%2235%22 font-size%3D%2210%22 text-anchor%3D%22middle%22%3E🥛%3C%2Ftext%3E%3C%2Fsvg%3E', validFrom: flyerIso(-2), validTo: flyerIso(4) },
-      { id: 102, flyerId: 5002, name: 'Lait 1% 2L', price: 2.99, wasPrice: null, unitPrice: 1.5, unitLabel: '/L', unitKind: 'volume', unitApprox: false, merchant: 'IGA', logo: null, premium: true, image: null, validFrom: flyerIso(-2), validTo: flyerIso(4) },
+      dealRow({ id: 101, flyerId: 5001, name: 'Lait 2% 4L', price: 4.99, wasPrice: 6.49, unitPrice: 1.25, unitLabel: '/L', unitKind: 'volume', unitApprox: false, merchant: 'Super C', logo: 'data:image/svg+xml,%3Csvg xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22 viewBox%3D%220 0 96 24%22%3E%3Crect width%3D%2296%22 height%3D%2224%22 rx%3D%224%22 fill%3D%22%23d33%22%2F%3E%3Ctext x%3D%2248%22 y%3D%2217%22 font-size%3D%2214%22 font-weight%3D%22700%22 fill%3D%22%23fff%22 text-anchor%3D%22middle%22 font-family%3D%22sans-serif%22%3ESUPER C%3C%2Ftext%3E%3C%2Fsvg%3E', premium: true, image: 'data:image/svg+xml,%3Csvg xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22 viewBox%3D%220 0 60 60%22%3E%3Crect width%3D%2260%22 height%3D%2260%22 fill%3D%22%23cfe8d6%22%2F%3E%3Ctext x%3D%2230%22 y%3D%2235%22 font-size%3D%2210%22 text-anchor%3D%22middle%22%3E🥛%3C%2Ftext%3E%3C%2Fsvg%3E', validFrom: flyerIso(-2), validTo: flyerIso(4) }),
+      dealRow({ id: 102, flyerId: 5002, name: 'Lait 1% 2L', price: 2.99, wasPrice: null, unitPrice: 1.5, unitLabel: '/L', unitKind: 'volume', unitApprox: false, merchant: 'IGA', logo: null, premium: true, image: null, validFrom: flyerIso(-2), validTo: flyerIso(4) }),
     ],
   },
   flyers: {
     // Dates are relative to the real clock (the store browser splits current vs
     // upcoming by Date.now(), which these tests don't freeze): two flyers in effect
     // this week + one IGA flyer Flipp already published for next week (future start).
+    postal: 'H2X1Y4',
+    count: 3,
     flyers: [
       { flyerId: 5001, merchant: 'Super C', logo: null, premium: true, validFrom: flyerIso(-1), validTo: flyerIso(5) },
       { flyerId: 5002, merchant: 'IGA', logo: null, premium: true, validFrom: flyerIso(-1), validTo: flyerIso(5) },
@@ -816,7 +925,7 @@ export const ROUTES: Record<string, unknown> = {
   ghost: GHOSTS,
   // « Les notes » (its own hub tab since the nav restructure — CercleNotes + global
   // search). Empty is the normal calm state; an absent `notes` must never crash it.
-  'family-notes': { notes: [] },
+  'family-notes': { notes: [], more: false },
   // « Les virements » — the money face of Les notes (`?section=virements`, mig 0126).
   // ONE composed read model: the standing agreements (with their derived `due` dates
   // and catch-up projection) and what has actually been sent. Anchored on MMID like
@@ -843,7 +952,41 @@ export const ROUTES: Record<string, unknown> = {
       { id: 'dg1', member_id: 'm3', media_key: 'nm_g1', scene_key: 'ns_g1', created_at: BASE },
       { id: 'dg2', member_id: 'm1', media_key: 'nm_g2', scene_key: null, created_at: BASE - DAY },
     ],
+    more: false,
   },
+  // The calm default of the twenty a page read and got `{}` for, until the recorder named
+  // them (2026-11-06): empty, in the handler's shape. A spec that needs rows routes its
+  // own, as it always has, and a later route wins.
+  'care-log': { entries: [] },
+  'chores-ledger': { since: BASE - 30 * DAY, ledger: [] },
+  'guest-links': { links: [] },
+  // Only ever asked by a guest session. `kind: null` is what the client reads as a legacy
+  // Démo link, and it is what `{}` amounted to.
+  'guest/whoami': { scope: 'guest', kind: null },
+  'home-pins': { pins: [] },
+  'home-projects': { projects: [] },
+  intake: { submissions: [] },
+  'meal-leftovers': { leftovers: [] },
+  notes: { notes: [] },
+  // Never empty on the real wire: whoever asks is the first operator on it.
+  'operator-invite': { operators: [{ email: 'famille@exemple.ca', createdAt: BASE - 30 * DAY, isSelf: true }] },
+  postbox: { messages: [] },
+  'recipe-loves': { loves: [] },
+  reserve: { reserve: [] },
+  schedule: { blocks: [] },
+  // 0 = no sample rows left. Anything above it raises the examples banner on the board.
+  seed: { count: 0 },
+  share: { shares: [] },
+  'shared-trip': { trips: [] },
+  'this-week': {
+    today: MMID,
+    weekStart: MMID,
+    weekEnd: MMID + 7 * DAY,
+    ahead: { meals: [], events: [], birthdays: [], work: [], projects: [] },
+    behind: { chores: [], routines: [], projects: [] },
+  },
+  'trip-notes': { notes: [] },
+  'trip-packing': { items: [] },
   // « Depuis ce matin » (A-3) — the board greeting's pull-only peek. Fields are
   // camelCase (this is a bespoke composed shape, not a raw D1 row passthrough —
   // see functions/api/today-changes.ts). One of each source, newest first, plus a
@@ -1363,9 +1506,27 @@ export async function mockApi(
       return
     }
 
-    // Unknown GET → empty object (keeps the UI from hanging on a real fetch).
+    // Unknown GET → empty object (keeps the UI from hanging on a real fetch). Named on the
+    // running test first: e2e/unknownGets.reporter.ts holds the list of these to a ratchet.
+    await noteUnknownGet(path)
     await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' })
   })
+}
+
+// The annotation an unknown GET leaves on its test. A dynamic import on purpose: this
+// module also reaches the browser (lib/devFixtures borrows ROUTES for /dev/kit), where
+// the Playwright runtime cannot load and this path never runs.
+export const UNKNOWN_GET = 'unknown-get'
+async function noteUnknownGet(path: string) {
+  try {
+    const { test } = await import('@playwright/test')
+    const { annotations } = test.info()
+    if (!annotations.some((a) => a.type === UNKNOWN_GET && a.description === path)) {
+      annotations.push({ type: UNKNOWN_GET, description: path })
+    }
+  } catch {
+    /* no test is running: a response landing after its test ended */
+  }
 }
 
 export type Theme = 'day' | 'night'

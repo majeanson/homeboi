@@ -7,7 +7,7 @@ import { mockApi, seedState } from './mocks'
 // and join (« Rejoindre ») lifecycle, the « Inviter » link/QR sheet, and the board
 // « Prochain voyage » card's « Partagé » row. Every endpoint is stubbed from the test
 // (the harness has no backend); writes return {ok:true}, so we assert the REQUEST fired
-// (path + body) rather than a refetched outcome — the interactions.spec discipline.
+// (path + body) rather than a refetched outcome — the interactions-*.spec discipline.
 
 const DAY = 86400
 // Trip dates must sit in the FUTURE relative to the real clock: the board VoyageCard
