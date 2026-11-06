@@ -1686,7 +1686,8 @@ export function Board() {
               // The visible text is the greeting; the NAME says what the tap opens —
               // the door looked like plain prose to a mouse/SR user (ACTIONS.md Wave C).
               onClick={help.pick('greeting', () => setSinceMorningOpen(true))}
-              aria-label={t.sinceMorning.title}
+              // The name STARTS with the words on screen: voice control says what it sees.
+              aria-label={`${me ? `${t.today[tod]}, ${greetName(me.display_name)}` : t.today[tod]} : ${t.sinceMorning.title}`}
               title={t.sinceMorning.title}
             >
               {me ? `${t.today[tod]}, ${greetName(me.display_name)}` : t.today[tod]}
@@ -1716,7 +1717,7 @@ export function Board() {
             type="button"
             className="profile-chip"
             onClick={() => setProfileOpen(true)}
-            aria-label={t.profile.who}
+            aria-label={me ? t.profile.who : `${t.profile.askShort} ${t.profile.who}`}
             title={t.profile.who}
             data-tour="board-faces"
           >

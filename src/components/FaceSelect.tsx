@@ -42,7 +42,7 @@ export function FaceSelect({
 
   return (
     <>
-      <button type="button" className="profile-chip profile-chip--labeled" onClick={() => setOpen(true)} aria-label={ariaLabel}>
+      <button type="button" className="profile-chip profile-chip--labeled" onClick={() => setOpen(true)} aria-label={`${sel ? sel.name : allLabel} : ${ariaLabel}`}>
         {sel ? (
           <Avatar className="profile-chip__av" photoUrl={sel.photoUrl} colour={sel.colour} name={sel.name} size={34} decorative />
         ) : (

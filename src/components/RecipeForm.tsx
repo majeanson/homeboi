@@ -1311,7 +1311,7 @@ export function RecipeForm({
                 type="button"
                 className="recipe-step__open"
                 onClick={() => setEditStep(i)}
-                aria-label={t.recipes.editStep}
+                aria-label={`${v.trim() || t.recipes.stepPlaceholder} : ${t.recipes.editStep}`}
               >
                 <span className={'recipe-step__text' + (v.trim() ? '' : ' is-empty')}>
                   {v.trim() || t.recipes.stepPlaceholder}

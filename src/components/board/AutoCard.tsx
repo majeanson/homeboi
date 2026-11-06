@@ -137,7 +137,6 @@ export function AutoCardView({ model, day }: { model: CarModel; day: number }) {
       to="/voiture"
       className="auto-card"
       style={{ ['--car-tint']: tint } as CSSProperties}
-      ariaLabel={t.auto.title}
       icon="car-bold"
       label={carLabel}
       // WHO HAS THE CAR AND WHEN, by name — the rides the grown card lists, each led by

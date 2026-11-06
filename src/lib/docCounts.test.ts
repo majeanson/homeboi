@@ -332,3 +332,10 @@ describe('STATE.md stays a front door', () => {
     ).toBeLessThanOrEqual(STATE_FIRST_OPEN_BOX_BY)
   })
 })
+
+// The allow list only shrinks (solidify 7.4): a new entry is a decision, so it edits this.
+describe('e2e/axe-allow.json', () => {
+  it('holds at most 1 entry', () => {
+    expect(JSON.parse(read('e2e/axe-allow.json')).length).toBeLessThanOrEqual(1)
+  })
+})

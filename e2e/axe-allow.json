@@ -1,0 +1,7 @@
+[
+  {
+    "rule": "meta-viewport",
+    "surface": "*",
+    "reason": "Owner decision 2026-09-16: keep user-scalable=no on a wall tablet and phone; the layout fits each medium instead of zooming."
+  }
+]

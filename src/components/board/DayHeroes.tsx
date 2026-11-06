@@ -204,7 +204,8 @@ export function DayHeroes({
             ? {
                 role: 'button' as const,
                 tabIndex: 0,
-                'aria-label': t.board.sky.open,
+                // The weather on the card is its name, so voice control can say it. This says what a tap does.
+                title: t.board.sky.open,
                 onClick: onOpenSky,
                 onKeyDown: (e: KeyboardEvent) => {
                   if (e.key === 'Enter' || e.key === ' ') {
