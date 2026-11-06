@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { mockApi } from './mocks'
+import { boxOf } from './measure'
 
 // « Mot de passe oublié » (STATE.md §4-K wave 3): /login → /oubli → the email's link →
 // /reinitialiser?t= → the board. The server is stubbed; what this pins is the SHAPE the
@@ -95,3 +96,19 @@ test('a good link sets the password and lands on the board, signed in', async ({
   await page.getByRole('button', { name: 'Enregistrer' }).click()
   await expect(page).toHaveURL(/\/board/)
 })
+
+// The press blurs the field. If that moves the button, press and release land on different
+// things and the click is lost: the first try on every auth form did nothing on a desktop.
+for (const route of ['/oubli', '/login', '/signup', '/reinitialiser?t=abc']) {
+  test(`${route}: pressing submit does not move it`, async ({ page }) => {
+    await mockApi(page, { signedIn: false })
+    await page.goto(route)
+    const submit = page.locator('form.auth__card button[type="submit"]')
+    await page.locator('form.auth__card input').first().fill('Motdepasse123!')
+    const before = await boxOf(submit)
+    await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2)
+    await page.mouse.down()
+    await expect.poll(async () => (await boxOf(submit)).y).toBe(before.y)
+    await page.mouse.up()
+  })
+}

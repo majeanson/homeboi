@@ -19,7 +19,10 @@
 .auth > .status-msg {
   margin-block: 0;
 }
-.auth:has(input:focus) {
+/* Only while a keyboard is really up. This used to be `.auth:has(input:focus)`, and pressing
+   the submit button blurs the field: the column re-centred under the pointer, the button
+   moved 34px between press and release, and no click fired (e2e/password-reset.spec). */
+.kb-open .auth {
   justify-content: flex-start;
 }
 .auth__card {
