@@ -1316,7 +1316,7 @@ All four are read-only views over rows other features own, so D1-D6, D13 and D14
 
 | Feature | D7 Guide | D8 Toddler | D9 Kiosk/Mob | D10 Voice | D11 Empty | D12 Who | D15 i18n | D16 e2e |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| « Cette année » (`HouseDiary`) | 🔶 no guide point, no help entry | ➖ᶠ | ✅ `hscroll.spec` | ➖ᶜ | ✅ `EmptyState` | ✅ faces, never counts | ✅ | 🔶 only its scroll row is specced |
+| « Cette année » (`HouseDiary`) | ✅ `cercle` pt 6 + `operatorHelp:houseDiary` | ➖ᶠ | ✅ `hscroll.spec` | ➖ᶜ | ✅ `EmptyState` | ✅ faces, never counts | ✅ | ✅ `house-diary.spec` |
 | « Pour toi » (`lib/pourToi`) | ➖ a line on the board, no concept to teach | ➖ parent lens only | ✅ | ➖ᶜ | ✅ the line is simply absent | ✅ names the picked face | ✅ | ✅ `pour-toi.spec`, `pourToi.test` |
 | Cast (`/cast`) | ✅ `set-devices` point | ➖ᶠ | ✅ `scenes.spec` | ➖ᶜ | ✅ the board's own | ➖ᵈ | ✅ | ✅ `scenes.spec` |
 | « Cette semaine ensemble » | ✅ guide + `operatorHelp:thisWeek` | ➖ᶠ | ✅ | ➖ᶜ | ✅ `this-week-calm.spec` | ✅ by face, never counts | ✅ | ✅ `this-week-calm.spec`, `glance.d1` |

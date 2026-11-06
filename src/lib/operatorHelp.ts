@@ -305,7 +305,7 @@ export const OPERATOR_HELP = {
     },
   },
   houseDiary: {
-    // « La maison cette année » — the cercle card's diary point (12).
+    // « La maison cette année » — the cercle card's « Fêtes et bilan de l'année » point.
     card: 'cercle',
     point: 6,
     body: {
