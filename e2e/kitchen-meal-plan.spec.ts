@@ -1,5 +1,4 @@
-import { test, expect, type Page } from '@playwright/test'
-import { mockApi, seedState } from './mocks'
+import { test, expect } from './fixtures'
 
 // La cuisine meal-planning UX: the ＋ "Planifier un repas" is a day picker that
 // opens that day's editor SCENE (/kitchen/day/:date — one editor, two entry
@@ -9,21 +8,8 @@ import { mockApi, seedState } from './mocks'
 // scene's headline now, not a slot section. The recipe builder fills the screen
 // (no stale-keyboard dead space).
 
-async function boot(page: Page) {
-  await page.setViewportSize({ width: 390, height: 844 })
-  await page.addInitScript(() => {
-    try {
-      localStorage.setItem('babillard-tours-seen', JSON.stringify(['essentials']))
-    } catch {
-      /* noop */
-    }
-  })
-  await mockApi(page)
-  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
-}
-
-test('＋ Planifier un repas → day picker → opens that day’s editor scene', async ({ page }) => {
-  await boot(page)
+test('＋ Planifier un repas → day picker → opens that day’s editor scene', async ({ page, app }) => {
+  await app.boot({ viewport: { width: 390, height: 844 } })
   await page.goto('/kitchen')
   await expect(page.locator('.kitchen')).toBeVisible({ timeout: 15_000 })
 
@@ -43,8 +29,8 @@ test('＋ Planifier un repas → day picker → opens that day’s editor scene'
   await expect(page.locator('.scene .day-mng__sec').first()).toBeVisible({ timeout: 10_000 })
 })
 
-test('day editor lists slots chronologically (note is the headline)', async ({ page }) => {
-  await boot(page)
+test('day editor lists slots chronologically (note is the headline)', async ({ page, app }) => {
+  await app.boot({ viewport: { width: 390, height: 844 } })
   await page.goto('/kitchen')
   await expect(page.locator('.kitchen')).toBeVisible({ timeout: 15_000 })
   // Open the first day's editor straight from the grid (the manage button is
@@ -67,8 +53,8 @@ test('day editor lists slots chronologically (note is the headline)', async ({ p
   await expect(page.locator('.day-mng__sec-head-row .sec-label__actbtn').first()).toBeVisible()
 })
 
-test('recipe builder fills the screen (no stale-keyboard dead space)', async ({ page }) => {
-  await boot(page)
+test('recipe builder fills the screen (no stale-keyboard dead space)', async ({ page, app }) => {
+  await app.boot({ viewport: { width: 390, height: 844 } })
   await page.goto('/kitchen/recipe/new')
   const modal = page.locator('.recipe-modal')
   await expect(modal).toBeVisible({ timeout: 15_000 })
@@ -86,8 +72,8 @@ test('recipe builder fills the screen (no stale-keyboard dead space)', async ({ 
 // summary line (Marc, 2026-09-04) — each supper is its own row, and tapping it
 // goes STRAIGHT to its recipe (like the board's meal rows). A meal with no linked
 // recipe falls back to that day's full editor (the same door the pencil opens).
-test('a day’s meal row opens its recipe directly; an unlinked meal falls back to the day editor', async ({ page }) => {
-  await boot(page)
+test('a day’s meal row opens its recipe directly; an unlinked meal falls back to the day editor', async ({ page, app }) => {
+  await app.boot({ viewport: { width: 390, height: 844 } })
   await page.goto('/kitchen')
   await expect(page.locator('.kitchen')).toBeVisible({ timeout: 15_000 })
 
@@ -114,8 +100,8 @@ test('a day’s meal row opens its recipe directly; an unlinked meal falls back 
 // deliberately OPENED to write in, so its field stays open. Lean to scan, generous
 // once inside — both directions are pinned here, because a fold applied everywhere
 // would be the mirror-image mistake.
-test('the meal pools lead with their content; the composer waits behind its ＋', async ({ page }) => {
-  await boot(page)
+test('the meal pools lead with their content; the composer waits behind its ＋', async ({ page, app }) => {
+  await app.boot({ viewport: { width: 390, height: 844 } })
   await page.goto('/kitchen')
   await expect(page.locator('.kitchen')).toBeVisible({ timeout: 15_000 })
 
@@ -131,8 +117,8 @@ test('the meal pools lead with their content; the composer waits behind its ＋'
   await expect(plus).toHaveAttribute('aria-expanded', 'true')
 })
 
-test('…but the ideas DRAWER keeps its field open — you opened it to write', async ({ page }) => {
-  await boot(page)
+test('…but the ideas DRAWER keeps its field open — you opened it to write', async ({ page, app }) => {
+  await app.boot({ viewport: { width: 390, height: 844 } })
   await page.goto('/kitchen')
   await expect(page.locator('.kitchen')).toBeVisible({ timeout: 15_000 })
 

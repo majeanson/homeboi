@@ -1,5 +1,4 @@
-import { test, expect, type Page } from '@playwright/test'
-import { mockApi, seedState } from './mocks'
+import { test, expect } from './fixtures'
 
 // Removing a quick-add suggestion used to be swipe-left ONLY (useSwipeToDelete binds
 // touch events), so on a desktop — mouse or keyboard — there was no way to remove one
@@ -10,17 +9,8 @@ import { mockApi, seedState } from './mocks'
 const PHONE = { width: 390, height: 844 }
 const DESKTOP = { width: 1280, height: 900 }
 
-async function boot(page: Page, viewport: { width: number; height: number }) {
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  await page.setViewportSize(viewport)
-  await mockApi(page)
-  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: 'mobile' })
-  await page.goto('/liste/quick')
-  await page.locator('.qa__row').first().waitFor({ state: 'visible', timeout: 15_000 })
-}
-
-test('a quick-add suggestion can be removed with a mouse (not just a swipe)', async ({ page }) => {
-  await boot(page, DESKTOP)
+test('a quick-add suggestion can be removed with a mouse (not just a swipe)', async ({ page, app }) => {
+  await app.boot({ viewport: DESKTOP, state: { calm: true }, route: '/liste/quick', wait: '.qa__row' })
   const rows = page.locator('.qa__row')
   const before = await rows.count()
   expect(before).toBeGreaterThan(0)
@@ -34,8 +24,8 @@ test('a quick-add suggestion can be removed with a mouse (not just a swipe)', as
   await expect(rows).toHaveCount(before - 1)
 })
 
-test('the quick-add delete is keyboard reachable', async ({ page }) => {
-  await boot(page, DESKTOP)
+test('the quick-add delete is keyboard reachable', async ({ page, app }) => {
+  await app.boot({ viewport: DESKTOP, state: { calm: true }, route: '/liste/quick', wait: '.qa__row' })
   const del = page.locator('.qa__row').first().getByRole('button', { name: /Retirer .* des suggestions/ })
   await del.focus()
   await expect(del).toBeFocused()
@@ -45,8 +35,8 @@ test('the quick-add delete is keyboard reachable', async ({ page }) => {
 // only opacity:0 at rest, so without `pointer-events:none` it silently swallows clicks
 // on every sibling that isn't the z-index:1 `.list-row__main` — it used to eat both the
 // aisle picker and the delete button above.
-test('the invisible swipe pane does not swallow clicks on the rest of the row', async ({ page }) => {
-  await boot(page, DESKTOP)
+test('the invisible swipe pane does not swallow clicks on the rest of the row', async ({ page, app }) => {
+  await app.boot({ viewport: DESKTOP, state: { calm: true }, route: '/liste/quick', wait: '.qa__row' })
   const hits = await page.locator('.qa__row').first().evaluate((row) => {
     const at = (sel: string) => {
       const el = row.querySelector(sel) as HTMLElement
@@ -65,8 +55,8 @@ test('the invisible swipe pane does not swallow clicks on the rest of the row', 
 // `aisle-pick__sel` while the CSS styled `.aisle-pip__sel`) drops every rule at once:
 // the native box reappears, opaque, on top of the pip and spills out of the row. Assert
 // the collapsed face is what actually paints — the pip's emoji, not a labelled box.
-test('the quick-add aisle picker collapses to a transparent pip, not a native select', async ({ page }) => {
-  await boot(page, DESKTOP)
+test('the quick-add aisle picker collapses to a transparent pip, not a native select', async ({ page, app }) => {
+  await app.boot({ viewport: DESKTOP, state: { calm: true }, route: '/liste/quick', wait: '.qa__row' })
   const pip = page.locator('.aisle-pip').first()
   await expect(pip).toBeVisible()
   const sel = page.locator('.aisle-pip__sel').first()
@@ -77,8 +67,8 @@ test('the quick-add aisle picker collapses to a transparent pip, not a native se
   expect(await sel.evaluate((e) => (e as HTMLSelectElement).disabled)).toBe(false)
 })
 
-test('the quick-add row does not overflow a phone once it carries a delete', async ({ page }) => {
-  await boot(page, PHONE)
+test('the quick-add row does not overflow a phone once it carries a delete', async ({ page, app }) => {
+  await app.boot({ viewport: PHONE, state: { calm: true }, route: '/liste/quick', wait: '.qa__row' })
   // Per-child bounds check, not scrollWidth: the ancestors set overflow-x:hidden, so a
   // too-wide row is CLIPPED rather than reported (see CLAUDE.md ▸ Horizontal overflow).
   const overflow = await page.locator('.qa__row').first().evaluate((row) => {

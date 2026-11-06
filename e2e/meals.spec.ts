@@ -1,22 +1,10 @@
-import { test, expect, type Page } from '@playwright/test'
-import { mockApi, seedState, BASE, BOARD } from './mocks'
+import type { Page } from '@playwright/test'
+import { test, expect } from './fixtures'
+import { mockApi, seedState, BOARD } from './mocks'
 
 // N meals per slot + time ordering + the food slot icons. Frontend-only against
 // mocked /api/* (the mock returns {ok:true} for writes, so we assert the request
 // fired — the established expectApi pattern).
-
-async function boot(page: Page, path = '/kitchen', freezeClock = false) {
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  // Only the board slot-icon test freezes the clock (to the mock epoch) so today's
-  // breakfast meal reads as live, not folded into the collapsed « Déjà passé »
-  // disclosure by the board lifecycle. Kept OFF elsewhere so a frozen night-time
-  // doesn't perturb time-of-day-dependent UI in the other tests.
-  if (freezeClock) await page.clock.setFixedTime(new Date(BASE * 1000))
-  await mockApi(page)
-  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
-  await page.goto(path)
-  await page.locator('.hub').first().waitFor({ state: 'visible', timeout: 15_000 })
-}
 
 // Resolve once a meals write with the given predicate is sent.
 function waitMeals(page: Page, method: string, pred: (body: any) => boolean) {
@@ -43,8 +31,8 @@ async function openManage(page: Page) {
   return sheet
 }
 
-test('a slot holds several meals — both show, with an add-another', async ({ page }) => {
-  await boot(page)
+test('a slot holds several meals — both show, with an add-another', async ({ page, app }) => {
+  await app.boot({ route: '/kitchen', wait: '.hub' })
   const sheet = await openManage(page)
   // Slots read chronologically now (déjeuner → souper), so scope to the Souper
   // section — it holds the two suppers.
@@ -57,8 +45,8 @@ test('a slot holds several meals — both show, with an add-another', async ({ p
   await expect(sheet.getByRole('button', { name: 'Ajouter un autre — Souper' })).toBeVisible()
 })
 
-test('removing one meal hides just that row at once, and deletes it on commit', async ({ page }) => {
-  await boot(page)
+test('removing one meal hides just that row at once, and deletes it on commit', async ({ page, app }) => {
+  await app.boot({ route: '/kitchen', wait: '.hub' })
   const sheet = await openManage(page)
   const rows = sheet.locator('.kitchen__meal-row')
   const before = await rows.count()
@@ -76,8 +64,8 @@ test('removing one meal hides just that row at once, and deletes it on commit', 
   expect(typeof body.id).toBe('string')
 })
 
-test('reorder posts a move; clear-day posts a clear', async ({ page }) => {
-  await boot(page)
+test('reorder posts a move; clear-day posts a clear', async ({ page, app }) => {
+  await app.boot({ route: '/kitchen', wait: '.hub' })
   const sheet = await openManage(page)
   const move = waitMeals(page, 'POST', (b) => b.action === 'move' && b.dir === 'down')
   // Reorder needs a slot with ≥2 meals — the Souper section (Spaghetti + Salade).
@@ -90,8 +78,8 @@ test('reorder posts a move; clear-day posts a clear', async ({ page }) => {
   await clear
 })
 
-test('clearing one slot posts a clear with that slot', async ({ page }) => {
-  await boot(page)
+test('clearing one slot posts a clear with that slot', async ({ page, app }) => {
+  await app.boot({ route: '/kitchen', wait: '.hub' })
   const sheet = await openManage(page)
   const clear = waitMeals(page, 'POST', (b) => b.action === 'clear' && b.slot === 'supper')
   await sheet.getByRole('button', { name: 'Vider ce repas' }).first().click()
@@ -122,15 +110,15 @@ test('an empty « Ce soir » offers the door to the Idées drawer', async ({ pag
   await expect(page).toHaveURL(/\/kitchen\/idees/)
 })
 
-test('the board "Ce soir" lists every supper', async ({ page }) => {
-  await boot(page, '/board')
+test('the board "Ce soir" lists every supper', async ({ page, app }) => {
+  await app.boot({ route: '/board', wait: '.hub' })
   const heroes = page.locator('.board-heroes .now-card .what')
   await expect(heroes.filter({ hasText: 'Spaghetti maison' })).toBeVisible()
   await expect(heroes.filter({ hasText: 'Salade César' })).toBeVisible()
 })
 
-test('meals carry their slot food icon, never the carrot', async ({ page }) => {
-  await boot(page, '/board', true) // freeze clock so the morning breakfast meal stays live
+test('meals carry their slot food icon, never the carrot', async ({ page, app }) => {
+  await app.boot({ route: '/board', wait: '.hub', clock: 'BASE' }) // freeze clock so the morning breakfast meal stays live
 
   // Today's breakfast (Crêpes) on the bento board is an Act tile with the egg icon.
   await expect(page.locator('.act .tile[data-icon="egg-bold"]').first()).toBeVisible()

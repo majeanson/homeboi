@@ -1,6 +1,7 @@
-import { test, expect, type Page } from '@playwright/test'
+import type { Page } from '@playwright/test'
+import { test, expect } from './fixtures'
 import { mockApi, seedState } from './mocks'
-import { boxOf } from './measure'
+import { boxOf, fontsReady } from './measure'
 
 // Desktop reachability of the side-scrolling rows.
 //
@@ -26,15 +27,7 @@ const PHONE = { width: 390, height: 844 }
 // lens toggle above it, nor a SubTabs a stacked card renders inside itself.
 const SUBS = '.operator__subs'
 
-async function boot(page: Page) {
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  await page.setViewportSize(PHONE)
-  await mockApi(page)
-  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: 'mobile' })
-  await page.goto('/settings?tab=maison&lens=regler')
-  await page.locator(SUBS).waitFor({ state: 'visible', timeout: 15_000 })
-  await page.evaluate(() => document.fonts?.ready).catch(() => {})
-}
+const SETTINGS = { viewport: PHONE, state: { calm: true }, route: '/settings?tab=maison&lens=regler', wait: SUBS }
 
 const metrics = (page: Page) =>
   page.locator(SUBS).evaluate((el) => ({
@@ -44,16 +37,18 @@ const metrics = (page: Page) =>
   }))
 
 test.describe('side-scrolling rows stay reachable with a mouse', () => {
-  test('the Maison pill row really does overflow at phone width', async ({ page }) => {
-    await boot(page)
+  test('the Maison pill row really does overflow at phone width', async ({ page, app }) => {
+    await app.boot(SETTINGS)
+    await fontsReady(page)
     const m = await metrics(page)
     // The precondition of the whole bug. If this ever stops being true the row got
     // narrower/shorter and the rest of this file is testing nothing — fail loudly.
     expect(m.scrollWidth, 'four Maison pills must outgrow a 390px panel').toBeGreaterThan(m.clientWidth + 1)
   })
 
-  test('a vertical mouse wheel scrolls the row sideways', async ({ page }) => {
-    await boot(page)
+  test('a vertical mouse wheel scrolls the row sideways', async ({ page, app }) => {
+    await app.boot(SETTINGS)
+    await fontsReady(page)
     const row = page.locator(SUBS)
     const box = await boxOf(row)
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
@@ -61,8 +56,9 @@ test.describe('side-scrolling rows stay reachable with a mouse', () => {
     await expect.poll(async () => (await metrics(page)).scrollLeft).toBeGreaterThan(0)
   })
 
-  test('the wheel is handed back to the page at the end of the row (no wheel trap)', async ({ page }) => {
-    await boot(page)
+  test('the wheel is handed back to the page at the end of the row (no wheel trap)', async ({ page, app }) => {
+    await app.boot(SETTINGS)
+    await fontsReady(page)
     const row = page.locator(SUBS)
     const box = await boxOf(row)
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
@@ -73,8 +69,9 @@ test.describe('side-scrolling rows stay reachable with a mouse', () => {
     expect(m.scrollLeft).toBeGreaterThanOrEqual(m.scrollWidth - m.clientWidth - 2)
   })
 
-  test('the ‹ › chevrons page the row and reach the last sub', async ({ page }) => {
-    await boot(page)
+  test('the ‹ › chevrons page the row and reach the last sub', async ({ page, app }) => {
+    await app.boot(SETTINGS)
+    await fontsReady(page)
     const next = page.getByRole('button', { name: 'Onglets suivants' })
     const prev = page.getByRole('button', { name: 'Onglets précédents' })
     // Rendered only while the row overflows; hidden on coarse pointers by CSS.

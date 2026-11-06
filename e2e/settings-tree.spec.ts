@@ -1,5 +1,4 @@
-import { test, expect, type Page } from '@playwright/test'
-import { mockApi, seedState } from './mocks'
+import { test, expect } from './fixtures'
 import { SETTINGS_TREE, SUB_LABEL_KEY } from '../src/lib/settingsNav'
 
 // THE RÉGLAGES TREE, walked in the browser. lib/settingsNav.ts is the one map of
@@ -14,22 +13,15 @@ import { SETTINGS_TREE, SUB_LABEL_KEY } from '../src/lib/settingsNav'
 
 const PHONE = { width: 390, height: 844 }
 
-async function boot(page: Page, path: string) {
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  await page.setViewportSize(PHONE)
-  await mockApi(page, { signedIn: true })
-  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: 'mobile' })
-  await page.goto(path)
-  await page.locator('.operator__tabs').waitFor({ state: 'visible', timeout: 15_000 })
-}
+const OPERATOR = { viewport: PHONE, state: { calm: true }, wait: '.operator__tabs' }
 
 type Tab = keyof typeof SETTINGS_TREE
 
 for (const tab of Object.keys(SETTINGS_TREE) as Tab[]) {
   const subs = SETTINGS_TREE[tab] as Record<string, readonly { key: string }[]>
 
-  test(`${tab}: the pill row is exactly the tree's pills, in order`, async ({ page }) => {
-    await boot(page, `/settings?tab=${tab}&lens=regler`)
+  test(`${tab}: the pill row is exactly the tree's pills, in order`, async ({ page, app }) => {
+    await app.boot({ ...OPERATOR, route: `/settings?tab=${tab}&lens=regler` })
     const pills = page.locator('.operator__subs [role="tab"]')
     await expect(pills).toHaveCount(Object.keys(subs).length)
     // Every pill has a label (SUB_LABEL_KEY resolved through i18n) — never a bare id
@@ -42,8 +34,8 @@ for (const tab of Object.keys(SETTINGS_TREE) as Tab[]) {
   })
 
   for (const [sub, sections] of Object.entries(subs)) {
-    test(`${tab} ▸ ${sub}: every section in the tree renders its #op-<key> card`, async ({ page }) => {
-      await boot(page, `/settings?tab=${tab}&lens=regler&sub=${sub}`)
+    test(`${tab} ▸ ${sub}: every section in the tree renders its #op-<key> card`, async ({ page, app }) => {
+      await app.boot({ ...OPERATOR, route: `/settings?tab=${tab}&lens=regler&sub=${sub}` })
       // The pill is selected…
       await expect(page.locator('.operator__subs [role="tab"][aria-selected="true"]')).toHaveCount(1)
       // …and its stack is the tree's, in the tree's order (DOM order of the anchors).
@@ -62,8 +54,8 @@ for (const tab of Object.keys(SETTINGS_TREE) as Tab[]) {
 for (const tab of Object.keys(SETTINGS_TREE) as Tab[]) {
   for (const [sub, sections] of Object.entries(SETTINGS_TREE[tab] as Record<string, readonly { key: string }[]>)) {
     const last = sections[sections.length - 1].key
-    test(`?tab=${tab}&focus=${last} lands on that card with no ?sub spelled (derives ${sub})`, async ({ page }) => {
-      await boot(page, `/settings?tab=${tab}&focus=${last}`)
+    test(`?tab=${tab}&focus=${last} lands on that card with no ?sub spelled (derives ${sub})`, async ({ page, app }) => {
+      await app.boot({ ...OPERATOR, route: `/settings?tab=${tab}&focus=${last}` })
       await expect(page.locator(`#op-${last}`)).toBeInViewport()
       // The one-shot param is consumed (one replace write; back-nav doesn't re-scroll).
       await expect(page).not.toHaveURL(/focus=/)

@@ -1,5 +1,5 @@
-import { test, expect, type Page } from '@playwright/test'
-import { mockApi, seedState } from './mocks'
+import type { Page } from '@playwright/test'
+import { test, expect } from './fixtures'
 import { LEGACY_SUB, LEGACY_TAB, SETTINGS_TREE } from '../src/lib/settingsNav'
 
 // Regression net for the themed-Réglages restructure: EVERY pre-restructure
@@ -12,14 +12,7 @@ import { LEGACY_SUB, LEGACY_TAB, SETTINGS_TREE } from '../src/lib/settingsNav'
 
 const PHONE = { width: 390, height: 844 }
 
-async function boot(page: Page, path: string) {
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  await page.setViewportSize(PHONE)
-  await mockApi(page)
-  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: 'mobile' })
-  await page.goto(path)
-  await page.locator('.operator__tabs').waitFor({ state: 'visible', timeout: 15_000 })
-}
+const OPERATOR = { viewport: PHONE, state: { calm: true }, wait: '.operator__tabs' }
 
 const expectTab = (page: Page, id: string) =>
   expect(page.locator(`#op-tab-${id}`)).toHaveAttribute('aria-selected', 'true')
@@ -54,8 +47,8 @@ const TAB_CASES: [string, string][] = [
 ]
 
 for (const [old, target] of TAB_CASES) {
-  test(`?tab=${old} lands on the ${target} tab`, async ({ page }) => {
-    await boot(page, `/settings?tab=${old}`)
+  test(`?tab=${old} lands on the ${target} tab`, async ({ page, app }) => {
+    await app.boot({ ...OPERATOR, route: `/settings?tab=${old}` })
     await expectTab(page, target)
   })
 }
@@ -72,8 +65,8 @@ const expectSub = (page: Page, tab: keyof typeof SETTINGS_TREE, sub: string) =>
 // (LEGACY_TAB.bySub) — walked from the data, so a re-pointed target updates this.
 for (const [oldTab, entry] of Object.entries(LEGACY_TAB)) {
   for (const [oldSub, target] of Object.entries(entry.bySub ?? {})) {
-    test(`?tab=${oldTab}&sub=${oldSub} lands on ${target.tab} ▸ ${target.sub}`, async ({ page }) => {
-      await boot(page, `/settings?tab=${oldTab}&sub=${oldSub}`)
+    test(`?tab=${oldTab}&sub=${oldSub} lands on ${target.tab} ▸ ${target.sub}`, async ({ page, app }) => {
+      await app.boot({ ...OPERATOR, route: `/settings?tab=${oldTab}&sub=${oldSub}` })
       await expectTab(page, target.tab)
       await expectSub(page, target.tab, target.sub)
     })
@@ -82,8 +75,8 @@ for (const [oldTab, entry] of Object.entries(LEGACY_TAB)) {
 
 // A retired ?sub reached through a retired TAB: the tab folds first (LEGACY_TAB),
 // then the sub (LEGACY_SUB) — ?tab=ai&sub=calm must end on Système ▸ Affichage & veille.
-test('?tab=ai&sub=calm folds tab, then sub, onto Système ▸ « Affichage & veille »', async ({ page }) => {
-  await boot(page, '/settings?tab=ai&sub=calm')
+test('?tab=ai&sub=calm folds tab, then sub, onto Système ▸ « Affichage & veille »', async ({ page, app }) => {
+  await app.boot({ ...OPERATOR, route: '/settings?tab=ai&sub=calm' })
   await expectTab(page, 'settings')
   await expectSub(page, 'settings', 'display')
   await expect(page.locator('#op-calm')).toBeVisible()
@@ -94,16 +87,16 @@ test('?tab=ai&sub=calm folds tab, then sub, onto Système ▸ « Affichage & vei
 // the next merge adds a line there and a case here for free. Nothing 404s.
 for (const [tab, folds] of Object.entries(LEGACY_SUB)) {
   for (const [oldSub, host] of Object.entries(folds ?? {})) {
-    test(`?tab=${tab}&sub=${oldSub} folds onto ${tab} ▸ ${host}`, async ({ page }) => {
-      await boot(page, `/settings?tab=${tab}&sub=${oldSub}`)
+    test(`?tab=${tab}&sub=${oldSub} folds onto ${tab} ▸ ${host}`, async ({ page, app }) => {
+      await app.boot({ ...OPERATOR, route: `/settings?tab=${tab}&sub=${oldSub}` })
       await expectTab(page, tab)
       await expectSub(page, tab as keyof typeof SETTINGS_TREE, host)
     })
   }
 }
 
-test('?tab=recipes (legacy) lands on La cuisine ▸ Apparence', async ({ page }) => {
-  await boot(page, '/settings?tab=recipes')
+test('?tab=recipes (legacy) lands on La cuisine ▸ Apparence', async ({ page, app }) => {
+  await app.boot({ ...OPERATOR, route: '/settings?tab=recipes' })
   await expectTab(page, 'kitchen')
   await expectSub(page, 'kitchen', 'apparence')
 })
@@ -111,8 +104,8 @@ test('?tab=recipes (legacy) lands on La cuisine ▸ Apparence', async ({ page })
 // ?focus= ALONE resolves the sub (subOfFocus): a link may name just the section and
 // survive the next pill reshuffle — the day a card moves, its old ?sub would have
 // pointed at the wrong pill while the section itself is still exactly findable.
-test('?focus= without ?sub lands on the section, sub derived', async ({ page }) => {
-  await boot(page, '/settings?tab=settings&focus=calm')
+test('?focus= without ?sub lands on the section, sub derived', async ({ page, app }) => {
+  await app.boot({ ...OPERATOR, route: '/settings?tab=settings&focus=calm' })
   await expectTab(page, 'settings')
   await expectSub(page, 'settings', 'display')
   await expect(page.locator('#op-calm')).toBeInViewport()
@@ -120,17 +113,17 @@ test('?focus= without ?sub lands on the section, sub derived', async ({ page }) 
 
 // ?card= guide links home onto the card's themed tab, Comprendre lens, and the
 // card opens highlighted (the param is consumed, pinning tab+lens in the URL).
-test('?tab=guide&card=kitchen homes onto La cuisine in Comprendre', async ({ page }) => {
-  await boot(page, '/settings?tab=guide&card=kitchen')
+test('?tab=guide&card=kitchen homes onto La cuisine in Comprendre', async ({ page, app }) => {
+  await app.boot({ ...OPERATOR, route: '/settings?tab=guide&card=kitchen' })
   await expect(page).toHaveURL(/tab=kitchen&lens=comprendre/)
   await expectTab(page, 'kitchen')
   await expect(page.locator('.guide__card.is-target')).toBeVisible()
 })
 
-test('a retired settings card id (+point) still lands on the exact card', async ({ page }) => {
+test('a retired settings card id (+point) still lands on the exact card', async ({ page, app }) => {
   // set-photos was folded into set-display (SETTINGS_CARD_ALIAS), whose home is
   // Système now — the alias chain must survive the restructure end-to-end.
-  await boot(page, '/settings?tab=guide&card=set-photos&point=0')
+  await app.boot({ ...OPERATOR, route: '/settings?tab=guide&card=set-photos&point=0' })
   await expect(page).toHaveURL(/tab=settings&lens=comprendre/)
   await expectTab(page, 'settings')
   await expect(page.locator('.guide__card.is-target')).toBeVisible()
@@ -139,16 +132,16 @@ test('a retired settings card id (+point) still lands on the exact card', async 
 // `ghost` became a GUIDE_CARD_ALIAS onto the liste card (guide merge 2026-08-27)
 // — the assertion is unchanged on purpose: the old bookmark must still land on
 // the liste tab with its host card highlighted.
-test('a concept card homes onto its bucket (ghost → La liste)', async ({ page }) => {
-  await boot(page, '/settings?tab=guide&card=ghost')
+test('a concept card homes onto its bucket (ghost → La liste)', async ({ page, app }) => {
+  await app.boot({ ...OPERATOR, route: '/settings?tab=guide&card=ghost' })
   await expect(page).toHaveURL(/tab=liste&lens=comprendre/)
   await expectTab(page, 'liste')
   await expect(page.locator('.guide__card.is-target')).toBeVisible()
 })
 
 // Old jump-grid ?theme= links resolve through THEME_ALIAS.
-test('?theme=kitchen-shop opens La cuisine in Comprendre', async ({ page }) => {
-  await boot(page, '/settings?tab=guide&theme=kitchen-shop')
+test('?theme=kitchen-shop opens La cuisine in Comprendre', async ({ page, app }) => {
+  await app.boot({ ...OPERATOR, route: '/settings?tab=guide&theme=kitchen-shop' })
   await expect(page).toHaveURL(/tab=kitchen&lens=comprendre/)
   await expectTab(page, 'kitchen')
 })
@@ -156,8 +149,8 @@ test('?theme=kitchen-shop opens La cuisine in Comprendre', async ({ page }) => {
 // The 55→32 agglomeration: a card retired INTO another (cookmode → recipes,
 // GUIDE_CARD_ALIAS base 7) keeps its old deep-link working — ?card=cookmode&point=1
 // must land on the recipes card with alias-shifted point 8 opened + highlighted.
-test('a merged concept card id (+point) still lands on its host card', async ({ page }) => {
-  await boot(page, '/settings?tab=guide&card=cookmode&point=1')
+test('a merged concept card id (+point) still lands on its host card', async ({ page, app }) => {
+  await app.boot({ ...OPERATOR, route: '/settings?tab=guide&card=cookmode&point=1' })
   await expect(page).toHaveURL(/tab=kitchen&lens=comprendre/)
   await expectTab(page, 'kitchen')
   await expect(page.locator('.guide__card.is-target')).toBeVisible()
@@ -167,8 +160,8 @@ test('a merged concept card id (+point) still lands on its host card', async ({ 
 // ?focus= — a guide « Régler » link names ONE section card inside a stacked sub
 // (kitchen ▸ Apparence stacks tags + pastilles + mesures): the anchored card is
 // on screen and the param is consumed (one replace write, no re-trigger on back).
-test('?focus=measureColors lands inside kitchen ▸ Apparence on the exact card', async ({ page }) => {
-  await boot(page, '/settings?tab=kitchen&sub=apparence&focus=measureColors')
+test('?focus=measureColors lands inside kitchen ▸ Apparence on the exact card', async ({ page, app }) => {
+  await app.boot({ ...OPERATOR, route: '/settings?tab=kitchen&sub=apparence&focus=measureColors' })
   await expectTab(page, 'kitchen')
   await expectSub(page, 'kitchen', 'apparence')
   await expect(page.locator('#op-measureColors')).toBeVisible()
@@ -180,8 +173,8 @@ test('?focus=measureColors lands inside kitchen ▸ Apparence on the exact card'
 // « Lui demander de compléter ») first shipped with the tab spelled out because a bare
 // focus landed on Découvrir — and once the focus is consumed, the derived tab must stay
 // pinned in the URL or the page folds back.
-test('?focus= alone lands on its section — tab and pill derived, and they stay', async ({ page }) => {
-  await boot(page, '/settings?focus=guestLinks')
+test('?focus= alone lands on its section — tab and pill derived, and they stay', async ({ page, app }) => {
+  await app.boot({ ...OPERATOR, route: '/settings?focus=guestLinks' })
   await expectTab(page, 'settings')
   await expect(page.locator('#op-guestLinks')).toBeVisible()
   await expect(page).toHaveURL(/tab=settings/)
@@ -190,8 +183,8 @@ test('?focus= alone lands on its section — tab and pill derived, and they stay
 })
 
 // …and the one guide-card link builder (settingsNav guideHref) is the card alone.
-test('a bare ?card= link homes onto the card', async ({ page }) => {
-  await boot(page, '/settings?card=kitchen')
+test('a bare ?card= link homes onto the card', async ({ page, app }) => {
+  await app.boot({ ...OPERATOR, route: '/settings?card=kitchen' })
   await expectTab(page, 'kitchen')
   await expect(page.locator('.guide__card.is-target')).toBeVisible()
 })

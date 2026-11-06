@@ -1,5 +1,4 @@
-import { test, expect } from '@playwright/test'
-import { mockApi, seedState } from './mocks'
+import { test, expect } from './fixtures'
 import { localDayStart } from '../src/lib/localDay'
 
 // « Moments » is retired (2026-08-25). Two things it owned had to survive the deletion,
@@ -17,15 +16,8 @@ import { localDayStart } from '../src/lib/localDay'
 // Local midnight in the household zone, not Node's (UTC on CI — a day off there).
 const today = () => localDayStart(new Date())
 
-async function boot(page: import('@playwright/test').Page, guest = false) {
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  await mockApi(page)
-  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
-  if (guest) await page.addInitScript(() => localStorage.setItem('babillard-guest-token', '1'))
-}
-
-test('the moon line now lives inside « Dehors aujourd’hui »', async ({ page }) => {
-  await boot(page)
+test('the moon line now lives inside « Dehors aujourd’hui »', async ({ page, app }) => {
+  await app.boot({ state: { calm: true } })
   await page.goto('/board')
   await page.locator('.hub').waitFor()
   // Tap the weather/wonder hero — the sheet's only door.
@@ -35,8 +27,8 @@ test('the moon line now lives inside « Dehors aujourd’hui »', async ({ page 
   await expect(page.locator('.sky-tonight__kicker')).toHaveText('Ce soir dans le ciel')
 })
 
-test('the day page offers « Avant de partir », and it opens that day’s screen', async ({ page }) => {
-  await boot(page)
+test('the day page offers « Avant de partir », and it opens that day’s screen', async ({ page, app }) => {
+  await app.boot({ state: { calm: true } })
   await page.goto(`/kitchen/day/${today()}`)
   await page.locator('.scene').waitFor()
   const door = page.locator('.day-plan__doors button')
@@ -46,8 +38,9 @@ test('the day page offers « Avant de partir », and it opens that day’s scree
   await page.waitForURL(/\/board\/departure\?day=\d+/)
 })
 
-test('a read-only guest never sees that door — the checklist behind it writes', async ({ page }) => {
-  await boot(page, true)
+test('a read-only guest never sees that door — the checklist behind it writes', async ({ page, app }) => {
+  await app.boot({ state: { calm: true } })
+  await page.addInitScript(() => localStorage.setItem('babillard-guest-token', '1'))
   await page.goto(`/kitchen/day/${today()}`)
   await page.locator('.scene').waitFor()
   await expect(page.locator('.day-plan__doors')).toHaveCount(0)

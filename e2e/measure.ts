@@ -1,4 +1,7 @@
-import { expect, type Locator } from '@playwright/test'
+import { expect, type Locator, type Page } from '@playwright/test'
+
+// A width measured or a frame photographed before the webfont lands is the fallback font's.
+export const fontsReady = (page: Page) => page.evaluate(() => document.fonts?.ready).catch(() => {})
 
 // `(await locator.boundingBox())!` — **0 sites left in this suite** (2026-09-09). It
 // throws « Cannot read properties of null (reading 'y') » when the node is detached
