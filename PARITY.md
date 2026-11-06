@@ -319,34 +319,34 @@ scored by the ACTIONS.md row being gap-free, same pattern as D7 → `DISCOVERY.m
 | F4 Notes frigo           | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ✅        | ✅        | ✅      | ➖²²       | ✅        | ✅       | ✅      |
 | F5 Mots                  | ✅      | ✅      | ✅      | ✅         | ✅    | ✅⁵¹      | ✅⁵³     | ✅⁵²       | ✅           | ✅        | ✅        | ✅      | ✅         | ✅        | ✅       | ✅      |
 | F6 Habitudes             | ✅⁵⁷    | ✅⁵⁷    | ✅      | ✅         | ✅    | ✅⁵       | ✅⁵³     | ✅⁵²       | ✅           | ✅        | ✅        | ✅      | ✅         | ➖¹       | ✅       | ✅      |
-| F7 Photos                | ✅      | ➖      | ✅      | ➖⁷        | ➖⁷   | ➖        | ✅       | ✅         | ✅           | ➖        | ✅        | ➖³⁰    | ✅         | ✅        | ✅       | ✅      |
-| F8 Dessins               | ✅      | ➖⁴     | ✅      | ➖⁷        | ✅    | ✅        | ✅⁵³     | ✅         | ✅           | ➖        | ✅        | ✅      | ✅         | ✅        | ✅       | ✅      |
-| F9 Capture               | ➖²⁴    | ➖      | ➖      | 🔶⁸        | ✅    | ➖        | ✅       | ➖⁴⁸       | ✅           | ✅        | ✅        | ➖³¹    | ➖         | ➖¹       | ✅       | ✅      |
-| F10 Recherche            | ➖      | ➖      | ➖      | ➖         | ➖    | ✅        | ✅       | ➖⁴⁸       | ✅⁵⁴         | ➖⁴⁷      | ✅        | ➖      | ➖         | ➖        | ✅       | ✅      |
-| F11 Widget space         | ✅      | ➖      | ➖⁴⁴    | ➖⁹        | ➖    | ➖        | ✅       | ✅         | ✅           | ➖        | ✅        | ➖      | ➖         | ➖        | ✅       | ✅      |
-| F12 Plan repas           | ✅      | ✅      | ✅      | ✅         | ✅    | ✅⁵¹      | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | ➖        | ✅       | ✅      |
-| F13 Idées repas          | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ✅⁵¹      | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | ➖        | ✅       | ✅      |
-| F14 Restants             | ✅      | ✅      | ✅      | ✅         | ✅    | ➖²⁷      | ✅       | ✅         | ✅           | ➖        | ✅        | ➖³²    | ✅         | ➖        | ✅       | ✅⁵⁴    |
-| F15 Recettes             | ✅      | ➖⁴     | ✅      | ✅⁶³       | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | 🔶¹⁰      | ✅       | ✅      |
-| F16 Garde-manger         | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ✅        | ✅       | ➖⁴⁸       | ✅           | ✅        | ✅        | ➖³³    | ✅         | ➖        | ✅       | ✅      |
-| F17 Vide-frigo           | ➖      | ➖      | ➖      | ➖⁸        | ➖    | ➖        | ✅⁵³     | ➖⁴⁸       | ✅           | ➖⁴⁷      | ➖³⁶      | ➖      | ➖         | ➖        | ✅       | ✅      |
-| F18 Circulaires          | ➖²⁵    | ➖⁴³    | ➖⁴⁵    | ✅         | ✅    | ➖²⁸      | ✅       | ➖⁴⁸       | ✅⁵⁴         | ➖        | ✅        | ➖      | ➖         | ➖        | ✅       | ✅      |
-| F19 La liste             | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ✅        | ✅        | ✅      | ✅         | ➖        | ✅       | ✅      |
-| F20 Fantômes             | ✅¹⁷    | ➖⁴³    | ✅      | ✅⁵⁶       | ✅    | ➖²⁹      | ✅       | ➖⁴⁸       | ✅           | ➖        | ✅        | ➖³⁴    | ✅         | ➖        | ✅       | ✅      |
-| F21 Personnes            | ✅      | ✅      | ✅      | ➖²⁰       | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ➖      | ✅         | ✅        | ✅       | ✅      |
-| F22 Groupes              | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ✅⁵¹      | ✅       | ➖⁴⁸       | ✅           | ➖        | ✅        | ➖      | ✅²¹       | ➖        | ✅       | ✅      |
-| F23 Animaux              | ✅      | ✅      | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖        | ✅        | ➖      | ✅         | ✅        | ✅       | ✅⁵⁴    |
-| F24 Business             | ✅      | ✅      | ✅      | ✅         | ✅    | ✅        | ✅       | ➖⁴⁸       | ✅           | ➖        | ✅        | ➖      | ✅         | ✅        | ✅       | ✅      |
+| F7 Photos                | ✅      | ➖ᵉ      | ✅      | ➖⁷        | ➖⁷   | ➖ᵉ        | ✅       | ✅         | ✅           | ➖ᶜ        | ✅        | ➖³⁰    | ✅         | ✅        | ✅       | ✅      |
+| F8 Dessins               | ✅      | ➖⁴     | ✅      | ➖⁷        | ✅    | ✅        | ✅⁵³     | ✅         | ✅           | ➖ᶜ        | ✅        | ✅      | ✅         | ✅        | ✅       | ✅      |
+| F9 Capture               | ➖²⁴    | ➖ᵃ      | ➖ᵃ      | ✅        | ✅    | ➖ᵃ        | ✅       | ➖⁴⁸       | ✅           | ✅        | ✅        | ➖³¹    | ➖ᵃ         | ➖¹       | ✅       | ✅      |
+| F10 Recherche            | ➖ᵃ      | ➖ᵃ      | ➖ᵃ      | ➖ᵃ         | ➖ᵃ    | ✅        | ✅       | ➖⁴⁸       | ✅⁵⁴         | ➖⁴⁷      | ✅        | ➖ᵃ      | ➖ᵃ         | ➖ᵃ        | ✅       | ✅      |
+| F11 Widget space         | ✅      | ➖ᵃ      | ➖⁴⁴    | ➖⁹        | ➖ᵃ    | ➖ᵃ        | ✅       | ✅         | ✅           | ➖ᵃ        | ✅        | ➖ᵃ      | ➖ᵃ         | ➖ᵃ        | ✅       | ✅      |
+| F12 Plan repas           | ✅      | ✅      | ✅      | ✅         | ✅    | ✅⁵¹      | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | ➖ᵇ        | ✅       | ✅      |
+| F13 Idées repas          | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ✅⁵¹      | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | ➖ᵇ        | ✅       | ✅      |
+| F14 Restants             | ✅      | ✅      | ✅      | ✅         | ✅    | ➖²⁷      | ✅       | ✅         | ✅           | ➖ᶜ        | ✅        | ➖³²    | ✅         | ➖ᵇ        | ✅       | ✅⁵⁴    |
+| F15 Recettes             | ✅      | ➖⁴     | ✅      | ✅⁶³       | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | ➖¹⁰      | ✅       | ✅      |
+| F16 Garde-manger         | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ✅        | ✅       | ➖⁴⁸       | ✅           | ✅        | ✅        | ➖³³    | ✅         | ➖ᵇ        | ✅       | ✅      |
+| F17 Vide-frigo           | ➖ᵃ      | ➖ᵃ      | ➖ᵃ      | ➖⁸        | ➖ᵃ    | ➖ᵃ        | ✅⁵³     | ➖⁴⁸       | ✅           | ➖⁴⁷      | ➖³⁶      | ➖ᵃ      | ➖ᵃ         | ➖ᵃ        | ✅       | ✅      |
+| F18 Circulaires          | ➖²⁵    | ➖⁴³    | ➖⁴⁵    | ✅         | ✅    | ➖²⁸      | ✅       | ➖⁴⁸       | ✅⁵⁴         | ➖ᶜ        | ✅        | ➖ᵈ      | ➖ᵃ         | ➖ᵇ        | ✅       | ✅      |
+| F19 La liste             | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ✅        | ✅        | ✅      | ✅         | ➖ᵇ        | ✅       | ✅      |
+| F20 Fantômes             | ✅¹⁷    | ➖⁴³    | ✅      | ✅⁵⁶       | ✅    | ➖²⁹      | ✅       | ➖⁴⁸       | ✅           | ➖ᶜ        | ✅        | ➖³⁴    | ✅         | ➖ᵇ        | ✅       | ✅      |
+| F21 Personnes            | ✅      | ✅      | ✅      | ➖²⁰       | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ➖ᵈ      | ✅         | ✅        | ✅       | ✅      |
+| F22 Groupes              | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ✅⁵¹      | ✅       | ➖⁴⁸       | ✅           | ➖ᶜ        | ✅        | ➖ᵈ      | ✅²¹       | ➖ᵇ        | ✅       | ✅      |
+| F23 Animaux              | ✅      | ✅      | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖ᶜ        | ✅        | ➖ᵈ      | ✅         | ✅        | ✅       | ✅⁵⁴    |
+| F24 Business             | ✅      | ✅      | ✅      | ✅         | ✅    | ✅        | ✅       | ➖⁴⁸       | ✅           | ➖ᶜ        | ✅        | ➖ᵈ      | ✅         | ✅        | ✅       | ✅      |
 | F25 Notes cercle         | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ➖⁴⁸       | ✅           | ✅        | ✅        | ✅      | ✅         | ✅        | ✅       | ✅      |
-| F26 Carnets              | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ➖⁴⁸       | ✅           | ➖⁴⁷      | ✅        | ➖³⁵    | ✅³ ²¹     | 🔶²³      | ✅       | 🔶¹¹    |
-| F27 Notre monde          | ➖      | ➖⁴³    | ➖      | ➖         | ➖    | ➖        | ✅       | ✅         | ✅           | ➖        | ✅        | ➖      | ➖         | ➖        | ✅       | ✅      |
-| F28 Routines             | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | 🔶¹⁰      | ✅       | ✅      |
-| F29 Collants             | ✅      | ➖      | ✅⁵⁵    | ✅         | ✅    | ➖        | ✅⁵³     | ✅⁵⁰       | ✅           | ➖        | ✅        | ✅      | ✅         | ➖        | ✅       | ✅⁵⁴    |
-| F30 Jouer                | ➖      | ➖      | ➖      | ➖         | ➖    | ➖        | ✅⁵³     | ✅         | ✅           | ➖⁴⁷      | ➖³⁷      | ➖      | ➖         | ➖        | ✅       | ✅⁵⁴    |
+| F26 Carnets              | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ➖⁴⁸       | ✅           | ➖⁴⁷      | ✅        | ➖³⁵    | ✅³ ²¹     | ➖²³      | ✅       | ✅    |
+| F27 Notre monde          | ➖ᵃ      | ➖⁴³    | ➖ᵃ      | ➖ᵃ         | ➖ᵃ    | ➖ᵃ        | ✅       | ✅         | ✅           | ➖ᵃ        | ✅        | ➖ᵃ      | ➖ᵃ         | ➖ᵃ        | ✅       | ✅      |
+| F28 Routines             | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | ➖¹⁰      | ✅       | ✅      |
+| F29 Collants             | ✅      | ➖ᵉ      | ✅⁵⁵    | ✅         | ✅    | ➖ᵉ        | ✅⁵³     | ✅⁵⁰       | ✅           | ➖ᶜ        | ✅        | ✅      | ✅         | ➖ᵇ        | ✅       | ✅⁵⁴    |
+| F30 Jouer                | ➖ᵃ      | ➖ᵃ      | ➖ᵃ      | ➖ᵃ         | ➖ᵃ    | ➖ᵃ        | ✅⁵³     | ✅         | ✅           | ➖⁴⁷      | ➖³⁷      | ➖ᵃ      | ➖ᵃ         | ➖ᵃ        | ✅       | ✅⁵⁴    |
 | F31 Voyage               | ✅      | ➖⁴³    | ✅      | ✅         | ✅    | ✅⁵¹      | ✅⁵³     | ➖⁴⁸       | ✅           | ✅        | ✅        | ✅      | ✅         | ✅        | ✅       | ✅      |
-| F32 L'auto               | ✅¹⁸    | ➖⁴³    | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖        | ✅        | ✅      | ✅³        | ➖        | ✅       | ✅⁵⁴    |
-| F33 Partager & invités   | 🔶²⁶    | ➖      | ✅      | ➖¹²       | 🔶    | ➖        | ✅       | ➖         | ➖           | ➖⁴⁷      | ✅        | ✅¹³    | ✅         | ✅        | ✅       | ✅⁶⁴    |
-| F34 Réglages & appareils | ✅      | ➖      | ✅      | ➖¹²       | ✅    | ➖        | ✅       | ➖¹⁴       | ➖           | ➖⁴⁷      | ✅        | ➖      | ✅²¹       | 🔶²³      | ✅       | ✅      |
+| F32 L'auto               | ✅¹⁸    | ➖⁴³    | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖ᶜ        | ✅        | ✅      | ✅³        | ➖ᵇ        | ✅       | ✅⁵⁴    |
+| F33 Partager & invités   | ➖²⁶    | ➖ᵉ      | ✅      | ➖¹²       | ➖ᵍ    | ➖ᵉ        | ✅       | ➖ᶠ         | ➖ᶠ           | ➖⁴⁷      | ✅        | ✅¹³    | ✅         | ✅        | ✅       | ✅⁶⁴    |
+| F34 Réglages & appareils | ✅      | ➖ᵉ      | ✅      | ➖¹²       | ✅    | ➖ᵉ        | ✅       | ➖¹⁴       | ➖ᶠ           | ➖⁴⁷      | ✅        | ➖ᵈ      | ✅²¹       | ➖²³      | ✅       | ✅      |
 | F36 Virements            | ✅      | ✅      | ✅⁶⁷    | ✅         | ✅    | ➖⁶⁸      | ✅       | ➖⁶⁹       | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅⁷⁰       | ➖¹       | ✅       | ✅      |
 | F37 L'autre parent       | ✅⁷¹    | ➖⁷²    | ✅⁷³    | ➖⁷⁴       | ➖⁷⁵  | ➖⁷⁶      | ✅       | ➖⁴⁸       | ✅           | ➖⁴⁷      | ➖⁷⁷      | ✅⁷⁸    | ✅⁷⁹       | ➖¹       | ✅       | ✅      |
 | F38 La semaine           | ➖⁸⁰    | ➖⁸¹    | ➖⁸⁰    | ➖⁸⁰       | ✅⁸²  | ➖⁸³      | ✅       | ➖⁸⁴       | ✅           | ➖⁴⁷      | ✅⁸⁵      | ✅⁸⁶    | ➖⁸⁰       | ➖¹       | ✅       | ✅      |
@@ -359,16 +359,16 @@ scored by the ACTIONS.md row being gap-free, same pattern as D7 → `DISCOVERY.m
 Footnotes (verdicts recorded so far):
 
 1. No media attachment by design — the entity is text/derived only.
-2. Home projects searchable; loose chores ("À faire") — verify which kinds `SEARCH_INDEX` covers.
+2. Home projects and À compléter are searchable. Loose chores (« À faire », `tasks`) are not: no SEARCH_INDEX entry. A real gap, the one 🔶 left in this matrix (checked 2026-11-06).
 3. **CONVERGED (mig 0087, already shipped).** The `color` outliers `tasks`/`home_projects`/`schedule_blocks`/`carnets` (+ the household JSON-pref columns) were renamed to `colour`; readers alias `colour AS color` so the API JSON stays byte-identical. Cells 🔶→✅. Only non-column spellings remain out of scope (the `color?` keys _inside_ reserve_locations/cars JSON, and the `avatar_kind='color'` discriminator value) — see UNIFORMIZING DB-2.
 4. Deliberate no-peek verdict recorded in `adapters.ts` L387-397 / UNIFORMIZING: tapping navigates to the full page/scene ("tap the thing, get the thing").
 5. **Dry-run confirmed 2026-07-10; FIXED (Wave S) 2026-07-10**: `habit` now has a `SEARCH_INDEX` entry (title) + a « Mes habitudes » SearchPage section → `/board/habitudes`. See ⁵¹.
 6. Guide card `habits` + `operatorHelp:habits` exist, but no « ? » help on the board/HabitudesPage surface itself and no tour step (audited 2026-07-10, Appendix A).
 7. Two-step R2 upload — exempt from useWrite/realtime per LIB-1 verdict.
-8. AI round-trip (capture classify / vide-frigo) can't be queued offline — exempt, but the _fallback_ manual path must work offline; verify.
+8. AI round-trip (capture classify / vide-frigo) cannot run offline, but the capture queues and replays: `e2e/capture-offline.spec.ts` (✅ since 2026-11-06).
 9. Board layout is device-local localStorage (`lib/boardCards`), not a server write.
 10. DB-1 deferred: parallel media arrays (recipe step-images, routine card-audio/photos) instead of the trio — opportunistic convergence only.
-11. Carnet restore/scene covered; care-log flows beyond restore unspecced.
+11. Care-log add, edit, delete and undo are all specced in `e2e/carnet-scene.spec.ts` (✅ since 2026-11-06).
 12. Auth/pairing/guest flows are online-only by nature.
 13. Postbox exact-name-match tinting is THE template for guest→household attribution (P2-8).
 14. Settings locked away from toddler by design (kid one-way door).
@@ -1067,6 +1067,17 @@ F31: D6 search) plus a D7 🔶. Neither is a gold standard; both are Wave target
 **Total: 17 ranked entries — 4 🔴, 12 🟡, 1 🟢.** No matrix ❌/🔶 is unrepresented.
 
 ---
+
+
+**Why a ➖ has a letter (checked against the code on 2026-11-06).** A number points at a footnote about that one cell; a letter names a class:
+
+- ᵃ **No stored row of its own.** A derived view, an AI action, device-local layout or static content, so there is nothing to peek, undo, search or attribute.
+- ᵇ **No media column.** The table holds no attachment (`functions/db/migrations`).
+- ᶜ **No free-text composer.** Structured fields and pickers only, so voice has nothing to fill (Part 2, D10).
+- ᵈ **Not authored.** A directory entry or shared setting, where « who wrote this » has no meaning.
+- ᵉ **The row is the content.** A picture on a wall or a Réglages section, with no detail to peek or text to find.
+- ᶠ **Operator surface.** Locked away from the toddler lens, and reached from the settings tab on either device role.
+- ᵍ **Not broadcast.** A link list is read by the operator who made it, so a push would reach nobody.
 
 ## Part 4 — Fix-waves (write on Day 4, execute Day 5+)
 

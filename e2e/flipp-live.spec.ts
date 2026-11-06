@@ -119,7 +119,7 @@ async function runBookmarklet(page: Page, payload: string) {
   await page.locator('#bb-flipp [data-bb="paste"]').click({ timeout: 15_000 })
   await page.locator('#bb-flipp [data-bb="replace"]').click({ timeout: 15_000 })
   await page.waitForURL(/\/liste_dachats/, { timeout: 60_000 })
-  await page.waitForTimeout(2_500)
+  await page.waitForTimeout(2_500) // flipp.com hydrating: a third-party page gives no signal we control
 }
 
 test('1 · a real « Ajouter à la liste » still stores the shape lib/flippList writes', async ({ page, request }) => {
@@ -185,7 +185,7 @@ test('3 · the routes still hold: item page needs a postal; bare /liste_dachats 
   // opened with a postal, flipp.com remembers it (`location_info` in storage) and
   // the bare item URL renders after all. This check therefore comes first.
   await open(page, `/fr-ca/item/${it.flyer_item_id}`)
-  await page.waitForTimeout(4_000)
+  await page.waitForTimeout(4_000) // flipp.com hydrating: a third-party page gives no signal we control
   await expect(page.getByText(it.name!.slice(0, 20), { exact: false })).toHaveCount(0)
   await shot(page, '3-item-no-postal')
   // With a postal code: the item.
@@ -202,7 +202,7 @@ test('3 · the routes still hold: item page needs a postal; bare /liste_dachats 
   await runBookmarklet(page, payload)
   await expect(page.getByText(it.merchant_name!, { exact: false }).first()).toBeVisible({ timeout: 30_000 })
   await open(page, `/fr-ca/liste_dachats?postal_code=${POSTAL}`)
-  await page.waitForTimeout(4_000)
+  await page.waitForTimeout(4_000) // flipp.com hydrating: a third-party page gives no signal we control
   await expect(page.locator('img[src*="wishabi.net/page_items"]')).toHaveCount(0)
 })
 
@@ -259,7 +259,7 @@ test('5 · « Envoyer à Flipp »: /action?command=add_text_to_list adds the lin
   const url = flippAddTextsUrl(['Oeufs Babillard', 'Pain, tranché'], POSTAL)!
   await page.goto(url, { waitUntil: 'domcontentloaded' })
   await page.waitForURL(/\/shopping_list|\/liste_dachats/, { timeout: 60_000 })
-  await page.waitForTimeout(3_000)
+  await page.waitForTimeout(3_000) // flipp.com hydrating: a third-party page gives no signal we control
   const raw = await stored(page)
   expect(raw, 'their /action wrote the list').not.toBeNull()
   const items = (JSON.parse(raw!) as { listItems: { term: string }[] }).listItems.map((i) => i.term)

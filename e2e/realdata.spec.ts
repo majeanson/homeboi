@@ -73,7 +73,7 @@ async function login(page: Page, context: BrowserContext) {
 async function settle(page: Page, ready = '.hub') {
   await page.locator(ready).first().waitFor({ state: 'visible', timeout: 20_000 }).catch(() => {})
   await page.evaluate(() => document.fonts?.ready).catch(() => {})
-  await page.waitForTimeout(600)
+  await page.waitForTimeout(600) // a real-data frame settling for its screenshot: no DOM signal to wait on
 }
 
 async function scrollToBottom(page: Page) {
@@ -83,7 +83,7 @@ async function scrollToBottom(page: Page) {
     const root = document.getElementById('root')
     if (root) root.scrollTop = root.scrollHeight
   })
-  await page.waitForTimeout(400)
+  await page.waitForTimeout(400) // a real-data frame settling for its screenshot: no DOM signal to wait on
 }
 
 // Controls whose tappable center is painted over by the fixed bottom nav, after
@@ -167,10 +167,10 @@ test('real liste overlays (cashier / quick-add / browse)', async ({ page, contex
   const quick = page.getByRole('button', { name: /Ajout rapide/ })
   if (await quick.count()) {
     await quick.first().click()
-    await page.waitForTimeout(500)
+    await page.waitForTimeout(500) // a real-data frame settling for its screenshot: no DOM signal to wait on
     await page.screenshot({ path: 'e2e/screenshots/real-liste-quickadd.png', fullPage: false })
     await page.keyboard.press('Escape').catch(() => {})
-    await page.waitForTimeout(300)
+    await page.waitForTimeout(300) // a real-data frame settling for its screenshot: no DOM signal to wait on
   }
 
   // Deals browser — also behind the ＋ Add sheet.
@@ -178,24 +178,24 @@ test('real liste overlays (cashier / quick-add / browse)', async ({ page, contex
   const browse = page.getByRole('button', { name: /Parcourir|Browse/ })
   if (await browse.count()) {
     await browse.first().click()
-    await page.waitForTimeout(900)
+    await page.waitForTimeout(900) // a real-data frame settling for its screenshot: no DOM signal to wait on
     await page.screenshot({ path: 'e2e/screenshots/real-liste-browse.png', fullPage: false })
     await page.keyboard.press('Escape').catch(() => {})
-    await page.waitForTimeout(300)
+    await page.waitForTimeout(300) // a real-data frame settling for its screenshot: no DOM signal to wait on
   }
 
   // Cashier (only if a deal is staged → the "Montrer à la caisse" button exists).
   const present = page.getByRole('button', { name: /Montrer|Show the cashier/ })
   if (await present.count()) {
     await present.first().click()
-    await page.waitForTimeout(700)
+    await page.waitForTimeout(700) // a real-data frame settling for its screenshot: no DOM signal to wait on
     await page.screenshot({ path: 'e2e/screenshots/real-cashier-grid.png', fullPage: false })
     // Tap a tile → its big proof peek (random-access, no sequential stepper).
     const tile = page.locator('.cashier__tile')
     if (await tile.count()) {
       await tile.first().click()
       await page.locator('.bigcard').waitFor({ state: 'visible' }).catch(() => {})
-      await page.waitForTimeout(600)
+      await page.waitForTimeout(600) // a real-data frame settling for its screenshot: no DOM signal to wait on
       await page.screenshot({ path: 'e2e/screenshots/real-cashier-peek.png', fullPage: false })
     }
   } else {
@@ -212,7 +212,7 @@ test('real add sheet @phone', async ({ page, context }) => {
   const fab = page.locator('.add-fab')
   if (await fab.count()) {
     await fab.first().click()
-    await page.waitForTimeout(600)
+    await page.waitForTimeout(600) // a real-data frame settling for its screenshot: no DOM signal to wait on
     await page.screenshot({ path: 'e2e/screenshots/real-addsheet.png', fullPage: false })
   }
 })
@@ -232,7 +232,7 @@ test('real board month view @phone-tall', async ({ page, context }) => {
   await login(page, context)
   await page.goto('/board')
   await settle(page)
-  await page.waitForTimeout(700)
+  await page.waitForTimeout(700) // a real-data frame settling for its screenshot: no DOM signal to wait on
   await page.screenshot({ path: 'e2e/screenshots/real-board-month.png', fullPage: true })
 })
 
@@ -259,7 +259,7 @@ test('real crud rows: all settings + kitchen tabs @phone-tall', async ({ page, c
   for (const id of SETTINGS_TABS) {
     await page.goto(`/settings?tab=${id}`)
     await settle(page, '.operator__tabs')
-    await page.waitForTimeout(400)
+    await page.waitForTimeout(400) // a real-data frame settling for its screenshot: no DOM signal to wait on
     await page.screenshot({ path: `e2e/screenshots/real-crud-settings-${id}.png`, fullPage: true })
   }
 
@@ -269,7 +269,7 @@ test('real crud rows: all settings + kitchen tabs @phone-tall', async ({ page, c
     await page.goto('/kitchen')
     await settle(page)
     await page.locator('.subtabs__opt').nth(idx).click().catch(() => {})
-    await page.waitForTimeout(500)
+    await page.waitForTimeout(500) // a real-data frame settling for its screenshot: no DOM signal to wait on
     await page.screenshot({ path: `e2e/screenshots/real-crud-kitchen-${name}.png`, fullPage: true })
   }
 })
@@ -284,12 +284,12 @@ test('real recipe + cook mode @phone', async ({ page, context }) => {
   const card = page.locator('.recipe-card').first()
   if (await card.count()) {
     await card.click()
-    await page.waitForTimeout(700)
+    await page.waitForTimeout(700) // a real-data frame settling for its screenshot: no DOM signal to wait on
     await page.screenshot({ path: 'e2e/screenshots/real-recipe-sheet.png', fullPage: false })
     const cook = page.getByRole('button', { name: /Cuisiner|Cook|cuisin/i })
     if (await cook.count()) {
       await cook.first().click()
-      await page.waitForTimeout(700)
+      await page.waitForTimeout(700) // a real-data frame settling for its screenshot: no DOM signal to wait on
       await page.screenshot({ path: 'e2e/screenshots/real-cook-mode.png', fullPage: false })
     }
   } else {
@@ -328,7 +328,7 @@ test('real cercle sub-views @phone-tall', async ({ page, context }) => {
   for (const v of views) {
     await page.goto(v.path)
     await settle(page)
-    await page.waitForTimeout(500)
+    await page.waitForTimeout(500) // a real-data frame settling for its screenshot: no DOM signal to wait on
     await page.screenshot({ path: `e2e/screenshots/real-cercle-${v.name}.png`, fullPage: true })
     console.log(`[overflow]  cercle-${v.name}: ${(await overflowing(page)) === 'ok' ? 'ok' : '⚠'}`)
   }
@@ -351,7 +351,7 @@ test('real scenes @phone-tall', async ({ page, context }) => {
     await page.goto(s.path)
     await page.locator(s.ready.split(',')[0].trim()).first().waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {})
     await page.evaluate(() => document.fonts?.ready).catch(() => {})
-    await page.waitForTimeout(600)
+    await page.waitForTimeout(600) // a real-data frame settling for its screenshot: no DOM signal to wait on
     await page.screenshot({ path: `e2e/screenshots/real-scene-${s.name}.png`, fullPage: true })
     const over = await page.evaluate(() => {
       const doc = document.documentElement
