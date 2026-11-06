@@ -4,6 +4,10 @@ import { defineConfig, devices } from '@playwright/test'
 // wrangler/D1 needed) and stub every /api/* call from the test, so screenshots
 // are deterministic and offline. The matrix lives in e2e/screenshots.spec.ts:
 // every surface × theme (day/night) × format (phone/wall) × language.
+// A second checkout needs its own server: `reuseExistingServer` would otherwise test
+// whichever Vite already holds the port, silently.
+const PORT = Number(process.env.PW_PORT) || 5173
+
 export default defineConfig({
   testDir: './e2e',
   // sw.spec.ts needs the built PROD bundle served by `vite preview` (the SW is a
@@ -44,7 +48,7 @@ export default defineConfig({
   reporter: [['list'], ['html', { open: 'never', outputFolder: 'e2e/report' }]],
   outputDir: 'e2e/test-results',
   use: {
-    baseURL: 'http://127.0.0.1:5173',
+    baseURL: `http://127.0.0.1:${PORT}`,
     // CI runs retries: 0, so « on-first-retry » meant CI had NEVER recorded a trace — every
     // CI flake was read blind (config-panels « a list row opens its editor scene »: 4
     // reds, 1 in 27 cold local runs, cause unprovable, 2026-09-29). Keep one on failure
@@ -74,8 +78,8 @@ export default defineConfig({
   // Plain `vite` — frontend only. The API is stubbed per-test via page.route,
   // so the 8788 proxy target never needs to be up.
   webServer: {
-    command: 'npm run dev -- --host 127.0.0.1 --port 5173',
-    url: 'http://127.0.0.1:5173',
+    command: `npm run dev -- --host 127.0.0.1 --port ${PORT}`,
+    url: `http://127.0.0.1:${PORT}`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
     // Vite's own log in the CI job (dependency re-optimisation, a failed transform, a
