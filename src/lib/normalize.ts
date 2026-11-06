@@ -20,7 +20,7 @@ export function foldRanges(text: string, needle: string): [number, number][] {
   let folded = ''
   const map: number[] = []
   for (let i = 0; i < text.length; i++) {
-    const f = fold(text[i])
+    const f = fold(text.charAt(i))
     for (let j = 0; j < f.length; j++) {
       folded += f[j]
       map.push(i)
@@ -29,12 +29,12 @@ export function foldRanges(text: string, needle: string): [number, number][] {
   const out: [number, number][] = []
   let at = folded.indexOf(n)
   while (at !== -1) {
-    let end = map[at + n.length - 1] + 1
+    let end = (map[at + n.length - 1] ?? 0) + 1
     // A decomposed (NFD) original carries combining marks AFTER their base char;
     // they fold to '' so they have no folded index — pull any trailing ones into
     // the range so a highlight never splits « à » from its accent.
-    while (end < text.length && fold(text[end]) === '') end++
-    out.push([map[at], end])
+    while (end < text.length && fold(text.charAt(end)) === '') end++
+    out.push([map[at] ?? 0, end])
     at = folded.indexOf(n, at + n.length)
   }
   return out

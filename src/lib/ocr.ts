@@ -116,7 +116,7 @@ export function normalizeOcrText(text: string): string {
       .replace(/([⁰¹²³⁴⁵⁶⁷⁸⁹]+)[⁄/]([₀₁₂₃₄₅₆₇₈₉]+)/g, (_, a: string, b: string) => `${[...a].map((c) => SUP.indexOf(c)).join('')}/${[...b].map((c) => SUB.indexOf(c)).join('')}`)
       // A whole number glued to a fraction glyph ("1½" / "1 ½") → mixed "1 1/2".
       .replace(/(\d)\s*([¼½¾⅐⅑⅒⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞])/g, (_, d, g) => `${d} ${VULGAR[g]}`)
-      .replace(VULGAR_CLASS, (g) => VULGAR[g])
+      .replace(VULGAR_CLASS, (g) => VULGAR[g] ?? g)
   )
 }
 
@@ -201,7 +201,7 @@ export function columnizeOcrPage(page: Page): string | null {
       const b1 = Math.min(N - 1, Math.ceil(((w.x1 - minX) / span) * N) - 1)
       for (let b = b0; b <= b1; b++) seen.add(b)
     }
-    for (const b of seen) cover[b]++
+    for (const b of seen) cover[b] = (cover[b] ?? 0) + 1
   }
   const sparseMax = Math.max(1, Math.round(bodyLines * 0.08))
   // A real gutter is wide: at least a word-height and a half. The small gap
@@ -210,7 +210,7 @@ export function columnizeOcrPage(page: Page): string | null {
   const gutters: number[] = [] // each gutter's centre x
   let runStart = -1
   for (let b = 0; b <= N; b++) {
-    const sparse = b < N && cover[b] <= sparseMax
+    const sparse = b < N && (cover[b] ?? 0) <= sparseMax
     if (sparse && runStart < 0) runStart = b
     if ((!sparse || b === N) && runStart >= 0) {
       // Interior runs only — a ragged left/right margin is not a gutter.
@@ -228,13 +228,20 @@ export function columnizeOcrPage(page: Page): string | null {
   const nCols = bounds.length - 1
   const colOf = (w: CWord): number => {
     const c = (w.x0 + w.x1) / 2
-    for (let i = 0; i < nCols; i++) if (c >= bounds[i] && c < bounds[i + 1]) return i
-    return c < bounds[0] ? 0 : nCols - 1
+    const col = bounds.findIndex((lo, i) => {
+      const hi = bounds[i + 1]
+      return hi !== undefined && c >= lo && c < hi
+    })
+    if (col >= 0) return col
+    return c < minX ? 0 : nCols - 1
   }
   // Every column must hold a fair share of the text, or the "gutter" was noise
   // (a hole in a short page, an indent) — better no split than a wrong one.
   const counts = new Array<number>(nCols).fill(0)
-  for (const w of body) counts[colOf(w)]++
+  for (const w of body) {
+    const c = colOf(w)
+    counts[c] = (counts[c] ?? 0) + 1
+  }
   if (counts.some((c) => c < body.length * 0.12)) return null
 
   // Re-emit: lines that GENUINELY span the columns first (the title, a meta line),
@@ -267,7 +274,7 @@ export function columnizeOcrPage(page: Page): string | null {
       else byCol.set(c, [w])
     }
     for (const [c, ws] of byCol) {
-      cols[c].push({ y: Math.min(...ws.map((w) => w.y0)), x: ws[0].x0, text: ws.map((w) => w.text).join(' ') })
+      cols[c]?.push({ y: Math.min(...ws.map((w) => w.y0)), x: ws[0]?.x0 ?? 0, text: ws.map((w) => w.text).join(' ') })
     }
   }
   headers.sort((a, z) => a.y - z.y)

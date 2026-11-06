@@ -31,24 +31,24 @@ function groupLines(md: string): LineGroup[] {
     if ((m = HEAD_RE.exec(line))) {
       // The stored grammar only distinguishes '# ' vs '## ' (htmlToMd folds deeper
       // levels) — map to h1/h2 and let the serializer fold back the same way.
-      out.push({ kind: 'heading', level: Math.min(m[1].length, 2), html: inlineMdToHtml(m[2]) })
+      out.push({ kind: 'heading', level: Math.min((m[1] ?? '').length, 2), html: inlineMdToHtml(m[2] ?? '') })
     } else if ((m = CHECK_RE.exec(line))) {
-      const item = { checked: m[1].toLowerCase() === 'x', html: inlineMdToHtml(m[2]) }
+      const item = { checked: m[1]?.toLowerCase() === 'x', html: inlineMdToHtml(m[2] ?? '') }
       const g = last()
       if (g?.kind === 'task') g.items.push(item)
       else out.push({ kind: 'task', items: [item] })
     } else if ((m = BULLET_RE.exec(line))) {
       const g = last()
-      if (g?.kind === 'bullet') g.items.push(inlineMdToHtml(m[1]))
-      else out.push({ kind: 'bullet', items: [inlineMdToHtml(m[1])] })
+      if (g?.kind === 'bullet') g.items.push(inlineMdToHtml(m[1] ?? ''))
+      else out.push({ kind: 'bullet', items: [inlineMdToHtml(m[1] ?? '')] })
     } else if ((m = NUMBER_RE.exec(line))) {
       const g = last()
-      if (g?.kind === 'numbered') g.items.push(inlineMdToHtml(m[1]))
-      else out.push({ kind: 'numbered', items: [inlineMdToHtml(m[1])] })
+      if (g?.kind === 'numbered') g.items.push(inlineMdToHtml(m[1] ?? ''))
+      else out.push({ kind: 'numbered', items: [inlineMdToHtml(m[1] ?? '')] })
     } else if ((m = QUOTE_RE.exec(line))) {
       const g = last()
-      if (g?.kind === 'quote') g.lines.push(inlineMdToHtml(m[1]))
-      else out.push({ kind: 'quote', lines: [inlineMdToHtml(m[1])] })
+      if (g?.kind === 'quote') g.lines.push(inlineMdToHtml(m[1] ?? ''))
+      else out.push({ kind: 'quote', lines: [inlineMdToHtml(m[1] ?? '')] })
     } else {
       out.push({ kind: 'plain', html: inlineMdToHtml(line) })
     }

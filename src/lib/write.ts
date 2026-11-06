@@ -19,7 +19,8 @@ const A_REGLER_PATHS = new Set(['events', 'meals', 'pantry', 'recipes', 'cercle'
 
 // The affected keys for this write, plus A_REGLER_KEY when the path feeds the card.
 function withAReglerKeys(path: string, keys: QueryKey[]): QueryKey[] {
-  const seg = (path || '').split('?')[0].replace(/^\/+/, '').split('/')[0]
+  const [bare = ''] = (path || '').split('?')
+  const [seg = ''] = bare.replace(/^\/+/, '').split('/')
   return A_REGLER_PATHS.has(seg) ? [...keys, A_REGLER_KEY] : keys
 }
 

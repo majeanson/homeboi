@@ -44,7 +44,7 @@ async function normalizeHeic(file: File): Promise<Blob> {
   try {
     const { default: heic2any } = await import('heic2any')
     const out = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.9 })
-    return Array.isArray(out) ? out[0] : out // multi-image HEIC → first frame
+    return Array.isArray(out) ? (out[0] ?? file) : out // multi-image HEIC → first frame
   } catch {
     return file
   }
@@ -101,7 +101,7 @@ export async function grayPixels(file: File, maxDim: number): Promise<{ gray: Ui
     draw(ctx, w, h)
     const { data } = ctx.getImageData(0, 0, w, h)
     const gray = new Uint8ClampedArray(w * h)
-    for (let i = 0, p = 0; i < data.length; i += 4, p++) gray[p] = (data[i] * 299 + data[i + 1] * 587 + data[i + 2] * 114) / 1000
+    for (let i = 0, p = 0; i < data.length; i += 4, p++) gray[p] = ((data[i] ?? 0) * 299 + (data[i + 1] ?? 0) * 587 + (data[i + 2] ?? 0) * 114) / 1000
     return { gray, width: w, height: h }
   } finally {
     done()

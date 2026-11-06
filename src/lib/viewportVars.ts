@@ -341,7 +341,7 @@ function caretLineEl(range: Range, scroller: HTMLElement): HTMLElement | null {
   const root = host && scroller.contains(host) ? host : scroller
   if (node === root) {
     const kids = root.childNodes
-    node = kids.length ? kids[Math.min(range.startOffset, kids.length - 1)] : null
+    node = kids.length ? (kids[Math.min(range.startOffset, kids.length - 1)] ?? null) : null
   }
   while (node && node.parentNode && node.parentNode !== root) node = node.parentNode
   return node && node.parentNode === root && node.nodeType === Node.ELEMENT_NODE ? (node as HTMLElement) : null

@@ -125,7 +125,7 @@ export type AddSheetMode =
 // tiles (see NAV_TARGET in AddSheet); `auto-pick` runs an action in place (stages
 // the best deal per line, then jumps to the cashier) — the page itself stays just
 // the list, so no shopping action lives as an on-page button anymore.
-export const SECTION_MODES: Record<string, AddSheetMode[]> = {
+export const SECTION_MODES: Record<string, AddSheetMode[]> & { board: AddSheetMode[] } = {
   // plan-today / plan-tomorrow are navigate-only shortcuts to the full day planner
   // (/kitchen/day/<date>): one place to set a day's meals + events + chores + note.
   // Their dates are dynamic, so AddSheet resolves the target at click time (like

@@ -93,7 +93,7 @@ export function installFixtureFetch(routes: FixtureRoutes): () => void {
 
     // Match on the path START so a query string (?view=manage, ?id=…) still hits, and
     // prefer the LONGEST match so `cercle/import` never resolves to `cercle`.
-    const suffix = path.slice('/api/'.length).split('?')[0]
+    const [suffix = ''] = path.slice('/api/'.length).split('?')
     const hit = Object.keys(routes)
       .filter((k) => suffix === k || suffix.startsWith(k + '/') || suffix.startsWith(k))
       .sort((a, b) => b.length - a.length)[0]

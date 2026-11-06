@@ -37,7 +37,7 @@ export const isUnauthorized = (e: unknown): boolean => isStatus(e, 401)
 
 function readCsrfCookie(): string | null {
   const m = document.cookie.match(/(?:^|;\s*)bb_csrf=([^;]+)/)
-  return m ? decodeURIComponent(m[1]) : null
+  return m?.[1] ? decodeURIComponent(m[1]) : null
 }
 /** Does THIS browser hold a session at all? (The CSRF cookie is the readable half of
  *  it.) On iOS, Safari and the home-screen app keep separate cookie jars — a page that

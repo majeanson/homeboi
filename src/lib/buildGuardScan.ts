@@ -159,7 +159,7 @@ export function arrayStrings(src: string, name: string): string[] {
   if (at < 0) throw new Error(`arrayStrings: no \`const ${name} = [\` in this source`)
   const open = src.indexOf('[', at)
   const body = blankComments(src.slice(open + 1, src.indexOf(']', open)))
-  return [...body.matchAll(/'([^']*)'|"([^"]*)"/g)].map((m) => m[1] ?? m[2])
+  return [...body.matchAll(/'([^']*)'|"([^"]*)"/g)].map((m) => m[1] ?? m[2] ?? '')
 }
 
 /**
@@ -190,7 +190,7 @@ export function classNameValues(src: string, token: string): { line: number; tex
     } else {
       value = src.slice(at).match(/^(['"])[^'"\n]*\1/)?.[0] ?? ''
     }
-    const holds = [...value.matchAll(/(['"`])([^'"`\n]*)\1/g)].some((lit) => lit[2].trim().split(/\s+/).includes(token))
+    const holds = [...value.matchAll(/(['"`])([^'"`\n]*)\1/g)].some((lit) => (lit[2] ?? '').trim().split(/\s+/).includes(token))
     if (holds) out.push({ line: src.slice(0, m.index).split('\n').length, text: value.slice(0, 60) })
   }
   return out

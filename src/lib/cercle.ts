@@ -850,14 +850,14 @@ export function familyLinksFromBands(bands: {
   }
   const { grandparents, parents, children } = bands
   // children ↔ children: siblings
-  for (let i = 0; i < children.length; i++)
-    for (let j = i + 1; j < children.length; j++) push(children[i], children[j], 'sibling')
+  for (const [a, b] of pairsOf(children)) push(a, b, 'sibling')
   // parents → children: parent
   for (const p of parents) for (const c of children) push(p, c, 'parent')
   // grandparents → children: grandparent
   for (const g of grandparents) for (const c of children) push(g, c, 'grandparent')
   // exactly two parents → spouses
-  if (parents.length === 2) push(parents[0], parents[1], 'spouse')
+  const [p1, p2] = parents
+  if (parents.length === 2 && p1 !== undefined && p2 !== undefined) push(p1, p2, 'spouse')
   return out
 }
 
@@ -966,9 +966,9 @@ export function parseBirthday(birthday: string | null | undefined): { year: numb
   if (!birthday) return null
   const m = /^(\d{1,4})-(\d{2})-(\d{2})$/.exec(birthday.trim())
   if (!m) return null
-  const year = +m[1]
-  const month = +m[2]
-  const day = +m[3]
+  const year = Number(m[1])
+  const month = Number(m[2])
+  const day = Number(m[3])
   if (month < 1 || month > 12 || day < 1 || day > 31) return null
   return { year, month, day, yearKnown: year > 0 }
 }
@@ -1097,6 +1097,11 @@ export function buildGroups(raw: ContactGroupRaw[]): ContactGroup[] {
 // tell them from stored ones, mirroring closedLinks' `derived:` convention. Feed
 // the result alongside the stored links into closedLinks (friend is a social tie,
 // so it passes the closure through unchanged and never touches the family math).
+// Every unordered pair of `xs`, in index order: (0,1) (0,2) … (1,2) …
+function* pairsOf<T>(xs: readonly T[]): Generator<[T, T]> {
+  for (const [i, a] of xs.entries()) for (const b of xs.slice(i + 1)) yield [a, b]
+}
+
 export function friendLinksFromGroups(groups: ContactGroup[], existing: ContactLink[]): ContactLink[] {
   const pair = (a: string, b: string) => (a < b ? `${a}|${b}` : `${b}|${a}`)
   const have = new Set(
@@ -1106,25 +1111,23 @@ export function friendLinksFromGroups(groups: ContactGroup[], existing: ContactL
   for (const g of groups) {
     if (g.kind !== 'friends') continue
     const keys = [...g.memberKeys].sort() // sorted → pairs already canonical (a < b)
-    for (let i = 0; i < keys.length; i++) {
-      for (let j = i + 1; j < keys.length; j++) {
-        const pk = pair(keys[i], keys[j])
-        if (have.has(pk)) continue
-        have.add(pk)
-        const a = parsePersonKey(keys[i])
-        const b = parsePersonKey(keys[j])
-        out.push({
-          id: `group-friend:${g.id}:${pk}`,
-          personAId: a.id,
-          personAKind: a.kind,
-          personBId: b.id,
-          personBKind: b.kind,
-          type: 'friend',
-          reverseType: 'friend',
-          label: null,
-          notes: null,
-        })
-      }
+    for (const [ka, kb] of pairsOf(keys)) {
+      const pk = pair(ka, kb)
+      if (have.has(pk)) continue
+      have.add(pk)
+      const a = parsePersonKey(ka)
+      const b = parsePersonKey(kb)
+      out.push({
+        id: `group-friend:${g.id}:${pk}`,
+        personAId: a.id,
+        personAKind: a.kind,
+        personBId: b.id,
+        personBKind: b.kind,
+        type: 'friend',
+        reverseType: 'friend',
+        label: null,
+        notes: null,
+      })
     }
   }
   return out
@@ -1302,7 +1305,7 @@ export function buildWorld(
   }
   for (const [k, ids] of memberIslands) {
     const arr = [...ids]
-    for (let i = 0; i < arr.length; i++) for (let j = i + 1; j < arr.length; j++) addVia(arr[i], arr[j], k)
+    for (const [a, b] of pairsOf(arr)) addVia(a, b, k)
   }
 
   // Cross-island links: a tie whose two endpoints have different primary islands.
@@ -1318,7 +1321,7 @@ export function buildWorld(
   }
 
   const bridges: WorldBridge[] = [...bridgeVia.entries()].map(([pk, via]) => {
-    const [aId, bId] = pk.split('|')
+    const [aId = '', bId = ''] = pk.split('|')
     return { aId, bId, viaKeys: [...via] }
   })
   return { islands, bridges }
@@ -1413,7 +1416,7 @@ export function layoutIslands(world: World, byKey: Map<string, Person>, o: Islan
   for (const isl of islands) {
     const ppl = isl.memberKeys.map((k) => byKey.get(k)).filter((p): p is Person => !!p)
     const fl = islandFaceLayout(ppl.length, slot)
-    const faces = ppl.map((p, i) => ({ p, x: fl.offsets[i].x, y: fl.offsets[i].y }))
+    const faces = ppl.map((p, i) => ({ p, x: fl.offsets[i]?.x ?? 0, y: fl.offsets[i]?.y ?? 0 }))
     sized.set(isl.id, { faces, outerR: fl.r + o.face / 2 + o.pad })
   }
   const outerR = (id: string) => sized.get(id)!.outerR
@@ -1426,21 +1429,22 @@ export function layoutIslands(world: World, byKey: Map<string, Person>, o: Islan
   const pos = new Map<string, { x: number; y: number }>()
   if (centre) pos.set(centre.id, { x: 0, y: 0 })
 
-  if (ring.length === 1 && !centre) {
-    pos.set(ring[0].id, { x: 0, y: 0 }) // a lone circle centres rather than orbiting nothing
+  const [lone] = ring
+  if (lone && ring.length === 1 && !centre) {
+    pos.set(lone.id, { x: 0, y: 0 }) // a lone circle centres rather than orbiting nothing
   } else if (ring.length) {
     const rs = ring.map((i) => outerR(i.id))
     const maxR = Math.max(...rs)
     const centreR = centre ? outerR(centre.id) : 0
-    const arc = ring.reduce((s, _i, idx) => s + 2 * rs[idx] + o.gap, 0)
+    const arc = rs.reduce((s, r) => s + 2 * r + o.gap, 0)
     const RR = Math.max(arc / (2 * Math.PI), centreR + maxR + o.gap, maxR + o.gap)
     // Angular width per island, scaled to fill the full circle (spacing ∝ size).
-    const widths = ring.map((_i, idx) => (2 * rs[idx] + o.gap) / RR)
+    const widths = rs.map((r) => (2 * r + o.gap) / RR)
     const sumW = widths.reduce((a, b) => a + b, 0) || 1
     const scale = (2 * Math.PI) / sumW
     let ang = -Math.PI / 2
     ring.forEach((isl, idx) => {
-      const wid = widths[idx] * scale
+      const wid = (widths[idx] ?? 0) * scale
       const a = ang + wid / 2
       pos.set(isl.id, { x: RR * Math.cos(a), y: RR * Math.sin(a) })
       ang += wid
@@ -1660,10 +1664,12 @@ export function layoutFamilyForest(people: Person[], links: ContactLink[], o: Fo
     order.push(...bySize)
   } else {
     const fixed = new Set<string>()
-    const anchor = bySize[0]
-    anchor.off = -anchor.minB
-    fixed.add(anchor.root)
-    order.push(anchor)
+    const [anchor] = bySize
+    if (anchor) {
+      anchor.off = -anchor.minB
+      fixed.add(anchor.root)
+      order.push(anchor)
+    }
     const edges = [...meta.values()].sort((x, y) => y.n - x.n || x.ca.localeCompare(y.ca))
     let grew = true
     while (grew) {
@@ -1739,12 +1745,13 @@ export function layoutFamilyForest(people: Person[], links: ContactLink[], o: Fo
     const rows = Math.max(1, Math.round(Math.sqrt(totalW / Math.max(1, tallest * 1.7))))
 
     const fill = (target: number): Comp[][] => {
-      const out: Comp[][] = [[]]
+      let cur: Comp[] = []
+      const out: Comp[][] = [cur]
       let lineW = 0
       for (const c of order) {
-        const cur = out[out.length - 1]
         if (cur.length && lineW + c.width + o.compGap > target) {
-          out.push([c])
+          cur = [c]
+          out.push(cur)
           lineW = c.width + o.compGap
         } else {
           cur.push(c)
@@ -2000,8 +2007,7 @@ export function closedLinks(people: Person[], links: ContactLink[]): ContactLink
   for (const e of list) if (e.t === 'sibling') sib.union(e.a, e.b)
   const comp = sib.components()
   for (const members of comp.values())
-    for (let i = 0; i < members.length; i++)
-      for (let j = i + 1; j < members.length; j++) add(members[i], members[j], 'sibling', null)
+    for (const [a, b] of pairsOf(members)) add(a, b, 'sibling', null)
 
   // Fixpoint over the propagation rules (bounded — only ever adds, so it converges).
   let changed = true
@@ -2107,11 +2113,10 @@ function inferredFamilyMap(
   }
   for (const kids of childrenOf.values()) {
     const sorted = [...new Set(kids)].sort()
-    for (let i = 0; i < sorted.length; i++)
-      for (let j = i + 1; j < sorted.length; j++) {
-        const pk = `${sorted[i]}|${sorted[j]}`
-        if (!inferred.has(pk)) inferred.set(pk, { aKey: sorted[i], bKey: sorted[j], type: 'sibling' })
-      }
+    for (const [aKey, bKey] of pairsOf(sorted)) {
+      const pk = `${aKey}|${bKey}`
+      if (!inferred.has(pk)) inferred.set(pk, { aKey, bKey, type: 'sibling' })
+    }
   }
   return inferred
 }
@@ -2241,13 +2246,11 @@ export function proposeFamilyLinks(
   for (const g of groups) {
     if (g.kind !== 'family') continue
     const keys = [...g.memberKeys].filter((k) => present.has(k)).sort() // a < b already
-    for (let i = 0; i < keys.length; i++) {
-      for (let j = i + 1; j < keys.length; j++) {
-        const pk = `${keys[i]}|${keys[j]}`
-        if (done.has(pk)) continue
-        done.add(pk)
-        proposePair(keys[i], keys[j], inferred, stored, true, undefined, out)
-      }
+    for (const [a, b] of pairsOf(keys)) {
+      const pk = `${a}|${b}`
+      if (done.has(pk)) continue
+      done.add(pk)
+      proposePair(a, b, inferred, stored, true, undefined, out)
     }
   }
   return out
@@ -2289,8 +2292,7 @@ function proposeWebLinks(people: Person[], storedLinks: ContactLink[]): FamilyLi
   for (const members of uf.components().values()) {
     const keys = members.filter((k) => present.has(k)).sort() // a < b already
     if (keys.length < 2) continue
-    for (let i = 0; i < keys.length; i++)
-      for (let j = i + 1; j < keys.length; j++) proposePair(keys[i], keys[j], inferred, stored, false, DEDUCED_KIN, out)
+    for (const [a, b] of pairsOf(keys)) proposePair(a, b, inferred, stored, false, DEDUCED_KIN, out)
   }
   return out
 }

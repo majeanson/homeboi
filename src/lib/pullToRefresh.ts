@@ -126,15 +126,19 @@ export function usePullToRefresh(
       // the page happened to be at its top opened the refresh indicator AND
       // preventDefault'd the list's own scroll — the list simply stopped moving.
       if (hasScrollableAncestor(target, el)) return
-      startY.current = e.touches[0].clientY
-      startX.current = e.touches[0].clientX
+      const touch = e.touches[0]
+      if (!touch) return
+      startY.current = touch.clientY
+      startX.current = touch.clientX
       tracking.current = true
     }
 
     const onMove = (e: TouchEvent) => {
       if (!tracking.current) return
-      const dy = e.touches[0].clientY - startY.current
-      const dx = e.touches[0].clientX - startX.current
+      const touch = e.touches[0]
+      if (!touch) return
+      const dy = touch.clientY - startY.current
+      const dx = touch.clientX - startX.current
       // Upward, or mostly sideways (a Rail / SubTabs swipe living inside the
       // body) → this was never a pull. Give up for the rest of the gesture.
       if (dy <= 0 || Math.abs(dx) > Math.abs(dy)) {

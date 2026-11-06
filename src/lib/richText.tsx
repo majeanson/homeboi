@@ -75,7 +75,7 @@ export function renderRich(text: string, hl?: string): ReactNode {
   while ((m = TOKEN.exec(text))) {
     if (m.index > last) out.push(<Fragment key={last}>{seg(text.slice(last, m.index))}</Fragment>)
     const kind = m[1]
-    const body = m[2]
+    const body = m[2] ?? ''
     if (kind === 'icon') {
       out.push(<InlineIcon key={m.index} name={body as IconName} />)
     } else if (kind === 'mot') {

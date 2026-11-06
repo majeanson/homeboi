@@ -201,10 +201,10 @@ export function useModal(
       const last = f[f.length - 1]
       if (e.shiftKey && document.activeElement === first) {
         e.preventDefault()
-        last.focus()
+        last?.focus()
       } else if (!e.shiftKey && document.activeElement === last) {
         e.preventDefault()
-        first.focus()
+        first?.focus()
       }
     }
     el.addEventListener('keydown', onKey)

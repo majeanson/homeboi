@@ -51,7 +51,7 @@ function wallParts(d: Date, tz: string) {
   if (hit) return hit
   const p = Object.fromEntries(wallFmt(tz).formatToParts(d).map((x) => [x.type, x.value])) as Record<string, string>
   // Intl emits hour "24" at midnight in some runtimes — normalize to 0.
-  const out = { y: +p.year, mo: +p.month, d: +p.day, h: +p.hour % 24, mi: +p.minute, s: +p.second }
+  const out = { y: Number(p.year), mo: Number(p.month), d: Number(p.day), h: Number(p.hour) % 24, mi: Number(p.minute), s: Number(p.second) }
   if (wallPartsCache.size > 20_000) wallPartsCache.clear()
   wallPartsCache.set(key, out)
   return out

@@ -59,7 +59,7 @@ export const DISCOVERY_PROBES: DiscoveryProbe[] = [
 export function pickDaily<T>(candidates: readonly T[], dayIndex: number): T | null {
   if (candidates.length === 0) return null
   const i = ((dayIndex % candidates.length) + candidates.length) % candidates.length
-  return candidates[i]
+  return candidates[i] ?? null
 }
 
 export const dayIndexNow = () => Math.floor(Date.now() / 86_400_000)

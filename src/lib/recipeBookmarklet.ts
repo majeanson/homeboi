@@ -81,7 +81,7 @@ export function parseRecipeHash(hash: string): CapturedRecipePage | null {
   const m = /^#import=([A-Za-z0-9\-_]+)$/.exec(hash || '')
   if (!m) return null
   try {
-    return coerceCapturedPage(JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g, '+').replace(/_/g, '/'))))))
+    return coerceCapturedPage(JSON.parse(decodeURIComponent(escape(atob((m[1] ?? '').replace(/-/g, '+').replace(/_/g, '/'))))))
   } catch {
     return null
   }

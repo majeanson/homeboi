@@ -20,6 +20,7 @@ export async function warmImageCache(
   const pull = async () => {
     while (next < queue.length) {
       const u = queue[next++]
+      if (u === undefined) break
       await fetch(u).catch(() => {})
       done++
       onTick?.(done)

@@ -12,7 +12,14 @@ export function reorderPatches(
 ): { id: string; position: number }[] {
   if (from === to || from < 0 || to < 0 || from >= rows.length || to >= rows.length) return []
   const next = [...rows]
-  const [moved] = next.splice(from, 1)
-  next.splice(to, 0, moved)
+  next.splice(to, 0, ...next.splice(from, 1))
   return next.flatMap((n, i) => (n.position === i ? [] : [{ id: n.id, position: i }]))
+}
+
+// Swap two slots in place. The casts only say that a slot is moved as it stands: nothing
+// is read out of either element, and a hole stays a hole.
+export function swapAt<T>(xs: T[], i: number, j: number): void {
+  const held = xs[i] as T
+  xs[i] = xs[j] as T
+  xs[j] = held
 }

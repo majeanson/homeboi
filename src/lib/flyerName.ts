@@ -46,18 +46,20 @@ function calm(s: string): string {
 export function itemNameFromFlyer(title: string): string {
   const whole = title.replace(/\s+/g, ' ').trim()
   if (!whole) return whole
-  const head = whole.split('|')[0].split(',')[0].trim() || whole
+  const [beforeBar = ''] = whole.split('|')
+  const [beforeComma = ''] = beforeBar.split(',')
+  const head = beforeComma.trim() || whole
   const words = head.split(' ')
   let end = words.length
   for (let i = 1; i < words.length; i++) {
     const rest = fold(words.slice(i).join(' '))
-    const sizeHere = SIZE.test(words.slice(i, i + 2).join(' ')) || SIZE.test(words[i])
+    const sizeHere = SIZE.test(words.slice(i, i + 2).join(' ')) || SIZE.test(words[i] ?? '')
     if (sizeHere || MARKERS.some((m) => rest === m || rest.startsWith(m + ' '))) {
       end = i
       break
     }
   }
   // Trailing glue a cut can leave behind (« CAROTTES OU », « POULET DE »).
-  while (end > 1 && /^(ou|et|de|du|des|d'|à|a|or|and|of|-|–)$/i.test(words[end - 1])) end--
+  while (end > 1 && /^(ou|et|de|du|des|d'|à|a|or|and|of|-|–)$/i.test(words[end - 1] ?? '')) end--
   return calm(words.slice(0, end).join(' ').replace(/[\s.:;-]+$/, ''))
 }

@@ -28,7 +28,7 @@ export interface Defi {
 export function pigeDefi(exclude: Set<string>, lang: Lang, rng: () => number = Math.random): Defi {
   const fresh = DEFI_DECK.filter((d) => !exclude.has(d[lang].trim().toLowerCase()))
   const pool = fresh.length ? fresh : DEFI_DECK
-  return pool[Math.min(pool.length - 1, Math.floor(rng() * pool.length))]
+  return pool[Math.min(pool.length - 1, Math.floor(rng() * pool.length))] ?? DEFI_DECK[0]
 }
 
 // A committed défi is stored as plain text (one language, like a note/mot). For a
@@ -48,7 +48,7 @@ export function localizeDefi(text: string, lang: Lang): string {
   return hit ? hit[lang] : text
 }
 
-export const DEFI_DECK: Defi[] = [
+export const DEFI_DECK: [Defi, ...Defi[]] = [
   // A · Couleur & thème du jour
   { fr: 'Porte du jaune aujourd’hui.', en: 'Wear something yellow today.', needs: 'clothes' },
   { fr: 'Porte du rouge aujourd’hui.', en: 'Wear something red today.', needs: 'clothes' },

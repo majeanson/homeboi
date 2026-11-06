@@ -207,8 +207,7 @@ async function replayOutbox(qc: QueryClient): Promise<void> {
   let rejected = 0
   try {
     const entries = await allEntries()
-    for (let i = 0; i < entries.length; i++) {
-      const e = entries[i]
+    for (const [i, e] of entries.entries()) {
       try {
         // A queued op can reference a tmp id whose create resolved OUTSIDE this
         // queue (it landed online; only the follow-up got queued on the flaky
@@ -230,9 +229,10 @@ async function replayOutbox(qc: QueryClient): Promise<void> {
           // …and teach the session registry too, so a write NOT yet queued (e.g.
           // a deferred delete still held behind the undo toast) resolves as well.
           recordTmpId(e.tmpId, realId)
-          for (let j = i + 1; j < entries.length; j++) {
-            const rewritten = rewriteTmpId(entries[j], e.tmpId, realId)
-            if (rewritten !== entries[j]) {
+          for (const [j, later] of entries.entries()) {
+            if (j <= i) continue
+            const rewritten = rewriteTmpId(later, e.tmpId, realId)
+            if (rewritten !== later) {
               entries[j] = rewritten
               await tx('readwrite', (s) => s.put(rewritten))
             }

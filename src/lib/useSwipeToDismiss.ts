@@ -61,14 +61,18 @@ export function useSwipeToDismiss(
         n = n.parentElement
       }
       if (el.scrollTop > 0) return
-      startY = e.touches[0].clientY
+      const touch = e.touches[0]
+      if (!touch) return
+      startY = touch.clientY
       delta = 0
       active = true
       el.style.transition = 'none'
     }
     const onMove = (e: TouchEvent) => {
       if (!active) return
-      delta = e.touches[0].clientY - startY
+      const touch = e.touches[0]
+      if (!touch) return
+      delta = touch.clientY - startY
       if (delta <= 0) {
         // Upward — give the gesture back to normal content scrolling.
         el.style.transform = ''
