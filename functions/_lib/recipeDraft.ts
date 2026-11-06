@@ -130,7 +130,8 @@ export async function draftByModel(env: Env, text: string, lang: Lang, known: Kn
 export function draftFromSelection(lines: string[], sel: LineSelection, known: Known): Omit<DraftOut, 'image' | 'source' | 'lang'> | null {
   // The list markers cookbooks print, « › », « ⇨ » included (a reader keeps them) — and a
   // lone leading comma, which is a « › » one reader could not tell from a comma.
-  const bare = (i: number) => lines[i].replace(/^(?:[-•·▪◦‣*–—›»▸►⇨➜→]+|,)\s*/, '').trim()
+  const lineAt = (i: number) => lines[i] ?? ''
+  const bare = (i: number) => lineAt(i).replace(/^(?:[-•·▪◦‣*–—›»▸►⇨➜→]+|,)\s*/, '').trim()
   const label = (i: number) => bare(i).replace(/\s*:\s*$/, '')
   // A part's label heads the lines printed UNDER it: its place is where it physically
   // sits, before the first picked line after it — not where the model's `before` says
@@ -149,7 +150,10 @@ export function draftFromSelection(lines: string[], sel: LineSelection, known: K
       .sort((a, b) => a.before - b.before)
     const out: string[] = []
     for (const i of items) {
-      while (pending.length && pending[0].before <= i) out.push(makeSectionHeading(pending.shift()!.title))
+      for (let next = pending[0]; next && next.before <= i; next = pending[0]) {
+        out.push(makeSectionHeading(next.title))
+        pending.shift()
+      }
       out.push(bare(i))
     }
     return dropDanglingHeadings(out)
@@ -171,12 +175,11 @@ export function draftFromSelection(lines: string[], sel: LineSelection, known: K
   type Version = { at: number; title: string }
   const versions: Version[] = labelAt.map((i) => ({ at: i, title: label(i) }))
   {
-    const printed = [...sel.steps].sort((a, b) => a - b).map((i) => ({ i, n: Number(/^(\d{1,2})(?!\d)/.exec(lines[i].trim())?.[1] ?? NaN) }))
+    const printed = [...sel.steps].sort((a, b) => a - b).map((i) => ({ i, n: Number(/^(\d{1,2})(?!\d)/.exec(lineAt(i).trim())?.[1] ?? NaN) }))
     let n = 2
-    for (let k = 1; k < printed.length; k++) {
-      const { i, n: num } = printed[k]
+    for (const [k, { i, n: num }] of printed.entries()) {
       const prev = printed[k - 1]
-      if (num !== 1 || !(prev.n >= 2)) continue
+      if (!prev || num !== 1 || !(prev.n >= 2)) continue
       if (versions.some((v) => v.at < i && v.at > prev.i)) continue // the page's own label opens it
       if (versions.some((v) => v.at < i)) continue // already inside a named version
       versions.push({ at: prev.i + 0.5, title: `Version ${n++}` })
@@ -221,8 +224,8 @@ export function draftFromSelection(lines: string[], sel: LineSelection, known: K
     ...sel.stepSections.map((s) => s.line),
     ...(sel.title != null ? [sel.title] : []),
   ])
-  const isBullet = (i: number) => /^[-•·▪◦‣*–—›»▸►⇨➜→]\s+\S/.test(lines[i])
-  const isLabel = (i: number) => /:\s*$/.test(lines[i]) || (/^[A-ZÀ-ÖŒ][^\d.!?;]{0,40}$/.test(lines[i]) && lines[i].split(/\s+/).length <= 6)
+  const isBullet = (i: number) => /^[-•·▪◦‣*–—›»▸►⇨➜→]\s+\S/.test(lineAt(i))
+  const isLabel = (i: number) => /:\s*$/.test(lineAt(i)) || (/^[A-ZÀ-ÖŒ][^\d.!?;]{0,40}$/.test(lineAt(i)) && lineAt(i).split(/\s+/).length <= 6)
   const restored: number[] = []
   const restoredSections: { line: number; before: number }[] = []
   for (let i = 0; i < lines.length; i++) {
@@ -252,7 +255,7 @@ export function draftFromSelection(lines: string[], sel: LineSelection, known: K
   const isBadge = (l: string) => !/\d/.test(l) && !/[.!?]$/.test(l) && l.split(/\s+/).length <= 3
   // A label heading nothing: a colon, or a short capitalised line — « Servir chaud avec du
   // pain » (five words, no period) is a step, so a bare label stays under four words.
-  const isBareLabel = (i: number) => isLabel(i) && (/:\s*$/.test(lines[i]) || lines[i].split(/\s+/).length <= 4)
+  const isBareLabel = (i: number) => isLabel(i) && (/:\s*$/.test(lineAt(i)) || lineAt(i).split(/\s+/).length <= 4)
   // The page's FOOTER starts at the first end marker after the method (a disclaimer, the
   // comment form, © — the same NOISE_END that ends a pasted recipe): the rule above keeps
   // a printed line because it might be the recipe's, and these never are. Only after the
@@ -260,7 +263,7 @@ export function draftFromSelection(lines: string[], sel: LineSelection, known: K
   const isFooterMark = (i: number) => lastStep >= 0 && i > lastStep && NOISE_END.test(bare(i))
   const footerAt = lines.findIndex((_, i) => isFooterMark(i))
   const isFurniture = (i: number) => {
-    const l = lines[i]
+    const l = lineAt(i)
     return (
       (footerAt >= 0 && i >= footerAt) ||
       (sel.title != null && i < sel.title) ||
@@ -287,7 +290,7 @@ export function draftFromSelection(lines: string[], sel: LineSelection, known: K
   // sauce : ») — heads the lines under it; it is not an ingredient or a step (the
   // selector filed one as an ingredient and it sat in the list with its colon, Marc,
   // 2026-10-30: « "Pour la sauce :" is not clear at all »).
-  const isLabelLine = (i: number) => /:\s*$/.test(lines[i].trim()) && !/\d/.test(lines[i]) && lines[i].replace(/\s*:\s*$/, '').split(/\s+/).length <= 6
+  const isLabelLine = (i: number) => /:\s*$/.test(lineAt(i).trim()) && !/\d/.test(lineAt(i)) && lineAt(i).replace(/\s*:\s*$/, '').split(/\s+/).length <= 6
   const labelled = (items: number[], parts: Part[]): { items: number[]; parts: Part[] } => ({
     items: items.filter((i) => !isLabelLine(i)),
     parts: [...parts, ...items.filter(isLabelLine).map((i) => ({ line: i, before: -1 }))],
@@ -305,7 +308,7 @@ export function draftFromSelection(lines: string[], sel: LineSelection, known: K
   const stepIdx = stL.items
   const steps = dropDanglingHeadings(refineSteps(withParts(stepIdx, versioned(stepIdx, stL.parts)), { blob: 'auto' }))
   if (!ingredients.length && !steps.length) return null
-  const at = (i: number | null) => (i == null ? null : lines[i])
+  const at = (i: number | null) => (i == null ? null : (lines[i] ?? null))
   // The model's notes — plus the strays above: the text read's notes on a page without
   // headings are a guess (a « SE CONGÈLE » badge, 2026-10-30), and a model told what
   // notes are chose none for a reason; a printed line it filed nowhere is not a guess.

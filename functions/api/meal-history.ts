@@ -61,7 +61,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
 
   const hasMore = dayRows.length > PAGE_DAYS
   const page = hasMore ? dayRows.slice(0, PAGE_DAYS) : dayRows
-  const oldest = page[page.length - 1].date
+  const oldest = page.at(-1)?.date ?? before
 
   const MEAL_ORDER = mealOrderSql((await householdMealLayout(ctx.env, hh)).order)
   const { results } = await ctx.env.DB.prepare(

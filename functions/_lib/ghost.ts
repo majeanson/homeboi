@@ -51,10 +51,14 @@ export function learnedCadence(timestamps: number[]): number | null {
   if (timestamps.length < 2) return null
   const sorted = [...timestamps].sort((a, b) => a - b)
   const gaps: number[] = []
-  for (let i = 1; i < sorted.length; i++) gaps.push((sorted[i] - sorted[i - 1]) / DAY)
+  for (const [i, at] of sorted.entries()) {
+    const before = sorted[i - 1]
+    if (before !== undefined) gaps.push((at - before) / DAY)
+  }
   gaps.sort((a, b) => a - b)
   const mid = Math.floor(gaps.length / 2)
-  const median = gaps.length % 2 ? gaps[mid] : (gaps[mid - 1] + gaps[mid]) / 2
+  const upper = gaps[mid] ?? 0
+  const median = gaps.length % 2 ? upper : ((gaps[mid - 1] ?? 0) + upper) / 2
   return Math.min(MAX_CADENCE, Math.max(MIN_CADENCE, Math.round(median)))
 }
 

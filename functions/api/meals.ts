@@ -4,6 +4,7 @@ import { localDayStart, newId, nowSec } from '../_lib/ids'
 import { profileMemberId } from '../_lib/profile'
 import { ingredientName } from '../_lib/ingredient'
 import { householdMealLayout, mealOrderSql } from '../_lib/mealSlots'
+import { swapAt } from '../../src/lib/reorder'
 
 // Meal plan as a ROLLING window: today through today + N days, where N is the
 // household's « Jours affichés » (`windowDays` on the mealSlots preference,
@@ -136,7 +137,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
     const i = ids.indexOf(body.id)
     const j = body.dir === 'up' ? i - 1 : i + 1
     if (i < 0 || j < 0 || j >= ids.length) return ok({ ok: true }) // at the edge
-    ;[ids[i], ids[j]] = [ids[j], ids[i]]
+    swapAt(ids, i, j)
     await ctx.env.DB.batch(
       ids.map((id, pos) =>
         ctx.env.DB.prepare('UPDATE meals SET position = ? WHERE id = ? AND household_id = ?').bind(

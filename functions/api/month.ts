@@ -318,9 +318,10 @@ export const onRequestGet = authed(async (ctx, actor) => {
     const occs = expandRange(anchor, r, from, to)
     // Each occurrence advances the rotation by one, so resolve the offset of the
     // first occurrence in the window once, then just step it forward.
-    let offset = occs.length ? rotationOffset(anchor, r, refDay, occs[0]) : 0
+    const firstOcc = occs[0]
+    let offset = firstOcc !== undefined ? rotationOffset(anchor, r, refDay, firstOcc) : 0
     for (const at of occs) {
-      const who = rot.length ? nameOf(rot[(((c.current_idx + offset) % rot.length) + rot.length) % rot.length]) : null
+      const who = rot.length ? nameOf(rot[(((c.current_idx + offset) % rot.length) + rot.length) % rot.length] ?? null) : null
       chores.push({ id: `${c.id}#${at}`, title: c.title, color: c.color, who, day: dayOf(at) })
       offset++
     }

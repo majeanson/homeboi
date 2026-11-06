@@ -217,7 +217,7 @@ export function salvageTruncatedJson(raw: string): string | null {
   let safe = -1
   let safeStack: string[] = []
   for (let i = start; i < raw.length; i++) {
-    const ch = raw[i]
+    const ch = raw.charAt(i)
     if (inStr) {
       if (esc) esc = false
       else if (ch === '\\') esc = true

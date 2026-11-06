@@ -158,9 +158,9 @@ async function fetchBing(lang: Lang): Promise<Wonder | null> {
     if (!i || typeof i.url !== 'string' || !i.url) return null
     // "Place / subject (© Author/Source)" → place + credit.
     const cr = (i.copyright ?? '').trim()
-    const m = cr.match(/^(.*?)\s*\(([^)]*)\)\s*$/)
-    const place = (m ? m[1] : cr).trim()
-    const credit = m ? m[2].trim() : ''
+    const [, rawPlace = cr, rawCredit = ''] = cr.match(/^(.*?)\s*\(([^)]*)\)\s*$/) ?? []
+    const place = rawPlace.trim()
+    const credit = rawCredit.trim()
     return {
       source: 'bing',
       title: (i.title ?? '').trim() || place || (lang === 'en' ? 'Photo of the day' : 'Photo du jour'),

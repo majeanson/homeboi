@@ -239,10 +239,10 @@ export function catchupProjection(
   const ids = Object.keys(shares)
   if (ids.length !== 2) return null
   const aheadMemberId = ids.find((id) => id !== catchup.behindMemberId)
-  if (!aheadMemberId || !(catchup.behindMemberId in shares)) return null
-
   const behindShare = shares[catchup.behindMemberId]
-  const aheadShare = shares[aheadMemberId]
+  const aheadShare = aheadMemberId ? shares[aheadMemberId] : undefined
+  if (!aheadMemberId || behindShare === undefined || aheadShare === undefined) return null
+
   const extraPerPayment = Math.max(0, behindShare - aheadShare)
 
   // What the behind member has actually sent toward this plan since the gap was

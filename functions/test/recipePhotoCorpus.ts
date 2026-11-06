@@ -69,7 +69,7 @@ export const canon = (s: string) =>
     .replace(/([⁰¹²³⁴⁵⁶⁷⁸⁹]+)[⁄/]([₀₁₂₃₄₅₆₇₈₉]+)/g, (_, a: string, b: string) => `${[...a].map((c) => SUP.indexOf(c)).join('')}/${[...b].map((c) => SUB.indexOf(c)).join('')}`)
     // A fraction glyph and its ASCII spelling (« ⅓ » / « 1/3 ») are one amount.
     .replace(/(\d)\s*([¼½¾⅓⅔⅛⅜⅝⅞])/g, (_, d, g) => `${d} ${VULGAR[g]}`)
-    .replace(/[¼½¾⅓⅔⅛⅜⅝⅞]/g, (g) => VULGAR[g])
+    .replace(/[¼½¾⅓⅔⅛⅜⅝⅞]/g, (g) => VULGAR[g] ?? g)
     // French guillemets with or without their inner spaces (« gril » / «gril»).
     .replace(/«\s*/g, '« ')
     .replace(/\s*»/g, ' »')

@@ -102,7 +102,7 @@ function listBlock(items: string[], ordered: boolean): string[] {
     const h = /^#{1,6}\s+(.*)$/.exec(raw)
     if (h) {
       if (out.length) out.push('')
-      out.push(`**${inline(h[1])}**`, '')
+      out.push(`**${inline(h[1] ?? '')}**`, '')
       n = 0
       continue
     }

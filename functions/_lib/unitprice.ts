@@ -75,9 +75,10 @@ function parseSize(str: string | null | undefined): Size | null {
   if (pack) {
     const n = Number(pack[1])
     const sz = Number(pack[2])
-    const u = pack[3]
-    if (MASS[u]) return { kind: 'mass', base: MASS[u] * sz * n }
-    if (VOL[u]) return { kind: 'volume', base: VOL[u] * sz * n }
+    const mass = MASS[pack[3] ?? '']
+    const vol = VOL[pack[3] ?? '']
+    if (mass) return { kind: 'mass', base: mass * sz * n }
+    if (vol) return { kind: 'volume', base: vol * sz * n }
   }
 
   const multi =
@@ -85,9 +86,10 @@ function parseSize(str: string | null | undefined): Size | null {
     t.match(/(\d+(?:\.\d+)?)\s*(g|gr|l)\b/)
   if (multi) {
     const sz = Number(multi[1])
-    const u = multi[2]
-    if (MASS[u]) return { kind: 'mass', base: MASS[u] * sz }
-    if (VOL[u]) return { kind: 'volume', base: VOL[u] * sz }
+    const mass = MASS[multi[2] ?? '']
+    const vol = VOL[multi[2] ?? '']
+    if (mass) return { kind: 'mass', base: mass * sz }
+    if (vol) return { kind: 'volume', base: vol * sz }
   }
   return null
 }

@@ -36,7 +36,7 @@ export async function importStepImages(env: Env, urls: (string | null)[], opts: 
     left--
     try {
       const res = await fetchPublic(u, { signal: AbortSignal.timeout(8_000) })
-      const type = (res.headers.get('content-type') ?? '').split(';')[0].trim()
+      const [type = ''] = (res.headers.get('content-type') ?? '').split(';').map((s) => s.trim())
       if (!res.ok || !RASTER.test(type)) continue
       const declared = Number(res.headers.get('content-length') ?? 0)
       if (declared > maxEach) continue

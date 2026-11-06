@@ -83,8 +83,9 @@ export function extractJsonLdBlocks(html: string): unknown[] {
   const re = /<script\b[^>]*type=["']application\/(ld\+)?json["'][^>]*>([\s\S]*?)<\/script>/gi
   let m: RegExpExecArray | null
   while ((m = re.exec(html))) {
-    if (!m[1] && !NAMES_A_RECIPE.test(m[2])) continue
-    const v = parseJsonLdText(m[2])
+    const body = m[2] ?? ''
+    if (!m[1] && !NAMES_A_RECIPE.test(body)) continue
+    const v = parseJsonLdText(body)
     if (v !== undefined) out.push(v)
   }
   return out
@@ -277,17 +278,17 @@ function splitOnAscendingMarkers(s: string, re: RegExp): string[] {
   let m: RegExpExecArray | null
   re.lastIndex = 0
   while ((m = re.exec(s))) {
-    if (+m[1] === expected) {
+    if (Number(m[1]) === expected) {
       marks.push({ index: m.index, end: m.index + m[0].length })
       expected++
     }
   }
   if (marks.length < 2) return [s]
   const out: string[] = []
-  const lead = s.slice(0, marks[0].index).trim()
+  const lead = s.slice(0, marks[0]?.index).trim()
   if (lead) out.push(lead)
-  for (let i = 0; i < marks.length; i++) {
-    const piece = s.slice(marks[i].end, marks[i + 1]?.index ?? s.length).trim()
+  for (const [i, mark] of marks.entries()) {
+    const piece = s.slice(mark.end, marks[i + 1]?.index ?? s.length).trim()
     if (piece) out.push(piece)
   }
   return out
@@ -397,8 +398,8 @@ export function refineSteps(raw: string[], opts: RefineOpts = {}): string[] {
   let mode = opts.blob ?? 'auto'
   if (mode === 'auto') {
     const body = cleanedAll.filter((c) => c && !isSectionHeading(c))
-    const lone = body.length === 1 ? splitPacked(body[0]) : []
-    mode = lone.length === 1 && lone[0].length > 400 ? 'sentences' : 'keep'
+    const lone = body.length === 1 ? splitPacked(body[0] ?? '') : []
+    mode = lone.length === 1 && (lone[0]?.length ?? 0) > 400 ? 'sentences' : 'keep'
   }
   const out: string[] = []
   let count = 0
@@ -449,9 +450,9 @@ export function healTruncatedSteps(steps: string[], originalSteps: string[] | un
     // real victims of the 200 cap are ~200 chars.
     if (s.length < 180 || /[.!?…»"”)]$/.test(s) || isSectionHeading(s)) return step
     const ns = norm(s)
-    for (let j = 0; j < originalSteps.length; j++) {
+    for (const [j, original] of originalSteps.entries()) {
       if (used.has(j)) continue
-      const o = originalSteps[j].trim()
+      const o = original.trim()
       if (o.length > s.length && norm(o).startsWith(ns)) {
         used.add(j)
         return o
@@ -554,14 +555,14 @@ export function normalizeInstructionsWithImages(value: unknown, max = MAX_STEPS)
   const steps: string[] = []
   const images: (string | null)[] = []
   out.forEach((l, i) => {
-    if (isSectionHeading(l) && steps.length && isSectionHeading(steps[steps.length - 1])) {
+    if (isSectionHeading(l) && steps.length && isSectionHeading(steps[steps.length - 1] ?? '')) {
       steps.pop()
       images.pop()
     }
     steps.push(l)
-    images.push(imgs[i])
+    images.push(imgs[i] ?? null)
   })
-  if (steps.length && isSectionHeading(steps[steps.length - 1])) {
+  if (steps.length && isSectionHeading(steps[steps.length - 1] ?? '')) {
     steps.pop()
     images.pop()
   }
@@ -599,12 +600,12 @@ export function pageMeta(html: string): { title: string | null; image: string | 
   const og = (prop: string): string | null => {
     const a = html.match(new RegExp(`<meta\\b[^>]*\\bproperty=["']og:${prop}["'][^>]*\\bcontent=["']([^"']*)["']`, 'i'))
     const b = a ?? html.match(new RegExp(`<meta\\b[^>]*\\bcontent=["']([^"']*)["'][^>]*\\bproperty=["']og:${prop}["']`, 'i'))
-    return b ? clean(b[1]) || null : null
+    return b ? clean(b[1] ?? '') || null : null
   }
   // The page's ONE <h1> is its name as printed (« Carrés au sucre »); og:title and
   // <title> are written for a share card or a tab (« Recette de carrés au sucre |
   // Recettes du Québec ») — they lose their « | Site » tail and serve only without an h1.
-  const h1s = [...html.matchAll(/<h1\b[^>]*>([\s\S]*?)<\/h1>/gi)].map((m) => clean(m[1])).filter((t) => t.length >= 2 && t.length <= 120)
+  const h1s = [...html.matchAll(/<h1\b[^>]*>([\s\S]*?)<\/h1>/gi)].map((m) => clean(m[1] ?? '')).filter((t) => t.length >= 2 && t.length <= 120)
   let title = h1s.length === 1 ? h1s[0] : null
   if (!title) {
     const o = og('title')
@@ -612,7 +613,7 @@ export function pageMeta(html: string): { title: string | null; image: string | 
   }
   if (!title) {
     const t = html.match(/<title\b[^>]*>([\s\S]*?)<\/title>/i)
-    title = t ? stripTitleTail(clean(t[1])) : null
+    title = t ? stripTitleTail(clean(t[1] ?? '')) : null
   }
   return { title: title ? title.slice(0, 200) : null, image: normalizeImage(og('image')) }
 }
@@ -639,7 +640,7 @@ export function parseYield(value: unknown): number | null {
     const labelled =
       value.match(/(\d{1,2})\s*(?:[àa]\s*\d{1,2}\s*)?(?:portions?|servings?|personnes?|convives|parts)\b/i) ??
       value.match(/(?:donne|serves?|rendement|yield|quantit[ée])\s*:?\s*(?:de\s+)?(\d{1,2})\b/i)
-    if (labelled) return clampServings(+labelled[1])
+    if (labelled) return clampServings(Number(labelled[1]))
     for (const m of value.matchAll(/\d+/g)) {
       const n = clampServings(+m[0])
       if (n) return n
@@ -666,7 +667,7 @@ export function parseYieldUnit(value: unknown): string | null {
   if (typeof value === 'string') {
     const m = value.match(/\d+\s*(?:[àa]\s*\d+\s*)?([a-zà-öœ' -]{3,24}?)\s*$/i)
     if (!m) return null
-    const unit = m[1].trim().replace(/^(?:de|d['’])\s+/i, '').trim()
+    const unit = (m[1] ?? '').trim().replace(/^(?:de|d['’])\s+/i, '').trim()
     return unit && !PORTION_WORDS.test(unit) ? unit.slice(0, 24) : null
   }
   if (Array.isArray(value)) {
@@ -749,8 +750,9 @@ export function parseRecipeJsonLdBlocks(blocks: unknown[], pick = 0): ParsedReci
     seen.add(key)
     return [p]
   })
-  if (!usable.length) return null
+
   const chosen = usable[Math.min(Math.max(0, Math.floor(pick) || 0), usable.length - 1)]
+  if (!chosen) return null
   return usable.length > 1 ? { ...chosen, candidates: usable.map((u, i) => ({ i, title: u.title })) } : chosen
 }
 
@@ -802,21 +804,22 @@ export function parseRecipeMicrodata(html: string): ParsedRecipe | null {
     const open = /<([a-z][a-z0-9]*)\b([^>]*)>/gi
     let m: RegExpExecArray | null
     while ((m = open.exec(html)) && out.length < 80) {
-      if (!wants.test(m[2])) continue
-      const tag = m[1].toLowerCase()
-      const c = m[2].match(/\b(?:content|datetime)=["']([^"']*)["']/i)
+      const attrs = m[2] ?? ''
+      if (!wants.test(attrs)) continue
+      const tag = (m[1] ?? '').toLowerCase()
+      const c = attrs.match(/\b(?:content|datetime)=["']([^"']*)["']/i)
       if (c) {
-        attr.push(c[1])
+        attr.push(c[1] ?? '')
         continue
       }
-      if (m[2].endsWith('/') || VOID_TAGS.has(tag)) continue
+      if (attrs.endsWith('/') || VOID_TAGS.has(tag)) continue
       const start = m.index + m[0].length
       const any = /<(\/?)([a-z][a-z0-9]*)\b[^>]*>/gi
       any.lastIndex = start
       let depth = 1
       let t: RegExpExecArray | null
       while ((t = any.exec(html))) {
-        if (t[2].toLowerCase() !== tag || t[0].endsWith('/>')) continue
+        if ((t[2] ?? '').toLowerCase() !== tag || t[0].endsWith('/>')) continue
         depth += t[1] ? -1 : 1
         if (depth === 0) {
           out.push(html.slice(start, t.index))
@@ -950,12 +953,14 @@ export function regroupIngredientsInText(text: string, ingredients: string[]): s
   // The first group's label sits just BEFORE its first ingredient — pull it in
   // so "Biscuits" isn't lost (mid-list labels are already inside the window).
   let start = hits[0]
-  if (start > 0 && rows[start - 1].ing == null && groupLabel(rows[start - 1].line)) start--
+  const stop = hits.at(-1)
+  if (start === undefined || stop === undefined) return ingredients
+  const before = rows[start - 1]
+  if (before && before.ing == null && groupLabel(before.line)) start--
   const out: string[] = []
-  for (let i = start; i <= hits[hits.length - 1]; i++) {
-    const r = rows[i]
+  for (const r of rows.slice(start, stop + 1)) {
     if (r.ing != null) {
-      out.push(ingredients[r.ing])
+      out.push(ingredients[r.ing] ?? '')
     } else {
       const sec = groupLabel(r.line)
       if (sec) out.push(makeSectionHeading(sec))
@@ -966,7 +971,7 @@ export function regroupIngredientsInText(text: string, ingredients: string[]): s
   if (heads.length === 0) return ingredients
   // One heading covering the WHOLE list adds nothing; one mid-list makes two
   // real groups and stays.
-  if (heads.length === 1 && isSectionHeading(grouped[0])) return ingredients
+  if (heads.length === 1 && isSectionHeading(grouped[0] ?? '')) return ingredients
   return grouped.slice(0, MAX_INGREDIENTS)
 }
 
@@ -1075,10 +1080,10 @@ export const CONTINUATION_START =
 export function joinLoneNumbers(lines: string[]): string[] {
   const out: string[] = []
   for (let i = 0; i < lines.length; i++) {
-    const l = lines[i]
+    const l = lines[i] ?? ''
     const m = /^(\d{1,2})[.)]?$/.exec(l)
     const next = lines[i + 1]
-    if (m && +m[1] >= 1 && +m[1] <= 30 && next && (/^\p{Ll}/u.test(next) || /[.!?]$/.test(next))) {
+    if (m && Number(m[1]) >= 1 && Number(m[1]) <= 30 && next && (/^\p{Ll}/u.test(next) || /[.!?]$/.test(next))) {
       out.push(`${m[1]} ${next}`)
       i++
     } else out.push(l)
@@ -1136,7 +1141,7 @@ export function textToMinutes(s: string): number | null {
   const h = hm ?? s.match(/(\d+)\s*(?:h(?:eures?|rs?)?|hours?)\b/i)
   const min = hm ? null : s.match(/(\d+)\s*(?:min(?:utes?)?|mn)\b/i)
   if (!h && !min) return null
-  const total = (h ? +h[1] * 60 : 0) + (hm ? +hm[2] : min ? +min[1] : 0)
+  const total = (h ? Number(h[1]) * 60 : 0) + (hm ? Number(hm[2]) : min ? Number(min[1]) : 0)
   return total > 0 && total <= 48 * 60 ? total : null
 }
 
@@ -1162,7 +1167,7 @@ const BADGE_VALUE = /^\d{1,3}(?:[,.]\d+)?(?:\s*[àa]\s*\d{1,3})?(?:\s*h\s*\d{2})
 function joinBadges(lines: string[]): string[] {
   const out = [...lines]
   for (let i = 0; i + 1 < out.length; i++) {
-    if (BADGE_LABEL.test(out[i]) && BADGE_VALUE.test(out[i + 1])) {
+    if (BADGE_LABEL.test(out[i] ?? '') && BADGE_VALUE.test(out[i + 1] ?? '')) {
       out[i] = `${out[i]} ${out[i + 1]}`
       out[i + 1] = ''
     }
@@ -1170,7 +1175,7 @@ function joinBadges(lines: string[]): string[] {
   return out
 }
 // The number, whichever branch matched: « 4 portions », « Donne 4 », « Portions : 4 ».
-const servingsOf = (sv: RegExpMatchArray): number => +(sv[1] ?? sv[2] ?? sv[4])
+const servingsOf = (sv: RegExpMatchArray): number => Number(sv[1] ?? sv[2] ?? sv[4])
 
 // A line that is ONLY an amount (+ its unit) — « 250 ml », « 1 c. à soupe », « 2 » —
 // and a line of words with no number: the two cells of one ingredient (F, 2026-10-27).
@@ -1204,7 +1209,7 @@ function inlineSectionTitle(line: string): string | null {
   const s = stripBullet(line)
   if (/\d/.test(s)) return null
   const colon = s.match(/^([^.!?:;,]{2,40})\s*:$/)
-  if (colon) return colon[1].trim()
+  if (colon) return (colon[1] ?? '').trim()
   // Article required after pour/for — "Pour le glaçage" / "For the filling"
   // are part names, but the ENGLISH verb "Pour in the milk" is an instruction.
   if (/^(?:pour\s+(?:le|la|les|l['’])|for\s+the\b)[^.!?:;,]{1,30}$/i.test(s) && s.split(/\s+/).length <= 5) return s
@@ -1274,7 +1279,7 @@ export function parsePastedRecipe(text: string): PastedRecipe {
   // A bare amount whose words sit on the NEXT line (a site's two cells, « 250 ml » /
   // « de farine »): the index of that words line, or -1. Never a heading.
   const wordsAfter = (from: number): number => {
-    if (!AMOUNT_ONLY.test(lines[from])) return -1
+    if (!AMOUNT_ONLY.test(lines[from] ?? '')) return -1
     let j = from + 1
     while (j < lines.length && lines[j] === '') j++
     const w = lines[j] ?? ''
@@ -1296,9 +1301,9 @@ export function parsePastedRecipe(text: string): PastedRecipe {
     const consumeMeta = (l: string): boolean => {
       const tm = l.match(TIME_LINE)
       if (tm) {
-        const mins = textToMinutes(tm[2])
+        const mins = textToMinutes(tm[2] ?? '')
         if (mins) {
-          const kind = tm[1].toLowerCase()
+          const kind = (tm[1] ?? '').toLowerCase()
           if (/^cuisson|^cook|^bak|^au\s+four/.test(kind)) times.cook ??= mins
           else if (/total/.test(kind)) times.total ??= mins
           else if (/^pr[ée]p/.test(kind)) times.prep ??= mins
@@ -1393,7 +1398,7 @@ export function parsePastedRecipe(text: string): PastedRecipe {
     const inlineNote = mode !== 'steps' ? line.match(INLINE_NOTE) : null
     if (inlineNote) {
       mode = 'notes'
-      noteLines.push(inlineNote[1])
+      noteLines.push(inlineNote[1] ?? '')
       noteOrder.push(li)
       continue
     }
@@ -1407,7 +1412,7 @@ export function parsePastedRecipe(text: string): PastedRecipe {
         continue
       }
       const labelled = line.match(/^(?:titre|title|nom|name)\s*:\s*(.{1,120})$/i)
-      const cand = labelled ? labelled[1].trim() : line
+      const cand = labelled?.[1]?.trim() ?? line
       if (!title && cand.length <= 120) {
         title = cand.slice(0, 200)
         titleAt = li
@@ -1619,7 +1624,7 @@ export function parsePastedRecipe(text: string): PastedRecipe {
   // A line printed twice (a page that shows its notes in two layouts) is kept once. In
   // PAGE order when every note carries its line (the two passes of a numbered card).
   const inPageOrder =
-    noteOrder.length === noteLines.length ? noteLines.map((l, k) => ({ l, i: noteOrder[k] })).sort((a, b) => a.i - b.i).map((x) => x.l) : noteLines
+    noteOrder.length === noteLines.length ? noteLines.map((l, k) => ({ l, i: noteOrder[k] ?? 0 })).sort((a, b) => a.i - b.i).map((x) => x.l) : noteLines
   const notes = [...new Set(inPageOrder)].join('\n').trim().slice(0, MAX_NOTES_LEN) || null
 
   const ingredients = dropDanglingHeadings(ings.slice(0, MAX_INGREDIENTS))
@@ -1725,7 +1730,7 @@ export function parseRecipeText(text: string): PastedRecipe {
 // anchor on the ingredients heading (or, failing that, the preparation one) and
 // spend the budget from there, keeping a little of the lead-in because the title,
 // yield and times usually sit just above that heading.
-const HEADING_ANCHORS = [
+const HEADING_ANCHORS: [RegExp, RegExp, ...RegExp[]] = [
   /^[ \t]*(?:#{1,6}[ \t]*)?(?:ingr[ée]dients?)[ \t]*:?[ \t]*$/im,
   /^[ \t]*(?:#{1,6}[ \t]*)?(?:pr[ée]paration|instructions?|directions?|m[ée]thode|method|[ée]tapes?|steps?)[ \t]*:?[ \t]*$/im,
 ]

@@ -9,7 +9,7 @@ const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'
 export function newId(len = 12): string {
   const bytes = crypto.getRandomValues(new Uint8Array(len))
   let out = ''
-  for (let i = 0; i < len; i++) out += ALPHABET[bytes[i] % ALPHABET.length]
+  for (const b of bytes) out += ALPHABET[b % ALPHABET.length]
   return out
 }
 
@@ -23,7 +23,7 @@ const SHORT_ALPHABET = '23456789abcdefghjkmnpqrstuvwxyz'
 export function newShortCode(len = 4): string {
   const bytes = crypto.getRandomValues(new Uint8Array(len))
   let out = ''
-  for (let i = 0; i < len; i++) out += SHORT_ALPHABET[bytes[i] % SHORT_ALPHABET.length]
+  for (const b of bytes) out += SHORT_ALPHABET[b % SHORT_ALPHABET.length]
   return out
 }
 
@@ -32,7 +32,7 @@ export function newShortCode(len = 4): string {
 export function newPairingCode(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(6))
   let out = ''
-  for (let i = 0; i < 6; i++) out += String(bytes[i] % 10)
+  for (const b of bytes) out += String(b % 10)
   return out
 }
 
@@ -101,7 +101,7 @@ function wallParts(d: Date, tz: string) {
   if (hit) return hit
   const p = Object.fromEntries(wallFmt(tz).formatToParts(d).map((x) => [x.type, x.value])) as Record<string, string>
   // Intl emits hour "24" at midnight in some runtimes — normalize to 0.
-  const out = { y: +p.year, mo: +p.month, d: +p.day, h: +p.hour % 24, mi: +p.minute, s: +p.second }
+  const out = { y: Number(p.year), mo: Number(p.month), d: Number(p.day), h: Number(p.hour) % 24, mi: Number(p.minute), s: Number(p.second) }
   if (wallPartsCache.size > 20_000) wallPartsCache.clear()
   wallPartsCache.set(key, out)
   return out

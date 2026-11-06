@@ -45,7 +45,7 @@ function printedStepNumbers(source: string): number[] {
   const out: number[] = []
   for (const line of source.split(/\r?\n/)) {
     const m = line.match(/^[ \t]*(?:[ée]tape|step)\s*(\d{1,2})\b/i) ?? (STEP_MARKED.test(line.trim()) ? line.trim().match(/^(\d{1,2})/) : null)
-    if (m) out.push(+m[1])
+    if (m) out.push(Number(m[1]))
   }
   return out
 }
@@ -103,7 +103,7 @@ export function auditDraft(d: Auditable, sourceText: string | null): AuditFlag[]
     const listed = (w: string) => have.some((h) => h.startsWith(w.slice(0, 4)) || w.startsWith(h.slice(0, 4)))
     for (const lifted of ingredientsFromMethod(steps)) {
       // A phrase never runs past its sentence (« 1 c. à thé. Bien mélanger »).
-      const phrase = lifted.split(/\.\s+(?=[A-ZÀ-ÖŒ])/)[0]
+      const phrase = lifted.split(/\.\s+(?=[A-ZÀ-ÖŒ])/)[0] ?? lifted
       // Only a MEASURE of something: an amount, a kitchen unit, then « de / d' / of » and
       // a word that is not an article (« 5 tablespoons of the hot liquid » is a gesture,
       // « 400 degrees F », « 65g each », « une feuille de papier » are not ingredients).
@@ -133,7 +133,7 @@ export function auditDraft(d: Auditable, sourceText: string | null): AuditFlag[]
 
   // A part heading with nothing under it.
   for (const list of [d.ingredients, d.steps]) {
-    const at = list.findIndex((l, i) => isHeading(l) && (i === list.length - 1 || isHeading(list[i + 1])))
+    const at = list.findIndex((l, i) => isHeading(l) && (i === list.length - 1 || isHeading(list[i + 1] ?? '')))
     if (at >= 0) {
       flags.push({ kind: 'empty-section', line: list[at] })
       break

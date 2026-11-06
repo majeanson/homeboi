@@ -312,7 +312,8 @@ const PATH_KEYS: Record<string, string[][]> = {
 // then collapse a dynamic trailing segment (e.g. "img/<key>") to its prefix so
 // per-id routes still map. Returns '' for an empty path.
 function normalizePath(path: string): string {
-  let p = (path || '').split('?')[0].replace(/^\/+/, '')
+  const [bare = ''] = (path || '').split('?')
+  let p = bare.replace(/^\/+/, '')
   if (p.startsWith('api/')) p = p.slice('api/'.length)
   p = p.replace(/\/+$/, '')
   return p

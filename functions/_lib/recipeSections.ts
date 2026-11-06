@@ -18,10 +18,11 @@ export const makeSectionHeading = (title: string): string => SECTION_PREFIX + ti
 // empty part — drop it. Run after parsing.
 export function dropDanglingHeadings(lines: string[]): string[] {
   const out: string[] = []
+  const endsOnHeading = () => isSectionHeading(out.at(-1) ?? '')
   for (const l of lines) {
-    if (isSectionHeading(l) && out.length && isSectionHeading(out[out.length - 1])) out.pop()
+    if (isSectionHeading(l) && endsOnHeading()) out.pop()
     out.push(l)
   }
-  if (out.length && isSectionHeading(out[out.length - 1])) out.pop()
+  if (endsOnHeading()) out.pop()
   return out
 }
