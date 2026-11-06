@@ -29,6 +29,8 @@ export interface CorpusMeta {
   // The audit flags this page SHOULD raise (recipeAudit.test) — none unless named, with
   // the reason in notes: a corpus page is verified correct, so a flag is usually a false alarm.
   audit?: string[]
+  // The method comes from stepHeadedMethod, so the model still gets a look (readPage askModel).
+  stepHeaded?: boolean
 }
 
 // The fields a cook would check — everything the form fills from an import.

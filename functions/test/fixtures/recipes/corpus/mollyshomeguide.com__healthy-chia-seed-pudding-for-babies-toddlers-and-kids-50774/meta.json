@@ -1,0 +1,8 @@
+{
+  "url": "https://mollyshomeguide.com/healthy-chia-seed-pudding-for-babies-toddlers-and-kids-50774/",
+  "capturedAt": "2026-11-06",
+  "reach": "direct",
+  "via": "playwright",
+  "notes": "Verified by reading 2026-11-05. JSON-LD with no recipeInstructions and no Instructions heading: the method is five « Step N: » subheads over plain lines. This read is the NO-MODEL one (stepHeadedMethod); prod asks the model first. CHOICE: the site's data says « cocoa butter » and 4 servings, the page prints « cocoa powder »: structured data stands, as everywhere; the model read fixes the word. (worker fetch 200 from prod; 429 on the capture run was this machine after repeated fetches.)",
+  "stepHeaded": true
+}

@@ -2,7 +2,9 @@
 import { describe, expect, it } from 'vitest'
 import { diffExpected, expectedOf, loadCorpus } from '../test/recipeCorpus'
 import { htmlToText, parsePastedRecipe, parseRecipeMicrodata, pageMeta, tidyIngredientLine } from './recipeImport'
-import { halfRead, importFromHtml, pageListFillsIngredients, readPage, regroupSteps, sourceFromCapture } from './recipeImportPage'
+import { fullerSteps, halfRead, importFromHtml, pageListFillsIngredients, readPage, regroupSteps, sourceFromCapture, sourceFromHtml, stepHeadedMethod } from './recipeImportPage'
+
+const real = (l: string[]) => l.filter((x) => !x.startsWith('## '))
 
 // The page seam (_lib/recipeImportPage) and the parser fixes the corpus forced
 // (2026-10-27). The corpus test scores whole pages; these pin each rule on its own.
@@ -69,6 +71,100 @@ describe('a page the cook’s browser captured reads like the page we fetched', 
       notes: 'Meilleur tiède.',
       structuring: 'headings',
     })
+  })
+})
+
+describe('stepHeadedMethod — only ever adds', () => {
+  const ingredients = ['2 cups milk', '1/2 cup chia seeds', '1/4 cup peanut butter']
+  const page = [
+    'Ingredients',
+    '2 cups milk',
+    '',
+    'Step 1: Combine Milk and Chia',
+    'Whisk the milk and chia seeds in a bowl.',
+    'Let the seeds absorb the liquid.',
+    '',
+    'Step 2: Finish',
+    'Stir in the peanut butter until smooth.',
+    'Serve it nice and cold.',
+    '',
+    'Disclaimer: parts of this article were written by a machine.',
+    'Leave a Comment',
+  ]
+  const text = page.join('\n')
+  const read = (t: string, ing = ingredients) => stepHeadedMethod(t, ing)
+
+  it('every step, every line, word for word, the footer out', () => {
+    expect(read(text)).toEqual([
+      '## Step 1: Combine Milk and Chia',
+      'Whisk the milk and chia seeds in a bowl.',
+      'Let the seeds absorb the liquid.',
+      '## Step 2: Finish',
+      'Stir in the peanut butter until smooth.',
+      'Serve it nice and cold.',
+    ])
+  })
+  it('a page with nothing after the last step reads to its end', () => {
+    expect(read(page.slice(0, 11).join('\n'))?.at(-1)).toBe('Serve it nice and cold.')
+  })
+  // Each of these is a page where the rule would be guessing — it must step aside.
+  const steppingAside: [string, string][] = [
+    ['a table of contents restarts the numbers', 'Step 1: Combine\nStep 2: Finish\n\n' + text],
+    ['a number is missing', text.replace('Step 2:', 'Step 3:')],
+    ['a single step is not a method', text.replace('Step 2: Finish', 'Finish')],
+    ['a title that is really the sentence', text.replace('Step 2: Finish', 'Step 2: Finish the milk and chia.')],
+    ['a line that is no sentence (a caption, an ad)', text.replace('Let the seeds absorb the liquid.', 'Sponsored photo')],
+    ['paragraphs: a blank line inside a step', text.replace('Whisk the milk and chia seeds in a bowl.\n', 'Whisk the milk and chia seeds in a bowl.\n\n')],
+    ['the last step may run on past its blank line', text.replace('Disclaimer: parts of this article were written by a machine.', 'Then chill the milk for a day before you eat it.')],
+    ['a heading with nothing under it', text.replace('Whisk the milk and chia seeds in a bowl.\nLet the seeds absorb the liquid.\n', '')],
+  ]
+  for (const [why, t] of steppingAside) it(`null: ${why}`, () => expect(read(t)).toBeNull())
+  it('null: a numbered list that does not cook this recipe', () => {
+    expect(read(text, ['1 kg de boeuf', '2 carottes', '1 oignon'])).toBeNull()
+  })
+  it('never touches a page that has a method', () => {
+    const r = readPage(
+      sourceFromCapture({
+        url: 'https://x.test/r',
+        jsonld: [JSON.stringify({ '@type': 'Recipe', name: 'P', recipeIngredient: ingredients, recipeInstructions: ['Tout mélanger.'] })],
+        text,
+      }),
+    )
+    expect(r.draft?.steps).toEqual(['Tout mélanger.'])
+    expect(r.askModel).toBe(false)
+  })
+  it('found alone, it is the no-model read — and the model still gets a look', () => {
+    const r = readPage(
+      sourceFromCapture({
+        url: 'https://x.test/r',
+        jsonld: [JSON.stringify({ '@type': 'Recipe', name: 'P', recipeIngredient: ingredients, recipeYield: '4', prepTime: 'PT15M' })],
+        text: `P\nMenu\n${text}`,
+      }),
+    )
+    expect(real(r.draft!.steps)).toHaveLength(4)
+    expect(r.askModel).toBe(true)
+    expect(r.known).toMatchObject({ servings: 4, times: { prep: 15 } })
+  })
+  it('no corpus page with a method of its own is touched', () => {
+    for (const e of loadCorpus()) {
+      const r = readPage(sourceFromHtml(e.html(), e.meta.url))
+      if (e.meta.stepHeaded) expect(r.askModel, e.id).toBe(true)
+      else expect(r.askModel, e.id).toBe(false)
+    }
+  })
+})
+
+describe('fullerSteps — the page’s lines replace a model’s only to add', () => {
+  const page = ['## Step 1', 'Mix it.', 'Rest it.', 'Serve it.']
+  it('the model lost a line → the page’s, whole', () => expect(fullerSteps(['Mix it.', 'Rest it.'], page)).toEqual(page))
+  it('the same lines, spelled alike → the page’s', () => expect(fullerSteps(['MIX IT', 'Rest it.', 'Serve it.'], page)).toEqual(page))
+  it('a line the page does not hold → the model’s stands', () => {
+    expect(fullerSteps(['Mix it.', 'Bake it.'], page)).toEqual(['Mix it.', 'Bake it.'])
+  })
+  it('nothing to compare → the model’s stands', () => {
+    expect(fullerSteps(['Mix it.'], undefined)).toEqual(['Mix it.'])
+    expect(fullerSteps(['Mix it.'], [])).toEqual(['Mix it.'])
+    expect(fullerSteps([], page)).toEqual([])
   })
 })
 

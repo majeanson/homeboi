@@ -2,6 +2,8 @@ import { draft, readText, type DraftOut } from './recipeDraft'
 import { isSectionHeading } from './recipeSections'
 import { adaptPage, applyGroups } from './siteAdapters'
 import {
+  NOISE_END,
+  NOTE_HEADING,
   extractJsonLdBlocks,
   htmlToText,
   normLoose,
@@ -12,6 +14,7 @@ import {
   parseRecipeJsonLdBlocks,
   parseRecipeMicrodata,
   recipeTextWindow,
+  refineSteps,
   regroupIngredientsInText,
   stripTitleTail,
 } from './recipeImport'
@@ -91,9 +94,13 @@ export interface PageRead {
   // A read good enough to ship with no model (site data, or the page's own headings);
   // null when only the model could organise this page.
   draft: DraftOut | null
+  // `draft` is not the last word: a model, when there is one, gets a look first. A half
+  // read, or a method only `stepHeadedMethod` found — see that function for why.
+  askModel: boolean
   // The recipe's text window — what the model gets, and what the verify panel shows.
   window: string
-  // The heuristic's own read of the window: the title/servings/times a model read keeps.
+  // What a model read keeps: the title/servings/times of the heuristic's read of the
+  // window, under the site's own figures when it published them.
   known: DraftOut
   // The page's name and picture (structured data first, then og:/<title>).
   title: string | null
@@ -131,8 +138,7 @@ export function readPage(src: PageSource, pick = 0): PageRead {
     // The site's step photos follow their step through any part heading added above.
     const photoOf = new Map(parsed.steps.map((s, i) => [s, parsed.stepImageUrls?.[i] ?? null]))
     const stepImageUrls = parsed.stepImageUrls ? steps.map((s) => (isSectionHeading(s) ? null : (photoOf.get(s) ?? null))) : undefined
-    return {
-      draft: draft({
+    const read = draft({
         ...parsed,
         stepImageUrls,
         image,
@@ -149,9 +155,24 @@ export function readPage(src: PageSource, pick = 0): PageRead {
         notes: parsed.notes ?? text.known.notes ?? null,
         source: src.url,
         structuring: parsed === ld ? 'jsonld' : 'microdata',
-      }),
+      })
+    const headed = real(read.steps).length ? null : stepHeadedMethod(src.text, read.ingredients)
+    return {
+      draft: headed ? { ...read, steps: headed } : read,
+      askModel: halfRead(read), // read before the rescue: a found method does not skip the model
       window,
-      known: text.known,
+      // The text heuristic guesses these; a site that publishes them knows. A model read
+      // of instantpot-style half data used to answer 2 servings where the site says 4.
+      known: {
+        ...text.known,
+        servings: parsed.servings ?? text.known.servings,
+        servingsUnit: parsed.servings != null ? parsed.servingsUnit : text.known.servingsUnit,
+        times: {
+          prep: parsed.times.prep ?? text.known.times.prep,
+          cook: parsed.times.cook ?? text.known.times.cook,
+          total: parsed.times.total ?? text.known.times.total,
+        },
+      },
       title,
       image,
     }
@@ -162,6 +183,7 @@ export function readPage(src: PageSource, pick = 0): PageRead {
   // reads the menu bar as a recipe.
   return {
     draft: printedOk ? { ...printed, title: title ?? printed.title, image, source: src.url } : null,
+    askModel: printedOk && halfRead(printed),
     window,
     known: text.known,
     title,
@@ -173,6 +195,70 @@ const real = (lines: string[]) => lines.filter((l) => !isSectionHeading(l))
 
 // Ingredients with no method, or a method with no ingredients: not yet a recipe.
 export const halfRead = (d: { ingredients: string[]; steps: string[] }): boolean => !real(d.ingredients).length || !real(d.steps).length
+
+// THE BLOG METHOD: no « Instructions » heading, no step in the structured data, only
+// « Step 1: Combine Milk and Chia Seeds » over a few lines (mollyshomeguide, 2026-11-05).
+//
+// It must only ever ADD (Marc: « if it only improves and never degrades »), and that is
+// a matter of WHERE it is allowed to count, not of how good it is:
+//   · it never runs while the site's data or the printed headings have a method;
+//   · it does not beat the model. On the very page it was written for, the model read
+//     « cocoa powder » from the printed list where the site's data says « cocoa butter ».
+//     So it ships alone only where the alternative is NO STEPS (AI off, budget spent, the
+//     model empty-handed), and beside a model read only through `fullerSteps`;
+//   · anything ambiguous is null, and the road is what it was before this existed:
+//     numbers that are not exactly 1..n (a table of contents restarts them), a title that
+//     is really a sentence, a line that is not one (a caption, an ad), a blank line inside
+//     a step (paragraphs: the last step's end would be a guess), a method that does not
+//     cook this recipe's ingredients, or a last step that may run on past its blank line.
+const STEP_LINE = /^(?:step|[ée]tape)\s*(\d{1,2})(?:\s*[:.–—-]\s*\S.{0,78})?$/i
+const SENTENCE = /\S\s+\S.*[.!?…»)]$/
+export function stepHeadedMethod(pageText: string, ingredients: string[]): string[] | null {
+  const lines = pageText.split('\n').map((l) => l.trim())
+  const heads = lines.flatMap((l, i) => {
+    const m = STEP_LINE.exec(l)
+    return m ? [{ i, n: Number(m[1]), line: l }] : []
+  })
+  if (heads.length < 2 || heads.some((h, k) => h.n !== k + 1 || /[.!?]$/.test(h.line))) return null
+  const out: string[] = []
+  for (let k = 0; k < heads.length; k++) {
+    const last = k === heads.length - 1
+    let body = lines.slice(heads[k].i + 1, last ? undefined : heads[k + 1].i)
+    while (body.length && !body[0]) body = body.slice(1)
+    if (last) {
+      const end = body.indexOf('')
+      if (end >= 0) {
+        const next = body.slice(end).find(Boolean)
+        if (next && SENTENCE.test(next) && !NOISE_END.test(next) && !NOTE_HEADING.test(next)) return null
+        body = body.slice(0, end)
+      }
+    }
+    while (body.length && !body[body.length - 1]) body = body.slice(0, -1)
+    if (!body.length || !body.every((l) => SENTENCE.test(l))) return null
+    out.push(`## ${heads[k].line}`, ...body)
+  }
+  // The method cooks THIS recipe: a « How to pick your chia seeds » list is numbered too.
+  const said = normLoose(out.join(' '))
+  const list = real(ingredients)
+  const used = list.filter((l) =>
+    normLoose(l)
+      .split(' ')
+      .some((w) => w.length >= 4 && !/^\d/.test(w) && said.includes(w)),
+  ).length
+  if (used < 2 || used * 2 < list.length) return null
+  return refineSteps(out, { blob: 'keep' })
+}
+
+// A model may leave a line out; it may not lose one to a read that holds them all. The
+// page's own lines replace the model's only when EVERY line the model kept is among them
+// — so the swap can add, never remove (the model dropped the last two lines of Step 5,
+// 2026-11-05, and nothing said so). Any difference and the model's read stands.
+export function fullerSteps(modelSteps: string[], pageSteps: string[] | undefined): string[] {
+  const kept = real(modelSteps)
+  if (!pageSteps?.length || !kept.length) return modelSteps
+  const have = new Set(real(pageSteps).map(normLoose))
+  return kept.every((l) => have.has(normLoose(l))) ? pageSteps : modelSteps
+}
 
 // The recipe's name. The structured data's, unless it is the page's printed name with
 // an SEO tail glued on — « Boeuf bourguignon : la vraie recette : la meilleure recette »
