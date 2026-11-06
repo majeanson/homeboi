@@ -29,12 +29,12 @@ export function Avatar({
   className,
   decorative = false,
 }: {
-  kind?: string | null
-  photo?: string | null // R2 key, when kind === 'photo'
+  kind?: string | null | undefined
+  photo?: string | null | undefined // R2 key, when kind === 'photo'
   /** A photo URL already built (an `imgUrl` or an object URL) — wins over kind/photo. */
-  photoUrl?: string | null
-  colour?: string | null
-  name?: string | null
+  photoUrl?: string | null | undefined
+  colour?: string | null | undefined
+  name?: string | null | undefined
   size?: number
   shape?: 'disc' | 'square'
   /** The host's own class (size, overlap, border) — the avatar classes stay. */

@@ -18,7 +18,7 @@ export class ApiError extends Error {
    * substrings of `message` — which breaks the moment the copy is edited, or read in
    * English. Undefined for every endpoint that does not send one.
    */
-  code?: string
+  code?: string | undefined
   constructor(status: number, message: string, code?: string) {
     super(message)
     this.status = status
@@ -72,7 +72,7 @@ function readProfile(): string | null {
 // offline-outbox REPLAY (see the guest backstop below) — a direct `api()` caller
 // may now set `idempotencyKey` too (a one-liner, per the item's scope note) without
 // that alone granting the guest bypass.
-type Options = { method?: string; body?: unknown; idempotencyKey?: string; replay?: boolean; timeoutMs?: number }
+type Options = { method?: string; body?: unknown; idempotencyKey?: string; replay?: boolean; timeoutMs?: number | undefined }
 
 // `fetch` never times out on its own — a stalled connection (a store's captive
 // portal, a wifi AP going out of range mid-handshake, any "packets silently
@@ -190,9 +190,9 @@ export async function api<T = unknown>(path: string, opts: Options = {}): Promis
       method,
       headers,
       credentials: 'same-origin',
-      body: payload,
-      keepalive: keepalive || undefined,
-      signal: controller?.signal,
+      ...(payload !== undefined && { body: payload }),
+      ...(keepalive && { keepalive }),
+      ...(controller && { signal: controller.signal }),
     })
     // `fetch` resolves as soon as HEADERS arrive — a connection that answers the
     // handshake and then stalls mid-body (a proxy/captive-portal drop, a signal

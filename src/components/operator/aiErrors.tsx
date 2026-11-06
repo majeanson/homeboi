@@ -36,7 +36,7 @@ interface AiCheck {
 // A "does it actually work?" probe that sits ABOVE the error log: instead of
 // waiting for a feature to fail and reading the journal after the fact, the
 // operator presses Tester l'IA and gets a live pass/fail per model right now.
-function AiStatusTest({ help }: { help?: HelpMode }) {
+function AiStatusTest({ help }: { help?: HelpMode | undefined }) {
   const o18n = useOperatorT()
   const [checks, setChecks] = useState<AiCheck[] | null>(null)
   const [running, setRunning] = useState(false)

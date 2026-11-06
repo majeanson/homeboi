@@ -220,7 +220,7 @@ export function RecipeReadReview({
    *  Several pages = one chip each (« Photo 1 », « Photo 2 »…) above the loupe. */
   photoUrls?: string[]
   /** The page text the AI organised (link / paste path), shown when there is no photo. */
-  sourceText?: string | null
+  sourceText?: string | null | undefined
   draft: ReadReviewDraft
   lowConfidenceWords: string[]
   // The pipeline honesty report (« Rapport » tab). Optional so older callers /
@@ -230,7 +230,7 @@ export function RecipeReadReview({
   onConfirm: (d: ReadReviewDraft) => void
   onCancel: () => void
   /** Re-run the read with the cook's hint (« Guider l'IA »). Omit → no retry offered. */
-  onRetry?: (hint: string) => void
+  onRetry?: ((hint: string) => void) | undefined
   retrying?: boolean
 }) {
   const t = useT()

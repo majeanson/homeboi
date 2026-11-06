@@ -33,7 +33,7 @@ export interface RemarkSeed {
   kind?: RemarkKind
   /** The help-registry key of the section the door was opened from — a SEMANTIC
    *  locator (« kitchen.recipes »), which beats a URL path for finding the code. */
-  helpKey?: string
+  helpKey?: string | undefined
   /** Prefilled text — the crash screen passes what threw. */
   text?: string
 }
@@ -75,7 +75,7 @@ export function RemarkComposer({
 }: {
   open: boolean
   onClose: () => void
-  seed?: RemarkSeed
+  seed?: RemarkSeed | undefined
 }) {
   const t = useT()
   const write = useWrite()

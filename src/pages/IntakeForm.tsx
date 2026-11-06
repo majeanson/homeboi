@@ -138,7 +138,7 @@ function PhotoPick({
   )
 }
 
-export function IntakeForm({ onSwitch }: { onSwitch?: () => void } = {}) {
+export function IntakeForm({ onSwitch }: { onSwitch?: (() => void) | undefined } = {}) {
   const t = useT()
   const preview = useSharePreview()
 

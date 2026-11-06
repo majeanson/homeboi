@@ -21,7 +21,7 @@ export interface Actor {
   // The household's wall-clock zone (migration 0135). `authed()` puts it into the
   // per-request async context (_lib/tz.ts) so every day helper picks it up; a handler
   // never has to pass it. Absent → America/Toronto, the pre-0135 behaviour.
-  tz?: string
+  tz?: string | undefined
   email?: string
   deviceId?: string
   // Only set when scope === 'kiosk'. A normal wall tablet is 'kiosk'; older device

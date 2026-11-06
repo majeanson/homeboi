@@ -36,9 +36,9 @@ export function CheckRow({
   note?: ReactNode
   onCheck: () => void
   checkLabel: string
-  onRename?: (text: string) => void
-  renderEdit?: (close: () => void) => ReactNode
-  onDelete?: () => void
+  onRename?: ((text: string) => void) | undefined
+  renderEdit?: ((close: () => void) => ReactNode) | undefined
+  onDelete?: (() => void) | undefined
   editLabel?: string
   deleteLabel?: string
   /** Optional secondary action shown as a compact icon button before ✏️/🗑️ — e.g.

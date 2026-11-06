@@ -133,9 +133,9 @@ export function auditDraft(d: Auditable, sourceText: string | null): AuditFlag[]
 
   // A part heading with nothing under it.
   for (const list of [d.ingredients, d.steps]) {
-    const at = list.findIndex((l, i) => isHeading(l) && (i === list.length - 1 || isHeading(list[i + 1] ?? '')))
-    if (at >= 0) {
-      flags.push({ kind: 'empty-section', line: list[at] })
+    const line = list.find((l, i) => isHeading(l) && (i === list.length - 1 || isHeading(list[i + 1] ?? '')))
+    if (line !== undefined) {
+      flags.push({ kind: 'empty-section', line })
       break
     }
   }

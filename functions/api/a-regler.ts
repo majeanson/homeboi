@@ -31,7 +31,7 @@ interface Friction {
   kind: Kind
   key: string // stable id (React key / dedupe)
   label: string // the entity noun (event title · meal name · person) — the FE wraps copy around it
-  sub?: string // a secondary detail (the low ingredient)
+  sub?: string | undefined // a secondary detail (the low ingredient)
   at?: number // when it's relevant (sort)
   href: string // the one-tap fix
 }

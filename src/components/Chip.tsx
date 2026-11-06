@@ -48,7 +48,7 @@ export function Chip({
 }: {
   children: ReactNode
   /** Present = this chip is a TOGGLE, and this is its state. Omit for an action. */
-  selected?: boolean
+  selected?: boolean | undefined
   /** The event is passed through for the rare row-nested chip that must stop it. */
   onClick?: (e: MouseEvent<HTMLButtonElement>) => void
   onRemove?: () => void
@@ -57,16 +57,16 @@ export function Chip({
   to?: string
   /** A chip that UNFOLDS a panel under itself — `aria-expanded`, not pressed. */
   expanded?: boolean
-  icon?: IconName
-  ariaLabel?: string
-  title?: string
+  icon?: IconName | undefined
+  ariaLabel?: string | undefined
+  title?: string | undefined
   /** Interactive: disables the button. Static: marks the label `aria-disabled`. */
   disabled?: boolean
   /** Extra modifier class(es) appended after `chip`/`is-on` (e.g. `kitchen__pill`,
    *  `tag-admin__pill`) — for the chips that carry a layout/scope variant. */
   className?: string
   /** Inline style — the colour-tinted tag pills (`chipTint(...)`) need this. */
-  style?: CSSProperties
+  style?: CSSProperties | undefined
 }) {
   // A removable chip is itself the remove button (tap the pill to drop it) — the
   // pattern the recipe tag-pills use. Otherwise it's a toggle, an action, a link

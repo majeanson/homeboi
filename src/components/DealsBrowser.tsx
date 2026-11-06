@@ -70,7 +70,7 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
   const [mode, setMode] = useTabParam('view', 'item', ['item', 'store'] as const)
   const [input, setInput] = useState('')
   const [query, setQuery] = useState('')
-  const [flyer, setFlyer] = useState<{ id: number; itemId: number | null; merchant: string; logo?: string | null; premium?: boolean } | null>(null)
+  const [flyer, setFlyer] = useState<{ id: number; itemId: number | null; merchant: string; logo?: string | null; premium?: boolean | undefined } | null>(null)
   const [store, setStore] = useState<string | null>(null)
   // Product name → what the add did: the EXISTING line it rode on, or null when
   // it made a new one (or the add is still in flight). Keyed by the flyer's

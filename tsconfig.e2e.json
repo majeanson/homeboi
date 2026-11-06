@@ -18,6 +18,7 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
     // DOM + node: a spec is node code that also evaluates browser code inside
     // page.evaluate(), where `document`, `caches` and `location` are real.
     "types": ["node"]

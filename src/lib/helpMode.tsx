@@ -134,7 +134,7 @@ export function HelpTitle<K extends string>({
   className,
   children,
 }: {
-  help?: HelpMode<K>
+  help?: HelpMode<K> | undefined
   k: K
   as?: 'h2' | 'h3'
   className?: string
@@ -198,7 +198,7 @@ export function HelpToggle({
 // way since #32), so a section gains a tour door the moment a Tour with its id
 // exists, with nothing to wire per tab. `src/lib/tour-rule.test.ts` holds both ends:
 // every hub card has a tour, and every step's anchor exists.
-export function HelpHint({ card }: { card?: string }) {
+export function HelpHint({ card }: { card?: string | undefined }) {
   const t = useT()
   const { start } = useTour()
   // A tour whose id IS the section's card id (the SectionIntro convention).

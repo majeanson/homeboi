@@ -10,7 +10,7 @@ import { Icon } from '../Icon'
 interface BringEvent {
   id: string
   title: string
-  bring_template_id?: string | null
+  bring_template_id?: string | null | undefined
 }
 
 // « À apporter » — the bring-lists for the day's activities, surfaced in « Avant de

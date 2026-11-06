@@ -60,7 +60,7 @@ const MAX_REC_MS = 30_000
 /** An uploaded-but-not-yet-committed memo. `body` turns this into POST fields. */
 export type StagedMemo =
   | { kind: 'audio'; key: string }
-  | { kind: 'drawing'; key: string; sceneKey?: string }
+  | { kind: 'drawing'; key: string; sceneKey?: string | undefined }
   | { kind: 'image'; key: string }
 
 export interface MemoAttachOptions {

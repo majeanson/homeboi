@@ -39,7 +39,7 @@ export function HouseholdListSection<T extends HouseholdListItem>({
   field: string // the /api/household read + PATCH key ('cars' | 'reserveLocations')
   seed: () => T[] // localized defaults when the column was never set
   labels: HouseholdListLabels
-  help?: HelpMode
+  help?: HelpMode | undefined
   helpKey?: string
 }) {
   const t = useT()

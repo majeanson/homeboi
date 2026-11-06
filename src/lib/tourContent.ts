@@ -71,7 +71,7 @@ type TourStep = {
 export type Tour = {
   id: string
   // Navigate here before step 0 so the step anchors exist (e.g. the board).
-  startRoute?: string
+  startRoute?: string | undefined
   steps: TourStep[]
 }
 

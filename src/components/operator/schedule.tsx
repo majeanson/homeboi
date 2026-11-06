@@ -77,7 +77,7 @@ export function ScheduleSection({ help }: { help?: HelpMode }) {
     wd.length === 0 ? o18n.schedEveryDay : [...wd].sort((a, b) => a - b).map((d) => t.recur.weekdayShort[d]).join(' ')
   const everyLabel = (n: number | undefined) => (n && n > 1 ? ` · ${o18n.schedEveryNWeeksShort(n)}` : '')
 
-  async function save(b: Omit<ScheduleBlock, 'id'> & { id?: string }) {
+  async function save(b: Omit<ScheduleBlock, 'id'> & { id?: string | undefined }) {
     await write('schedule', {
       method: b.id ? 'PATCH' : 'POST',
       body: b,
@@ -173,7 +173,7 @@ function BlockForm({
 }: {
   members: Member[]
   value?: ScheduleBlock
-  onSave: (b: Omit<ScheduleBlock, 'id'> & { id?: string }) => void
+  onSave: (b: Omit<ScheduleBlock, 'id'> & { id?: string | undefined }) => void
   onCancel: () => void
 }) {
   const o18n = useOperatorT()

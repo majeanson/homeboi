@@ -13,9 +13,9 @@ import { swapAt } from './reorder'
 export interface SeekItem {
   id: string
   label: string // the resolved name ("Chien", "Rouge", "Mamie")
-  emoji?: string
+  emoji?: string | undefined
   photo?: string | null
-  color?: string | null
+  color?: string | null | undefined
   lang?: Lang // read this item in its own language (a person's name stays neutral)
 }
 export interface SeekDeck {

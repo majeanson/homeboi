@@ -381,7 +381,7 @@ export function RecipesTab({
                 // Both tabs share the single 'collections' help entry, so pin it
                 // (ignore the per-tab key) — otherwise the 'aa' tab would request a
                 // non-existent help entry (a P2-9 orphan).
-                pick={help ? (_k, run) => help.pick('collections', run) : undefined}
+                {...(help && { pick: (_k: string, run: () => void) => help.pick('collections', run) })}
               />
             </div>
           )}

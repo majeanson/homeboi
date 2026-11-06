@@ -17,7 +17,7 @@
 export interface CarSpan {
   start: number // unix seconds (inclusive)
   end: number // unix seconds (exclusive)
-  label?: string // "Marc au travail", a trip title…
+  label?: string | undefined // "Marc au travail", a trip title…
   holderId?: string | null // who holds the car during this span (member/contact key), if known
 }
 
@@ -107,7 +107,7 @@ export interface CarStatus {
   // When busy: the instant the car frees up (the covering span's end), so the glance
   // can say "prise — revient ~17 h". When free: the next instant it becomes busy
   // again within the day (so "libre jusqu'à 15 h"), or undefined if free all day.
-  until?: number
+  until?: number | undefined
   span?: CarSpan // the covering span when busy
   // The day holds at least one commitment (a busy span OR a car-taking ride), even
   // if the car is free right NOW. Lets the glance say "libre — le reste de la

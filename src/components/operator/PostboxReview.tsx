@@ -31,7 +31,7 @@ interface PendingMsg {
   createdAt: number
 }
 
-export function PostboxReview({ help }: { help?: HelpMode }) {
+export function PostboxReview({ help }: { help?: HelpMode | undefined }) {
   const t = useT()
   const qc = useQueryClient()
   const confirm = useConfirm()

@@ -56,7 +56,7 @@ export function FamilyBuilder({
   group: ContactGroupRaw | null
   /** Build a NEW family pre-seeded with these person keys (e.g. from a person's
    *  detail peek — "build their family"). Ignored when editing an existing group. */
-  seedKeys?: string[]
+  seedKeys?: string[] | undefined
   /** Relationships-only mode (from the Maisonnée card): wire up who's whose
    *  parent/sibling/spouse WITHOUT creating a named group — no name field, save
    *  writes links only. Keeps the household from spawning a redundant group. */

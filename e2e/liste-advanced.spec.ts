@@ -22,7 +22,7 @@ const PNG =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
 
 /** The board fixture with a real image on the first item's staged deal. */
-function boardWithClipping(opts: { validTo?: string } = {}) {
+function boardWithClipping(opts: { validTo?: string | undefined } = {}) {
   const board = JSON.parse(JSON.stringify(BOARD))
   const item = board.list[0]
   const d = JSON.parse(item.deal_json)

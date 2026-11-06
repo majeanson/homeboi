@@ -18,7 +18,7 @@ export interface QuickItem {
   label: string
   count: number
   searchTerms: string[]
-  status?: 'due' | 'soon'
+  status?: 'due' | 'soon' | undefined
   always?: boolean // #27: a standing staple — shown first in a "Toujours" group
   // A tracked item that isn't near renewal yet (a 'later' ghost) — surfaced as a
   // quiet, opt-in "Souvent racheté" group. CALM: no count/cadence is ever shown,

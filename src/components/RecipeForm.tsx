@@ -203,7 +203,7 @@ export function RecipeForm({
     report: ReadReport
     // How the read was made, for the provenance line once confirmed (a site-data read
     // the audit sent here is still « site », not « ai »).
-    via?: 'site' | 'headings' | 'heuristic' | 'ai'
+    via?: 'site' | 'headings' | 'heuristic' | 'ai' | undefined
     image?: string | null
     source?: string | null
   } | null>(null)
@@ -454,7 +454,7 @@ export function RecipeForm({
     // …and every page of it, in order (a two-page spread keeps both, 2026-10-30).
     sourceImages?: string[]
     // The site's step photos, already stored (R2 keys, aligned to `steps`; '' = none).
-    stepImages?: string[]
+    stepImages?: string[] | undefined
   }
   function applyDraft(d: Draft) {
     const last = lastDraft.current

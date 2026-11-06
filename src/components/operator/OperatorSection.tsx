@@ -30,8 +30,8 @@ export function OperatorSection({
   hint?: ReactNode
   action?: ReactNode
   /** With `helpKey`: render the heading as a help-mode `HelpTitle` + its bubble. */
-  help?: HelpMode
-  helpKey?: string
+  help?: HelpMode | undefined
+  helpKey?: string | undefined
   /** The `?focus=` anchor key when it must differ from `helpKey` — for a card whose
    *  helpKey is SHARED (`guest` names five cards): only the one that passes
    *  `anchor="guestLinks"` mints a DOM id. Must be a key in SETTINGS_TREE. */

@@ -69,7 +69,7 @@ export interface DayBucket {
 
 /** One day's slice of a trip band: the trip + whether this cell is its first/last
  *  visible day (rounded ends + the title shows on the start). */
-export interface TripSpan { id: string; title: string; colour: string; isStart: boolean; isEnd: boolean; start_at: number; shared?: boolean }
+export interface TripSpan { id: string; title: string; colour: string; isStart: boolean; isEnd: boolean; start_at: number; shared?: boolean | undefined }
 
 // A calendar marker: a colour AND a category, so a surface can tell each kind apart
 // instead of drawing a wall of identical circles. Events/chores/notes are shape-coded
@@ -79,13 +79,13 @@ export type DotKind = 'event' | 'meal' | 'chore' | 'note' | 'todo' | 'birthday' 
 export interface Dot {
   color: string
   kind: DotKind
-  slot?: MealSlot // meals → which slot icon to draw
+  slot?: MealSlot | undefined // meals → which slot icon to draw
   done?: boolean // habits: the day's intention was met (a filled ring, else hollow)
 }
 /** The same marker, plus what it SAYS once there is room for words. `time` is the
  *  clock face for a timed event and nothing for anything all-day. */
 export interface Line extends Dot {
-  time?: string
+  time?: string | undefined
   label: string
 }
 

@@ -19,23 +19,23 @@ import { Img } from './Img'
 export interface Tile {
   key: string
   icon?: string
-  image?: string | null // a real photo (recipe) — shown in the sticker disc, with `icon` as the fallback
+  image?: string | null | undefined // a real photo (recipe) — shown in the sticker disc, with `icon` as the fallback
   label: string
-  sub?: string
+  sub?: string | undefined
   narration?: string
   // A parent-voice clip R2 key (feature #17 A). When set, a speak-only tap plays
   // the clip and FALLS BACK to TTS (narration ?? label) on any error. Empty/unset
   // → straight TTS (the original contract, and the no-R2 path).
-  audioKey?: string | null
+  audioKey?: string | null | undefined
   // Read this tile's text in ITS OWN language (a recipe's `lang`), not the UI /
   // global voice — so an English recipe on a French kid grid is said in English.
-  lang?: Lang
+  lang?: Lang | undefined
   done?: boolean
-  color?: string // member colour (avatar_ref) — whose thing this is
-  onTap?: () => void
+  color?: string | undefined // member colour (avatar_ref) — whose thing this is
+  onTap?: (() => void) | undefined
   // What the FIRST tap says after the proposition ("Tape encore pour …"). Lets a
   // cook tile say "…pour cuisiner" where a picker tile says "…pour choisir".
-  confirmHint?: string
+  confirmHint?: string | undefined
 }
 
 // A fixed cut-paper palette. Tiles with no member colour cycle through it by

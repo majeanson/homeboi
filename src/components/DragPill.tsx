@@ -44,7 +44,7 @@ interface DragPillProps {
   showGrip?: boolean
   /** Keyboard/mouse mirror for the same reorder — pass to make the grip a real
    *  Tab stop with ↑/↓ support. Omit to leave the grip drag-only. */
-  onMove?: (dir: 'up' | 'down') => void
+  onMove?: ((dir: 'up' | 'down') => void) | undefined
   /** Ref to the rendered zone element — for a caller that scrolls a row into view
    *  (e.g. the notes list's deep-link focus). */
   nodeRef?: Ref<HTMLElement>
@@ -54,7 +54,7 @@ interface DragPillProps {
    *  the row is a CONTAINER target and keeps the dotted `dnd-over` outline (right
    *  for "drop into this zone", wrong for a linear reorder). The host's CSS needs
    *  `position: relative` for the line to place correctly. */
-  edge?: DropCue | null
+  edge?: DropCue | null | undefined
   /** Which way this list runs, so 'before'/'after' become the right physical edge:
    *  'y' (default) = a column of rows → top/bottom; 'x' = a row of cards →
    *  left/right. Also what tells lib/dnd this zone is a reorder target at all. */

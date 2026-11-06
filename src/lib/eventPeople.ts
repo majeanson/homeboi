@@ -21,7 +21,7 @@ export function parsePeopleIds(raw?: string | null): string[] {
 
 // The member ids an event concerns: its passengers set, else its legacy single
 // member_id, else none. (contact_id/business_id are the EXTERNAL « Avec », not people.)
-export function eventMembers(e: { member_id?: string | null; passengers?: string | null }): string[] {
+export function eventMembers(e: { member_id?: string | null | undefined; passengers?: string | null | undefined }): string[] {
   const ids = parsePeopleIds(e.passengers)
   if (ids.length) return ids
   return e.member_id ? [e.member_id] : []
@@ -31,10 +31,10 @@ export function eventMembers(e: { member_id?: string | null; passengers?: string
 // shared <Avatar>/<AvatarStack> take. Unknown ids (a deleted member) drop out — a
 // soft ref renders as nobody, never a crash.
 export interface Face {
-  kind?: string | null
-  photo?: string | null
-  colour?: string | null
-  name?: string | null
+  kind?: string | null | undefined
+  photo?: string | null | undefined
+  colour?: string | null | undefined
+  name?: string | null | undefined
 }
 export function memberFaces(ids: string[], members: Member[]): Face[] {
   return ids

@@ -1508,7 +1508,7 @@ export interface ForestOpts {
   /** Stable left→right position within a band (the directory's family order). */
   orderOf?: (key: string) => number
   /** Names + tints a tree's frame. */
-  clusterOf?: (key: string) => { name: string; colour: string | null } | null
+  clusterOf?: ((key: string) => { name: string; colour: string | null } | null) | undefined
 }
 export interface ForestPoint {
   x: number
@@ -2075,7 +2075,7 @@ export interface FamilyLinkProposal {
   op: 'create' | 'modify'
   existingId: string | null // the stored link to PATCH (modify only)
   inferred: boolean // true = precise rung from the hierarchy; false = generic `relative` fallback
-  reason?: Bi // a transitive deduction (from inferLinks) carries its own human "why"
+  reason?: Bi | undefined // a transitive deduction (from inferLinks) carries its own human "why"
 }
 
 const unorderedPair = (a: string, b: string) => (a < b ? `${a}|${b}` : `${b}|${a}`)

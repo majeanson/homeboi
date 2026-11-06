@@ -12,22 +12,22 @@ export interface EventRow {
   start_at: number
   all_day: number
   member_id: string | null // the denormalized primary of « Qui » (= passengers[0]); back-compat single face
-  end_at?: number | null // optional « Jusqu'à » — the window's exclusive end (unix s); absent = a point
-  car_id?: string | null // « Prend l'auto »: set = this rendez-vous takes that household car (soft ref into households.cars)
-  passengers?: string | null // « Qui » — all the household people this concerns (JSON id array); parse via eventMembers()
-  contact_id?: string | null // #21: assigned to a « Le cercle » contact instead of a member
-  contact_name?: string | null // the contact's first name, joined server-side, for the label
-  contact_address?: string | null // the contact's address JSON, joined server-side — « Itinéraire » on the peek
-  business_id?: string | null // a « Le cercle » Business (vet, plumber…) — a rendez-vous
-  business_name?: string | null // the business name, joined server-side, for the label
-  business_colour?: string | null // the business's own tint — colours the rendez-vous
-  business_address?: string | null // the business's plain address, joined server-side — « Itinéraire » on the peek
-  bring_template_id?: string | null // #17/0077: the activity's bring-list (soft ref → todo_templates); « À apporter » on the departure card
-  notes?: string | null // 0121: the rendez-vous' free-text note (« apporter la carte d'assurance… ») — its detail peek + the day page row
-  soon?: boolean // within its calm "Bientôt" lead window now (migration 0038)
-  birthday?: boolean // a DERIVED birthday occurrence (from a person's birthday), not a stored event
-  age?: number | null // the age turned, when the birth year is known
-  gift_ideas?: string | null // #20: gift notes shown in the birthday's detail peek
+  end_at?: number | null | undefined // optional « Jusqu'à » — the window's exclusive end (unix s); absent = a point
+  car_id?: string | null | undefined // « Prend l'auto »: set = this rendez-vous takes that household car (soft ref into households.cars)
+  passengers?: string | null | undefined // « Qui » — all the household people this concerns (JSON id array); parse via eventMembers()
+  contact_id?: string | null | undefined // #21: assigned to a « Le cercle » contact instead of a member
+  contact_name?: string | null | undefined // the contact's first name, joined server-side, for the label
+  contact_address?: string | null | undefined // the contact's address JSON, joined server-side — « Itinéraire » on the peek
+  business_id?: string | null | undefined // a « Le cercle » Business (vet, plumber…) — a rendez-vous
+  business_name?: string | null | undefined // the business name, joined server-side, for the label
+  business_colour?: string | null | undefined // the business's own tint — colours the rendez-vous
+  business_address?: string | null | undefined // the business's plain address, joined server-side — « Itinéraire » on the peek
+  bring_template_id?: string | null | undefined // #17/0077: the activity's bring-list (soft ref → todo_templates); « À apporter » on the departure card
+  notes?: string | null | undefined // 0121: the rendez-vous' free-text note (« apporter la carte d'assurance… ») — its detail peek + the day page row
+  soon?: boolean | undefined // within its calm "Bientôt" lead window now (migration 0038)
+  birthday?: boolean | undefined // a DERIVED birthday occurrence (from a person's birthday), not a stored event
+  age?: number | null | undefined // the age turned, when the birth year is known
+  gift_ideas?: string | null | undefined // #20: gift notes shown in the birthday's detail peek
   // A-2 (bmad/09): a DERIVED fête QC/CA (lib/year) — client-side only, never a
   // stored row. Announce line: all-day, nobody's, not editable. `ferie` = a
   // stat/day-off; `emoji` is its picture (⚜️ 🎃 🎄…).

@@ -471,12 +471,12 @@ export function DrawPad({
   onSave: (png: Blob, scene: string) => void
   // Optional "Garder": keep a copy in the lasting gallery (separate from pinning to
   // the fridge). Shown as its own action when provided. Same (png, scene) payload.
-  onKeep?: (png: Blob, scene: string) => void
-  onMakeRoutine?: (png: Blob, scene: string) => void
+  onKeep?: ((png: Blob, scene: string) => void) | undefined
+  onMakeRoutine?: ((png: Blob, scene: string) => void) | undefined
   // Fallback for old PNG-only drawings: drawn as a flat, non-editable base layer.
-  initial?: string
+  initial?: string | undefined
   // Preferred: a URL to the editable scene JSON; rebuilt into editable layers.
-  initialSceneUrl?: string
+  initialSceneUrl?: string | undefined
   // #14 "Calquer": load `initial` as a FADED, removable tracing layer (a watermark
   // photo) instead of editable strokes — you redraw over the original and the caller
   // saves a NEW copy, leaving the source drawing untouched. The fade slider / remove
@@ -489,7 +489,7 @@ export function DrawPad({
   // started in one launcher (board note, gallery, postbox, routine card, memo) can't
   // resurface in another. Defaults to a shared 'new' slot when omitted.
   draftId?: string
-  toddler?: boolean
+  toddler?: boolean | undefined
 }) {
   const t = useT()
   // #37 word tracing — names + recipe titles a child can trace ("trace your name").
@@ -1612,7 +1612,7 @@ export function DrawPad({
       const base = baseSrc?.startsWith('data:') ? baseSrc
         : (baseImgRef.current && !hasPhoto) ? baseToDataUrl()
         : undefined
-      const scene: Scene = { v: 1, strokes: strokesRef.current, stamps: stampsRef.current, pixels: [...pixelsRef.current], shapes: shapesRef.current, fills: fillsRef.current, base, template: tplRef.current }
+      const scene: Scene = { v: 1, strokes: strokesRef.current, stamps: stampsRef.current, pixels: [...pixelsRef.current], shapes: shapesRef.current, fills: fillsRef.current, ...(base !== undefined && { base }), template: tplRef.current }
       const json = JSON.stringify(scene)
       return json.length > SCENE_MAX ? '' : json
     } catch {

@@ -68,7 +68,7 @@ type Entry = {
    *  can never grow its chrome back — and a surface that legitimately leads with a
    *  hero simply carries a bigger number. Tighten it in the same commit as a lean
    *  pass; it only ever moves down. See LEAN.md. */
-  budgetPx?: number
+  budgetPx?: number | undefined
   /** Why this entry measures `contentTopPx` and then deliberately does NOT hold it to a
    *  ceiling. Required (by the invariant test below) on any entry that sets `content`
    *  without a `budgetPx`, because silence is ambiguous in the expensive direction: an
@@ -76,7 +76,7 @@ type Entry = {
    *  nobody got to, and the second kind grows unnoticed. `voyage` sat unbudgeted at
    *  212px for two weeks on exactly that ambiguity — LEAN.md analysed the surface at
    *  length and the table never got the number (UNIFY.md day 7). */
-  noBudgetWhy?: string
+  noBudgetWhy?: string | undefined
 }
 
 // « Les notes » ships with an EMPTY family-notes fixture (the behavioural specs want

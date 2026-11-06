@@ -130,10 +130,10 @@ export function FlyerViewer({
   // Store logo for the header band. The flyer detail endpoint carries no merchant
   // info, so the caller passes it when it has it (the store browser does); else we
   // fall back to the nearby-stores cache, then to a monogram.
-  logo?: string | null
+  logo?: string | null | undefined
   // Whether this is an image-based (premium) flyer. Drives the "official vs
   // reconstructed" note. Resolved like logo (prop → flyers cache → unknown).
-  premium?: boolean
+  premium?: boolean | undefined
   // Both answer with the EXISTING list line the add rode on (deal ↔ item: a
   // specific flyer product lands on its generic line), or null for a new line —
   // the button says which, so a reuse doesn't read as nothing happening.

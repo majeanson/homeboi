@@ -206,7 +206,8 @@ describe('flippListPayload — every pick with a Flipp id as a clipping, every l
   })
 
   it('an older staged deal (no merchantId / box) still clips, with nulls', () => {
-    const out = JSON.parse(flippListPayload([pick('a', { merchantId: undefined, box: undefined })])) as FlippPayload
+    const { merchantId: _merchantId, box: _box, ...older } = pick('a').deal
+    const out = JSON.parse(flippListPayload([{ itemId: 'a', itemText: 'x', deal: older }])) as FlippPayload
     expect(out.clippings[0]!.merchantId).toBeNull()
     expect(out.clippings[0]!.left).toBeNull()
   })

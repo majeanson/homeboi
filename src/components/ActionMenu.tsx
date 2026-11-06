@@ -29,11 +29,11 @@ import { useModal } from '../lib/useModal'
 // between items; every item is a real button, so mouse + keyboard both work
 // (desktop-reachability rule).
 export type ActionMenuItem = {
-  icon?: IconName
+  icon?: IconName | undefined
   label: string
   onSelect: () => void
   // 'danger' paints the row warn-red (a destructive delete).
-  tone?: 'danger'
+  tone?: 'danger' | undefined
   disabled?: boolean
   // Draws a quiet divider above this row — separates the "manage" rows
   // (Modifier / Supprimer) from the do-actions.

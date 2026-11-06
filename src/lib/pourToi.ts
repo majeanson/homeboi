@@ -13,7 +13,7 @@ import { timeOfDay } from './timeofday'
 // The soonest still-to-come timed rendez-vous today that concerns THIS face — one of the
 // event's people (« Qui »). A family-wide item (no people) is not "yours": the board's own
 // « Prochainement » already shows it to everyone.
-export function pickMyNext<T extends { start_at: number; all_day: number; member_id?: string | null; passengers?: string | null }>(
+export function pickMyNext<T extends { start_at: number; all_day: number; member_id?: string | null | undefined; passengers?: string | null | undefined }>(
   events: T[],
   faceId: string,
   nowSec: number,

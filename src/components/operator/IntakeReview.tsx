@@ -23,7 +23,7 @@ import { Icon } from '../Icon'
 // opens — and the merge is lib/ficheMerge's, the one merge. This card used to carry its
 // own ~150-line copy of both, which had already drifted from the other one.
 
-export function IntakeReview({ help }: { help?: HelpMode }) {
+export function IntakeReview({ help }: { help?: HelpMode | undefined }) {
   const t = useT()
   const qc = useQueryClient()
   const confirm = useConfirm()

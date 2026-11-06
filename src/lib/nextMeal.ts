@@ -72,7 +72,7 @@ export function recipeForMeal(meal: MealLink, recipes: Recipe[]): Recipe | undef
 // meals/recipes caches. `enabled` gates the fetch (the ＋ sheet only needs it
 // while open). `target` is null when nothing is planned or the meal has no
 // matching recipe — callers fall back to the kitchen.
-export function useNextMeal(enabled = true): { meal?: MealRow; recipe?: Recipe; target: string | null } {
+export function useNextMeal(enabled = true): { meal?: MealRow | undefined; recipe?: Recipe | undefined; target: string | null } {
   const { data: mealsData } = useQuery({ queryKey: MEALS_KEY, queryFn: () => api<MealsData>('meals'), enabled })
   const { data: recipesData } = useQuery({
     queryKey: RECIPES_KEY,

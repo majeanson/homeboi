@@ -29,10 +29,10 @@ import { EVENTS_KEY, BOARD_KEY, MONTH_KEY, MEMBERS_KEY } from '../../lib/queryKe
 
 const baseId = (id: string) => id.split('#')[0] ?? id
 
-type PeekEvent = { id: string; title: string; birthday?: boolean | null }
+type PeekEvent = { id: string; title: string; birthday?: boolean | null | undefined }
 
 export interface EventPeekActions {
-  optsFor: (e: PeekEvent) => { onEdit?: () => void; onDelete?: () => void; onShare?: () => void } | undefined
+  optsFor: (e: PeekEvent) => { onEdit?: (() => void) | undefined; onDelete?: (() => void) | undefined; onShare?: (() => void) | undefined } | undefined
   node: React.ReactNode
 }
 

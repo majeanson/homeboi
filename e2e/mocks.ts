@@ -874,13 +874,13 @@ const IMG_SVG =
 export async function mockApi(
   page: Page,
   opts: {
-    signedIn?: boolean
+    signedIn?: boolean | undefined
     unauthorized?: boolean
-    fresh?: boolean
-    longText?: boolean
+    fresh?: boolean | undefined
+    longText?: boolean | undefined
     /** The demo SANDBOX session — a real operator whose email marks it throwaway
      *  (lib/demo.ts). Drives the board's « Garder ma maisonnée » claim banner. */
-    sandbox?: boolean
+    sandbox?: boolean | undefined
     // Hold every data response this many ms so a page's <Loading/> frame is
     // capturable before data lands (auth/me + health stay instant so the shell
     // still boots signed-in).
@@ -1375,15 +1375,17 @@ export type Surface = 'kiosk' | 'mobile'
 
 export interface AppState {
   theme?: Theme
-  audience?: Audience
+  // `| undefined` is meaningful on these: app.boot merges { ...DEFAULT_STATE, ...state }, so
+  // an explicit undefined CLEARS a default — the first-visitor specs rely on it.
+  audience?: Audience | undefined
   lang?: Lang
   calm?: boolean
   // The device role. When set, the `/` smart entry treats the device as "chosen"
   // and skips the marketing page. Leave undefined to exercise a first-time visitor.
-  surface?: Surface
+  surface?: Surface | undefined
   // The parent board layout (bento = Grille | month = Mois | annee = L'année).
   // Defaults to bento.
-  boardView?: 'bento' | 'semaine' | 'month' | 'annee'
+  boardView?: 'bento' | 'semaine' | 'month' | 'annee' | undefined
   // Per-device board card layout (« Disposition du babillard », lib/boardCards). Lets a
   // spec exercise a custom layout without hand-injecting the localStorage key.
   // Unset → the canonical zones/order, everything at its default size and mode.
@@ -1429,12 +1431,12 @@ export interface AppState {
   // It needs a lever because the fold is the POINT of the change and a fresh browser
   // can never show it: the sweep would have photographed the open steps forever and
   // called the lean pass reviewed (2026-09-15).
-  flippSetup?: boolean
+  flippSetup?: boolean | undefined
   // Réglages ▸ Affichage ▸ Texte: 'normal' (100%) | 'large' (115%) | 'x-large' (130%).
   // Worth a lever because the ramp scales the whole rem tree while ~20% of declarations
   // are px — precisely the shape that produces horizontal overflow — and nothing
   // photographed the enlarged app until the third step landed (2026-09-15).
-  textScale?: 'normal' | 'large' | 'x-large'
+  textScale?: 'normal' | 'large' | 'x-large' | undefined
 }
 
 // Seed localStorage BEFORE any document script runs, so theme-bootstrap.js picks

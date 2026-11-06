@@ -42,7 +42,7 @@ export function FaceSheet({
   allLabel: string
   ariaLabel: string
   /** Sheet heading; defaults to `ariaLabel`. */
-  title?: string
+  title?: string | undefined
 }) {
   // Let the picked face show its selected state for a beat before the sheet slides
   // away — an instant close reads as "did that even register?".

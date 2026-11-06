@@ -37,7 +37,7 @@ export function MealRows({
   onMove: (id: string, dir: 'up' | 'down') => void
   // « Déplacer… » — to another day and/or slot. The mouse/keyboard MIRROR of the two
   // drags (ACTIONS.md: a gesture is never the only door); the host opens its picker.
-  onMoveTo?: (meal: MealRow) => void
+  onMoveTo?: ((meal: MealRow) => void) | undefined
   onRename: (id: string, title: string) => void
   onClearAll?: () => void // "clear this slot" — shown only when the slot holds several
   // "Il en reste ?" — announce that this cooked meal has leftovers (drops them into
@@ -48,7 +48,7 @@ export function MealRows({
   // starts a drag of that meal; the parent decides the drop (move it to another
   // slot). `draggingId` greys out the row currently being dragged. `dragLabel`
   // accessibly names the gesture.
-  onDragStart?: (id: string, label: string, e: ReactPointerEvent) => void
+  onDragStart?: ((id: string, label: string, e: ReactPointerEvent) => void) | undefined
   draggingId?: string | null
   dragLabel?: string
 }) {

@@ -43,7 +43,7 @@ export function DefiBlock({
   today: number
   // Board « ? » help-mode (optional): when armed, the kicker becomes tappable and
   // pops an in-place bubble. The scene passes nothing (no help mode there).
-  help?: HelpMode
+  help?: HelpMode | undefined
 }) {
   const t = useT()
   const fn = t.habits.defi

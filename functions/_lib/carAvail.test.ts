@@ -126,7 +126,7 @@ describe('rideSpans', () => {
 // The board glance reads carStatusAt over schedule spans PLUS rideSpans — the bug was
 // a ride (no work block) reading as "libre toute la journée". These cover that path.
 describe('carStatusAt with ride spans folded in', () => {
-  const rideAt = (n: number, holderId?: string): Ride => ({ id: `r${n}`, at: h(n), carId: 'car', holderId })
+  const rideAt = (n: number, holderId?: string): Ride => ({ id: `r${n}`, at: h(n), carId: 'car', ...(holderId !== undefined && { holderId }) })
   const withRides = (spans: CarSpan[], rides: Ride[], t: number) =>
     carStatusAt([...spans, ...rideSpans(rides, DAY, DAY_END)], t, DAY_END)
 

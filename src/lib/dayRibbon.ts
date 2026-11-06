@@ -7,7 +7,7 @@
 
 export interface FilItem {
   start_at: number // unix seconds — when it sits on the axis
-  until?: number // optional end (a job window): "past" only once it has ENDED, not when it starts
+  until?: number | undefined // optional end (a job window): "past" only once it has ENDED, not when it starts
 }
 
 export interface FilRow<T> {

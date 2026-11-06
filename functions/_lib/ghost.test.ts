@@ -21,7 +21,7 @@ function rank(opts: {
     staples: opts.staples ?? [EGGS],
     openKeys: new Set(opts.openKeys ?? []),
     now: NOW,
-    includeLater: opts.includeLater,
+    ...(opts.includeLater !== undefined && { includeLater: opts.includeLater }),
   })
 }
 

@@ -76,9 +76,9 @@ function DocTile({
 }: {
   docKey: string
   variant: 'grid' | 'list'
-  label?: string
+  label?: string | undefined
   onOpenPdf: (src: string) => void
-  onRemove?: (key: string) => void
+  onRemove?: ((key: string) => void) | undefined
   removeLabel: string
 }) {
   const [isPdf, setIsPdf] = useState(isPdfKey(docKey))

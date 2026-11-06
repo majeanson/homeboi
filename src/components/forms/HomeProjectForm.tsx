@@ -34,7 +34,7 @@ export function HomeProjectForm({
   value?: HomeProject | null
   // « Les carnets »: when set, this Entretien row belongs to a carnet (a house, a
   // car, the water heater) — it still surfaces on the board exactly the same.
-  carnetId?: string | null
+  carnetId?: string | null | undefined
   onSaved: () => void
   onCancel?: () => void
 }) {

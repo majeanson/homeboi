@@ -53,8 +53,8 @@ export function EmptyState({
   tone?: 'plain' | 'calm'
   size?: 'section' | 'cell'
   className?: string
-  guide?: { card: string; point?: number }
-  action?: { to: string; label: string; icon?: IconName }
+  guide?: { card: string; point?: number } | undefined
+  action?: { to: string; label: string; icon?: IconName } | undefined
 }) {
   const t = useT()
   const { tutorial } = useHelp()

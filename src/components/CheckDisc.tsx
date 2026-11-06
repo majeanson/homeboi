@@ -13,11 +13,11 @@ export function CheckDisc({
   className,
   style,
 }: {
-  done?: boolean
-  onClick?: MouseEventHandler<HTMLButtonElement>
+  done?: boolean | undefined
+  onClick?: MouseEventHandler<HTMLButtonElement> | undefined
   label?: string
   className?: string
-  style?: CSSProperties
+  style?: CSSProperties | undefined
 }) {
   if (!onClick) {
     return (

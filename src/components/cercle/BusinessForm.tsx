@@ -27,7 +27,7 @@ export function BusinessForm({
   value?: Business | null
   /** A shared Google Maps link (from /share → ?add=business&import=): seeds the
    *  import field and runs the lookup on open — the paste + tap is already done. */
-  initialImportUrl?: string
+  initialImportUrl?: string | undefined
   onSaved: () => void
   onCancel?: () => void
 }) {

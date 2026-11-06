@@ -49,7 +49,7 @@ function whoOf(members: Member[], id: string | null, role?: string): DetailWho |
 export function buildEvent(
   e: EventRow,
   ctx: DetailCtx,
-  opts?: { onShare?: () => void; onEdit?: () => void; onDelete?: () => void },
+  opts?: { onShare?: (() => void) | undefined; onEdit?: (() => void) | undefined; onDelete?: (() => void) | undefined },
 ): DetailModel {
   const { t, lang, members } = ctx
   const day = localDayStart(new Date(e.start_at * 1000))
@@ -161,7 +161,7 @@ function rdvBlock(label: string, r: NextRdv, lang: Lang): DetailBlock {
 export function buildBusiness(
   b: Business,
   ctx: DetailCtx,
-  opts?: { onEdit?: () => void; onDelete?: () => void; onSchedule?: () => void; nextRdv?: NextRdv | null },
+  opts?: { onEdit?: (() => void) | undefined; onDelete?: (() => void) | undefined; onSchedule?: (() => void) | undefined; nextRdv?: NextRdv | null | undefined },
 ): DetailModel {
   const { t, lang } = ctx
   const bz = t.cercle.business
@@ -218,14 +218,14 @@ export function buildPet(
   pet: Pet,
   ctx: DetailCtx,
   opts?: {
-    relations?: string[]
-    groupToggle?: GroupToggle
-    vetName?: string | null
-    onEdit?: () => void
-    onDelete?: () => void
-    buildFamilyHref?: string
-    onConnect?: () => void
-    onSchedule?: () => void // a vet visit — the caller seeds the pet's vet Business
+    relations?: string[] | undefined
+    groupToggle?: GroupToggle | undefined
+    vetName?: string | null | undefined
+    onEdit?: (() => void) | undefined
+    onDelete?: (() => void) | undefined
+    buildFamilyHref?: string | undefined
+    onConnect?: (() => void) | undefined
+    onSchedule?: (() => void) | undefined // a vet visit — the caller seeds the pet's vet Business
   },
 ): DetailModel {
   const { t, lang } = ctx
@@ -283,14 +283,14 @@ export function buildMot(
   m: Mot,
   ctx: DetailCtx,
   opts?: {
-    saved?: boolean
-    onToggleSave?: () => void
-    onDelete?: () => void
+    saved?: boolean | undefined
+    onToggleSave?: (() => void) | undefined
+    onDelete?: (() => void) | undefined
     // (Replies and « Transformer » went with the mots table, 0142.)
     // Sender-outbox extras: reschedule a « Plus tard » that hasn't landed, and show its
     // programmed time as the « when » line instead of the created date.
-    onReschedule?: () => void
-    whenOverride?: string
+    onReschedule?: (() => void) | undefined
+    whenOverride?: string | undefined
   },
 ): DetailModel {
   const { t, lang, members } = ctx
@@ -332,22 +332,22 @@ export function buildChore(
   c: ChoreInstance,
   ctx: DetailCtx,
   opts?: {
-    onDone?: () => void
-    upcoming?: boolean
-    todo?: boolean
-    overdue?: boolean
+    onDone?: (() => void) | undefined
+    upcoming?: boolean | undefined
+    todo?: boolean | undefined
+    overdue?: boolean | undefined
     // « Reporter » (entretien): postpone without checking — quiet, then it returns.
     // Cycle only shows for a recurring row (c.recurring); week always pairs onDone.
-    onPostponeWeek?: () => void
-    onPostponeCycle?: () => void
+    onPostponeWeek?: (() => void) | undefined
+    onPostponeCycle?: (() => void) | undefined
     // « Modifier » — a corvée is edited INLINE in Réglages (its row expands into the
     // same ＋ form), so there is no edit scene to open: this door names that place
     // instead of leaving someone to hunt for it. Door #11, the Réglages mirror.
-    editHref?: string
+    editHref?: string | undefined
     // « Supprimer » — deferred, matching the tier the board's own check already uses
     // for this row. Overflow, because a glance surface must not put a destructive tap
     // beside a « Fait ».
-    onDelete?: () => void
+    onDelete?: (() => void) | undefined
   },
 ): DetailModel {
   const { t, lang, members } = ctx
@@ -393,7 +393,7 @@ export function buildChore(
 export function buildHabit(
   h: Habit,
   ctx: DetailCtx,
-  opts: { days: HabitDay[]; today: number; canEdit?: boolean },
+  opts: { days: HabitDay[]; today: number; canEdit?: boolean | undefined },
 ): DetailModel {
   const { t, members } = ctx
   const fn = t.habits
@@ -426,7 +426,7 @@ export function buildHabit(
 export function buildLeftover(
   l: { id: string; title: string },
   ctx: DetailCtx,
-  opts?: { onDone?: () => void; onPlanTonight?: () => void },
+  opts?: { onDone?: (() => void) | undefined; onPlanTonight?: (() => void) | undefined },
 ): DetailModel {
   const { t } = ctx
   const actions: DetailAction[] = []
@@ -462,20 +462,20 @@ export function buildListItem(
   i: { id: string; text: string; checked?: boolean; noRush?: boolean; terms?: string[] },
   ctx: DetailCtx,
   opts: {
-    adderId?: string | null
-    picto?: string
-    aisle?: string
-    dealMerchant?: string | null
-    dealPrice?: string | null
+    adderId?: string | null | undefined
+    picto?: string | undefined
+    aisle?: string | undefined
+    dealMerchant?: string | null | undefined
+    dealPrice?: string | null | undefined
     /** The flyer product's own name ("Lait 2% 4L") — never on the row, so the peek
      *  is where it gets said. */
-    dealName?: string | null
+    dealName?: string | null | undefined
     /** Preformatted validity ("jusqu'au 5 sept.") — the caller has the lang. */
-    dealUntil?: string | null
+    dealUntil?: string | null | undefined
     /** The validTo day is fully past (lib/deals dealEnded) → the loud warning chip. */
-    dealEnded?: boolean
-    onToggle?: () => void
-    onDelete?: () => void
+    dealEnded?: boolean | undefined
+    onToggle?: (() => void) | undefined
+    onDelete?: (() => void) | undefined
   } = {},
 ): DetailModel {
   const { t } = ctx
@@ -545,13 +545,13 @@ export interface MealLike {
 }
 
 export interface MealOpts {
-  color?: string
+  color?: string | undefined
   slotLabel?: string
   daySec?: number
   /** The recipe this meal resolves to (useOpenMeal resolves it) — adds the 📖 / 🍲 doors. */
   recipeId?: string | null
-  onLeftover?: () => void
-  onRemove?: () => void
+  onLeftover?: (() => void) | undefined
+  onRemove?: (() => void) | undefined
 }
 
 // — A planned meal. EVERY tapped meal reaches this builder now (Marc, 2026-09-02):
@@ -632,12 +632,12 @@ export function buildDay(
   ctx: DetailCtx,
   opts: {
     label: string
-    day?: number
-    accent?: string
+    day?: number | undefined
+    accent?: string | undefined
     // `recipeId` (when the caller resolved one, via useRecipeForMeal) turns that
     // meal line into a door pair; a free-text meal stays plain text.
     meals: { slot: string; title: string; cook?: string | null; recipeId?: string | null }[]
-    note?: string | null
+    note?: string | null | undefined
   },
 ): DetailModel {
   const { t } = ctx
@@ -716,7 +716,7 @@ export interface GroupToggle {
 export function buildContact(
   c: Contact,
   ctx: DetailCtx,
-  opts?: { accent?: string; relations?: string[]; groups?: string[]; groupToggle?: GroupToggle; onEdit?: () => void; onDelete?: () => void; onExport?: () => void; onConnect?: () => void; onSchedule?: () => void; nextRdv?: NextRdv | null; buildFamilyHref?: string; onReach?: () => void; askFicheHref?: string },
+  opts?: { accent?: string | undefined; relations?: string[] | undefined; groups?: string[] | undefined; groupToggle?: GroupToggle | undefined; onEdit?: (() => void) | undefined; onDelete?: (() => void) | undefined; onExport?: (() => void) | undefined; onConnect?: (() => void) | undefined; onSchedule?: (() => void) | undefined; nextRdv?: NextRdv | null | undefined; buildFamilyHref?: string | undefined; onReach?: (() => void) | undefined; askFicheHref?: string | undefined },
 ): DetailModel {
   const { t, lang } = ctx
   const accent = opts?.accent ?? '#2A8F85'
@@ -794,7 +794,7 @@ export function buildContact(
 export function buildMemberPerson(
   p: Person,
   ctx: DetailCtx,
-  opts?: { relations?: string[]; groupToggle?: GroupToggle; onDetail?: () => void; onConnect?: () => void; onSchedule?: () => void; buildFamilyHref?: string; onReach?: () => void },
+  opts?: { relations?: string[] | undefined; groupToggle?: GroupToggle | undefined; onDetail?: (() => void) | undefined; onConnect?: (() => void) | undefined; onSchedule?: (() => void) | undefined; buildFamilyHref?: string | undefined; onReach?: (() => void) | undefined },
 ): DetailModel {
   const { t } = ctx
   const accent = p.colour ?? '#2A8F85'
@@ -859,7 +859,7 @@ export function buildMemberPerson(
 export function buildTransfer(
   tr: TransferModel,
   ctx: { t: Dict; lang: Lang; plans: TransferPlanModel[]; members: CercleMember[] },
-  opts?: { onEdit?: () => void; onDelete?: () => void; onCopy?: () => void },
+  opts?: { onEdit?: (() => void) | undefined; onDelete?: (() => void) | undefined; onCopy?: (() => void) | undefined },
 ): DetailModel {
   const { t, lang, plans, members } = ctx
   const v = t.virements
