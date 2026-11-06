@@ -25,6 +25,7 @@ const ALLOWED: Record<string, string> = {
   '/intake': 'a redirect kept for old links, to /courrier',
   '/garder': 'needs a sandbox session, else it redirects: the demo specs walk it',
   '/share': 'needs a share payload, else it redirects',
+  '/cercle/carnet/:id': 'needs its own fixtures: carnet-scene.spec walks it',
   '/dev/kit': 'renders loading specimens on purpose, so "finished loading" can never hold',
   '/voyage/partage/:id': 'its sync socket warns in dev StrictMode: the shared-voyage specs walk it',
   '/moment': 'a redirect kept for old links',

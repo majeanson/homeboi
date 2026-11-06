@@ -71,7 +71,6 @@ export const ROUTES = [
   // Added by solidify 6.3: every remaining route the router knows (routeSweep.test.ts).
   '/voyage',
   '/kitchen/cook/multi?r=rc1,rc2',
-  '/cercle/carnet/ca1',
   '/virement/v1/edit',
   '/virement/plan/p1/edit',
   '/voyage/rejoindre',
