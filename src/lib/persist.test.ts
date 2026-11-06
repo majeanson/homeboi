@@ -207,6 +207,54 @@ describe('auth loss', () => {
     expect(saved()).toBeUndefined()
   })
 
+  it('a save already pending does not write the household back after the wipe', async () => {
+    const qc = watched()
+    qc.setQueryData(['board'], { list: ['lait'] })
+    persist.clearPersistedCache()
+    await elapse()
+    expect(saved()).toBeUndefined()
+  })
+
+  it('a revoked device polling into 401s stays wiped: the cache still holds the data', async () => {
+    const qc = watched()
+    qc.setQueryData(['board'], { list: ['lait'] })
+    await elapse()
+    persist.clearPersistedCache()
+    await settle()
+    await failedPoll(qc, 'board', 401)
+    await elapse()
+    expect(saved()).toBeUndefined()
+  })
+
+  it('a write made while revoked does not bring the snapshot back either', async () => {
+    const qc = watched()
+    await qc.fetchQuery({ queryKey: ['board'], queryFn: () => ({ list: ['lait'] }), meta: { live: true } })
+    persist.clearPersistedCache()
+    await settle()
+    qc.setQueryData(['board'], { list: ['lait', 'pain'] })
+    await elapse()
+    expect(saved()).toBeUndefined()
+  })
+
+  it('a public feed answering is no proof of a session', async () => {
+    const qc = watched()
+    qc.setQueryData(['board'], { list: ['lait'] })
+    persist.clearPersistedCache()
+    await settle()
+    await qc.fetchQuery({ queryKey: ['weather'], queryFn: () => ({ t: 3 }) })
+    await elapse()
+    expect(saved()).toBeUndefined()
+  })
+
+  it('the household answering again resumes the snapshot', async () => {
+    const qc = watched()
+    qc.setQueryData(['board'], { list: ['lait'] })
+    persist.clearPersistedCache()
+    await settle()
+    await qc.fetchQuery({ queryKey: ['board'], queryFn: () => ({ list: ['pain'] }), staleTime: 0, meta: { live: true } })
+    await elapse()
+    expect(savedKeys()).toContain('["board"]')
+  })
 })
 
 describe('IndexedDB is never allowed to wedge the app', () => {
