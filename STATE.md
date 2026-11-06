@@ -82,7 +82,7 @@ interchangeable. Read this table before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md` is now
-> a number you can trust. It reads **1**, the D1 routes the harness cannot
+> a number you can trust. It reads **1** — the D1 routes the harness cannot
 > reach (below). **Asserted from the boxes themselves** by
 > `src/lib/docCounts.test.ts`, so this sentence cannot drift the way `REVIEW-PASS.md`'s
 > banner once did — it claimed 15 for twelve days against a single box.
