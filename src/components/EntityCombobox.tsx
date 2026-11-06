@@ -36,16 +36,16 @@ export interface ComboOption<T = unknown> {
   /** The underlying entity (a Recipe, Leftover, MealRow…) handed to `onSelect`. */
   data: T
   /** Optional group heading — consecutive options sharing one render under it. */
-  group?: string
+  group?: string | undefined
   /** Leading picto inside the row. */
   icon?: IconName
-  iconColor?: string
+  iconColor?: string | undefined
   /** Route for the picto: it leaves the row and becomes its own small icon-only
    *  link to the entity's page (a recipe row → `/kitchen/recipe/:id`). Deliberately
    *  a tight hit area so tapping anywhere else on the row still picks the option. */
-  iconTo?: string
+  iconTo?: string | undefined
   /** Accessible label for that link. Defaults to the option's `label`. */
-  iconToLabel?: string
+  iconToLabel?: string | undefined
   /** Right-aligned badge (cookability "Prêt" / "il manque 2", a date…). */
   badge?: ReactNode
   /** Faint second line under the label: what this option CONTAINS, so you can read
@@ -55,7 +55,7 @@ export interface ComboOption<T = unknown> {
    *  on the wall tablet, where a tap on the row picks it outright. */
   hint?: ReactNode
   /** Extra strings folded into the type-to-filter match (e.g. recipe ingredients). */
-  keywords?: string[]
+  keywords?: string[] | undefined
 }
 
 // Type-to-filter with a two-tier rank: a needle found in the option's NAME beats
@@ -111,10 +111,10 @@ export interface EntityComboboxProps<T> {
   placeholder?: string
   ariaLabel?: string
   /** Shown in the dropdown when nothing matches (free text still commits). */
-  noMatchLabel?: string
+  noMatchLabel?: string | undefined
   voice?: VoiceInput
   voiceLabel?: string
-  autoFocus?: boolean
+  autoFocus?: boolean | undefined
   /** Disables only the submit (e.g. an in-flight save); the input stays live. */
   busy?: boolean
   disabled?: boolean

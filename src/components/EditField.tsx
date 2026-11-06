@@ -31,11 +31,11 @@ export interface EditFieldProps {
   /** Fired by Enter, the submit button, and (when commitOnBlur) focus-out. Gets the raw value. */
   onSubmit?: (v: string) => void
   /** Provide → a labeled submit button. Omit → an icon-only ✓ (unless submitIcon is null). */
-  submitLabel?: string
+  submitLabel?: string | undefined
   /** Icon for the icon-only submit. Pass null to hide the submit button entirely (Enter/blur only). */
   submitIcon?: IconName | null
   /** Optional leading icon on the LABELED submit button (e.g. ＋ on Liste's "Ajouter"). */
-  submitLeadingIcon?: IconName
+  submitLeadingIcon?: IconName | undefined
   /** Labeled submit weight: compact ghost (default) or the prominent primary CTA. */
   submitVariant?: 'sm' | 'primary'
   /** Commit when focus leaves the field (and the form). Default false. Skips empty/whitespace. */
@@ -45,7 +45,7 @@ export interface EditFieldProps {
   /** Inline ✕ inside the box while the value is non-empty. Default true. */
   clearable?: boolean
   /** From useVoiceInput → mic inside the box + a VoiceStatus line below. */
-  voice?: VoiceInput
+  voice?: VoiceInput | undefined
   voiceLabel?: string
   /** A quiet glyph INSIDE the box, left of the text (what `.sheet__field` used to
    *  draw by hand). Decorative — the field's aria-label carries the meaning. */
@@ -60,11 +60,11 @@ export interface EditFieldProps {
   allowEmpty?: boolean
   placeholder?: string
   ariaLabel?: string
-  autoFocus?: boolean
+  autoFocus?: boolean | undefined
   /** Disables the whole field (input + buttons). */
   disabled?: boolean
   /** Disables only the submit button (e.g. an in-flight save) — the input stays live. */
-  busy?: boolean
+  busy?: boolean | undefined
   maxLength?: number
   /** SOFT length cap, in characters — the honest answer to "my text got cut after
    *  saving". `maxLength` is a HARD block (the browser silently eats every
@@ -91,7 +91,7 @@ export interface EditFieldProps {
   /** Standard ↑/↓ reorder pair after the field (row use). */
   reorder?: { onUp: () => void; onDown: () => void; upDisabled?: boolean; downDisabled?: boolean }
   /** Standard trash button after the field (row use). */
-  onDelete?: () => void
+  onDelete?: (() => void) | undefined
   deleteLabel?: string
   /** A custom action rendered right after the submit (e.g. Liste's small
    *  "search the flyer" magnifier beside Ajouter). Keep it compact — style it

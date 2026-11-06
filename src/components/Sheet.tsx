@@ -39,7 +39,7 @@ export function Sheet({
   title?: ReactNode
   ariaLabel?: string
   /** Extra modifier on the sheet (e.g. `detail-sheet`, or a dynamic `help-armed`). */
-  className?: string
+  className?: string | undefined
   showClose?: boolean
   closeLabel?: string
   /** Optional control(s) beside the ✕ (e.g. the detail peek's ⋯ ActionMenu) —

@@ -298,7 +298,7 @@ const TIMER_PRESETS = [0, 30, 60, 120, 180, 300]
 // "30 s", "1 min", "2 min" — readable in both registers (min/s are universal).
 const fmtDur = (s: number) => (s % 60 === 0 ? `${s / 60} min` : `${s} s`)
 
-function TimerControl({ seconds = 0, onChange }: { seconds?: number; onChange: (s: number) => void }) {
+function TimerControl({ seconds = 0, onChange }: { seconds?: number | undefined; onChange: (s: number) => void }) {
   const t = useT()
   const isOn = seconds > 0
   // indexOf a non-preset (legacy custom) value is -1; +1 lands on 0 = off, so one

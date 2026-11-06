@@ -35,7 +35,7 @@ interface LedgerRow {
 // stays beside its component rather than in src/lib/queryKeys.ts (cross-page only).
 const LEDGER_KEY = ['chores-ledger']
 
-export function ChoreLedger({ help }: { help?: HelpMode }) {
+export function ChoreLedger({ help }: { help?: HelpMode | undefined }) {
   const o18n = useOperatorT()
   const { lang } = useLang()
   const loc = lang === 'fr' ? 'fr-CA' : 'en-CA'

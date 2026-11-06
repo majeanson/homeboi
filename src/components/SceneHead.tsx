@@ -40,7 +40,7 @@ export function SceneHead({
   // Optional leading inline glyph before the title (FormScene uses it).
   icon?: IconName
   // A GUIDE entry id (lib/guideContent.ts). Given → a "?" links to that card.
-  card?: string
+  card?: string | undefined
   onClose?: () => void
   /** The route to land on when there is nothing in-app to pop back to. */
   backTo?: string

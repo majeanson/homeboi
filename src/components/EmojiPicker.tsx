@@ -21,7 +21,7 @@ export function EmojiPicker({
   search = true,
 }: {
   // The currently-picked emoji (highlighted), or null/'' for none.
-  value?: string | null
+  value?: string | null | undefined
   onSelect: (emoji: string) => void
   ariaLabel: string
   className?: string

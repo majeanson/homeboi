@@ -69,7 +69,7 @@ export function SubTabs<K extends string>({
   // A section colour (e.g. SECTION_TINT[...].ink) applied as a local `--accent`
   // override on the row, so the active pill + focus ring wear that section's hue
   // (the themed Réglages tabs). Undefined keeps the ambient surface accent.
-  tint?: string
+  tint?: string | undefined
 }) {
   const group =
     'subtabs' + (size === 'mini' ? ' subtabs--mini' : '') + (className ? ' ' + className : '')

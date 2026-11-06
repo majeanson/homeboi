@@ -28,7 +28,7 @@ export function Skeleton({
   className,
 }: {
   /** How many placeholders. Match the surface's typical first screen, not its max. */
-  count?: number
+  count?: number | undefined
   /** `row` = a stacked list; `card` = a responsive grid of tiles. */
   variant?: 'row' | 'card'
   className?: string

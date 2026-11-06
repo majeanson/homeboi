@@ -75,7 +75,7 @@ export interface RemovedMeal {
   title: string
   slot: string
   day: number
-  recipe_id?: string | null
+  recipe_id?: string | null | undefined
 }
 export function restoredMealRow(m: RemovedMeal): MealRow {
   return { id: m.id, date: m.day, slot: m.slot, title: m.title, cook_member_id: null, recipe_id: m.recipe_id ?? null }

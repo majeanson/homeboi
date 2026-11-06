@@ -46,8 +46,8 @@ export interface LoadStateQuery {
 }
 export interface LoadStateShape {
   /** The surface's known shape, if any — reserves the space instead of a centred line. */
-  shape?: 'row' | 'card'
-  count?: number
+  shape?: 'row' | 'card' | undefined
+  count?: number | undefined
 }
 export function loadStateOf(q: LoadStateQuery, opts: LoadStateShape = {}): ReactElement | null {
   if (q.data !== undefined) return null

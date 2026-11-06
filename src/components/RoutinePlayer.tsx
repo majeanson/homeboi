@@ -110,7 +110,7 @@ export function RoutinePlayer({
   // returns to the Routines tab).
   exitTo?: string
   // When present (ToddlerView with several routines), a bottom "← back to faces" link.
-  onClose?: () => void
+  onClose?: (() => void) | undefined
   backLabel?: string
 }) {
   const t = useT()
@@ -752,8 +752,8 @@ function Countdown({
 }: {
   seconds: number
   tint: string
-  persisted?: TimerEntry
-  onPersist?: (s: TimerEntry | null) => void
+  persisted?: TimerEntry | undefined
+  onPersist?: ((s: TimerEntry | null) => void) | undefined
 }) {
   const t = useT()
   const nowSec = () => Math.floor(Date.now() / 1000)

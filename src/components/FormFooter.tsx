@@ -32,10 +32,10 @@ export function FormFooter({
   onSave?: () => void
   saveDisabled?: boolean
   busy?: boolean
-  onCancel?: () => void
+  onCancel?: (() => void) | undefined
   cancelLabel?: ReactNode
   // Given → a separated destructive Delete on the left. Caller owns the confirm.
-  onDelete?: () => void
+  onDelete?: (() => void) | undefined
   deleteLabel?: ReactNode
   // A quiet non-destructive action that belongs to the THING, not to this edit — e.g.
   // « Partager » on a routine. Sits with Delete in the left cluster so it never reads

@@ -42,8 +42,8 @@ export function Segmented<K extends string>({
   collapse?: boolean
   className?: string
   tour?: string
-  pick?: (key: K, run: () => void) => () => void
-  armed?: boolean
+  pick?: ((key: K, run: () => void) => () => void) | undefined
+  armed?: boolean | undefined
 }) {
   const ref = useRef<HTMLDivElement>(null)
   function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {

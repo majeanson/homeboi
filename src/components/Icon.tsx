@@ -15,7 +15,7 @@ export function Icon({
 }: {
   name: IconName
   size?: number
-  color?: string
+  color?: string | undefined
   style?: React.CSSProperties
 }) {
   const inner = PIP_ICONS[name] || ''
@@ -36,6 +36,6 @@ export function Icon({
 // An icon sized to sit inline with text (baseline-aligned), for mid-sentence use
 // or beside a label in a button/chip. One place for the repeated inline style so
 // every inline glyph lines up the same way.
-export function InlineIcon({ name, size = 15, color }: { name: IconName; size?: number; color?: string }) {
+export function InlineIcon({ name, size = 15, color }: { name: IconName; size?: number; color?: string | undefined }) {
   return <Icon name={name} size={size} color={color} style={{ display: 'inline-block', verticalAlign: '-0.15em' }} />
 }

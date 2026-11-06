@@ -23,21 +23,21 @@ export function RowActions({
   className,
   readOnly,
 }: {
-  onEdit?: () => void
-  onDelete?: () => void
-  editLabel?: string
-  deleteLabel?: string
+  onEdit?: (() => void) | undefined
+  onDelete?: (() => void) | undefined
+  editLabel?: string | undefined
+  deleteLabel?: string | undefined
   /** Optional row-specific secondary action rendered BEFORE ✏️/🗑️ with the same
    *  chrome — e.g. La réserve's 🛍 "→ add to the shopping list" (via CheckRow).
    *  One slot, not a toolbar: a row keeps at most three compact icons. */
-  onExtra?: () => void
-  extraIcon?: IconName
-  extraLabel?: string
-  size?: number
-  className?: string
+  onExtra?: (() => void) | undefined
+  extraIcon?: IconName | undefined
+  extraLabel?: string | undefined
+  size?: number | undefined
+  className?: string | undefined
   /** Hide the edit/delete affordances entirely. Defaults to the read-only guest
    *  session, so a babysitter never sees a ✏️/🗑️ on any row app-wide. */
-  readOnly?: boolean
+  readOnly?: boolean | undefined
 }) {
   const t = useT()
   if (readOnly ?? isGuest()) return null
