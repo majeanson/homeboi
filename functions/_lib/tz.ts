@@ -32,7 +32,7 @@ const DEFAULT_TZ = 'America/Toronto'
 // 190-call-site edit this file exists to avoid — so the request says who it is, once,
 // where it already says what time it is.
 interface RequestContext {
-  tz?: string
+  tz?: string | undefined
   /** Absent outside a request — the cron, a unit test, the module top level. */
   householdId?: string
   // No « is this a sandbox » flag: it used to ride here, derived from the REQUESTER's

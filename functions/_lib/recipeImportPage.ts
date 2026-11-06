@@ -140,7 +140,7 @@ export function readPage(src: PageSource, pick = 0): PageRead {
     const stepImageUrls = parsed.stepImageUrls ? steps.map((s) => (isSectionHeading(s) ? null : (photoOf.get(s) ?? null))) : undefined
     const read = draft({
         ...parsed,
-        stepImageUrls,
+        ...(stepImageUrls && { stepImageUrls }),
         image,
         ingredients:
           printedOk && pageListFillsIngredients(parsed.ingredients, printed.ingredients)

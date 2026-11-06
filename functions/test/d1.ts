@@ -10,7 +10,7 @@ import { dumpHousehold, type Takeout } from '../_lib/takeout'
 export const ORIGIN = 'https://babillard.test'
 
 // `body` is JSON-encoded; `raw` goes as it is (an upload's bytes), content-type in `headers`.
-type FetchInit = { method?: string; body?: unknown; raw?: BodyInit; headers?: Record<string, string> }
+type FetchInit = { method?: string; body?: unknown; raw?: BodyInit; headers?: Record<string, string> | undefined }
 
 export interface Session {
   email: string
@@ -38,7 +38,7 @@ export function anon(path: string, init?: FetchInit): Promise<Response> {
   }
   // `exports.default` is the Worker's own default export as a Fetcher (the plugin runs
   // main in this isolate); the pinned workers-types have no `Exports` shape for it.
-  return (exports as unknown as { default: Fetcher }).default.fetch(`${ORIGIN}${path}`, { method: init?.method ?? 'GET', headers, body })
+  return (exports as unknown as { default: Fetcher }).default.fetch(`${ORIGIN}${path}`, { method: init?.method ?? 'GET', headers, ...(body !== undefined && { body }) })
 }
 
 function cookiesFrom(res: Response): { cookie: string; csrf: string } {

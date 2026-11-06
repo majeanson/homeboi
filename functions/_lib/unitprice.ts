@@ -104,9 +104,9 @@ function multiBuy(prePriceText: string | null | undefined): number {
 
 export interface UnitPriceInput {
   price: number | null
-  name?: string | null
-  prePriceText?: string | null
-  postPriceText?: string | null
+  name?: string | null | undefined
+  prePriceText?: string | null | undefined
+  postPriceText?: string | null | undefined
 }
 
 // Compute a comparable unit price, or null when no size is stated.

@@ -41,7 +41,7 @@ interface Wonder {
   copyright?: string
 }
 
-const CACHE: RequestInit['cf'] = { cacheTtl: 21600, cacheEverything: true } // 6 h
+const CACHE: NonNullable<RequestInit['cf']> = { cacheTtl: 21600, cacheEverything: true } // 6 h
 
 export const onRequestGet = authed(async (ctx) => {
   const key = ctx.env.NASA_APOD_KEY ?? 'DEMO_KEY'

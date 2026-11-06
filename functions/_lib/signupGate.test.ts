@@ -34,8 +34,9 @@ describe('the signup gate', () => {
   it('only exactly "1" opens it — a typo fails toward the gate', () => {
     // Red against `!!env.SIGNUP_OPEN` (which "0" would satisfy) or a truthy parse.
     for (const v of ['0', '', 'true', 'yes', ' 1', '1 ', 'on', undefined]) {
-      expect(signupOpen({ SIGNUP_OPEN: v }), `SIGNUP_OPEN=${JSON.stringify(v)}`).toBe(false)
-      expect(inviteRequired({ SIGNUP_OPEN: v, INVITE_CODE: CODE })).toBe(true)
+      const open = v === undefined ? {} : { SIGNUP_OPEN: v }
+      expect(signupOpen(open), `SIGNUP_OPEN=${JSON.stringify(v)}`).toBe(false)
+      expect(inviteRequired({ ...open, INVITE_CODE: CODE })).toBe(true)
     }
   })
 
