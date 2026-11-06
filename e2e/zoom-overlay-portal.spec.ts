@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { mockApi, seedState } from './mocks'
-import { boxOf } from './measure'
+import { boxOf, settled } from './measure'
 
 test.use({ hasTouch: true })
 
@@ -38,13 +38,13 @@ test('cercle drawing zoom overlay portals to body and closes', async ({ page }) 
 
   // Close via ✕ and stays closed.
   await page.locator('.zoom-overlay__close').tap()
-  await page.waitForTimeout(400)
+  await settled(page)
   await expect(page.locator('.zoom-overlay')).toHaveCount(0)
 
   // Reopen, close via backdrop, stays closed.
   await page.locator('.cercle-notes .cnote__thumb').first().tap()
   await expect(page.locator('.zoom-overlay')).toBeVisible()
   await page.locator('.zoom-overlay').tap({ position: { x: 20, y: 30 } })
-  await page.waitForTimeout(400)
+  await settled(page)
   await expect(page.locator('.zoom-overlay')).toHaveCount(0)
 })

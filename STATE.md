@@ -119,7 +119,8 @@ Three read-only audits (components/CSS · flows · tests/guards) on 2026-11-05 f
 ## 4. What still needs improvement — consolidated and ranked
 
 **Ouvert depuis le plan de solidification (2026-11-05)**, chacun tenu par un cliquet ou un test :
-- [ ] 44 specs gardent leur propre `boot`, et 199 `waitForTimeout` restent (`e2e-rule.test.ts`). `interactions.spec` et `config-panels.spec` ne sont pas scindés.
+- [x] Les specs passent à `app.boot` : plus aucun `boot` local, et `waitForTimeout` tombe de 199 à 80 (`e2e-rule.test.ts`, BOOT_MAX 0). Une photo ou une mesure finale attend `settled()` (`e2e/measure.ts`) : la page a cessé de bouger. Ceux qui restent sont une durée voulue : un appui maintenu, ou la preuve que rien n'arrive, chacun avec sa raison en commentaire.
+- [ ] `realdata.spec` (16) et `flipp-live.spec` (4) gardent des attentes sans raison écrite : l'un veut un vrai compte, l'autre le vrai flipp.com, donc ni l'un ni l'autre n'a pu tourner ici. `interactions.spec` et `config-panels.spec` ne sont pas scindés.
 - [ ] 67 routes sans test positif sur vrai D1 (`worker/d1Coverage.test.ts`). Le type `Wire` des mocks n'est pas fini.
 - [ ] `noUncheckedIndexedAccess` (802 erreurs) et `exactOptionalPropertyTypes` (353). oxlint reste en `correctness` : `suspicious` + `perf` donnent 8 441 faux positifs d'une seule règle, et `iframe-missing-sandbox` casserait le lecteur PDF de `CarnetDocs`. Décision prise, à ne pas rouvrir sans nouvelle mesure.
 - [x] 7.1 : les 13 modules ont leurs tests, chacun vu rouge. `@testing-library/react` est là, et `npm run test:coverage` tient un plancher par dossier (`src/lib` 62,58 % de lignes) dans `vitest.config.ts`. Hors CI : personne n'a demandé d'en faire une barrière. Deux vrais bogues trouvés : un instantané effacé à la perte d'auth se réécrivait (`persist`), une écriture retenue partait deux fois au démontage (`toast`).

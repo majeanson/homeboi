@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
+import { settled } from './measure'
 
 // Form action buttons + the focused field must stay visible when the on-screen
 // keyboard is up. iOS overlays the keyboard without resizing the layout viewport;
@@ -34,7 +35,7 @@ for (const d of DEVICES) {
         const r = document.getElementById('root')
         if (r) r.scrollTop = r.scrollHeight
       })
-      await page.waitForTimeout(200)
+      await settled(page)
       await page.screenshot({ path: png(path.slice(1)), fullPage: false })
       await expectAbove(page.locator('button[type="submit"]'), VISIBLE, `${path} submit`)
     })
@@ -50,8 +51,8 @@ for (const d of DEVICES) {
     await add.scrollIntoViewIfNeeded()
     await add.focus()
     await openKeyboard(page, d.kb)
-    // Let the re-pin retries (120/280/480ms) settle, as they do on a device.
-    await page.waitForTimeout(600)
+    // The re-pin retries (120/280/480ms) settle, as they do on a device.
+    await settled(page)
     await page.screenshot({ path: png('board-todo-add'), fullPage: false })
     await expectAbove(add, VISIBLE, 'board À compléter add')
   })
@@ -80,7 +81,7 @@ for (const d of DEVICES) {
     await add.scrollIntoViewIfNeeded()
     await add.focus()
     await openKeyboard(page, d.kb)
-    await page.waitForTimeout(600) // let the focus-pin retries settle
+    await settled(page) // the focus-pin retries have settled
     // Strand it: scroll the page scroller back up so the field sits fully inside
     // the keyboard band again (what a scroll-to-peek or a late layout shift does).
     const stranded = await page.evaluate((vis) => {
@@ -93,7 +94,7 @@ for (const d of DEVICES) {
     }, VISIBLE)
     test.skip(!stranded, 'not enough scroll room to strand the field on this device')
     await page.keyboard.type('lait')
-    await page.waitForTimeout(300) // follow is rAF-coalesced
+    await settled(page) // follow is rAF-coalesced
     await page.screenshot({ path: png('type-follow'), fullPage: false })
     await expectAbove(add, VISIBLE, 'typed field followed back above the keyboard')
   })
@@ -119,7 +120,7 @@ for (const d of DEVICES) {
       await s.go(page)
       const field = page.locator(s.field).first()
       await field.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {})
-      await page.waitForTimeout(300)
+      await settled(page)
       if (await field.count()) await field.focus().catch(() => {})
       await openKeyboard(page, d.kb)
       await page.screenshot({ path: png(s.name), fullPage: false })
@@ -176,7 +177,7 @@ for (const d of DEVICES) {
     // real typing happens seconds later, and a re-pin must not be what saves the caret.
     await page.waitForTimeout(1100)
     await page.keyboard.type('x')
-    await page.waitForTimeout(350)
+    await settled(page)
     await page.screenshot({ path: png('tall-memo'), fullPage: false })
     const box = await memo.boundingBox()
     expect(box, 'memo has a box').not.toBeNull()
@@ -308,7 +309,7 @@ test('kb: extending a selection with the keyboard open is never yanked back up',
     await page.keyboard.press('Enter')
   }
   await openKeyboard(page, d.kb)
-  await page.waitForTimeout(600) // let the focus-pin retries settle
+  await settled(page) // the focus-pin retries have settled
   // Anchor the selection on an early line, scroll it above the fold, then extend
   // the focus end downward like a handle drag (each extend fires selectionchange).
   const drift = await scroller.evaluate(async (el) => {
@@ -442,19 +443,20 @@ test('a suspend never latches --kb / .kb-open', async ({ page }) => {
   // The collapse can land BEFORE visibilitychange, while we still count as visible —
   // this is the event that latched the phantom keyboard.
   await page.evaluate(shrinkBy, 500)
+  // A sequence, not a settle: the suspend's steps must land between the remeasure's own
+  // 60/200 ms retries, in that order, the way a phone delivers them.
   await page.waitForTimeout(120)
 
   // Away. Nothing measured while hidden is trustworthy, so nothing is written.
   await page.evaluate(setHidden, true)
   await page.evaluate(shrinkBy, 620) // iOS keeps shrinking us on the way out
-  await page.waitForTimeout(120)
+  await page.waitForTimeout(120) // the same sequence
 
   // Back — with the viewport silently restored and NO resize event of its own, which
   // is the case that used to leave the vars stuck forever.
   await page.evaluate(shrinkBy, 0)
   await page.evaluate(setHidden, false)
-  await page.waitForTimeout(700) // remeasure's settle retries (60/200/500ms)
-  expect(await page.evaluate(kbState), 'vars cleared on the way back').toEqual({ open: false, kb: '0px' })
+  await expect.poll(() => page.evaluate(kbState), 'vars cleared on the way back').toEqual({ open: false, kb: '0px' }) // remeasure's settle retries (60/200/500ms)
 
   // The tab bar and ＋ FAB came back with it.
   await expect(page.locator('.hubnav')).toBeVisible()
@@ -491,9 +493,7 @@ test('a keyboard that vanishes with the route leaves no dead band on the next sc
   // Navigate the way the app does: an in-app link into a full-screen .scene.
   await page.locator('a[href="/board/departure"]').first().click()
   await expect(page.locator('.scene')).toBeVisible()
-  await page.waitForTimeout(700) // remeasure's settle retries (60/200/500ms)
-
-  expect(await page.evaluate(kbState), 'vars cleared by the navigation').toEqual({ open: false, kb: '0px' })
+  await expect.poll(() => page.evaluate(kbState), 'vars cleared by the navigation').toEqual({ open: false, kb: '0px' }) // remeasure's settle retries (60/200/500ms)
   const band = await page.evaluate(() => {
     const body = document.querySelector('.scene__body')!
     return Math.round(window.innerHeight - body.getBoundingClientRect().bottom)
@@ -514,6 +514,7 @@ test('a keyboard that is genuinely still up keeps its fit across a navigation', 
   // with the device, not blanket-clear on every navigation.
   await page.locator('a[href="/board/departure"]').first().click()
   await expect(page.locator('.scene')).toBeVisible()
+  // Proving the fit was NOT cleared: the remeasure's retries (60/200/500ms) must have run.
   await page.waitForTimeout(700)
   expect(await page.evaluate(kbState), 'fit kept').toEqual({ open: true, kb: '291px' })
 })
@@ -547,8 +548,7 @@ test('a keyboard that vanishes with its sheet is cleared by the next tap', async
     document.documentElement.style.setProperty('--kb', '291px')
   })
   await page.locator('.hub__body').first().click({ position: { x: 5, y: 5 } })
-  await page.waitForTimeout(300)
-  expect(await page.evaluate(kbState), 'the next tap cleared it').toEqual({ open: false, kb: '0px' })
+  await expect.poll(() => page.evaluate(kbState), 'the next tap cleared it').toEqual({ open: false, kb: '0px' })
 })
 
 // …and the same unmount with NO tap and NO navigation: idle hands heal nothing.

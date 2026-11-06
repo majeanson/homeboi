@@ -75,6 +75,7 @@ test('a device with no nudge pending never sees the board card, even when it cou
   await page.goto('/board')
   await expect(page.locator('.wg-slot').first()).toBeVisible()
   await fireInstallPrompt(page)
+  // Proving the hint stayed away: nothing marks an absence, so give it the time it would have taken.
   await page.waitForTimeout(300)
   await expect(page.locator('.install-hint')).toHaveCount(0)
 })

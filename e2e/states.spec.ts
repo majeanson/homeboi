@@ -1,5 +1,6 @@
 import { test as base, expect, type Page } from '@playwright/test'
 import { mockApi, seedState } from './mocks'
+import { settled } from './measure'
 
 // Screenshot-review loop, iteration 4: the states the happy-path sweeps skip —
 // EMPTY / ERROR / LOADING (fresh household, 401 recovery, nothing-yet lists) and
@@ -16,8 +17,10 @@ const test = base.extend({
 
 const PHONE = { width: 390, height: 844 }
 const WALL = { width: 1280, height: 800 }
-const shot = (page: Page, name: string) =>
-  page.screenshot({ path: `e2e/screenshots/st-${name}.png`, fullPage: false })
+const shot = async (page: Page, name: string) => {
+  await settled(page)
+  await page.screenshot({ path: `e2e/screenshots/st-${name}.png`, fullPage: false })
+}
 
 // ---- Empty / error / recovery (phone) -----------------------------------
 test('st: fresh household board (empty)', async ({ page }) => {
@@ -26,7 +29,6 @@ test('st: fresh household board (empty)', async ({ page }) => {
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
   await page.goto('/board')
   await page.locator('.hub').first().waitFor({ state: 'visible', timeout: 15_000 })
-  await page.waitForTimeout(600)
   await shot(page, 'fresh-board')
 })
 
@@ -36,7 +38,6 @@ test('st: fresh household list (empty)', async ({ page }) => {
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
   await page.goto('/liste')
   await page.locator('.hub').first().waitFor({ state: 'visible', timeout: 15_000 })
-  await page.waitForTimeout(600)
   await shot(page, 'fresh-list')
 })
 
@@ -47,7 +48,6 @@ test('st: fresh household settings welcome', async ({ page }) => {
   // Guide is the default tab now; deep-link to La maisonnée to capture the welcome.
   await page.goto('/settings?tab=household')
   await page.locator('.hub').first().waitFor({ state: 'visible', timeout: 15_000 })
-  await page.waitForTimeout(600)
   await shot(page, 'fresh-settings')
 })
 
@@ -61,11 +61,9 @@ test('st: empty kitchen (no recipes / no meals)', async ({ page }) => {
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
   await page.goto('/kitchen')
   await page.locator('.hub').first().waitFor({ state: 'visible', timeout: 15_000 })
-  await page.waitForTimeout(600)
   await shot(page, 'empty-kitchen-meals')
   // The Recettes tab empty state.
   await page.getByRole('tab', { name: /Recettes/ }).click().catch(() => {})
-  await page.waitForTimeout(400)
   await shot(page, 'empty-kitchen-recipes')
 })
 
@@ -74,7 +72,6 @@ test('st: 401 pairing-lost recovery (paired device)', async ({ page }) => {
   await mockApi(page, { unauthorized: true })
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile', paired: true })
   await page.goto('/board')
-  await page.waitForTimeout(900)
   await shot(page, 'recovery-pairing-lost')
 })
 
@@ -83,7 +80,6 @@ test('st: 401 pair prompt (unpaired device)', async ({ page }) => {
   await mockApi(page, { unauthorized: true, signedIn: false })
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
   await page.goto('/board')
-  await page.waitForTimeout(900)
   await shot(page, 'recovery-pair-prompt')
 })
 
@@ -93,7 +89,7 @@ async function kid(page: Page, path: string) {
   await seedState(page, { theme: 'day', audience: 'toddler', lang: 'fr', calm: true, surface: 'kiosk' })
   await page.goto(path)
   await page.locator('.kid, .hub').first().waitFor({ state: 'visible', timeout: 15_000 })
-  await page.waitForTimeout(500)
+  await settled(page)
 }
 
 test('st: toddler routines — face picker → story → running', async ({ page }) => {
@@ -102,13 +98,11 @@ test('st: toddler routines — face picker → story → running', async ({ page
   await kid(page, '/maison')
   await shot(page, 'toddler-routines-faces')
   await page.locator('.kid__face').first().click().catch(() => {})
-  await page.waitForTimeout(500)
   await shot(page, 'toddler-routine-story')
   // Start the step → the running clock view.
   const start = page.locator('.tdl-start')
   if (await start.count()) {
     await start.click()
-    await page.waitForTimeout(500)
     await shot(page, 'toddler-routine-running')
   }
 })
@@ -120,7 +114,6 @@ test('st: toddler kitchen — tap a meal → kid cook mode', async ({ page }) =>
   const tile = page.locator('.bigtile').first()
   if (await tile.count()) {
     await tile.click()
-    await page.waitForTimeout(600)
     await shot(page, 'toddler-kitchen-cook')
   }
 })
@@ -131,6 +124,5 @@ test('st: toddler empty board (nothing planned)', async ({ page }) => {
   await seedState(page, { theme: 'day', audience: 'toddler', lang: 'fr', calm: true, surface: 'kiosk' })
   await page.goto('/board')
   await page.locator('.kid, .hub').first().waitFor({ state: 'visible', timeout: 15_000 })
-  await page.waitForTimeout(600)
   await shot(page, 'toddler-empty-board')
 })

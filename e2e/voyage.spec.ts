@@ -134,6 +134,7 @@ test('dragging an itinerary entry within its day PATCHes its position', async ({
   const from = await grip.boundingBox()
   await page.mouse.move(from!.x + from!.width / 2, from!.y + from!.height / 2)
   await page.mouse.down()
+  // The hold IS the gesture: a press lasts a duration, and no signal stands in for one.
   await page.waitForTimeout(600)
   const patch = page.waitForRequest(
     (r) => isApi('PATCH', 'trip-notes')(r) && typeof r.postDataJSON()?.position === 'number',

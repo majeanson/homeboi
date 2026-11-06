@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { mockApi, seedState } from './mocks'
+import { settled } from './measure'
 
 // The gallery itself, smoke-tested.
 //
@@ -39,7 +40,7 @@ test('every gallery specimen renders without throwing', async ({ page }) => {
   await page.evaluate(() => {
     document.querySelectorAll('details.kit-entry').forEach((d) => d.setAttribute('open', ''))
   })
-  await page.waitForTimeout(1500)
+  await settled(page)
 
   expect(errors, 'a specimen threw while rendering').toEqual([])
   // The page is still a gallery, not a white screen behind an error boundary.

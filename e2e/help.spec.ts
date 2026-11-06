@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './fixtures'
 import { mockApi, seedState } from './mocks'
 import { boxOf } from './measure'
 
@@ -7,25 +7,8 @@ import { boxOf } from './measure'
 // at the matching card; an Expert switch in Réglages ▸ Affichage hides the help
 // affordance. Both run frontend-only against mocked APIs.
 
-async function boot(page: import('@playwright/test').Page, path: string) {
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  await mockApi(page)
-  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
-  // Keep the first-login guided tour from auto-navigating to /board mid-test (it
-  // races a /settings navigation and yanks the page off it — see lib/tour.tsx).
-  await page.addInitScript(() => {
-    try {
-      localStorage.setItem('babillard-tours-seen', JSON.stringify(['essentials']))
-    } catch {
-      /* noop */
-    }
-  })
-  await page.goto(path)
-  await page.locator('.hub, .operator').first().waitFor({ state: 'visible', timeout: 15_000 })
-}
-
-test('the contextual ? deep-links into the matching Guide card', async ({ page }) => {
-  await boot(page, '/kitchen')
+test('the contextual ? deep-links into the matching Guide card', async ({ page, app }) => {
+  await app.boot({ route: '/kitchen', wait: '.hub, .operator' })
   const dot = page.locator('.avatar--help').first()
   await expect(dot).toBeVisible()
   await dot.click()
@@ -74,9 +57,9 @@ test('board ? explains « Mots » in place and links to its guide', async ({ pag
   await expect(page).toHaveURL(/card=mots/)
 })
 
-test('tutorial vs expert mode shows / hides the ? dots', async ({ page }) => {
+test('tutorial vs expert mode shows / hides the ? dots', async ({ page, app }) => {
   // Tutorial is the default: the dot shows.
-  await boot(page, '/liste')
+  await app.boot({ route: '/liste', wait: '.hub, .operator' })
   await expect(page.locator('.avatar--help')).toHaveCount(1)
 
   // Flip to expert in Réglages ▸ Affichage.
@@ -132,8 +115,8 @@ test('an armed bubble lands clear of the bottom nav, doors and all', async ({ pa
 
 // Every board card answers the « ? » (solidify 4.3): armed, a tap on a card with no heading
 // of its own explains it, in place, and does NOT do what the card normally does.
-test('armed, a tap on a board card explains it right under the card', async ({ page }) => {
-  await boot(page, '/board')
+test('armed, a tap on a board card explains it right under the card', async ({ page, app }) => {
+  await app.boot({ route: '/board', wait: '.hub, .operator' })
   await page.locator('.help-toggle').first().click()
   const slot = page.locator('.wg-slot--explain').first()
   await expect(slot).toBeVisible()

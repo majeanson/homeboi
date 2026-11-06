@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { mockApi, seedState } from './mocks'
 import { ROUTES } from './routes'
+import { settled } from './measure'
 
 // THE GAP OWNS THE SPACING — a ratchet at zero (2026-10-01).
 //
@@ -39,7 +40,7 @@ for (const size of SIZES) {
       await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: 'mobile' })
       await page.goto(route)
       await expect(page.locator('.loading, .skeleton'), `${at} finished loading`).toHaveCount(0, { timeout: 15_000 })
-      await page.waitForTimeout(300)
+      await settled(page)
       const hits = await page.evaluate((allowed) => {
         const sig = (el: Element) =>
           el.tagName.toLowerCase() + [...el.classList].filter((c) => !c.startsWith('is-')).map((c) => '.' + c).join('')

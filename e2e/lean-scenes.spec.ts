@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test'
+import { test, expect } from './fixtures'
 import { mockApi, seedState, MMID } from './mocks'
 import { addLocalDays, localDayStart } from '../src/lib/localDay'
 
@@ -21,24 +21,10 @@ import { addLocalDays, localDayStart } from '../src/lib/localDay'
 //
 // See LEAN.md, and the budgets in e2e/state-matrix.spec.ts.
 
-async function boot(page: Page, overrides?: Record<string, unknown>) {
-  await page.setViewportSize({ width: 390, height: 844 })
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  await page.addInitScript(() => {
-    try {
-      localStorage.setItem('babillard-tours-seen', JSON.stringify(['essentials']))
-    } catch {
-      /* noop */
-    }
-  })
-  await mockApi(page, { overrides })
-  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
-}
-
 // ── /search ─────────────────────────────────────────────────────────────────────
 
-test('search puts the count and « Demander à l’IA » on ONE line, above the results', async ({ page }) => {
-  await boot(page)
+test('search puts the count and « Demander à l’IA » on ONE line, above the results', async ({ page, app }) => {
+  await app.boot({ viewport: { width: 390, height: 844 } })
   await page.goto('/search?q=spag')
   await expect(page.locator('.search__row').first()).toBeVisible({ timeout: 15_000 })
 
@@ -58,8 +44,8 @@ test('search puts the count and « Demander à l’IA » on ONE line, above the 
 
 // ── /kitchen/recipe/:id ─────────────────────────────────────────────────────────
 
-test('a recipe that states its servings shows ONE scaling control, not two', async ({ page }) => {
-  await boot(page)
+test('a recipe that states its servings shows ONE scaling control, not two', async ({ page, app }) => {
+  await app.boot({ viewport: { width: 390, height: 844 } })
   await page.goto('/kitchen/recipe/rc1')
   await expect(page.locator('.recipe-view__ings li').first()).toBeVisible({ timeout: 15_000 })
   // The stepper says it in portions — which is what you want to know.
@@ -67,10 +53,10 @@ test('a recipe that states its servings shows ONE scaling control, not two', asy
   await expect(page.locator('.recipe-mult')).toHaveCount(0)
 })
 
-test('a recipe with NO stated servings keeps its ×½ ×1 ×2 ×3 presets', async ({ page }) => {
+test('a recipe with NO stated servings keeps its ×½ ×1 ×2 ×3 presets', async ({ page, app }) => {
   // The presets are that recipe's whole scaling control — this is the case the fix
   // above must not cargo-cult onto (LEAN.md invariant 3).
-  await boot(page, {
+  await app.boot({ viewport: { width: 390, height: 844 }, api: { overrides: {
     recipes: {
       recipes: [
         {
@@ -90,7 +76,7 @@ test('a recipe with NO stated servings keeps its ×½ ×1 ×2 ×3 presets', asyn
         },
       ],
     },
-  })
+  } } })
   await page.goto('/kitchen/recipe/rcX')
   await expect(page.locator('.recipe-view__ings li').first()).toBeVisible({ timeout: 15_000 })
   await expect(page.locator('.recipe-scale')).toHaveCount(0)
@@ -99,8 +85,8 @@ test('a recipe with NO stated servings keeps its ×½ ×1 ×2 ×3 presets', asyn
 
 // ── /home-project/new ───────────────────────────────────────────────────────────
 
-test('the project form leads with its name, not with the presets that fill it', async ({ page }) => {
-  await boot(page)
+test('the project form leads with its name, not with the presets that fill it', async ({ page, app }) => {
+  await app.boot({ viewport: { width: 390, height: 844 } })
   await page.goto('/home-project/new')
   const field = page.locator('.edit-field__input').first()
   await expect(field).toBeVisible({ timeout: 15_000 })
@@ -141,8 +127,8 @@ const CARNET_FIXTURE = {
   },
 }
 
-test('a carnet carries its ＋ in each section header, not as a bar under each list', async ({ page }) => {
-  await boot(page, CARNET_FIXTURE)
+test('a carnet carries its ＋ in each section header, not as a bar under each list', async ({ page, app }) => {
+  await app.boot({ viewport: { width: 390, height: 844 }, api: { overrides: CARNET_FIXTURE } })
   await page.goto('/cercle/carnet/c1')
   await expect(page.locator('.carnet-block').first()).toBeVisible({ timeout: 15_000 })
 
@@ -201,8 +187,8 @@ const TRIP = {
   'trip-notes': { notes: [] },
 }
 
-test('the itinerary shows ONE ＋ per day, not a composer under every day', async ({ page }) => {
-  await boot(page, TRIP)
+test('the itinerary shows ONE ＋ per day, not a composer under every day', async ({ page, app }) => {
+  await app.boot({ viewport: { width: 390, height: 844 }, api: { overrides: TRIP } })
   await page.goto('/voyage/tp1')
   const days = page.locator('.voyage-itin__day')
   await expect(days).toHaveCount(5, { timeout: 15_000 })
@@ -230,8 +216,8 @@ test('the itinerary shows ONE ＋ per day, not a composer under every day', asyn
 
 // ── /liste/circulaires ──────────────────────────────────────────────────────────
 
-test('the flyer scene drops the subtitle its own empty state already says', async ({ page }) => {
-  await boot(page)
+test('the flyer scene drops the subtitle its own empty state already says', async ({ page, app }) => {
+  await app.boot({ viewport: { width: 390, height: 844 } })
   await page.goto('/liste/circulaires')
   await expect(page.locator('.deal-tabs')).toBeVisible({ timeout: 15_000 })
   // The header says the name once; the field's placeholder and the empty state below
@@ -246,8 +232,8 @@ test('the flyer scene drops the subtitle its own empty state already says', asyn
 // day. Two of the three were already small discs in the card's own header, so the body
 // was mostly a duplicate of the chrome above it. « Demain » had the same shape with one
 // pill. The doors live in the header now; the body is the day.
-test("« Aujourd'hui » leads with the day, not with a stack of buttons", async ({ page }) => {
-  await boot(page)
+test("« Aujourd'hui » leads with the day, not with a stack of buttons", async ({ page, app }) => {
+  await app.boot({ viewport: { width: 390, height: 844 } })
   await page.goto('/board')
   await page.locator('.hub').waitFor({ state: 'visible' })
   const card = page.locator('.wg-slot[data-card="today"]')
@@ -274,8 +260,8 @@ test("« Aujourd'hui » leads with the day, not with a stack of buttons", async 
   for (const g of gaps) expect(g, 'discs must not overlap their 44px targets').toBeGreaterThanOrEqual(16)
 })
 
-test('« Demain » does the same — one door, in the header', async ({ page }) => {
-  await boot(page)
+test('« Demain » does the same — one door, in the header', async ({ page, app }) => {
+  await app.boot({ viewport: { width: 390, height: 844 } })
   await page.goto('/board')
   await page.locator('.hub').waitFor({ state: 'visible' })
   const card = page.locator('.wg-slot[data-card="tomorrow"]')
@@ -285,7 +271,7 @@ test('« Demain » does the same — one door, in the header', async ({ page }) 
   await expect(card.getByLabel(/Planifier demain/)).toBeVisible()
 })
 
-test('on a 320px phone the card header neither clips its title nor bleeds off screen', async ({ page }) => {
+test('on a 320px phone the card header neither clips its title nor bleeds off screen', async ({ page, app }) => {
   // The invariant, not the mechanism. Three 44px touch targets are 132px whatever
   // diameter you draw inside them; add a 26px glyph and a 94px title and a 320px
   // phone's 223px header cannot hold them on one line — it bled off the screen (CI:
@@ -295,7 +281,7 @@ test('on a 320px phone the card header neither clips its title nor bleeds off sc
   // Asserting the WRAP itself would be asserting today's door count: the card carries
   // two now (cooking moved to a row that can name the dish), which fits on one line at
   // 320px. What must hold either way is that nothing is clipped and nothing escapes.
-  await boot(page)
+  await app.boot({ viewport: { width: 390, height: 844 } })
   await page.setViewportSize({ width: 320, height: 700 })
   await page.goto('/board')
   await page.locator('.hub').waitFor({ state: 'visible' })
@@ -316,7 +302,7 @@ test('on a 320px phone the card header neither clips its title nor bleeds off sc
   expect(m.actRightGap, 'and the doors stay hard right').toBeLessThan(2)
 })
 
-test(`« Aujourd’hui » SAYS what is being cooked — a row, not a bare icon`, async ({ page }) => {
+test(`« Aujourd’hui » SAYS what is being cooked — a row, not a bare icon`, async ({ page, app }) => {
   // Reported after the button cull: "meal preparations in Aujourd'hui and Demain
   // widgets are completely gone". They were: « Préparer le repas · <plat> » had become
   // an unlabelled pot in the header, and that line was the ONLY place this card ever
@@ -326,7 +312,7 @@ test(`« Aujourd’hui » SAYS what is being cooked — a row, not a bare icon`,
   // The rule the cull was FOR ("information in the board, not buttons") is the same
   // rule that puts it back: a row that names the dish is information, a pot glyph is
   // not.
-  await boot(page)
+  await app.boot({ viewport: { width: 390, height: 844 } })
   // Mid-afternoon on purpose: the next meal is then the hero supper (the one carrying
   // a recipe), which is the case this row exists for. Unfrozen it read the real wall
   // clock and went red every evening: past 19 h (souper 17 h 30 + SLOT_GRACE_MIN) the
@@ -347,7 +333,7 @@ test(`« Aujourd’hui » SAYS what is being cooked — a row, not a bare icon`,
   await expect(page).toHaveURL(/cook$/)
 })
 
-test('…and never says it twice', async ({ page }) => {
+test('…and never says it twice', async ({ page, app }) => {
   // The pill this replaces printed « Préparer le repas · X » above a « Collation · X »
   // row for the SAME meal — the duplication visible in the original report. The row
   // stands down when that meal is already listed.
@@ -356,7 +342,7 @@ test('…and never says it twice', async ({ page }) => {
   // déjeuner, which IS one of the card's own rows (the hero supper never is — it lives
   // in « Ce soir »), so this is the only way to actually exercise the branch. Without
   // the freeze the test passes whether the dedupe exists or not.
-  await boot(page)
+  await app.boot({ viewport: { width: 390, height: 844 } })
   await page.clock.setFixedTime(new Date((MMID + 7 * 3600) * 1000))
   await page.goto('/board')
   await page.locator('.hub').waitFor({ state: 'visible' })

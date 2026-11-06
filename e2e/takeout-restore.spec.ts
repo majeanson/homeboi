@@ -1,4 +1,5 @@
-import { test, expect, type Page, type Route } from '@playwright/test'
+import type { Route } from '@playwright/test'
+import { test, expect, type App } from './fixtures'
 import { mockApi, seedState } from './mocks'
 
 // « Restaurer une copie » — Réglages ▸ Système ▸ Appareils & accès (STATE.md §4-L L8).
@@ -10,20 +11,17 @@ const json = (b: unknown) => ({ status: 200, contentType: 'application/json', bo
 const URL_ = '/settings?tab=settings&focus=takeout&lens=regler'
 const BACKUPS = { backups: [{ date: '2026-09-15', bytes: 41_000 }, { date: '2026-09-14', bytes: 40_100 }] }
 
-async function boot(page: Page, opts: { signedIn?: boolean; paired?: boolean; backups?: unknown } = {}) {
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  await page.setViewportSize({ width: 390, height: 844 })
-  await mockApi(page, { signedIn: opts.signedIn ?? true })
+async function openTakeout(app: App, opts: { backups?: unknown } = {}) {
+  const { page } = app
+  await app.boot({ viewport: { width: 390, height: 844 } })
   await page.route('**/api/takeout/backups', (route: Route) => route.fulfill(json(opts.backups ?? BACKUPS)))
-  await seedState(page, { theme: 'day', lang: 'fr', surface: 'mobile' })
-  if (opts.paired) await page.addInitScript(() => localStorage.setItem('babillard-device-token', 'e2e-device-token'))
   await page.goto(URL_)
   await page.locator('#op-takeout').waitFor({ state: 'visible', timeout: 15_000 })
   return page.locator('#op-takeout')
 }
 
-test('the nightly copies are listed, newest first, behind « Restaurer une copie »', async ({ page }) => {
-  const card = await boot(page)
+test('the nightly copies are listed, newest first, behind « Restaurer une copie »', async ({ app }) => {
+  const card = await openTakeout(app)
   // The export button is still the first thing — the restore folds under it.
   await expect(card.getByRole('link', { name: /Télécharger mes données/ })).toBeVisible()
   await card.getByText('Restaurer une copie').click()
@@ -33,8 +31,8 @@ test('the nightly copies are listed, newest first, behind « Restaurer une copie
   await expect(card.getByRole('button', { name: 'Depuis un fichier…' })).toBeVisible()
 })
 
-test('restoring a nightly copy confirms with the password, names what is lost, then POSTs', async ({ page }) => {
-  const card = await boot(page)
+test('restoring a nightly copy confirms with the password, names what is lost, then POSTs', async ({ page, app }) => {
+  const card = await openTakeout(app)
   const posted: unknown[] = []
   await page.route('**/api/takeout/restore', (route: Route) => {
     posted.push(route.request().postDataJSON())
@@ -56,8 +54,8 @@ test('restoring a nightly copy confirms with the password, names what is lost, t
   await expect(card.getByText(/412 lignes restaurées/)).toBeVisible()
 })
 
-test('cancelling the confirm posts nothing', async ({ page }) => {
-  const card = await boot(page)
+test('cancelling the confirm posts nothing', async ({ page, app }) => {
+  const card = await openTakeout(app)
   const posted: unknown[] = []
   await page.route('**/api/takeout/restore', (route: Route) => {
     posted.push(1)
@@ -70,8 +68,8 @@ test('cancelling the confirm posts nothing', async ({ page }) => {
   expect(posted).toHaveLength(0)
 })
 
-test('a wrong password is one sentence, not a crash', async ({ page }) => {
-  const card = await boot(page)
+test('a wrong password is one sentence, not a crash', async ({ page, app }) => {
+  const card = await openTakeout(app)
   await page.route('**/api/takeout/restore', (route: Route) =>
     route.fulfill({ status: 403, contentType: 'application/json', body: JSON.stringify({ error: 'Mot de passe invalide.' }) }),
   )
@@ -82,8 +80,8 @@ test('a wrong password is one sentence, not a crash', async ({ page }) => {
   await expect(card.getByText('Mot de passe invalide.')).toBeVisible()
 })
 
-test('no nightly copy yet says so instead of showing an empty list', async ({ page }) => {
-  const card = await boot(page, { backups: { backups: [] } })
+test('no nightly copy yet says so instead of showing an empty list', async ({ app }) => {
+  const card = await openTakeout(app, { backups: { backups: [] } })
   await card.getByText('Restaurer une copie').click()
   await expect(card.getByText(/Aucune copie de nuit/)).toBeVisible()
   await expect(card.locator('.listrow')).toHaveCount(0)

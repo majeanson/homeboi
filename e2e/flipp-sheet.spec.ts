@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { mockApi, seedState } from './mocks'
-import { boxOf } from './measure'
+import { boxOf, settled } from './measure'
 import { boardWithDeals } from './dealFixture'
 
 // « Ma liste Flipp » — the LIST-level Flipp doors, on La liste.
@@ -143,13 +143,16 @@ test('the « Comment ça marche » chip lands on the walkthrough card, even when
     await new Promise((r) => setTimeout(r, 1500))
     await route.fallback()
   })
+  const lateRows = page.waitForResponse(/\/api\/flyers(\?|$)/)
   await page.locator('.flippsheet a[href^="/settings"]').click()
   const card = page.locator('#op-flipp')
   await expect(card).toBeVisible({ timeout: 15_000 })
-  // Give the late rows time to land and the settle loop time to answer them.
-  await page.waitForTimeout(3_000)
-  const top = (await boxOf(card)).y // boxOf, never the bare call — the documented trap
-  expect(Math.abs(top), `card top edge should sit at the top of the view, was ${top}px`).toBeLessThanOrEqual(40)
+  // The late rows land, the page goes quiet, and the settle loop has answered them.
+  await lateRows
+  await settled(page)
+  await expect
+    .poll(async () => Math.abs((await boxOf(card)).y), 'card top edge should sit at the top of the view') // boxOf, never the bare call — the documented trap
+    .toBeLessThanOrEqual(40)
 })
 
 test.describe('on an iPhone', () => {

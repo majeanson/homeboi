@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { mockApi, seedState } from './mocks'
-import { boxOf } from './measure'
+import { boxOf, settled } from './measure'
 
 // Plan seam #8: filling a week cost seven full-screen day scenes. An EMPTY day cell
 // in the week grid is now the field itself — tap it, type, done. The day scene still
@@ -87,7 +87,7 @@ test('planning a day low in the week brings the field AND its options on screen'
     return btns.length - 1
   })
   expect(idx, 'found an empty day to drive').toBeGreaterThanOrEqual(0)
-  await page.waitForTimeout(200)
+  await settled(page)
 
   // A real tap, with no test-runner scrolling in front of it.
   await page.evaluate((i) => {
@@ -99,7 +99,7 @@ test('planning a day low in the week brings the field AND its options on screen'
   await expect(field).toBeVisible()
   const menu = field.locator('.combobox__menu')
   await expect(menu).toBeVisible()
-  await page.waitForTimeout(400) // let the reveal's smooth scroll land
+  await settled(page) // the reveal's smooth scroll has landed
 
   const view = page.viewportSize()!
   // The INPUT row, not the combobox root — the root contains the dropdown, and a long
@@ -147,12 +147,13 @@ test('opening a composer that is already in view does not move the page', async 
     const row = btn.closest('.kitchen__day') as HTMLElement
     scroller.scrollTop += row.getBoundingClientRect().top - window.innerHeight / 2
   })
-  await page.waitForTimeout(200)
+  await settled(page)
   const before = await scrollTop()
 
   await page.evaluate(() => document.querySelector<HTMLElement>('.kitchen__day-addbtn')?.click())
   await expect(page.locator('.kitchen__day-add')).toBeVisible()
-  await page.waitForTimeout(500) // any scroll would have landed by now
+  // Proving no scroll came: nothing marks an absence, so give it the time it would have taken.
+  await page.waitForTimeout(500)
 
   expect(await scrollTop(), 'a composer already in view must not scroll the page').toBe(before)
 })

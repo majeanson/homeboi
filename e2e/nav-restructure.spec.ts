@@ -1,5 +1,5 @@
-import { test, expect, type Page } from '@playwright/test'
-import { mockApi, seedState, BASE } from './mocks'
+import { test, expect } from './fixtures'
+import { BASE } from './mocks'
 
 // The nav restructure (2026-08): the six hub tabs went from
 // board/kitchen/liste/cercle/routines/settings to board/kitchen/liste/notes/
@@ -11,15 +11,9 @@ import { mockApi, seedState, BASE } from './mocks'
 // coverage the per-file specs (nav-tabs, interactions, cercle-visual, …) don't
 // exercise end-to-end as a REDIRECT.
 
-async function boot(page: Page, audience: 'parent' | 'toddler' = 'parent') {
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  await mockApi(page)
-  await seedState(page, { theme: 'day', audience, lang: 'fr', calm: true, surface: 'mobile' })
-}
-
 test.describe('legacy hub redirects (query-preserving)', () => {
-  test('/routines?plus=1 redirects to /maison and opens the ＋ sheet', async ({ page }) => {
-    await boot(page)
+  test('/routines?plus=1 redirects to /maison and opens the ＋ sheet', async ({ page, app }) => {
+    await app.boot({ state: { calm: true } })
     await page.goto('/routines?plus=1')
     await expect(page).toHaveURL(/\/maison/)
     await expect(page).not.toHaveURL(/plus=/) // consumed, not replayed on back/refresh
@@ -29,7 +23,7 @@ test.describe('legacy hub redirects (query-preserving)', () => {
     await expect(page.locator('.sheet.show .cat-grid')).toBeVisible()
   })
 
-  test('/cercle?section=notes&item=<id> redirects to /notes?item=<id> and focuses the note', async ({ page }) => {
+  test('/cercle?section=notes&item=<id> redirects to /notes?item=<id> and focuses the note', async ({ page, app }) => {
     const NOTE = {
       id: 'nr1',
       member_id: null,
@@ -42,7 +36,7 @@ test.describe('legacy hub redirects (query-preserving)', () => {
       created_at: BASE,
       updated_at: BASE,
     }
-    await boot(page)
+    await app.boot({ state: { calm: true } })
     await page.route('**/api/family-notes**', async (route) => {
       if (route.request().method() !== 'GET') return route.fallback()
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ notes: [NOTE] }) })
@@ -54,9 +48,9 @@ test.describe('legacy hub redirects (query-preserving)', () => {
     await expect(page.locator('.cnote.is-focus')).toBeVisible()
   })
 
-  test('/cercle?add=business&import=<url> redirects to /maison with the business form open, import pre-filled', async ({ page }) => {
+  test('/cercle?add=business&import=<url> redirects to /maison with the business form open, import pre-filled', async ({ page, app }) => {
     const MAPS_URL = 'https://maps.app.goo.gl/hCpMvxRRDUhwLCPi9?g_st=ic'
-    await boot(page)
+    await app.boot({ state: { calm: true } })
     await page.route('**/api/place-import**', async (route) => {
       await route.fulfill({
         status: 200,
@@ -74,8 +68,8 @@ test.describe('legacy hub redirects (query-preserving)', () => {
     await expect(form.getByRole('textbox', { name: 'Nom' })).toHaveValue('Garage Roy')
   })
 
-  test('bare /cercle redirects to /maison?section=family (the old cercle default)', async ({ page }) => {
-    await boot(page)
+  test('bare /cercle redirects to /maison?section=family (the old cercle default)', async ({ page, app }) => {
+    await app.boot({ state: { calm: true } })
     await page.goto('/cercle')
     await expect(page).toHaveURL(/\/maison\?section=family$/)
     // Scoped to the section pill row (data-tour="maison-sections") — Famille also
@@ -83,8 +77,8 @@ test.describe('legacy hub redirects (query-preserving)', () => {
     await expect(page.locator('[data-tour="maison-sections"] .subtabs__opt[aria-selected="true"]')).toHaveText(/Famille/)
   })
 
-  test('/kid redirects to /maison, landing a toddler on the routine picture-story picker', async ({ page }) => {
-    await boot(page, 'toddler')
+  test('/kid redirects to /maison, landing a toddler on the routine picture-story picker', async ({ page, app }) => {
+    await app.boot({ state: { calm: true, audience: 'toddler' } })
     await page.goto('/kid')
     await expect(page).toHaveURL(/\/maison$/)
     await expect(page.locator('.kid__faces')).toBeVisible()
@@ -92,7 +86,7 @@ test.describe('legacy hub redirects (query-preserving)', () => {
 })
 
 test.describe('toddler lens split (Maison vs Les notes)', () => {
-  test('toddler /notes is the hear-first read-only list — no composer, no « Nouvelle note »', async ({ page }) => {
+  test('toddler /notes is the hear-first read-only list — no composer, no « Nouvelle note »', async ({ page, app }) => {
     const NOTE = {
       id: 'nk1',
       member_id: null,
@@ -105,7 +99,7 @@ test.describe('toddler lens split (Maison vs Les notes)', () => {
       created_at: BASE,
       updated_at: BASE,
     }
-    await boot(page, 'toddler')
+    await app.boot({ state: { calm: true, audience: 'toddler' } })
     await page.route('**/api/family-notes**', async (route) => {
       if (route.request().method() !== 'GET') return route.fallback()
       await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ notes: [NOTE] }) })
@@ -118,27 +112,27 @@ test.describe('toddler lens split (Maison vs Les notes)', () => {
     await expect(page.locator('.add-fab')).toHaveCount(0) // toddler lens never gets the ＋
   })
 
-  test('toddler /maison (default section) is the kid routine picture-story view', async ({ page }) => {
-    await boot(page, 'toddler')
+  test('toddler /maison (default section) is the kid routine picture-story view', async ({ page, app }) => {
+    await app.boot({ state: { calm: true, audience: 'toddler' } })
     await page.goto('/maison')
     await expect(page.locator('.kid__faces')).toBeVisible()
     await expect(page.locator('.cercle-kid__grid')).toHaveCount(0)
   })
 
-  test('toddler /maison?section=family is the circle kid faces grid', async ({ page }) => {
-    await boot(page, 'toddler')
+  test('toddler /maison?section=family is the circle kid faces grid', async ({ page, app }) => {
+    await app.boot({ state: { calm: true, audience: 'toddler' } })
     await page.goto('/maison?section=family')
     await expect(page.locator('.cercle-kid__grid')).toBeVisible()
     await expect(page.locator('.kid__faces')).toHaveCount(0)
   })
 })
 
-test('the ＋ on /notes opens a blank note directly — no sheet, no chooser', async ({ page }) => {
+test('the ＋ on /notes opens a blank note directly — no sheet, no chooser', async ({ page, app }) => {
   // /notes carries a single add-mode ('cnote'), but it's in FORM_ROUTES (2026-09-04:
   // iOS-Notes style) — so a tap NAVIGATES to /notes?add=1 and opens the full-screen
   // NoteEditor, never the sheet. Holding the ＋ still opens the quick voice/text/📎
   // composer (VOICE_MODES, see fab-hold-voice.spec.ts) — that door didn't move.
-  await boot(page)
+  await app.boot({ state: { calm: true } })
   await page.goto('/notes')
   await page.locator('.add-fab').click()
   await expect(page.locator('.sheet.show')).toHaveCount(0)
@@ -160,10 +154,10 @@ test('the ＋ on /notes opens a blank note directly — no sheet, no chooser', a
   await expect(page.locator('.note-editor')).toHaveCount(0)
 })
 
-test('/notes?add=1 still opens the rich editor — every time, not just once', async ({ page }) => {
+test('/notes?add=1 still opens the rich editor — every time, not just once', async ({ page, app }) => {
   // The rich-editor door survives as a URL (a stray deep-link out in the wild), and
   // it's what the ＋ FAB itself now navigates to on every tap.
-  await boot(page)
+  await app.boot({ state: { calm: true } })
   await page.goto('/notes?add=1')
   await expect(page.locator('.note-editor')).toBeVisible()
   await expect(page).not.toHaveURL(/add=/) // the one-shot door strips it once opened

@@ -1,4 +1,5 @@
-import { test, expect, type Page } from '@playwright/test'
+import type { Page } from '@playwright/test'
+import { test, expect } from './fixtures'
 import { mockApi, seedState } from './mocks'
 
 // Réglages ▸ Repas — the household's meal ORDER, HERO and serve HOURS. Three separate
@@ -9,16 +10,9 @@ import { mockApi, seedState } from './mocks'
 // order + a moved hero + one edited hour, and asserts the settings rows AND the day
 // editor both follow it.
 
-const boot = async (page: Page, path: string) => {
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  await mockApi(page)
-  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
-  await page.goto(path)
-}
-
-test('Réglages ▸ Repas renders order + hero + hours, no overflow at 360px', async ({ page }) => {
+test('Réglages ▸ Repas renders order + hero + hours, no overflow at 360px', async ({ page, app }) => {
   await page.setViewportSize({ width: 360, height: 780 })
-  await boot(page, '/settings?tab=kitchen&sub=meals')
+  await app.boot({ route: '/settings?tab=kitchen&sub=meals', state: { calm: true } })
 
   const rows = page.locator('.meal-slots__row')
   await expect(rows.first()).toBeVisible({ timeout: 15_000 })
@@ -72,8 +66,8 @@ test('the hour stepper nudges by 30 min and PATCHes mealHours', async ({ page })
   expect(patches).toContainEqual(expect.objectContaining({ mealHours: { supper: 18 * 60 } }))
 })
 
-test('day editor lists the five slots chronologically, souper in place', async ({ page }) => {
-  await boot(page, '/kitchen')
+test('day editor lists the five slots chronologically, souper in place', async ({ page, app }) => {
+  await app.boot({ route: '/kitchen', state: { calm: true } })
   await page.locator('.kitchen__day').first().getByRole('button', { name: /Gérer/ }).click()
   await expect(page.locator('.scene .day-mng__sec').first()).toBeVisible({ timeout: 15_000 })
   const heads = await page.locator('.day-mng__sec-head').allInnerTexts()

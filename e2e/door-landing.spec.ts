@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test'
+import { test, expect } from './fixtures'
 import { mockApi, seedState, BASE, MMID } from './mocks'
 
 // A DOOR LANDS ON ITS TARGET.
@@ -20,33 +20,26 @@ import { mockApi, seedState, BASE, MMID } from './mocks'
 // A door that names a PAGE (« Planifier aujourd'hui » → the day's plan) is not in
 // scope: the page IS the target there.
 
-async function boot(page: Page) {
-  await page.setViewportSize({ width: 390, height: 844 })
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  await mockApi(page)
-  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
-}
-
 const DAY = Math.floor(BASE / 86400) * 86400
 
 test.describe('the day scene opens the composer you asked for', () => {
-  test('?focus=note opens the day note, seeded and ready', async ({ page }) => {
-    await boot(page)
+  test('?focus=note opens the day note, seeded and ready', async ({ page, app }) => {
+    await app.boot({ viewport: { width: 390, height: 844 } })
     await page.goto(`/kitchen/day/${DAY}?focus=note`)
     await expect(page.locator('.day-plan__note .edit-field')).toBeVisible({ timeout: 8000 })
     // One-shot: consumed on arrival, so a refresh or a back-nav doesn't reopen it.
     await expect(page).not.toHaveURL(/focus=/)
   })
 
-  test('?focus=meal opens the hero slot on the Repas face', async ({ page }) => {
-    await boot(page)
+  test('?focus=meal opens the hero slot on the Repas face', async ({ page, app }) => {
+    await app.boot({ viewport: { width: 390, height: 844 } })
     await page.goto(`/kitchen/day/${DAY}?vue=repas&focus=meal`)
     await expect(page.locator('.day-mng__sec .edit-field input.input').first()).toBeVisible({ timeout: 8000 })
     await expect(page).not.toHaveURL(/focus=/)
   })
 
-  test('an unknown ?focus= is ignored, not a crash or a stuck param', async ({ page }) => {
-    await boot(page)
+  test('an unknown ?focus= is ignored, not a crash or a stuck param', async ({ page, app }) => {
+    await app.boot({ viewport: { width: 390, height: 844 } })
     await page.goto(`/kitchen/day/${DAY}?focus=zzz`)
     await expect(page.locator('.scene').first()).toBeVisible({ timeout: 8000 })
     await expect(page).not.toHaveURL(/focus=/)
@@ -77,8 +70,8 @@ const emptyDoors: [string, string, string][] = [
   ['les mots du frigo', '/board?plus=note', '.sheet.show'],
 ]
 for (const [what, url, sel] of emptyDoors) {
-  test(`an empty ${what} card taps straight into its add (${url})`, async ({ page }) => {
-    await boot(page)
+  test(`an empty ${what} card taps straight into its add (${url})`, async ({ page, app }) => {
+    await app.boot({ viewport: { width: 390, height: 844 } })
     await page.goto(url)
     await expect(page.locator(sel).first()).toBeVisible({ timeout: 8000 })
   })
@@ -90,8 +83,8 @@ for (const [what, url, sel] of emptyDoors) {
 // recette » — and that door used to land on the KITCHEN'S FRONT PAGE, leaving you to
 // find the meal again. It lands on that meal's own composer now.
 // (The peek's matching door is unit-tested in components/detail/adapters.test.ts.)
-test('?focus=meal:<slot> opens THAT slot’s composer, not the headline one', async ({ page }) => {
-  await boot(page)
+test('?focus=meal:<slot> opens THAT slot’s composer, not the headline one', async ({ page, app }) => {
+  await app.boot({ viewport: { width: 390, height: 844 } })
   await page.goto(`/kitchen/day/${DAY}?vue=repas&focus=meal:snack`)
   await page.locator('.day-mng__sec').first().waitFor({ state: 'visible', timeout: 15_000 })
   const open = await page.locator('.day-mng__sec').evaluateAll((els) =>

@@ -1,5 +1,5 @@
-import { test, expect, type Page } from '@playwright/test'
-import { mockApi, seedState } from './mocks'
+import { test, expect } from './fixtures'
+import { settled } from './measure'
 
 // An open ＋ bottom-sheet must freeze the page BEHIND it. The document never
 // scrolls in this app — the real scrollers are #root and .hub__body — so the
@@ -7,22 +7,8 @@ import { mockApi, seedState } from './mocks'
 // sheet (the kitchen "Planifier un repas" chooser overflows a short viewport)
 // leaked to the page behind and the sheet's lower content was unreachable.
 
-async function boot(page: Page) {
-  // A short viewport (landscape-ish phone) so the kitchen ＋ sheet overflows.
-  await page.setViewportSize({ width: 412, height: 520 })
-  await page.addInitScript(() => {
-    try {
-      localStorage.setItem('babillard-tours-seen', JSON.stringify(['essentials']))
-    } catch {
-      /* noop */
-    }
-  })
-  await mockApi(page)
-  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
-}
-
-test('open ＋ sheet freezes the page behind; closing releases it', async ({ page }) => {
-  await boot(page)
+test('open ＋ sheet freezes the page behind; closing releases it', async ({ page, app }) => {
+  await app.boot({ viewport: { width: 412, height: 520 } }) // A short viewport (landscape-ish phone) so the kitchen ＋ sheet overflows.
   await page.goto('/kitchen')
   await expect(page.locator('.kitchen')).toBeVisible({ timeout: 15_000 })
 
@@ -32,7 +18,7 @@ test('open ＋ sheet freezes the page behind; closing releases it', async ({ pag
 
   await page.locator('.add-fab').click()
   await expect(page.locator('.sheet.show')).toBeVisible()
-  await page.waitForTimeout(500) // let the slide-in settle
+  await settled(page)
 
   const open = await page.evaluate(() => {
     const sheet = document.querySelector('.sheet.show') as HTMLElement

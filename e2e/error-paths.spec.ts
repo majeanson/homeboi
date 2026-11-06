@@ -1,4 +1,5 @@
-import { test, expect, type Page } from '@playwright/test'
+import type { Page } from '@playwright/test'
+import { test, expect } from './fixtures'
 import { mockApi, seedState } from './mocks'
 
 // « No write fails silently » (commit 6d9e18a) — pins the error surfacing on the
@@ -24,14 +25,6 @@ import { mockApi, seedState } from './mocks'
 
 const SAVE_FAILED = 'Pas enregistré — réessaie.'
 
-async function boot(page: Page, path: string, ready: string) {
-  await page.setViewportSize({ width: 420, height: 860 })
-  await mockApi(page)
-  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
-  await page.goto(path)
-  await expect(page.locator(ready)).toBeVisible({ timeout: 15_000 })
-}
-
 // Registered AFTER mockApi, so it intercepts first; everything it doesn't fail
 // falls back to the shared mock. Toggleable so a test can re-run the same submit
 // against a healthy server and prove the recovery path (the sheet closes).
@@ -48,8 +41,8 @@ async function failWrites(page: Page, apiPath: string, methods: string[]) {
 
 // ─────────────────────────── AddSheet (board ＋) ───────────────────────────
 
-test('AddSheet: a rejected quick todo add keeps the sheet open, the text, and says so', async ({ page }) => {
-  await boot(page, '/board', '.board-wall')
+test('AddSheet: a rejected quick todo add keeps the sheet open, the text, and says so', async ({ page, app }) => {
+  await app.boot({ viewport: { width: 420, height: 860 }, route: '/board', wait: '.board-wall' })
   const fail = await failWrites(page, 'todos', ['POST'])
 
   await page.locator('.add-fab').click()
@@ -77,8 +70,8 @@ test('AddSheet: a rejected quick todo add keeps the sheet open, the text, and sa
 
 // ─────────────────────── ListEditPage (/liste/item/:id) ───────────────────────
 
-test('ListEditPage: a rejected save keeps the scene open with the error line', async ({ page }) => {
-  await boot(page, '/liste/item/l2', '.li-edit') // « Pain », from the board fixture
+test('ListEditPage: a rejected save keeps the scene open with the error line', async ({ page, app }) => {
+  await app.boot({ viewport: { width: 420, height: 860 }, route: '/liste/item/l2', wait: '.li-edit' }) // « Pain », from the board fixture
   await failWrites(page, 'list', ['PATCH'])
 
   await page.locator('.li-edit__actions .btn--primary').click() // Enregistrer
@@ -90,8 +83,8 @@ test('ListEditPage: a rejected save keeps the scene open with the error line', a
   await expect(page).toHaveURL(/\/liste\/item\/l2/)
 })
 
-test('ListEditPage: a rejected delete (through the confirm) keeps the scene open with the error line', async ({ page }) => {
-  await boot(page, '/liste/item/l2', '.li-edit')
+test('ListEditPage: a rejected delete (through the confirm) keeps the scene open with the error line', async ({ page, app }) => {
+  await app.boot({ viewport: { width: 420, height: 860 }, route: '/liste/item/l2', wait: '.li-edit' })
   await failWrites(page, 'list', ['DELETE'])
 
   await page.getByRole('button', { name: 'Supprimer de la liste' }).click()
@@ -166,8 +159,8 @@ test('RecipeForm: a backdrop/Esc close on a PRISTINE form closes immediately (no
 // got an answer — here route.abort()) is the offline path. useWrite queues it to
 // the outbox and resolves, so the sheet closes calmly with NO error line — only a
 // server that answered 4xx/5xx (the tests above) keeps the form open and says so.
-test('AddSheet: a network-level failure queues calmly — the sheet closes, no error line', async ({ page }) => {
-  await boot(page, '/board', '.board-wall')
+test('AddSheet: a network-level failure queues calmly — the sheet closes, no error line', async ({ page, app }) => {
+  await app.boot({ viewport: { width: 420, height: 860 }, route: '/board', wait: '.board-wall' })
   await page.route('**/api/todos', (route) =>
     route.request().method() === 'POST' ? route.abort('failed') : route.fallback(),
   )

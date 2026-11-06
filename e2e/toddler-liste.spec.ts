@@ -24,6 +24,7 @@ test('a tap never writes', async ({ page, app }) => {
   })
   await app.boot({ route: '/liste', state: { audience: 'toddler' }, api: { overrides: { board: { ...BOARD, list } } }, wait: '.bigtiles' })
   await page.locator('.bigtile').first().click()
+  // Proving no write was sent: nothing marks an absence, so give it the time it would have taken.
   await page.waitForTimeout(300)
   await expect(page.locator('.bigtile')).toHaveCount(2)
   expect(writes).toEqual([])

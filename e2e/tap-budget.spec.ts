@@ -1,5 +1,6 @@
-import { test, expect, type Page, type Locator, type Request } from '@playwright/test'
-import { mockApi, seedState, BASE } from './mocks'
+import type { Locator, Request } from '@playwright/test'
+import { test, expect } from './fixtures'
+import { BASE } from './mocks'
 
 // ─────────────────────────────── The tap budget ───────────────────────────────
 // C-18 (bmad/08-the-grandma-test.md): pin the number of TAPS each daily action
@@ -51,26 +52,11 @@ const isApi = (method: string, path: string) => (r: Request) =>
 
 // Fresh boot on /board — same harness as nav-tabs.spec.ts. reducedMotion keeps
 // infinitely-animated elements (toddler float, entrance fades) stable for clicks.
-async function boot(page: Page) {
-  await page.setViewportSize({ width: 390, height: 844 })
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  await page.addInitScript(() => {
-    try {
-      localStorage.setItem('babillard-tours-seen', JSON.stringify(['essentials']))
-    } catch {
-      /* noop */
-    }
-  })
-  await mockApi(page)
-  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
-  await page.goto('/board')
-  await expect(page.locator('.board-wall')).toBeVisible({ timeout: 15_000 })
-}
 
 // ------------------------------------------------------------------ glance: 0
 
-test('glance: supper tonight — 0 taps (the board just says it)', async ({ page }) => {
-  await boot(page)
+test('glance: supper tonight — 0 taps (the board just says it)', async ({ page, app }) => {
+  await app.boot({ viewport: { width: 390, height: 844 }, route: '/board', wait: '.board-wall' })
   // « Ce soir » is a band card, always on the resting board — the whole point
   // of the wall tablet is that supper costs zero interactions to know.
   const heroes = page.locator('.board-heroes .now-card .what')
@@ -78,8 +64,8 @@ test('glance: supper tonight — 0 taps (the board just says it)', async ({ page
   assertBudget('glance: supper tonight', 0, 0)
 })
 
-test('auto: see who has the car — 0 taps (the board card says it)', async ({ page }) => {
-  await boot(page)
+test('auto: see who has the car — 0 taps (the board card says it)', async ({ page, app }) => {
+  await app.boot({ viewport: { width: 390, height: 844 }, route: '/board', wait: '.board-wall' })
   // The AutoCard mounts from the CAR fixture (status: Papa holds the car until
   // this evening) — "où est l'auto ?" is answered at a glance, no navigation.
   const status = page.locator('.auto-card__status')
@@ -90,8 +76,8 @@ test('auto: see who has the car — 0 taps (the board card says it)', async ({ p
 
 // ------------------------------------------------------------------- liste
 
-test('liste: check an item — 2 taps (tab + the row toggle)', async ({ page }) => {
-  await boot(page)
+test('liste: check an item — 2 taps (tab + the row toggle)', async ({ page, app }) => {
+  await app.boot({ viewport: { width: 390, height: 844 }, route: '/board', wait: '.board-wall' })
   const { tap, count } = tapCounter()
   await tap(page.locator('.hubnav a[href="/liste"]')) // 1 — the hub tab
   const row = page.locator('.today-feed .list-rows .list-row', { hasText: 'Pain' })
@@ -101,8 +87,8 @@ test('liste: check an item — 2 taps (tab + the row toggle)', async ({ page }) 
   assertBudget('liste: check an item', count(), 2)
 })
 
-test('liste: add an item — 2 taps (tab + field focus; typing + Enter are free)', async ({ page }) => {
-  await boot(page)
+test('liste: add an item — 2 taps (tab + field focus; typing + Enter are free)', async ({ page, app }) => {
+  await app.boot({ viewport: { width: 390, height: 844 }, route: '/board', wait: '.board-wall' })
   const { tap, count } = tapCounter()
   await tap(page.locator('.hubnav a[href="/liste"]')) // 1 — the hub tab
   const input = page.locator('.today-feed form.edit-field .input').first()
@@ -124,8 +110,8 @@ test('liste: add an item — 2 taps (tab + field focus; typing + Enter are free)
 // honest path is board → liste → Circulaires = 2 taps. (The ＋ sheet's
 // « Parcourir les circulaires » tile is the slower 3-tap road; the budget pins
 // the fastest one.)
-test('liste: browse the flyers/deals — 2 taps (tab + the Circulaires shortcut)', async ({ page }) => {
-  await boot(page)
+test('liste: browse the flyers/deals — 2 taps (tab + the Circulaires shortcut)', async ({ page, app }) => {
+  await app.boot({ viewport: { width: 390, height: 844 }, route: '/board', wait: '.board-wall' })
   const { tap, count } = tapCounter()
   await tap(page.locator('.hubnav a[href="/liste"]')) // 1 — the hub tab
   // Scope to the visible shortcut row — the ＋ sheet's (closed) flyer tile shares
@@ -140,8 +126,8 @@ test('liste: browse the flyers/deals — 2 taps (tab + the Circulaires shortcut)
 
 // ------------------------------------------------------------------- kitchen
 
-test('supper: cook tonight’s meal — 2 taps (the board hero peeks, then Cuisiner)', async ({ page }) => {
-  await boot(page)
+test('supper: cook tonight’s meal — 2 taps (the board hero peeks, then Cuisiner)', async ({ page, app }) => {
+  await app.boot({ viewport: { width: 390, height: 844 }, route: '/board', wait: '.board-wall' })
   const { tap, count } = tapCounter()
   // Re-pinned 1 → 2 on 2026-09-02, deliberately and on Marc's explicit call. « Ce soir »
   // used to land straight ON the recipe view (1 tap). What that cost: a planned meal had
@@ -159,8 +145,8 @@ test('supper: cook tonight’s meal — 2 taps (the board hero peeks, then Cuisi
   assertBudget('supper: cook tonight’s meal', count(), 2)
 })
 
-test('kitchen: see the week — 1 tap (the hub tab; Repas is the default sub-tab)', async ({ page }) => {
-  await boot(page)
+test('kitchen: see the week — 1 tap (the hub tab; Repas is the default sub-tab)', async ({ page, app }) => {
+  await app.boot({ viewport: { width: 390, height: 844 }, route: '/board', wait: '.board-wall' })
   const { tap, count } = tapCounter()
   await tap(page.locator('.hubnav a[href="/kitchen"]')) // 1 — the hub tab
   const week = page.locator('.kitchen__week')
@@ -172,8 +158,8 @@ test('kitchen: see the week — 1 tap (the hub tab; Repas is the default sub-tab
 
 // ------------------------------------------------------------------- event
 
-test('event: add a rendez-vous — 3 taps (＋ FAB + tile + save; typing is free)', async ({ page }) => {
-  await boot(page)
+test('event: add a rendez-vous — 3 taps (＋ FAB + tile + save; typing is free)', async ({ page, app }) => {
+  await app.boot({ viewport: { width: 390, height: 844 }, route: '/board', wait: '.board-wall' })
   const { tap, count } = tapCounter()
   await tap(page.locator('.add-fab')) // 1 — the contextual ＋
   await expect(page.locator('.sheet.show')).toBeVisible()
@@ -195,8 +181,8 @@ test('event: add a rendez-vous — 3 taps (＋ FAB + tile + save; typing is free
 
 // ------------------------------------------------------------------- routines
 
-test('routines: open a routine to run — 2 taps (tab + the card’s ▶ Faire)', async ({ page }) => {
-  await boot(page)
+test('routines: open a routine to run — 2 taps (tab + the card’s ▶ Faire)', async ({ page, app }) => {
+  await app.boot({ viewport: { width: 390, height: 844 }, route: '/board', wait: '.board-wall' })
   const { tap, count } = tapCounter()
   // Routines is Maison's default section, so its hub tab lands straight on the grid.
   await tap(page.locator('.hubnav a[href="/maison"]')) // 1 — the hub tab
@@ -210,8 +196,8 @@ test('routines: open a routine to run — 2 taps (tab + the card’s ▶ Faire)'
   assertBudget('routines: open a routine to run', count(), 2)
 })
 
-test('routines: tapping the CARD runs it too — no peek in between', async ({ page }) => {
-  await boot(page)
+test('routines: tapping the CARD runs it too — no peek in between', async ({ page, app }) => {
+  await app.boot({ viewport: { width: 390, height: 844 }, route: '/board', wait: '.board-wall' })
   const { tap, count } = tapCounter()
   await tap(page.locator('.hubnav a[href="/maison"]')) // 1 — the hub tab (Routines is its default section)
   await expect(page.locator('.routines-grid').first()).toBeVisible({ timeout: 15_000 })
@@ -230,7 +216,7 @@ test('routines: tapping the CARD runs it too — no peek in between', async ({ p
 // AFTER mockApi → it wins), the voyage.spec pattern. The clock freezes at BASE so
 // the trip (BASE → BASE+5j) reads as upcoming and the « Prochain voyage » card
 // mounts (it hides itself when nothing's coming — calm).
-test('voyage: open the next trip — 1 tap (the board card row)', async ({ page }) => {
+test('voyage: open the next trip — 1 tap (the board card row)', async ({ page, app }) => {
   const DAY = 86400
   const TRIP = {
     id: 'trip1',
@@ -248,7 +234,7 @@ test('voyage: open the next trip — 1 tap (the board card row)', async ({ page 
     updated_at: null,
   }
   await page.clock.setFixedTime(new Date(BASE * 1000))
-  await boot(page)
+  await app.boot({ viewport: { width: 390, height: 844 }, route: '/board', wait: '.board-wall' })
   await page.route('**/api/trips**', (route) =>
     route.request().method() === 'GET'
       ? route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ trips: [TRIP] }) })

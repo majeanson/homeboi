@@ -1,5 +1,5 @@
-import { test, expect } from '@playwright/test'
-import { mockApi, seedState, ROUTES } from './mocks'
+import { test, expect } from './fixtures'
+import { ROUTES } from './mocks'
 
 // REVIEW-PASS: deleting an event or a chore in Réglages hid the row by mutating the
 // query cache (`useUndoableRemove` → `setQueryData`; that hook was FOLDED into
@@ -17,16 +17,9 @@ import { mockApi, seedState, ROUTES } from './mocks'
 
 const PHONE = { width: 390, height: 844 }
 
-async function boot(page: import('@playwright/test').Page) {
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  await page.setViewportSize(PHONE)
-  await mockApi(page)
-  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
-}
-
-test('a deleted event stays gone across a remount, then « Annuler » restores it', async ({ page }) => {
+test('a deleted event stays gone across a remount, then « Annuler » restores it', async ({ page, app }) => {
   const deletes: string[] = []
-  await boot(page)
+  await app.boot({ viewport: PHONE })
   await page.route('**/api/events**', async (route) => {
     const m = route.request().method()
     if (m === 'GET') {

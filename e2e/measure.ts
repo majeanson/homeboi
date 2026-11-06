@@ -1,4 +1,42 @@
-import { expect, type Locator } from '@playwright/test'
+import { expect, type Locator, type Page } from '@playwright/test'
+
+// A width measured or a frame photographed before the webfont lands is the fallback font's.
+export const fontsReady = (page: Page) => page.evaluate(() => document.fonts?.ready).catch(() => {})
+
+// THE FRAME HAS STOPPED MOVING — what a photo or a final measurement actually waits for,
+// where `waitForTimeout(250)` guessed at it. Webfonts in, then two samples a quarter-second
+// apart must agree on the URL, the size of the DOM, every scroll offset and the root's
+// class and inline vars (the keyboard fit lives there), with no finite animation or
+// transition still running (a spinner's `infinite` keeps going by design and does not
+// count). A reveal the caller can name still waits for its selector first: this says the
+// page has gone quiet, not that the right thing arrived.
+export async function settled(page: Page) {
+  await fontsReady(page)
+  let last = ''
+  await expect
+    .poll(
+      async () => {
+        const { sample, moving } = await page.evaluate(() => ({
+          sample: [
+            location.href,
+            document.body.innerHTML.length,
+            document.documentElement.className,
+            document.documentElement.style.cssText,
+            [...document.querySelectorAll('*')].reduce((n, e) => n + e.scrollTop + e.scrollLeft, 0),
+          ].join(' '),
+          moving: document
+            .getAnimations()
+            .filter((a) => a.playState === 'running' && a.effect?.getComputedTiming().iterations !== Infinity)
+            .map((a) => (a as CSSAnimation).animationName ?? (a as CSSTransition).transitionProperty ?? 'script'),
+        }))
+        const state = moving.length ? `moving: ${moving.join(', ')}` : sample === last ? 'quiet' : `changed: ${sample}`
+        last = sample
+        return state
+      },
+      { intervals: [250], timeout: 10_000, message: 'the page never stopped moving' },
+    )
+    .toBe('quiet')
+}
 
 // `(await locator.boundingBox())!` — **0 sites left in this suite** (2026-09-09). It
 // throws « Cannot read properties of null (reading 'y') » when the node is detached

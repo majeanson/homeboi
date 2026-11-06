@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { mockApi, seedState, type Theme } from './mocks'
+import { settled } from './measure'
 
 // Visual sweep for « Le cercle » — now Maison's Famille/Social sections (the nav
 // restructure merged the old standalone Le cercle tab into /maison) — NOT covered
@@ -32,7 +33,7 @@ const STATES = [
 async function settle(page: Page, ready: string) {
   await page.locator(ready).first().waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {})
   await page.evaluate(() => document.fonts?.ready).catch(() => {})
-  await page.waitForTimeout(500)
+  await settled(page)
 }
 
 // NOTE: Maison's Famille/Social sections (ex-« Le cercle ») are deliberately EXEMPT

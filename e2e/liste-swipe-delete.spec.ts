@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { mockApi, seedState } from './mocks'
+import { settled } from './measure'
 
 // Swipe-left delete on La liste, END TO END — the guard for « I swipe and the items
 // always come back » (2026-10-06, round four of this bug, and the first round whose
@@ -91,7 +92,7 @@ test.describe('swipe-delete on La liste', () => {
     // repaint the row (the deferred removal un-hides once the scope is fresh — if
     // the frame still contained l2, « Pain » would come straight back here).
     await page.waitForResponse((r) => r.url().includes('/api/board') && r.request().method() === 'GET', { timeout: 20_000 })
-    await page.waitForTimeout(500)
+    await settled(page)
     await expect(page.locator(ROW)).toHaveCount(0)
     await expect(page.locator('.list-rows')).not.toContainText('Pain')
   })
@@ -135,7 +136,7 @@ test.describe('swipe-delete on La liste', () => {
     expect(typeof body.asOf, 'asOf = the gesture’s epoch seconds').toBe('number')
 
     await page.waitForResponse((r) => r.url().includes('/api/board') && r.request().method() === 'GET', { timeout: 20_000 })
-    await page.waitForTimeout(500)
+    await settled(page)
     await expect(page.locator(ROW)).toHaveCount(0)
   })
 })

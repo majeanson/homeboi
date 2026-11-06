@@ -1,5 +1,5 @@
-import { test, expect, type Page } from '@playwright/test'
-import { mockApi, seedState } from './mocks'
+import type { Page } from '@playwright/test'
+import { test, expect } from './fixtures'
 
 // « Le son » — the app's own silent switch (src/lib/sound.ts).
 //
@@ -11,20 +11,11 @@ import { mockApi, seedState } from './mocks'
 // The load-bearing claim is that muting actually reaches `speechSynthesis` — not
 // that a button changes colour. Headless Chromium has no voices, so we install a
 // counting stub before the app boots and assert on CALLS.
-async function boot(page: Page, route: string) {
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  // The speech counter lives in mocks.ts (window.__spoke): its init script runs
-  // AFTER any a test adds, so a local stub here would be silently overwritten and
-  // the counter would never move — which reads exactly like « muting works ».
-  await mockApi(page)
-  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
-  await page.goto(route)
-}
 
 const spoke = (page: Page) => page.evaluate(() => (window as unknown as { __spoke: number }).__spoke)
 
-test('cook mode: muting stops the app from speaking, and it comes back', async ({ page }) => {
-  await boot(page, '/kitchen/recipe/rc1/cook')
+test('cook mode: muting stops the app from speaking, and it comes back', async ({ page, app }) => {
+  await app.boot({ route: '/kitchen/recipe/rc1/cook' })
   await expect(page.locator('.cook')).toBeVisible()
 
   const mute = page.locator('.cook__bar-tools .sound-toggle')
@@ -45,6 +36,7 @@ test('cook mode: muting stops the app from speaking, and it comes back', async (
   await expect(mute).toHaveClass(/is-muted/)
   const before = await spoke(page)
   await step.click()
+  // Proving a sentence was NOT spoken: no DOM signal marks a silence, so give it the time it would have taken.
   await page.waitForTimeout(300)
   expect(await spoke(page)).toBe(before)
 
@@ -54,8 +46,8 @@ test('cook mode: muting stops the app from speaking, and it comes back', async (
   await expect.poll(() => spoke(page)).toBeGreaterThan(before)
 })
 
-test('the choice is per-device and survives a reload', async ({ page }) => {
-  await boot(page, '/kitchen/recipe/rc1/cook')
+test('the choice is per-device and survives a reload', async ({ page, app }) => {
+  await app.boot({ route: '/kitchen/recipe/rc1/cook' })
   await page.locator('.cook__bar-tools .sound-toggle').click()
 
   await page.reload()
@@ -65,14 +57,15 @@ test('the choice is per-device and survives a reload', async ({ page }) => {
   await expect(page.locator('.cook__bar-tools .sound-toggle')).toHaveClass(/is-muted/)
   const before = await spoke(page)
   await page.locator('.cook__step-read').first().click()
+  // Proving a sentence was NOT spoken: no DOM signal marks a silence, so give it the time it would have taken.
   await page.waitForTimeout(300)
   expect(await spoke(page)).toBe(before)
 })
 
-test('Réglages ▸ Voix mirrors the same switch', async ({ page }) => {
+test('Réglages ▸ Voix mirrors the same switch', async ({ page, app }) => {
   // The bar toggles are where you REACH for it; this is the calm door, and both
   // must be the same flag — two switches that disagree would be worse than one.
-  await boot(page, '/settings?tab=settings&sub=ai&focus=voice')
+  await app.boot({ route: '/settings?tab=settings&sub=ai&focus=voice' })
   const inSettings = page.locator('.operator__section .sound-toggle')
   await expect(inSettings).toBeVisible()
   await inSettings.click()

@@ -1,4 +1,5 @@
-import { test, expect, type Page } from '@playwright/test'
+import type { Page } from '@playwright/test'
+import { test, expect, type App } from './fixtures'
 import { mockApi, seedState, BASE, MMID } from './mocks'
 
 const DAY = 86400
@@ -493,11 +494,10 @@ test.describe('the check-in opens by itself', () => {
 
   // `habitCheckin: true` leaves the trigger armed (seedState answers it for the day
   // by default, so no OTHER spec is navigated off its page mid-test).
-  async function boot(page: Page, when: Date, checkin: Record<string, unknown> = ARMED) {
-    await page.emulateMedia({ reducedMotion: 'reduce' })
+  async function openAt(app: App, when: Date, checkin: Record<string, unknown> = ARMED) {
+    const { page } = app
     await page.clock.install({ time: when })
-    await mockApi(page)
-    await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, habitCheckin: true })
+    await app.boot({ state: { calm: true, habitCheckin: true } })
     await page.addInitScript((c) => localStorage.setItem('babillard-habitudes-checkin', JSON.stringify(c)), checkin)
     // THIS DEVICE IS NOT NEW (2026-09-23). « Le point du jour » stands down for the
     // whole of a device's FIRST day — the first day belongs to the welcome — and a fresh
@@ -513,8 +513,8 @@ test.describe('the check-in opens by itself', () => {
     await page.goto('/board')
   }
 
-  test('opens once on the first app open of a new local day, then not again', async ({ page }) => {
-    await boot(page, at('06:30'))
+  test('opens once on the first app open of a new local day, then not again', async ({ page, app }) => {
+    await openAt(app, at('06:30'))
     // The morning open lands on the scene without any tap.
     await page.locator('.habitudes').waitFor({ state: 'visible', timeout: 15_000 })
     expect(new URL(page.url()).pathname).toBe('/board/habitudes')
@@ -522,28 +522,31 @@ test.describe('the check-in opens by itself', () => {
     // Dismissing IS the answer for the day: going back to the board doesn't re-open it.
     await page.locator('.scene__head .btn').click()
     await page.locator('.hub').waitFor({ state: 'visible' })
+    // Proving the scene did NOT open: nothing marks an absence, so give it the time it would have taken.
     await page.waitForTimeout(500)
     expect(new URL(page.url()).pathname).toBe('/board')
   })
 
-  test('stays shut when the day was already answered on this device', async ({ page }) => {
-    await boot(page, at('06:30'), { autoOpen: true, reminders: false, lastShownDay: MMID, fired: { day: 0, minutes: [] } })
+  test('stays shut when the day was already answered on this device', async ({ page, app }) => {
+    await openAt(app, at('06:30'), { autoOpen: true, reminders: false, lastShownDay: MMID, fired: { day: 0, minutes: [] } })
     await page.locator('.hub').waitFor({ state: 'visible', timeout: 15_000 })
+    // Proving the scene did NOT open: nothing marks an absence, so give it the time it would have taken.
     await page.waitForTimeout(500)
     expect(new URL(page.url()).pathname).toBe('/board')
   })
 
-  test('stays shut when the device opted out of the morning open', async ({ page }) => {
-    await boot(page, at('06:30'), { autoOpen: false, reminders: false, lastShownDay: 0, fired: { day: 0, minutes: [] } })
+  test('stays shut when the device opted out of the morning open', async ({ page, app }) => {
+    await openAt(app, at('06:30'), { autoOpen: false, reminders: false, lastShownDay: 0, fired: { day: 0, minutes: [] } })
     await page.locator('.hub').waitFor({ state: 'visible', timeout: 15_000 })
+    // Proving the scene did NOT open: nothing marks an absence, so give it the time it would have taken.
     await page.waitForTimeout(500)
     expect(new URL(page.url()).pathname).toBe('/board')
   })
 
   // The reminder path, with the morning open already answered so it can't be the
   // thing that fires. hb1's reminder is at 09:00; we boot at 08:55 and roll forward.
-  test('a reminder time opens the scene from the board, once', async ({ page }) => {
-    await boot(page, at('08:55'), { autoOpen: false, reminders: true, lastShownDay: MMID, fired: { day: 0, minutes: [] } })
+  test('a reminder time opens the scene from the board, once', async ({ page, app }) => {
+    await openAt(app, at('08:55'), { autoOpen: false, reminders: true, lastShownDay: MMID, fired: { day: 0, minutes: [] } })
     await page.locator('.hub').waitFor({ state: 'visible', timeout: 15_000 })
     expect(new URL(page.url()).pathname).toBe('/board')
 
@@ -555,16 +558,18 @@ test.describe('the check-in opens by itself', () => {
     await page.locator('.scene__head .btn').click()
     await page.locator('.hub').waitFor({ state: 'visible' })
     await page.clock.fastForward('05:00')
+    // Proving the scene did NOT open: nothing marks an absence, so give it the time it would have taken.
     await page.waitForTimeout(500)
     expect(new URL(page.url()).pathname).toBe('/board')
   })
 
-  test('a reminder never interrupts a form, and stays silent once opted out', async ({ page }) => {
+  test('a reminder never interrupts a form, and stays silent once opted out', async ({ page, app }) => {
     // On a scene (the habit form), a due reminder must not yank the page away.
-    await boot(page, at('08:55'), { autoOpen: false, reminders: true, lastShownDay: MMID, fired: { day: 0, minutes: [] } })
+    await openAt(app, at('08:55'), { autoOpen: false, reminders: true, lastShownDay: MMID, fired: { day: 0, minutes: [] } })
     await page.goto('/habitude/new')
     await page.locator('.habit-form__kinds').waitFor({ state: 'visible', timeout: 15_000 })
     await page.clock.fastForward('06:00')
+    // Proving the scene did NOT open: nothing marks an absence, so give it the time it would have taken.
     await page.waitForTimeout(500)
     expect(new URL(page.url()).pathname).toBe('/habitude/new')
   })

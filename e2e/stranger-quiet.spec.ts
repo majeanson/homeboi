@@ -58,6 +58,7 @@ test('the marketing page, signed out, asks the API for nothing it cannot have', 
   })
   await page.goto('/')
   await expect(page.locator('.home__cta-demo')).toBeVisible()
+  // Proving no request left: nothing marks an absence, so give it the time it would have taken.
   await page.waitForTimeout(2600)
   expect([...new Set(asked)], 'the signed-out door asked for something only a household can have').toEqual([])
 })
