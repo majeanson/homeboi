@@ -1,3 +1,4 @@
+import { dealsKey } from '../lib/queryKeys'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { EmptyState } from '../components/EmptyState'
@@ -54,7 +55,7 @@ export function PriceMatchPage() {
   const dayKey = new Date().toISOString().slice(0, 10)
   const termsParam = terms.length ? terms.join(',') : ''
   const dealsQ = useQuery({
-    queryKey: ['deals', query, termsParam, dayKey],
+    queryKey: dealsKey(query, termsParam, dayKey),
     // Longer than api()'s 20s default: the server walks up to several Flipp
     // searches (one per term) sequentially, which can outrun that on its own.
     queryFn: () =>

@@ -1,3 +1,4 @@
+import { wonderKey } from '../../lib/queryKeys'
 import { useQueries } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
@@ -130,7 +131,7 @@ function WonderGallery({ current, onSelect }: { current: Wonder; onSelect: (s: W
   const t = useT()
   const results = useQueries({
     queries: WONDER_SOURCES.map((source) => ({
-      queryKey: ['wonder', source],
+      queryKey: wonderKey(source),
       queryFn: () => api<{ wonder: Wonder | null }>(`wonder?source=${source}`),
       staleTime: SIX_HOURS,
       retry: false,

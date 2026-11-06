@@ -1,3 +1,4 @@
+import { flyerKey } from '../lib/queryKeys'
 import { useTabParam } from '../lib/tabParam'
 import { IconButton } from './IconButton'
 import { Loading } from './Fallback'
@@ -100,7 +101,7 @@ const FLYER_STALE = 30 * 60 * 1000 // flyers change ~weekly; cache generously
 export async function prefetchFlyer(qc: QueryClient, flyerId: number): Promise<void> {
   const data = await qc
     .fetchQuery({
-      queryKey: ['flyer', flyerId],
+      queryKey: flyerKey(flyerId),
       queryFn: () => api<FlyerResponse>(`flyer?id=${flyerId}`),
       staleTime: FLYER_STALE,
     })
@@ -177,7 +178,7 @@ export function FlyerViewer({
   }, [premium, qc, flyerId])
   // Cached so re-opening the same flyer (or one prefetched on wifi) is instant.
   const { data, isError } = useQuery({
-    queryKey: ['flyer', flyerId],
+    queryKey: flyerKey(flyerId),
     queryFn: () => api<FlyerResponse>(`flyer?id=${flyerId}`),
     staleTime: FLYER_STALE,
   })

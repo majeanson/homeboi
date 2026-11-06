@@ -1,3 +1,4 @@
+import { wonderKey } from '../../lib/queryKeys'
 import { useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api'
@@ -126,7 +127,7 @@ export function useWonder(): { wonder: Wonder | null; shuffle: () => void; pick:
   const enabled = useApodEnabled()
   const [source, setSource] = useState<WonderSource>('bing')
   const { data } = useQuery({
-    queryKey: ['wonder', source],
+    queryKey: wonderKey(source),
     queryFn: () => api<{ wonder: Wonder | null }>(`wonder?source=${source}`),
     enabled,
     staleTime: SIX_HOURS,

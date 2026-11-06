@@ -164,3 +164,8 @@ export const operatorJoinKey = (token: string) => ['operator-join', token]
 // Who can act as this household (operator-invite GET). Used by the Réglages section
 // that mints the link, so the list refreshes the moment someone joins.
 export const OPERATORS_KEY = ['operators']
+
+// Solidify 6.6: each of these was spelled in two files. Prefix invalidation still works.
+export const wonderKey = (source: unknown) => ['wonder', source] as const
+export const flyerKey = (flyerId: unknown) => ['flyer', flyerId] as const
+export const dealsKey = (...parts: unknown[]) => ['deals', ...parts] as const

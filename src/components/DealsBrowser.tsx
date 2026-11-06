@@ -1,3 +1,4 @@
+import { dealsKey } from '../lib/queryKeys'
 import { IconButton } from './IconButton'
 import { SearchField } from './SearchField'
 import { Loading } from './Fallback'
@@ -100,7 +101,7 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
   const dayKey = new Date().toISOString().slice(0, 10)
   const now = Date.now()
   const dealsQ = useQuery({
-    queryKey: ['deals', query, dayKey],
+    queryKey: dealsKey(query, dayKey),
     // Longer than api()'s 20s default: the server walks up to several Flipp
     // searches (one per term) sequentially, which can outrun that on its own.
     queryFn: () => api<{ deals: Deal[] }>(`deals?q=${encodeURIComponent(query)}`, { timeoutMs: 45_000 }),
