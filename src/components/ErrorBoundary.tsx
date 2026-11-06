@@ -14,13 +14,13 @@ interface State {
 }
 
 export class ErrorBoundary extends Component<Props, State> {
-  state: State = { error: null }
+  override state: State = { error: null }
 
   static getDerivedStateFromError(error: Error): State {
     return { error }
   }
 
-  componentDidCatch(error: Error, info: ErrorInfo) {
+  override componentDidCatch(error: Error, info: ErrorInfo) {
     // Surface it for the console / future telemetry. Swallow any logging error so
     // the fallback always renders.
     try {
@@ -30,7 +30,7 @@ export class ErrorBoundary extends Component<Props, State> {
     }
   }
 
-  render() {
+  override render() {
     if (!this.state.error) return this.props.children
     return (
       <div className="errboundary" role="alert">
