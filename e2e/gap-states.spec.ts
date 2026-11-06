@@ -28,7 +28,7 @@ async function boot(page: Page, path: string, theme: Theme, surface: 'mobile' | 
   await seedState(page, { theme, audience: 'parent', lang: 'fr', calm: true, surface })
   await page.goto(path)
   await page.locator('.hub, .page, main').first().waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {})
-  await page.evaluate(() => (document as any).fonts?.ready).catch(() => {})
+  await page.evaluate(() => document.fonts?.ready).catch(() => {})
 }
 
 // ── 1. The destructive CONFIRM dialog (useConfirm) — never screenshotted before.

@@ -17,7 +17,7 @@ async function boot(page: Page, theme: Theme, format: { width: number; height: n
   await seedState(page, { theme, lang: 'fr', calm: true }) // no surface → not "chosen"
   await page.goto('/')
   await page.locator('.home').waitFor({ state: 'visible', timeout: 15_000 })
-  await page.evaluate(() => (document as any).fonts?.ready).catch(() => {})
+  await page.evaluate(() => document.fonts?.ready).catch(() => {})
   await page.waitForTimeout(150)
 }
 

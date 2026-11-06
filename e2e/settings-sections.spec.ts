@@ -29,7 +29,7 @@ async function boot(page: Page, id: string) {
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: 'mobile' })
   await page.goto(`/settings?tab=${id}`)
   await page.locator('.operator__tabs').waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {})
-  await page.evaluate(() => (document as any).fonts?.ready).catch(() => {})
+  await page.evaluate(() => document.fonts?.ready).catch(() => {})
 }
 
 SECTIONS.forEach((id) => {

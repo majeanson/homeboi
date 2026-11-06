@@ -21,7 +21,8 @@ test('the app mounts when indexedDB.open() hangs forever (iOS cold-launch bug)',
   await page.addInitScript(() => {
     const inert = { onsuccess: null, onerror: null, onupgradeneeded: null, onblocked: null, result: null }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ;(window.indexedDB as any).open = () => inert
+    const idb: { open: unknown } = window.indexedDB
+    idb.open = () => inert
   })
   await mockApi(page)
   await seedState(page, { theme: 'night', audience: 'parent', lang: 'fr', surface: 'kiosk' })
@@ -37,7 +38,8 @@ test('the app mounts when indexedDB is unavailable (private mode / disabled stor
   // open() throws. The helpers catch it and resolve null; the app must still boot.
   await page.addInitScript(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ;(window.indexedDB as any).open = () => {
+    const idb: { open: unknown } = window.indexedDB
+    idb.open = () => {
       throw new Error('IndexedDB unavailable')
     }
   })

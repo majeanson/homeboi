@@ -25,7 +25,7 @@ async function boot(
   const { page } = app
   await app.boot({ viewport: format, state: { theme, audience, calm: true, surface }, route: path })
   await page.locator('.hub, .page, main').first().waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {})
-  await page.evaluate(() => (document as any).fonts?.ready).catch(() => {})
+  await page.evaluate(() => document.fonts?.ready).catch(() => {})
 }
 
 const shoot = (page: Page, name: string, fullPage = true) =>

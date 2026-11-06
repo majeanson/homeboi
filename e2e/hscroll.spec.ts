@@ -33,7 +33,7 @@ async function boot(page: Page) {
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: 'mobile' })
   await page.goto('/settings?tab=maison&lens=regler')
   await page.locator(SUBS).waitFor({ state: 'visible', timeout: 15_000 })
-  await page.evaluate(() => (document as any).fonts?.ready).catch(() => {})
+  await page.evaluate(() => document.fonts?.ready).catch(() => {})
 }
 
 const metrics = (page: Page) =>

@@ -15,7 +15,7 @@ async function boot(page: Page, path: string, theme: Theme = 'day') {
   await seedState(page, { theme, audience: 'parent', lang: 'fr', calm: true, surface: 'mobile' })
   await page.goto(path)
   await page.locator('.hub, .page').first().waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {})
-  await page.evaluate(() => (document as any).fonts?.ready).catch(() => {})
+  await page.evaluate(() => document.fonts?.ready).catch(() => {})
 }
 
 const shoot = (page: Page, name: string) => page.screenshot({ path: `e2e/screenshots/${name}.png` })

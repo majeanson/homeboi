@@ -31,7 +31,7 @@ const STATES = [
 
 async function settle(page: Page, ready: string) {
   await page.locator(ready).first().waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {})
-  await page.evaluate(() => (document as any).fonts?.ready).catch(() => {})
+  await page.evaluate(() => document.fonts?.ready).catch(() => {})
   await page.waitForTimeout(500)
 }
 

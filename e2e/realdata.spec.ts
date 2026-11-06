@@ -72,7 +72,7 @@ async function login(page: Page, context: BrowserContext) {
 
 async function settle(page: Page, ready = '.hub') {
   await page.locator(ready).first().waitFor({ state: 'visible', timeout: 20_000 }).catch(() => {})
-  await page.evaluate(() => (document as any).fonts?.ready).catch(() => {})
+  await page.evaluate(() => document.fonts?.ready).catch(() => {})
   await page.waitForTimeout(600)
 }
 
@@ -350,7 +350,7 @@ test('real scenes @phone-tall', async ({ page, context }) => {
   for (const s of scenes) {
     await page.goto(s.path)
     await page.locator(s.ready.split(',')[0].trim()).first().waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {})
-    await page.evaluate(() => (document as any).fonts?.ready).catch(() => {})
+    await page.evaluate(() => document.fonts?.ready).catch(() => {})
     await page.waitForTimeout(600)
     await page.screenshot({ path: `e2e/screenshots/real-scene-${s.name}.png`, fullPage: true })
     const over = await page.evaluate(() => {

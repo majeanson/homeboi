@@ -36,7 +36,7 @@ const FORMATS = [
 
 async function settle(page: Page) {
   await page.locator('.hub').first().waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {})
-  await page.evaluate(() => (document as any).fonts?.ready).catch(() => {})
+  await page.evaluate(() => document.fonts?.ready).catch(() => {})
   await page.waitForTimeout(400)
 }
 

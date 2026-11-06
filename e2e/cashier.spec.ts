@@ -80,7 +80,7 @@ async function openGrid(
   await page.locator('.hub').first().waitFor({ state: 'visible', timeout: 15_000 })
   await page.getByRole('button', { name: /Montrer à la caisse/ }).click()
   await page.locator('.cashier__tile').first().waitFor({ state: 'visible', timeout: 15_000 })
-  await page.evaluate(() => (document as any).fonts?.ready).catch(() => {})
+  await page.evaluate(() => document.fonts?.ready).catch(() => {})
 }
 
 // Tap a tile → its full-screen proof peek.

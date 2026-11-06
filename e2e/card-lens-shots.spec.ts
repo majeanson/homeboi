@@ -49,7 +49,7 @@ async function shoot(page: Page, card: BoardCardId, f: Face) {
   await page.goto('/board')
   const slot = page.locator(`.wg-slot[data-card="${card}"]`)
   await slot.first().waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {})
-  await page.evaluate(() => (document as any).fonts?.ready).catch(() => {})
+  await page.evaluate(() => document.fonts?.ready).catch(() => {})
   await page.waitForTimeout(400)
   await slot
     .first()
