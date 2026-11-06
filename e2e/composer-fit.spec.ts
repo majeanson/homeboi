@@ -105,15 +105,15 @@ for (const width of [360, 390]) {
 
       await assertClean(page, `${c.name} composer`)
 
-      const m = await measure(page, field)
+      const m = (await measure(page, field))!
       expect(m, `${c.name}: no field found at ${field}`).not.toBeNull()
       // Printed on every run: this is the number you read off to set a floor.
-      console.log(`[composer-fit] ${c.name} @${width}: ${m!.width}px typing width, placeholder « ${m!.placeholder} » needs ${m!.placeholderPx}px`)
+      console.log(`[composer-fit] ${c.name} @${width}: ${m.width}px typing width, placeholder « ${m.placeholder} » needs ${m.placeholderPx}px`)
 
       expect(
-        m!.width,
-        `${c.name} @${width}: ${m!.width}px of typing width, floor is ${c.floor[width]}px. This floor only moves UP — see the header of this file.`,
-      ).toBeGreaterThanOrEqual(c.floor[width])
+        m.width,
+        `${c.name} @${width}: ${m.width}px of typing width, floor is ${c.floor[width]}px. This floor only moves UP — see the header of this file.`,
+      ).toBeGreaterThanOrEqual(c.floor[width]!)
 
       // Minus 3: canvas metrics vs real layout differ by a couple px across
       // platforms (CI's Linux fonts measured this exact placeholder 1px wider
@@ -121,9 +121,9 @@ for (const width of [360, 390]) {
       // is tens of px over (« Ajouter un » was ~54px short) — sub-glyph slack
       // keeps the guard meaningful without a 1px cross-platform flake.
       expect(
-        m!.width,
-        `${c.name} @${width}: the placeholder « ${m!.placeholder} » needs ${m!.placeholderPx}px but the field is ${m!.width}px — it renders clipped.`,
-      ).toBeGreaterThanOrEqual(m!.placeholderPx - 3)
+        m.width,
+        `${c.name} @${width}: the placeholder « ${m.placeholder} » needs ${m.placeholderPx}px but the field is ${m.width}px — it renders clipped.`,
+      ).toBeGreaterThanOrEqual(m.placeholderPx - 3)
     })
   }
 }
@@ -155,16 +155,16 @@ for (const width of [360, 390]) {
       await page.goto(f.route)
       await expect(page.locator(f.field).first()).toBeVisible({ timeout: 15_000 })
 
-      const m = await measure(page, f.field)
+      const m = (await measure(page, f.field))!
       expect(m, `${f.name}: no field found at ${f.field}`).not.toBeNull()
-      expect(m!.placeholder.length, `${f.name}: the field has no placeholder to measure`).toBeGreaterThan(0)
-      console.log(`[scene-fit] ${f.name} @${width}: ${m!.width}px wide, placeholder « ${m!.placeholder} » needs ${m!.placeholderPx}px`)
+      expect(m.placeholder.length, `${f.name}: the field has no placeholder to measure`).toBeGreaterThan(0)
+      console.log(`[scene-fit] ${f.name} @${width}: ${m.width}px wide, placeholder « ${m.placeholder} » needs ${m.placeholderPx}px`)
 
       // Same −3 slack as the composer block, for the same cross-platform reason.
       expect(
-        m!.width,
-        `${f.name} @${width}: the placeholder « ${m!.placeholder} » needs ${m!.placeholderPx}px but the field is ${m!.width}px — it renders clipped.`,
-      ).toBeGreaterThanOrEqual(m!.placeholderPx - 3)
+        m.width,
+        `${f.name} @${width}: the placeholder « ${m.placeholder} » needs ${m.placeholderPx}px but the field is ${m.width}px — it renders clipped.`,
+      ).toBeGreaterThanOrEqual(m.placeholderPx - 3)
     })
   }
 }

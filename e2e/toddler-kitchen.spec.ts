@@ -75,7 +75,7 @@ test('a child’s pick is an IDEA, never a plan — meal-ideas is written, meals
 
   await expect.poll(() => writes.length, { timeout: 5000 }).toBeGreaterThan(0)
   expect(writes.map((w) => w.path)).toEqual(['meal-ideas'])
-  const body = JSON.parse(writes[0].body || '{}')
+  const body = JSON.parse(writes[0]!.body || '{}')
   expect(body).toMatchObject({ title: 'Tacos au poulet', recipeId: 'rc2' })
   expect(typeof body.date, 'the idea carries the day the child chose').toBe('number')
   // The pick closes itself, so a wandering finger can't fire it twice.

@@ -25,7 +25,7 @@ const DECK = [
 
 // Fourteen steps with the kind of label a parent actually types.
 const LONG_DECK = Array.from({ length: 14 }, (_, i) => ({
-  icon: ['🛏️', '🚽', '🧼', '🪥', '👕', '🧦', '👟', '🥣', '🧃', '🎒', '🧥', '🧤', '🚗', '👋'][i],
+  icon: ['🛏️', '🚽', '🧼', '🪥', '👕', '🧦', '👟', '🥣', '🧃', '🎒', '🧥', '🧤', '🚗', '👋'][i]!,
   label: `Étape numéro ${i + 1} : une consigne assez longue pour passer à la ligne`,
 }))
 
@@ -67,7 +67,7 @@ async function serve(
         ],
       }
       // A second routine, so the kiosk has a face picker to drift back to.
-      if (opts.second) snap.routines.push({ ...snap.routines[0], id: 'ry', name: 'Dodo', memberName: 'Noah', memberId: 'm4', doneIdx: [], timers: {} })
+      if (opts.second) snap.routines.push({ ...snap.routines[0]!, id: 'ry', name: 'Dodo', memberName: 'Noah', memberId: 'm4', doneIdx: [], timers: {} })
       if (getDelay) await new Promise((r) => setTimeout(r, getDelay))
       return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(snap) })
     }

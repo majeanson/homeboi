@@ -32,7 +32,7 @@ test('a deleted event stays gone across a remount, then « Annuler » restores i
   await page.goto('/settings?tab=board&lens=regler&sub=events')
   await page.locator('.operator').waitFor({ state: 'visible', timeout: 15_000 })
 
-  const title = (ROUTES.events as { events: { title: string }[] }).events[0].title
+  const title = (ROUTES.events as { events: { title: string }[] }).events[0]!.title
   const row = () => page.locator('.operator__list li', { hasText: title })
   await expect(row()).toBeVisible()
 

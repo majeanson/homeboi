@@ -34,7 +34,7 @@ async function addCards(form: import('@playwright/test').Locator, words: string[
     await expect(form.getByLabel('mot', { exact: true })).toHaveCount(i + 1)
   }
   const inputs = form.getByLabel('mot', { exact: true })
-  for (let i = 0; i < words.length; i++) await inputs.nth(i).fill(words[i])
+  for (let i = 0; i < words.length; i++) await inputs.nth(i).fill(words[i]!)
 }
 
 // Submit and return the parsed POST /routines body.

@@ -54,7 +54,7 @@ async function login(page: Page, context: BrowserContext) {
     .headersArray()
     .filter((h) => h.name.toLowerCase() === 'set-cookie')
     .map((h) => {
-      const pair = h.value.split(';')[0]
+      const pair = h.value.split(';')[0]!
       const eq = pair.indexOf('=')
       return {
         name: pair.slice(0, eq).trim(),
@@ -349,7 +349,7 @@ test('real scenes @phone-tall', async ({ page, context }) => {
   ]
   for (const s of scenes) {
     await page.goto(s.path)
-    await page.locator(s.ready.split(',')[0].trim()).first().waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {})
+    await page.locator(s.ready.split(',')[0]!.trim()).first().waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {})
     await page.evaluate(() => document.fonts?.ready).catch(() => {})
     await page.waitForTimeout(600)
     await page.screenshot({ path: `e2e/screenshots/real-scene-${s.name}.png`, fullPage: true })

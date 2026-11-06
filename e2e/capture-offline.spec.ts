@@ -57,10 +57,10 @@ test('an offline capture queues (queued confirmation, input cleared, pending cou
     page.context().setOffline(false),
   ])
   expect(capturePosts.length).toBe(1)
-  expect(capturePosts[0].headers()['idempotency-key']).toBeTruthy()
+  expect(capturePosts[0]?.headers()['idempotency-key']).toBeTruthy()
 
   // The replayed body is the raw text — routing stayed server-side, just deferred.
-  const body = JSON.parse(capturePosts[0].postData() || '{}')
+  const body = JSON.parse(capturePosts[0]!.postData() || '{}')
   expect(body.text).toBe('Acheter du lait')
 
   // And the outbox drains — the pending stamp clears once the write lands.
@@ -135,6 +135,6 @@ test('a share-target capture made offline queues instead of vanishing, then repl
     page.context().setOffline(false),
   ])
   expect(capturePosts.length).toBe(1)
-  expect(capturePosts[0].headers()['idempotency-key']).toBeTruthy()
-  expect(JSON.parse(capturePosts[0].postData() || '{}').text).toBe('https://example.com/recette-de-tarte')
+  expect(capturePosts[0]?.headers()['idempotency-key']).toBeTruthy()
+  expect(JSON.parse(capturePosts[0]!.postData() || '{}').text).toBe('https://example.com/recette-de-tarte')
 })

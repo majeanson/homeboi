@@ -123,7 +123,7 @@ async function runBookmarklet(page: Page, payload: string) {
 }
 
 test('1 · a real « Ajouter à la liste » still stores the shape lib/flippList writes', async ({ page, request }) => {
-  const [it] = await liveDeals(request, ['lait', 'pain'], 1)
+  const it = (await liveDeals(request, ['lait', 'pain'], 1))[0]!
   await open(page, `/fr-ca/item/${it.flyer_item_id}?postal_code=${POSTAL}`)
   await expect(page.getByText(it.name!.slice(0, 20), { exact: false }).first()).toBeVisible({ timeout: 30_000 })
   await page.locator('button', { hasText: /ajouter à la liste/i }).first().click()
@@ -141,14 +141,14 @@ test('1 · a real « Ajouter à la liste » still stores the shape lib/flippList
   for (const key of ['_outstandingOps', 'flyerItemClippings', 'listItems', 'photos', 'ecomItems', '_delegate']) {
     expect(theirs, `top-level key "${key}" — their dump: ${raw}`).toHaveProperty(key)
   }
-  const real = theirs.flyerItemClippings.find((c) => c.flyerItemId === it.flyer_item_id)
+  const real = theirs.flyerItemClippings.find((c) => c.flyerItemId === it.flyer_item_id)!
   expect(real, `their clipping for ${it.flyer_item_id} — dump: ${raw}`).toBeTruthy()
   // Clipping: theirs ⊇ ours, and the two typed facts that matter.
   for (const key of Object.keys(ourClipping)) {
     expect(real, `clipping key "${key}" — their clipping: ${JSON.stringify(real)}`).toHaveProperty(key)
   }
-  expect(real!.id).toBe(`item-clipping-${it.flyer_item_id}`)
-  expect(typeof real!.price, 'price is stored as a STRING').toBe('string')
+  expect(real.id).toBe(`item-clipping-${it.flyer_item_id}`)
+  expect(typeof real.price, 'price is stored as a STRING').toBe('string')
   await shot(page, '1-item-added')
 })
 
@@ -179,7 +179,7 @@ test('2 · the bookmarklet renders a payload on their real list page, by store',
 })
 
 test('3 · the routes still hold: item page needs a postal; bare /liste_dachats is the list, the prefixed one is not', async ({ page, request }) => {
-  const [it] = await liveDeals(request, ['lait', 'pain'], 1)
+  const it = (await liveDeals(request, ['lait', 'pain'], 1))[0]!
   // Without a postal code, in a FRESH browser: not the item (Flipp's error state) —
   // which is why lib/deals builds no door. Fresh matters: once any page has been
   // opened with a postal, flipp.com remembers it (`location_info` in storage) and

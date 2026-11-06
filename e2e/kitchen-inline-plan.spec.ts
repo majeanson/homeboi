@@ -82,7 +82,7 @@ test('planning a day low in the week brings the field AND its options on screen'
     const target = btns[btns.length - 1]
     // Scroll so the target's row sits ~120px above the fold: visible, tappable, with
     // no room beneath it for a dropdown.
-    const row = target.closest('.kitchen__day') as HTMLElement
+    const row = target!.closest('.kitchen__day') as HTMLElement
     scroller.scrollTop += row.getBoundingClientRect().top - (window.innerHeight - 120)
     return btns.length - 1
   })

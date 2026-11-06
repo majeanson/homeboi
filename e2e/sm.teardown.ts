@@ -145,7 +145,7 @@ export default function mergeManifest() {
   // first version, which only asked "did this run produce anything at all?" and then
   // watched a two-test `-g` run delete all 154 other PNGs.
   const orphans: string[] = []
-  const whole = states.length > 0 && states.length === states[0].expectedStates
+  const whole = states.length > 0 && states.length === states[0]!.expectedStates
   if (whole) {
     const live = new Set(states.flatMap((s) => s.frames ?? [`${s.name}.png`]))
     for (const f of readdirSync(dir).filter((f) => f.endsWith('.png'))) {

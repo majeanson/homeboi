@@ -146,8 +146,8 @@ test('link import, AI-organised: verify beside the page text, guide the AI, conf
   await hintField.fill('garde les étapes telles quelles')
   await modal.getByRole('button', { name: 'Réessayer' }).click()
   await expect.poll(() => bodies.length).toBe(2)
-  expect(bodies[1].hint).toBe('garde les étapes telles quelles')
-  expect(bodies[1].url).toBe('https://www.example.test/recette')
+  expect(bodies[1]?.hint).toBe('garde les étapes telles quelles')
+  expect(bodies[1]?.url).toBe('https://www.example.test/recette')
   await expect(modal.getByTestId('read-review-audit')).toHaveCount(0)
 
   // Confirm → the checked read lands, and the form says how it was read.
@@ -373,9 +373,9 @@ test('saving a NEW recipe already in the book asks: « Remplacer » overwrites i
   await expect(dialog).toContainText('Remplacer « Tacos au poulet », déjà dans le livre ?')
   await dialog.getByRole('button', { name: 'Remplacer' }).click()
   await expect.poll(() => writes.length).toBe(1)
-  expect(writes[0].method).toBe('PATCH')
-  expect(writes[0].body.id).toBe('rc2')
-  expect(writes[0].body.title).toBe('Lasagne du dimanche')
+  expect(writes[0]?.method).toBe('PATCH')
+  expect(writes[0]?.body.id).toBe('rc2')
+  expect(writes[0]?.body.title).toBe('Lasagne du dimanche')
 
   // Same NAME, no link: « Garder les deux » = a POST, a deliberate copy.
   await page.goto('/kitchen/recipe/new')
@@ -385,8 +385,8 @@ test('saving a NEW recipe already in the book asks: « Remplacer » overwrites i
   await expect(page.locator('.confirm')).toContainText('Remplacer « Tacos au poulet »')
   await page.locator('.confirm').getByRole('button', { name: 'Garder les deux' }).click()
   await expect.poll(() => writes.length).toBe(2)
-  expect(writes[1].method).toBe('POST')
-  expect(writes[1].body.id).toBeUndefined()
+  expect(writes[1]?.method).toBe('POST')
+  expect(writes[1]!.body.id).toBeUndefined()
 })
 
 // ---- Progress you can SEE (Marc, 2026-10-27: « so the user doesn't feel like it's

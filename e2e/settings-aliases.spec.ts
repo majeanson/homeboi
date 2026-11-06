@@ -57,7 +57,7 @@ for (const [old, target] of TAB_CASES) {
 // on screen (`id="op-<key>"`, from SETTINGS_TREE) — never by pill label, so the
 // next rename or reshuffle changes this file's data, not its assertions.
 const firstAnchor = (tab: keyof typeof SETTINGS_TREE, sub: string) =>
-  `#op-${(SETTINGS_TREE[tab] as Record<string, readonly { key: string }[]>)[sub][0].key}`
+  `#op-${(SETTINGS_TREE[tab] as Record<string, readonly { key: string }[]>)[sub]![0]!.key}`
 const expectSub = (page: Page, tab: keyof typeof SETTINGS_TREE, sub: string) =>
   expect(page.locator(firstAnchor(tab, sub))).toBeVisible()
 

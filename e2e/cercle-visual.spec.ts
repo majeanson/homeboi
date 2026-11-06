@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 import { mockApi, seedState, type Theme } from './mocks'
-import { settled } from './measure'
+import { boxOf, settled } from './measure'
 
 // Visual sweep for « Le cercle » — now Maison's Famille/Social sections (the nav
 // restructure merged the old standalone Le cercle tab into /maison) — NOT covered
@@ -135,8 +135,8 @@ for (const width of [390, 1280]) {
       let ratio = Infinity // (centre distance) / (disc diameter); < 1 means overlap
       for (let i = 0; i < circles.length; i++)
         for (let j = i + 1; j < circles.length; j++) {
-          const a = circles[i]
-          const b = circles[j]
+          const a = circles[i]!
+          const b = circles[j]!
           ratio = Math.min(ratio, Math.hypot(a.x - b.x, a.y - b.y) / Math.max(a.d, b.d))
         }
       return { count: circles.length, ratio }
@@ -182,8 +182,8 @@ test('social tree — families are framed, and friendships connect them', async 
   // Sophie ↔ Thomas are friends and both parents, so the alignment puts them level:
   // the friendship reads as a horizontal line rather than a diagonal across the forest.
   const y = async (name: string) => {
-    const box = await page.locator(`.cercle-tree .ego-node[aria-label*="${name}"] .avatar`).first().boundingBox()
-    return box!.y + box!.height / 2
+    const box = await boxOf(page.locator(`.cercle-tree .ego-node[aria-label*="${name}"] .avatar`).first())
+    return box.y + box.height / 2
   }
   expect(Math.abs((await y('Sophie')) - (await y('Thomas')))).toBeLessThan(2)
   expect(await y('Zoé')).toBeGreaterThan(await y('Sophie')) // children below their parents

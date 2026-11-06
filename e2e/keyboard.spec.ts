@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { settled } from './measure'
+import { boxOf, settled } from './measure'
 
 // Form action buttons + the focused field must stay visible when the on-screen
 // keyboard is up. iOS overlays the keyboard without resizing the layout viewport;
@@ -179,11 +179,10 @@ for (const d of DEVICES) {
     await page.keyboard.type('x')
     await settled(page)
     await page.screenshot({ path: png('tall-memo'), fullPage: false })
-    const box = await memo.boundingBox()
-    expect(box, 'memo has a box').not.toBeNull()
+    const box = await boxOf(memo)
     // Line 1 is at the box's top: that top must be on screen and above the keyboard.
-    expect(box!.y, 'the caret line (box top) is on-screen').toBeGreaterThanOrEqual(-1)
-    expect(box!.y, 'the caret line (box top) is above the keyboard').toBeLessThanOrEqual(VISIBLE - 20)
+    expect(box.y, 'the caret line (box top) is on-screen').toBeGreaterThanOrEqual(-1)
+    expect(box.y, 'the caret line (box top) is above the keyboard').toBeLessThanOrEqual(VISIBLE - 20)
   })
 
   // --- Recipe modal: create form (title input summons the keyboard) ---
@@ -315,11 +314,11 @@ test('kb: extending a selection with the keyboard open is never yanked back up',
   const drift = await scroller.evaluate(async (el) => {
     const lines = [...el.querySelector('.note-tiptap')!.children] as HTMLElement[]
     const sel = document.getSelection()!
-    sel.setBaseAndExtent(lines[2].firstChild ?? lines[2], 0, lines[20].firstChild ?? lines[20], 1)
+    sel.setBaseAndExtent(lines[2]!.firstChild ?? lines[2]!, 0, lines[20]!.firstChild ?? lines[20]!, 1)
     el.scrollTop = el.scrollHeight // the anchor line now sits far above the visible band
     const start = el.scrollTop
     for (let i = 21; i < 28; i++) {
-      sel.extend(lines[i].firstChild ?? lines[i], 1)
+      sel.extend(lines[i]!.firstChild ?? lines[i]!, 1)
       await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
     }
     await new Promise((r) => setTimeout(r, 200))

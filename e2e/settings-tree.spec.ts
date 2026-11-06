@@ -28,7 +28,7 @@ for (const tab of Object.keys(SETTINGS_TREE) as Tab[]) {
     // or an empty button. The exact words live in i18n and are not asserted here.
     for (let i = 0; i < Object.keys(subs).length; i++) {
       const text = (await pills.nth(i).innerText()).trim()
-      expect(text, `pill ${i} of ${tab} (${Object.keys(subs)[i]}, label key ${(SUB_LABEL_KEY[tab] as Record<string, string>)[Object.keys(subs)[i]]})`).not.toBe('')
+      expect(text, `pill ${i} of ${tab} (${Object.keys(subs)[i]}, label key ${(SUB_LABEL_KEY[tab] as Record<string, string>)[Object.keys(subs)[i]!]})`).not.toBe('')
       expect(Object.keys(subs), `pill ${i} of ${tab} shows its id instead of a label`).not.toContain(text)
     }
   })
@@ -53,7 +53,7 @@ for (const tab of Object.keys(SETTINGS_TREE) as Tab[]) {
 // section: one representative per pill, the last one (the hardest to reach).
 for (const tab of Object.keys(SETTINGS_TREE) as Tab[]) {
   for (const [sub, sections] of Object.entries(SETTINGS_TREE[tab] as Record<string, readonly { key: string }[]>)) {
-    const last = sections[sections.length - 1].key
+    const last = sections[sections.length - 1]!.key
     test(`?tab=${tab}&focus=${last} lands on that card with no ?sub spelled (derives ${sub})`, async ({ page, app }) => {
       await app.boot({ ...OPERATOR, route: `/settings?tab=${tab}&focus=${last}` })
       await expect(page.locator(`#op-${last}`)).toBeInViewport()

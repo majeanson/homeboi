@@ -26,7 +26,7 @@ async function openCook(page: Page, audience: 'parent' | 'toddler') {
 // "2 / 6" → [2, 6]
 async function counter(page: Page): Promise<[number, number]> {
   const text = (await page.locator('.cook__count').innerText()).trim()
-  const [a, b] = text.split('/').map((s) => Number(s.trim()))
+  const [a = NaN, b = NaN] = text.split('/').map((s) => Number(s.trim()))
   return [a, b]
 }
 
@@ -164,7 +164,7 @@ test('a parent can flag an ingredient low without leaving the recipe', async ({ 
   await expect.poll(() => posted.length, { timeout: 5000 }).toBe(1)
   // Only the NAME travels — « 250 ml de beurre » would be a recipe line on a
   // shopping reminder, not a thing you're out of.
-  const item = String(posted[0].item ?? '')
+  const item = String(posted[0]!.item ?? '')
   expect(item).toBeTruthy()
   expect(item).not.toMatch(/\d/)
   // It's a TOGGLE, not a one-way flag, and that isn't a preference: cook mode is a
