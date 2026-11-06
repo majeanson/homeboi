@@ -126,7 +126,7 @@ test('the whole merge chain fires: people, then their link, then the pet, then t
   // The relationship rides the ids the two POSTs just returned — the step most likely to
   // be assembled wrong, and the one whose failure is invisible (the people land, unrelated).
   const links = writes.filter((w) => w.path === 'cercle-links')
-  expect(links[0].body).toMatchObject({
+  expect(links[0]?.body).toMatchObject({
     aId: 'cercle-1',
     aKind: 'contact',
     bId: 'cercle-2',
@@ -136,13 +136,13 @@ test('the whole merge chain fires: people, then their link, then the pet, then t
 
   const pets = writes.filter((w) => w.path === 'pets')
   expect(pets).toHaveLength(1)
-  expect(pets[0].body).toMatchObject({ name: 'Grisou', species: 'chat' })
+  expect(pets[0]?.body).toMatchObject({ name: 'Grisou', species: 'chat' })
   // …and the cat is linked to ITS owner (self, index 0), not to whoever came first.
-  expect(links[1].body).toMatchObject({ aId: 'cercle-1', bId: 'pets-4', bKind: 'pet', type: 'owner' })
+  expect(links[1]?.body).toMatchObject({ aId: 'cercle-1', bId: 'pets-4', bKind: 'pet', type: 'owner' })
 
   // The shared family's NAME becomes a group, and both people join it.
   const groups = writes.filter((w) => w.path === 'cercle-groups')
-  expect(groups[0].body).toMatchObject({ name: 'Famille Fortier', kind: 'family' })
+  expect(groups[0]?.body).toMatchObject({ name: 'Famille Fortier', kind: 'family' })
   expect(groups.slice(1).map((w) => w.body.personId)).toEqual(['cercle-1', 'cercle-2'])
 })
 

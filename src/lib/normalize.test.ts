@@ -31,7 +31,7 @@ describe('foldRanges', () => {
     // split the final accent from its base char.
     const s = 'déjà vu'.normalize('NFD')
     expect(fold(s)).toBe('deja vu')
-    const [range] = foldRanges(s, 'déjà')
+    const range = (foldRanges(s, 'déjà'))[0]!
     expect(s.slice(range[0], range[1])).toBe('déjà'.normalize('NFD'))
   })
 

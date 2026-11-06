@@ -77,7 +77,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
     const [opUpdate] = await ctx.env.DB.batch(statements)
     // No row moved ⇒ the sweep deleted the sandbox between resolve and claim
     // (the TTL kill switch) — the session is already structurally dead.
-    if ((opUpdate.meta?.changes ?? 0) === 0) return unauthorized()
+    if ((opUpdate?.meta?.changes ?? 0) === 0) return unauthorized()
   } catch {
     return conflict('Un compte existe déjà pour ce courriel — connecte-toi.')
   }

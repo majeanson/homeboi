@@ -43,7 +43,7 @@ describe('recipe fixtures — the site’s steps, all of them, as written', () =
 
   it('a final keeping step (« Se conserve… au réfrigérateur ») survives the JSON-LD path', () => {
     const n = node('ricardo-tarte-au-sucre.json') as { recipeInstructions: { itemListElement: unknown[] }[] }
-    n.recipeInstructions[1].itemListElement.push({ '@type': 'HowToStep', text: 'Se conserve 3 jours au réfrigérateur.' })
+    n.recipeInstructions[1]!.itemListElement.push({ '@type': 'HowToStep', text: 'Se conserve 3 jours au réfrigérateur.' })
     const d = read(n)
     expect(d.steps[d.steps.length - 1]).toBe('Se conserve 3 jours au réfrigérateur.')
   })

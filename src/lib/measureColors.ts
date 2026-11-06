@@ -23,7 +23,7 @@ import { qtyKey, type Measure, type MeasureUnit } from './measure'
 // The six real spoons, left→right on the fan: 1 tbs, 1/2 tbs, 1 tsp, 1/2 tsp,
 // 1/4 tsp, 1/8 tsp. These are the DEFAULTS — a household can recolour each one to
 // match its own physical spoon set in Réglages ▸ Affichage (see lib/measurePrefs).
-export const DEFAULT_MEASURE_COLORS: Record<string, string> = {
+const TOOL_COLORS = {
   // — tablespoon (c. à soupe) —
   '1|tbsp': '#8DB63C', // leaf green   (label "1 tbs")
   '1/2|tbsp': '#8A5A33', // brown        (label "1/2 tbs")
@@ -45,6 +45,9 @@ export const DEFAULT_MEASURE_COLORS: Record<string, string> = {
   '1/4|cup': '#E2A82C', // golden yellow
   '1/8|cup': '#EA9DAE', // pink      (smallest)
 }
+// The keys stay named as well as open, so a swatch in measurePrefs spelling a tool that
+// is not here fails to compile instead of rendering no colour.
+export const DEFAULT_MEASURE_COLORS: Record<string, string> & typeof TOOL_COLORS = TOOL_COLORS
 
 // No colour-coded tool for this amount — a soft, greyed tint per unit so the pill
 // reads as "generic spoon/cup" without competing with the six vivid tool colours.

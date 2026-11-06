@@ -93,7 +93,7 @@ export function parseRecurPhrase(text: string, nowMs: number = Date.now()): Pars
   )
   if (n) {
     const interval = clampN(Number(n[1]))
-    const unit = n[2]
+    const unit = n[2] ?? ''
     if (/^(jour|day)/.test(unit)) return { recur: { freq: 'daily', interval } }
     if (/^(semaine|week)/.test(unit)) return { recur: { freq: 'weekly', interval } }
     if (/^(mois|month)/.test(unit)) return { recur: { freq: 'monthly', interval } }

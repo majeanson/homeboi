@@ -207,8 +207,8 @@ describe('flippListPayload — every pick with a Flipp id as a clipping, every l
 
   it('an older staged deal (no merchantId / box) still clips, with nulls', () => {
     const out = JSON.parse(flippListPayload([pick('a', { merchantId: undefined, box: undefined })])) as FlippPayload
-    expect(out.clippings[0].merchantId).toBeNull()
-    expect(out.clippings[0].left).toBeNull()
+    expect(out.clippings[0]!.merchantId).toBeNull()
+    expect(out.clippings[0]!.left).toBeNull()
   })
 
   it('typed lines ride as items — trimmed, deduped case-insensitively, blanks dropped', () => {
@@ -233,7 +233,7 @@ describe('the bookmarklet, run against a fake flipp.com page — Babillard → F
       ['Oeufs', false],
       ['Beurre', false],
     ])
-    expect(list.listItems[0].id).toMatch(/^oeufs-/)
+    expect(list.listItems[0]?.id).toMatch(/^oeufs-/)
     expect(r.location.href).toBe('/liste_dachats')
   })
 
@@ -267,7 +267,7 @@ describe('the bookmarklet, run against a fake flipp.com page — Babillard → F
     })
     const list = (await run({ stored: existing, prompt: payload, confirm: false })).list! // Annuler = ADD
     expect(list.flyerItemClippings.map((c) => c.flyerItemId)).toEqual([101, 102])
-    expect(list.flyerItemClippings[0].name).toBe('déjà là') // theirs wins; ours only adds
+    expect(list.flyerItemClippings[0]?.name).toBe('déjà là') // theirs wins; ours only adds
     // « oeufs » already there (checked, even) — kept as is, case-insensitively; « Beurre » added.
     expect(list.listItems.map((i) => [i.id, i.term, i.checked])).toEqual([
       ['oeufs-abc', 'oeufs', true],
@@ -336,11 +336,11 @@ describe('flippAddTextsUrl — « Envoyer à Flipp », their /action door', () =
   })
   it('a comma inside a line becomes a space (their splitter is bare), blanks and doubles drop', () => {
     const u = flippAddTextsUrl([' Pain, tranché ', 'pain  tranché', '', 'Oeufs'])!
-    expect(decodeURIComponent(u.split('texts=')[1])).toBe('Pain tranché,Oeufs')
+    expect(decodeURIComponent(u.split('texts=')[1]!)).toBe('Pain tranché,Oeufs')
   })
   it('a percent sign travels as its fullwidth twin — one « % » dropped their whole batch', () => {
     const u = flippAddTextsUrl(['Lait 2%', 'Yogourt 100% naturel'])!
-    const texts = decodeURIComponent(u.split('texts=')[1])
+    const texts = decodeURIComponent(u.split('texts=')[1]!)
     expect(texts).toBe('Lait 2％,Yogourt 100％ naturel')
     expect(texts).not.toContain('%')
     // …and what their handler does next (decodeURIComponent on the decoded value) no longer throws.
@@ -351,7 +351,7 @@ describe('flippAddTextsUrl — « Envoyer à Flipp », their /action door', () =
     expect(flippSendText('POITRINES DE POULET DÉSOSSÉES SANS PEAU FORMAT FAMILIAL 2 KG')).toBe('POITRINES DE POULET DÉSOSSÉES SANS PEAU')
     expect(flippSendText('Lait')).toBe('Lait')
     const u = flippAddTextsUrl(['MIEL BILLY BEE | BILLY BEE HONEY 500 g', 'Miel Billy Bee'])!
-    expect(decodeURIComponent(u.split('texts=')[1])).toBe('MIEL BILLY BEE') // and the two are one line
+    expect(decodeURIComponent(u.split('texts=')[1]!)).toBe('MIEL BILLY BEE') // and the two are one line
   })
   it('nothing to send → null (the caller falls back to the plain list door)', () => {
     expect(flippAddTextsUrl([], 'H2X 1Y4')).toBeNull()
@@ -381,7 +381,7 @@ describe('the bookmarklet, SIGNED IN — the account list, by their own join PUT
       'GET /v1/users/4242/shopping_lists/L1',
       'PUT /v1/users/4242/shopping_lists/L1',
     ])
-    const put = r.calls[2].body as { commit_version: number; _ops: { verb: string; object: Record<string, unknown> }[] }
+    const put = r.calls[2]!.body as { commit_version: number; _ops: { verb: string; object: Record<string, unknown> }[] }
     expect(put.commit_version).toBe(7)
     expect(put._ops.map((o) => [o.verb, o.object.type, o.object.flyer_item_id ?? o.object.term])).toEqual([
       ['post', 'flyer_item_clipping', 101],
@@ -390,7 +390,7 @@ describe('the bookmarklet, SIGNED IN — the account list, by their own join PUT
       ['post', 'list_item', 'Beurre'],
     ])
     // The clipping op is the object their SLFlyerItemClipping.createOp('post') builds.
-    expect(put._ops[0].object).toEqual({
+    expect(put._ops[0]?.object).toEqual({
       id: null,
       commit_version: null,
       type: 'flyer_item_clipping',
@@ -417,13 +417,13 @@ describe('the bookmarklet, SIGNED IN — the account list, by their own join PUT
     const item101 = { id: 101, flyer_id: 5001, left: 100.5, right: 200.5, top: -10, bottom: -110, cutout_image_url: 'http://f.wishabi.net/page_items/1/cut.jpg', current_price: 4.49, valid_to: '2026-09-16T23:59:59-04:00', merchant_id: 3384 }
     const r = await run({ cookie: SIGNED_IN, prompt: noBox, items: { 101: item101 } })
     expect(r.calls.map((c) => c.method)).toEqual(['GET', 'GET', 'GET', 'PUT']) // item, lists, list, put
-    const put = r.calls[3].body as { _ops: { object: Record<string, unknown> }[] }
+    const put = r.calls[3]!.body as { _ops: { object: Record<string, unknown> }[] }
     expect(put._ops.map((o) => [o.object.type, o.object.flyer_item_id ?? o.object.term])).toEqual([
       ['flyer_item_clipping', 101],
       ['flyer_item_clipping', 102],
       ['list_item', 'Oeufs'],
     ])
-    const clip = put._ops[0].object
+    const clip = put._ops[0]!.object
     expect([clip.left, clip.right, clip.top, clip.bottom]).toEqual([100.5, 200.5, -10, -110])
     expect(clip.thumbnail_url).toBe('https://f.wishabi.net/page_items/1/cut.jpg') // the cutout, https
     expect(clip.price).toBe('4.49') // the missing price, as a string
@@ -441,7 +441,7 @@ describe('the bookmarklet, SIGNED IN — the account list, by their own join PUT
   it('a clipping WITHOUT its box that Flipp no longer knows (404) goes as a typed item (its short name), never as a clipping — one null-geometry row breaks their whole list layout', async () => {
     const noBox = flippListPayload([pick('a', { box: null, name: 'MIEL BILLY BEE | BILLY BEE HONEY 500 g' }), pick('b', { id: 102, name: 'Pain' })], ['Oeufs'])
     const r = await run({ cookie: SIGNED_IN, prompt: noBox }) // Flipp knows nothing of item 101 → 404 → a word
-    expect(r.calls[0].url).toMatch(/\/bf\/flipp\/items\/101\?locale=fr-ca$/)
+    expect(r.calls[0]?.url).toMatch(/\/bf\/flipp\/items\/101\?locale=fr-ca$/)
     const put = r.calls.find((c) => c.method === 'PUT')!.body as { _ops: { object: Record<string, unknown> }[] }
     expect(put._ops.map((o) => [o.object.type, o.object.flyer_item_id ?? o.object.term])).toEqual([
       ['flyer_item_clipping', 102],
@@ -453,14 +453,14 @@ describe('the bookmarklet, SIGNED IN — the account list, by their own join PUT
 
   it('never re-posts a clipping or a term the account list already has (their own uniqueness)', async () => {
     const r = await run({ cookie: SIGNED_IN, prompt: payload, confirm: false, account: { commit_version: 3, flyer_item_clippings: [{ id: 9, flyer_item_id: 101 }], list_items: [{ id: 8, term: 'oeufs' }] } })
-    const put = r.calls[2].body as { _ops: { object: Record<string, unknown> }[] }
+    const put = r.calls[2]!.body as { _ops: { object: Record<string, unknown> }[] }
     expect(put._ops.map((o) => o.object.flyer_item_id ?? o.object.term)).toEqual([102, 'Beurre'])
   })
 
   it('no list on the account yet → POST one, then PUT into it', async () => {
     const r = await run({ cookie: SIGNED_IN, prompt: payload, account: null })
     expect(r.calls.map((c) => c.method)).toEqual(['GET', 'POST', 'GET', 'PUT'])
-    expect(r.calls[3].url).toMatch(/\/shopping_lists\/L-new$/)
+    expect(r.calls[3]?.url).toMatch(/\/shopping_lists\/L-new$/)
   })
 
   it('their API refusing (a 401 on the lists) → says so with the step and status, writes nothing, goes nowhere', async () => {
@@ -481,7 +481,7 @@ describe('the bookmarklet, SIGNED IN — the account list, by their own join PUT
   it('agrees with its readable twin, flippAccountOps', async () => {
     const account = { commit_version: 1, flyer_item_clippings: [{ id: 1, flyer_item_id: 102 }], list_items: [{ id: 2, term: 'Beurre' }] }
     const r = await run({ cookie: SIGNED_IN, prompt: payload, confirm: false, account })
-    const put = r.calls[2].body as { _ops: unknown[] }
+    const put = r.calls[2]!.body as { _ops: unknown[] }
     expect(put._ops).toEqual(flippAccountOps(account, JSON.parse(payload) as FlippPayload))
   })
 
@@ -493,7 +493,7 @@ describe('the bookmarklet, SIGNED IN — the account list, by their own join PUT
     }
     const r = await run({ cookie: SIGNED_IN, prompt: payload, confirm: true, account })
     expect(r.calls.map((c) => c.method)).toEqual(['GET', 'GET', 'PUT'])
-    const put = r.calls[2].body as { commit_version: number; _ops: { verb: string; object: Record<string, unknown> }[] }
+    const put = r.calls[2]!.body as { commit_version: number; _ops: { verb: string; object: Record<string, unknown> }[] }
     expect(put.commit_version).toBe(4)
     expect(put._ops.map((o) => [o.verb, o.object.type, o.object.id ?? o.object.flyer_item_id ?? o.object.term])).toEqual([
       ['delete', 'flyer_item_clipping', 'old1'],
@@ -636,7 +636,7 @@ describe('the SHEET the bookmark draws on flipp.com — real buttons, the right 
     const account = { commit_version: 4, flyer_item_clippings: [{ id: 'old1', commit_version: 2, flyer_item_id: 555 }], list_items: [] }
     const r = await run({ dom: true, cookie: SIGNED_IN, clipboard: payload, account })
     const after = await r.click('replace')
-    const put = after.calls[2].body as { _ops: { verb: string; object: Record<string, unknown> }[] }
+    const put = after.calls[2]!.body as { _ops: { verb: string; object: Record<string, unknown> }[] }
     expect(put._ops.map((o) => o.verb)).toEqual(['delete', 'post', 'post', 'post', 'post'])
   })
 
@@ -649,7 +649,7 @@ describe('the SHEET the bookmark draws on flipp.com — real buttons, the right 
     expect(r.sheet()).toEqual(['clear', 'cancel'])
     expect(r.sheetTitle()).toMatch(/^Vider ta liste Flipp \? Tout ce qui s’y trouve/)
     const after = await r.click('clear')
-    const put = after.calls[2].body as { _ops: { verb: string }[] }
+    const put = after.calls[2]!.body as { _ops: { verb: string }[] }
     expect(put._ops.map((o) => o.verb)).toEqual(['delete', 'delete'])
     expect(after.location.href).toBe('/liste_dachats')
   })
@@ -685,7 +685,7 @@ describe('« Vider ma liste Flipp » — the clear payload, and « vider » in t
   it('the till payload parses as a clear; signed in → one delete op per row, echoing id + commit_version, then their list page', async () => {
     const r = await run({ cookie: SIGNED_IN, clipboard: FLIPP_CLEAR_PAYLOAD, confirm: true, account })
     expect(r.prompts).toEqual([])
-    const put = r.calls[2].body as { commit_version: number; _ops: { verb: string; object: Record<string, unknown> }[] }
+    const put = r.calls[2]!.body as { commit_version: number; _ops: { verb: string; object: Record<string, unknown> }[] }
     expect(put.commit_version).toBe(5)
     expect(put._ops.map((o) => [o.verb, o.object.type, o.object.id, o.object.commit_version])).toEqual([
       ['delete', 'flyer_item_clipping', 'c1', 2],

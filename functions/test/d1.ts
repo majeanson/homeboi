@@ -44,7 +44,7 @@ export function anon(path: string, init?: FetchInit): Promise<Response> {
 function cookiesFrom(res: Response): { cookie: string; csrf: string } {
   // getSetCookie() exists in workerd; the pinned workers-types predate it.
   const set = (res.headers as unknown as { getSetCookie(): string[] }).getSetCookie()
-  const pick = (name: string) => set.find((c: string) => c.startsWith(`${name}=`))?.split(';')[0].slice(name.length + 1) ?? ''
+  const pick = (name: string) => set.find((c: string) => c.startsWith(`${name}=`))?.split(';')[0]?.slice(name.length + 1) ?? ''
   const session = pick('bb_session')
   const csrf = pick('bb_csrf')
   if (!session || !csrf) throw new Error(`no session cookies on ${res.status}: ${set.join(' | ')}`)

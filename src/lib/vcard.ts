@@ -79,7 +79,7 @@ function splitProp(line: string): { name: string; value: string } | null {
   const i = line.indexOf(':')
   if (i < 0) return null
   const head = line.slice(0, i)
-  const name = head.split(';')[0].trim().toUpperCase()
+  const name = (head.split(';')[0] ?? '').trim().toUpperCase()
   return { name, value: line.slice(i + 1) }
 }
 

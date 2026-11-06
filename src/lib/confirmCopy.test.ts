@@ -105,7 +105,7 @@ describe('every confirm() takes its message from a …Confirm key', () => {
       if (rel in NOT_A_DESTRUCTIVE_DIALOG) continue
       const src = blankComments(readFileSync(f, 'utf8'))
       for (const m of src.matchAll(/\bconfirm\(\{[\s\S]{0,200}?message:\s*([^,\n}]+)/g)) {
-        if (!/Confirm\b/.test(m[1])) stray.push(`${rel}: ${m[1]}`)
+        if (!/Confirm\b/.test(m[1]!)) stray.push(`${rel}: ${m[1]}`)
       }
     }
     expect(stray, 'add a …Confirm string that says what is lost').toEqual([])

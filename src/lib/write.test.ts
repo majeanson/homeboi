@@ -56,7 +56,7 @@ describe('writeWith — B-9 idempotency', () => {
     await writeWith(qc, 'list', { method: 'POST', body: { text: 'Lait' } })
 
     expect(apiMock).toHaveBeenCalledOnce()
-    const [path, opts] = apiMock.mock.calls[0]
+    const [path, opts] = apiMock.mock.calls[0]!
     expect(path).toBe('list')
     expect(opts?.idempotencyKey).toBeTruthy()
     expect(enqueueMock).not.toHaveBeenCalled() // it landed online — nothing queued
@@ -73,8 +73,8 @@ describe('writeWith — B-9 idempotency', () => {
     expect(apiMock).toHaveBeenCalledOnce()
     expect(enqueueMock).toHaveBeenCalledOnce()
 
-    const sentKey = apiMock.mock.calls[0][1]?.idempotencyKey as string | undefined
-    const queuedKey = enqueueMock.mock.calls[0][0].key as string | undefined
+    const sentKey = apiMock.mock.calls[0]![1]?.idempotencyKey as string | undefined
+    const queuedKey = enqueueMock.mock.calls[0]![0].key as string | undefined
     expect(sentKey).toBeTruthy()
     expect(queuedKey).toBe(sentKey) // NOT a fresh uuid — the B-9 fix
   })

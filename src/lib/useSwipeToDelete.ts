@@ -55,16 +55,20 @@ export function useSwipeToDelete(ref: RefObject<HTMLElement | null>, onDelete: (
       if (e.touches.length !== 1) return
       skip = !!(e.target as Element)?.closest?.('[data-dnd-grip]')
       if (skip) return
-      startX = e.touches[0].clientX
-      startY = e.touches[0].clientY
+      const touch = e.touches[0]
+      if (!touch) return
+      startX = touch.clientX
+      startY = touch.clientY
       dx = 0
       axis = 'undecided'
       el.style.transition = 'none'
     }
     const onMove = (e: TouchEvent) => {
       if (skip) return
-      const ddx = e.touches[0].clientX - startX
-      const ddy = e.touches[0].clientY - startY
+      const touch = e.touches[0]
+      if (!touch) return
+      const ddx = touch.clientX - startX
+      const ddy = touch.clientY - startY
       if (axis === 'undecided') {
         if (Math.abs(ddx) < ARM_PX && Math.abs(ddy) < ARM_PX) return
         // Vertical-biased axis lock — the gesture is a SCROLL unless it's plainly a

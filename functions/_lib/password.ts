@@ -54,8 +54,8 @@ export async function verifyPassword(password: string, stored: string | null | u
   const parts = stored.split('$')
   if (parts.length !== 4 || parts[0] !== 'v1') return false
   const iterations = Number(parts[1])
-  const salt = fromB64url(parts[2])
-  const expected = fromB64url(parts[3])
+  const salt = fromB64url(parts[2] ?? '')
+  const expected = fromB64url(parts[3] ?? '')
   if (!Number.isInteger(iterations) || iterations < 1 || !salt || !expected) return false
   const actual = await derive(password, salt, iterations)
   return timingSafeBytes(actual, expected)
@@ -64,7 +64,7 @@ export async function verifyPassword(password: string, stored: string | null | u
 function timingSafeBytes(a: Uint8Array, b: Uint8Array): boolean {
   if (a.length !== b.length) return false
   let diff = 0
-  for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i]
+  for (let i = 0; i < a.length; i++) diff |= (a[i] ?? 0) ^ (b[i] ?? 0)
   return diff === 0
 }
 
@@ -75,6 +75,6 @@ export function safeEqual(a: string, b: string): boolean {
   const eb = new TextEncoder().encode(b)
   if (ea.length !== eb.length) return false
   let diff = 0
-  for (let i = 0; i < ea.length; i++) diff |= ea[i] ^ eb[i]
+  for (let i = 0; i < ea.length; i++) diff |= (ea[i] ?? 0) ^ (eb[i] ?? 0)
   return diff === 0
 }

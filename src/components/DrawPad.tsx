@@ -43,7 +43,7 @@ import { Chip } from './Chip'
 // `useModal` + CSS lock the page so a stroke can't scroll/select behind it.
 // `toddler` trims the toolbar to the big, safe, fun controls.
 const PAPER = '#fffdf7'
-const COLORS = [
+const COLORS: [string, ...string[]] = [
   '#2b2b2b', '#C2563A', '#E8632E', '#D9842A', '#F2B705', '#6B8A52',
   '#3FA796', '#5891AC', '#3D6BB5', '#7E5BB0', '#95527A', '#E4739B',
 ]
@@ -56,6 +56,7 @@ const SIZES = [
   { key: 'm', pen: 6, max: 5, ui: 13, cell: 26, font: 48 },
   { key: 'l', pen: 12, max: 11, ui: 19, cell: 40, font: 72 },
 ] as const
+const sizeOf = (i: number) => SIZES[i] ?? SIZES[1]
 const PACKS: { key: string; icon: string; items: string[] }[] = [
   { key: 'faces', icon: '😀', items: ['😀', '😄', '😍', '🤩', '😎', '😇', '🥳', '😴', '🤗', '😜'] },
   { key: 'animals', icon: '🐱', items: ['🐱', '🐶', '🐰', '🐻', '🦊', '🐸', '🐥', '🦄', '🐝', '🐢'] },
@@ -346,8 +347,13 @@ function drawFreehand(ctx: CanvasRenderingContext2D, st: Stroke) {
     return
   }
   ctx.beginPath()
-  ctx.moveTo(out[0][0], out[0][1])
-  for (let i = 1; i < out.length; i++) ctx.lineTo(out[i][0], out[i][1])
+  let started = false
+  for (const pt of out) {
+    const x = pt[0] ?? 0, y = pt[1] ?? 0
+    if (started) ctx.lineTo(x, y)
+    else ctx.moveTo(x, y)
+    started = true
+  }
   ctx.closePath()
   ctx.fill()
   ctx.restore()
@@ -380,7 +386,8 @@ function normStroke(raw: unknown): Stroke | null {
 function hexToRgb(hex: string): [number, number, number] {
   const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex.trim())
   if (!m) return [0, 0, 0]
-  return [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)]
+  const [, r = '', g = '', b = ''] = m
+  return [parseInt(r, 16), parseInt(g, 16), parseInt(b, 16)]
 }
 // Flood fill on a raw RGBA buffer (device pixels). CRUCIAL: it READS the target colour
 // and region boundaries from `ref` (a frozen copy of the INK-ONLY raster) but WRITES the
@@ -396,7 +403,7 @@ function hexToRgb(hex: string): [number, number, number] {
 function floodFillRaster(out: Uint8ClampedArray, ref: Uint8ClampedArray, W: number, H: number, sx: number, sy: number, col: [number, number, number], seen: Uint8Array, gen: number, dilate: number) {
   if (sx < 0 || sy < 0 || sx >= W || sy >= H) return
   const start = (sy * W + sx) * 4
-  const tr = ref[start], tg = ref[start + 1], tb = ref[start + 2]
+  const tr = ref[start] ?? 0, tg = ref[start + 1] ?? 0, tb = ref[start + 2] ?? 0
   const [fr, fg, fb] = col
   const TOL = 48 * 48 // squared RGB distance treated as "same region"
   const region: number[] = []
@@ -405,7 +412,7 @@ function floodFillRaster(out: Uint8ClampedArray, ref: Uint8ClampedArray, W: numb
     const p = stack.pop()!
     if (seen[p] === gen) continue
     const i = p * 4
-    const dr = ref[i] - tr, dg = ref[i + 1] - tg, db = ref[i + 2] - tb
+    const dr = (ref[i] ?? 0) - tr, dg = (ref[i + 1] ?? 0) - tg, db = (ref[i + 2] ?? 0) - tb
     // Mark `seen` only for ACCEPTED region cells. Rejected boundary/rim cells stay
     // unmarked so the dilation below can recolour them — otherwise pre-marking the rim
     // (esp. along a straight edge) defeats the dilation and the white halo survives.
@@ -441,6 +448,8 @@ function floodFillRaster(out: Uint8ClampedArray, ref: Uint8ClampedArray, W: numb
     frontier = next
   }
 }
+
+const DEFAULT_STICKER = PACKS[0]?.items[0] ?? '😀'
 
 export function DrawPad({
   open,
@@ -547,7 +556,7 @@ export function DrawPad({
   const modeRef = useRef<Mode>('pen')
   const colorRef = useRef<string>(COLORS[0])
   const sizeRef = useRef<number>(1)
-  const stickerRef = useRef<string>(PACKS[0].items[0])
+  const stickerRef = useRef<string>(DEFAULT_STICKER)
   const textRef = useRef<string>('')
   const symmetryRef = useRef<boolean>(false)
   const fillRef = useRef<boolean>(false)
@@ -587,7 +596,7 @@ export function DrawPad({
   const [recent, setRecent] = useState<string[]>([])
   const [size, setSize] = useState(1)
   const [pack, setPack] = useState(0)
-  const [sticker, setSticker] = useState(PACKS[0].items[0])
+  const [sticker, setSticker] = useState(DEFAULT_STICKER)
   const [text, setText] = useState('')
   const [symmetry, setSymmetry] = useState(false)
   const [fill, setFill] = useState(false)
@@ -712,8 +721,8 @@ export function DrawPad({
   // fill never hides a stroke/pixel, and used (at identity) to build the fill boundary.
   function drawContent(ctx: CanvasRenderingContext2D) {
     for (const [key, col] of pixelsRef.current) {
-      const [coords, cellStr] = key.split(':')
-      const [cx, cy] = coords.split(',').map(Number)
+      const [coords = '', cellStr] = key.split(':')
+      const [cx = 0, cy = 0] = coords.split(',').map(Number)
       const cell = Number(cellStr)
       ctx.fillStyle = col
       ctx.fillRect(cx * cell, cy * cell, cell, cell)
@@ -815,9 +824,9 @@ export function DrawPad({
       const dx = Math.round(r * (v.z * x + v.ox)), dy = Math.round(r * (v.z * y + v.oy))
       if (dx >= 0 && dy >= 0 && dx < canvas.width && dy < canvas.height) {
         try {
-          const px = ctx.getImageData(dx, dy, 1, 1).data
+          const [pr = 0, pg = 0, pb = 0] = ctx.getImageData(dx, dy, 1, 1).data
           const [fr, fg, fb] = hexToRgb(colorRef.current)
-          if ((px[0] - fr) ** 2 + (px[1] - fg) ** 2 + (px[2] - fb) ** 2 <= 16) return
+          if ((pr - fr) ** 2 + (pg - fg) ** 2 + (pb - fb) ** 2 <= 16) return
         } catch { /* tainted — fall through and fill anyway */ }
       }
     }
@@ -941,7 +950,7 @@ export function DrawPad({
   // preview and the committed stroke, so perfect-freehand renders them identically —
   // what you see while dragging is exactly what's kept (no width jump on release).
   function makeStroke(pts: { x: number; y: number; pressure: number }[], color: string): Stroke {
-    return { pts: pts.map((p) => ({ x: p.x, y: p.y, p: p.pressure })), color, size: SIZES[sizeRef.current].pen }
+    return { pts: pts.map((p) => ({ x: p.x, y: p.y, p: p.pressure })), color, size: sizeOf(sizeRef.current).pen }
   }
   // Live freehand pen: blit the frozen snapshot + draw the in-progress stroke on top
   // (O(1) per frame). Uses drawFreehand — the exact renderer used on commit.
@@ -1007,7 +1016,7 @@ export function DrawPad({
   }
   function stampAt(x: number, y: number, txt: string) {
     if (!txt) return
-    const font = SIZES[sizeRef.current].font
+    const font = sizeOf(sizeRef.current).font
     const items: Stamp[] = [{ x, y, text: txt, font }]
     if (symmetryRef.current) items.push({ x: cssW() - x, y, text: txt, font })
     pushStamps(items)
@@ -1025,7 +1034,7 @@ export function DrawPad({
     if (next === undefined) map.delete(key); else map.set(key, next)
   }
   function paintPixel(x: number, y: number) {
-    const cell = SIZES[sizeRef.current].cell
+    const cell = sizeOf(sizeRef.current).cell
     const cx = Math.floor(x / cell), cy = Math.floor(y / cell)
     const tag = `${cx},${cy}`
     if (dragRef.current.last === tag) return // same cell as last move — skip the redraw
@@ -1037,7 +1046,7 @@ export function DrawPad({
   // Flood-fill the contiguous run of like-valued grid cells from (x,y) — the pixel
   // "bucket". Bounded by the visible grid (cap guards a pathological canvas).
   function floodFill(x: number, y: number) {
-    const cell = SIZES[sizeRef.current].cell
+    const cell = sizeOf(sizeRef.current).cell
     const cols = Math.ceil(cssW() / cell), rows = Math.ceil(cssH() / cell)
     const map = pixelsRef.current
     const at = (cx: number, cy: number) => map.get(`${cx},${cy}:${cell}`)
@@ -1115,7 +1124,7 @@ export function DrawPad({
       if (m === 'pixel' && dragRef.current.active && !fillRef.current) { paintPixel(c.x, c.y); return }
       if (m === 'shape' && shapeDragRef.current?.active) {
         const d = shapeDragRef.current
-        previewRef.current = { type: shapeTypeRef.current, x0: d.x0, y0: d.y0, x1: c.x, y1: c.y, color: colorRef.current, size: SIZES[sizeRef.current].max }
+        previewRef.current = { type: shapeTypeRef.current, x0: d.x0, y0: d.y0, x1: c.x, y1: c.y, color: colorRef.current, size: sizeOf(sizeRef.current).max }
         schedulePreview()
         return
       }
@@ -1147,7 +1156,7 @@ export function DrawPad({
         shapeDragRef.current = null
         previewRef.current = null
         if (Math.abs(c.x - d.x0) > 3 || Math.abs(c.y - d.y0) > 3)
-          commitShape({ type: shapeTypeRef.current, x0: d.x0, y0: d.y0, x1: c.x, y1: c.y, color: colorRef.current, size: SIZES[sizeRef.current].max })
+          commitShape({ type: shapeTypeRef.current, x0: d.x0, y0: d.y0, x1: c.x, y1: c.y, color: colorRef.current, size: sizeOf(sizeRef.current).max })
         else render()
       } else if (m === 'pen') {
         commitPenStroke()
@@ -1169,6 +1178,7 @@ export function DrawPad({
     }
     const startPinch = () => {
       const [a, b] = [...pointersRef.current.values()]
+      if (!a || !b) return
       pinchRef.current = {
         startView: { ...viewRef.current },
         startMid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
@@ -1179,6 +1189,7 @@ export function DrawPad({
       const pr = pinchRef.current
       if (!pr) return
       const [a, b] = [...pointersRef.current.values()]
+      if (!a || !b) return
       const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }
       const dist = Math.hypot(a.x - b.x, a.y - b.y)
       applyView(pinchView(pr.startView, pr.startMid, pr.startDist, mid, dist, cssW(), cssH()))
@@ -1757,11 +1768,11 @@ export function DrawPad({
           <div className="drawpad__stickers">
             <div className="drawpad__packs" role="group" aria-label={t.memo.drawSticker}>
               {PACKS.map((p, i) => (
-                <button key={p.key} type="button" className={'drawpad__pack' + (pack === i ? ' is-on' : '')} onClick={() => { setPack(i); setSticker(p.items[0]) }} aria-label={t.memo.packs[p.key as keyof typeof t.memo.packs]} aria-pressed={pack === i}>{p.icon}</button>
+                <button key={p.key} type="button" className={'drawpad__pack' + (pack === i ? ' is-on' : '')} onClick={() => { setPack(i); setSticker(p.items[0] ?? DEFAULT_STICKER) }} aria-label={t.memo.packs[p.key as keyof typeof t.memo.packs]} aria-pressed={pack === i}>{p.icon}</button>
               ))}
             </div>
             <div className="drawpad__stickerset" role="group">
-              {PACKS[pack].items.map((e) => (
+              {(PACKS[pack]?.items ?? []).map((e) => (
                 <button key={e} type="button" className={'drawpad__sticker' + (sticker === e ? ' is-on' : '')} onClick={() => setSticker(e)} aria-label={e} aria-pressed={sticker === e}>{e}</button>
               ))}
             </div>
@@ -1807,11 +1818,11 @@ export function DrawPad({
         <div className="drawpad__stickertray" role="group" aria-label={t.memo.drawSticker}>
           <div className="drawpad__packs drawpad__packs--tray">
             {PACKS.map((p, i) => (
-              <button key={p.key} type="button" className={'drawpad__pack' + (pack === i ? ' is-on' : '')} onClick={() => { setPack(i); setSticker(PACKS[i].items[0]) }} aria-label={t.memo.packs[p.key as keyof typeof t.memo.packs]} aria-pressed={pack === i}>{p.icon}</button>
+              <button key={p.key} type="button" className={'drawpad__pack' + (pack === i ? ' is-on' : '')} onClick={() => { setPack(i); setSticker(p.items[0] ?? DEFAULT_STICKER) }} aria-label={t.memo.packs[p.key as keyof typeof t.memo.packs]} aria-pressed={pack === i}>{p.icon}</button>
             ))}
           </div>
           <div className="drawpad__stickerset drawpad__stickerset--tray" role="group">
-            {PACKS[pack].items.map((e) => (
+            {(PACKS[pack]?.items ?? []).map((e) => (
               <button key={e} type="button" className={'drawpad__sticker' + (sticker === e ? ' is-on' : '')} onClick={() => setSticker(e)} aria-label={e} aria-pressed={sticker === e}>{e}</button>
             ))}
           </div>
@@ -1863,7 +1874,7 @@ export function DrawPad({
                 ))}
               </div>
               <div className="drawpad__stickerset drawpad__stickerset--tray">
-                {PACKS[pack].items.map((e) => (
+                {(PACKS[pack]?.items ?? []).map((e) => (
                   <button key={e} type="button" className={'drawpad__sticker' + (traceSticker === e ? ' is-on' : '')} onClick={() => setTraceSticker(e)} aria-label={e} aria-pressed={traceSticker === e}>{e}</button>
                 ))}
               </div>
@@ -1922,7 +1933,7 @@ export function DrawPad({
         <canvas ref={canvasRef} className="drawpad__canvas" />
         {/* The pixel grid is a CSS overlay at base scale, so hide it while zoomed (it
             wouldn't line up with the magnified cells). */}
-        {mode === 'pixel' && zoomPct === 100 && <div className="drawpad__grid" aria-hidden="true" style={{ '--cell': `${SIZES[size].cell}px` } as React.CSSProperties} />}
+        {mode === 'pixel' && zoomPct === 100 && <div className="drawpad__grid" aria-hidden="true" style={{ '--cell': `${sizeOf(size).cell}px` } as React.CSSProperties} />}
         {/* Zoom badge — tap to snap back to fit. Pinch (two fingers) or the wheel
             zooms; one finger keeps drawing. Only shown once zoomed in. */}
         {zoomPct > 100 && (

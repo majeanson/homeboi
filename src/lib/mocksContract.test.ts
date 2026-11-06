@@ -29,7 +29,7 @@ function tableKeys(): string[] {
   const body = src.slice(start, end).replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
   // A key is quoted when it holds a slash (`'auth/me': authMe`) and a SHORTHAND property
   // otherwise (`board,` — the module is imported under the route's own name).
-  return [...body.matchAll(/^\s*(?:'([^']+)'\s*:|([a-zA-Z0-9_]+)\s*,)/gm)].map((m) => m[1] ?? m[2])
+  return [...body.matchAll(/^\s*(?:'([^']+)'\s*:|([a-zA-Z0-9_]+)\s*,)/gm)].map((m) => m[1] ?? m[2]!)
 }
 
 async function fixtureKeys(): Promise<string[]> {
@@ -62,6 +62,6 @@ describe('e2e mocks ↔ worker route table', () => {
 
   it('the health fixture carries the whole wire (the canary for the typed-fixture rule)', async () => {
     const mod = (await import('../../e2e/mocks')) as { ROUTES: Record<string, Record<string, unknown>> }
-    expect(Object.keys(mod.ROUTES.health).length).toBeGreaterThanOrEqual(15)
+    expect(Object.keys(mod.ROUTES.health ?? {}).length).toBeGreaterThanOrEqual(15)
   })
 })

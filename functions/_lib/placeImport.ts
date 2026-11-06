@@ -159,7 +159,7 @@ export function splitNameAddress(q: string): { name: string | null; address: str
     .map((s) => s.trim())
     .filter(Boolean)
   if (parts.length === 0) return { name: null, address: null }
-  if (parts.length === 1) return { name: parts[0], address: null }
+  if (parts.length === 1) return { name: parts[0] ?? null, address: null }
   let idx = parts.findIndex((p, i) => i > 0 && /^\d/.test(p))
   if (idx < 1) idx = 1
   const name = parts.slice(0, idx).join(', ')
@@ -188,7 +188,7 @@ export function parseGoogleMapsUrl(finalUrl: string): ParsedPlace {
     out.address = address
   } else {
     const m = u.pathname.match(/\/place\/([^/@]+)/)
-    if (m) out.name = decodeURIComponent(m[1].replace(/\+/g, ' ')).trim() || null
+    if (m) out.name = decodeURIComponent((m[1] ?? '').replace(/\+/g, ' ')).trim() || null
   }
 
   const at = u.pathname.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)

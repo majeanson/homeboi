@@ -144,7 +144,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // the synonyms are best-effort enrichment — a failing alias just adds nothing.
   let rawItems: FlippItem[]
   try {
-    rawItems = await flippSearch(terms[0], postal, lang)
+    rawItems = await flippSearch(terms[0] ?? q, postal, lang)
   } catch {
     return serviceUnavailable('Service de circulaires indisponible.')
   }
@@ -217,22 +217,19 @@ export const onRequestGet = authed(async (ctx, actor) => {
 const SNIPER_CAP = 24
 async function sniperFill(env: Env, deals: Deal[], lang: 'fr' | 'en'): Promise<void> {
   if (!env.AI) return
-  const gaps: number[] = []
-  for (let i = 0; i < deals.length && gaps.length < SNIPER_CAP; i++) {
-    if (deals[i].unitPrice == null && deals[i].price != null) gaps.push(i)
-  }
+  const gaps = deals.filter((d) => d.unitPrice == null && d.price != null).slice(0, SNIPER_CAP)
   if (gaps.length === 0) return
 
   const sizes = await extractSizes(
     env,
     // Strip the leading SKU/product code first; otherwise the model reads it as a
     // gram size (the "994949 FROMAGE …" → "$0.01/kg" bug).
-    gaps.map((i) => stripProductCode(deals[i].name)),
+    gaps.map((d) => stripProductCode(d.name)),
     lang,
   )
   sizes.forEach((size, k) => {
-    if (!size) return
-    const d = deals[gaps[k]]
+    const d = gaps[k]
+    if (!size || !d) return
     const u = computeUnitPrice({ price: d.price, name: size })
     if (u) {
       d.unitPrice = u.unitPrice

@@ -122,7 +122,7 @@ describe('un commerce', () => {
     const other = await household('biz-b', undefined, { empty: true })
     expect((await s.fetch('/api/businesses', { method: 'POST', body: { name: ' ' } })).status).toBe(400)
     const id = await addBiz(s, { notes: 'x'.repeat(3000) })
-    expect((await biz(s))[0].notes).toHaveLength(2000)
+    expect((await biz(s))[0]?.notes).toHaveLength(2000)
     expect((await other.fetch('/api/businesses', { method: 'PATCH', body: { id, name: 'Volé' } })).status).toBe(404)
     expect(await biz(other)).toEqual([])
   })
@@ -132,10 +132,10 @@ describe('un commerce', () => {
     const id = await addBiz(s, { name: 'Plombier' })
     const heater = await okJson<{ id: string }>(s.fetch('/api/carnets', { method: 'POST', body: { name: 'Chauffe-eau', kind: 'appliance' } }))
     for (const title of ['Installation', 'Entretien']) await okJson(s.fetch('/api/care-log', { method: 'POST', body: { carnetId: heater.id, title, businessId: id } }))
-    expect((await biz(s))[0].servicedCarnets).toEqual([{ id: heater.id, name: 'Chauffe-eau', kind: 'appliance' }])
+    expect((await biz(s))[0]?.servicedCarnets).toEqual([{ id: heater.id, name: 'Chauffe-eau', kind: 'appliance' }])
 
     await okJson(s.fetch('/api/carnets', { method: 'DELETE', body: { id: heater.id } }))
-    expect((await biz(s))[0].servicedCarnets).toEqual([])
+    expect((await biz(s))[0]!.servicedCarnets).toEqual([])
   })
 
   it('a rendez-vous with a deleted business still reads', async () => {
@@ -145,6 +145,6 @@ describe('un commerce', () => {
     const ev = await okJson<{ id: string }>(s.fetch('/api/events', { method: 'POST', body: { title: 'Vaccin', startAt, businessId: id } }))
     await okJson(s.fetch('/api/businesses', { method: 'DELETE', body: { id } }))
     const { events } = await okJson<{ events: { title: string }[] }>(s.fetch(`/api/events?id=${ev.id}`))
-    expect(events[0].title).toBe('Vaccin')
+    expect(events[0]?.title).toBe('Vaccin')
   })
 })

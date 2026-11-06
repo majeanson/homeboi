@@ -12,6 +12,8 @@
 // deck used to be the second caller; since 2026-09-08 (PARITY Wave D) a card carries
 // its own clipKey / photoKey, so nothing there is positional any more.
 
+import { swapAt } from './reorder'
+
 const EMPTY = ''
 
 // Pad/trim a side array to exactly `len`, defaulting any missing slot to ''. The
@@ -19,7 +21,10 @@ const EMPTY = ''
 // older payload, a hand-built array) is realigned before we touch it.
 export function alignSide(side: readonly string[] | undefined, len: number): string[] {
   const out: string[] = []
-  for (let i = 0; i < len; i++) out.push(typeof side?.[i] === 'string' ? side![i] : EMPTY)
+  for (let i = 0; i < len; i++) {
+    const s = side?.[i]
+    out.push(typeof s === 'string' ? s : EMPTY)
+  }
   return out
 }
 
@@ -45,8 +50,7 @@ export function sideRemove(side: readonly string[], at: number): string[] {
 export function sideMove(side: readonly string[], from: number, to: number): string[] {
   if (from < 0 || from >= side.length || to < 0 || to >= side.length || from === to) return side.slice()
   const out = side.slice()
-  const [m] = out.splice(from, 1)
-  out.splice(to, 0, m)
+  out.splice(to, 0, ...out.splice(from, 1))
   return out
 }
 
@@ -56,7 +60,7 @@ export function sideMove(side: readonly string[], from: number, to: number): str
 export function sideSwap(side: readonly string[], i: number, j: number): string[] {
   if (i < 0 || i >= side.length || j < 0 || j >= side.length || i === j) return side.slice()
   const out = side.slice()
-  ;[out[i], out[j]] = [out[j], out[i]]
+  swapAt(out, i, j)
   return out
 }
 

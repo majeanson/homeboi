@@ -68,7 +68,7 @@ export function ricardoGroups(propsJson: string): Adapted | null {
 function ricardoFromHtml(html: string): Adapted | null {
   for (const m of html.matchAll(/<[a-z]+\b[^>]*\bdata-react-app=["']recipeCookingMode["'][^>]*>/gi)) {
     const props = m[0].match(/\bdata-react-app-props=(["'])([\s\S]*?)\1/i)
-    if (props) return ricardoGroups(decodeAttr(props[2]))
+    if (props) return ricardoGroups(decodeAttr(props[2] ?? ''))
   }
   return null
 }
@@ -77,13 +77,13 @@ function wprmFromHtml(html: string): Adapted | null {
   const starts = [...html.matchAll(/<[a-z]+\b[^>]*class=["'][^"']*\bwprm-recipe-ingredient-group\b[^"']*["'][^>]*>/gi)].map((m) => m.index)
   if (starts.length < 2) return null
   const groups: SiteGroup[] = []
-  for (let i = 0; i < starts.length; i++) {
-    const seg = html.slice(starts[i], starts[i + 1] ?? starts[i] + 60_000)
+  for (const [i, start] of starts.entries()) {
+    const seg = html.slice(start, starts[i + 1] ?? start + 60_000)
     const name = seg.match(/class=["'][^"']*\bwprm-recipe-group-name\b[^"']*["'][^>]*>([\s\S]*?)<\/(?:h\d|div|span|p)>/i)
     const lines = [...seg.matchAll(/<li\b[^>]*class=["'][^"']*\bwprm-recipe-ingredient\b(?!-)[^"']*["'][^>]*>([\s\S]*?)<\/li>/gi)].map((m) =>
-      htmlToText(m[1], 400).replace(/\s+/g, ' ').trim(),
+      htmlToText(m[1] ?? '', 400).replace(/\s+/g, ' ').trim(),
     )
-    groups.push({ name: name ? htmlToText(name[1], 200).replace(/\s+/g, ' ').replace(/\s*:\s*$/, '').trim() : '', lines })
+    groups.push({ name: name ? htmlToText(name[1] ?? '', 200).replace(/\s+/g, ' ').replace(/\s*:\s*$/, '').trim() : '', lines })
   }
   return groups.some((g) => g.lines.length) ? { ingredientGroups: groups, exact: false } : null
 }
@@ -111,8 +111,9 @@ export function applyGroups(flat: string[], groups: SiteGroup[] | undefined, exa
   for (const g of groups) {
     if (g.name) out.push(makeSectionHeading(g.name))
     for (const line of g.lines) {
-      if (exact && normLoose(line) !== normLoose(flat[i])) return null
-      out.push(flat[i++])
+      const item = flat[i++] ?? ''
+      if (exact && normLoose(line) !== normLoose(item)) return null
+      out.push(item)
     }
   }
   return out

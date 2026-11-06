@@ -51,7 +51,7 @@ export const boardWithDeals = (long: boolean, allEnded = false) => ({
     ...BOARD.list.map((item, i) => ({
       ...item,
       text: long ? `${item.text} ${LONG}` : item.text,
-      deal_json: JSON.stringify(stagedDeal(DEALS[i] ?? DEALS[0], long, allEnded)),
+      deal_json: JSON.stringify(stagedDeal(DEALS[i] ?? DEALS[0]!, long, allEnded)),
     })),
     // Two plain lines — no deal — so « Ma liste Flipp » has typed items to carry;
     // the checked one must NOT go (it is already bought).

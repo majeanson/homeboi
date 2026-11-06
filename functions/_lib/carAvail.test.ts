@@ -119,7 +119,7 @@ describe('rideSpans', () => {
 
   it('clamps a late ride window to the end of the day', () => {
     const rides: Ride[] = [{ id: 'r1', at: h(23), carId: 'car' }]
-    expect(rideSpans(rides, DAY_START, DAY_END)[0].end).toBe(DAY_END)
+    expect(rideSpans(rides, DAY_START, DAY_END)[0]?.end).toBe(DAY_END)
   })
 })
 
@@ -163,8 +163,8 @@ describe('rideConflicts', () => {
   it('flags a car-taking ride that lands while the car is committed', () => {
     const found = conflicts([{ id: 'r1', at: h(17), label: 'Épicerie', carId: 'car' }])
     expect(found).toHaveLength(1)
-    expect(found[0].ride.id).toBe('r1')
-    expect(found[0].span.label).toBe('au travail')
+    expect(found[0]?.ride.id).toBe('r1')
+    expect(found[0]?.span.label).toBe('au travail')
   })
 
   it('does NOT flag a ride that never takes our car', () => {
@@ -184,7 +184,7 @@ describe('rideConflicts', () => {
   it('flags a ride that STARTS free but runs into a committed block', () => {
     const found = conflicts([{ id: 'r5', at: h(7), endAt: h(9.5), label: 'Rendez-vous', carId: 'car' }])
     expect(found).toHaveLength(1)
-    expect(found[0].ride.id).toBe('r5')
+    expect(found[0]?.ride.id).toBe('r5')
   })
 
   it('flags a ride whose 2 h DEFAULT window runs into a committed block', () => {

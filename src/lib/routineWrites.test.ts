@@ -70,7 +70,7 @@ describe('sendRoutineOp', () => {
     sendRoutineOp(qc, tick(2, false))
     await flush()
     expect(writeWith).toHaveBeenCalledTimes(1)
-    const [, path, spec] = writeWith.mock.calls[0]
+    const [, path, spec] = writeWith.mock.calls[0]!
     expect(path).toBe('routines')
     expect(spec).toMatchObject({ method: 'PATCH', body: { routineId: 'r', cardIdx: 2, done: false } })
   })

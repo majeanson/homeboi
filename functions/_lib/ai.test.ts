@@ -192,11 +192,11 @@ describe('selectRecipeLines — the model chooses lines, it never writes them', 
     const run = vi.fn(async (_m: string, _i: unknown) => ({ response: REPLY }))
     const env = { DB: {} as D1Database, AI: { run } as unknown as Ai } as Env
     const sel = await selectRecipeLines(env, LINES, 'fr', '  la 2e recette\nde la page ')
-    const input = run.mock.calls[0][1] as { messages: { content: string }[]; response_format: { type: string; json_schema: { required: string[] } }; max_tokens: number }
+    const input = run.mock.calls[0]![1] as { messages: { content: string }[]; response_format: { type: string; json_schema: { required: string[] } }; max_tokens: number }
     expect(input.response_format.type).toBe('json_schema')
     expect(input.response_format.json_schema.required).toContain('ingredientSections')
     expect(input.max_tokens).toBe(1500)
-    const prompt = input.messages[0].content
+    const prompt = input.messages[0]!.content
     expect(prompt).toContain('2: 500 ml de cassonade')
     expect(prompt).toContain('NUMÉROS DE LIGNE')
     expect(prompt).toContain('Indication du cuisinier : « la 2e recette de la page »')
@@ -211,7 +211,7 @@ describe('selectRecipeLines — the model chooses lines, it never writes them', 
     const env = { DB: {} as D1Database, AI: { run } as unknown as Ai } as Env
     expect(await selectRecipeLines(env, LINES, 'fr')).toEqual(REPLY)
     expect(run).toHaveBeenCalledTimes(2)
-    expect((run.mock.calls[1][1] as { response_format?: unknown }).response_format).toBeUndefined()
+    expect((run.mock.calls[1]![1] as { response_format?: unknown }).response_format).toBeUndefined()
   })
 
   it('any other failure is the model not answering — no retry, null', async () => {
@@ -250,14 +250,14 @@ describe('transcribeImage — primary vision model, Llama fallback', () => {
     const t = await transcribeImage({ DB: {}, AI: { run } } as unknown as Env, bytes, 'fr', report)
     expect(t).toBe('Crêpes\n250 ml de farine')
     expect(report.visionModel).toBe(VISION_PRIMARY_ID)
-    expect(run.mock.calls[0][0]).toBe(VISION_PRIMARY_ID)
+    expect(run.mock.calls[0]?.[0]).toBe(VISION_PRIMARY_ID)
     // The VERIFIED image shape (Workers AI REST, 2026-10-27): OpenAI content parts with
     // `image_url: { url: data:… }` — a top-level `image` made the model answer « Je ne
     // peux pas voir d'images » and, on prod, transcribe a story for a biscuit card.
-    const input = run.mock.calls[0][1] as unknown as { messages: { content: { type: string; image_url?: { url: string } }[] }[]; image?: unknown; reasoning_effort?: string }
+    const input = run.mock.calls[0]![1] as unknown as { messages: { content: { type: string; image_url?: { url: string } }[] }[]; image?: unknown; reasoning_effort?: string }
     expect(input.image).toBeUndefined()
-    expect(input.messages[0].content.map((c) => c.type)).toEqual(['text', 'image_url'])
-    expect(input.messages[0].content[1].image_url?.url).toMatch(/^data:image\/jpeg;base64,/)
+    expect(input.messages[0]!.content.map((c) => c.type)).toEqual(['text', 'image_url'])
+    expect(input.messages[0]?.content[1]?.image_url?.url).toMatch(/^data:image\/jpeg;base64,/)
     // Mistral Small first (fast on a full page); no thinking switch for it.
     expect((input as { chat_template_kwargs?: unknown }).chat_template_kwargs).toBeUndefined()
   })
@@ -267,10 +267,10 @@ describe('transcribeImage — primary vision model, Llama fallback', () => {
     const report = { error: null as string | null, visionModel: null as string | null }
     expect(await transcribeImage({ DB: {}, AI: { run } } as unknown as Env, bytes, 'fr', report)).toBe('Crêpes')
     expect(report.visionModel).toBe(VISION_SECOND_ID)
-    expect(run.mock.calls[1][0]).toBe(VISION_SECOND_ID)
+    expect(run.mock.calls[1]?.[0]).toBe(VISION_SECOND_ID)
     // Gemma 4 thinks by default and, on a full page, returns NOTHING within the budget;
     // the chat template's switch is the one that holds (reasoning_effort did not).
-    expect((run.mock.calls[1][1] as { chat_template_kwargs?: { enable_thinking?: boolean } }).chat_template_kwargs).toEqual({ enable_thinking: false })
+    expect((run.mock.calls[1]![1] as { chat_template_kwargs?: { enable_thinking?: boolean } }).chat_template_kwargs).toEqual({ enable_thinking: false })
   })
   it('the primary answers in the OpenAI shape (choices[0].message.content) → read as text', async () => {
     const run = vi.fn(async () => ({ choices: [{ message: { content: 'Biscuits\n2 œufs' } }] }))
@@ -331,7 +331,7 @@ describe('transcribeImage — primary vision model, Llama fallback', () => {
       const report = { error: null as string | null, visionModel: null as string | null }
       expect(await transcribeImage({ DB: {}, AI: { run } } as unknown as Env, bytes, 'fr', report)).toBe('Crêpes')
       expect(report.visionModel).toBe(VISION_MODEL_ID)
-      expect(run.mock.calls[2][0]).toBe(VISION_MODEL_ID)
+      expect(run.mock.calls[2]?.[0]).toBe(VISION_MODEL_ID)
     }
   })
 })

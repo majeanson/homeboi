@@ -58,7 +58,7 @@ test('the shelf shows exactly what is kept — a photo, a drawing, a mot — and
 })
 
 test('nothing kept, no shelf — the card does not sit empty on the band', async ({ page, app }) => {
-  await openBoard(app, { mots: [{ ...MOT, saved_at: null }], photos: [PHOTOS[1]], drawings: [DRAWINGS[1]] })
+  await openBoard(app, { mots: [{ ...MOT, saved_at: null }], photos: [PHOTOS[1]!], drawings: [DRAWINGS[1]!] })
   await expect(page.locator('.wg-slot[data-card="mots"], .wg-slot[data-card="photos"]').first()).toBeVisible()
   // An 'auto' slot stays MOUNTED and hidden when empty (board-empty-cards.spec says why:
   // a self-fetching card only learns it is empty after fetching) — hidden, never absent.
@@ -66,7 +66,7 @@ test('nothing kept, no shelf — the card does not sit empty on the band', async
 })
 
 test('the photo frame’s pin keeps the photo on show — one PATCH, pressed state', async ({ page, app }) => {
-  await openBoard(app, { photos: [PHOTOS[1]] })
+  await openBoard(app, { photos: [PHOTOS[1]!] })
   const frame = page.locator('.wg-slot[data-card="photos"] .photo-frame')
   await expect(frame).toBeVisible()
   const pin = frame.getByRole('button', { name: 'Garder' })

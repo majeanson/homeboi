@@ -32,6 +32,7 @@ export function SeekGame({ decks }: { decks: SeekDeck[] }) {
   const nextRound = (d: SeekDeck) => {
     clear()
     const r = pickSeekRound(d, Math.min(BOARD_MAX, d.items.length), prevId.current)
+    if (!r) return
     prevId.current = r.target.id
     setFound(false)
     setRound(r)

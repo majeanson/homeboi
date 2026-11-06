@@ -65,7 +65,7 @@ describe('un virement', () => {
     await okJson(patch(s, { id, reference: ' CA12345 ' }))
     expect((await read(s)).transfers[0], 'the reference lands later, the rest stays').toMatchObject({ reference: 'CA12345', memo: 'Août', totalCents: 17550 })
     await okJson(patch(s, { id, reference: null }))
-    expect((await read(s)).transfers[0].reference, 'null is how a client clears it').toBeNull()
+    expect((await read(s)).transfers[0]!.reference, 'null is how a client clears it').toBeNull()
 
     await okJson(s.fetch('/api/transfers', { method: 'DELETE', body: { id } }))
     expect((await read(s)).transfers).toEqual([])
@@ -77,7 +77,7 @@ describe('un virement', () => {
   it('a date left out is today', async () => {
     const s = await household('transfers-today', undefined, { empty: true })
     await log(s)
-    expect((await read(s)).transfers[0].sentAt).toBe(today())
+    expect((await read(s)).transfers[0]?.sentAt).toBe(today())
   })
 
   it('refuses any line that does not add up, whole, rather than storing part of it', async () => {
@@ -98,7 +98,7 @@ describe('un virement', () => {
     const id = await log(s)
     expect((await patch(s, { id, lines: [] })).status).toBe(400)
     expect((await patch(s, { id, sentAt: 'hier' })).status).toBe(400)
-    expect((await read(s)).transfers[0].totalCents, 'a refused edit leaves the receipt').toBe(5000)
+    expect((await read(s)).transfers[0]!.totalCents, 'a refused edit leaves the receipt').toBe(5000)
   })
 
   it('a line may not claim another household’s plan, and a stranger cannot touch the receipt', async () => {
@@ -136,7 +136,7 @@ describe('une entente', () => {
 
     await okJson(s.fetch('/api/transfer-plans', { method: 'DELETE', body: { id } }))
     expect(await planOf(s, id)).toBeUndefined()
-    expect((await read(s)).transfers[0].lines[0], 'a receipt stays true after the agreement ends').toMatchObject({ kind: 'plan', planId: id })
+    expect((await read(s)).transfers[0]!.lines[0], 'a receipt stays true after the agreement ends').toMatchObject({ kind: 'plan', planId: id })
     expect((await send(s, { lines: [{ kind: 'plan', planId: id, dueAt: day(1), amountCents: 1 }] })).status, 'but it takes no new claims').toBe(400)
   })
 

@@ -435,10 +435,10 @@ describe('pinning the focused field', () => {
     input.focus()
     viewport({ height: 500 })
     const pin = vi.mocked(input.scrollIntoView)
-    expect(pin.mock.calls[0][0]).toEqual({ block: 'start', behavior: 'smooth' })
+    expect(pin.mock.calls[0]?.[0]).toEqual({ block: 'start', behavior: 'smooth' })
     vi.advanceTimersByTime(1000)
     expect(pin).toHaveBeenCalledTimes(5)
-    expect(pin.mock.calls[4][0]).toEqual({ block: 'start', behavior: 'auto' })
+    expect(pin.mock.calls[4]?.[0]).toEqual({ block: 'start', behavior: 'auto' })
   })
 
   it('the retries are bounded: a later manual scroll while typing is never fought', async () => {

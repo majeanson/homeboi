@@ -186,14 +186,14 @@ describe('les bagages', () => {
     expect(await bag(s, id)).toEqual([expect.objectContaining({ id: shared, text: 'Crème solaire', member_id: null, packed_at: null }), expect.objectContaining({ id: hers, member_id: lea })])
 
     await patchBag(s, { id: shared, packed: true })
-    expect((await bag(s, id))[0].packed_at).toBeGreaterThan(0)
+    expect((await bag(s, id))[0]?.packed_at).toBeGreaterThan(0)
     await patchBag(s, { id: shared, packed: false })
-    expect((await bag(s, id))[0].packed_at).toBeNull()
+    expect((await bag(s, id))[0]!.packed_at).toBeNull()
 
     await patchBag(s, { id: hers, packed: true })
-    expect((await bag(s, id))[1].member_id, 'a tick does not change whose bag it is').toBe(lea)
+    expect((await bag(s, id))[1]!.member_id, 'a tick does not change whose bag it is').toBe(lea)
     await patchBag(s, { id: hers, member_id: null })
-    expect((await bag(s, id))[1].member_id, 'moved to the shared list').toBeNull()
+    expect((await bag(s, id))[1]!.member_id, 'moved to the shared list').toBeNull()
     await patchBag(s, { id: hers, text: 'Toutou' })
     expect((await bag(s, id))[1]).toMatchObject({ text: 'Toutou' })
 

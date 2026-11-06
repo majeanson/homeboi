@@ -272,7 +272,8 @@ export function EntityCombobox<T>({
     } else if (e.key === 'Enter') {
       // A highlighted option links it; otherwise Enter keeps the free text.
       e.preventDefault()
-      if (open && activeIdx >= 0) pick(shown[activeIdx])
+      const highlighted = shown[activeIdx]
+      if (open && highlighted) pick(highlighted)
       else commit()
     } else if (e.key === 'Escape') {
       // First Esc closes the dropdown; if it's already closed, let the editor cancel.

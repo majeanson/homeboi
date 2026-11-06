@@ -42,7 +42,7 @@ export function rawImgTags(src: string): { line: number; text: string }[] {
   const out: { line: number; text: string }[] = []
   for (const m of src.matchAll(/<img(?=[\s/>])/g)) {
     const at = m.index ?? 0
-    out.push({ line: src.slice(0, at).split('\n').length, text: src.slice(at, at + 50).split('\n')[0] })
+    out.push({ line: src.slice(0, at).split('\n').length, text: src.slice(at, at + 50).split('\n')[0]! })
   }
   return out
 }

@@ -60,10 +60,10 @@ describe('jumeler une tablette', () => {
     const s = await household('pair-revoke', undefined, { empty: true })
     const { deviceId, token } = await pair(s, 'Salon')
     await okJson(s.fetch('/api/pair/devices', { method: 'PATCH', body: { id: deviceId, label: '  Tablette du salon  ' } }))
-    expect((await devices(s))[0].label).toBe('Tablette du salon')
+    expect((await devices(s))[0]?.label).toBe('Tablette du salon')
 
     await okJson(s.fetch('/api/pair/devices', { method: 'POST', body: { revokeId: deviceId } }))
-    expect((await devices(s))[0].revoked_at).toBeGreaterThan(0)
+    expect((await devices(s))[0]?.revoked_at).toBeGreaterThan(0)
     expect((await anon('/api/board', { headers: { 'X-Device-Token': token } })).status).toBe(401)
   })
 

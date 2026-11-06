@@ -113,7 +113,8 @@ export function SubTabs<K extends string>({
     else if (e.key === 'End') next = options.length - 1
     else return
     e.preventDefault()
-    if (next !== idx) onSelect(options[next].key)
+    const picked = options[next]
+    if (picked && next !== idx) onSelect(picked.key)
     // Move focus to the target tab (stable, keyed by o.key — safe to focus at once).
     // preventScroll + toView: a bare .focus() would scroll the whole PAGE to the row.
     const target = tablistRef.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]

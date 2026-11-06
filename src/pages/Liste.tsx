@@ -429,8 +429,7 @@ export function Liste() {
     const cur = removal.visible(qc.getQueryData<BoardListData>(BOARD_KEY)?.list ?? [])
     const ids = cur.map((i) => i.id)
     if (from < 0 || from >= ids.length || to < 0 || to >= ids.length) return
-    const [moved] = ids.splice(from, 1)
-    ids.splice(to, 0, moved)
+    ids.splice(to, 0, ...ids.splice(from, 1))
     reorderTo(ids)
   }
   const dnd = usePointerDnd({
@@ -876,7 +875,8 @@ export function Liste() {
             // visible without grouping.
             const ai = aisleOf(item.text)
             const aisleInfo = AISLE_BY_ID[ai]
-            const showHeader = byAisle && (index === 0 || groupOf(displayList[index - 1]) !== groupOf(item))
+            const above = displayList[index - 1]
+            const showHeader = byAisle && (!above || groupOf(above) !== groupOf(item))
             return (
               <Fragment key={item.id}>
                 {showHeader && (

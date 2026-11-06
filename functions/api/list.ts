@@ -101,7 +101,7 @@ async function orderedRows(db: D1Database, householdId: string) {
 // last row is an ordinary errand).
 function noRushStart(rows: { non_urgent: number | null }[]): number {
   let i = rows.length
-  while (i > 0 && rows[i - 1].non_urgent) i--
+  while (i > 0 && rows[i - 1]?.non_urgent) i--
   return i
 }
 

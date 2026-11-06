@@ -73,37 +73,37 @@ describe('resolveCarDay — the resolved busy answer', () => {
     const d = resolveCarDay(input({ rideRows: [ride({ start_at: atOn(SUN, 14) })] }), SUN)
     expect(d.spans).toEqual([]) // no schedule window…
     expect(d.carSpans).toHaveLength(1) // …but the car is spoken for
-    expect(d.carSpans[0].start).toBe(atOn(SUN, 14))
-    expect(d.carSpans[0].end).toBe(atOn(SUN, 16)) // the 2 h default
+    expect(d.carSpans[0]?.start).toBe(atOn(SUN, 14))
+    expect(d.carSpans[0]?.end).toBe(atOn(SUN, 16)) // the 2 h default
   })
 
   it('an explicit « Jusqu’à » sets the exact window instead of the default', () => {
     const d = resolveCarDay(input({ rideRows: [ride({ start_at: atOn(SUN, 14), end_at: atOn(SUN, 15) })] }), SUN)
-    expect(d.carSpans[0].end).toBe(atOn(SUN, 15))
+    expect(d.carSpans[0]?.end).toBe(atOn(SUN, 15))
   })
 
   it('merges the work window and a rendez-vous that runs straight out of it', () => {
     const d = resolveCarDay(input({ rideRows: [ride({ start_at: atOn(WED, 17) })] }), WED)
     expect(d.carSpans).toHaveLength(1)
-    expect(d.carSpans[0].start).toBe(atOn(WED, 8))
-    expect(d.carSpans[0].end).toBe(atOn(WED, 19))
+    expect(d.carSpans[0]?.start).toBe(atOn(WED, 8))
+    expect(d.carSpans[0]?.end).toBe(atOn(WED, 19))
   })
 })
 
 describe('resolveCarDay — conflicts', () => {
   it('flags a rendez-vous landing while the car is at work', () => {
     const d = resolveCarDay(input({ rideRows: [ride({ start_at: atOn(WED, 16) })] }), WED)
-    expect(d.rides[0].conflict).toBe(true)
+    expect(d.rides[0]?.conflict).toBe(true)
   })
 
   it('does not flag one that starts exactly when the car is back', () => {
     const d = resolveCarDay(input({ rideRows: [ride({ start_at: atOn(WED, 17) })] }), WED)
-    expect(d.rides[0].conflict).toBe(false)
+    expect(d.rides[0]!.conflict).toBe(false)
   })
 
   it('flags one that begins in a free gap but runs INTO the work window', () => {
     const d = resolveCarDay(input({ rideRows: [ride({ start_at: atOn(WED, 7) })] }), WED)
-    expect(d.rides[0].conflict).toBe(true)
+    expect(d.rides[0]?.conflict).toBe(true)
   })
 
   it('a rendez-vous on a SECOND car is not judged against the primary car’s schedule', () => {
@@ -111,7 +111,7 @@ describe('resolveCarDay — conflicts', () => {
     // It still shows in the day's list…
     expect(d.rides).toHaveLength(1)
     // …but it neither occupies the primary car nor clashes with its schedule.
-    expect(d.rides[0].conflict).toBe(false)
+    expect(d.rides[0]!.conflict).toBe(false)
     expect(d.carSpans).toEqual([{ start: atOn(WED, 8), end: atOn(WED, 17), label: 'Travail', holderId: 'marc' }])
   })
 })
@@ -132,7 +132,7 @@ describe('resolveCarDay — per-date adjustments', () => {
   it('a rendez-vous still occupies the car on a day the schedule released it', () => {
     const d = resolveCarDay(input({ overrides: [OV], rideRows: [ride({ start_at: atOn(WED, 14) })] }), WED)
     expect(d.carSpans).toHaveLength(1)
-    expect(d.carSpans[0].start).toBe(atOn(WED, 14))
+    expect(d.carSpans[0]?.start).toBe(atOn(WED, 14))
   })
 })
 
@@ -149,7 +149,7 @@ describe('ridesOnDay / toRide — recurrence', () => {
     // last two hours on THURSDAY, not carry Wednesday's absolute end.
     const rec = ride({ start_at: atOn(WED, 18), end_at: atOn(WED, 20), recur_json: JSON.stringify(wk([4])) })
     const inp = input({ rideRows: [rec] })
-    const [occ] = ridesOnDay(inp, THU, addLocalDays(THU, 1))
+    const occ = (ridesOnDay(inp, THU, addLocalDays(THU, 1)))[0]!
     const r = toRide(inp, occ.row, occ.at)
     expect(r.at).toBe(atOn(THU, 18))
     expect(r.endAt).toBe(atOn(THU, 20))

@@ -278,7 +278,7 @@ export function AddSheet({
   // (one mode, no tiles to choose between) still drops straight into its single
   // form, and an explicit initialMode (open('pantry'), the Garde-manger ＋) still
   // pins that form.
-  const defMode: AddSheetMode | null = shown.length > 1 ? null : shown[0]
+  const defMode: AddSheetMode | null = shown.length > 1 ? null : (shown[0] ?? null)
   const [mode, setMode] = useState<AddSheetMode | null>(initialMode ?? defMode)
   // Re-sync on each open so the last visit's pick doesn't leak into this one.
   useEffect(() => {

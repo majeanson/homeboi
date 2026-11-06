@@ -35,10 +35,10 @@ function editDistance(a: string, b: string): number {
   let prev = Array.from({ length: n + 1 }, (_, j) => j)
   for (let i = 1; i <= m; i++) {
     const cur = [i]
-    for (let j = 1; j <= n; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1))
+    for (let j = 1; j <= n; j++) cur[j] = Math.min((prev[j] ?? 0) + 1, (cur[j - 1] ?? 0) + 1, (prev[j - 1] ?? 0) + (a[i - 1] === b[j - 1] ? 0 : 1))
     prev = cur
   }
-  return prev[n]
+  return prev[n] ?? 0
 }
 // A token pair a zoom could legitimately have read differently.
 const glyphClose = (a: string, b: string) => a === b || glyphy(a) || glyphy(b) || editDistance(a, b) <= 2
@@ -50,9 +50,9 @@ function sameLineDistance(a: string, b: string): number {
   const B = lineTokens(b)
   if (!A.length || A.length !== B.length) return -1
   let diff = 0
-  for (let i = 0; i < A.length; i++) {
-    if (A[i] === B[i]) continue
-    if (!glyphClose(A[i], B[i]) || ++diff > MAX_SUBSTITUTIONS) return -1
+  for (const [i, token] of A.entries()) {
+    if (token === B[i]) continue
+    if (!glyphClose(token, B[i] ?? '') || ++diff > MAX_SUBSTITUTIONS) return -1
   }
   return diff
 }
@@ -63,7 +63,7 @@ export function mergeOcrPages(pages: string[]): string {
   const texts = pages.map((p) => p.trim()).filter(Boolean)
   if (texts.length <= 1) return texts[0] ?? ''
   const splitLines = (t: string) => t.split(/\r?\n/).map((l) => l.trim()).filter(Boolean)
-  const base = splitLines(texts[0])
+  const base = splitLines(texts[0] ?? '')
   // Best detail replacement found for each base line (closest read wins).
   const replacement = new Map<number, { line: string; dist: number }>()
   const extras: string[] = []
@@ -73,8 +73,8 @@ export function mergeOcrPages(pages: string[]): string {
     const matches = lines.map((line) => {
       let bestIdx = -1
       let bestDist = Infinity
-      for (let i = 0; i < base.length; i++) {
-        const d = sameLineDistance(line, base[i])
+      for (const [i, baseLine] of base.entries()) {
+        const d = sameLineDistance(line, baseLine)
         if (d >= 0 && d < bestDist) {
           bestDist = d
           bestIdx = i

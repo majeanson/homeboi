@@ -39,7 +39,7 @@ export function bumpFrequent(scope: string, id: string): void {
     entry.at = Date.now()
     const ids = Object.keys(map)
     if (ids.length > MAX_PER_SCOPE) {
-      ids.sort((a, b) => map[a].at - map[b].at)
+      ids.sort((a, b) => (map[a]?.at ?? 0) - (map[b]?.at ?? 0))
       for (const stale of ids.slice(0, ids.length - MAX_PER_SCOPE)) delete map[stale]
     }
     localStorage.setItem(LS_KEY, JSON.stringify(store))

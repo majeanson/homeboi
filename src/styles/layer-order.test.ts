@@ -48,7 +48,7 @@ function cssFiles(dir: string): string[] {
 function rules(css: string): { selector: string; body: string }[] {
   const bare = css.replace(/\/\*[\s\S]*?\*\//g, '')
   const out: { selector: string; body: string }[] = []
-  for (const m of bare.matchAll(/([^{}]+)\{([^{}]*)\}/g)) out.push({ selector: m[1].trim(), body: m[2] })
+  for (const m of bare.matchAll(/([^{}]+)\{([^{}]*)\}/g)) out.push({ selector: m[1]!.trim(), body: m[2]! })
   return out
 }
 
@@ -61,7 +61,7 @@ const files = cssFiles(stylesDir)
 const zTokens = new Map<string, number>()
 for (const { selector, body } of rules(readFileSync(join(stylesDir, 'core.css'), 'utf8'))) {
   if (selector !== ':root') continue
-  for (const m of body.matchAll(/--(z-[a-z-]+)\s*:\s*(\d+)/g)) zTokens.set(m[1], +m[2])
+  for (const m of body.matchAll(/--(z-[a-z-]+)\s*:\s*(\d+)/g)) zTokens.set(m[1]!, +m[2]!)
 }
 
 /** Every `z-index: <n | var(--z-x)>` declaration in the stylesheets, by selector. */
@@ -70,7 +70,7 @@ for (const f of files) {
   for (const { selector, body } of rules(readFileSync(f, 'utf8'))) {
     const m = /(?:^|;)\s*z-index\s*:\s*(?:(-?\d+)|var\(--(z-[a-z-]+)\))/.exec(body)
     if (!m) continue
-    const z = m[1] != null ? +m[1] : (zTokens.get(m[2]) ?? NaN)
+    const z = m[1] != null ? +m[1] : (zTokens.get(m[2]!) ?? NaN)
     // First declaration wins — a later `.hub .x` override tweaks size, not layer.
     if (!zBySelector.has(selector)) zBySelector.set(selector, { z, file: relative(stylesDir, f), body })
   }

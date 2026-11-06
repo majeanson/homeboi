@@ -65,7 +65,7 @@ export function chipClassNames(src: string): { line: number; text: string }[] {
       value = src.slice(at).match(/^(['"])[^'"\n]*\1/)?.[0] ?? ''
     }
     const holdsChip = [...value.matchAll(/(['"`])([^'"`\n]*)\1/g)].some((lit) =>
-      lit[2].trim().split(/\s+/).includes('chip'),
+      lit[2]!.trim().split(/\s+/).includes('chip'),
     )
     if (holdsChip) out.push({ line: src.slice(0, m.index).split('\n').length, text: value.slice(0, 60) })
   }

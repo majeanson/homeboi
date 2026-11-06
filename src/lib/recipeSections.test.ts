@@ -31,8 +31,8 @@ describe('recipeVersions / applyVersion', () => {
   it('finds the matched pair and leaves the parts alone', () => {
     const v = recipeVersions(ingredients, steps)
     expect(v.map((x) => x.title)).toEqual(['pour une version bol'])
-    expect(v[0].ingredients).toEqual(['## Garnitures (au choix)', 'Chou rouge émincé', '## Pour la sauce', '80 ml de mayonnaise'])
-    expect(v[0].steps).toEqual(['Mélanger la sauce.', 'Garnir.'])
+    expect(v[0]?.ingredients).toEqual(['## Garnitures (au choix)', 'Chou rouge émincé', '## Pour la sauce', '80 ml de mayonnaise'])
+    expect(v[0]?.steps).toEqual(['Mélanger la sauce.', 'Garnir.'])
     expect(recipeVersions(['## Pour la sauce', 'x'], ['Cuire.'])).toEqual([])
     expect(recipeVersions(['x'], ['## Cuisson', 'Cuire.'])).toEqual([])
   })

@@ -74,8 +74,7 @@ export function CardDeckEditor({
   const move = (from: number, to: number) => {
     if (to < 0 || to >= cards.length || from === to) return
     const next = [...cards]
-    const [m] = next.splice(from, 1)
-    next.splice(to, 0, m)
+    next.splice(to, 0, ...next.splice(from, 1))
     onChange(next)
   }
   // '' clears: the key is dropped from the card so the saved deck stays clean.
@@ -304,7 +303,7 @@ function TimerControl({ seconds = 0, onChange }: { seconds?: number; onChange: (
   const isOn = seconds > 0
   // indexOf a non-preset (legacy custom) value is -1; +1 lands on 0 = off, so one
   // more tap clears an odd value and re-enters the preset cycle cleanly.
-  const cycle = () => onChange(TIMER_PRESETS[(TIMER_PRESETS.indexOf(seconds) + 1) % TIMER_PRESETS.length])
+  const cycle = () => onChange(TIMER_PRESETS[(TIMER_PRESETS.indexOf(seconds) + 1) % TIMER_PRESETS.length] ?? 0)
   return (
     <div className="deck__timer mono">
       <button

@@ -69,7 +69,7 @@ async function hmac(secret: string, message: string): Promise<Uint8Array> {
 function timingSafeEqual(a: Uint8Array, b: Uint8Array): boolean {
   if (a.length !== b.length) return false
   let diff = 0
-  for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i]
+  for (let i = 0; i < a.length; i++) diff |= (a[i] ?? 0) ^ (b[i] ?? 0)
   return diff === 0
 }
 
@@ -282,7 +282,7 @@ const KIND_ALIASES: Record<string, GuestKind> = { intake: 'postbox' }
 // (verify, the allowlist, the SPA) agrees. Today's guests are read-only-
 // everything, which IS showcase — so old links keep working unchanged.
 export function normalizeGuestKind(k: unknown): GuestKind {
-  if (typeof k === 'string' && k in KIND_ALIASES) return KIND_ALIASES[k]
+  if (typeof k === 'string' && k in KIND_ALIASES) return KIND_ALIASES[k] ?? 'showcase'
   return KNOWN_KINDS.includes(k as GuestKind) ? (k as GuestKind) : 'showcase'
 }
 

@@ -35,10 +35,10 @@ test('a recipe posts its leftovers without leaving the scene', async ({ page }) 
 
   // It carries the recipe link, so the pool row can open the recipe it came from.
   await expect.poll(() => posted.length).toBe(1)
-  expect(posted[0].title).toBeTruthy()
-  expect(posted[0].recipeId).toBeTruthy()
+  expect(posted[0]?.title).toBeTruthy()
+  expect(posted[0]?.recipeId).toBeTruthy()
   // No meal behind a recipe opened straight from the book.
-  expect(posted[0].sourceMealId).toBeNull()
+  expect(posted[0]!.sourceMealId).toBeNull()
 
   // NO undo toast from here, and that is deliberate, not an omission: .recipe-modal
   // is z-index 80 and .undo-toast is 40, so an « Annuler » offered from inside this

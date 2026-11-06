@@ -219,7 +219,7 @@ export function SearchPage() {
         if (r !== -1) hits.push({ x, r })
       }
       hits.sort((a, b) => a.r - b.r) // stable: ties keep source order
-      return { items: hits.slice(0, CAP).map((h) => h.x), best: hits.length ? hits[0].r : 99 }
+      return { items: hits.slice(0, CAP).map((h) => h.x), best: hits[0]?.r ?? 99 }
     }
 
     const recipes = pick(recipesData, SEARCH_INDEX.recipe)
@@ -273,8 +273,7 @@ export function SearchPage() {
       const titleStr = e.title[lang]
       const whatStr = stripTokens(e.what[lang])
       let pointIdx = -1
-      for (let i = 0; i < e.points.length; i++) {
-        const p = e.points[i]
+      for (const [i, p] of e.points.entries()) {
         if (fold(stripTokens(`${p.label[lang]} ${p.detail[lang]} ${p.why?.[lang] ?? ''}`)).includes(needle)) {
           pointIdx = i
           break
@@ -285,19 +284,20 @@ export function SearchPage() {
       const r = tf === needle ? 0 : tf.includes(needle) ? 1 : whatHit || pointIdx >= 0 ? 2 : -1
       if (r === -1) continue
       const usePoint = r === 2 && !whatHit && pointIdx >= 0
+      const point = usePoint ? e.points[pointIdx] : undefined
       guideAll.push({
         r,
         g: {
           id: e.id,
           icon: e.icon,
           title: titleStr,
-          sub: usePoint ? stripTokens(e.points[pointIdx].label[lang]) : whatStr,
+          sub: point ? stripTokens(point.label[lang]) : whatStr,
           to: guideHref(e.id, usePoint ? pointIdx : null),
         },
       })
     }
     guideAll.sort((a, b) => a.r - b.r)
-    const guide = { items: guideAll.slice(0, CAP).map((h) => h.g), best: guideAll.length ? guideAll[0].r : 99 }
+    const guide = { items: guideAll.slice(0, CAP).map((h) => h.g), best: guideAll[0]?.r ?? 99 }
     return { recipes, people, pets: petHits, businesses: bizHits, routines: routineHits, todos: todoHits, chores: choreHits, pantry: pantryHits, cars: carHits, carnets: carnetHits, projects: projectHits, care: careHits, pins: pinHits, drawings: drawingHits, habits: habitHits, mots: motHits, meals: mealHits, ideas: ideaHits, groups: groupHits, trips: tripHits, events, listItems, notes, guide }
   }, [needle, recipesData, contacts, pets, businesses, routines, todos, chores, low, reserve, cars, carnets, homeProjects, careLog, homePins, drawings, habits, mots, meals, mealIdeas, groups, trips, memberName, board, familyNotes, lang])
 

@@ -55,7 +55,8 @@ export function Segmented<K extends string>({
     else if (e.key === 'End') next = options.length - 1
     else return
     e.preventDefault()
-    if (next !== idx) onChange(options[next].key)
+    const target = options[next]
+    if (target && next !== idx) onChange(target.key)
     ref.current?.querySelectorAll<HTMLButtonElement>('[role="radio"]')[next]?.focus({ preventScroll: true })
   }
   // No option selected (a value outside the list): the first takes the tab stop, so the

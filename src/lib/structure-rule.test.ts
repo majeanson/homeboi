@@ -22,7 +22,7 @@ describe('one key, one spelling', () => {
     const heads = new Map<string, Set<string>>()
     for (const { rel, text } of files) {
       for (const m of text.matchAll(/queryKey:\s*\[\s*'([^']+)'/g)) {
-        heads.set(m[1], (heads.get(m[1]) ?? new Set()).add(rel))
+        heads.set(m[1]!, (heads.get(m[1]!) ?? new Set()).add(rel))
       }
     }
     const twice = [...heads].filter(([, f]) => f.size > 1).map(([k, f]) => `${k}: ${[...f].join(', ')}`)

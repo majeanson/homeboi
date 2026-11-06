@@ -29,19 +29,19 @@ describe('placeFil', () => {
 
   it('the first row has no gap; later gaps scale with the time between items, clamped', () => {
     const { rows } = placeFil([{ start_at: at(8) }, { start_at: at(8.5) }, { start_at: at(20) }], at(0))
-    expect(rows[0].gapBefore).toBe(0)
+    expect(rows[0]?.gapBefore).toBe(0)
     // 30 min apart → below the floor → clamped to MIN_GAP (0.5).
-    expect(rows[1].gapBefore).toBe(0.5)
+    expect(rows[1]?.gapBefore).toBe(0.5)
     // 11.5 h apart → above the ceiling → clamped to MAX_GAP (2.5).
-    expect(rows[2].gapBefore).toBe(2.5)
+    expect(rows[2]?.gapBefore).toBe(2.5)
   })
 
   it('a job window spanning now is not yet past (uses `until`, not start)', () => {
     // Started 9:00, ends 17:00, now 12:00 → still ongoing, not dimmed.
     const { rows } = placeFil([{ start_at: at(9), until: at(17) }], at(12))
-    expect(rows[0].past).toBe(false)
+    expect(rows[0]!.past).toBe(false)
     // Same window after it ends → past.
-    expect(placeFil([{ start_at: at(9), until: at(17) }], at(18)).rows[0].past).toBe(true)
+    expect(placeFil([{ start_at: at(9), until: at(17) }], at(18)).rows[0]?.past).toBe(true)
   })
 
   it('flags a « libre » gap of ≥2h between commitments (measured from the previous end)', () => {
@@ -53,7 +53,7 @@ describe('placeFil', () => {
   it('measures the free gap from a job window’s end (until), not its start', () => {
     // Job 9:00–17:00, then an 18:00 event → only 1 h after work → NOT free.
     const { rows } = placeFil([{ start_at: at(9), until: at(17) }, { start_at: at(18) }], at(20))
-    expect(rows[1].freeBefore).toBe(false)
+    expect(rows[1]!.freeBefore).toBe(false)
   })
 
   it('handles an empty list', () => {

@@ -221,9 +221,9 @@ export function stepHeadedMethod(pageText: string, ingredients: string[]): strin
   })
   if (heads.length < 2 || heads.some((h, k) => h.n !== k + 1 || /[.!?]$/.test(h.line))) return null
   const out: string[] = []
-  for (let k = 0; k < heads.length; k++) {
+  for (const [k, head] of heads.entries()) {
     const last = k === heads.length - 1
-    let body = lines.slice(heads[k].i + 1, last ? undefined : heads[k + 1].i)
+    let body = lines.slice(head.i + 1, heads[k + 1]?.i)
     while (body.length && !body[0]) body = body.slice(1)
     if (last) {
       const end = body.indexOf('')
@@ -235,7 +235,7 @@ export function stepHeadedMethod(pageText: string, ingredients: string[]): strin
     }
     while (body.length && !body[body.length - 1]) body = body.slice(0, -1)
     if (!body.length || !body.every((l) => SENTENCE.test(l))) return null
-    out.push(`## ${heads[k].line}`, ...body)
+    out.push(`## ${head.line}`, ...body)
   }
   // The method cooks THIS recipe: a « How to pick your chia seeds » list is numbered too.
   const said = normLoose(out.join(' '))
@@ -283,8 +283,8 @@ export function recipeTitle(structured: string | null, printed: string | null): 
 export function unglueStepHeadings(steps: string[], pageText: string): string[] {
   const lines = new Set(pageText.split('\n').map((l) => l.trim()).filter(Boolean))
   return steps.flatMap((s) => {
-    const m = /^([^.!?:;]{3,60}?[a-zà-öœ)])([A-ZÀ-ÖŒ][a-zà-öœ])/.exec(s)
-    return m && lines.has(m[1]) ? [`## ${m[1]}`, s.slice(m[1].length)] : [s]
+    const head = /^([^.!?:;]{3,60}?[a-zà-öœ)])([A-ZÀ-ÖŒ][a-zà-öœ])/.exec(s)?.[1]
+    return head && lines.has(head) ? [`## ${head}`, s.slice(head.length)] : [s]
   })
 }
 
@@ -307,7 +307,7 @@ export function pageListFillsIngredients(structured: string[], printed: string[]
   if (s.some((l) => /\d\.\d{4,}/.test(l))) {
     if (p.length !== s.length) return false
     return s.every((l, i) => {
-      const lw = words(p[i])
+      const lw = words(p[i] ?? '')
       const sw = words(l).filter((w) => w.length >= 3 && !/^\d/.test(w))
       return sw.filter((w) => lw.some((x) => x.startsWith(w))).length * 10 >= sw.length * 6
     })
@@ -324,7 +324,7 @@ export function pageListFillsIngredients(structured: string[], printed: string[]
   }
   let j = 0
   for (const name of s) {
-    while (j < p.length && !holds(p[j], name)) j++
+    while (j < p.length && !holds(p[j] ?? '', name)) j++
     if (j >= p.length) return false
     j++
   }
@@ -337,9 +337,9 @@ export function pageListFillsIngredients(structured: string[], printed: string[]
 export function regroupSteps(structured: string[], printed: string[]): string[] {
   if (structured.some((l) => isSectionHeading(l)) || !printed.some((l) => isSectionHeading(l))) return structured
   const p = real(printed)
-  if (p.length !== structured.length || p.some((l, i) => normLoose(l) !== normLoose(structured[i]))) return structured
+  if (p.length !== structured.length || p.some((l, i) => normLoose(l) !== normLoose(structured[i] ?? ''))) return structured
   let i = 0
-  return printed.map((l) => (isSectionHeading(l) ? l : structured[i++]))
+  return printed.map((l) => (isSectionHeading(l) ? l : (structured[i++] ?? l)))
 }
 
 // The no-model read of a fetched page: the draft, or an honest « no recipe here ».

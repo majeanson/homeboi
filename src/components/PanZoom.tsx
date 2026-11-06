@@ -121,6 +121,7 @@ export function PanZoom({
     if (pointers.current.size === 2) {
       const r = surfaceRef.current!.getBoundingClientRect()
       const [a, b] = [...pointers.current.values()]
+      if (!a || !b) return
       pinch.current = {
         dist: Math.hypot(a.x - b.x, a.y - b.y) || 1,
         cx: (a.x + b.x) / 2 - r.left,
@@ -139,6 +140,7 @@ export function PanZoom({
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
     if (pointers.current.size >= 2 && pinch.current) {
       const [a, b] = [...pointers.current.values()]
+      if (!a || !b) return
       const s1 = clampScale(pinch.current.scale * (Math.hypot(a.x - b.x, a.y - b.y) / pinch.current.dist))
       // Scale about the pinch's starting midpoint, THEN follow the midpoint as the two
       // fingers travel — so two fingers also MOVE the content, with or without a

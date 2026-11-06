@@ -95,8 +95,8 @@ describe('familyToShare', () => {
     expect(out.self.photoKey).toBe('av_1')
     // household = the rest (Léa, index 1).
     expect(out.household).toHaveLength(1)
-    expect(out.household[0].firstName).toBe('Léa')
-    expect(out.household[0].lastName).toBe('Tremblay')
+    expect(out.household[0]?.firstName).toBe('Léa')
+    expect(out.household[0]?.lastName).toBe('Tremblay')
     // The spouse edge maps to indices; owner/pet is NOT a person edge.
     expect(out.links).toEqual([{ aIndex: 0, bIndex: 1, type: 'spouse' }])
     // The pet rides along, owned by Marc (index 0).
@@ -141,6 +141,6 @@ describe('familyToShare', () => {
       links: [link('member', 'm9', 'pet', 'p1', 'owner', 'pet')],
     }
     const out = familyToShare([personKey('contact', 'a'), personKey('pet', 'p1')], data)!
-    expect(out.pets[0].ownerIndex).toBe(0)
+    expect(out.pets[0]?.ownerIndex).toBe(0)
   })
 })

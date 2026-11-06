@@ -541,6 +541,7 @@ export function useVoiceInput(onResult: (text: string) => void, opts: VoiceOpts 
       sawResultRef.current = true // any result at all rules out the instant-abort retry
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const r = e.results[i]
+        if (!r) continue
         if (!r.isFinal) {
           sawInterim = true
           pendingRef.current = r[0]?.transcript?.trim() ?? pendingRef.current

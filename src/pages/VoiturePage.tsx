@@ -36,7 +36,7 @@ const minToHHMM = (min: number) => `${pad(Math.floor(min / 60))}:${pad(min % 60)
 const hhmmToMin = (s: string): number | null => {
   const m = /^(\d{1,2}):(\d{2})$/.exec(s)
   if (!m) return null
-  const v = +m[1] * 60 + +m[2]
+  const v = Number(m[1]) * 60 + Number(m[2])
   return v >= 0 && v <= 1440 ? v : null
 }
 // The Sunday on/before a local day (matches the recur week boundary).

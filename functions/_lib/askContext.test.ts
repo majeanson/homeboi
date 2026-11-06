@@ -81,7 +81,7 @@ describe('expandAskEvents — recurring expansion + merge + cap', () => {
     expect(out.length).toBeGreaterThan(1) // multiple Wednesdays in a month window
     for (const e of out) expect(e.title).toBe('Bac bleu')
     // sorted ascending
-    for (let i = 1; i < out.length; i++) expect(out[i].start_at).toBeGreaterThan(out[i - 1].start_at)
+    for (let i = 1; i < out.length; i++) expect(out[i]?.start_at).toBeGreaterThan(out[i - 1]!.start_at)
   })
 
   it('a malformed/null recur rule contributes nothing (never crashes)', () => {
@@ -97,7 +97,7 @@ describe('expandAskEvents — recurring expansion + merge + cap', () => {
     const out = expandAskEvents(oneOff, recurring, rangeStart, rangeEnd)
     expect(out.some((e) => e.title === 'Rendez-vous')).toBe(true)
     expect(out.some((e) => e.title === 'Corvée')).toBe(true)
-    for (let i = 1; i < out.length; i++) expect(out[i].start_at).toBeGreaterThanOrEqual(out[i - 1].start_at)
+    for (let i = 1; i < out.length; i++) expect(out[i]?.start_at).toBeGreaterThanOrEqual(out[i - 1]!.start_at)
   })
 
   it('caps the merged, sorted total at EVENT_CAP', () => {
@@ -116,8 +116,8 @@ describe('birthdaysForPrompt — derivation + cap', () => {
     const people: BirthdayPerson[] = [{ key: 'member:lea', name: 'Léa', birthday: '2020-06-24', memberId: 'lea' }]
     const out = birthdaysForPrompt(people, d(2026, 5, 1), d(2026, 6, 1))
     expect(out).toHaveLength(1)
-    expect(out[0].name).toBe('Léa')
-    expect(out[0].age).toBe(6)
+    expect(out[0]?.name).toBe('Léa')
+    expect(out[0]?.age).toBe(6)
   })
 
   it('caps at BIRTHDAY_CAP even with a large extended family in-window', () => {
@@ -316,15 +316,15 @@ describe('workForPrompt — the derived work rota', () => {
   it('names the member and carries the window + car claim', () => {
     const occ = workForPrompt([BLOCK], [], MEMBERS, WED, WED + 86400)
     expect(occ).toHaveLength(1)
-    expect(occ[0].name).toBe('Marc')
-    expect(occ[0].holdsCar).toBe(true)
-    expect(occ[0].endAt).toBeGreaterThan(occ[0].at)
+    expect(occ[0]?.name).toBe('Marc')
+    expect(occ[0]?.holdsCar).toBe(true)
+    expect(occ[0]?.endAt).toBeGreaterThan(occ[0]!.at)
   })
 
   it('an adjusted date releases the car but keeps the work', () => {
     const occ = workForPrompt([BLOCK], [{ day: WED }], MEMBERS, WED, WED + 86400)
     expect(occ).toHaveLength(1)
-    expect(occ[0].holdsCar).toBe(false)
+    expect(occ[0]!.holdsCar).toBe(false)
   })
 
   it('drops a window whose member no longer exists rather than printing a blank name', () => {

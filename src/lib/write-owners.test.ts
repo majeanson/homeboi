@@ -128,8 +128,8 @@ function ownedWrites(): Site[] {
       out.push({
         file: relative(srcDir, f).split(sep).join('/'),
         line: src.slice(0, m.index).split('\n').length,
-        endpoint: m[2],
-        keysText: keys ? keys[1] : null,
+        endpoint: m[2]!,
+        keysText: keys ? keys[1]! : null,
       })
     }
     // The CREATE seam (lib/undoCreate): `createWithUndo({ endpoint: '…', affectedKeys })`
@@ -140,13 +140,13 @@ function ownedWrites(): Site[] {
     for (const m of src.matchAll(/\bcreateWithUndo\s*\(\s*\{/g)) {
       const after = src.slice(m.index, m.index + 600)
       const ep = after.match(/\bendpoint:\s*['"`]([^'"`]+)['"`]/)
-      if (!ep || !OWNED[ep[1]]) continue
+      if (!ep || !OWNED[ep[1]!]) continue
       const keys = after.match(/affectedKeys:\s*(\[[^\]]*\]|\w+)/)
       out.push({
         file: relative(srcDir, f).split(sep).join('/'),
         line: src.slice(0, m.index).split('\n').length,
-        endpoint: ep[1],
-        keysText: keys ? keys[1] : null,
+        endpoint: ep[1]!,
+        keysText: keys ? keys[1]! : null,
       })
     }
   }
@@ -163,7 +163,7 @@ describe('the ownership rule (a shared mutation flow is not re-implemented besid
   it('only the documented owners write an owned endpoint', () => {
     const offenders = writes
       .filter((w) => {
-        const owners = OWNED[w.endpoint].owners
+        const owners = OWNED[w.endpoint]!.owners
         return owners !== undefined && !owners.has(w.file)
       })
       .map((w) => `${w.file}:${w.line} → ${w.endpoint}`)
@@ -187,7 +187,7 @@ describe('the ownership rule (a shared mutation flow is not re-implemented besid
       // A named-variable key list (`affectedKeys: keys`) is resolved by hand: the
       // required tokens must at least appear somewhere in the same file.
       const scope = w.keysText && w.keysText.startsWith('[') ? w.keysText : readScanned(join(srcDir, w.file))
-      for (const k of OWNED[w.endpoint].requiredKeys) {
+      for (const k of OWNED[w.endpoint]!.requiredKeys) {
         if (!scope.includes(k)) offenders.push(`${w.file}:${w.line} → ${w.endpoint} is missing ${k}`)
       }
     }

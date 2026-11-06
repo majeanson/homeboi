@@ -79,9 +79,9 @@ export function PhotosSection({ help }: { help?: HelpMode }) {
     setBusy(true)
     setProgress({ done: 0, total: files.length })
     try {
-      for (let i = 0; i < files.length; i++) {
+      for (const [i, file] of files.entries()) {
         // Sequential so the server-side prune can't race itself.
-        await uploadMedia('photos', files[i])
+        await uploadMedia('photos', file)
         setProgress({ done: i + 1, total: files.length })
       }
       qc.invalidateQueries({ queryKey: PHOTOS_KEY })

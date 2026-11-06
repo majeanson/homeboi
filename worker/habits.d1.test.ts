@@ -130,7 +130,7 @@ describe('la journée d’une habitude', () => {
     const { days } = await read(s)
     expect(days.map((d) => d.value), 'a delta would have said 6').toEqual([3])
     await mark(s, id, { value: 0 })
-    expect((await read(s)).days[0].value, 'a zero is a value, not an absence').toBe(0)
+    expect((await read(s)).days[0]!.value, 'a zero is a value, not an absence').toBe(0)
   })
 
   it('any past day can be backfilled, the future cannot', async () => {
@@ -158,7 +158,7 @@ describe('la journée d’une habitude', () => {
     const lea = await member(s, 'Léa')
     const id = await add(s)
     await okJson(s.fetch('/api/habits', { method: 'PATCH', headers: { 'X-Profile': lea }, body: { id, mark: { day: today(), value: 1 } } }))
-    expect((await read(s)).days[0].member_id).toBe(lea)
+    expect((await read(s)).days[0]?.member_id).toBe(lea)
   })
 })
 

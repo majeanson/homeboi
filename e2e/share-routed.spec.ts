@@ -60,9 +60,9 @@ test('a shared link lands with its routed label and a reachable « Corriger »',
   // routing's rows handed back for deletion (never a duplicate).
   await page.locator('.share-page .cat-pick', { hasText: 'Souper' }).first().click()
   await expect.poll(() => posts.length).toBe(2)
-  expect(posts[1].forceType).toBe('meal')
-  expect(posts[1].text).toBe('https://example.com/recette-de-tarte')
-  expect(posts[1].undo).toEqual([{ table: 'events', id: 'x_e2e' }])
+  expect(posts[1]?.forceType).toBe('meal')
+  expect(posts[1]?.text).toBe('https://example.com/recette-de-tarte')
+  expect(posts[1]?.undo).toEqual([{ table: 'events', id: 'x_e2e' }])
 
   // The way onward replaces « Annuler » once something has landed.
   await expect(page.locator('.share-page__actions .btn--ghost').first()).toContainText('babillard')

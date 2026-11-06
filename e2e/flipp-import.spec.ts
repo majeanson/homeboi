@@ -65,11 +65,11 @@ test('confirmed: the deal swaps onto its line, the new line is added, the checke
   await expect(dialog).toBeVisible()
   await dialog.getByRole('button', { name: /^Rapporter$/ }).click()
   await expect.poll(() => writes.length, { timeout: 10_000 }).toBeGreaterThanOrEqual(3)
-  const patchDeal = writes.find((w) => w.method === 'PATCH' && w.body.id === 'l1' && w.body.deal)
+  const patchDeal = writes.find((w) => w.method === 'PATCH' && w.body.id === 'l1' && w.body.deal)!
   expect(patchDeal, 'the Flipp clipping became the deal on « Lait »').toBeTruthy()
-  expect((patchDeal!.body.deal as { id: number; merchant: string; price: number }).id).toBe(555)
-  expect((patchDeal!.body.deal as { id: number; merchant: string; price: number }).merchant).toBe('IGA')
-  expect((patchDeal!.body.deal as { id: number; merchant: string; price: number }).price).toBe(2.99)
+  expect((patchDeal.body.deal as { id: number; merchant: string; price: number }).id).toBe(555)
+  expect((patchDeal.body.deal as { id: number; merchant: string; price: number }).merchant).toBe('IGA')
+  expect((patchDeal.body.deal as { id: number; merchant: string; price: number }).price).toBe(2.99)
   const post = writes.find((w) => w.method === 'POST' && w.body.text === 'Crème à café')
   expect(post, 'the typed item became a new line').toBeTruthy()
   const check = writes.find((w) => w.method === 'PATCH' && w.body.id === 'l3' && w.body.checked === true)
@@ -122,9 +122,9 @@ test('a clipping with no line lands as a calm name, and the deal keeps the whole
   await expect(dialog).toBeVisible({ timeout: 15_000 })
   await dialog.getByRole('button', { name: /^Rapporter$/ }).click()
   await expect.poll(() => posts.length, { timeout: 10_000 }).toBe(1)
-  expect(posts[0].text, 'the line reads like a grocery item').toBe('Cuisses de poulet')
-  expect(posts[0].match_text, 'the server still matches on the whole title').toBe(TITLE)
-  const deal = posts[0].deal as { id: number; name: string }
+  expect(posts[0]!.text, 'the line reads like a grocery item').toBe('Cuisses de poulet')
+  expect(posts[0]!.match_text, 'the server still matches on the whole title').toBe(TITLE)
+  const deal = posts[0]!.deal as { id: number; name: string }
   expect(deal.id, 'the deal keeps its flyer item').toBe(777)
   expect(deal.name, 'the deal keeps the whole flyer title').toBe(TITLE)
 })

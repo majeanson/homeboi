@@ -26,7 +26,7 @@ describe('meal slot defaults', () => {
   it('covers every slot with a start hour, strictly increasing through the day', () => {
     for (const s of MEAL_SLOTS) expect(DEFAULT_SLOT_HOURS[s]).toBeTypeOf('number')
     const inOrder = DEFAULT_SLOT_ORDER.map((s) => DEFAULT_SLOT_HOURS[s])
-    for (let i = 1; i < inOrder.length; i++) expect(inOrder[i]).toBeGreaterThan(inOrder[i - 1])
+    for (let i = 1; i < inOrder.length; i++) expect(inOrder[i]).toBeGreaterThan(inOrder[i - 1]!)
   })
 
   it('has a distinct food icon for every slot (no slot falls back to a generic glyph)', () => {

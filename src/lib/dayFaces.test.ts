@@ -78,10 +78,10 @@ describe('the day panel and the day markers read the same bucket', () => {
     const missing = fieldsLinesForReads().filter((f) => {
       // The panel filters some lists before counting them (meals by visible slot,
       // todos by pending, habits by done) and counts the filtered local instead.
-      const aliases = [`sel.${f}.length`, `sel${f[0].toUpperCase()}${f.slice(1)}.length`]
+      const aliases = [`sel.${f}.length`, `sel${f[0]!.toUpperCase()}${f.slice(1)}.length`]
       if (f === 'habits') aliases.push('selHabitsDone.length')
       if (f === 'home') aliases.push('sel.home.length')
-      return !aliases.some((a) => expr.includes(a))
+      return !aliases.some((a) => expr!.includes(a))
     })
     expect(
       missing,

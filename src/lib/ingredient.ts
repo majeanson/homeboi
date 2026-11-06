@@ -34,8 +34,8 @@ const bareOf = (tok: string) => tok.toLowerCase().replace(/[.,;]+$/, '')
 // unit, so a real item that happens to start with a digit ("7up") is never cut in half.
 const GLUED = /^([\d.,/]+|[½¼¾⅓⅔⅛⅜⅝⅞]+)([a-zà-ÿ]+\.?)$/i
 const splitGlued = (tok: string): string[] => {
-  const m = GLUED.exec(tok)
-  return m && UNITS.has(bareOf(m[2])) ? [m[1], m[2]] : [tok]
+  const [, qty, unit] = GLUED.exec(tok) ?? []
+  return qty && unit && UNITS.has(bareOf(unit)) ? [qty, unit] : [tok]
 }
 
 export function ingredientName(line: string): string {
@@ -44,16 +44,17 @@ export function ingredientName(line: string): string {
   const toks = cleaned.split(' ').flatMap(splitGlued)
   let j = 0
   while (j < toks.length) {
-    const bare = bareOf(toks[j])
+    const tok = toks[j] ?? ''
+    const bare = bareOf(tok)
     if (SPOON_STUB.has(bare) && j + 2 < toks.length) {
-      const conn = bareOf(toks[j + 1])
-      const suf = bareOf(toks[j + 2])
+      const conn = bareOf(toks[j + 1] ?? '')
+      const suf = bareOf(toks[j + 2] ?? '')
       if ((conn === 'à' || conn === 'a') && SPOON_SUFFIX.has(suf)) {
         j += 3
         continue
       }
     }
-    const isQty = NUMBER.test(bare) || FRACTIONS.test(toks[j])
+    const isQty = NUMBER.test(bare) || FRACTIONS.test(tok)
     if (isQty || UNITS.has(bare) || CONNECT.has(bare)) {
       j++
       continue
@@ -69,7 +70,7 @@ export function ingredientName(line: string): string {
   let k = toks.length
   let sawQty = false
   while (k > j) {
-    const tok = toks[k - 1]
+    const tok = toks[k - 1] ?? ''
     const bare = bareOf(tok)
     const isQty = NUMBER.test(bare) || FRACTIONS.test(tok)
     if (isQty || UNITS.has(bare) || CONNECT.has(bare)) {

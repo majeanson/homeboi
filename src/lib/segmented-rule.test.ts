@@ -33,7 +33,7 @@ function tokens(tag: string): string[] {
   const m = /className=(?:"([^"]*)"|\{([\s\S]*)\})/.exec(tag)
   if (!m) return []
   if (m[1] !== undefined) return m[1].split(/\s+/)
-  return [...m[2].matchAll(/['"`]([^'"`]*)['"`]/g)].flatMap((x) => x[1].trim().split(/\s+/))
+  return [...m[2]!.matchAll(/['"`]([^'"`]*)['"`]/g)].flatMap((x) => x[1]!.trim().split(/\s+/))
 }
 
 describe('segmented rule — tabs are SubTabs, value pickers are Segmented', () => {

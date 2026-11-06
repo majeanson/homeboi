@@ -340,8 +340,8 @@ export const onRequestPatch = authed(async (ctx, actor) => {
 
   // Move (rename) or drop (remove) the tag's colour so it follows the tag.
   const colors = await readColors(ctx.env, actor.householdId)
-  if (fromKey in colors) {
-    const hex = colors[fromKey]
+  const hex = colors[fromKey]
+  if (hex !== undefined) {
     delete colors[fromKey]
     if (renameTo) colors[renameTo.toLowerCase()] = hex
     updates.push(writeColors(ctx.env, actor.householdId, colors, ts))

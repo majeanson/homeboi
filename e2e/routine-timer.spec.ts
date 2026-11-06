@@ -25,7 +25,7 @@ const isRoutinePatch = (r: Request) =>
 function routinesWithTimer(over: { timers?: Record<number, unknown> } = {}) {
   const base = ROUTES.routines as { routines: Record<string, unknown>[] }
   const [r1, ...rest] = base.routines
-  const cards = (r1.cards as Record<string, unknown>[]).map((c, i) =>
+  const cards = (r1!.cards as Record<string, unknown>[]).map((c, i) =>
     i === 1 ? { ...c, seconds: 120 } : c,
   )
   return { routines: [{ ...r1, cards, ...over }, ...rest] }

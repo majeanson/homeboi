@@ -236,7 +236,7 @@ export function tabOfFocus(focus: string): SettingsTabId | undefined {
 export function subOfFocus(tab: string, focus: string): string | undefined {
   const subs = SETTINGS_TREE[tab as SettingsTabId] as Record<string, readonly SettingsSection[]> | undefined
   if (!subs) return undefined
-  return Object.keys(subs).find((sub) => subs[sub].some((x) => x.key === focus))
+  return Object.keys(subs).find((sub) => subs[sub]?.some((x) => x.key === focus))
 }
 
 /** The sections of `tab/sub` this viewer may see. `guest` = a read-only link guest

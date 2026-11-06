@@ -25,7 +25,7 @@ describe('addLocalDays', () => {
     const days = Array.from({ length: 5 }, (_, i) => addLocalDays(start, i))
     expect(days.map((d) => localYMD(d, TZ).day)).toEqual([6, 7, 8, 9, 10])
     // The Mar 8 → Mar 9 step must be the short 23h day; naive +86400 would overshoot.
-    const springGap = days[3] - days[2]
+    const springGap = days[3]! - days[2]!
     expect(springGap).toBe(DAY - 3600)
   })
 
@@ -34,7 +34,7 @@ describe('addLocalDays', () => {
     const start = localDayStart(new Date('2026-10-30T12:00:00Z'), TZ) // Fri Oct 30
     const days = Array.from({ length: 5 }, (_, i) => addLocalDays(start, i))
     expect(days.map((d) => localYMD(d, TZ).day)).toEqual([30, 31, 1, 2, 3])
-    const fallGap = days[3] - days[2] // Nov 1 → Nov 2
+    const fallGap = days[3]! - days[2]! // Nov 1 → Nov 2
     expect(fallGap).toBe(DAY + 3600)
   })
 

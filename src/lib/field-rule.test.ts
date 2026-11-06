@@ -29,7 +29,7 @@ function classTokens(tag: string): string[] {
   if (!m) return []
   const value = m[1] ?? m[2] ?? m[3] ?? ''
   const lits = m[3] !== undefined ? [...value.matchAll(/['"`]([^'"`]*)['"`]/g)].map((x) => x[1]) : [value]
-  return lits.flatMap((l) => l.trim().split(/\s+/)).filter(Boolean)
+  return lits.flatMap((l) => l!.trim().split(/\s+/)).filter(Boolean)
 }
 
 describe('field rule — a labelled control is a Field', () => {

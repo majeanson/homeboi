@@ -202,7 +202,8 @@ export function NotesList({
           // carried information. An expanded row is a detail view and stays
           // self-contained: it always prints its own full moment.
           const expandedNow = expandedIds.has(n.id)
-          const sameDayAsAbove = idx > 0 && formatDay(shown[idx - 1].created_at, lang) === formatDay(n.created_at, lang)
+          const above = shown[idx - 1]
+          const sameDayAsAbove = above !== undefined && formatDay(above.created_at, lang) === formatDay(n.created_at, lang)
           const when = expandedNow
             ? formatDayTime(n.created_at, lang)
             : sameDayAsAbove

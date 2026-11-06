@@ -31,17 +31,17 @@ describe('normKey', () => {
 describe('rankCookable', () => {
   it('treats a recipe with nothing out-of-stock as ready (0 missing)', () => {
     const ranked = rankCookable([R.spag], ['Beurre', 'Café'], [])
-    expect(ranked[0].missing).toEqual([])
+    expect(ranked[0]!.missing).toEqual([])
   })
 
   it('flags an out-of-stock ingredient as missing', () => {
     const ranked = rankCookable([R.spag], ['Oignon'], [])
-    expect(ranked[0].missing).toEqual(['Oignon'])
+    expect(ranked[0]?.missing).toEqual(['Oignon'])
   })
 
   it('does not flag something already on the list', () => {
     const ranked = rankCookable([R.spag], ['Oignon'], ['Oignon'])
-    expect(ranked[0].missing).toEqual([])
+    expect(ranked[0]!.missing).toEqual([])
   })
 
   it('orders fewest-missing first, then by title', () => {
@@ -55,9 +55,9 @@ describe('rankCookable', () => {
   it('matches multi-word staples but not coincidental substrings', () => {
     const poultry = { title: 'Volaille', ingredients: ['Volaille rôtie', 'Thym'] }
     // "ail" (garlic) must NOT match "volaille"
-    expect(rankCookable([poultry], ['Ail'], [])[0].missing).toEqual([])
+    expect(rankCookable([poultry], ['Ail'], [])[0]!.missing).toEqual([])
     // "sauce tomate" should match the spaghetti's "1 pot de sauce tomate"
-    expect(rankCookable([R.spag], ['Sauce tomate'], [])[0].missing).toEqual(['Sauce tomate'])
+    expect(rankCookable([R.spag], ['Sauce tomate'], [])[0]?.missing).toEqual(['Sauce tomate'])
   })
 })
 
@@ -83,11 +83,11 @@ describe('rankNeglected', () => {
 
   it('computes whole-day gaps and never goes negative', () => {
     const last = new Map<string, number>([['a', today - 25 * DAY]])
-    const ranked = rankNeglected([recipes[0]], last, today)
-    expect(ranked[0].daysSince).toBe(25)
+    const ranked = rankNeglected([recipes[0]!], last, today)
+    expect(ranked[0]?.daysSince).toBe(25)
     // A future-dated serving (planned ahead) clamps to 0, not a negative gap.
     const future = new Map<string, number>([['a', today + 3 * DAY]])
-    expect(rankNeglected([recipes[0]], future, today)[0].daysSince).toBe(0)
+    expect(rankNeglected([recipes[0]!], future, today)[0]?.daysSince).toBe(0)
   })
 
   it('breaks ties on title for a stable order', () => {
@@ -96,7 +96,7 @@ describe('rankNeglected', () => {
       ['b', today - 10 * DAY],
     ])
     // Equal gaps → alphabetical by title (Spaghetti before Tacos).
-    const ranked = rankNeglected([recipes[1], recipes[0]], last, today)
+    const ranked = rankNeglected([recipes[1]!, recipes[0]!], last, today)
     expect(ranked.map((r) => r.recipe.title)).toEqual(['Spaghetti', 'Tacos'])
   })
 })

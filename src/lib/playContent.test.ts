@@ -31,21 +31,24 @@ describe('buildSeekDecks', () => {
 describe('pickSeekRound', () => {
   const deck = buildSeekDecks([], 'fr', NAMES).find((d) => d.id === 'animals')!
   it('builds a board of the requested size that contains the target', () => {
-    const { board, target } = pickSeekRound(deck, 5, null, () => 0)
+    const { board, target } = pickSeekRound(deck, 5, null, () => 0)!
     expect(board).toHaveLength(5)
     expect(board.some((i) => i.id === target.id)).toBe(true)
   })
   it('never repeats the previous target when the board allows', () => {
-    const first = pickSeekRound(deck, 4, null)
-    const second = pickSeekRound(deck, 4, first.target.id)
+    const first = pickSeekRound(deck, 4, null)!
+    const second = pickSeekRound(deck, 4, first.target.id)!
     // the new target differs (a 4-tile board always has another option)
     expect(second.target.id).not.toBe(first.target.id)
   })
   it('caps the board at the deck size and never throws', () => {
     const tiny = { id: 'x', label: 'X', emoji: '•', items: deck.items.slice(0, 2) }
-    const { board, target } = pickSeekRound(tiny, 6, null, () => 0)
+    const { board, target } = pickSeekRound(tiny, 6, null, () => 0)!
     expect(board.length).toBeLessThanOrEqual(2)
     expect(board.some((i) => i.id === target.id)).toBe(true)
+  })
+  it('answers null for an empty deck rather than inventing a target', () => {
+    expect(pickSeekRound({ id: 'x', label: 'X', emoji: '•', items: [] }, 6, null)).toBeNull()
   })
 })
 
@@ -67,15 +70,15 @@ describe('bucketDay', () => {
   const [matin, midi, soir, dodo] = bucketDay(meals, events)
 
   it('buckets meals by slot (breakfast→matin, lunch+snack→midi, supper+dessert→soir)', () => {
-    expect(matin.mealTitles).toEqual(['Œufs'])
-    expect(midi.mealTitles).toEqual(['Soupe', 'Biscuit'])
-    expect(soir.mealTitles).toEqual(['Pâtes', 'Gâteau'])
-    expect(dodo.mealTitles).toEqual([])
+    expect(matin?.mealTitles).toEqual(['Œufs'])
+    expect(midi?.mealTitles).toEqual(['Soupe', 'Biscuit'])
+    expect(soir?.mealTitles).toEqual(['Pâtes', 'Gâteau'])
+    expect(dodo!.mealTitles).toEqual([])
   })
   it('buckets events by local hour, with all-day events in the morning', () => {
-    expect(matin.eventTitles).toEqual(expect.arrayContaining(['Fête', 'Parc']))
-    expect(soir.eventTitles).toContain('Souper-fête')
-    expect(dodo.eventTitles).toContain('Histoire')
+    expect(matin?.eventTitles).toEqual(expect.arrayContaining(['Fête', 'Parc']))
+    expect(soir?.eventTitles).toContain('Souper-fête')
+    expect(dodo?.eventTitles).toContain('Histoire')
   })
   it('always returns the four parts in order', () => {
     expect(bucketDay([], []).map((p) => p.key)).toEqual(['matin', 'midi', 'soir', 'dodo'])

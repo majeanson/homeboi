@@ -415,7 +415,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // filter keeps these visible to everyone alongside the picked member's own.
   const whoseTurnId = (c: ChoreSrc): string | null => {
     const rot = teamIds(c)
-    return rot.length ? rot[c.current_idx % rot.length] : null
+    return rot[c.current_idx % rot.length] ?? null
   }
   const whoseTurn = (c: ChoreSrc): string | null => memberName(whoseTurnId(c))
   const choresToday: ChoreInst[] = []

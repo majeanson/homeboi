@@ -179,12 +179,12 @@ export function Operator() {
   const [params, setParams] = useSearchParams()
   // The valid set also accepts every retired id, so an old deep link parses;
   // LEGACY_TAB folds it (sub-aware for the three split tabs) to the themed host.
-  const [rawTab, setTab] = useTabParam('tab', sectionIds[0], [...sectionIds, ...Object.keys(LEGACY_TAB)])
+  const [rawTab, setTab] = useTabParam('tab', 'decouvrir', [...sectionIds, ...Object.keys(LEGACY_TAB)])
   const rawSub = params.get('sub')
   const legacy = LEGACY_TAB[rawTab]
   const legacyTarget = legacy ? (rawSub ? legacy.bySub?.[rawSub] : undefined) ?? { tab: legacy.tab, sub: legacy.sub } : null
   let tab = legacyTarget ? legacyTarget.tab : rawTab
-  if (!sectionIds.includes(tab)) tab = sectionIds[0]
+  if (!sectionIds.includes(tab)) tab = 'decouvrir'
   // ?focus= with no ?tab= — the SECTION is the address, so its tab is derived too
   // (2026-09-30). The doors that open a settings card from elsewhere (the board ＋ « Lien
   // pour la gardienne », a contact's « Lui demander de compléter ») used to need the tab
@@ -437,7 +437,7 @@ export function Operator() {
   // Pill labels, from the taxonomy's i18n keys (SUB_LABEL_KEY) — typed against the
   // tree, so a pill can't lose its label in a reshuffle.
   const subLabel = (tab: SettingsTabId, subId: string): string =>
-    (o18n as Record<string, unknown>)[(SUB_LABEL_KEY[tab] as Record<string, string>)[subId]] as string
+    (o18n as Record<string, unknown>)[(SUB_LABEL_KEY[tab] as Record<string, string>)[subId] ?? ''] as string
 
   // Who is looking: the viewer decides which sections (and therefore which pills)
   // exist at all — lib/settingsNav's `access` per section, not a hand-kept
@@ -476,7 +476,8 @@ export function Operator() {
   // `subs` is null when this tab offers the viewer no Régler side at all (Découvrir,
   // or any tab a guest can't configure) — the lens toggle then drops to Comprendre
   // alone rather than rendering an empty pill row.
-  const subs = subSections[tab] && subSections[tab].length > 0 ? subSections[tab] : null
+  const tabSubs = subSections[tab]
+  const subs = tabSubs && tabSubs.length > 0 ? tabSubs : null
   const subKeys = subs ? subs.map((s) => s.key) : []
   const aliasSub = legacyTarget?.sub
   // Where a URL lands when its ?sub is missing or stale, most specific first:
@@ -498,6 +499,7 @@ export function Operator() {
           : (subKeys[0] ?? '')
   const [sub, setSub] = useTabParam('sub', subFallback, subKeys)
   const activeSub = subs?.find((s) => s.key === sub) ?? subs?.[0]
+  const subGoto = activeSub && SUB_GOTO[`${tab}/${activeSub.key}`]
 
   if (loading || !canEnter) return <Loading />
 
@@ -574,6 +576,7 @@ export function Operator() {
             else return
             e.preventDefault()
             const id = sectionIds[n]
+            if (!id) return
             setTab(id)
             // preventScroll + toView, exactly as SubTabs does it: a bare .focus()
             // scrolls the whole PAGE to the row instead of scrolling the row.
@@ -654,10 +657,10 @@ export function Operator() {
                       Comprendre · Régler · go SEE it. The label hides on a narrow phone
                       (the ↗ glyph + its aria-label/title carry it there) and returns the
                       moment there's room — never an unnamed control. */}
-                  {lens === 'regler' && activeSub && SUB_GOTO[`${tab}/${activeSub.key}`] && (
+                  {lens === 'regler' && subGoto && (
                     <Link
                       className="operator__goto mono"
-                      to={SUB_GOTO[`${tab}/${activeSub.key}`]}
+                      to={subGoto}
                       aria-label={o18n.gotoFeature}
                       title={o18n.gotoFeature}
                     >
@@ -677,7 +680,7 @@ export function Operator() {
                     // itself (the guest link kinds, corvées ▸ projets ▸ entretien).
                     className="operator__subs"
                     options={subs.map((s) => ({ key: s.key, label: s.label }))}
-                    value={activeSub?.key ?? subs[0].key}
+                    value={activeSub?.key ?? subs[0]?.key ?? ''}
                     onSelect={setSub}
                     ariaLabel={o18n.jumpAria}
                     tint={tab in SECTION_TINT ? SECTION_TINT[tab as SectionKey].ink : undefined}

@@ -20,8 +20,8 @@ describe('composeSinceMorning — per-source sentences', () => {
       [row({ id: '1', kind: 'list_item', at: 100, text: 'du lait', name: 'Papa' })],
       FR,
     )
-    expect(e.text).toBe('Papa a ajouté du lait')
-    expect(e.face?.name).toBe('Papa')
+    expect(e?.text).toBe('Papa a ajouté du lait')
+    expect(e?.face?.name).toBe('Papa')
   })
 
   it('meal -> "<name> a proposé <title>"', () => {
@@ -29,7 +29,7 @@ describe('composeSinceMorning — per-source sentences', () => {
       [row({ id: '1', kind: 'meal', at: 100, text: 'une pizza', name: 'Léa' })],
       FR,
     )
-    expect(e.text).toBe('Léa a proposé une pizza')
+    expect(e?.text).toBe('Léa a proposé une pizza')
   })
 
   it('note with text -> quotes a short excerpt', () => {
@@ -37,28 +37,28 @@ describe('composeSinceMorning — per-source sentences', () => {
       [row({ id: '1', kind: 'note', at: 100, text: 'penser à appeler maman', name: 'Cam' })],
       FR,
     )
-    expect(e.text).toBe('Cam a laissé un mot : « penser à appeler maman »')
+    expect(e?.text).toBe('Cam a laissé un mot : « penser à appeler maman »')
   })
 
   it('note with text longer than the excerpt cap is truncated with an ellipsis', () => {
     const long = 'x'.repeat(60)
     const [e] = composeSinceMorning([row({ id: '1', kind: 'note', at: 100, text: long, name: 'Cam' })], FR)
-    expect(e.text).toBe(`Cam a laissé un mot : « ${'x'.repeat(40)}… »`)
+    expect(e?.text).toBe(`Cam a laissé un mot : « ${'x'.repeat(40)}… »`)
   })
 
   it('note with no text -> generic "a laissé un mot" (media-only postbox drop)', () => {
     const [e] = composeSinceMorning([row({ id: '1', kind: 'note', at: 100, text: '', name: 'Papi' })], FR)
-    expect(e.text).toBe('Papi a laissé un mot')
+    expect(e?.text).toBe('Papi a laissé un mot')
   })
 
   it('day_note -> "<name> a écrit une note pour la journée"', () => {
     const [e] = composeSinceMorning([row({ id: '1', kind: 'day_note', at: 100, name: 'Papa' })], FR)
-    expect(e.text).toBe('Papa a écrit une note pour la journée')
+    expect(e?.text).toBe('Papa a écrit une note pour la journée')
   })
 
   it('drawing -> "<name> a fait un dessin"', () => {
     const [e] = composeSinceMorning([row({ id: '1', kind: 'drawing', at: 100, name: 'Léa' })], FR)
-    expect(e.text).toBe('Léa a fait un dessin')
+    expect(e?.text).toBe('Léa a fait un dessin')
   })
 
   it('event -> face-less "Nouveau rendez-vous : <title>" line, no face', () => {
@@ -66,8 +66,8 @@ describe('composeSinceMorning — per-source sentences', () => {
       [row({ id: '1', kind: 'event', at: 100, text: 'Dentiste', name: 'Papa' })],
       FR,
     )
-    expect(e.text).toBe('Nouveau rendez-vous : Dentiste')
-    expect(e.face).toBeNull()
+    expect(e?.text).toBe('Nouveau rendez-vous : Dentiste')
+    expect(e!.face).toBeNull()
   })
 })
 
@@ -77,8 +77,8 @@ describe('composeSinceMorning — Maisonnée / no-member fallback', () => {
       [row({ id: '1', kind: 'list_item', at: 100, text: 'du pain', name: null })],
       FR,
     )
-    expect(e.text).toBe('Quelqu’un a ajouté du pain')
-    expect(e.face?.name).toBe('Quelqu’un')
+    expect(e?.text).toBe('Quelqu’un a ajouté du pain')
+    expect(e?.face?.name).toBe('Quelqu’un')
   })
 })
 
@@ -98,10 +98,10 @@ describe('composeSinceMorning — author_label (postbox) takes precedence', () =
       ],
       FR,
     )
-    expect(e.text).toBe('Papi a laissé un mot : « Bisous »')
-    expect(e.face?.name).toBe('Papi')
+    expect(e?.text).toBe('Papi a laissé un mot : « Bisous »')
+    expect(e?.face?.name).toBe('Papi')
     // the tint (colour) still rides along from the matched member.
-    expect(e.face?.colour).toBe('#ff0000')
+    expect(e?.face?.colour).toBe('#ff0000')
   })
 
   it('a postbox note with no member match still names the sender, generic disc', () => {
@@ -109,9 +109,9 @@ describe('composeSinceMorning — author_label (postbox) takes precedence', () =
       [row({ id: '1', kind: 'note', at: 100, text: '', name: null, authorLabel: 'Mamie' })],
       FR,
     )
-    expect(e.text).toBe('Mamie a laissé un mot')
-    expect(e.face?.name).toBe('Mamie')
-    expect(e.face?.colour).toBeNull()
+    expect(e?.text).toBe('Mamie a laissé un mot')
+    expect(e?.face?.name).toBe('Mamie')
+    expect(e!.face?.colour).toBeNull()
   })
 })
 

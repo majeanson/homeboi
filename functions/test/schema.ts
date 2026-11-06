@@ -28,7 +28,7 @@ export function liveTables(): Set<string> {
     else if (m[2]) live.delete(m[2])
     else if (m[3]) {
       live.delete(m[3])
-      live.add(m[4])
+      if (m[4]) live.add(m[4])
     }
   }
   return live

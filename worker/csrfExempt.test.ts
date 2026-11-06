@@ -22,7 +22,7 @@ const SRC = readFileSync(join(import.meta.dirname, 'index.ts'), 'utf8')
 function exemptPaths(): string[] {
   const m = SRC.match(/const CSRF_EXEMPT = new Set\(\[([^\]]*)\]\)/)
   if (!m) throw new Error('CSRF_EXEMPT is no longer a `new Set([...])` literal — update this guard, do not delete it.')
-  return [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1])
+  return [...m[1]!.matchAll(/'([^']+)'/g)].map((x) => x[1]!)
 }
 
 describe('the CSRF-exempt list', () => {

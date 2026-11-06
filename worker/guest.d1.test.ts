@@ -176,7 +176,7 @@ describe('la boîte aux lettres', () => {
     const { guestToken } = await box(s)
     await okJson(send(guestToken, { senderName: '  Mamie  ', text: '  Bon voyage !  ' }))
     expect(await fridge(s), 'quarantined: nothing on the board yet').toEqual([])
-    const [m] = await pending(s)
+    const m = (await pending(s))[0]!
     expect(m).toMatchObject({ senderName: 'Mamie', text: 'Bon voyage !', mediaKind: null })
 
     await okJson(review(s, m.id, 'accepted'))
@@ -212,14 +212,14 @@ describe('la boîte aux lettres', () => {
     await okJson(send(guestToken, { senderName: 'Mamie', media_kind: 'drawing', media_key: drawing.key, scene_key: scene.key }))
     const [first] = await pending(s)
     expect(first).toMatchObject({ mediaKind: 'drawing', mediaKey: drawing.key, sceneKey: scene.key })
-    await okJson(review(s, first.id, 'dismissed'))
+    await okJson(review(s, first!.id, 'dismissed'))
     expect(await stored(drawing.key)).toBe(false)
     expect(await stored(scene.key)).toBe(false)
     expect(await fridge(s)).toEqual([])
 
     const clip = await okJson<{ key: string }>(png(guestToken, '/api/guest/postbox-media', 'audio/webm'))
     await okJson(send(guestToken, { senderName: 'Mamie', media_kind: 'audio', media_key: clip.key }))
-    await okJson(review(s, (await pending(s))[0].id, 'accepted'))
+    await okJson(review(s, (await pending(s))[0]!.id, 'accepted'))
     expect((await fridge(s))[0]).toMatchObject({ media_kind: 'audio', media_key: clip.key })
     expect(await stored(clip.key), 'the note owns it now').toBe(true)
   })
@@ -280,9 +280,9 @@ describe('la fiche', () => {
     const { guestToken } = await box(s, { targetKey: `contact:${c.id}` })
     await okJson(submit(guestToken, { self: { firstName: '  Marie  ', email: 'marie@exemple.test', birthday: '1950-02-03' }, household: [{ firstName: 'Paul' }], pets: [{ name: 'Rex', species: 'chien', ownerIndex: 0 }] }))
 
-    const [sub] = await queue(s)
-    expect(sub.self).toMatchObject({ firstName: 'Marie', email: 'marie@exemple.test', birthday: '1950-02-03' })
-    expect(sub.household).toHaveLength(1)
+    const sub = (await queue(s))[0]!
+    expect(sub?.self).toMatchObject({ firstName: 'Marie', email: 'marie@exemple.test', birthday: '1950-02-03' })
+    expect(sub?.household).toHaveLength(1)
     expect(sub.targetKey, 'from the signed token').toBe(`contact:${c.id}`)
     const { contacts } = await okJson<{ contacts: { firstName: string; email: string | null }[] }>(s.fetch('/api/cercle'))
     expect(contacts, 'quarantined: the live directory is untouched').toEqual([expect.objectContaining({ firstName: 'Marie', email: null })])
@@ -296,8 +296,8 @@ describe('la fiche', () => {
     const s = await household('intake-scope', undefined, { empty: true })
     const { guestToken } = await box(s, { fields: 0 })
     await okJson(submit(guestToken, { self: { firstName: 'Marie', email: 'marie@exemple.test', birthday: '1950-02-03' }, household: [{ firstName: 'Paul' }], pets: [{ name: 'Rex', ownerIndex: 0 }] }))
-    const [sub] = await queue(s)
-    expect(sub.self).toMatchObject({ firstName: 'Marie', email: '', birthday: null })
+    const sub = (await queue(s))[0]!
+    expect(sub?.self).toMatchObject({ firstName: 'Marie', email: '', birthday: null })
     expect(sub.household).toEqual([])
     expect(sub.pets).toEqual([])
   })
@@ -307,7 +307,7 @@ describe('la fiche', () => {
     const { guestToken } = await box(s)
     expect((await submit(guestToken, { self: { lastName: 'Sans prénom' } })).status).toBe(400)
     await okJson(submit(guestToken, { self: { firstName: 'Marie', photoKey: 'av_quelquun-dautre' } }))
-    expect((await queue(s))[0].self.photoKey).toBeNull()
+    expect((await queue(s))[0]!.self.photoKey).toBeNull()
   })
 
   it('a dismissed form frees its staged photo; a merged one leaves it to the contact', async () => {

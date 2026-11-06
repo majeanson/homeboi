@@ -31,11 +31,12 @@ export function ARegler({ enabled, variant = 'chip' }: { enabled: boolean; varia
   // The compact lens (see CardLens.tsx): `null` for the `chip` variant (it renders
   // outside a CardSlot) and for the `card` variant when it isn't rendered halved.
   const lens = useCardLens()
-  if (empty) return null
+  const [lead] = signals
+  if (empty || !lead) return null
   // The first friction is the headline; with a SINGLE friction, tap goes straight to
   // its one-tap fix; with several, to « Cette semaine » for the full list.
-  const first = frictionRow(signals[0], t)
-  const to = signals.length === 1 ? signals[0].href : settingsHref({ tab: 'board', focus: 'thisWeek' })
+  const first = frictionRow(lead, t)
+  const to = signals.length === 1 ? lead.href : settingsHref({ tab: 'board', focus: 'thisWeek' })
   const aria = `${t.aRegler.title} (${signals.length})`
 
   // Card: a hero-style tile (marigold = a warm heads-up), label + the lead friction as

@@ -20,7 +20,7 @@ function page(opts: { margin?: number; blur?: boolean; shadow?: boolean; toEdge?
   }
   if (opts.shadow) {
     // A hand's shadow: the lower-left third darkened by 60 %, text still there.
-    for (let y = Math.floor(H * 0.6); y < H; y++) for (let x = 0; x < Math.floor(W * 0.5); x++) g[y * W + x] = Math.round(g[y * W + x] * 0.4)
+    for (let y = Math.floor(H * 0.6); y < H; y++) for (let x = 0; x < Math.floor(W * 0.5); x++) g[y * W + x] = Math.round(g[y * W + x]! * 0.4)
   }
   if (opts.blur) {
     // Two 15×15 box passes — a shaken phone's σ ≈ 2 blur on 5-px strokes, which on the
@@ -37,7 +37,7 @@ function page(opts: { margin?: number; blur?: boolean; shadow?: boolean; toEdge?
               const yy = y + dy
               const xx = x + dx
               if (yy < 0 || yy >= H || xx < 0 || xx >= W) continue
-              s += cur[yy * W + xx]
+              s += cur[yy * W + xx]!
               n++
             }
           }

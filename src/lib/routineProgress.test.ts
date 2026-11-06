@@ -110,8 +110,8 @@ describe('applyOp', () => {
 
   it('only touches its own routine', () => {
     const out = applyOp(data(), { kind: 'done', routineId: 'a', cardIdx: 1, done: true })
-    expect(out.routines[0].doneIdx).toEqual([0, 1])
-    expect(out.routines[1].doneIdx).toEqual([])
+    expect(out.routines[0]?.doneIdx).toEqual([0, 1])
+    expect(out.routines[1]!.doneIdx).toEqual([])
   })
 
   it('re-applying the same op changes nothing — the writer relies on this', () => {
@@ -127,9 +127,9 @@ describe('applyOp', () => {
 
   it('a timer op sets, then clears, one step’s entry', () => {
     const set = applyOp(data(), { kind: 'timer', routineId: 'a', cardIdx: 2, timer: { endsAt: 99 } })
-    expect(set.routines[0].timers).toMatchObject({ 0: { left: 5 }, 2: { endsAt: 99 } })
+    expect(set.routines[0]?.timers).toMatchObject({ 0: { left: 5 }, 2: { endsAt: 99 } })
     const cleared = applyOp(set, { kind: 'timer', routineId: 'a', cardIdx: 2, timer: null })
-    expect(cleared.routines[0].timers).toEqual({ 0: { left: 5 } })
+    expect(cleared.routines[0]?.timers).toEqual({ 0: { left: 5 } })
   })
 })
 

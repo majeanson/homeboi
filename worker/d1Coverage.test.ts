@@ -33,7 +33,7 @@ describe('d1 coverage', () => {
     expect(paths, 'a quoted key').toContain('meal-leftovers')
   })
   it(`routes no *.d1.test.ts names: at most ${UNTESTED_MAX}`, () => {
-    const untested = paths.filter((p) => !named(p))
+    const untested = paths.filter((p) => !named(p!))
     expect(untested.length, untested.join(' ')).toBeLessThanOrEqual(UNTESTED_MAX)
   })
 })

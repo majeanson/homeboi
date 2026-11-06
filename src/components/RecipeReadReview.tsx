@@ -94,7 +94,7 @@ export const modelLabel = (id: string): string => {
   const base = id.replace(/^@cf\//, '').split('/').pop() ?? id
   const m = base.match(/^([a-z]+)(?:-([a-z]+))?(?:-?(\d+(?:\.\d+)?))?/i)
   if (!m) return base
-  const cap = (s?: string) => (s ? s[0].toUpperCase() + s.slice(1) : '')
+  const cap = (s?: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '')
   return [cap(m[1]), m[2] && !/^\d/.test(m[2]) ? cap(m[2]) : '', m[3] ?? ''].filter(Boolean).join(' ')
 }
 const reasonText = (r: AiAttemptView['reason'], t: ReturnType<typeof useT>): string =>

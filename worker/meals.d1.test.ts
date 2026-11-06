@@ -121,7 +121,7 @@ describe('le plan des repas', () => {
   it('an unstated slot files under the household’s own hero meal, never a hardcoded souper', async () => {
     const s = await household('meals-hero', undefined, { empty: true })
     await add(s, { title: 'Par défaut' })
-    expect((await plan(s)).days[0].slot).toBe('supper')
+    expect((await plan(s)).days[0]?.slot).toBe('supper')
 
     await okJson(s.fetch('/api/household', { method: 'PATCH', body: { mealHero: 'lunch' } }))
     await add(s, { title: 'Le grand repas du midi', slot: 'pas-un-repas' })
@@ -168,7 +168,7 @@ describe('les restants', () => {
     expect(await pool(s)).toEqual([expect.objectContaining({ id: made.id, title: 'Chili', recipe_id: 'r1', source_meal_id: 'm1' })])
 
     await okJson(s.fetch('/api/meal-leftovers', { method: 'PATCH', body: { id: made.id, title: 'Chili du dimanche' } }))
-    expect((await pool(s))[0].title).toBe('Chili du dimanche')
+    expect((await pool(s))[0]?.title).toBe('Chili du dimanche')
     expect((await s.fetch('/api/meal-leftovers', { method: 'PATCH', body: { id: made.id, title: ' ' } })).status).toBe(400)
 
     await okJson(s.fetch('/api/meal-leftovers', { method: 'DELETE', body: { id: made.id } }))
@@ -229,7 +229,7 @@ describe('l’historique', () => {
 
     type Page = { days: Meal[]; nextBefore: number | null }
     const first = await okJson<Page>(s.fetch('/api/meal-history'))
-    expect(first.days[0].title, 'today is already what we are eating').toBe('Aujourd’hui')
+    expect(first.days[0]!.title, 'today is already what we are eating').toBe('Aujourd’hui')
     expect(first.days.map((m) => m.title)).not.toContain('Demain')
     expect(new Set(first.days.map((m) => m.date)).size, 'fourteen planned days').toBe(14)
     expect(first.days.filter((m) => m.date === day(-13)).map((m) => m.title), 'a day is never torn across pages').toEqual(['Jour 13 midi', 'Jour 13'])
@@ -252,6 +252,6 @@ describe('l’historique', () => {
     const { dishes } = await okJson<{ dishes: Record<string, unknown>[] }>(s.fetch('/api/meal-history?summary=1'))
     expect(dishes.map((d) => String(d.title).toLowerCase())).toEqual(['spaghetti', 'soupe'])
     expect(dishes[0], 'the most recent spelling and recipe link win').toMatchObject({ title: 'spaghetti', recipe_id: 'r-sp', last_at: day(-2) })
-    expect(Object.keys(dishes[0]).sort(), 'calm: « dernière fois », never « 12 fois »').toEqual(['last_at', 'recipe_id', 'title'])
+    expect(Object.keys(dishes[0]!).sort(), 'calm: « dernière fois », never « 12 fois »').toEqual(['last_at', 'recipe_id', 'title'])
   })
 })

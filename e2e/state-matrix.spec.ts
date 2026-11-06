@@ -1022,7 +1022,7 @@ async function scrollFrames(page: Page, id: string, max: number): Promise<string
     // the frame says nothing and a reviewer opening it learns only that they have
     // reached the end — which the ABSENCE of the frame says better. Compare the bytes,
     // because every proxy for 'did this move' has now been wrong once.
-    const prev = join(OUT, extra.length ? extra[extra.length - 1] : `${id}.png`)
+    const prev = join(OUT, extra.at(-1) ?? `${id}.png`)
     if (readFileSync(prev).equals(readFileSync(join(OUT, file)))) {
       rmSync(join(OUT, file))
       break

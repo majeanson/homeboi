@@ -52,7 +52,7 @@ describe('l’horaire', () => {
     const id = await add(s, { memberId: marc, label: '  Bureau  ', startMin: 480, endMin: 720, weekdays: [5, 1], color: '#ABCDEF' })
     expect((await blocks(s)).map((b) => b.id), 'by start of day').toEqual([id, late])
     expect((await blocks(s))[0]).toMatchObject({ label: 'Bureau', weekdays: [1, 5], color: '#abcdef', holdsCar: true, weekInterval: 1, anchorDay: null })
-    expect((await blocks(s))[1].weekdays, 'deduped, in range').toEqual([1, 3])
+    expect((await blocks(s))[1]!.weekdays, 'deduped, in range').toEqual([1, 3])
 
     await okJson(s.fetch('/api/schedule', { method: 'PATCH', body: { id, memberId: marc, startMin: 540, endMin: 600, weekdays: [2], holdsCar: false } }))
     expect((await blocks(s))[0]).toMatchObject({ id, startMin: 540, label: null, weekdays: [2], holdsCar: false, color: null })
@@ -77,14 +77,14 @@ describe('l’horaire', () => {
     const s = await household('schedule-rota', undefined, { empty: true })
     const marc = await member(s, 'Marc')
     const id = await add(s, { memberId: marc, startMin: 480, endMin: 600, weekdays: [1], weekInterval: 2 })
-    const [made] = await blocks(s)
-    expect(made.weekInterval).toBe(2)
+    const made = (await blocks(s))[0]!
+    expect(made?.weekInterval).toBe(2)
     expect(dow(made.anchorDay!), 'the start of a local week').toBe(0)
 
     await okJson(s.fetch('/api/schedule', { method: 'PATCH', body: { id, memberId: marc, startMin: 500, endMin: 600, weekdays: [1], weekInterval: 2, anchorDay: made.anchorDay! - 7 * 86400 } }))
-    expect((await blocks(s))[0].anchorDay, 'a rota kept off this week stays off it').toBe(made.anchorDay! - 7 * 86400)
+    expect((await blocks(s))[0]!.anchorDay, 'a rota kept off this week stays off it').toBe(made.anchorDay! - 7 * 86400)
     await okJson(s.fetch('/api/schedule', { method: 'PATCH', body: { id, memberId: marc, startMin: 500, endMin: 600, weekdays: [1], weekInterval: 99 } }))
-    expect((await blocks(s))[0].weekInterval, 'a two-month rota is the ceiling').toBe(8)
+    expect((await blocks(s))[0]!.weekInterval, 'a two-month rota is the ceiling').toBe(8)
   })
 })
 
@@ -103,11 +103,11 @@ describe('où est l’auto', () => {
     const d = day(1)
     await add(s, { memberId: marc, label: 'Bureau', startMin: 480, endMin: 1020, weekdays: [dow(d)] })
     const [held] = (await range(s, d, day(2))).days
-    expect(held.carSpans.length).toBe(1)
+    expect(held?.carSpans.length).toBe(1)
 
     const [id] = (await blocks(s)).map((b) => b.id)
     await okJson(s.fetch('/api/schedule', { method: 'PATCH', body: { id, memberId: marc, startMin: 480, endMin: 1020, weekdays: [dow(d)], holdsCar: false } }))
-    expect((await range(s, d, day(2))).days[0].carSpans, 'he took the bus').toEqual([])
+    expect((await range(s, d, day(2))).days[0]!.carSpans, 'he took the bus').toEqual([])
   })
 
   it('a rendez-vous taking the car while it is out is a conflict; one outside the window is not', async () => {
@@ -118,7 +118,7 @@ describe('où est l’auto', () => {
     await add(s, { memberId: marc, startMin: 480, endMin: 1020, weekdays: [dow(d)] })
     await okJson(s.fetch('/api/events', { method: 'POST', body: { title: 'Dentiste', startAt: d + 10 * 3600, carId: 'auto' } }))
     await okJson(s.fetch('/api/events', { method: 'POST', body: { title: 'Soir', startAt: d + 20 * 3600, carId: 'auto', passengers: [marc] } }))
-    const { rides } = (await range(s, d, day(2))).days[0]
+    const { rides } = (await range(s, d, day(2))).days[0]!
     expect(rides.find((r) => r.title === 'Dentiste')!.conflict).toBe(true)
     expect(rides.find((r) => r.title === 'Soir')).toMatchObject({ conflict: false, passengers: [marc] })
   })
@@ -134,14 +134,14 @@ describe('une journée ajustée', () => {
     await okJson(s.fetch('/api/car-day', { method: 'POST', body: { carId: 'auto', day: d, free: true } }))
 
     const [adjusted, next] = (await range(s, d, day(3))).days
-    expect(adjusted.carSpans, 'the car stays home').toEqual([])
-    expect(adjusted.override).toMatchObject({ free: true })
-    expect(next.carSpans, 'the template still rules the next day').toHaveLength(1)
+    expect(adjusted!.carSpans, 'the car stays home').toEqual([])
+    expect(adjusted?.override).toMatchObject({ free: true })
+    expect(next!.carSpans, 'the template still rules the next day').toHaveLength(1)
 
     await okJson(s.fetch('/api/car-day', { method: 'DELETE', body: { carId: 'auto', day: d } }))
     const [back] = (await range(s, d, day(2))).days
-    expect(back.override).toBeNull()
-    expect(back.carSpans).toHaveLength(1)
+    expect(back!.override).toBeNull()
+    expect(back?.carSpans).toHaveLength(1)
   })
 
   it('a second adjustment of the same day replaces the first', async () => {
@@ -152,8 +152,8 @@ describe('une journée ajustée', () => {
     await okJson(s.fetch('/api/car-day', { method: 'POST', body: { carId: 'auto', day: d, holderId: marc, startMin: 540, endMin: 600, label: ' Garage ' } }))
     await okJson(s.fetch('/api/car-day', { method: 'POST', body: { carId: 'auto', day: d, holderId: marc, startMin: 600, endMin: 660, label: 'Épicerie' } }))
     const [row] = (await range(s, d, day(3))).days
-    expect(row.override).toMatchObject({ label: 'Épicerie' })
-    expect(row.carSpans).toHaveLength(1)
+    expect(row?.override).toMatchObject({ label: 'Épicerie' })
+    expect(row?.carSpans).toHaveLength(1)
   })
 
   it('refuses a missing car or day, and stays in its household', async () => {
@@ -165,7 +165,7 @@ describe('une journée ajustée', () => {
     expect((await s.fetch('/api/car-day', { method: 'POST', body: { carId: 'auto' } })).status).toBe(400)
     await okJson(s.fetch('/api/car-day', { method: 'POST', body: { carId: 'auto', day: day(1), free: true } }))
     await okJson(other.fetch('/api/car-day', { method: 'DELETE', body: { carId: 'auto', day: day(1) } }))
-    expect((await range(s, day(1), day(2))).days[0].override, 'the same car id elsewhere is another car').toMatchObject({ free: true })
-    expect((await range(other, day(1), day(2))).days[0].override).toBeNull()
+    expect((await range(s, day(1), day(2))).days[0]!.override, 'the same car id elsewhere is another car').toMatchObject({ free: true })
+    expect((await range(other, day(1), day(2))).days[0]!.override).toBeNull()
   })
 })

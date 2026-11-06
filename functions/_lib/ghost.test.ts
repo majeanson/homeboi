@@ -111,7 +111,7 @@ describe('rankGhosts', () => {
     expect(rank({ log, staples }).map((x) => x.key)).toEqual(['eggs']) // default: hidden
     const g = rank({ log, staples, includeLater: true })
     expect(g.map((x) => x.key)).toEqual(['eggs', 'bread'])
-    expect(g[1].status).toBe('later')
+    expect(g[1]?.status).toBe('later')
   })
 
   it('includeLater still never suggests open-list items nor muted ones', () => {
@@ -163,6 +163,6 @@ describe('trackCandidates', () => {
     }
     const c = trackCandidates(log, [], [])
     expect(c.length).toBeLessThanOrEqual(6)
-    for (let i = 1; i < c.length; i++) expect(c[i - 1].count).toBeGreaterThanOrEqual(c[i].count)
+    for (let i = 1; i < c.length; i++) expect(c[i - 1]?.count).toBeGreaterThanOrEqual(c[i]!.count)
   })
 })

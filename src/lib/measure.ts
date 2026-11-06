@@ -82,12 +82,13 @@ const TOKEN = new RegExp(
 function parseQty(tok: string): number {
   tok = tok.trim()
   let m = tok.match(/^(\d+)\s+(\d+)\/(\d+)$/) // 1 1/2
-  if (m) return +m[1] + +m[2] / +m[3]
+  if (m) return Number(m[1]) + Number(m[2]) / Number(m[3])
   m = tok.match(new RegExp(`^(\\d+)\\s*([${FRAC}])$`)) // 1½
-  if (m) return +m[1] + UNICODE_FRAC[m[2]]
+  if (m) return Number(m[1]) + (UNICODE_FRAC[m[2] ?? ''] ?? NaN)
   m = tok.match(/^(\d+)\/(\d+)$/) // 1/2
-  if (m) return +m[1] / +m[2]
-  if (UNICODE_FRAC[tok] != null) return UNICODE_FRAC[tok] // ½
+  if (m) return Number(m[1]) / Number(m[2])
+  const frac = UNICODE_FRAC[tok]
+  if (frac != null) return frac // ½
   return parseFloat(tok.replace(',', '.')) // 2 / 1.5
 }
 
@@ -128,7 +129,7 @@ export function findMeasures(line: string): Measure[] {
   const out: Measure[] = []
   for (const m of line.matchAll(TOKEN)) {
     const g = m.groups!
-    const value = parseQty(g.qty)
+    const value = parseQty(g.qty ?? '')
     if (!isFinite(value) || value <= 0) continue
     const unit: MeasureUnit = g.tsp ? 'tsp' : g.tbsp ? 'tbsp' : 'cup'
     const qty = qtyKey(value)
@@ -174,7 +175,7 @@ const agreeIsh = (printed: number, expected: number): boolean =>
 export function measuresDisagree(line: string): boolean {
   const ml = METRIC_ML.exec(line)
   if (ml) {
-    const printed = parseFloat(ml[1].replace(',', '.'))
+    const printed = parseFloat((ml[1] ?? '').replace(',', '.'))
     if (isFinite(printed) && printed > 0) {
       for (const m of findMeasures(line)) {
         if (!agreeIsh(printed, m.value * ML_PER[m.unit])) return true
@@ -184,8 +185,8 @@ export function measuresDisagree(line: string): boolean {
   const g = METRIC_G.exec(line)
   const lb = g ? IMPERIAL_LB.exec(line) : null
   if (g && lb) {
-    const grams = parseFloat(g[1].replace(',', '.'))
-    const pounds = parseQty(lb[1])
+    const grams = parseFloat((g[1] ?? '').replace(',', '.'))
+    const pounds = parseQty(lb[1] ?? '')
     if (isFinite(grams) && grams > 0 && isFinite(pounds) && pounds > 0 && !agreeIsh(grams, pounds * G_PER_LB)) return true
   }
   return false
@@ -233,9 +234,9 @@ const ML_PAREN = /(\d+(?:[.,]\d+)?)\s*ml\s*\(\s*([^)]*?)\s*\)/i
 export function repairImperialFromMetric(line: string): string {
   const m = ML_PAREN.exec(line)
   if (!m) return line
-  const ml = parseFloat(m[1].replace(',', '.'))
+  const ml = parseFloat((m[1] ?? '').replace(',', '.'))
   if (!isFinite(ml) || ml <= 0) return line
-  const inner = m[2]
+  const inner = m[2] ?? ''
   if (findMeasures(inner).length > 0) return line // the paren already reads cleanly — hands off
   const u = UNIT_IN_PAREN.exec(inner)
   if (!u) return line

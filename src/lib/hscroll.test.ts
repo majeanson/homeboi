@@ -186,9 +186,9 @@ describe('the chevrons and deep links', () => {
     const scrollBy = vi.fn()
     r.el.scrollBy = scrollBy
     r.h.page(1)
-    expect(scrollBy.mock.calls[0][0].left).toBe(240)
+    expect(scrollBy.mock.calls[0]?.[0].left).toBe(240)
     r.h.page(-1)
-    expect(scrollBy.mock.calls[1][0].left).toBe(-240)
+    expect(scrollBy.mock.calls[1]?.[0].left).toBe(-240)
   })
 
   it('a chevron on a tiny row still moves far enough to do something', () => {
@@ -197,7 +197,7 @@ describe('the chevrons and deep links', () => {
     const scrollBy = vi.fn()
     r.el.scrollBy = scrollBy
     r.h.page(1)
-    expect(scrollBy.mock.calls[0][0].left).toBe(120)
+    expect(scrollBy.mock.calls[0]?.[0].left).toBe(120)
   })
 
   function toViewCase(childLeft: number, scrollLeft = 200) {
@@ -215,7 +215,7 @@ describe('the chevrons and deep links', () => {
   it('a deep-linked tab lands centred in the row', () => {
     const { r, scrollTo, child } = toViewCase(400)
     r.h.toView(child)
-    expect(scrollTo.mock.calls[0][0].left).toBe(200 + 400 - 100)
+    expect(scrollTo.mock.calls[0]?.[0].left).toBe(200 + 400 - 100)
   })
 
   it('the page itself never moves: only the row scrolls', () => {
@@ -227,17 +227,17 @@ describe('the chevrons and deep links', () => {
   it('a tab near either end clamps to the road the row actually has', () => {
     const near = toViewCase(-500)
     near.r.h.toView(near.child)
-    expect(near.scrollTo.mock.calls[0][0].left).toBe(0)
+    expect(near.scrollTo.mock.calls[0]?.[0].left).toBe(0)
     near.r.view.unmount()
     const far = toViewCase(5000)
     far.r.h.toView(far.child)
-    expect(far.scrollTo.mock.calls[0][0].left).toBe(700)
+    expect(far.scrollTo.mock.calls[0]?.[0].left).toBe(700)
   })
 
   it('an instant landing does not glide, for a page that opens already scrolled', () => {
     const { r, scrollTo, child } = toViewCase(400)
     r.h.toView(child, true)
-    expect(scrollTo.mock.calls[0][0].behavior).toBe('auto')
+    expect(scrollTo.mock.calls[0]?.[0].behavior).toBe('auto')
   })
 
   it('a row that fits has nothing to scroll to', () => {

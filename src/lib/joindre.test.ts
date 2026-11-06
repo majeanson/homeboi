@@ -49,7 +49,7 @@ describe('rankJoindre', () => {
     const ranked = rankJoindre(people, businesses, {})
     // Member-with-phone (tier 1) still beats the business (tier 2), even one named
     // "Ambulance" that would alphabetically sort first.
-    expect(ranked[0].key).toBe('member:m')
+    expect(ranked[0]?.key).toBe('member:m')
   })
 
   it('alphabetical by first name within a tier', () => {
@@ -68,12 +68,12 @@ describe('rankJoindre', () => {
       person({ key: 'member:m', firstName: 'Marc', kind: 'member', phone: '2' }), // tier 1, scored
     ]
     const ranked = rankJoindre(people, [], { 'member:m': 5 })
-    expect(ranked[0].key).toBe('member:m')
+    expect(ranked[0]?.key).toBe('member:m')
   })
 
   it('business key is prefixed business:<id>', () => {
     const ranked = rankJoindre([], [biz({ id: 'plombier-1', name: 'Plomberie A', phone: '1' })], {})
-    expect(ranked[0].key).toBe('business:plombier-1')
+    expect(ranked[0]?.key).toBe('business:plombier-1')
   })
 
   it('caps the ranked list to 8', () => {

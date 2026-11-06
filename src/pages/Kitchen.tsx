@@ -236,7 +236,7 @@ export function Kitchen() {
       const one = MEAL_KEY.exec(fromKey)
       if (one) {
         const [, fromDate, slot, id] = one
-        if (Number(fromDate) === to) return
+        if (Number(fromDate) === to || !id || !slot) return
         reschedule(qc, id, to, slot)
         return
       }

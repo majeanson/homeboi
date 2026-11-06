@@ -487,7 +487,7 @@ test.describe('the check-in opens by itself', () => {
   // local, so a fresh boot is before it — the reminder must stay silent until then.
   const at = (hhmm: string) => {
     const [h, m] = hhmm.split(':').map(Number)
-    return new Date((MMID + h * 3600 + m * 60) * 1000)
+    return new Date((MMID + h! * 3600 + m! * 60) * 1000)
   }
 
   const ARMED = { autoOpen: true, reminders: true, lastShownDay: 0, fired: { day: 0, minutes: [] } }

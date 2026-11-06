@@ -52,12 +52,12 @@ describe('à utiliser bientôt', () => {
   it('is marked, renamed, cleared, capped, and buys nothing', async () => {
     const s = await household('soon-crud', undefined, { empty: true })
     await okJson(s.fetch('/api/use-soon', { method: 'POST', body: { item: `  ${'x'.repeat(300)}  ` } }))
-    const [row] = await soon(s)
-    expect(row.item).toHaveLength(200)
+    const row = (await soon(s))[0]!
+    expect(row?.item).toHaveLength(200)
     expect(await listCount(s)).toBe(0)
 
     await okJson(s.fetch('/api/use-soon', { method: 'PATCH', body: { id: row.id, item: 'Épinards' } }))
-    expect((await soon(s))[0].item).toBe('Épinards')
+    expect((await soon(s))[0]?.item).toBe('Épinards')
     expect((await s.fetch('/api/use-soon', { method: 'PATCH', body: { id: row.id, item: ' ' } })).status).toBe(400)
     expect((await s.fetch('/api/use-soon', { method: 'POST', body: { item: ' ' } })).status).toBe(400)
 
@@ -70,7 +70,7 @@ describe('à utiliser bientôt', () => {
     const other = await household('soon-b', undefined, { empty: true })
     await okJson(s.fetch('/api/use-soon', { method: 'POST', body: { item: 'Épinards' } }))
     const [row] = await soon(s)
-    await okJson(other.fetch('/api/use-soon', { method: 'DELETE', body: { id: row.id } }))
+    await okJson(other.fetch('/api/use-soon', { method: 'DELETE', body: { id: row!.id } }))
     expect(await soon(s)).toHaveLength(1)
     expect(await soon(other)).toEqual([])
   })
@@ -93,7 +93,7 @@ describe('la réserve', () => {
     await patch(s, { id, item: 'Fraises' })
     expect((await reserve(s))[0], 'a rename leaves the spot').toMatchObject({ item: 'Fraises', location_id: 'garde-robe' })
     await patch(s, { id, location_id: null })
-    expect((await reserve(s))[0].location_id).toBeNull()
+    expect((await reserve(s))[0]!.location_id).toBeNull()
 
     await okJson(s.fetch('/api/reserve', { method: 'DELETE', body: { id } }))
     expect(await reserve(s)).toEqual([])

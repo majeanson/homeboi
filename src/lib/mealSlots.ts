@@ -121,7 +121,7 @@ export function clockOrder(hours: Record<MealSlot, number>): MealSlot[] {
 export function slotAtMinute(hours: Record<MealSlot, number>, minute: number): MealSlot {
   const clock = clockOrder(hours)
   for (const s of clock) if (minute < hours[s] + SLOT_GRACE_MIN) return s
-  return clock[clock.length - 1]
+  return clock[clock.length - 1] ?? 'supper'
 }
 
 // "16:00" → "16 h" / "16 h 30" (FR) · "4 PM" / "4:30 PM" (EN). The Réglages row label

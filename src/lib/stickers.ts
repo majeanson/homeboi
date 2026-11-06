@@ -1,3 +1,5 @@
+import { swapAt } from './reorder'
+
 // The routine sticker wall (OPT-IN — only when « Mode calme » is OFF). A closed set
 // of playful emoji stickers a child can place on their wall when they finish a
 // routine. Emoji-first so it renders everywhere with zero assets. This array IS the
@@ -70,7 +72,7 @@ export function stickersFor(daySec: number, routineId: string | null, offer = ST
   const n = Math.min(offer, pool.length)
   for (let i = 0; i < n; i++) {
     const j = i + Math.floor(rnd() * (pool.length - i))
-    ;[pool[i], pool[j]] = [pool[j], pool[i]]
+    swapAt(pool, i, j)
   }
   // Re-sort the draw into catalog order: the SET rotates day to day, but the grid stays
   // tidy (colours/animals/fruit grouped) instead of reading as scrambled noise.

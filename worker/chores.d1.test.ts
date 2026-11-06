@@ -83,7 +83,7 @@ describe('le tour', () => {
 
     expect((await patch(s, { id, complete: false, role: 'child', memberId: kid })).complete).toBe(false)
     expect(await one(s, id), 'not finished').toMatchObject({ current_idx: 0, last_done_at: null })
-    expect((await ledger(s)).ledger[0].helpers).toEqual([expect.objectContaining({ memberId: kid, name: 'Zoé', role: 'child' })])
+    expect((await ledger(s)).ledger[0]?.helpers).toEqual([expect.objectContaining({ memberId: kid, name: 'Zoé', role: 'child' })])
   })
 
   it('a shorter rotation cannot strand the turn out of range', async () => {
@@ -107,7 +107,7 @@ describe('le tour', () => {
     const id = await add(s, {})
     expect(await patch(s, { id })).toMatchObject({ nextIdx: 0 })
     expect(await one(s, id)).toMatchObject({ current_idx: 0, last_done_by: null })
-    expect((await ledger(s)).ledger[0].helpers, 'an anonymous tap is a role, not a name').toEqual([expect.objectContaining({ name: null, role: 'parent' })])
+    expect((await ledger(s)).ledger[0]!.helpers, 'an anonymous tap is a role, not a name').toEqual([expect.objectContaining({ name: null, role: 'parent' })])
   })
 })
 
@@ -122,7 +122,7 @@ describe('le registre', () => {
 
     const { ledger: rows } = await ledger(s)
     expect(rows).toHaveLength(1)
-    expect(rows[0].helpers.map((h) => h.name).sort(), 'each person once').toEqual(['Léa', 'Marc'])
+    expect(rows[0]!.helpers.map((h) => h.name).sort(), 'each person once').toEqual(['Léa', 'Marc'])
     expect(JSON.stringify(rows), 'names and dates, no tally').not.toMatch(/"(count|total|rank|score)"/)
   })
 
@@ -132,7 +132,7 @@ describe('le registre', () => {
     const id = await add(s, { rotation: [a] })
     await patch(s, { id })
     await okJson(s.fetch('/api/members', { method: 'DELETE', body: { id: a } }))
-    expect((await ledger(s)).ledger[0].helpers[0], 'the chore keeps the fact, not the face').toMatchObject({ memberId: null, name: null })
+    expect((await ledger(s)).ledger[0]!.helpers[0], 'the chore keeps the fact, not the face').toMatchObject({ memberId: null, name: null })
 
     const old = Math.floor(Date.now() / 1000) - 40 * 86400
     await env.DB.prepare('UPDATE task_participants SET contributed_at = ? WHERE task_id = ?').bind(old, id).run()

@@ -86,7 +86,7 @@ describe('seasonUpkeepItems (the ONE « Cette saison » selection)', () => {
     ]
     const out = seasonUpkeepItems(rows, now)
     expect(out.length).toBe(2)
-    expect(out[0].overdueSince).not.toBeNull() // owed leads
+    expect(out[0]!.overdueSince).not.toBeNull() // owed leads
   })
   it('drops plans and settled one-offs', () => {
     const rows = [

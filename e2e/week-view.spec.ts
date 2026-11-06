@@ -17,7 +17,7 @@ import { mockApi, seedState } from './mocks'
 // was right. The documented trap in CLAUDE.md (« Day arithmetic on a local midnight »).
 const monthWindow = (days: number[]) => ({
   events: [
-    { id: 'e1', title: 'Rendez-vous dentiste', at: days[0] + 9 * 3600, all_day: 0, member_id: 'm3', day: days[0] },
+    { id: 'e1', title: 'Rendez-vous dentiste', at: days[0]! + 9 * 3600, all_day: 0, member_id: 'm3', day: days[0] },
     { id: 'e2', title: 'Souper chez Mamie', at: days[2], all_day: 1, member_id: null, day: days[2] },
   ],
   meals: [{ id: 'm1', slot: 'supper', title: 'Spaghetti maison', cook_member_id: 'm1', day: days[0] }],

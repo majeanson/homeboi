@@ -72,7 +72,7 @@ async function dragOnto(
   const higher = await page.evaluate(
     ([a, b]) => {
       const top = (s: string) => document.querySelector(s)!.getBoundingClientRect().top
-      return top(a) <= top(b) ? a : b
+      return top(a!) <= top(b!) ? a : b
     },
     [fromSel, toSel],
   )
@@ -81,7 +81,7 @@ async function dragOnto(
   // `block:'start'` alone parks the higher card at y≈0, i.e. squarely in the top
   // band — the drop point then scrolled away under the pointer mid-gesture and the
   // card landed on whatever the scroll brought under it.
-  await page.locator(higher).evaluate((el) => {
+  await page.locator(higher!).evaluate((el) => {
     el.scrollIntoView({ block: 'start', behavior: 'instant' })
     const sc = el.closest('.hub__body') as HTMLElement | null
     if (sc) sc.scrollTop = Math.max(0, sc.scrollTop - 150)

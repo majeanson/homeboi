@@ -39,6 +39,10 @@ export const EDGE_ABOVE = 0.09
 
 export function assessGray(gray: Uint8Array | Uint8ClampedArray, w: number, h: number): PhotoAssessment {
   if (w < 64 || h < 64 || gray.length < w * h) return { usable: false, sharpness: 0, shadow: 0, edge: 0 }
+  // `w * h` fits inside `gray` (checked above) and every caller stays one pixel in from
+  // the edge, so the default is never read.
+  const px = (i: number) => gray[i] ?? 0
+  const laplacian = (i: number) => 4 * px(i) - px(i - 1) - px(i + 1) - px(i - w) - px(i + w)
   // Laplacian variance — the classic focus measure.
   let sum = 0
   let sumSq = 0
@@ -46,7 +50,7 @@ export function assessGray(gray: Uint8Array | Uint8ClampedArray, w: number, h: n
   for (let y = 1; y < h - 1; y++) {
     for (let x = 1; x < w - 1; x++) {
       const i = y * w + x
-      const lap = 4 * gray[i] - gray[i - 1] - gray[i + 1] - gray[i - w] - gray[i + w]
+      const lap = laplacian(i)
       sum += lap
       sumSq += lap * lap
       n++
@@ -67,8 +71,8 @@ export function assessGray(gray: Uint8Array | Uint8ClampedArray, w: number, h: n
       for (let y = cy * ch + 1; y < (cy + 1) * ch - 1; y++) {
         for (let x = cx * cw + 1; x < (cx + 1) * cw - 1; x++) {
           const i = y * w + x
-          b += gray[i]
-          const lap = Math.abs(4 * gray[i] - gray[i - 1] - gray[i + 1] - gray[i - w] - gray[i + w])
+          b += px(i)
+          const lap = Math.abs(laplacian(i))
           if (lap > 60) e++
           c++
         }
@@ -89,7 +93,7 @@ export function assessGray(gray: Uint8Array | Uint8ClampedArray, w: number, h: n
     if (x < 1 || y < 1 || x >= w - 1 || y >= h - 1) return
     total++
     const i = y * w + x
-    if (Math.abs(4 * gray[i] - gray[i - 1] - gray[i + 1] - gray[i - w] - gray[i + w]) > 60) edgy++
+    if (Math.abs(laplacian(i)) > 60) edgy++
   }
   for (let y = 0; y < h; y++) for (let x = 0; x < band; x++) look(x, y)
   for (let y = 0; y < h; y++) for (let x = w - band; x < w; x++) look(x, y)

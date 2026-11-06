@@ -90,7 +90,7 @@ test('« Envoyer ma liste » opens flipp.com with the list in the address, in Fl
   await expect(page.locator('.flippsheet__done')).toContainText(/partie avec le lien/)
 
   const payload = JSON.parse(
-    await page.evaluate((h) => decodeURIComponent(escape(atob(h.split('#bb=')[1].replace(/-/g, '+').replace(/_/g, '/')))), href!),
+    await page.evaluate((h) => decodeURIComponent(escape(atob(h.split('#bb=')[1]!.replace(/-/g, '+').replace(/_/g, '/')))), href!),
   ) as { v: number; clippings: { flyerItemId: number; name: string; price: string; merchantName: string }[]; items: { term: string }[] }
   expect(payload.v).toBe(1)
   // The ended deal is not a clipping…
@@ -201,7 +201,7 @@ test('a store hidden AT THE TILL still sends its deals to Flipp, with their phot
   await openSheet(page, { tillHidden: ['super c'] })
   const href = await page.locator('a.flippsheet__send').getAttribute('href')
   const payload = JSON.parse(
-    await page.evaluate((h) => decodeURIComponent(escape(atob(h.split('#bb=')[1].replace(/-/g, '+').replace(/_/g, '/')))), href!),
+    await page.evaluate((h) => decodeURIComponent(escape(atob(h.split('#bb=')[1]!.replace(/-/g, '+').replace(/_/g, '/')))), href!),
   ) as { clippings: { flyerItemId: number; merchantName: string }[]; items: { term: string }[] }
   // Super C's deal (101) is STILL a clipping — with its photo, not demoted to a word.
   expect(payload.clippings.map((c) => c.flyerItemId)).toEqual([101, 102, 103])
@@ -226,7 +226,7 @@ test('« Les rabais seulement » carries the deals and NO written items', async 
   await expect(door).toBeVisible()
   const href = await door.getAttribute('href')
   const payload = JSON.parse(
-    await page.evaluate((h) => decodeURIComponent(escape(atob(h.split('#bb=')[1].replace(/-/g, '+').replace(/_/g, '/')))), href!),
+    await page.evaluate((h) => decodeURIComponent(escape(atob(h.split('#bb=')[1]!.replace(/-/g, '+').replace(/_/g, '/')))), href!),
   ) as { clippings: { flyerItemId: number }[]; items: unknown[] }
   expect(payload.clippings.map((c) => c.flyerItemId)).toEqual([101, 102, 103])
   expect(payload.items).toEqual([])
@@ -234,7 +234,7 @@ test('« Les rabais seulement » carries the deals and NO written items', async 
   // The full door beside it still carries both halves — the two are a real choice.
   const full = JSON.parse(
     await page.evaluate(
-      (h) => decodeURIComponent(escape(atob(h.split('#bb=')[1].replace(/-/g, '+').replace(/_/g, '/')))),
+      (h) => decodeURIComponent(escape(atob(h.split('#bb=')[1]!.replace(/-/g, '+').replace(/_/g, '/')))),
       (await page.locator('a.flippsheet__send').getAttribute('href'))!,
     ),
   ) as { items: { term: string }[] }

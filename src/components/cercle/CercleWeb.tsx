@@ -73,7 +73,7 @@ export function CercleWeb({
 
   // « Maxime relie Le hockey et Le travail. » — the same sentence the world map speaks.
   const bridgeLabel = (viaKeys: string[], a: string, b: string) =>
-    t.cercle.world.sayBridge(byKey.get(viaKeys[0])?.firstName ?? '', a, b)
+    t.cercle.world.sayBridge(byKey.get(viaKeys[0] ?? '')?.firstName ?? '', a, b)
 
   // Stop each bridge at the two halos rather than running centre-to-centre, so a
   // connector never crosses the faces of the circles it joins.

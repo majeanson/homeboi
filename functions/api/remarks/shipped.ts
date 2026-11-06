@@ -135,8 +135,8 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
       "UPDATE remarks SET status = 'shipped', updated_at = ?1 WHERE id = ?2 AND status <> 'confirmed' AND deleted_at IS NULL",
     ).bind(at, id),
   ])
-  const inserted = (res[0].meta?.changes ?? 0) > 0
-  const advanced = (res[1].meta?.changes ?? 0) > 0
+  const inserted = (res[0]?.meta?.changes ?? 0) > 0
+  const advanced = (res[1]?.meta?.changes ?? 0) > 0
 
   // A re-run of the same workflow. The index refused the duplicate; answer 200 so the CI
   // step does not annotate a false failure, and say which it was.

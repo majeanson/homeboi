@@ -46,13 +46,13 @@ const noComments = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '')
 // Tokens the :root BASE block (the day palette, before any theme override) defines.
 const core = readFileSync(join(stylesDir, 'core.css'), 'utf8')
 const baseBlock = /:root\s*\{([^}]*)\}/.exec(noComments(core))![1]
-const BASE = new Set([...baseBlock.matchAll(/(--[a-z0-9-]+)\s*:/g)].map((m) => m[1]))
+const BASE = new Set([...baseBlock!.matchAll(/(--[a-z0-9-]+)\s*:/g)].map((m) => m[1]!))
 
 // Every custom property declared ANYWHERE: a CSS `--x:` declaration, or a component
 // naming it as a string (`style={{ '--x': … }}`, `setProperty('--x', …)`).
 const DECLARED = new Set<string>(BASE)
-for (const f of css) for (const m of noComments(readFileSync(f, 'utf8')).matchAll(/(--[a-z0-9-]+)\s*:/g)) DECLARED.add(m[1])
-for (const f of tsx) for (const m of readFileSync(f, 'utf8').matchAll(/['"`](--[a-z0-9-]+)['"`]/g)) DECLARED.add(m[1])
+for (const f of css) for (const m of noComments(readFileSync(f, 'utf8')).matchAll(/(--[a-z0-9-]+)\s*:/g)) DECLARED.add(m[1]!)
+for (const f of tsx) for (const m of readFileSync(f, 'utf8').matchAll(/['"`](--[a-z0-9-]+)['"`]/g)) DECLARED.add(m[1]!)
 
 describe('tokens', () => {
   it('found the palette (a broken parser must not pass vacuously)', () => {
@@ -66,7 +66,7 @@ describe('tokens', () => {
     for (const f of [...css, ...tsx]) {
       const src = f.endsWith('.css') ? noComments(readFileSync(f, 'utf8')) : readFileSync(f, 'utf8')
       for (const m of src.matchAll(/var\((--[a-z0-9-]+)\s*\)/g)) {
-        if (!DECLARED.has(m[1])) bad.push(`${rel(f)}: var(${m[1]})`)
+        if (!DECLARED.has(m[1]!)) bad.push(`${rel(f)}: var(${m[1]})`)
       }
     }
     expect([...new Set(bad)].join('\n'), 'a var() that resolves to nothing renders as `initial` — define the token in core.css or use the one that exists').toBe('')
@@ -77,7 +77,7 @@ describe('tokens', () => {
     for (const f of [...css, ...tsx]) {
       const src = f.endsWith('.css') ? noComments(readFileSync(f, 'utf8')) : readFileSync(f, 'utf8')
       for (const m of src.matchAll(/var\((--[a-z0-9-]+)\s*,/g)) {
-        if (BASE.has(m[1])) bad.push(`${rel(f)}: var(${m[1]}, …)`)
+        if (BASE.has(m[1]!)) bad.push(`${rel(f)}: var(${m[1]}, …)`)
       }
     }
     expect([...new Set(bad)].join('\n'), 'the base block IS the fallback; a second value beside it is the one that goes stale (15 × a teal hex under --accent, 2026-11-05)').toBe('')
@@ -87,7 +87,7 @@ describe('tokens', () => {
     const bad: string[] = []
     for (const f of css) {
       const src = noComments(readFileSync(f, 'utf8'))
-      for (const m of src.matchAll(/z-index\s*:\s*(\d+)/g)) if (+m[1] >= 10) bad.push(`${rel(f)}: z-index: ${m[1]}`)
+      for (const m of src.matchAll(/z-index\s*:\s*(\d+)/g)) if (+m[1]! >= 10) bad.push(`${rel(f)}: z-index: ${m[1]}`)
     }
     expect(bad.join('\n'), 'name the layer: add or reuse a --z-* token in core.css (and keep the prose scale in sheets/capture.css true)').toBe('')
   })

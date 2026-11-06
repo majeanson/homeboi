@@ -18,12 +18,12 @@ import { HEAD_RE, CHECK_RE, BULLET_RE, NUMBER_RE, QUOTE_RE } from './noteGrammar
 
 // ── inline ──────────────────────────────────────────────────────────────────────
 // Recursive: find the earliest marker, render its inner recursively, then the rest.
-function parseInline(text: string, keyBase: string): ReactNode[] {
+function parseInline(text: string | undefined, keyBase: string): ReactNode[] {
   if (!text) return []
   let best: { index: number; len: number; inner: string; tag: 'strong' | 'em' | 'del' } | null = null
   const consider = (re: RegExp, tag: 'strong' | 'em' | 'del') => {
     const m = re.exec(text)
-    if (m && (best === null || m.index < best.index)) best = { index: m.index, len: m[0].length, inner: m[1], tag }
+    if (m && (best === null || m.index < best.index)) best = { index: m.index, len: m[0].length, inner: m[1] ?? '', tag }
   }
   consider(/\*\*([^*]+?)\*\*/, 'strong') // bold before single-star italic
   consider(/~~([^~]+?)~~/, 'del')
@@ -64,9 +64,10 @@ export function renderNoteBody(md: string, opts: { onToggleCheck?: (lineIndex: n
     }
   }
 
+  const at = (n: number) => lines[n] ?? ''
   let i = 0
   while (i < lines.length) {
-    const line = lines[i]
+    const line = at(i)
     let m: RegExpExecArray | null
     if (!line.trim()) {
       flush()
@@ -77,7 +78,7 @@ export function renderNoteBody(md: string, opts: { onToggleCheck?: (lineIndex: n
       flush()
       const inner = parseInline(m[2], 'h' + i)
       blocks.push(
-        m[1].length === 1 ? (
+        m[1]?.length === 1 ? (
           <h3 key={'h' + key++} className="note-md__h note-md__h1">
             {inner}
           </h3>
@@ -93,8 +94,8 @@ export function renderNoteBody(md: string, opts: { onToggleCheck?: (lineIndex: n
     if (CHECK_RE.test(line)) {
       flush()
       const items: ReactNode[] = []
-      while (i < lines.length && (m = CHECK_RE.exec(lines[i]))) {
-        const checked = m[1].toLowerCase() === 'x'
+      while (i < lines.length && (m = CHECK_RE.exec(at(i)))) {
+        const checked = m[1]?.toLowerCase() === 'x'
         const idx = i
         items.push(
           <li key={'c' + idx} className="note-md__check">
@@ -122,7 +123,7 @@ export function renderNoteBody(md: string, opts: { onToggleCheck?: (lineIndex: n
     if (BULLET_RE.test(line) && !CHECK_RE.test(line)) {
       flush()
       const items: ReactNode[] = []
-      while (i < lines.length && !CHECK_RE.test(lines[i]) && (m = BULLET_RE.exec(lines[i]))) {
+      while (i < lines.length && !CHECK_RE.test(at(i)) && (m = BULLET_RE.exec(at(i)))) {
         items.push(
           <li key={'b' + i} className="note-md__li">
             {parseInline(m[1], 'b' + i)}
@@ -140,7 +141,7 @@ export function renderNoteBody(md: string, opts: { onToggleCheck?: (lineIndex: n
     if (NUMBER_RE.test(line)) {
       flush()
       const items: ReactNode[] = []
-      while (i < lines.length && (m = NUMBER_RE.exec(lines[i]))) {
+      while (i < lines.length && (m = NUMBER_RE.exec(at(i)))) {
         items.push(
           <li key={'n' + i} className="note-md__li">
             {parseInline(m[1], 'n' + i)}
@@ -158,7 +159,7 @@ export function renderNoteBody(md: string, opts: { onToggleCheck?: (lineIndex: n
     if (QUOTE_RE.test(line)) {
       flush()
       const q: ReactNode[] = []
-      while (i < lines.length && (m = QUOTE_RE.exec(lines[i]))) {
+      while (i < lines.length && (m = QUOTE_RE.exec(at(i)))) {
         if (q.length) q.push(<br key={'qb' + i} />)
         q.push(<Fragment key={'q' + i}>{parseInline(m[1], 'q' + i)}</Fragment>)
         i++
@@ -214,6 +215,7 @@ export function toggleCheckAt(md: string, lineIndex: number): string {
   if (l === undefined) return md
   const m = /^([-*]\s+\[)([ xX])(\]\s*.*)$/.exec(l)
   if (!m) return md
-  lines[lineIndex] = m[1] + (m[2].toLowerCase() === 'x' ? ' ' : 'x') + m[3]
+  const [, open = '', box = '', close = ''] = m
+  lines[lineIndex] = open + (box.toLowerCase() === 'x' ? ' ' : 'x') + close
   return lines.join('\n')
 }

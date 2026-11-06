@@ -112,7 +112,7 @@ describe('detectFamilyGroups (Union-Find over unified people)', () => {
     const groups = detectFamilyGroups(people, links, fam)
     // One family of {a,b,c}; z is alone (friend doesn't bind) → filtered out (size 1).
     expect(groups).toHaveLength(1)
-    expect([...groups[0].memberKeys].sort()).toEqual([k('a'), k('b'), k('c')])
+    expect([...groups[0]!.memberKeys].sort()).toEqual([k('a'), k('b'), k('c')])
   })
 
   it('binds a household MEMBER and a contact into the same family', () => {
@@ -121,7 +121,7 @@ describe('detectFamilyGroups (Union-Find over unified people)', () => {
     const links = [link('m1', 'c1', 'grandparent', { aKind: 'member', bKind: 'contact' })]
     const groups = detectFamilyGroups(people, links, fam)
     expect(groups).toHaveLength(1)
-    expect([...groups[0].memberKeys].sort()).toEqual([personKey('contact', 'c1'), personKey('member', 'm1')].sort())
+    expect([...groups[0]!.memberKeys].sort()).toEqual([personKey('contact', 'c1'), personKey('member', 'm1')].sort())
   })
 
   it('returns no group when nobody is linked', () => {
@@ -141,8 +141,8 @@ describe('unifyCircle (a member + its hard-linked contact are ONE person)', () =
   it('absorbs the linked contact into its member and fills gender from the contact', () => {
     const people = unifyCircle([linked('c1', 'Marie', 'm1', { gender: 'f' })], [member('m1', 'Marie')], [], []).people
     expect(people).toHaveLength(1) // one human, not two
-    expect(people[0].key).toBe(mk('m1')) // the member is canonical
-    expect(people[0].gender).toBe('f') // gender carried over from the contact
+    expect(people[0]?.key).toBe(mk('m1')) // the member is canonical
+    expect(people[0]?.gender).toBe('f') // gender carried over from the contact
   })
 
   it('remaps a contact-keyed link onto the member', () => {
@@ -153,8 +153,8 @@ describe('unifyCircle (a member + its hard-linked contact are ONE person)', () =
       [],
     )
     expect(links).toHaveLength(1)
-    expect(personKey(links[0].personAKind, links[0].personAId)).toBe(mk('m1'))
-    expect(personKey(links[0].personBKind, links[0].personBId)).toBe(ck('c2'))
+    expect(personKey(links[0]!.personAKind, links[0]!.personAId)).toBe(mk('m1'))
+    expect(personKey(links[0]!.personBKind, links[0]!.personBId)).toBe(ck('c2'))
   })
 
   it('drops a tie that collapses onto the same person', () => {
@@ -175,7 +175,7 @@ describe('unifyCircle (a member + its hard-linked contact are ONE person)', () =
         ],
       },
     ])
-    expect(groups[0].memberKeys).toEqual([{ personId: 'm1', personKind: 'member' }])
+    expect(groups[0]?.memberKeys).toEqual([{ personId: 'm1', personKind: 'member' }])
   })
 
   it('is a thin pass-through when no contact is linked', () => {
@@ -486,7 +486,7 @@ describe('proposeFamilyLinks (« Compléter les familles »)', () => {
     const props = proposeFamilyLinks(ppl('p', 'x', 'y'), [link('p', 'x', 'parent'), link('p', 'y', 'parent')], [famGroup('g', 'p', 'x', 'y')])
     expect(props).toHaveLength(1) // p-x and p-y already stored; only x-y is missing
     expect(props[0]).toMatchObject({ op: 'create', type: 'sibling', inferred: true })
-    expect([props[0].aKey, props[0].bKey].sort()).toEqual([k('x'), k('y')])
+    expect([props[0]!.aKey, props[0]!.bKey].sort()).toEqual([k('x'), k('y')])
   })
 
   it('falls back to a generic relative tie when no rung can be known', () => {
@@ -527,8 +527,8 @@ describe('proposeAllFamilyLinks (one button: group completion + transitive bridg
     const props = proposeAllFamilyLinks(ppl('p', 'x', 'y'), [link('p', 'x', 'parent'), link('p', 'y', 'parent')], [])
     expect(props).toHaveLength(1)
     expect(props[0]).toMatchObject({ op: 'create', type: 'sibling' })
-    expect([props[0].aKey, props[0].bKey].sort()).toEqual([k('x'), k('y')])
-    expect(props[0].reason).toBeDefined() // a transitive item carries its own "why"
+    expect([props[0]!.aKey, props[0]!.bKey].sort()).toEqual([k('x'), k('y')])
+    expect(props[0]?.reason).toBeDefined() // a transitive item carries its own "why"
   })
 
   it('deduces spouse from co-parents (links two families through one junction)', () => {
@@ -796,7 +796,7 @@ describe('worldClustersFrom', () => {
     const groups = [{ id: 'amis', name: 'Amis', kind: 'friends' as const, colour: null, memberKeys: new Set([personKey('contact', 'f')]) }]
     const householdKeys = new Set([personKey('member', 'm1')])
     const clusters = worldClustersFrom(people, links, groups, householdKeys, 'Maison', '#000', (n) => (n ? `Famille ${n}` : 'Famille'))
-    expect(clusters[0].kind).toBe('household')
+    expect(clusters[0]?.kind).toBe('household')
     expect(clusters.some((c) => c.kind === 'family')).toBe(true) // the a/b auto-family
     const social = clusters.find((c) => c.kind === 'group')
     expect(social?.groupKind).toBe('friends')
@@ -812,7 +812,7 @@ describe('worldClustersFrom', () => {
 const dist = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(a.x - b.x, a.y - b.y)
 const minSpacing = (pts: { x: number; y: number }[]) => {
   let m = Infinity
-  for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) m = Math.min(m, dist(pts[i], pts[j]))
+  for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) m = Math.min(m, dist(pts[i]!, pts[j]!))
   return m
 }
 
@@ -879,7 +879,7 @@ describe('layoutIslands', () => {
     const world = buildWorld(ppl, [], [{ id: 'g1', name: 'Amis', kind: 'group' as const, colour: null, memberKeys: [mk, ca, cb, cc] }], 'Autres')
     const l = layoutIslands(world, byKey, OPTS)!
     expect(l.placed).toHaveLength(1)
-    expect(l.placed[0].cx).toBeCloseTo(l.width / 2, 0)
+    expect(l.placed[0]?.cx).toBeCloseTo(l.width / 2, 0)
   })
 
   it('keeps two islands from overlapping, and every face inside its halo', () => {
@@ -893,7 +893,8 @@ describe('layoutIslands', () => {
       'Autres',
     )
     const l = layoutIslands(world, byKey, OPTS)!
-    const [a, b] = l.placed
+    const a = l.placed[0]!
+    const b = l.placed[1]!
     expect(dist(mid(a), mid(b))).toBeGreaterThanOrEqual(a.outerR + b.outerR)
     for (const isl of l.placed) for (const f of isl.faces) expect(Math.hypot(f.x, f.y) + OPTS.face / 2).toBeLessThanOrEqual(isl.outerR + 0.01)
   })
@@ -986,7 +987,8 @@ describe('layoutFamilyForest', () => {
       expect(inside).toHaveLength(f.count)
     }
     // Two frames never overlap.
-    const [a, b] = l.frames
+    const a = l.frames[0]!
+    const b = l.frames[1]!
     expect(a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h).toBe(false)
   })
 

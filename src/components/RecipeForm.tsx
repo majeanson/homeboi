@@ -46,6 +46,7 @@ import { fold } from '../lib/normalize'
 import { stashPendingImport, type CapturedRecipePage } from '../lib/recipeBookmarklet'
 import { importStage, useElapsed, type ImportKind, type ImportStage } from '../lib/importProgress'
 import { Img } from './Img'
+import { swapAt } from '../lib/reorder'
 
 // In the EDITOR a row is a section row as soon as it carries the "## " marker —
 // even with the title still empty ("## "), so typing the name doesn't flip the
@@ -381,7 +382,7 @@ export function RecipeForm({
     const arr = [...lines(kind)]
     const j = i + delta
     if (j < 0 || j >= arr.length) return
-    ;[arr[i], arr[j]] = [arr[j], arr[i]]
+    swapAt(arr, i, j)
     setLines(kind)(arr)
     setActiveLine((a) => (a?.kind === kind && a.i === i ? { kind, i: j } : a))
     if (kind === 'steps') {
@@ -407,13 +408,14 @@ export function RecipeForm({
       .filter(Boolean)
       .map((s) => {
         if (isHeadingRow(s)) return s
-        const sec = s.match(/^([^.!?:;,]{2,40}):$/)
-        return sec && !/\d/.test(sec[1]) ? SECTION_PREFIX + sec[1].trim() : s
+        const sec = s.match(/^([^.!?:;,]{2,40}):$/)?.[1]
+        return sec && !/\d/.test(sec) ? SECTION_PREFIX + sec.trim() : s
       })
     if (parts.length <= 1) return false
     const cur = lines(kind)
-    const keepCurrent = cur[i].trim()
-    setLines(kind)([...cur.slice(0, i), ...(keepCurrent ? [cur[i], ...parts] : parts), ...cur.slice(i + 1)])
+    const line = cur[i] ?? ''
+    const keepCurrent = line.trim()
+    setLines(kind)([...cur.slice(0, i), ...(keepCurrent ? [line, ...parts] : parts), ...cur.slice(i + 1)])
     // Keep stepImages aligned to the same splice: a kept row holds its photo and
     // the pasted rows insert empty slots AFTER it (remove 0); a blank row is
     // consumed and replaced by the pasted rows (remove 1). Either way the tail
@@ -573,8 +575,8 @@ export function RecipeForm({
       // page, a hand's shadow over the text, text at the frame's edge — each a retake
       // the cook can make now. Never blocks the read; said at once, and again under
       // the verify panel beside the lines it may have cost.
-      for (let i = 0; i < files.length; i++) {
-        for (const kind of await checkPhotoFile(files[i])) report.photoWarnings.push({ page: i, kind })
+      for (const [i, file] of files.entries()) {
+        for (const kind of await checkPhotoFile(file)) report.photoWarnings.push({ page: i, kind })
       }
       if (report.photoWarnings.length) {
         const kinds = [...new Set(report.photoWarnings.map((w) => w.kind))]
@@ -585,10 +587,10 @@ export function RecipeForm({
       // the deployment has a key. Sends each page to /api/recipe-ocr → faithful text.
       const useCloud = ocrEngine === 'cloud' && cloudOcrAvailable && aiEnabled
       if (useCloud) {
-        for (let i = 0; i < files.length; i++) {
+        for (const [i, file] of files.entries()) {
           // Downscale-only here (no Tesseract-style upscaling) — Mistral reads small
           // text fine, and this keeps the upload under the endpoint's 6 MB cap.
-          const img = await resizeImage(files[i], OCR_MAX)
+          const img = await resizeImage(file, OCR_MAX)
           setReadProgress(i / files.length)
           const r = await api<{ text: string; model?: string }>('recipe-ocr', { method: 'POST', body: img }).catch(
             () => null,
@@ -618,8 +620,8 @@ export function RecipeForm({
         let confSum = 0
         let confN = 0
         engineFailed = true
-        for (let i = 0; i < files.length; i++) {
-          const big = await resizeImage(files[i], OCR_MAX)
+        for (const [i, file] of files.entries()) {
+          const big = await resizeImage(file, OCR_MAX)
           const res = await ocrImage(big, (p) => setReadProgress((i + p) / files.length))
           if (!res.engineFailed) engineFailed = false
           if (res.text) {
@@ -1044,7 +1046,7 @@ export function RecipeForm({
         if (isSectionHeading(p.text) && prev && isSectionHeading(prev.text)) out.pop()
         out.push(p)
       }
-      if (out.length && isSectionHeading(out[out.length - 1].text)) out.pop()
+      if (isSectionHeading(out.at(-1)?.text ?? '')) out.pop()
       return { steps: out.map((p) => p.text), stepImages: out.map((p) => p.img) }
     }
     const cleanedSteps = cleanStepsWithPhotos()

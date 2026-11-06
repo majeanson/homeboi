@@ -165,7 +165,7 @@ describe('api() timeout on a stalled connection', () => {
     } finally {
       if (orig) Object.defineProperty(document, 'visibilityState', orig)
     }
-    const [, opts] = spy.mock.calls[0]
+    const [, opts] = spy.mock.calls[0]!
     expect(opts.keepalive).toBe(true)
     expect(opts.signal).toBeUndefined()
   })

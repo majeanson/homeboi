@@ -79,12 +79,13 @@ const QTY_UNIT = new RegExp(`(${Q})(\\s*${CONNECT})(${UNIT})${NOT_LETTER}\\.?`, 
 function valueOf(tok: string): number {
   tok = tok.trim()
   let m = tok.match(/^(\d+)\s+(\d+)\/(\d+)$/) // 1 1/2
-  if (m) return +m[1] + +m[2] / +m[3]
+  if (m) return Number(m[1]) + Number(m[2]) / Number(m[3])
   m = tok.match(new RegExp(`^(\\d+)\\s*([${FRAC}])$`)) // 1½
-  if (m) return +m[1] + UNICODE_FRAC[m[2]]
+  if (m) return Number(m[1]) + (UNICODE_FRAC[m[2] ?? ''] ?? NaN)
   m = tok.match(/^(\d+)\/(\d+)$/) // 1/2
-  if (m) return +m[1] / +m[2]
-  if (UNICODE_FRAC[tok] != null) return UNICODE_FRAC[tok] // ½
+  if (m) return Number(m[1]) / Number(m[2])
+  const frac = UNICODE_FRAC[tok]
+  if (frac != null) return frac // ½
   return parseFloat(tok.replace(',', '.')) // 2 / 1.5
 }
 
@@ -218,7 +219,7 @@ export function scaleLine(line: string, factor: number): string {
   //    non-leading measure). matchAll advances past each, so they don't overlap.
   let firstUnitStart = Infinity
   for (const m of line.matchAll(QTY_UNIT)) {
-    const text = renderMeasure(m[1], m[2], m[3], factor)
+    const text = renderMeasure(m[1] ?? '', m[2] ?? '', m[3] ?? '', factor)
     if (text == null) continue
     const start = m.index!
     targets.push({ start, end: start + m[0].length, text })
@@ -232,7 +233,7 @@ export function scaleLine(line: string, factor: number): string {
   if (lead) {
     const leadStart = lead.index! + (lead[0].length - lead[0].trimStart().length)
     const alreadyMeasure = firstUnitStart <= leadStart && firstUnitStart < lead.index! + lead[0].length
-    const a = valueOf(lead[1])
+    const a = valueOf(lead[1] ?? '')
     if (!alreadyMeasure && isFinite(a)) {
       const rest = ''
       let text: string | null = null

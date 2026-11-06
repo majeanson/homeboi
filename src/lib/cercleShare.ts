@@ -83,7 +83,8 @@ export function familyToShare(memberKeys: Iterable<string>, data: FamilyShareDat
       if (petById.has(id)) petKeys.push(key)
     }
   }
-  if (humans.length === 0) return null
+  const [self, ...household] = humans
+  if (!self) return null
 
   const indexByKey = new Map(humanKeys.map((k, i) => [k, i]))
   const inFamily = new Set(humanKeys)
@@ -126,6 +127,5 @@ export function familyToShare(memberKeys: Iterable<string>, data: FamilyShareDat
     return { name: p.name, species: p.species ?? '', photoKey: p.photoKey, ownerIndex }
   })
 
-  const [self, ...household] = humans
   return { self, household, links, pets }
 }

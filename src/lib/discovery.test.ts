@@ -51,9 +51,9 @@ describe('buildDiscoveryTour', () => {
     const tour = buildDiscoveryTour(['voyage', 'mots'])!
     expect(tour.id).toBe('discovery')
     expect(tour.steps).toHaveLength(3) // intro + 2
-    expect(tour.steps[0].card).toBeUndefined() // the centred intro
-    expect(tour.steps[1].card).toBe('voyage') // each stop hands off to its guide card
-    expect(tour.steps[2].card).toBe('mots')
+    expect(tour.steps[0]!.card).toBeUndefined() // the centred intro
+    expect(tour.steps[1]?.card).toBe('voyage') // each stop hands off to its guide card
+    expect(tour.steps[2]?.card).toBe('mots')
     // Bi parity — both languages present on every step (typeof-FR contract spirit).
     for (const s of tour.steps) {
       expect(s.title.fr.length).toBeGreaterThan(0)

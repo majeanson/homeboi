@@ -45,19 +45,19 @@ describe('ReviewChecklist — the picks survive the parent', () => {
   it('a re-render with the SAME batch (a new array, same people) keeps what was unticked', () => {
     act(() => root.render(createElement(ReviewChecklist, props(['Camille', 'Théo', 'Grisou']))))
     expect(boxes()).toHaveLength(3)
-    act(() => boxes()[1].click())
-    expect(boxes()[1].checked).toBe(false)
+    act(() => boxes()[1]!.click())
+    expect(boxes()[1]!.checked).toBe(false)
     expect(selectedLabel()).toBe('Ajouter la sélection (2)')
     // The parent re-renders and builds its array again — a refetch landed, a poll ticked.
     // Red against `useEffect(…, [items])`: Théo comes back ticked and the button reads (3).
     act(() => root.render(createElement(ReviewChecklist, props(['Camille', 'Théo', 'Grisou']))))
-    expect(boxes()[1].checked).toBe(false)
+    expect(boxes()[1]!.checked).toBe(false)
     expect(selectedLabel()).toBe('Ajouter la sélection (2)')
   })
 
   it('a NEW batch starts fully ticked again', () => {
     act(() => root.render(createElement(ReviewChecklist, props(['Camille', 'Théo', 'Grisou']))))
-    act(() => boxes()[1].click())
+    act(() => boxes()[1]!.click())
     act(() => root.render(createElement(ReviewChecklist, props(['Sophie', 'Théo']))))
     expect(boxes().map((b) => b.checked)).toEqual([true, true])
     expect(selectedLabel()).toBe('Ajouter la sélection (2)')
@@ -65,7 +65,7 @@ describe('ReviewChecklist — the picks survive the parent', () => {
 
   it('closing and reopening the review forgets the previous picks', () => {
     act(() => root.render(createElement(ReviewChecklist, props(['Camille', 'Théo', 'Grisou']))))
-    act(() => boxes()[1].click())
+    act(() => boxes()[1]!.click())
     act(() => root.render(createElement(ReviewChecklist, props(['Camille', 'Théo', 'Grisou'], false))))
     act(() => root.render(createElement(ReviewChecklist, props(['Camille', 'Théo', 'Grisou'], true))))
     expect(boxes().map((b) => b.checked)).toEqual([true, true, true])

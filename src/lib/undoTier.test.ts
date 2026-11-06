@@ -153,7 +153,7 @@ describe('undo tier — one mechanism per act', () => {
     const bad: string[] = []
     for (const f of files) {
       for (const m of f.raw.matchAll(/useDeferredRemoval\(([A-Za-z_][A-Za-z0-9_]*)\)/g)) {
-        if (/_KEY$/.test(m[1]) && !exported.has(m[1])) bad.push(`${f.path}: useDeferredRemoval(${m[1]})`)
+        if (/_KEY$/.test(m[1]!) && !exported.has(m[1])) bad.push(`${f.path}: useDeferredRemoval(${m[1]})`)
       }
     }
     expect(bad, 'that key is exported nowhere — a private scope hides the row on no other surface').toEqual([])

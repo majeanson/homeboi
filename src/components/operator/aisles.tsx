@@ -61,8 +61,7 @@ export function AisleOrderSection() {
     if (!order || !Number.isInteger(from) || !Number.isInteger(to) || from === to) return
     if (from < 0 || from >= order.length || to < 0 || to >= order.length) return
     const next = [...order]
-    const [moved] = next.splice(from, 1)
-    next.splice(to, 0, moved)
+    next.splice(to, 0, ...next.splice(from, 1))
     save(next)
   }
 

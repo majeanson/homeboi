@@ -4,6 +4,7 @@
 // pictos are emoji (the board's convention for content, vs Phosphor for controls).
 import type { Lang } from '../i18n'
 import { DEFAULT_SLOT_HOURS, isMealSlot, type MealSlot } from './mealSlots'
+import { swapAt } from './reorder'
 
 // ---- Cherche et trouve (find-it) -------------------------------------------
 
@@ -138,8 +139,9 @@ export function buildSeekDecks(people: SeekPerson[], lang: Lang, names: DeckName
   while (mix.length < MIX_CAP) {
     let added = false
     for (const d of ordered) {
-      if (d.items[i]) {
-        mix.push(d.items[i])
+      const item = d.items[i]
+      if (item) {
+        mix.push(item)
         added = true
         if (mix.length >= MIX_CAP) break
       }
@@ -155,27 +157,27 @@ export function buildSeekDecks(people: SeekPerson[], lang: Lang, names: DeckName
 // One round of « Cherche et trouve »: a small board of items + the one to find. The
 // target is fresh (never the same as `prevId` when the deck allows), and the board
 // always contains the target. Pure given `rand` (injected for tests). NEVER throws —
-// a too-small deck just yields the whole deck.
+// a too-small deck just yields the whole deck, and an empty one yields null.
 export function pickSeekRound(
   deck: SeekDeck,
   size: number,
   prevId: string | null,
   rand: () => number = Math.random,
-): { board: SeekItem[]; target: SeekItem } {
+): { board: SeekItem[]; target: SeekItem } | null {
   const items = deck.items
   const n = Math.min(size, items.length)
   // Shuffle a copy (Fisher–Yates) so the board is a random subset, order varied.
   const pool = items.slice()
   for (let k = pool.length - 1; k > 0; k--) {
     const j = Math.floor(rand() * (k + 1))
-    ;[pool[k], pool[j]] = [pool[j], pool[k]]
+    swapAt(pool, k, j)
   }
   const board = pool.slice(0, n)
   // Prefer a target that isn't last round's (so the prompt actually changes).
   const fresh = board.filter((it) => it.id !== prevId)
   const choices = fresh.length ? fresh : board
   const target = choices[Math.floor(rand() * choices.length)]
-  return { board, target }
+  return target ? { board, target } : null
 }
 
 // ---- Notre journée (the our-day timeline) ----------------------------------

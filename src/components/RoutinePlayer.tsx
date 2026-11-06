@@ -190,10 +190,11 @@ export function RoutinePlayer({
 
   // Read a step aloud WITHOUT marking it done — hear what to do first, then do it.
   function readAloud(idx: number) {
-    if (idx < 0 || idx >= routine.cards.length) return
-    const text = routine.cards[idx].narration ?? routine.cards[idx].label
+    const card = routine.cards[idx]
+    if (!card) return
+    const text = card.narration ?? card.label
     const seq = flashSpeaking(idx)
-    playNarration(routine.cards[idx].clipKey, text, (raw) => speak(raw, undefined, { onEnd: () => endSpeaking(seq) }))
+    playNarration(card.clipKey, text, (raw) => speak(raw, undefined, { onEnd: () => endSpeaking(seq) }))
   }
   // A short, gentle pulse when a step settles — the same one the step Countdown gives
   // at zero, so the app feels the same in the hand. Guarded: no vibration API is fine.
@@ -335,6 +336,7 @@ export function RoutinePlayer({
       return
     }
     const c = routine.cards[idx]
+    if (!c) return
     const seq = flashSpeaking(idx)
     speak(t.kid.backTo(c.narration ?? c.label), undefined, { onEnd: () => endSpeaking(seq) })
     setArmedIdx(idx)
@@ -418,6 +420,7 @@ export function RoutinePlayer({
         )
         return pool[Math.floor(Math.random() * pool.length)]
       })()
+    if (!line) return
     speak(line)
     setBuddyLine(line)
     setBuddyTalking(true)

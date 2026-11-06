@@ -113,7 +113,7 @@ describe('a held write', () => {
     const oldest = held('Le plus vieux')
     for (let i = 0; i < MAX_UNDO_ENTRIES; i++) held(`suivant ${i}`)
     expect(oldest.onCommit).toHaveBeenCalledTimes(1)
-    expect(toast.recents.isLive(toast.recents.history[0].id)).toBe(false)
+    expect(toast.recents.isLive(toast.recents.history[0]!.id)).toBe(false)
     elapse(HOLD)
     expect(oldest.onCommit).toHaveBeenCalledTimes(1)
   })
@@ -182,7 +182,7 @@ describe('a compensating action', () => {
   it('it expires like the others: it does not linger until six more actions evict it', () => {
     mount()
     act(() => toast.record({ message: 'Ajouté', onUndo: () => {} }))
-    const { id } = toast.recents.history[0]
+    const { id } = toast.recents.history[0]!
     expect(toast.recents.isLive(id)).toBe(true)
     elapse(HOLD)
     expect(toast.recents.isLive(id)).toBe(false)
@@ -195,7 +195,7 @@ describe('a notice', () => {
     act(() => toast.notice('Ce lien ne mène plus à rien.'))
     expect(screen.getByText('Ce lien ne mène plus à rien.')).toBeTruthy()
     expect(undoButton()).toBeNull()
-    expect(toast.recents.isLive(toast.recents.history[0].id)).toBe(false)
+    expect(toast.recents.isLive(toast.recents.history[0]!.id)).toBe(false)
   })
 
   it('a refused write says one calm line, never a silent snap-back', () => {
@@ -421,7 +421,7 @@ describe('the session log', () => {
     held('Fait')
     elapse(HOLD)
     expect(toast.recents.history.map((r) => r.message)).toEqual(['Fait'])
-    expect(toast.recents.isLive(toast.recents.history[0].id)).toBe(false)
+    expect(toast.recents.isLive(toast.recents.history[0]!.id)).toBe(false)
   })
 
   it('stays bounded and newest-last: a tablet glances, it does not audit', () => {
@@ -429,13 +429,13 @@ describe('the session log', () => {
     for (let i = 0; i < 20; i++) act(() => toast.notice(`ligne ${i}`))
     expect(toast.recents.history).toHaveLength(15)
     expect(toast.recents.history.at(-1)?.message).toBe('ligne 19')
-    expect(toast.recents.history[0].message).toBe('ligne 5')
+    expect(toast.recents.history[0]?.message).toBe('ligne 5')
   })
 
   it('a late undo works from Réglages while the entry is still live', () => {
     mount()
     const { onCommit, onUndo } = held()
-    act(() => toast.recents.undo(toast.recents.history[0].id))
+    act(() => toast.recents.undo(toast.recents.history[0]!.id))
     elapse(HOLD)
     expect(onUndo).toHaveBeenCalledTimes(1)
     expect(onCommit).not.toHaveBeenCalled()
@@ -444,7 +444,7 @@ describe('the session log', () => {
   it('a late undo of something already committed does nothing', () => {
     mount()
     const { onUndo } = held()
-    const { id } = toast.recents.history[0]
+    const { id } = toast.recents.history[0]!
     elapse(HOLD)
     act(() => toast.recents.undo(id))
     expect(onUndo).not.toHaveBeenCalled()

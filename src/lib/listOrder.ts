@@ -23,6 +23,6 @@ export function rushRank(row: NoRushRow): number {
 // last row is an ordinary errand (nothing to step over).
 export function noRushStart(rows: NoRushRow[]): number {
   let i = rows.length
-  while (i > 0 && rows[i - 1].non_urgent) i--
+  while (i > 0 && rows[i - 1]?.non_urgent) i--
   return i
 }

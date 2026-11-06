@@ -19,9 +19,9 @@ describe('le cadre photo', () => {
     expect(await photos(s)).toEqual([expect.objectContaining({ id, key, saved_at: null })])
 
     await okJson(s.fetch('/api/photos', { method: 'PATCH', body: { id, saved: true } }))
-    expect((await photos(s))[0].saved_at).toBeGreaterThan(0)
+    expect((await photos(s))[0]?.saved_at).toBeGreaterThan(0)
     await okJson(s.fetch('/api/photos', { method: 'PATCH', body: { id, saved: false } }))
-    expect((await photos(s))[0].saved_at).toBeNull()
+    expect((await photos(s))[0]!.saved_at).toBeNull()
     expect((await s.fetch('/api/photos', { method: 'PATCH', body: { id } })).status).toBe(400)
 
     await okJson(s.fetch('/api/photos', { method: 'DELETE', body: { id } }))

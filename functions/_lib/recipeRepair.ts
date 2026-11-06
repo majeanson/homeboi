@@ -43,7 +43,7 @@ export function unquoteLine(line: string): string {
 export function unquoteTitle(title: string | null): string | null {
   if (!title) return title
   const m = title.trim().match(/^\{?\s*"(?:title|titre)"\s*:\s*"(.*?)"\s*,?\s*\}?$/i)
-  return unquoteLine(m ? m[1] : title) || null
+  return unquoteLine(m?.[1] ?? title) || null
 }
 
 // A transcript's PREAMBLE: the lines a model puts before the text it was asked to copy
@@ -58,7 +58,7 @@ export function stripTranscriptPreamble(text: string): string {
   let i = 0
   let judged = 0
   while (i < lines.length && judged < 4) {
-    const l = lines[i].trim()
+    const l = (lines[i] ?? '').trim()
     if (!l) {
       i++
       continue
@@ -87,8 +87,8 @@ export function jsonFragmentsToText(text: string): string {
     if (!l || /^[{}[\],]+$/.test(l)) continue
     const kv = l.match(/^\{?\s*"([A-Za-z_]+)"\s*:\s*(.*)$/)
     if (kv) {
-      const key = kv[1].toLowerCase()
-      const val = kv[2].trim().replace(/,$/, '').trim()
+      const key = (kv[1] ?? '').toLowerCase()
+      const val = (kv[2] ?? '').trim().replace(/,$/, '').trim()
       if (val === '[' || val === '[]' || val === '{') {
         if (/^ingr[ée]dients?$/.test(key)) out.push('Ingrédients')
         else if (/^(steps?|instructions?|method|directions?|[ée]tapes?|pr[ée]paration)$/.test(key)) out.push('Préparation')
@@ -124,13 +124,14 @@ export interface FieldSalvage {
 export function salvageFieldLines(lines: string[]): FieldSalvage {
   const out: FieldSalvage = { lines: [], servings: null, prep: null, cook: null }
   for (let i = 0; i < lines.length; i++) {
-    const l = lines[i].trim()
+    const raw = lines[i] ?? ''
+    const l = raw.trim()
     const f = l.match(FIELD)
     if (f) {
       const next = lines[i + 1]?.trim() ?? ''
       if (NUMBER.test(next)) {
         const n = Math.round(parseFloat(next.replace(',', '.')))
-        const key = f[1].toLowerCase()
+        const key = (f[1] ?? '').toLowerCase()
         if (/^(servings?|portions?|yield|rendement)$/.test(key)) out.servings ??= n
         else if (/^prep|pr[ée]paration/.test(key)) out.prep ??= n
         else if (/^cook|cuisson/.test(key)) out.cook ??= n
@@ -139,7 +140,7 @@ export function salvageFieldLines(lines: string[]): FieldSalvage {
       continue
     }
     if (NUMBER.test(l)) continue
-    out.lines.push(lines[i])
+    out.lines.push(raw)
   }
   return out
 }
@@ -160,8 +161,8 @@ const KEEPING_LINE =
 
 function oneMetaSentence(s: string): { meta: boolean; servings: number | null } {
   const y = s.match(YIELD_LINE)
-  if (y && /\d/.test(s) && new RegExp(PORTION, 'i').test(s)) return { meta: true, servings: parseInt(y[1] ?? y[2], 10) || null }
-  if (y && /^(?:donne|rendement|yield|serves?|makes)\b/i.test(s)) return { meta: true, servings: parseInt(y[1] ?? y[2], 10) || null }
+  if (y && /\d/.test(s) && new RegExp(PORTION, 'i').test(s)) return { meta: true, servings: parseInt(y[1] ?? y[2] ?? '', 10) || null }
+  if (y && /^(?:donne|rendement|yield|serves?|makes)\b/i.test(s)) return { meta: true, servings: parseInt(y[1] ?? y[2] ?? '', 10) || null }
   if (KEEPING_LINE.test(s)) {
     // No « heures / hours »: « Refrigerate 4 hours before serving » is a STEP (a chill
     // time), not how long it keeps — counting hours deleted real last steps (2026-10-27).
@@ -261,8 +262,8 @@ function takePhrase(text: string, start: number): string | null {
     if (m[3]) break // the word carried the phrase's closing punctuation
     if (words.length >= 9) break
   }
-  if (!words.length) return null
-  if (NOT_FOOD.test(words[0])) return null
+  const [firstWord] = words
+  if (firstWord === undefined || NOT_FOOD.test(firstWord)) return null
   if (!hasUnit && !hasDe && words.length > 3) words.length = 3
   const phrase = (rest.slice(0, i) + words.join(' ')).replace(/\s+/g, ' ').trim()
   return phrase

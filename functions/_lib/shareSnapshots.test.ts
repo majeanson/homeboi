@@ -165,8 +165,8 @@ describe('remapSnapshotBlobKeys', () => {
       cards: [{ icon: 'a', label: 'b', photoKey: 'rp_orig' }, { icon: 'c', label: 'd', photoKey: '' }],
     }
     const out = remapSnapshotBlobKeys('routine', r, (k) => `sh_${k}`)
-    expect(out.cards[0].photoKey).toBe('sh_rp_orig')
-    expect(out.cards[1].photoKey).toBe('')
-    expect(r.cards[0].photoKey).toBe('rp_orig') // input untouched
+    expect(out.cards[0]?.photoKey).toBe('sh_rp_orig')
+    expect(out.cards[1]?.photoKey).toBe('')
+    expect(r.cards[0]?.photoKey).toBe('rp_orig') // input untouched
   })
 })

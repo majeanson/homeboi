@@ -71,7 +71,7 @@ describe('data invariants', () => {
     if (out.status !== 'violated') throw new Error('unreachable')
     expect(out.total).toBe(1)
     expect(out.violations[0]).toMatchObject({ table: 'notes', id: 'nt_orphan' })
-    expect(out.violations[0].detail).toContain('nm_blob_sans_genre')
+    expect(out.violations[0]?.detail).toContain('nm_blob_sans_genre')
   })
 
   it('catches a media_kind with no media_key — the pair broken the OTHER way', async () => {
@@ -87,7 +87,7 @@ describe('data invariants', () => {
     const out = only(await check(a.householdId), 'media-pair').outcome
     expect(out.status).toBe('violated')
     if (out.status !== 'violated') throw new Error('unreachable')
-    expect(out.violations[0].detail).toContain('sans clé')
+    expect(out.violations[0]?.detail).toContain('sans clé')
   })
 
   it('catches a scene_key on something that is not a drawing', async () => {
@@ -102,7 +102,7 @@ describe('data invariants', () => {
     expect(violatedKeys(reports)).toEqual(['scene-key-drawing'])
     const out = only(reports, 'scene-key-drawing').outcome
     if (out.status !== 'violated') throw new Error(JSON.stringify(out))
-    expect(out.violations[0].detail).toContain('audio')
+    expect(out.violations[0]?.detail).toContain('audio')
   })
 
   it('catches an empty string in a NOT NULL JSON column', async () => {
@@ -121,7 +121,7 @@ describe('data invariants', () => {
     expect(violatedKeys(reports)).toEqual(['json-columns'])
     const out = only(reports, 'json-columns').outcome
     if (out.status !== 'violated') throw new Error(JSON.stringify(out))
-    expect(out.violations[0].detail).toContain('ingredients_json')
+    expect(out.violations[0]?.detail).toContain('ingredients_json')
   })
 
   it('catches JSON of the WRONG CONTAINER — an object where an array was promised', async () => {
@@ -137,7 +137,7 @@ describe('data invariants', () => {
 
     const out = only(await check(a.householdId), 'json-columns').outcome
     if (out.status !== 'violated') throw new Error(JSON.stringify(out))
-    expect(out.violations[0].detail).toContain('steps_json')
+    expect(out.violations[0]?.detail).toContain('steps_json')
   })
 
   it('catches a member ref pointing at nobody', async () => {
@@ -159,7 +159,7 @@ describe('data invariants', () => {
     const out = only(reports, 'member-refs').outcome
     if (out.status !== 'violated') throw new Error(JSON.stringify(out))
     expect(out.violations[0]).toMatchObject({ table: 'list_items', id: 'li_ghost' })
-    expect(out.violations[0].detail).toContain('mb_parti')
+    expect(out.violations[0]?.detail).toContain('mb_parti')
   })
 
   it("catches a member ref pointing at ANOTHER household's member", async () => {
@@ -181,7 +181,7 @@ describe('data invariants', () => {
 
     const out = only(await check(a.householdId), 'member-refs').outcome
     if (out.status !== 'violated') throw new Error(JSON.stringify(out))
-    expect(out.violations[0].id).toBe('nt_cross')
+    expect(out.violations[0]?.id).toBe('nt_cross')
   })
 
   it('catches an expired flyer deal still waiting to be bought', async () => {
@@ -197,7 +197,7 @@ describe('data invariants', () => {
     expect(violatedKeys(reports)).toEqual(['expired-deals'])
     const out = only(reports, 'expired-deals').outcome
     if (out.status !== 'violated') throw new Error(JSON.stringify(out))
-    expect(out.violations[0].detail).toContain('Yogourt')
+    expect(out.violations[0]?.detail).toContain('Yogourt')
   })
 
   it('does NOT flag a deal that is still good, nor one already checked off', async () => {
@@ -237,7 +237,7 @@ describe('data invariants', () => {
     const out = only(reports, 'list-positions').outcome
     if (out.status !== 'violated') throw new Error(JSON.stringify(out))
     expect(out.total).toBe(1)
-    expect(out.violations[0].detail).toContain('position 3')
+    expect(out.violations[0]?.detail).toContain('position 3')
   })
 
   it('catches a row modified before it existed', async () => {

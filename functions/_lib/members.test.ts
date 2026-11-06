@@ -36,10 +36,10 @@ function tablesReferencingMembers(): Set<string> {
   while ((m = re.exec(schema))) {
     const before = schema.slice(0, m.index)
     const create = [...before.matchAll(/create\s+table\s+(\w+)/g)].pop()
-    if (create) tables.add(create[1])
+    if (create) tables.add(create[1]!)
   }
   // A table a later migration DROPPED references nothing any more (0143 dropped `mots`).
-  for (const d of schema.matchAll(/drop\s+table\s+(?:if\s+exists\s+)?(\w+)/g)) tables.delete(d[1])
+  for (const d of schema.matchAll(/drop\s+table\s+(?:if\s+exists\s+)?(\w+)/g)) tables.delete(d[1]!)
   return tables
 }
 

@@ -41,7 +41,7 @@ describe('carnetLifeSoon', () => {
 
   it('sorts soonest-first', () => {
     const soon = carnetLifeSoon(items, now)
-    for (let i = 1; i < soon.length; i++) expect(soon[i].at).toBeGreaterThanOrEqual(soon[i - 1].at)
+    for (let i = 1; i < soon.length; i++) expect(soon[i]?.at).toBeGreaterThanOrEqual(soon[i - 1]!.at)
   })
 
   it('carries a stable, source-prefixed DerivedOccurrence id', () => {

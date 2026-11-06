@@ -49,7 +49,7 @@ export function findDurations(text: string): Duration[] {
   for (const m of text.matchAll(TOKEN)) {
     const g = m.groups!
     let seconds = 0
-    if (g.h1 != null) seconds = +g.h1 * 3600 + +g.m1 * 60
+    if (g.h1 != null) seconds = +g.h1 * 3600 + Number(g.m1) * 60
     else if (g.h2 != null) seconds = Math.round(parseFloat(g.h2.replace(',', '.')) * 3600)
     else if (g.m2 != null) seconds = (g.m2b != null ? +g.m2b : +g.m2) * 60
     else if (g.s2 != null) seconds = +g.s2

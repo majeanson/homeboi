@@ -23,7 +23,7 @@ function fmt(key: string, lang: Lang, opts: Intl.DateTimeFormatOptions): Intl.Da
 // Capitalize the first letter (e.g. a locale day name "lundi" → "Lundi"). Shared so
 // the departure/itinerary/day surfaces don't each re-declare it.
 export function capitalize(s: string): string {
-  return s ? s[0].toUpperCase() + s.slice(1) : s
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : s
 }
 
 // Unix seconds -> "15 h 30" / "3:30 PM". Intl handles the locale spacing.

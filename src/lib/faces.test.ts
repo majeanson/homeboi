@@ -26,7 +26,7 @@ describe('member → face', () => {
     // The kind test is load-bearing: a member can carry an avatar_ref for a
     // non-photo kind, and rendering that as an <img> is a broken tile, not a face.
     expect(toFace({ ...RAW, avatar_kind: 'initial' }).photoUrl).toBeNull()
-    expect(facesFromCercleMembers([{ ...CERCLE, avatarKind: 'emoji' }])[0].photoUrl).toBeNull()
+    expect(facesFromCercleMembers([{ ...CERCLE, avatarKind: 'emoji' }])[0]!.photoUrl).toBeNull()
   })
 
   it('a member with no avatar at all falls back to the coloured initial', () => {
@@ -37,7 +37,7 @@ describe('member → face', () => {
 
   it('a missing colour is null, never undefined — the disc needs a definite fallback', () => {
     expect(toFace({ id: 'm3', display_name: 'Cy' }).colour).toBeNull()
-    expect(facesFromCercleMembers([{ id: 'm3', displayName: 'Cy' }])[0].colour).toBeNull()
+    expect(facesFromCercleMembers([{ id: 'm3', displayName: 'Cy' }])[0]!.colour).toBeNull()
   })
 
   it('maps a whole roster in order', () => {

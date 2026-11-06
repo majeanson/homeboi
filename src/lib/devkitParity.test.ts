@@ -43,7 +43,7 @@ type Entry = { cat: string; name: string; files: string[] }
 // `Entry[]` brackets, or a bare /cat: '…'/) is how two earlier passes at this
 // counted a local `cat` variable inside a render as if it were an entry.
 const ENTRIES: Entry[] = [...devkit.matchAll(/\n\s+cat: '([^']+)',\n\s+name: '([^']+)',\n\s+file: '([^']+)',/g)].map(
-  (m) => ({ cat: m[1], name: m[2], files: pathsIn(m[3]) }),
+  (m) => ({ cat: m[1]!, name: m[2]!, files: pathsIn(m[3]!) }),
 )
 
 /** Every path-shaped token in a string — a `file` may cite several, or wrap them in prose. */
@@ -58,13 +58,13 @@ const secStart = mdLines.findIndex((l) => l.startsWith('## Shared primitives'))
 const secEnd = mdLines.findIndex((l) => l.startsWith('### Page orchestrators'))
 const ROWS: Row[] = []
 for (let i = secStart; i < secEnd; i++) {
-  const l = mdLines[i]
+  const l = mdLines[i]!
   if (!l.startsWith('|')) continue
   const cells = l.split('|').map((c) => c.trim())
   if (cells.length < 4) continue
-  const name = cells[1].replace(/\*\*/g, '').trim()
+  const name = cells[1]!.replace(/\*\*/g, '').trim()
   if (!name || /^-+$/.test(name) || name === 'Component') continue
-  const files = pathsIn(cells[2])
+  const files = pathsIn(cells[2]!)
   if (!files.length) continue
   ROWS.push({ line: i + 1, name, files, excused: /\*\(no specimen: .+?\)\*/.test(l) })
 }
@@ -125,7 +125,7 @@ describe('/dev/kit ↔ COMPONENTS.md parity', () => {
       const src = fs.readFileSync(f, 'utf8')
       for (const m of src.matchAll(/^export function ([A-Z][A-Za-z0-9]*)\(/gm)) {
         const rel = path.relative(SRC, f).split(path.sep).join('/')
-        home.set(m[1], [...(home.get(m[1]) ?? []), rel])
+        home.set(m[1]!, [...(home.get(m[1]!) ?? []), rel])
       }
     }
     const dupes = [...home.entries()].filter(([, files]) => files.length > 1).map(([n, f]) => `${n}: ${f.join(' + ')}`)
@@ -146,13 +146,13 @@ describe('/dev/kit ↔ COMPONENTS.md parity', () => {
     // the scan then read as a retired category. (Second self-inflicted false positive
     // in one assertion — a backtick scan does not know what it is looking at.)
     const rows: string[] = []
-    for (let i = head + 2; i < mdLines.length && mdLines[i].startsWith('|'); i++) rows.push(mdLines[i])
+    for (let i = head + 2; i < mdLines.length && mdLines[i]!.startsWith('|'); i++) rows.push(mdLines[i]!)
     const declared = new Set(rows.flatMap((l) => [...l.matchAll(/`([^`]+)`/g)].map((m) => m[1])))
     const undeclared = [...new Set(ENTRIES.map((e) => e.cat))].filter((c) => !declared.has(c))
     expect(undeclared, 'A gallery category is not in the mapping table in COMPONENTS.md.').toEqual([])
     // …and the mapping must not name categories the gallery has retired.
     const live = new Set(ENTRIES.map((e) => e.cat))
-    expect([...declared].filter((c) => !live.has(c)), 'The mapping table names a category the gallery no longer uses.').toEqual([])
+    expect([...declared].filter((c) => !live.has(c!)), 'The mapping table names a category the gallery no longer uses.').toEqual([])
   })
 
   it('the gallery has one name per category', () => {
@@ -179,8 +179,8 @@ describe('COMPONENTS.md names every top-level component', () => {
       .filter((f) => f.endsWith('.tsx') && !f.includes('.test.'))
       .flatMap((f) =>
         [...fs.readFileSync(path.join(dir, f), 'utf8').matchAll(/^export function ([A-Z][A-Za-z0-9_]+)/gm)]
-          .map((m) => (scanned.push(m[1]), m[1]))
-          .filter((name) => !md.includes(name))
+          .map((m) => (scanned.push(m[1]!), m[1]))
+          .filter((name) => !md.includes(name!))
           .map((name) => `${f}: ${name}`),
       )
     expect(scanned.length, 'the export scan found nothing: it broke').toBeGreaterThan(50)
@@ -201,9 +201,9 @@ function exportsOf(file: string): string[] {
   for (const m of src.matchAll(
     /export\s+(?:default\s+)?(?:async\s+)?(?:function|const|class|type|interface)\s+([A-Za-z0-9_]+)/g,
   ))
-    names.push(m[1])
+    names.push(m[1]!)
   for (const m of src.matchAll(/export\s*\{([^}]*)\}/g))
-    for (const part of m[1].split(',')) {
+    for (const part of m[1]!.split(',')) {
       const n = part.trim().split(/\s+as\s+/).pop()
       if (n) names.push(n)
     }

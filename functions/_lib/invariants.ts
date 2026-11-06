@@ -242,9 +242,9 @@ export const INVARIANTS: readonly Invariant[] = [
       const re = /["`[]?(\w+)["`\]]?\s+TEXT\s+NOT\s+NULL\s+DEFAULT\s+'(\[\]|\{\})'/gi
       const candidates: { table: string; column: string; kind: 'array' | 'object' }[] = []
       for (const t of schema.values()) {
-        for (const m of t.sql.matchAll(re)) {
-          if (t.columns.has(m[1])) {
-            candidates.push({ table: t.name, column: m[1], kind: m[2] === '[]' ? 'array' : 'object' })
+        for (const [, column = '', shape] of t.sql.matchAll(re)) {
+          if (t.columns.has(column)) {
+            candidates.push({ table: t.name, column, kind: shape === '[]' ? 'array' : 'object' })
           }
         }
       }

@@ -1,5 +1,6 @@
 import { test, expect, type Page, type Request } from '@playwright/test'
 import { mockApi, seedState } from './mocks'
+import { boxOf } from './measure'
 
 // « Le truc du compagnon » — the trick the child's creature says for the step they're
 // ON when they tap it. Two halves, both driven here:
@@ -62,17 +63,17 @@ test('the companion never covers the advance/back controls on a phone', async ({
   // Start the run so the → advance button is present (it replaces the ▶ start).
   await page.locator('.tdl-start').click()
 
-  const buddy = await page.locator('.tdl-buddy').boundingBox()
+  const buddy = await boxOf(page.locator('.tdl-buddy'))
   // The primary action (→ / ✓) and the ← rewind must both be clear of the creature —
   // at kiosk size in the bottom corner the fox sat ON TOP of the → and ate the tap.
   for (const sel of ['.tdl-finish', '.tdl-prev']) {
     const ctrl = await page.locator(sel).boundingBox()
     if (!ctrl) continue // ← only shows once a step is behind us
     const overlap = !(
-      buddy!.x + buddy!.width <= ctrl.x ||
-      ctrl.x + ctrl.width <= buddy!.x ||
-      buddy!.y + buddy!.height <= ctrl.y ||
-      ctrl.y + ctrl.height <= buddy!.y
+      buddy.x + buddy.width <= ctrl.x ||
+      ctrl.x + ctrl.width <= buddy.x ||
+      buddy.y + buddy.height <= ctrl.y ||
+      ctrl.y + ctrl.height <= buddy.y
     )
     expect(overlap, `${sel} must not be covered by the companion`).toBe(false)
   }
@@ -88,10 +89,9 @@ test('the bubble stays inside the stage on a 360px phone (no horizontal bleed)',
   // A long trick must WRAP inside the viewport, never bleed off either edge — the
   // standing no-horizontal-overflow rule, checked against real bounds (the container
   // clips would hide it from a scrollWidth check).
-  const box = await bubble.boundingBox()
-  expect(box).not.toBeNull()
-  expect(box!.x).toBeGreaterThanOrEqual(0)
-  expect(box!.x + box!.width).toBeLessThanOrEqual(360)
+  const box = await boxOf(bubble)
+  expect(box.x).toBeGreaterThanOrEqual(0)
+  expect(box.x + box.width).toBeLessThanOrEqual(360)
 })
 
 test('a parent’s own « truc » reaches the saved POST body', async ({ page }) => {
@@ -163,8 +163,8 @@ test('editing a routine keeps every step’s photo and voice clip it did not tou
     form.getByRole('button', { name: 'Enregistrer', exact: true }).click(),
   ])
   const body = JSON.parse(req.postData() || '{}') as { cards: { photoKey?: string; clipKey?: string }[] }
-  expect(body.cards[0].photoKey).toBe('rcp_step1photo')
-  expect(body.cards[1].clipKey).toBe('rn_step2clip')
+  expect(body.cards[0]?.photoKey).toBe('rcp_step1photo')
+  expect(body.cards[1]?.clipKey).toBe('rn_step2clip')
 })
 
 test('tapping a step’s picture offers a photo above the emojis, and it saves', async ({ page }) => {
@@ -193,7 +193,7 @@ test('tapping a step’s picture offers a photo above the emojis, and it saves',
     form.getByRole('button', { name: 'Enregistrer', exact: true }).click(),
   ])
   const body = JSON.parse(req.postData() || '{}') as { cards: { photoKey?: string }[] }
-  expect(body.cards[0].photoKey).toBe('rcp_newphoto')
+  expect(body.cards[0]?.photoKey).toBe('rcp_newphoto')
 })
 
 const PNG_1x1 = Buffer.from(

@@ -235,7 +235,7 @@ export const FLIPP_BOOKMARKLET_BODY =
  *  `MAX_TEXT` characters cut on a word — what a person would type into Flipp. */
 const MAX_TEXT = 40
 export function flippSendText(raw: string): string {
-  let t = raw.split('|')[0].replace(/,/g, ' ').replace(/%/g, '％').replace(/\s+/g, ' ').trim()
+  let t = (raw.split('|')[0] ?? '').replace(/,/g, ' ').replace(/%/g, '％').replace(/\s+/g, ' ').trim()
   if (t.length > MAX_TEXT) {
     const cut = t.slice(0, MAX_TEXT + 1)
     const sp = cut.lastIndexOf(' ')
@@ -299,7 +299,7 @@ export function parseFlippHash(hash: string): FlippExport | null {
   const m = /^#flipp=([A-Za-z0-9\-_]+)$/.exec(hash || '')
   if (!m) return null
   try {
-    const b64 = m[1].replace(/-/g, '+').replace(/_/g, '/')
+    const b64 = (m[1] ?? '').replace(/-/g, '+').replace(/_/g, '/')
     const json = decodeURIComponent(escape(atob(b64)))
     const d = JSON.parse(json) as Partial<FlippExport>
     if (!d || d.v !== 1 || d.from !== 'flipp') return null
@@ -392,7 +392,7 @@ export function flippAccountOps(existing: FlippServerList, payload: FlippPayload
   for (const x of payload.clippings ?? []) {
     if (!x || !x.flyerItemId || have.has(x.flyerItemId)) continue
     if (!(typeof x.left === 'number' && typeof x.right === 'number' && typeof x.top === 'number' && typeof x.bottom === 'number')) {
-      if (x.name) fallback.push({ term: String(x.name).split('|')[0].replace(/\s+/g, ' ').trim() })
+      if (x.name) fallback.push({ term: (String(x.name).split('|')[0] ?? '').replace(/\s+/g, ' ').trim() })
       continue
     }
     have.add(x.flyerItemId)

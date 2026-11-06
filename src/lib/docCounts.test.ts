@@ -148,7 +148,7 @@ const glossaryTerms = () => new Set([...read('src/lib/glossary.ts').matchAll(/^ 
 const PATHS = /[A-Za-z0-9_/.-]+\.(?:tsx?|css)/g
 const kitFiles = () =>
   new Set(
-    [...read('src/pages/DevKit.tsx').matchAll(/\n\s+file: '([^']+)',/g)].flatMap((m) => m[1].match(PATHS) ?? []),
+    [...read('src/pages/DevKit.tsx').matchAll(/\n\s+file: '([^']+)',/g)].flatMap((m) => m[1]!.match(PATHS) ?? []),
   )
 const primitiveRows = () => {
   const lines = read('COMPONENTS.md').split(/\r?\n/)
@@ -158,13 +158,13 @@ const primitiveRows = () => {
   let rows = 0
   let specimens = 0
   for (let i = a; i < b; i++) {
-    const l = lines[i]
+    const l = lines[i]!
     if (!l.startsWith('|')) continue
     const cells = l.split('|').map((c) => c.trim())
     if (cells.length < 4) continue
-    const name = cells[1].replace(/\*\*/g, '').trim()
+    const name = cells[1]!.replace(/\*\*/g, '').trim()
     if (!name || /^-+$/.test(name) || name === 'Component') continue
-    const files = cells[2].match(PATHS) ?? []
+    const files = cells[2]!.match(PATHS) ?? []
     if (!files.length) continue
     rows++
     if (files.some((f) => kit.has(f))) specimens++
@@ -226,10 +226,10 @@ describe('the docs quote the real counts', () => {
 
   for (const c of claims) {
     it(`${c.file} — ${c.what}`, () => {
-      const m = read(c.file).match(c.re)
+      const m = read(c.file).match(c.re)!
       // Not a skip: a claim that vanished is a claim nobody is checking any more.
       expect(m, `${c.file}: the sentence stating ${c.what} no longer matches ${c.re}. If you reworded it, update the regex here — do not delete the claim.`).not.toBeNull()
-      expect(Number(m![1]), `${c.file} says ${m![1]} for ${c.what}; the code has ${c.actual()}`).toBe(c.actual())
+      expect(Number(m[1]), `${c.file} says ${m[1]} for ${c.what}; the code has ${c.actual()}`).toBe(c.actual())
     })
   }
 
