@@ -100,6 +100,7 @@ Before implementing ANY change, do this first — it's faster than the rework it
 | Person photo/initial, mic, icon — and ANY picture (an R2 blob via `imgUrl(key)`, a flyer clipping, a logo, a web photo) | **`Avatar`/`VoiceButton`/`Icon`/`ZoomableImg`**, all on **`Img`** — a bare `<img>` has ONE shot at its bytes and then sits blank for the session (the board « Dessins » tiles came back « clear » on the phone, 2026-10-30); Img retries with backoff, re-asks once per reconnection / foregrounding, and sets `data-loaded` so a surface that knows the shape can reserve it. A **test** enforces it (`src/lib/img-rule.test.ts`): a raw `<img>` fails the build | `components/*`, `components/Img.tsx` (pass a family/group `colour` to Avatar so a photo-less member's initials disc takes the group colour) |
 | Pick a household face (Maisonnée + members) | **`MemberSwitcher`** (the `.mswitch` "Aujourd'hui" row) | `components/MemberSwitcher.tsx` (controlled; every "who am I today" **lens** — board « Aujourd'hui », Maison's focus lens + the Notes face — wires it to the ONE device profile `useProfile`, so the pick is remembered app-wide. Only a **value** picker (a mot's recipient, a habit's owner) holds local state) |
 | Confirm a destructive delete / undo a light one | **`useConfirm`** / the undo toast — and its message says WHAT IS LOST, never a bare « Supprimer ? » (a **test** enforces it: `src/lib/confirmCopy.test.ts`, every `…Confirm` string ≥ 6 words with a consequence). Model: « Supprimer ce groupe ? Les personnes restent dans le cercle. » | `lib/confirm.tsx`, `lib/toast.tsx` (`lib/undoStack.ts`) |
+| Land ON a row from a link (`?item=<id>`) · where a search hit goes | **`useItemPulse()`** + `data-item={id}` on the row · **`landingFor`** | `lib/useItemPulse.ts`, `lib/searchLanding.ts` (`searchLanding.test.ts` fails a hand-spelled search row) |
 | Touch drag-and-drop / reorder | **`usePointerDnd`** | `lib/dnd.tsx` (never HTML5 `draggable`) |
 | A press-and-hold gesture | **`useLongPress`** | `lib/useLongPress.ts` (aborts on travel, kills the context menu, swallows the trailing click) |
 | "Something is happening — don't screensaver/drift over it" | **`pokeIdle()`** | `lib/idleHold.ts` — HubLayout's idle cycle only sees `pointerdown`/`keydown` at `window`; anything else that counts as activity (a hands-free voice capture, a gesture that `stopPropagation()`s on purpose) pokes this instead |
@@ -240,8 +241,7 @@ regressions.** Node 26.
 main` directly. CI (typecheck/test/build) is the only gate; a red build is caught
 > on `main` and fixed forward. (This supersedes the old branch-per-change + PR flow.)
 
-> README.md predates the Pages→Worker migration — ignore its `pages:dev` references;
-> the real full-stack command is `npm run cf:dev`. **DEPLOY.md is the current source of truth.**
+> The full-stack command is `npm run cf:dev`. **DEPLOY.md is the current source of truth.**
 
 ---
 
@@ -674,7 +674,7 @@ scroller. Réglages ▸ Régler ▸ Système's (then) nine subs were simply uncl
   `keyboard-fit`, `write-rule`, `write-owners`, `swallow-rule`, `intl-rule`, `nested-interactive`,
   `discovery`, `demoHousehold`, `realtime`, `layer-order`, `chip-rule`, `img-rule`, `glossary`,
   `undoTier`, `tour-rule`, `docCounts`, `devkitParity`, `link-button-rule`, `autofocus`,
-  `usageRule`, `csrfExempt`, `schemaRefs`, `deadCopy`, `keyShape`, `load-error-rule`, `dnd-mirror`, `hscroll-rule`, `kit-class-rule`, `avatar-rule`, `empty-rule`, `status-rule`, `search-rule`, `icon-button-rule`, `btn-order`, `field-rule`, `segmented-rule`, `overlay-naming`, `prop-naming` — are the best thing in this codebase, and a green one
+  `usageRule`, `csrfExempt`, `schemaRefs`, `deadCopy`, `keyShape`, `load-error-rule`, `dnd-mirror`, `hscroll-rule`, `kit-class-rule`, `avatar-rule`, `empty-rule`, `status-rule`, `search-rule`, `icon-button-rule`, `btn-order`, `field-rule`, `segmented-rule`, `overlay-naming`, `prop-naming`, `tabparam-rule`, `dead-class`, `dup-rule`, `structure-rule`, `routeSweep`, `routesTable`, `d1Coverage`, `e2e-rule`, `conventions` — are the best thing in this codebase, and a green one
   proves nothing on its own: `nested-interactive` once reported green over the very
   defect it was written for (STATE.md §5 has the story). Plant the violation (or stash
   the fix), watch the guard fail, restore. **And check that the plant actually landed**

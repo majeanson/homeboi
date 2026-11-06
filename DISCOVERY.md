@@ -40,6 +40,7 @@ settings) are one tap back.** No dead-end prose.
 
 | Param | On | Means |
 | --- | --- | --- |
+| `?item=<id>` | `/board`, `/board/habitudes`, `/drawings`, `/kitchen/idees` · `/maison`, `/notes` | Land on that row: `useItemPulse` scrolls to `[data-item]`, marks it, strips the param. Maison and Notes read it through their own `focusItem`. Search builds these in `lib/searchLanding`. |
 | `?tab=<SectionKey>` | `/settings` | Which themed Réglages tab (retired ids fold via `LEGACY_TAB`). |
 | `?lens=comprendre\|regler` | `/settings` | The tab's lens; default `regler` (stored as no param). |
 | `?sub=<id>` | `/settings` | The Régler pill (ids in `SETTINGS_TREE` → `SETTINGS_SUBS`; retired ids fold via `LEGACY_SUB`). **Optional when `?focus=` is given** — the sub is then derived from the section (`subOfFocus`), which is what lets a link survive a pill reshuffle. |

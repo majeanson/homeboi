@@ -1299,6 +1299,10 @@ recorded ➖ with a why, never silence. When finalized, fold a pointer into
 
 ---
 
+### Roster rows awaiting a score (solidify 4.4)
+
+« Cette année » (`HouseDiary`) · « Pour toi » (`lib/pourToi`) · Cast (`/cast`) · « Cette semaine ensemble ». Each is a shipped surface with no Part-1 row: ❓ on every dimension until someone walks them. A guess here would read as a verdict.
+
 ## Part 6 — The standing gold-standard gate (how every new feature stays gap-free)
 
 Part 5's checklist is the **what**. This is the **when + how-enforced**, so a feature
@@ -1326,10 +1330,10 @@ Lean on the guards that exist; spend review attention on the rest.
 
 | Guard                                     | Dimensions                                                                                                        | The mechanism                                                                                                                                                                                                                               |
 | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Red build catches drift**               | D5 · D13/calm · D15 · D9 · D16                                                                                    | `realtime.test.ts` pins `keysForPath`; `calm-tenets.test.ts` blocks streak/points/badge/push/inventory; `tsc` enforces `typeof FR` EN-parity; `add-sheet-overflow`/`layout-overflow`/`screenshots` sweep 360 px; the feature's own e2e spec |
-| **Manual only — nothing fails the build** | D2 peek · D3 undo · D6 search · D7 guide · D8 toddler · D10 voice · D11 empty · D12 attribution · D14 media-shape | The Part 5 checklist walk + a reviewer reading the row                                                                                                                                                                                      |
+| **Red build catches drift**               | D5 · D6 search (`searchLanding`) · D7 board help (`helpRegistry`) · D8 toddler (`toddler-*.spec`) · D11 empty (`empty-rule`) · D13/calm · D14 media-shape (`parallel-array-rule`) · D15 · D9 · D16                                                                                    | `realtime.test.ts` pins `keysForPath`; `calm-tenets.test.ts` blocks streak/points/badge/push/inventory; `tsc` enforces `typeof FR` EN-parity; `add-sheet-overflow`/`layout-overflow`/`screenshots` sweep 360 px; the feature's own e2e spec |
+| **Manual only — nothing fails the build** | D2 peek · D3 undo presence · D10 voice · D12 attribution | The Part 5 checklist walk + a reviewer reading the row                                                                                                                                                                                      |
 
-**Rule of thumb: the manual-only nine are where features silently fall short** — they
+**Rule of thumb: the manual-only four are where features silently fall short** — they
 compile and pass tests while missing a peek, an empty state, a toddler lens, or a guide
 card. Score them explicitly, every time.
 
