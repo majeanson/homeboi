@@ -156,7 +156,7 @@ export function MealPool<T extends { id: string; title: string }, O>({
       affectedKeys: [queryKey],
       optimistic: (c) =>
         c.setQueryData<Record<string, T[]>>(queryKey, (d) =>
-          d ? { ...d, [collectionKey]: d[collectionKey].map((x) => (x.id === item.id ? { ...x, title: v } : x)) } : d,
+          d ? { ...d, [collectionKey]: (d[collectionKey] ?? []).map((x) => (x.id === item.id ? { ...x, title: v } : x)) } : d,
         ),
     }).catch(writeFailed)
   }

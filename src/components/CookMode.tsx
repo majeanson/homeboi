@@ -285,14 +285,16 @@ export function CookMode({
   // ignored, so the pills / checkboxes keep working.
   const touch = useRef<{ x: number; y: number } | null>(null)
   const onTouchStart = (e: ReactTouchEvent) => {
-    touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+    const first = e.touches[0]
+    touch.current = first ? { x: first.clientX, y: first.clientY } : null
   }
   const onTouchEnd = (e: ReactTouchEvent) => {
     const start = touch.current
     touch.current = null
-    if (!start || modeRef.current !== 'step') return
-    const dx = e.changedTouches[0].clientX - start.x
-    const dy = e.changedTouches[0].clientY - start.y
+    const lifted = e.changedTouches[0]
+    if (!start || !lifted || modeRef.current !== 'step') return
+    const dx = lifted.clientX - start.x
+    const dy = lifted.clientY - start.y
     if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) return
     if (dx > 0) goPrev()
     else goNext()

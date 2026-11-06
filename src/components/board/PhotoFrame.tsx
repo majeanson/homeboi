@@ -30,6 +30,7 @@ export function PhotoFrame() {
   if (!photos.length) return null
   const cur = idx % photos.length
   const p = photos[cur]
+  if (!p) return null
   // The compact lens (see CardLens.tsx): a halved « Photo du jour » is a MEDIA mini —
   // just the photo, no shuffle, no zoom (both wait for the tap-to-grow).
   if (lens && lens.compact && !lens.expanded) {
@@ -38,7 +39,7 @@ export function PhotoFrame() {
         className="cardmini--media"
         label={t.boardCard.photos}
         onExpand={lens.expand}
-        body={<Img key={p!.id} className="cardmini__photo" src={imgUrl(p!.key)} alt="" loading="lazy" />}
+        body={<Img key={p.id} className="cardmini__photo" src={imgUrl(p.key)} alt="" loading="lazy" />}
       />
     )
   }

@@ -99,8 +99,7 @@ export function RecipeTagsSection({ help }: { help?: HelpMode }) {
   function movePill(from: number, to: number) {
     if (from === to || from < 0 || to < 0 || from >= effective.length || to >= effective.length) return
     const next = [...effective]
-    const [moved] = next.splice(from, 1)
-    next.splice(to, 0, moved)
+    next.splice(to, 0, ...next.splice(from, 1))
     savePills(next)
   }
   const dnd = usePointerDnd({

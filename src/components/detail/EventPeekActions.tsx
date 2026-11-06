@@ -27,7 +27,7 @@ import { EVENTS_KEY, BOARD_KEY, MONTH_KEY, MEMBERS_KEY } from '../../lib/queryKe
 //   · Share → the public /partage link (operator only — minting is a server write).
 // A derived birthday has no event row behind it, so it gets none of these.
 
-const baseId = (id: string) => id.split('#')[0]
+const baseId = (id: string) => id.split('#')[0] ?? id
 
 type PeekEvent = { id: string; title: string; birthday?: boolean | null }
 

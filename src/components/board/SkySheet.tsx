@@ -139,7 +139,7 @@ function WonderGallery({ current, onSelect }: { current: Wonder; onSelect: (s: W
   })
   const seen = new Set<string>()
   const tiles = WONDER_SOURCES.flatMap((source, i) => {
-    const w = results[i].data?.wonder
+    const w = results[i]?.data?.wonder
     if (!w || seen.has(w.imgUrl)) return []
     seen.add(w.imgUrl)
     return [{ source, w }]

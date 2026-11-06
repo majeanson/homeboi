@@ -58,7 +58,7 @@ export function CercleConstellation({ world, byKey, toddler = false }: { world: 
     return w.sayIsland(isl.name, names.join(', '))
   }
   const bridgeLine = (b: PlacedBridge): string => {
-    const via = byKey.get(b.viaKeys[0])?.firstName ?? ''
+    const via = byKey.get(b.viaKeys[0] ?? '')?.firstName ?? ''
     return w.sayBridge(via, b.a.island.name, b.b.island.name)
   }
 
@@ -97,12 +97,13 @@ export function CercleConstellation({ world, byKey, toddler = false }: { world: 
   lineRef.current = lineForStep
   useEffect(() => {
     if (tourAt == null) return
-    if (tourAt >= sequence.length) {
+    const step = sequence[tourAt]
+    if (step === undefined) {
       setTourAt(null)
       setCaption(null)
       return
     }
-    const line = lineRef.current(sequence[tourAt])
+    const line = lineRef.current(step)
     setCaption(line)
     let advanced = false
     const next = () => {

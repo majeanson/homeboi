@@ -60,6 +60,7 @@ export function SouvenirsCard({ readOnly = false }: { readOnly?: boolean }) {
     ...drawings.map((d) => ({ id: `d-${d.id}`, at: d.saved_at ?? 0, src: imgUrl(d.media_key) })),
   ].sort((a, b) => b.at - a.at)
 
+  const [latest] = pictures
   if (lens && lens.compact && !lens.expanded) {
     return (
       <CardMini
@@ -67,10 +68,10 @@ export function SouvenirsCard({ readOnly = false }: { readOnly?: boolean }) {
         label={t.boardCard.souvenirs}
         onExpand={lens.expand}
         body={
-          pictures.length ? (
-            <Img key={pictures[0].id} className="cardmini__photo" src={pictures[0].src} alt="" loading="lazy" />
+          latest ? (
+            <Img key={latest.id} className="cardmini__photo" src={latest.src} alt="" loading="lazy" />
           ) : (
-            <span className="souv__mot souv__mot--mini">{label(mots[0])}</span>
+            mots[0] && <span className="souv__mot souv__mot--mini">{label(mots[0])}</span>
           )
         }
       />

@@ -142,7 +142,7 @@ export function DidYouKnowCard() {
   // this card vanish from an offline Réglages for no reason (the status-vs-data
   // rule, CLAUDE.md conventions — same class as the persist snapshot bug).
   if (!results.every((r) => r.data !== undefined)) return null
-  const unused = DISCOVERY_PROBES.filter((p, i) => p.unused(results[i].data)).map((p) => p.card)
+  const unused = DISCOVERY_PROBES.filter((p, i) => p.unused(results[i]?.data)).map((p) => p.card)
   const candidates = unused.filter((id) => !seen.includes(id))
   const pick = pickDaily(candidates, dayIndexNow())
   const entry = pick ? GUIDE.find((e) => e.id === pick) : null

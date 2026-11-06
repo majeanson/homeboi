@@ -254,8 +254,8 @@ export function MonthView({
   const { signedIn } = useAuth()
 
   const grid = useMemo(() => monthGrid(selYMD.year, selYMD.month), [selYMD.year, selYMD.month])
-  const from = grid.days[0]
-  const to = grid.days[grid.days.length - 1] + DAY
+  const from = grid.days[0] ?? 0
+  const to = (grid.days[grid.days.length - 1] ?? 0) + DAY
 
   // healOnError: this surface has no poll, so before it a failed window sat blank
   // until the one manual « Réessayer » tap (ddf0a4e) — now it also heals itself.

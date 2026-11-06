@@ -184,7 +184,7 @@ export function FamilyBuilder({
     const nm = newName.trim()
     if (!nm) return
     const parts = nm.split(/\s+/)
-    const firstName = parts[0]
+    const firstName = parts[0] ?? nm
     const lastName = parts.slice(1).join(' ')
     const res = await write<{ id: string }>('cercle', {
       method: 'POST',

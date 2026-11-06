@@ -42,7 +42,7 @@ export function IngredientLine({
   // them somehow »). The page's own word, never a new one.
   const opt = line.match(OPTIONAL)
   const text = opt ? line.slice(0, opt.index).trimEnd() : line
-  const tag = opt ? <span className="ing-opt mono">{opt[1].toLowerCase()}</span> : null
+  const tag = opt ? <span className="ing-opt mono">{opt[1]?.toLowerCase()}</span> : null
   const measures = useMemo(() => findMeasures(text), [text])
 
   if (measures.length === 0)

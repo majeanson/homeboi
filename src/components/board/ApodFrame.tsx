@@ -144,7 +144,8 @@ export function useWonder(): { wonder: Wonder | null; shuffle: () => void; pick:
   // Jump to a random source OTHER than the one showing (mirrors PhotoFrame's shuffle).
   const shuffle = () => {
     const others = SOURCES.filter((s) => s !== source)
-    setSource(others[Math.floor(Math.random() * others.length)])
+    const next = others[Math.floor(Math.random() * others.length)]
+    if (next) setSource(next)
   }
 
   // Direct pick — the « Dehors aujourd'hui » sheet's gallery taps a specific source,

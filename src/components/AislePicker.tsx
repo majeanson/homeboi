@@ -33,9 +33,10 @@ export function AislePicker({
   // The keyword guess (no overrides) — shown on the "Auto" option so it's clear where
   // the item lands by default.
   const guess = aisleFor(text)
-  // The override map is a plain Record, so a miss reads as AisleId at the type level —
-  // check membership before trusting it.
-  const override: AisleId | undefined = AISLE_BY_ID[overrides[key]] ? overrides[key] : undefined
+  // An override can name an aisle that no longer exists — check membership before
+  // trusting it.
+  const stored = overrides[key]
+  const override: AisleId | undefined = stored && AISLE_BY_ID[stored] ? stored : undefined
   const current: AisleId | 'auto' = override ?? 'auto'
   const shown = AISLE_BY_ID[override ?? guess]
   function set(value: string) {

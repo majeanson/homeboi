@@ -19,6 +19,7 @@ import { Icon } from '../Icon'
 import { Reorder } from '../Reorder'
 import { EmptyState } from '../EmptyState'
 import { Modal } from '../Modal'
+import { swapAt } from '../../lib/reorder'
 
 // The body of ONE « liste à compléter » — rename, its ordered items (plain labels
 // and references to other lists), the two adders, and the « Voir la liste finale »
@@ -81,7 +82,7 @@ export function TemplateEditor({ templates, tpl }: { templates: TodoTemplate[]; 
     const j = dir === 'up' ? idx - 1 : idx + 1
     if (j < 0 || j >= tpl.items.length) return
     const next = [...tpl.items]
-    ;[next[idx], next[j]] = [next[j], next[idx]]
+    swapAt(next, idx, j)
     saveItems(next)
   }
 

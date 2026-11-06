@@ -30,8 +30,12 @@ export function CatchupGraph({ series }: { series: CatchupSeries }) {
   const { lang } = useLang()
   const v = t.virements
 
-  const from = series.past[0].at
-  const to = series.ahead[series.ahead.length - 1].at
+  const first = series.past[0]
+  const last = series.ahead.at(-1)
+  const now = series.past.at(-1)
+  if (!first || !last || !now) return null
+  const from = first.at
+  const to = last.at
   const span = Math.max(1, to - from)
   const x = (at: number) => ((at - from) / span) * W
   // A zero gap sits ON the floor; the full gap reaches the top. maxCents is the gap
@@ -40,7 +44,6 @@ export function CatchupGraph({ series }: { series: CatchupSeries }) {
 
   const path = (pts: readonly { at: number; cents: number }[]) => pts.map((p) => `${x(p.at)},${y(p.cents)}`).join(' ')
 
-  const now = series.past[series.past.length - 1]
 
   return (
     <div className="vgraph">

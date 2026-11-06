@@ -20,7 +20,7 @@ export function minutesToHhmm(min: number): string {
 
 /** "09:00" → 540, or null when the field is empty/half-typed. */
 export function hhmmToMinutes(v: string): number | null {
-  const [h, m] = v.split(':').map(Number)
+  const [h = NaN, m = NaN] = v.split(':').map(Number)
   if (!Number.isInteger(h) || !Number.isInteger(m)) return null
   return h * 60 + m
 }
@@ -65,7 +65,7 @@ export function ReminderTimesField({ value, onChange }: { value: number[]; onCha
           className="btn btn--ghost reminders__add"
           // A first reminder lands at 09:00; each next one an hour after the last,
           // clamped inside the day — so tapping ＋ repeatedly never collides.
-          onClick={() => commit([...value, value.length ? Math.min(1439, value[value.length - 1] + 60) : 540])}
+          onClick={() => commit([...value, Math.min(1439, (value.at(-1) ?? 480) + 60)])}
         >
           <Icon name="plus-bold" size={16} /> {fn.addReminder}
         </button>

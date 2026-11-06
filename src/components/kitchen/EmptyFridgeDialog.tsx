@@ -111,7 +111,8 @@ export function EmptyFridgeDialog({
   // Save a generated recipe to the book, tagged « Vide-frigo » so it's findable.
   // Returns the new id (cached in `saved`) so « Cuisiner » can route straight to it.
   async function save(r: FridgeRecipe): Promise<string | null> {
-    if (saved[r.title]) return saved[r.title]
+    const known = saved[r.title]
+    if (known) return known
     setSavingTitle(r.title)
     try {
       const res = await api<{ id: string }>('recipes', {

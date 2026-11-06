@@ -43,7 +43,7 @@ const minToHHMM = (min: number) => `${pad(Math.floor(min / 60))}:${pad(min % 60)
 const hhmmToMin = (s: string): number | null => {
   const m = /^(\d{1,2}):(\d{2})$/.exec(s)
   if (!m) return null
-  const min = +m[1] * 60 + +m[2]
+  const min = Number(m[1]) * 60 + Number(m[2])
   return min >= 0 && min <= 24 * 60 ? min : null
 }
 

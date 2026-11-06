@@ -77,6 +77,7 @@ function ZoomOverlay({ src, alt, caption, onClose }: { src: string; alt: string;
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
     if (pointers.current.size === 2) {
       const [a, b] = [...pointers.current.values()]
+      if (!a || !b) return
       pinch.current = {
         dist: Math.hypot(a.x - b.x, a.y - b.y) || 1,
         midX: (a.x + b.x) / 2,
@@ -97,6 +98,7 @@ function ZoomOverlay({ src, alt, caption, onClose }: { src: string; alt: string;
 
     if (pointers.current.size >= 2 && pinch.current) {
       const [a, b] = [...pointers.current.values()]
+      if (!a || !b) return
       const dist = Math.hypot(a.x - b.x, a.y - b.y)
       const midX = (a.x + b.x) / 2
       const midY = (a.y + b.y) / 2

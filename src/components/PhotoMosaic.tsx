@@ -5,6 +5,7 @@ import { useGallery } from '../lib/drawingGallery'
 import { usePhotos } from '../lib/photoGallery'
 import { computeDayPart, type DayPart } from '../lib/timeofday'
 import { Img } from './Img'
+import { swapAt } from '../lib/reorder'
 
 // Full-screen family-memory mosaic for the idle screensaver: tiles the whole
 // surface with family PHOTOS and saved kids' DRAWINGS (#49), and every few seconds
@@ -61,7 +62,7 @@ function gridFor(w: number, h: number, photoCount: number): { cols: number; rows
 function shuffle(arr: number[]): number[] {
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1))
-    ;[arr[i], arr[j]] = [arr[j], arr[i]]
+    swapAt(arr, i, j)
   }
   return arr
 }
@@ -69,7 +70,7 @@ function shuffle(arr: number[]): number[] {
 // Seed distinct images where possible; cycle a shuffled order when tiles > images.
 function seedTiles(count: number, n: number): Tile[] {
   const order = shuffle([...Array(n).keys()])
-  return Array.from({ length: count }, (_, i) => ({ photo: order[i % n], nonce: 0 }))
+  return Array.from({ length: count }, (_, i) => ({ photo: order[i % n] ?? 0, nonce: 0 }))
 }
 
 // Pick the next image index for a tile: bring in an image that is NOT already on
@@ -90,7 +91,7 @@ function pickBiased(images: MosaicImg[], used: Set<number>, current: number, dra
   if (fd.length && fp.length) pool = Math.random() < drawWeight ? fd : fp
   else if (fd.length || fp.length) pool = fd.length ? fd : fp
   else return current // every image is already on a tile — no fresh pick, stay put
-  return pool[Math.floor(Math.random() * pool.length)]
+  return pool[Math.floor(Math.random() * pool.length)] ?? current
 }
 
 export function PhotoMosaic() {
@@ -148,11 +149,13 @@ export function PhotoMosaic() {
       setTiles((prev) => {
         if (!prev.length) return prev
         const t = Math.floor(Math.random() * prev.length)
+        const tile = prev[t]
+        if (!tile) return prev
         const used = new Set(prev.map((x) => x.photo))
-        const next = pickBiased(images, used, prev[t].photo, weight)
-        if (next === prev[t].photo) return prev // no fresh image to bring in — no churn (and no dupe)
+        const next = pickBiased(images, used, tile.photo, weight)
+        if (next === tile.photo) return prev // no fresh image to bring in — no churn (and no dupe)
         const copy = prev.slice()
-        copy[t] = { photo: next, nonce: prev[t].nonce + 1 }
+        copy[t] = { photo: next, nonce: tile.nonce + 1 }
         return copy
       })
     }, SWAP_MS)
@@ -169,6 +172,7 @@ export function PhotoMosaic() {
     >
       {tiles.map((tile, i) => {
         const p = images[tile.photo % n]
+        if (!p) return null
         return (
           <div className="ambient-mosaic__tile" key={i}>
             {/* key bumps with the nonce so React remounts the <img>, replaying the fade. */}

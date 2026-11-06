@@ -129,7 +129,7 @@ export function RoutinesSection({ routines, onChange, help }: { routines: Routin
   async function cycleTod(r: Routine) {
     const prev = r.timeOfDay
     const cur = isRoutineTod(r.timeOfDay) ? ROUTINE_TODS.indexOf(r.timeOfDay) : -1
-    const next = cur + 1 >= ROUTINE_TODS.length ? null : ROUTINE_TODS[cur + 1]
+    const next = ROUTINE_TODS[cur + 1] ?? null
     // One write per cue, with the chip flip carried as useWrite's optimistic (so it
     // reverts on a server reject and queues offline instead of being lost).
     const setTodWrite = (tod: string | null) =>

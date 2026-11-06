@@ -321,6 +321,7 @@ export function MicSelfTest({ help }: { help?: HelpMode }) {
       recog.onresult = (e) => {
         for (let i = e.resultIndex; i < e.results.length; i++) {
           const r = e.results[i]
+          if (!r) continue
           const txt = r[0]?.transcript?.trim() ?? ''
           if (r.isFinal) {
             finalCount++

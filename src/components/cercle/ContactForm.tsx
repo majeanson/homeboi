@@ -161,9 +161,10 @@ export function ContactForm({
     } catch {
       parsed = []
     }
-    if (parsed.length === 0) return
+    const [only] = parsed
+    if (!only) return
     if (parsed.length === 1) {
-      prefillFrom(parsed[0])
+      prefillFrom(only)
       return
     }
     // Many cards: open the picker (all preselected) so you choose WHO to import — the
