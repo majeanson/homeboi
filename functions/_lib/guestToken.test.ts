@@ -55,7 +55,10 @@ describe('guest token kind round-trip', () => {
 
   it('rejects a tampered token', async () => {
     const token = await issueGuestToken(env, 'g3', 'hh3', 3600, 'sitter')
-    const tampered = token.slice(0, -2) + (token.endsWith('a') ? 'bb' : 'aa')
+    // Well inside the signature: the very last base64url character holds unused bits, so
+    // swapping it could leave the same bytes (it failed about 1 run in 1024).
+    const i = token.length - 10
+    const tampered = token.slice(0, i) + (token[i] === 'a' ? 'b' : 'a') + token.slice(i + 1)
     expect(await verifyGuestToken(env, tampered)).toBeNull()
   })
 
