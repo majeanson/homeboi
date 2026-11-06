@@ -7,8 +7,8 @@ import { describe, expect, it } from 'vitest'
 // state and when a page counts as ready. A `waitForTimeout` is a guess about time, and the
 // flake it causes reads as noise. `as any` hides a real type from the one layer that
 // would have caught a renamed field. Planted red with one more of each.
-const BOOT_MAX = 18
-const WAIT_MAX = 192
+const BOOT_MAX = 0
+const WAIT_MAX = 150
 
 const dir = join(__dirname, '../../e2e')
 const specs = readdirSync(dir)

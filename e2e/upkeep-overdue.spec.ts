@@ -1,5 +1,6 @@
-import { test, expect, type Page } from '@playwright/test'
-import { mockApi, seedState, BOARD } from './mocks'
+import type { Page } from '@playwright/test'
+import { test, expect } from './fixtures'
+import { BOARD } from './mocks'
 
 // « Entretiens saisonniers » — the overdue carry-forward. A missed upkeep due date
 // (server `homeOverdue`, functions/_lib/upkeep) rides the « À faire » card as a
@@ -23,28 +24,13 @@ const OVERDUE = {
   overdueSince: BOARD.syncedAt - 12 * DAY,
 }
 
-async function boot(page: Page, opts: { guest?: boolean } = {}) {
-  await mockApi(page)
-  await seedState(page, {})
-  // The shared BOARD fixture stays lean; this spec serves its own richer variant
-  // (the documented clone-and-override pattern at the top of mocks.ts).
-  await page.route('**/api/board*', (route) =>
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ ...BOARD, homeOverdue: [OVERDUE] }),
-    }),
-  )
-  if (opts.guest) await page.addInitScript(() => localStorage.setItem('babillard-guest-token', '1'))
-  await page.goto('/board')
-  await page.waitForSelector('.board-grid .wg-slot')
-}
+const OPEN = { route: '/board', wait: '.board-grid .wg-slot', api: { overrides: { board: { ...BOARD, homeOverdue: [OVERDUE] } } } }
 
 const row = (page: Page) =>
   page.locator('.wg-slot[data-card="todos"] .act').filter({ hasText: 'Nettoyer les gouttières' })
 
-test('an overdue entretien waits on « À faire » with its calm owed-since line', async ({ page }) => {
-  await boot(page)
+test('an overdue entretien waits on « À faire » with its calm owed-since line', async ({ page, app }) => {
+  await app.boot(OPEN)
   const r = row(page)
   await r.scrollIntoViewIfNeeded()
   await expect(r).toBeVisible()
@@ -52,8 +38,8 @@ test('an overdue entretien waits on « À faire » with its calm owed-since line
   await expect(r.locator('.when')).toContainText('En attente depuis')
 })
 
-test('checking it hides the row behind the undo toast, and undo brings it back', async ({ page }) => {
-  await boot(page)
+test('checking it hides the row behind the undo toast, and undo brings it back', async ({ page, app }) => {
+  await app.boot(OPEN)
   const r = row(page)
   await r.scrollIntoViewIfNeeded()
   // Split row: the body peeks, the check disc ticks.
@@ -66,8 +52,8 @@ test('checking it hides the row behind the undo toast, and undo brings it back',
   await expect(row(page)).toHaveCount(1)
 })
 
-test('« Reporter » lives behind the peek: postpone hides the row, undo brings it back', async ({ page }) => {
-  await boot(page)
+test('« Reporter » lives behind the peek: postpone hides the row, undo brings it back', async ({ page, app }) => {
+  await app.boot(OPEN)
   const r = row(page)
   await r.scrollIntoViewIfNeeded()
   // Split row: the body opens the detail peek (actions behind the detail door).
@@ -88,8 +74,11 @@ test('« Reporter » lives behind the peek: postpone hides the row, undo brings 
   await expect(row(page)).toHaveCount(1)
 })
 
-test('a read-only guest sees the owed row but no check', async ({ page }) => {
-  await boot(page, { guest: true })
+test('a read-only guest sees the owed row but no check', async ({ page, app }) => {
+  await app.boot({ api: OPEN.api })
+  await page.addInitScript(() => localStorage.setItem('babillard-guest-token', '1'))
+  await page.goto(OPEN.route)
+  await page.waitForSelector(OPEN.wait)
   const r = row(page)
   await r.scrollIntoViewIfNeeded()
   await expect(r).toBeVisible()

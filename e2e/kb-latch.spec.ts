@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from './fixtures'
 import { mockApi, seedState } from './mocks'
 import { openKitEntry } from './kit'
 import { installVvStub, openKeyboard } from './kb'
@@ -20,18 +20,9 @@ import { installVvStub, openKeyboard } from './kb'
 
 const PHONE = { width: 390, height: 844 }
 
-async function boot(page: import('@playwright/test').Page) {
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  await page.setViewportSize(PHONE)
+test('a viewport shrink with NOTHING focused never hides the tab bar', async ({ page, app }) => {
   await installVvStub(page)
-  await mockApi(page)
-  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
-  await page.goto('/board')
-  await page.locator('.hub').waitFor({ state: 'visible', timeout: 15_000 })
-}
-
-test('a viewport shrink with NOTHING focused never hides the tab bar', async ({ page }) => {
-  await boot(page)
+  await app.boot({ viewport: PHONE, route: '/board', wait: '.hub' })
   const tabbar = page.locator('.hubnav')
   await expect(tabbar).toBeVisible()
 
@@ -44,9 +35,10 @@ test('a viewport shrink with NOTHING focused never hides the tab bar', async ({ 
   await expect(tabbar, 'the household must not lose its navigation to a phantom keyboard').toBeVisible()
 })
 
-test('a real keyboard — a focused field — still hides the chrome and fits', async ({ page }) => {
+test('a real keyboard — a focused field — still hides the chrome and fits', async ({ page, app }) => {
   // The other side, so "never hide it" can't quietly become the fix.
-  await boot(page)
+  await installVvStub(page)
+  await app.boot({ viewport: PHONE, route: '/board', wait: '.hub' })
   await page.locator('.add-fab').click()
   const field = page.locator('.sheet.show input:visible, .sheet.show textarea:visible, .sheet.show [contenteditable]:visible').first()
   await field.click()
@@ -55,7 +47,7 @@ test('a real keyboard — a focused field — still hides the chrome and fits', 
   await expect(page.locator('html')).toHaveClass(/kb-open/)
 })
 
-test('a real keyboard survives losing its field — the fit is not dropped on a blur', async ({ page }) => {
+test('a real keyboard survives losing its field — the fit is not dropped on a blur', async ({ page, app }) => {
   // The OTHER half of the invariant, and the one that keeps the guard honest. iOS keeps
   // the keyboard up when the focused field goes away — a sheet closing, a form
   // unmounting on save, or an in-app NAVIGATION taking the field with it. There is no
@@ -65,7 +57,8 @@ test('a real keyboard survives losing its field — the fit is not dropped on a 
   // it read better and was wrong, and CI said so by failing keyboard.spec.ts's « a
   // keyboard that is genuinely still up keeps its fit across a navigation ». The
   // falling edge belongs to the geometry (the shrink going away) and to the healers.
-  await boot(page)
+  await installVvStub(page)
+  await app.boot({ viewport: PHONE, route: '/board', wait: '.hub' })
   await page.locator('.add-fab').click()
   const field = page.locator('.sheet.show input:visible, .sheet.show textarea:visible, .sheet.show [contenteditable]:visible').first()
   await field.click()
@@ -74,7 +67,9 @@ test('a real keyboard survives losing its field — the fit is not dropped on a 
 
   // Focus leaves while the viewport stays shrunk: the keyboard is still up.
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
-  await page.waitForTimeout(1500) // past the 1 s watchdog tick
+  // A clock, not a settle: the claim is that the 1 s watchdog ticks and does nothing, and only
+  // its tick having passed can show that.
+  await page.waitForTimeout(1500)
   await expect(page.locator('html'), 'a live keyboard must not be un-fitted by a blur').toHaveClass(/kb-open/)
 })
 

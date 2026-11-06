@@ -1,5 +1,4 @@
-import { test, expect, type Page } from '@playwright/test'
-import { mockApi, seedState } from './mocks'
+import { test, expect, type App } from './fixtures'
 
 // The first-run onboarding SEQUENCE (not a pile-up). A real signup lands EMPTY on the
 // setup checklist (WelcomeCard) since 2026-09-23; its « Charger des exemples » loads
@@ -11,9 +10,9 @@ import { mockApi, seedState } from './mocks'
 // Frontend-only against mocked /api/*. /api/seed is stubbed with a STATEFUL count
 // (GET returns it, DELETE clears it), registered AFTER mockApi so it wins for that
 // path. The essentials tour is pre-marked seen so its overlay doesn't gate the cards.
-async function boot(page: Page, opts: { hasSample: boolean; fresh?: boolean }) {
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  await mockApi(page, { fresh: opts.fresh })
+async function openBoard(app: App, opts: { hasSample: boolean; fresh?: boolean }) {
+  const { page } = app
+  await app.boot({ api: { fresh: opts.fresh } })
   let count = opts.hasSample ? 47 : 0
   await page.route('**/api/seed', async (route) => {
     const method = route.request().method()
@@ -21,20 +20,12 @@ async function boot(page: Page, opts: { hasSample: boolean; fresh?: boolean }) {
     else if (method === 'POST') count = 47
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ count }) })
   })
-  await page.addInitScript(() => {
-    try {
-      localStorage.setItem('babillard-tours-seen', JSON.stringify(['essentials']))
-    } catch {
-      /* noop */
-    }
-  })
-  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
   await page.goto('/board')
   await page.locator('.hub').first().waitFor({ state: 'visible', timeout: 15_000 })
 }
 
-test('demo present → only the explore banner shows; the setup checklist is suppressed', async ({ page }) => {
-  await boot(page, { hasSample: true })
+test('demo present → only the explore banner shows; the setup checklist is suppressed', async ({ page, app }) => {
+  await openBoard(app, { hasSample: true })
   const banner = page.locator('.sample-banner')
   await expect(banner).toBeVisible()
   await expect(banner).toContainText('Vider et commencer')
@@ -42,8 +33,8 @@ test('demo present → only the explore banner shows; the setup checklist is sup
   await expect(page.locator('.welcome-card')).toHaveCount(0)
 })
 
-test('« Vider et commencer » fires the clear (DELETE /api/seed) and the banner unmounts', async ({ page }) => {
-  await boot(page, { hasSample: true })
+test('« Vider et commencer » fires the clear (DELETE /api/seed) and the banner unmounts', async ({ page, app }) => {
+  await openBoard(app, { hasSample: true })
   await page.locator('.sample-banner').getByRole('button', { name: /Vider et commencer/ }).click()
   const [req] = await Promise.all([
     page.waitForRequest((r) => r.url().includes('/api/seed') && r.method() === 'DELETE'),
@@ -55,8 +46,8 @@ test('« Vider et commencer » fires the clear (DELETE /api/seed) and the banner
   await expect(page.locator('.sample-banner')).toHaveCount(0)
 })
 
-test('fresh empty household, no demo → the setup checklist shows directly, no banner', async ({ page }) => {
-  await boot(page, { hasSample: false, fresh: true })
+test('fresh empty household, no demo → the setup checklist shows directly, no banner', async ({ page, app }) => {
+  await openBoard(app, { hasSample: false, fresh: true })
   await expect(page.locator('.sample-banner')).toHaveCount(0)
   const welcome = page.locator('.welcome-card')
   await expect(welcome).toBeVisible()
@@ -66,8 +57,8 @@ test('fresh empty household, no demo → the setup checklist shows directly, no 
 // A failed examples write SAYS so. All five examples handlers used to swallow the error:
 // the button re-enabled and nothing else happened (2026-09-23). useSampleWrite owns
 // the notice now; these two pin it on the two board doors.
-test('a failed « Charger des exemples » says so, and the checklist stays', async ({ page }) => {
-  await boot(page, { hasSample: false, fresh: true })
+test('a failed « Charger des exemples » says so, and the checklist stays', async ({ page, app }) => {
+  await openBoard(app, { hasSample: false, fresh: true })
   await page.route('**/api/seed', (route) =>
     route.request().method() === 'POST' ? route.fulfill({ status: 500, contentType: 'application/json', body: '{}' }) : route.fallback(),
   )
@@ -78,8 +69,8 @@ test('a failed « Charger des exemples » says so, and the checklist stays', asy
   await expect(welcome.getByRole('button', { name: /Charger des exemples/ })).toBeEnabled()
 })
 
-test('a failed « Vider et commencer » says so, and the banner stays', async ({ page }) => {
-  await boot(page, { hasSample: true })
+test('a failed « Vider et commencer » says so, and the banner stays', async ({ page, app }) => {
+  await openBoard(app, { hasSample: true })
   await page.route('**/api/seed', (route) =>
     route.request().method() === 'DELETE' ? route.fulfill({ status: 500, contentType: 'application/json', body: '{}' }) : route.fallback(),
   )
@@ -89,8 +80,8 @@ test('a failed « Vider et commencer » says so, and the banner stays', async ({
   await expect(page.locator('.sample-banner')).toBeVisible()
 })
 
-test('the checklist offers the examples on request — and hands over to the banner', async ({ page }) => {
-  await boot(page, { hasSample: false, fresh: true })
+test('the checklist offers the examples on request — and hands over to the banner', async ({ page, app }) => {
+  await openBoard(app, { hasSample: false, fresh: true })
   const welcome = page.locator('.welcome-card')
   const [req] = await Promise.all([
     page.waitForRequest((r) => r.url().includes('/api/seed') && r.method() === 'POST'),

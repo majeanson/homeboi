@@ -1,5 +1,5 @@
-import { test, expect, type Page } from '@playwright/test'
-import { mockApi, seedState } from './mocks'
+import type { Page } from '@playwright/test'
+import { test, expect, type App } from './fixtures'
 import { boxOf } from './measure'
 
 // Dragging a person onto a named group in Maison ▸ Social/Famille — the last
@@ -30,13 +30,14 @@ interface Write {
   body: Record<string, unknown>
 }
 
-async function boot(page: Page, section = 'social'): Promise<Write[]> {
+// The one difference: this spec owns the group writes, so it can read them back. Registered
+// AFTER mockApi so it matches first; the route has to exist before the page asks.
+async function openSection(app: App, section = 'social'): Promise<Write[]> {
+  const { page } = app
   const writes: Write[] = []
   // Wide enough that a person row and the group below it are on screen together —
   // the drag needs both without an intervening scroll.
-  await page.setViewportSize({ width: 900, height: 1400 })
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  await mockApi(page)
+  await app.boot({ viewport: { width: 900, height: 1400 } })
   await page.route('**/api/**', async (route) => {
     const path = new URL(route.request().url()).pathname.replace(/^\/api\//, '')
     const method = route.request().method()
@@ -46,7 +47,6 @@ async function boot(page: Page, section = 'social'): Promise<Write[]> {
     }
     return route.fallback()
   })
-  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
   await page.goto(`/maison?section=${section}`)
   await page.locator('.cercle-row').first().waitFor({ state: 'visible', timeout: 15_000 })
   return writes
@@ -75,8 +75,8 @@ async function dragToGroup(
   await page.mouse.up()
 }
 
-test('dropping a person on a group adds them to it', async ({ page }) => {
-  const writes = await boot(page)
+test('dropping a person on a group adds them to it', async ({ page, app }) => {
+  const writes = await openSection(app)
   await dragToGroup(page, 'Voisin', 'g2')
 
   await expect.poll(() => writes.length, { timeout: 5000 }).toBe(1)
@@ -86,8 +86,8 @@ test('dropping a person on a group adds them to it', async ({ page }) => {
   })
 })
 
-test('…and « Annuler » writes the exact inverse', async ({ page }) => {
-  const writes = await boot(page)
+test('…and « Annuler » writes the exact inverse', async ({ page, app }) => {
+  const writes = await openSection(app)
   await dragToGroup(page, 'Voisin', 'g2')
   await expect.poll(() => writes.length, { timeout: 5000 }).toBe(1)
 
@@ -100,8 +100,8 @@ test('…and « Annuler » writes the exact inverse', async ({ page }) => {
   expect(writes[1]).toEqual({ ...writes[0], method: 'DELETE' })
 })
 
-test('a group a person is ALREADY in never lights up as a target', async ({ page }) => {
-  const writes = await boot(page)
+test('a group a person is ALREADY in never lights up as a target', async ({ page, app }) => {
+  const writes = await openSection(app)
   const zone = page.locator('[data-dnd-zone="group:g2"]')
 
   // The control first: an allowed drag DOES light the zone. Without this, the
@@ -117,6 +117,7 @@ test('a group a person is ALREADY in never lights up as a target', async ({ page
   await dragToGroup(page, 'Karim', 'g2', async () => {
     await expect(zone, 'a group he is already in offers no drop cue').not.toHaveClass(/dnd-over/)
   })
+  // Proving the drop posted nothing: nothing marks an absence, so give it the time it would have taken.
   await page.waitForTimeout(500)
   expect(writes.length, 'and the drop itself posts nothing').toBe(1)
 })

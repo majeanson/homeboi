@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test'
-import { test, type App } from './fixtures'
+import { test } from './fixtures'
+import { settled } from './measure'
 import type { Audience, Surface, Theme } from './mocks'
 
 // Full visual coverage of the surfaces the static sweep (screenshots.spec) and
@@ -13,23 +14,20 @@ import type { Audience, Surface, Theme } from './mocks'
 const PHONE = { width: 390, height: 844 }
 const WALL = { width: 1280, height: 800 }
 
-// Boot a page the same way the other overlay specs do: reduced motion (so sheets
-// settle instantly), mocked API, seeded localStorage, then navigate and wait for
-// the page shell + webfonts.
-async function boot(
-  app: App,
-  path: string,
-  opts: { theme?: Theme; audience?: Audience; surface?: Surface; format?: { width: number; height: number } } = {},
-) {
-  const { theme = 'day', audience = 'parent', surface = 'mobile', format = PHONE } = opts
-  const { page } = app
-  await app.boot({ viewport: format, state: { theme, audience, calm: true, surface }, route: path })
-  await page.locator('.hub, .page, main').first().waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {})
-  await page.evaluate(() => document.fonts?.ready).catch(() => {})
-}
+// The boot options every shot shares: reduced motion comes with the fixture (so sheets
+// settle instantly), and the page shell is what counts as landed.
+type Opts = { theme?: Theme; audience?: Audience; surface?: Surface; format?: { width: number; height: number } }
+const at = (route: string, { theme = 'day', audience = 'parent', surface = 'mobile', format = PHONE }: Opts = {}) => ({
+  route,
+  viewport: format,
+  state: { theme, audience, calm: true, surface },
+  wait: '.hub, .page, main',
+})
 
-const shoot = (page: Page, name: string, fullPage = true) =>
-  page.screenshot({ path: `e2e/screenshots/${name}.png`, fullPage })
+const shoot = async (page: Page, name: string, fullPage = true) => {
+  await settled(page)
+  await page.screenshot({ path: `e2e/screenshots/${name}.png`, fullPage })
+}
 
 // ── Kitchen sub-tabs ───────────────────────────────────────────────────────
 // The static sweep only ever shoots the default 'meals' tab. Capture the Pantry
@@ -39,21 +37,19 @@ for (const theme of ['day', 'night'] as Theme[]) {
   const sfx = theme === 'night' ? '-night' : ''
 
   test(`kitchen-pantry${sfx}`, async ({ page, app }) => {
-    await boot(app, '/kitchen', { theme })
+    await app.boot(at('/kitchen', { theme }))
     await page.locator('.subtabs__opt').nth(1).click()
     // The three add boxes wait behind their section ＋ now; open the low list's so the
     // frame still covers a composer, and wait on the ＋ itself for the tab to be ready.
     await page.getByRole('button', { name: 'Ajouter un aliment', exact: true }).click()
     await page.getByRole('textbox', { name: 'Ajouter un aliment', exact: true }).waitFor({ state: 'visible' })
-    await page.waitForTimeout(250)
     await shoot(page, `kitchen-pantry-phone${sfx}`)
   })
 
   test(`kitchen-recipes${sfx}`, async ({ page, app }) => {
-    await boot(app, '/kitchen', { theme })
+    await app.boot(at('/kitchen', { theme }))
     await page.locator('.subtabs__opt').nth(2).click()
     await page.locator('.recipe-grid').waitFor({ state: 'visible' })
-    await page.waitForTimeout(250)
     await shoot(page, `kitchen-recipes-phone${sfx}`)
   })
 }
@@ -61,19 +57,17 @@ for (const theme of ['day', 'night'] as Theme[]) {
 // Wide (wall) layout of the two kitchen tabs — column counts and card grids read
 // differently at 1280px; worth a day-only look.
 test('kitchen-pantry-wall', async ({ page, app }) => {
-  await boot(app, '/kitchen', { surface: 'kiosk', format: WALL })
+  await app.boot(at('/kitchen', { surface: 'kiosk', format: WALL }))
   await page.locator('.subtabs__opt').nth(1).click()
   await page.getByRole('button', { name: 'Ajouter un aliment', exact: true }).click()
   await page.getByRole('textbox', { name: 'Ajouter un aliment', exact: true }).waitFor({ state: 'visible' })
-  await page.waitForTimeout(250)
   await shoot(page, 'kitchen-pantry-wall')
 })
 
 test('kitchen-recipes-wall', async ({ page, app }) => {
-  await boot(app, '/kitchen', { surface: 'kiosk', format: WALL })
+  await app.boot(at('/kitchen', { surface: 'kiosk', format: WALL }))
   await page.locator('.subtabs__opt').nth(2).click()
   await page.locator('.recipe-grid').waitFor({ state: 'visible' })
-  await page.waitForTimeout(250)
   await shoot(page, 'kitchen-recipes-wall')
 })
 
@@ -83,13 +77,12 @@ for (const theme of ['day', 'night'] as Theme[]) {
 
   // ⚡ Quick add: the re-stock page of past/predicted items (now a full-screen scene).
   test(`list-quick-add${sfx}`, async ({ page, app }) => {
-    await boot(app, '/liste', { theme })
+    await app.boot(at('/liste', { theme }))
     await page.locator('.add-fab').click() // Ajout rapide lives in the ＋ sheet now
     // Scope to the sheet (dialog): the liste page also has a direct « Ajout rapide »
     // shortcut button now, so an unscoped name lookup is ambiguous.
     await page.getByRole('dialog').getByRole('button', { name: 'Ajout rapide' }).click()
     await page.locator('.scene .qa__list').waitFor({ state: 'visible' })
-    await page.waitForTimeout(250)
     await shoot(page, `list-quick-add-phone${sfx}`, false)
   })
 
@@ -97,13 +90,12 @@ for (const theme of ['day', 'night'] as Theme[]) {
   // The name/centre toggles the check (shop seam #1); the row keeps no always-on
   // action buttons (compact-rows pass).
   test(`list-item-sheet${sfx}`, async ({ page, app }) => {
-    await boot(app, '/liste', { theme })
+    await app.boot(at('/liste', { theme }))
     // `button.`: the first row (« Lait ») carries a deal WITH its clipping since
     // 2026-09-10, and a row with a clipping shows the picture as a zoom, not the
     // edit door — the next row's picture is the button this state is about.
     await page.locator('button.list-row__img').first().click()
     await page.locator('.scene .li-edit').waitFor({ state: 'visible' })
-    await page.waitForTimeout(250)
     await shoot(page, `list-item-sheet-phone${sfx}`, false)
   })
 }
@@ -111,22 +103,20 @@ for (const theme of ['day', 'night'] as Theme[]) {
 // The "checked / in the cart" row state + the "Clear checked" action bar it
 // reveals — the single most-used interaction on the list, never captured before.
 test('list-checked', async ({ page, app }) => {
-  await boot(app, '/liste')
+  await app.boot(at('/liste'))
   await page.locator('.list-row__toggle').first().click()
   await page.locator('.list-row__main.done').first().waitFor({ state: 'visible' })
-  await page.waitForTimeout(250)
   await shoot(page, 'list-checked-phone')
 })
 
 // DealsBrowser, "by item" tab, START state (before a search) — the empty/seed
 // state with the staple chips. The results state is already in sheets.spec.
 test('list-deals-start', async ({ page, app }) => {
-  await boot(app, '/liste')
+  await app.boot(at('/liste'))
   await page.locator('.add-fab').click() // flyer browser lives in the ＋ sheet now
   await page.getByRole('dialog').getByRole('button', { name: /Parcourir/ }).click()
   await page.locator('.scene').waitFor({ state: 'visible' })
   await page.locator('.deal-stores').first().waitFor({ state: 'visible' })
-  await page.waitForTimeout(250)
   await shoot(page, 'list-deals-start-phone', false)
 })
 
@@ -135,10 +125,9 @@ test('list-deals-start', async ({ page, app }) => {
 for (const theme of ['day', 'night'] as Theme[]) {
   const sfx = theme === 'night' ? '-night' : ''
   test(`board-profile-picker${sfx}`, async ({ page, app }) => {
-    await boot(app, '/board', { theme })
+    await app.boot(at('/board', { theme }))
     await page.locator('.profile-chip').click()
     await page.locator('.profile-faces').waitFor({ state: 'visible' })
-    await page.waitForTimeout(300)
     await shoot(page, `board-profile-picker-phone${sfx}`, false)
   })
 }
@@ -149,23 +138,21 @@ for (const theme of ['day', 'night'] as Theme[]) {
 // routine(…)) are mostly navigate-only; « Corvées » first expands an in-sheet
 // sub-choice (Corvée · Entretien · Projets) before the scene.
 test('scene-add-chore', async ({ page, app }) => {
-  await boot(app, '/board')
+  await app.boot(at('/board'))
   await page.locator('.add-fab').click()
   // Target « Corvées » by label (the tile order shifted as ride/activity tiles were
   // added), then its first sub-choice (Corvée → /chore/new scene).
   await page.getByRole('dialog').locator('.cat-pick', { hasText: 'Corvées' }).click()
   await page.locator('.addsheet__chorepick .cat-pick').first().click()
   await page.locator('.scene .operator__chore-form').waitFor({ state: 'visible' })
-  await page.waitForTimeout(250)
   await shoot(page, 'scene-add-chore-phone', false)
 })
 
 test('scene-add-routine', async ({ page, app }) => {
   // The board ＋ no longer carries a routine tile (routines have their own Maison
   // section), so capture the add-routine scene by its route directly.
-  await boot(app, '/routine/new')
+  await app.boot({ ...at('/routine/new'), wait: '.scene .operator__routine-form' }) // a scene: no hub behind it
   await page.locator('.scene .operator__routine-form').waitFor({ state: 'visible' })
-  await page.waitForTimeout(250)
   await shoot(page, 'scene-add-routine-phone', false)
 })
 
@@ -180,7 +167,7 @@ test('scene-add-routine', async ({ page, app }) => {
 // The EventForm is now EDIT-only in Réglages; adding navigates to the /event/new
 // scene from the agenda tab's "Ajouter un rendez-vous" button, where the form lives.
 test('settings-recur-weekly', async ({ page, app }) => {
-  await boot(app, '/settings')
+  await app.boot(at('/settings'))
   await page.locator('.operator__tabs').getByRole('tab', { name: 'Le babillard' }).click() // events sub is first
   await page.getByRole('button', { name: 'Ajouter un rendez-vous' }).click() // → /event/new scene
   // « Répéter » + « Afficher dès » are the form's third optional section now — both sit
@@ -189,7 +176,6 @@ test('settings-recur-weekly', async ({ page, app }) => {
   await page.locator('.recur select').first().waitFor({ state: 'visible' })
   await page.locator('.recur select').first().selectOption('weekly')
   await page.locator('.recur__days').waitFor({ state: 'visible' })
-  await page.waitForTimeout(250)
   await shoot(page, 'settings-recur-weekly-phone', false)
 })
 
@@ -201,19 +187,18 @@ test('settings-deck-palette', async ({ page, app }) => {
   // Routines is its own sub-section under Maison (and its default) — deep-link to it.
   // (?tab=chores is a legacy id that folds to Maison too, but names its OWN default
   // sub, Corvées — ?tab=maison&sub=routines is the direct, unambiguous path.)
-  await boot(app, '/settings?tab=maison&sub=routines')
+  await app.boot(at('/settings?tab=maison&sub=routines'))
   await page.getByRole('button', { name: 'Créer une routine' }).click() // → /routine/new scene
   await page.locator('.deck__add').waitFor({ state: 'visible' })
   await page.locator('.deck__add').click() // add a blank card
   await page.locator('.deck__emoji').first().click() // open its palette
   await page.locator('.emoji-picker').waitFor({ state: 'visible' }) // shared EmojiPicker now
-  await page.waitForTimeout(250)
   await shoot(page, 'settings-deck-palette-phone', false)
 })
 
 // Rename-a-tag inline form (Réglages ▸ Recettes ▸ used-tags). recipes = nth(5).
 test('settings-tag-rename', async ({ page, app }) => {
-  await boot(app, '/settings')
+  await app.boot(at('/settings'))
   await page.getByRole('tab', { name: 'La cuisine' }).click() // recipes (tags)
   await page.locator('.tag-admin__row').first().waitFor({ state: 'visible' })
   // Each row ends in the uniform RowActions pair (✏️ Renommer / 🗑️ Retirer); the
@@ -221,7 +206,6 @@ test('settings-tag-rename', async ({ page, app }) => {
   // accessible name rather than position. Tapping it reveals the inline rename form.
   await page.locator('.tag-admin__row').first().getByRole('button', { name: 'Renommer' }).click()
   await page.locator('.tag-admin__rename').waitFor({ state: 'visible' })
-  await page.waitForTimeout(250)
   await shoot(page, 'settings-tag-rename-phone', false)
 })
 
@@ -233,11 +217,10 @@ test('settings-tag-rename', async ({ page, app }) => {
 // into the ONE IdeasDrawer. The kitchen ＋ sheet's week actions shrank to shop +
 // « Idées »; the tile navigates to the drawer's own full-screen scene.
 test('kitchen-ideas-drawer', async ({ page, app }) => {
-  await boot(app, '/kitchen')
+  await app.boot(at('/kitchen'))
   await page.locator('.add-fab').click()
   await page.locator('.cat-pick', { hasText: 'Idées de repas' }).click()
   await page.locator('.ideas-drawer.scene').waitFor({ state: 'visible' })
-  await page.waitForTimeout(250)
   await shoot(page, 'kitchen-ideas-drawer-phone', false)
 })
 
@@ -245,11 +228,10 @@ test('kitchen-ideas-drawer', async ({ page, app }) => {
 // tick what you want). Same move into the ＋ Add sheet; the .kitchen__shop confirm
 // panel renders on the grid behind.
 test('kitchen-shop-week', async ({ page, app }) => {
-  await boot(app, '/kitchen')
+  await app.boot(at('/kitchen'))
   await page.locator('.add-fab').click()
   await page.getByRole('button', { name: /Magasiner la semaine/ }).click()
   await page.locator('.kitchen__shop').waitFor({ state: 'visible' })
-  await page.waitForTimeout(250)
   await shoot(page, 'kitchen-shop-week-phone', false)
 })
 
@@ -279,35 +261,32 @@ async function openKidCook(page: Page) {
 
 // Plan-a-supper day picker (slot picker + week chips) revealed by "Planifier".
 test('recipe-plan', async ({ page, app }) => {
-  await boot(app, '/kitchen')
+  await app.boot(at('/kitchen'))
   await openRecipe(page)
   await page.getByRole('button', { name: /^Planifier$/ }).click()
   // The recipe sheet's "Planifier" now opens the shared MealPlanPicker
   // (slot picker + week chips), which renders .meal-plan-pick / __days.
   await page.locator('.meal-plan-pick__days').waitFor({ state: 'visible' })
-  await page.waitForTimeout(250)
   await shoot(page, 'recipe-plan-phone', false)
 })
 
 // The 📜 "as written / original" paper view of a recipe.
 test('recipe-original', async ({ page, app }) => {
-  await boot(app, '/kitchen')
+  await app.boot(at('/kitchen'))
   await openRecipe(page)
   await page.locator('.recipe-original-toggle').click()
   await page.locator('.recipe-original').waitFor({ state: 'visible' })
-  await page.waitForTimeout(250)
   await shoot(page, 'recipe-original-phone', false)
 })
 
 // CookMode 'full' view — the whole recipe on one scrolling page. This is what the
 // parent profile gets straight from the recipe sheet's "Cuisiner" (no toggle).
 test('cook-full', async ({ page, app }) => {
-  await boot(app, '/kitchen')
+  await app.boot(at('/kitchen'))
   await openRecipe(page)
   await page.locator('.recipe-actions .btn--primary').click() // Cuisiner
   await page.locator('.cook').waitFor({ state: 'visible' })
   await page.locator('.cook__full').waitFor({ state: 'visible' })
-  await page.waitForTimeout(250)
   await shoot(page, 'cook-full-phone', false)
 })
 
@@ -315,23 +294,21 @@ test('cook-full', async ({ page, app }) => {
 // duration; start it. Step view follows the toddler profile, so go via the kid
 // kitchen.
 test('cook-timer-running', async ({ page, app }) => {
-  await boot(app, '/kitchen', { audience: 'toddler' })
+  await app.boot(at('/kitchen', { audience: 'toddler' }))
   await openKidCook(page)
   await page.locator('.cook__arrow--next').click() // ingredients → step 1
   await page.locator('.cook__timer-chip').first().click() // start the timer
   await page.locator('.cook__timer').waitFor({ state: 'visible' })
-  await page.waitForTimeout(250)
   await shoot(page, 'cook-timer-running-phone', false)
 })
 
 // CookMode last step — Next disables at the end (no full-width "Bonne appétit"
 // button anymore; the way out is the bar's small ✕).
 test('cook-last', async ({ page, app }) => {
-  await boot(app, '/kitchen', { audience: 'toddler' })
+  await app.boot(at('/kitchen', { audience: 'toddler' }))
   await openKidCook(page)
   // ingredients(0) → step1(1) → step2(2) → step3/last(3): three Next taps.
   for (let i = 0; i < 3; i++) await page.locator('.cook__arrow--next').click()
   await page.locator('.cook__arrow--next').waitFor({ state: 'visible' })
-  await page.waitForTimeout(250)
   await shoot(page, 'cook-last-phone', false)
 })

@@ -1,5 +1,5 @@
-import { test, expect, type Page } from '@playwright/test'
-import { mockApi, seedState } from './mocks'
+import type { Page } from '@playwright/test'
+import { test, expect, type App } from './fixtures'
 
 // « Ajouter une famille » — /cercle/import?s=<id>, the RECIPIENT side of « Partager une
 // famille ». It had no e2e at all, and it is the worst place in the app for that: the
@@ -70,11 +70,10 @@ const SHARE_DUP = {
   },
 }
 
-async function boot(page: Page, opts: { share?: unknown; status?: number } = {}): Promise<Write[]> {
+async function serveShare(app: App, opts: { share?: unknown; status?: number } = {}): Promise<Write[]> {
+  const { page } = app
   const writes: Write[] = []
-  await page.setViewportSize(PHONE)
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  await mockApi(page)
+  await app.boot({ viewport: PHONE })
   // Registered AFTER mockApi so it matches first (Playwright walks handlers newest → oldest).
   // Reads fall through to the shared fixture — this only owns the share itself and the
   // writes the merge makes, each answered with the id the next step needs.
@@ -106,14 +105,13 @@ async function boot(page: Page, opts: { share?: unknown; status?: number } = {})
     }
     return route.fallback()
   })
-  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
   return writes
 }
 
 const review = (page: Page) => page.getByRole('button', { name: 'Réviser et ajouter' })
 
-test('the whole merge chain fires: people, then their link, then the pet, then the family group', async ({ page }) => {
-  const writes = await boot(page)
+test('the whole merge chain fires: people, then their link, then the pet, then the family group', async ({ page, app }) => {
+  const writes = await serveShare(app)
   await page.goto('/cercle/import?s=share-1')
   await expect(page.getByText('Partagé par Camille')).toBeVisible()
   await review(page).click()
@@ -148,8 +146,8 @@ test('the whole merge chain fires: people, then their link, then the pet, then t
   expect(groups.slice(1).map((w) => w.body.personId)).toEqual(['cercle-1', 'cercle-2'])
 })
 
-test('someone we already know is MERGED into their fiche, not added a second time', async ({ page }) => {
-  const writes = await boot(page, { share: SHARE_DUP })
+test('someone we already know is MERGED into their fiche, not added a second time', async ({ page, app }) => {
+  const writes = await serveShare(app, { share: SHARE_DUP })
   await page.goto('/cercle/import?s=share-2')
   await review(page).click()
 
@@ -166,8 +164,8 @@ test('someone we already know is MERGED into their fiche, not added a second tim
   expect(people[1]).toMatchObject({ method: 'POST', body: { firstName: 'Théo' } })
 })
 
-test('…and that call is reversible — the chip flips back to a new fiche', async ({ page }) => {
-  const writes = await boot(page, { share: SHARE_DUP })
+test('…and that call is reversible — the chip flips back to a new fiche', async ({ page, app }) => {
+  const writes = await serveShare(app, { share: SHARE_DUP })
   await page.goto('/cercle/import?s=share-2')
   await review(page).click()
 
@@ -183,8 +181,8 @@ test('…and that call is reversible — the chip flips back to a new fiche', as
   ).toBe(true)
 })
 
-test('unticking a person excludes them — and the link that needed them is dropped', async ({ page }) => {
-  const writes = await boot(page)
+test('unticking a person excludes them — and the link that needed them is dropped', async ({ page, app }) => {
+  const writes = await serveShare(app)
   await page.goto('/cercle/import?s=share-1')
   await review(page).click()
 
@@ -202,15 +200,15 @@ test('unticking a person excludes them — and the link that needed them is drop
   expect(writes.filter((w) => w.path === 'cercle-groups')).toEqual([])
 })
 
-test('an expired share says so, instead of a broken page', async ({ page }) => {
-  await boot(page, { status: 404 })
+test('an expired share says so, instead of a broken page', async ({ page, app }) => {
+  await serveShare(app, { status: 404 })
   await page.goto('/cercle/import?s=gone')
   await expect(page.getByText('Ce partage n’existe plus ou a expiré.')).toBeVisible()
   await expect(review(page)).toHaveCount(0)
 })
 
-test('a read-only guest never reaches the merge at all', async ({ page }) => {
-  await boot(page)
+test('a read-only guest never reaches the merge at all', async ({ page, app }) => {
+  await serveShare(app)
   await page.addInitScript(() => localStorage.setItem('babillard-guest-token', 'e2e-guest-token'))
   await page.goto('/cercle/import?s=share-1')
   await page.waitForURL(/\/maison\?section=family/)

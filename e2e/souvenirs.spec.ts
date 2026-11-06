@@ -1,5 +1,6 @@
-import { test, expect, type Page } from '@playwright/test'
-import { mockApi, seedState, BASE, notesFromMots } from './mocks'
+import type { Page } from '@playwright/test'
+import { test, expect, type App } from './fixtures'
+import { BASE, notesFromMots } from './mocks'
 
 // « Souvenirs » (PLAN-mots C1, accepted 2026-09-25 — « put the widget back »): a band card
 // that shelves what the household chose to KEEP — kept mots (saved_at, since 0094), kept
@@ -22,9 +23,9 @@ const DRAWINGS = [
   { id: 'dg2', member_id: 'm1', media_key: 'nm_g2', scene_key: null, created_at: BASE - 86_400, saved_at: null },
 ]
 
-async function boot(page: Page, o: { mots?: object[]; photos?: object[]; drawings?: object[] } = {}) {
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  await mockApi(page)
+async function openBoard(app: App, o: { mots?: object[]; photos?: object[]; drawings?: object[] } = {}) {
+  const { page } = app
+  await app.boot()
   const json = (body: unknown) => ({ status: 200, contentType: 'application/json', body: JSON.stringify(body) })
   // Mots are fridge notes since 0142 — served in the notes shape.
   await page.route('**/api/notes**', (route) =>
@@ -32,22 +33,14 @@ async function boot(page: Page, o: { mots?: object[]; photos?: object[]; drawing
   )
   await page.route('**/api/photos**', (route) => (route.request().method() === 'GET' ? route.fulfill(json({ photos: o.photos ?? [] })) : route.fulfill(json({ ok: true }))))
   await page.route('**/api/drawings**', (route) => (route.request().method() === 'GET' ? route.fulfill(json({ drawings: o.drawings ?? [], more: false })) : route.fulfill(json({ ok: true }))))
-  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
-  await page.addInitScript(() => {
-    try {
-      localStorage.setItem('babillard-tours-seen', JSON.stringify(['essentials']))
-    } catch {
-      /* noop */
-    }
-  })
   await page.goto('/board')
   await page.locator('.hub').first().waitFor({ state: 'visible', timeout: 15_000 })
 }
 
 const shelf = (page: Page) => page.locator('.wg-slot[data-card="souvenirs"]')
 
-test('the shelf shows exactly what is kept — a photo, a drawing, a mot — and a mot opens its peek', async ({ page }) => {
-  await boot(page, { mots: [MOT], photos: PHOTOS, drawings: DRAWINGS })
+test('the shelf shows exactly what is kept — a photo, a drawing, a mot — and a mot opens its peek', async ({ page, app }) => {
+  await openBoard(app, { mots: [MOT], photos: PHOTOS, drawings: DRAWINGS })
   const card = shelf(page)
   await expect(card).toBeVisible()
   // Two pictures (the kept photo + the kept drawing), never the unkept ones.
@@ -64,16 +57,16 @@ test('the shelf shows exactly what is kept — a photo, a drawing, a mot — and
   await expect(card).not.toContainText(/\b\d+ (souvenirs?|photos?|dessins?|mots?)\b/)
 })
 
-test('nothing kept, no shelf — the card does not sit empty on the band', async ({ page }) => {
-  await boot(page, { mots: [{ ...MOT, saved_at: null }], photos: [PHOTOS[1]], drawings: [DRAWINGS[1]] })
+test('nothing kept, no shelf — the card does not sit empty on the band', async ({ page, app }) => {
+  await openBoard(app, { mots: [{ ...MOT, saved_at: null }], photos: [PHOTOS[1]], drawings: [DRAWINGS[1]] })
   await expect(page.locator('.wg-slot[data-card="mots"], .wg-slot[data-card="photos"]').first()).toBeVisible()
   // An 'auto' slot stays MOUNTED and hidden when empty (board-empty-cards.spec says why:
   // a self-fetching card only learns it is empty after fetching) — hidden, never absent.
   await expect(shelf(page)).toBeHidden()
 })
 
-test('the photo frame’s pin keeps the photo on show — one PATCH, pressed state', async ({ page }) => {
-  await boot(page, { photos: [PHOTOS[1]] })
+test('the photo frame’s pin keeps the photo on show — one PATCH, pressed state', async ({ page, app }) => {
+  await openBoard(app, { photos: [PHOTOS[1]] })
   const frame = page.locator('.wg-slot[data-card="photos"] .photo-frame')
   await expect(frame).toBeVisible()
   const pin = frame.getByRole('button', { name: 'Garder' })

@@ -1,5 +1,7 @@
-import { test as base, expect, type Page } from '@playwright/test'
-import { mockApi, seedState, type Theme } from './mocks'
+import type { Page } from '@playwright/test'
+import { test as base, expect } from './fixtures'
+import { settled } from './measure'
+import { type Theme } from './mocks'
 
 // Screenshot-review loop — the OPENED states the mature suite still missed (audited
 // against the full inventory): the destructive CONFIRM dialog, the generic DETAIL
@@ -18,17 +20,9 @@ const test = base.extend({
 
 const PHONE = { width: 390, height: 844 }
 const WALL = { width: 1280, height: 800 }
-const shot = (page: Page, name: string) =>
-  page.screenshot({ path: `e2e/screenshots/gap-${name}.png`, fullPage: false })
-
-async function boot(page: Page, path: string, theme: Theme, surface: 'mobile' | 'kiosk', fmt: { width: number; height: number }) {
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  await page.setViewportSize(fmt)
-  await mockApi(page)
-  await seedState(page, { theme, audience: 'parent', lang: 'fr', calm: true, surface })
-  await page.goto(path)
-  await page.locator('.hub, .page, main').first().waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {})
-  await page.evaluate(() => document.fonts?.ready).catch(() => {})
+const shot = async (page: Page, name: string) => {
+  await settled(page)
+  await page.screenshot({ path: `e2e/screenshots/gap-${name}.png`, fullPage: false })
 }
 
 // ── 1. The destructive CONFIRM dialog (useConfirm) — never screenshotted before.
@@ -36,13 +30,12 @@ async function boot(page: Page, path: string, theme: Theme, surface: 'mobile' | 
 // (not the undo toast). We open the dialog and shoot it; we do NOT confirm.
 for (const theme of ['day', 'night'] as Theme[]) {
   const sfx = theme === 'night' ? '-night' : ''
-  test(`gap confirm-dialog${sfx}`, async ({ page }) => {
-    await boot(page, '/settings?tab=household', theme, 'mobile', PHONE)
+  test(`gap confirm-dialog${sfx}`, async ({ page, app }) => {
+    await app.boot({ viewport: PHONE, route: '/settings?tab=household', state: { theme: theme, calm: true, surface: 'mobile' }, wait: '.hub, .page, main' })
     await page.getByRole('button', { name: 'Supprimer la personne' }).first().click()
     await page.locator('.confirm').waitFor({ state: 'visible', timeout: 10_000 })
     // The danger-toned dialog: message + the yes/no actions.
     await expect(page.locator('.confirm__actions')).toBeVisible()
-    await page.waitForTimeout(250)
     await shot(page, `confirm-dialog-phone${sfx}`)
   })
 }
@@ -52,11 +45,10 @@ for (const theme of ['day', 'night'] as Theme[]) {
 // is the shared sheet for events/chores/meals.
 for (const theme of ['day', 'night'] as Theme[]) {
   const sfx = theme === 'night' ? '-night' : ''
-  test(`gap detail-peek${sfx}`, async ({ page }) => {
-    await boot(page, '/board', theme, 'mobile', PHONE)
+  test(`gap detail-peek${sfx}`, async ({ page, app }) => {
+    await app.boot({ viewport: PHONE, route: '/board', state: { theme: theme, calm: true, surface: 'mobile' }, wait: '.hub, .page, main' })
     await page.locator('.act__hit').first().click()
     await page.locator('.detail-sheet').waitFor({ state: 'visible', timeout: 10_000 })
-    await page.waitForTimeout(250)
     await shot(page, `detail-peek-phone${sfx}`)
   })
 }
@@ -70,10 +62,9 @@ for (const theme of ['day', 'night'] as Theme[]) {
     // Wall night is redundant with phone for the Guide's flat content; keep phone
     // both themes + wall day to bound the matrix.
     if (fmt.name === 'wall' && theme === 'night') continue
-    test(`gap guide-${fmt.name}${sfx}`, async ({ page }) => {
-      await boot(page, '/settings?tab=guide', theme, fmt.surface, fmt.vp)
+    test(`gap guide-${fmt.name}${sfx}`, async ({ page, app }) => {
+      await app.boot({ viewport: fmt.vp, route: '/settings?tab=guide', state: { theme: theme, calm: true, surface: fmt.surface }, wait: '.hub, .page, main' })
       await page.locator('.guide').first().waitFor({ state: 'visible', timeout: 15_000 })
-      await page.waitForTimeout(300)
       await shot(page, `guide-${fmt.name}${sfx}`)
     })
   }
@@ -85,12 +76,11 @@ for (const theme of ['day', 'night'] as Theme[]) {
 // waiting on the real idle timer). Kiosk surface — it's a wall-tablet behaviour.
 for (const theme of ['day', 'night'] as Theme[]) {
   const sfx = theme === 'night' ? '-night' : ''
-  test(`gap ambient-screensaver${sfx}`, async ({ page }) => {
-    await boot(page, '/board', theme, 'kiosk', WALL)
+  test(`gap ambient-screensaver${sfx}`, async ({ page, app }) => {
+    await app.boot({ viewport: WALL, route: '/board', state: { theme: theme, calm: true, surface: 'kiosk' }, wait: '.hub, .page, main' })
     await page.locator('.hub').first().waitFor({ state: 'visible', timeout: 15_000 })
     await page.evaluate(() => window.dispatchEvent(new CustomEvent('bb:idle-debug', { detail: 'screensaver' })))
     await page.locator('.ambient').waitFor({ state: 'visible', timeout: 10_000 })
-    await page.waitForTimeout(400)
     await shot(page, `ambient-screensaver-wall${sfx}`)
   })
 }

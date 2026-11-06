@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { test, expect, type App } from './fixtures'
+import { test, expect } from './fixtures'
 // The same per-child right-edge check add-sheet-overflow.spec.ts uses: a composer
 // that gained a full-width line is also the shape most likely to bleed past it.
 import { assertClean } from './overflow'
@@ -23,10 +23,6 @@ import { assertClean } from './overflow'
 // The second assertion is the one that actually reads like the bug: the field's
 // own placeholder, measured in the field's own font, must FIT. A number can drift
 // past a reviewer; « Ajouter un… » cannot.
-
-async function boot(app: App, width: number) {
-  await app.boot({ viewport: { width, height: 844 } })
-}
 
 type Composer = {
   /** What a human calls it — this is what a failure prints. */
@@ -89,7 +85,7 @@ async function measure(page: Page, selector: string) {
 for (const width of [360, 390]) {
   for (const c of COMPOSERS) {
     test(`composer keeps its typing width — ${c.name} @${width}`, async ({ page, app }) => {
-      await boot(app, width)
+      await app.boot({ viewport: { width, height: 844 } })
       await page.goto(c.route)
       await expect(page.locator('.hub__body')).toBeVisible({ timeout: 15_000 })
 
@@ -155,7 +151,7 @@ const SCENE_FIELDS: { name: string; route: string; field: string }[] = [
 for (const width of [360, 390]) {
   for (const f of SCENE_FIELDS) {
     test(`scene form keeps its placeholder readable — ${f.name} @${width}`, async ({ page, app }) => {
-      await boot(app, width)
+      await app.boot({ viewport: { width, height: 844 } })
       await page.goto(f.route)
       await expect(page.locator(f.field).first()).toBeVisible({ timeout: 15_000 })
 
@@ -198,7 +194,7 @@ const DATE_ROWS: { name: string; route: string; ready: string }[] = [
 for (const width of [360, 390]) {
   for (const d of DATE_ROWS) {
     test(`a date field is never narrower than the control needs — ${d.name} @${width}`, async ({ page, app }) => {
-      await boot(app, width)
+      await app.boot({ viewport: { width, height: 844 } })
       await page.goto(d.route)
       await expect(page.locator(d.ready).first()).toBeVisible({ timeout: 15_000 })
 
