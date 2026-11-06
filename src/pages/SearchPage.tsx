@@ -12,7 +12,7 @@ import { fold } from '../lib/normalize'
 import { SEARCH_INDEX, drawingFields, type SearchFields, type PantryRow } from '../lib/searchIndex'
 import { CATS } from '../lib/cats'
 import { colourFor } from '../lib/things'
-import { CERCLE_KEY, FAMILY_NOTES_KEY, BUSINESSES_KEY, ROUTINES_KEY, TODOS_KEY, CARNETS_KEY, HOME_PROJECTS_KEY, CARE_LOG_KEY, HOME_PINS_KEY, DRAWINGS_KEY, MEMBERS_KEY } from '../lib/queryKeys'
+import { CERCLE_KEY, CHORES_KEY, FAMILY_NOTES_KEY, BUSINESSES_KEY, ROUTINES_KEY, TODOS_KEY, CARNETS_KEY, HOME_PROJECTS_KEY, CARE_LOG_KEY, HOME_PINS_KEY, DRAWINGS_KEY, MEMBERS_KEY } from '../lib/queryKeys'
 import { type Carnet, type CareLog, type HomePin, PIN_EMOJI } from '../lib/carnets'
 import { type GalleryDrawing } from '../lib/drawingGallery'
 import { type Member } from '../lib/members'
@@ -23,6 +23,7 @@ import { firstLine } from '../lib/noteMarkdown'
 import { type Business, BUSINESS_COLOUR } from '../lib/businesses'
 import { type Routine, type HomeProject } from '../components/operator/types'
 import { type TodosData } from '../lib/todos'
+import type { Chore } from '../components/operator/types'
 import { type ReserveData, RESERVE_KEY, type MealRow, type MealIdea, type MealIdeasData, MEAL_IDEAS_KEY } from '../components/kitchen/types'
 import { useCars } from '../lib/carPrefs'
 import { useHabits } from '../lib/habits'
@@ -141,6 +142,8 @@ export function SearchPage() {
   const routines = useQuery({ queryKey: ROUTINES_KEY, queryFn: () => api<{ routines: Routine[] }>('routines') }).data?.routines ?? []
   // À compléter — the board glance's open todos (global + today) under TODOS_KEY.
   const todos = useQuery({ queryKey: TODOS_KEY, queryFn: () => api<TodosData>('todos') }).data?.todos ?? []
+  // À faire — the recurring chores. PARITY's last 🔶: they had no entry here at all.
+  const chores = useQuery({ queryKey: CHORES_KEY, queryFn: () => api<{ chores: Chore[] }>('chores') }).data?.chores ?? []
   // Garde-manger: "ce qui s'achève" (running-low) + La réserve (the stash). Both
   // live under the kitchen Pantry tab; each item links there.
   const low = usePantry().data?.low ?? []
@@ -236,6 +239,7 @@ export function SearchPage() {
     const bizHits = pick(businesses, SEARCH_INDEX.business)
     const routineHits = pick(routines, SEARCH_INDEX.routine)
     const todoHits = pick(todos, SEARCH_INDEX.todo)
+    const choreHits = pick(chores, SEARCH_INDEX.chore)
     // Garde-manger + La réserve — one merged ranked pool, tagged so the row can
     // label which list it's from while linking to the same Pantry tab.
     const pantryHits = pick(
@@ -294,8 +298,8 @@ export function SearchPage() {
     }
     guideAll.sort((a, b) => a.r - b.r)
     const guide = { items: guideAll.slice(0, CAP).map((h) => h.g), best: guideAll.length ? guideAll[0].r : 99 }
-    return { recipes, people, pets: petHits, businesses: bizHits, routines: routineHits, todos: todoHits, pantry: pantryHits, cars: carHits, carnets: carnetHits, projects: projectHits, care: careHits, pins: pinHits, drawings: drawingHits, habits: habitHits, mots: motHits, meals: mealHits, ideas: ideaHits, groups: groupHits, trips: tripHits, events, listItems, notes, guide }
-  }, [needle, recipesData, contacts, pets, businesses, routines, todos, low, reserve, cars, carnets, homeProjects, careLog, homePins, drawings, habits, mots, meals, mealIdeas, groups, trips, memberName, board, familyNotes, lang])
+    return { recipes, people, pets: petHits, businesses: bizHits, routines: routineHits, todos: todoHits, chores: choreHits, pantry: pantryHits, cars: carHits, carnets: carnetHits, projects: projectHits, care: careHits, pins: pinHits, drawings: drawingHits, habits: habitHits, mots: motHits, meals: mealHits, ideas: ideaHits, groups: groupHits, trips: tripHits, events, listItems, notes, guide }
+  }, [needle, recipesData, contacts, pets, businesses, routines, todos, chores, low, reserve, cars, carnets, homeProjects, careLog, homePins, drawings, habits, mots, meals, mealIdeas, groups, trips, memberName, board, familyNotes, lang])
 
   const total = res
     ? res.recipes.items.length +
@@ -304,6 +308,7 @@ export function SearchPage() {
       res.businesses.items.length +
       res.routines.items.length +
       res.todos.items.length +
+      res.chores.items.length +
       res.pantry.items.length +
       res.cars.items.length +
       res.carnets.items.length +
@@ -744,6 +749,25 @@ export function SearchPage() {
                     </span>
                     <span className="search__main">
                       <span className="search__title">{hl(td.title)}</span>
+                    </span>
+                    <Icon name="arrow-right-bold" size={16} />
+                  </Link>
+                ))}
+              </Section>
+                ),
+              },
+
+              {
+                best: res!.chores.best,
+                node: res!.chores.items.length > 0 && (
+              <Section key="chores" label={t.search.chores}>
+                {res!.chores.items.map((c) => (
+                  <Link key={c.id} to={landingFor({ kind: 'chore' })} className="search__row">
+                    <span className="search__pic" aria-hidden="true" style={{ color: CATS.chore.deep }}>
+                      <InlineIcon name="check-square-bold" />
+                    </span>
+                    <span className="search__main">
+                      <span className="search__title">{hl(c.title)}</span>
                     </span>
                     <Icon name="arrow-right-bold" size={16} />
                   </Link>

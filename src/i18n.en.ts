@@ -29,6 +29,7 @@ export const EN: typeof FR = {
     homeProjects: 'Projects & upkeep',
     auto: 'The car',
     routines: 'Routines',
+    chores: 'To do',
     todos: 'To-dos',
     pantry: 'Pantry & reserve',
     events: 'Appointments',

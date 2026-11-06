@@ -29,3 +29,13 @@ test('a search result carries the row id through to the page', async ({ page, ap
   await page.locator('.search__row[href="/board/habitudes?item=hb1"]').click()
   await expect(page.locator('[data-item="hb1"]')).toHaveClass(/is-item-target/)
 })
+
+test('a chore is findable, and lands on its section', async ({ page, app }) => {
+  await app.boot({
+    route: '/search?q=Vaisselle',
+    api: { overrides: { chores: { chores: [{ id: 'ch1', title: 'Vaisselle', rotation_json: '[]', current_idx: 0 }] } } },
+    wait: '.search__row',
+  })
+  await page.locator('.search__row', { hasText: 'Vaisselle' }).click()
+  await expect(page).toHaveURL(/\/settings/)
+})

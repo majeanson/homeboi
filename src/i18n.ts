@@ -37,6 +37,7 @@ export const FR = {
     homeProjects: 'Projets & entretien',
     auto: 'L’auto',
     routines: 'Routines',
+    chores: 'À faire',
     todos: 'À compléter',
     pantry: 'Garde-manger & réserve',
     events: 'Rendez-vous',

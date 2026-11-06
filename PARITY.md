@@ -313,7 +313,7 @@ scored by the ACTIONS.md row being gap-free, same pattern as D7 → `DISCOVERY.m
 | Feature                  | D1 CRUD | D2 Peek | D3 Undo | D4 Offline | D5 RT | D6 Search | D7 Guide | D8 Toddler | D9 Kiosk/Mob | D10 Voice | D11 Empty | D12 Who | D13 Schema | D14 Media | D15 i18n | D16 e2e |
 | ------------------------ | ------- | ------- | ------- | ---------- | ----- | --------- | -------- | ---------- | ------------ | --------- | --------- | ------- | ---------- | --------- | -------- | ------- |
 | F1 Agenda                | ✅      | ✅      | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | ➖¹       | ✅       | ✅      |
-| F2 Corvées+Projets       | ✅⁶⁶    | ✅      | ✅⁶⁶    | ✅         | ✅    | 🔶²       | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅³        | ➖¹       | ✅       | ✅⁶⁶    |
+| F2 Corvées+Projets       | ✅⁶⁶    | ✅      | ✅⁶⁶    | ✅         | ✅    | ✅²       | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅³        | ➖¹       | ✅       | ✅⁶⁶    |
 | F3 Todos (loose)         | ✅      | ✅      | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅         | ➖¹       | ✅       | ✅⁵⁴    |
 | F35 Avant de partir      | ✅⁵⁹    | ➖⁴     | ✅      | ✅         | ✅    | ➖⁶⁰      | ✅       | ➖⁴⁸       | ✅           | ➖⁴⁷      | ✅        | ✅      | ✅⁵⁹       | ➖¹       | ✅       | ✅⁶¹    |
 | F4 Notes frigo           | ✅      | ➖⁴     | ✅      | ✅         | ✅    | ✅        | ✅       | ✅         | ✅           | ✅        | ✅        | ✅      | ➖²²       | ✅        | ✅       | ✅      |
@@ -359,7 +359,7 @@ scored by the ACTIONS.md row being gap-free, same pattern as D7 → `DISCOVERY.m
 Footnotes (verdicts recorded so far):
 
 1. No media attachment by design — the entity is text/derived only.
-2. Home projects and À compléter are searchable. Loose chores (« À faire », `tasks`) are not: no SEARCH_INDEX entry. A real gap, the one 🔶 left in this matrix (checked 2026-11-06).
+2. Home projects, À compléter and the À faire chores are all searchable (`SEARCH_INDEX`, 2026-11-06).
 3. **CONVERGED (mig 0087, already shipped).** The `color` outliers `tasks`/`home_projects`/`schedule_blocks`/`carnets` (+ the household JSON-pref columns) were renamed to `colour`; readers alias `colour AS color` so the API JSON stays byte-identical. Cells 🔶→✅. Only non-column spellings remain out of scope (the `color?` keys _inside_ reserve_locations/cars JSON, and the `avatar_kind='color'` discriminator value) — see UNIFORMIZING DB-2.
 4. Deliberate no-peek verdict recorded in `adapters.ts` L387-397 / UNIFORMIZING: tapping navigates to the full page/scene ("tap the thing, get the thing").
 5. **Dry-run confirmed 2026-07-10; FIXED (Wave S) 2026-07-10**: `habit` now has a `SEARCH_INDEX` entry (title) + a « Mes habitudes » SearchPage section → `/board/habitudes`. See ⁵¹.
@@ -1310,9 +1310,16 @@ recorded ➖ with a why, never silence. When finalized, fold a pointer into
 
 ---
 
-### Roster rows awaiting a score (solidify 4.4)
+### Four rows added late, scored 2026-11-06 (solidify 4.4)
 
-« Cette année » (`HouseDiary`) · « Pour toi » (`lib/pourToi`) · Cast (`/cast`) · « Cette semaine ensemble ». Each is a shipped surface with no Part-1 row: ❓ on every dimension until someone walks them. A guess here would read as a verdict.
+All four are read-only views over rows other features own, so D1-D6, D13 and D14 are ➖ᵃ for each. The columns that can differ:
+
+| Feature | D7 Guide | D8 Toddler | D9 Kiosk/Mob | D10 Voice | D11 Empty | D12 Who | D15 i18n | D16 e2e |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| « Cette année » (`HouseDiary`) | 🔶 no guide point, no help entry | ➖ᶠ | ✅ `hscroll.spec` | ➖ᶜ | ✅ `EmptyState` | ✅ faces, never counts | ✅ | 🔶 only its scroll row is specced |
+| « Pour toi » (`lib/pourToi`) | ➖ a line on the board, no concept to teach | ➖ parent lens only | ✅ | ➖ᶜ | ✅ the line is simply absent | ✅ names the picked face | ✅ | ✅ `pour-toi.spec`, `pourToi.test` |
+| Cast (`/cast`) | ✅ `set-devices` point | ➖ᶠ | ✅ `scenes.spec` | ➖ᶜ | ✅ the board's own | ➖ᵈ | ✅ | ✅ `scenes.spec` |
+| « Cette semaine ensemble » | ✅ guide + `operatorHelp:thisWeek` | ➖ᶠ | ✅ | ➖ᶜ | ✅ `this-week-calm.spec` | ✅ by face, never counts | ✅ | ✅ `this-week-calm.spec`, `glance.d1` |
 
 ## Part 6 — The standing gold-standard gate (how every new feature stays gap-free)
 

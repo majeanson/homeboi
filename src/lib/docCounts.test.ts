@@ -341,8 +341,8 @@ describe('e2e/axe-allow.json', () => {
 })
 
 // A ➖ with no reason reads as a shrug, and it hid real gaps for months (solidify 8). Every
-// ➖ in the Part 3 matrix now carries a footnote or a class letter. One 🔶 is left on
-// purpose: loose chores are not searchable. Planted red by stripping one marker.
+// ➖ in the Part 3 matrix now carries a footnote or a class letter, and no 🔶 is left.
+// Planted red by stripping one marker.
 describe('PARITY Part 3 explains every cell', () => {
   const part3 = read('PARITY.md').split('## Part 3')[1].split('## Part 4')[0]
   const cells = part3
@@ -355,7 +355,7 @@ describe('PARITY Part 3 explains every cell', () => {
   it('no bare ➖', () => {
     expect(cells.filter((c) => c === '➖')).toEqual([])
   })
-  it('at most one 🔶', () => {
-    expect(cells.filter((c) => c.startsWith('🔶')).length).toBeLessThanOrEqual(1)
+  it('no 🔶', () => {
+    expect(cells.filter((c) => c.startsWith('🔶'))).toEqual([])
   })
 })

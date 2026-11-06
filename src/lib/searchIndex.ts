@@ -76,6 +76,7 @@ export const SEARCH_INDEX = {
     secondary: (r) => (r.cards ?? []).map((c) => c.label).join(' '),
   }),
   todo: entry<Todo>({ primary: (td) => td.title }),
+  chore: entry<{ title: string }>({ primary: (c) => c.title }),
   pantry: entry<PantryRow>({ primary: (x) => x.item }),
   car: entry<CarLite>({ primary: (c) => c.name }),
   carnet: entry<Carnet>({

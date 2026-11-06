@@ -18,6 +18,9 @@ describe('search landing — one table', () => {
     expect(landingFor({ kind: 'todo', id: 't' })).toBe('/board?item=t')
     expect(landingFor({ kind: 'idea', id: 'i' })).toBe('/kitchen/idees?tab=kid&item=i')
   })
+  it('a chore lands on its Réglages section', () => {
+    expect(landingFor({ kind: 'chore' })).toContain('focus=chores')
+  })
   it('a project without a carnet falls back to its Réglages section', () => {
     expect(landingFor({ kind: 'project', carnetId: 'c' })).toBe('/cercle/carnet/c')
     expect(landingFor({ kind: 'project', carnetId: null })).toContain('focus=chores')

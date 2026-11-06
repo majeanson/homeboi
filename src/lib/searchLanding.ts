@@ -15,6 +15,7 @@ export type SearchHit =
   | { kind: 'event'; at: number }
   | { kind: 'group'; id: string; family: boolean }
   | { kind: 'pantry' }
+  | { kind: 'chore' }
   | { kind: 'car' }
 
 export function landingFor(hit: SearchHit): string {
@@ -56,6 +57,8 @@ export function landingFor(hit: SearchHit): string {
       return `/kitchen/day/${localDayStart(new Date(hit.at * 1000))}`
     case 'group':
       return hit.family ? `/cercle/family/${hit.id}` : '/maison?section=social'
+    case 'chore':
+      return settingsHref({ tab: 'maison', focus: 'chores' })
     case 'pantry':
       return '/kitchen?tab=pantry'
     case 'car':

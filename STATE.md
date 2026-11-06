@@ -123,7 +123,7 @@ Three read-only audits (components/CSS · flows · tests/guards) on 2026-11-05 f
 - [ ] 17 routes sans test positif sur vrai D1 (`worker/d1Coverage.test.ts`), toutes hors d'atteinte du harnais : neuf exigent une IA (`AI: ''`), huit sortent sur le réseau (`OUTBOUND`). Le chiffre « 67 » d'avant était faux : la regex ne lisait pas les 45 clés raccourcies de TABLE, le vrai compte était 97. Le type `Wire` des mocks n'est pas fini.
 - [ ] `noUncheckedIndexedAccess` (802 erreurs) et `exactOptionalPropertyTypes` (353). oxlint reste en `correctness` : `suspicious` + `perf` donnent 8 441 faux positifs d'une seule règle, et `iframe-missing-sandbox` casserait le lecteur PDF de `CarnetDocs`. Décision prise, à ne pas rouvrir sans nouvelle mesure.
 - [x] 7.1 : les 13 modules ont leurs tests, chacun vu rouge. `@testing-library/react` est là, et `npm run test:coverage` tient un plancher par dossier (`src/lib` 62,58 % de lignes) dans `vitest.config.ts`. Hors CI : personne n'a demandé d'en faire une barrière. Deux vrais bogues trouvés : un instantané effacé à la perte d'auth se réécrivait (`persist`), une écriture retenue partait deux fois au démontage (`toast`).
-- [ ] PARITY : les 4 rangées ajoutées sont ❓, non notées, et les « À faire » ne sont pas cherchables (le seul 🔶 restant).
+- [ ] « Cette année » (`HouseDiary`) n'a ni point de guide ni aide « ? », et seul son rail est spécifié e2e (PARITY, rangées tardives).
 
 > **Trois cases ouvertes** (2026-11-05, en tête de §4). Avant elles, 2026-09-29 : §K's six waves and §L are all closed; what is left is §M
 > (needs a device) and F37's review (~12-29). New work starts from what real households do.
