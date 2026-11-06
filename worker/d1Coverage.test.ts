@@ -6,13 +6,16 @@ import { describe, expect, it } from 'vitest'
 // walks every route, but it proves a handler leaks nothing, not that it works: a positive
 // path needs a test that names the route. This ratchet says how many have none and can
 // only fall. Plant: rename a path string in a *.d1.test.ts so one route loses its test.
+// It reached 0 on 2026-11-06, the last 17 by way of functions/test/fakes.ts (a scripted
+// model behind runModel, a scripted internet): a route with no test on a real D1 now
+// fails the build, so a new endpoint ships with one.
 //
 // A route counts when a test holds its path as a STRING: a quote right before `/api/`, and
 // the path ending there. So a comment naming a route buys nothing, and `/api/car` is not
 // « named » by `/api/car-day`. TABLE has two key shapes, `'quoted': mod` and the shorthand
 // `events,`; both are read, because the first version of this file saw only the quoted
 // ones and so left out 45 routes (the regex is the whole of the bug, the canary pins it).
-const UNTESTED_MAX = 17
+const UNTESTED_MAX = 0
 
 const here = __dirname
 const routes = readFileSync(join(here, 'routes.ts'), 'utf8')

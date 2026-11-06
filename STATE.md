@@ -82,8 +82,8 @@ interchangeable. Read this table before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md` is now
-> a number you can trust. It reads **1** — the D1 routes the harness cannot
-> reach (below). **Asserted from the boxes themselves** by
+> a number you can trust. It reads **0** — the last box, the D1 routes, closed on
+> 2026-11-06 (§4). **Asserted from the boxes themselves** by
 > `src/lib/docCounts.test.ts`, so this sentence cannot drift the way `REVIEW-PASS.md`'s
 > banner once did — it claimed 15 for twelve days against a single box.
 >
@@ -120,11 +120,11 @@ Three read-only audits (components/CSS · flows · tests/guards) on 2026-11-05 f
 
 **Ouvert depuis le plan de solidification (2026-11-05)**, chacun tenu par un cliquet ou un test :
 - [x] Les specs passent à `app.boot` : plus aucun `boot` local, et `waitForTimeout` tombe de 199 à 80 (`e2e-rule.test.ts`, BOOT_MAX 0). Une photo ou une mesure finale attend `settled()` (`e2e/measure.ts`) : la page a cessé de bouger. Ceux qui restent sont une durée voulue : un appui maintenu, ou la preuve que rien n'arrive, chacun avec sa raison en commentaire. 6.1 et 6.2 (2026-11-06) : `interactions.spec` et `config-panels.spec` sont découpés par surface (12 fichiers, 129 titres identiques, `e2e/interact.ts`). `ROUTES: Partial<Wire>` tient 64 fixtures par `tsc`, mais le côté handler ne tient encore que `health` : les autres handlers n'ont pas adopté leur interface. Les routes GET sans fixture passent de 35 à 15, chacune nommée avec sa raison (`mocksContract.test.ts`). Un GET inconnu répond toujours `{}`, et `e2e/unknownGets.reporter.ts` fait échouer une exécution sur un chemin hors de `e2e/unknown-gets.json` (2 chemins, plafond dans `docCounts`).
-- [ ] 17 routes sans test positif sur vrai D1 (`worker/d1Coverage.test.ts`), toutes hors d'atteinte du harnais : neuf exigent une IA (`AI: ''`), huit sortent sur le réseau (`OUTBOUND`). Le chiffre « 67 » d'avant était faux : la regex ne lisait pas les 45 clés raccourcies de TABLE, le vrai compte était 97. Les mocks suivent `Wire` (`ROUTES: Partial<Wire>`, 64 routes) : `tsc` tient le côté fixture, mais seul `health` construit son type côté handler, donc une clé ajoutée à un handler ne rougit rien.
+- [x] Les 17 routes sans test positif sur vrai D1 en ont un, et `UNTESTED_MAX` est à 0 (`worker/d1Coverage.test.ts`) : une route sans test sur vrai D1 fait maintenant échouer le build. `functions/test/fakes.ts` scripte le modèle derrière `runModel`, donc le compteur `usage_daily` reste le vrai, et `fetch` ; un appel non scripté fait échouer le test (`worker/aiRoutes.d1.test.ts`, `worker/outbound.d1.test.ts`, 68 tests). Correction de cette case : `AI: ''` et `BROWSER: ''` ne faisaient rien, `wrangler.toml` l'emporte, et `env.AI` était le vrai binding, qui lance « needs to be run remotely ». Un vrai bogue trouvé : `recap` envoyait les soupers à venir dans le bilan de la semaine passée (`functions/api/recap.ts`, même borne que les événements). Le chiffre « 67 » d'avant était faux : la regex ne lisait pas les 45 clés raccourcies de TABLE, le vrai compte était 97.
 - [x] `noUncheckedIndexedAccess` et `exactOptionalPropertyTypes` sont allumés dans les trois tsconfig. oxlint reste en `correctness` : `suspicious` + `perf` donnent 8 441 faux positifs d'une seule règle, et `iframe-missing-sandbox` casserait le lecteur PDF de `CarnetDocs`. Décision prise, à ne pas rouvrir sans nouvelle mesure. `exhaustive-deps` est passé en erreur le 2026-11-06 : la revue de fin a trouvé cet item du plan oublié, et un vrai bogue dedans (`tagSlots` absent du mémo de la cuisine).
 - [x] 7.1 : les 13 modules ont leurs tests, chacun vu rouge. `@testing-library/react` est là, et `npm run test:coverage` tient un plancher par dossier (`src/lib` 62,58 % de lignes) dans `vitest.config.ts`. Hors CI : personne n'a demandé d'en faire une barrière. Deux vrais bogues trouvés : un instantané effacé à la perte d'auth se réécrivait (`persist`), une écriture retenue partait deux fois au démontage (`toast`).
 
-> **Une case ouverte** (2026-11-05, en tête de §4). Avant elles, 2026-09-29 : §K's six waves and §L are all closed; what is left is §M
+> **No open box.** La dernière s'est fermée le 2026-11-06. Avant elles, 2026-09-29 : §K's six waves and §L are all closed; what is left is §M
 > (needs a device) and F37's review (~12-29). New work starts from what real households do.
 >
 > **The standing work since 2026-11-05 is `plans/2026-11-05-SOLIDIFY.md`** — nine waves of
