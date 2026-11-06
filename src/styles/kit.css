@@ -680,7 +680,7 @@
 }
 /* On a tight phone only the selected option keeps its word: same-shaped glyphs in a
    pill are unguessable, so the control always says what it currently shows. */
-@media (max-width: 520px) {
+@media (max-width: 560px) {
   .segmented--collapse .segmented__opt {
     width: 40px;
     flex: none;

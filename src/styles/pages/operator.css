@@ -59,7 +59,7 @@
 /* Wide screen (kiosk/landscape): nav becomes a sticky sidebar, panel takes the rest.
    The .operator__tabs sidebar (column + sticky + own scroll) and .operator__tab
    full-width overrides live in misc.css so they out-cascade the base rules there. */
-@media (min-width: 60rem) {
+@media (min-width: 1000px) {
   .operator {
     max-width: 72rem;
   }
@@ -129,7 +129,7 @@
 }
 /* Narrow phone: the ↗ alone, named by its aria-label + title. The word returns as
    soon as the row can hold it — never a permanently unnamed control. */
-@media (max-width: 30rem) {
+@media (max-width: 480px) {
   .operator__goto {
     padding: 0.45rem 0.55rem;
   }

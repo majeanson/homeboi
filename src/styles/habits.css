@@ -426,7 +426,7 @@
 }
 
 /* Toddler lens + narrow phones: give the taps more room, stack the controls. */
-@media (max-width: 26rem) {
+@media (max-width: 420px) {
   .habit-row__plus {
     flex: 1;
   }

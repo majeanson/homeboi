@@ -94,9 +94,11 @@ describe('tokens', () => {
 
   // ── Ratchets. Lower the pin in the commit that earns it; never raise it. ──
 
-  // Distinct WIDTH queries (min-/max-width, px or rem). 24 on 2026-11-05 against the
-  // three canonical widths named in core.css; wave 5 of the plan sweeps them.
-  const MEDIA_WIDTHS_MAX = 24
+  // Distinct WIDTH queries (min-/max-width, px or rem). 24 on 2026-11-05, 14 after 5.3 folded the
+  // near-duplicates. It stops there on purpose: what is left around 340-420px decides
+  // which side a real phone lands on, `max 699` pairs with the <source> in Home.tsx, and
+  // `43.99rem` pairs with `44rem`. Three widths would move layouts no frame can check.
+  const MEDIA_WIDTHS_MAX = 14
   it(`uses at most ${MEDIA_WIDTHS_MAX} distinct @media width queries (ratchet)`, () => {
     const seen = new Set<string>()
     for (const f of css) for (const m of noComments(readFileSync(f, 'utf8')).matchAll(/@media[^{]*?\((min|max)-width:\s*([0-9.]+(?:px|rem))\)/g)) seen.add(`${m[1]}:${m[2]}`)

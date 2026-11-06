@@ -221,7 +221,7 @@
    own tidy full-width row — two equal, comfortable buttons — instead of small chips
    stranded in the corner by `margin-left:auto`. When there are no drawings yet, they
    ARE the strip, so they should sit square, not float. */
-@media (max-width: 680px) {
+@media (max-width: 720px) {
   .notes--drawings .notes__action {
     margin-left: 0;
     width: 100%;

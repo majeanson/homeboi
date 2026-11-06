@@ -450,7 +450,7 @@
 .day-plan__trip > .act + .act .tile {
   opacity: 0.6;
 }
-@media (max-width: 520px) {
+@media (max-width: 560px) {
   .monthv__grid {
     gap: 2px;
   }
@@ -474,7 +474,7 @@
    six rows AND the detail panel below sit on one screen. Height is set only on the day
    cells (not the weekday header), so those rows share the budget while the header stays
    compact; clamp keeps cells tap-friendly on a short window and sane on a tall one. */
-@media (min-width: 900px) {
+@media (min-width: 1000px) {
   /* Side by side. Below 900px the day is a pinned drawer over the grid; here there is
      width for both at once, so the calendar takes the left column and the picked day a
      sticky right one — nothing to fold, nothing to scroll past. The head/grid/legend keep

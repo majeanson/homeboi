@@ -84,7 +84,7 @@
    drawings strip in particular NEEDED the span: a tall drawing flowed into a multi-column
    break got clipped mid-image, leaving a stray ✕. A grid item can't be split across
    columns at all, so that failure mode is gone by construction. */
-@media (max-width: 680px) {
+@media (max-width: 720px) {
   .board-wall {
     padding: 1rem 0.9rem 1.5rem;
   }

@@ -98,6 +98,17 @@ describe('field fit conventions', () => {
     expect(offenders, 'a fixed basis smaller than the content stops the row wrapping — let it be 100% or auto').toEqual([])
   })
 
+  // Repo-wide, the same declaration only falls (solidify 5.2). All 28 are a field, a text or
+  // a card filling what is left, where a fixed basis is the normal way to get responsive
+  // columns and `auto` would collapse them. The trap is a ROW OF CONTROLS: reach for Cluster.
+  // Planted red with one more `flex: 1 1 8rem`.
+  it('a fixed flex basis in rem/px only falls (28)', () => {
+    const n = files
+      .flatMap((f) => rules(readFileSync(f, 'utf8')))
+      .filter((r) => /(^|[;\s])flex\s*:\s*1\s+1\s+\d*\.?\d+(rem|px)/.test(r.body)).length
+    expect(n, 'a row of controls uses Cluster, not a fixed basis').toBeLessThanOrEqual(28)
+  })
+
   it('no composer row is pinned nowrap outside the dense-row allowlist', () => {
     const offenders: string[] = []
     for (const f of files) {

@@ -44,7 +44,7 @@
   justify-content: flex-end;
   margin-top: 14px;
 }
-@media (max-width: 520px) {
+@media (max-width: 560px) {
   .list-clear .btn {
     flex: 1 1 100%;
     justify-content: center;
@@ -257,7 +257,7 @@
    full width — an easy thumb target at the bottom of the list. Wider screens keep
    it at its natural width. Scoped away from the quiet shortcut row above, whose
    whole point is that its chips DON'T claim a line each. */
-@media (max-width: 520px) {
+@media (max-width: 560px) {
   .list-actions:not(.list-actions--quiet) .btn {
     flex: 1 1 100%;
   }

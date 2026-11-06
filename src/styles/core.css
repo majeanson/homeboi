@@ -614,6 +614,11 @@ body::before {
      classic-scrollbar browsers. No-op where scrollbars overlay (touch). */
   scrollbar-gutter: stable;
 }
+/* A hub scrolls inside .hub__body, which keeps its own gutter. #root never scrolls there,
+   so its reserved strip was 15px of nothing on every tab of a desktop browser. */
+#root:has(> .hub, > * > .hub) {
+  scrollbar-gutter: auto;
+}
 /* Modal scroll lock (useModal). The document never scrolls — these two are the
    only scrollers — so freezing THEM is what actually stops the page drifting
    behind an open sheet/dialog. overflow:hidden keeps their scrollTop, so the

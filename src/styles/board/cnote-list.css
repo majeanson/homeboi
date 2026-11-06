@@ -208,7 +208,7 @@
 }
 /* Phone: the scope chip would crowd the row — drop it (the face picker / board face
    already says whose list you're in) so the title + actions keep room. */
-@media (max-width: 30rem) {
+@media (max-width: 480px) {
   .cnote__chip {
     display: none;
   }

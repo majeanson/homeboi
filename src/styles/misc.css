@@ -335,7 +335,7 @@
    list (the row/column flip of the group + panel lives in operator.css). These two
    overrides sit here, in the file that DEFINES .operator__tabs/.operator__tab, so
    they win the cascade over the base rules above (operator.css imports earlier). */
-@media (min-width: 60rem) {
+@media (min-width: 1000px) {
   .operator__tabs {
     flex-direction: column;
     flex-wrap: nowrap;

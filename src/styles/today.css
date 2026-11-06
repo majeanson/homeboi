@@ -1298,7 +1298,7 @@
 
 /* Mobile: tighter padding + a smaller icon tile shrink each row further (the
    inline time · title · who layout is already the default above). */
-@media (max-width: 680px) {
+@media (max-width: 720px) {
   .act {
     padding: 7px 9px;
     gap: 8px;

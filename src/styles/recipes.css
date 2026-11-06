@@ -702,7 +702,7 @@
    screen the button steals width and the input shrinks to a few characters —
    you can't see what you typed. Below 540px the field takes the whole line and
    the action(s) drop beneath it, so every edit is comfortably wide. */
-@media (max-width: 540px) {
+@media (max-width: 560px) {
   /* When a day is being edited, let the whole editor (title field + recipe
      picker, or the staples confirm) drop below the day's tile+name and span the
      full card width — otherwise it's pinned to a ~60% column on the right and

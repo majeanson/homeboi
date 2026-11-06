@@ -1038,7 +1038,7 @@
 /* On a phone the view row is tight (3 segments + this launch button): drop the word
    and keep the sparkle + ↗ (the button stays aria-labelled « Voir notre monde ») so
    the row never overflows. The label returns when there's room. */
-@media (max-width: 30rem) {
+@media (max-width: 480px) {
   .cercle-worldlaunch__label {
     display: none;
   }
