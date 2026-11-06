@@ -620,16 +620,9 @@
 }
 @media (prefers-reduced-motion: no-preference) {
   .cook__voicectl.is-on {
-    animation: cook-mic-pulse 1.5s ease-in-out infinite;
-  }
-  @keyframes cook-mic-pulse {
-    0%,
-    100% {
-      box-shadow: 0 0 0 0 color-mix(in srgb, var(--terracotta-deep) 45%, transparent);
-    }
-    70% {
-      box-shadow: 0 0 0 6px color-mix(in srgb, var(--terracotta-deep) 0%, transparent);
-    }
+    --pulse-colour: var(--terracotta-deep);
+    --pulse-spread: 6px;
+    animation: pulse-ring 1.5s ease-in-out infinite;
   }
 }
 /* The spoken-command hint shown while the mic is open. */

@@ -31,13 +31,13 @@
 .cnote:last-child {
   border-bottom: 0;
 }
-/* A gentle arrival fade for note rows — the same calm ambient-in the screensaver
+/* A gentle arrival fade for note rows — the same calm fade-in the screensaver
    uses, brought to this otherwise-static adult list. React keeps keyed rows mounted
    across polls, so it only plays on first mount / on a freshly-added note, never on
    a refresh. Opacity-only + gated. */
 @media (prefers-reduced-motion: no-preference) {
   .cnote {
-    animation: ambient-in var(--dur-slow) var(--ease-out) both;
+    animation: fade-in var(--dur-slow) var(--ease-out) both;
   }
 }
 /* An expanded note: its title may wrap, and the full body sits on its own row. */

@@ -28,17 +28,9 @@
    lands top-to-bottom. Opacity-only (the house rule). Skipped entirely for
    reduced-motion below. */
 @media (prefers-reduced-motion: no-preference) {
-  @keyframes lac-fade-in {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
   .bigtile,
 .today-hero {
-    animation: lac-fade-in 0.5s ease both;
+    animation: fade-in 0.5s ease both;
   }
   .bigtile:nth-child(2) {
     animation-delay: 0.06s;

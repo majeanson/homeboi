@@ -902,13 +902,6 @@ textarea.input {
 }
 /* A tag that's also the on/off control (the IA switch in the Réglages header):
    inherits the pill look but behaves as a tappable button. */
-.eyebrow {
-  color: var(--ink-soft);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-size: var(--text-xs); /* type floor (A-10) — was 0.74rem */
-  margin: 0 0 0.5rem;
-}
 .error {
   color: var(--warn);
 }
@@ -1266,7 +1259,9 @@ html[data-embedded] .home {
   border-color: var(--accent);
   background: var(--accent);
   color: var(--accent-ink);
-  animation: voice-pulse 1.4s ease-in-out infinite;
+  --pulse-colour: var(--accent);
+  --pulse-spread: 0.4rem;
+  animation: pulse-ring 1.4s ease-in-out infinite;
 }
 /* Mic grant the browser remembers as refused: dim it so it reads as
    "blocked — fix in settings" rather than just inert. Still tappable (the tap
@@ -1274,10 +1269,6 @@ html[data-embedded] .home {
 .capture__voice.is-blocked {
   opacity: 0.45;
   filter: grayscale(1);
-}
-@keyframes voice-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent); }
-  50% { box-shadow: 0 0 0 0.4rem color-mix(in srgb, var(--accent) 0%, transparent); }
 }
 @media (prefers-reduced-motion: reduce) {
   .capture__voice.is-listening { animation: none; }

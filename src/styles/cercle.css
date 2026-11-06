@@ -582,14 +582,14 @@
   border: 1px solid var(--line);
   background: var(--surface);
 }
-/* While the R2 photo loads, the tile shimmers (shared flyer-img-shimmer keyframe;
+/* While the R2 photo loads, the tile shimmers (shared shimmer keyframe;
    ZoomableImg sets data-loaded). The rule sits on the img — its own var(--surface)
    bg would otherwise cover a wrapper shimmer. Calm, gated; the keyframe is global. */
 @media (prefers-reduced-motion: no-preference) {
   .cf-photos__img[data-loaded='0'] {
     background: linear-gradient(100deg, rgba(0, 0, 0, 0.04) 30%, rgba(0, 0, 0, 0.08) 50%, rgba(0, 0, 0, 0.04) 70%);
     background-size: 200% 100%;
-    animation: flyer-img-shimmer 1.3s ease-in-out infinite;
+    animation: shimmer 1.3s ease-in-out infinite;
   }
 }
 .cf-photos__del {

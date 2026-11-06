@@ -198,7 +198,7 @@
   .note-card__draw[data-loaded='0'] {
     background: linear-gradient(100deg, rgba(0, 0, 0, 0.04) 30%, rgba(0, 0, 0, 0.08) 50%, rgba(0, 0, 0, 0.04) 70%) #fffdf7;
     background-size: 200% 100%;
-    animation: flyer-img-shimmer 1.3s ease-in-out infinite;
+    animation: shimmer 1.3s ease-in-out infinite;
   }
 }
 .note-card__draw[data-loaded='x'] {

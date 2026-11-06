@@ -229,20 +229,12 @@
     rgba(0, 0, 0, 0.04) 70%
   );
   background-size: 200% 100%;
-  animation: flyer-img-shimmer 1.3s ease-in-out infinite;
+  animation: shimmer 1.3s ease-in-out infinite;
 }
 /* Failed after retries: a calm static tint, no animation, no broken icon. */
 .flyer-grid__cell:has(img[data-loaded='x']),
 .flyer-item:has(img[data-loaded='x']) {
   background: rgba(0, 0, 0, 0.05);
-}
-@keyframes flyer-img-shimmer {
-  from {
-    background-position: 200% 0;
-  }
-  to {
-    background-position: -200% 0;
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   .flyer-grid__cell img,

@@ -39,9 +39,7 @@ const dynamicPrefixes = [...code.matchAll(/([a-z][a-z0-9_-]*(?:--|__|-))(?:\$\{|
 const words = new Set(code.match(/[A-Za-z_][A-Za-z0-9_-]*/g) ?? [])
 
 // Classes that arrive from outside the source: each says from where.
-const ALLOWED: Record<string, string> = {
-  eyebrow: 'the kicker family adopts it in 5.2',
-}
+const ALLOWED: Record<string, string> = {}
 
 function classesOf(css: string): string[] {
   const noComments = css.replace(/\/\*[\s\S]*?\*\//g, ' ')

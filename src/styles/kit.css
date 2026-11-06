@@ -784,3 +784,37 @@
   width: 100%;
   min-width: 0;
 }
+
+/* The shared motions (solidify 5.2): one name each. Set --pulse-colour and --pulse-spread
+   where pulse-ring is used. Every use sits behind reduced-motion at its own site. */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+@keyframes pulse-ring {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--pulse-colour) 50%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 var(--pulse-spread) color-mix(in srgb, var(--pulse-colour) 0%, transparent);
+  }
+}
+/* One line that truncates: new code wears this rather than spelling the three declarations. */
+.ellipsis {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
