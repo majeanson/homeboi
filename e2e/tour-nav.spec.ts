@@ -1,4 +1,6 @@
-import { test, expect, type Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
+import { test, expect } from './fixtures'
+import { settled } from './measure'
 import { mockApi, seedState } from './mocks'
 
 // Regression: the guided tour must NOT swallow taps. Its step 2 spotlights the
@@ -8,17 +10,8 @@ import { mockApi, seedState } from './mocks'
 // so the nav works while the tour rides along. This test proves both: the tour
 // auto-starts for a signed-in parent, AND a nav tap navigates with it up.
 
-async function boot(page: Page) {
-  await page.emulateMedia({ reducedMotion: 'reduce' })
-  await page.setViewportSize({ width: 390, height: 844 })
-  await mockApi(page)
-  // Signed-in parent, tour NOT marked seen → the essentials tour auto-starts.
-  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile', calm: true, tour: true })
-  await page.goto('/board')
-}
-
-test('guided tour does not block the bottom nav', async ({ page }) => {
-  await boot(page)
+test('guided tour does not block the bottom nav', async ({ page, app }) => {
+  await app.boot({ viewport: { width: 390, height: 844 }, state: { calm: true, tour: true }, route: '/board' }) // tour NOT marked seen → the essentials tour auto-starts
   // The tour auto-launches (centred welcome card first). This is the diagnosis.
   await page.locator('.tour').waitFor({ state: 'visible', timeout: 10_000 })
 
@@ -140,15 +133,15 @@ for (const tab of HELP_TABS) {
   })
 }
 
-test('tour card names itself (capture)', async ({ page }) => {
-  await boot(page)
+test('tour card names itself (capture)', async ({ page, app }) => {
+  await app.boot({ viewport: { width: 390, height: 844 }, state: { calm: true, tour: true }, route: '/board' }) // tour NOT marked seen → the essentials tour auto-starts
   await page.locator('.tour').waitFor({ state: 'visible', timeout: 10_000 })
   await page.locator('.tour__eyebrow').waitFor({ state: 'visible' })
   await page.screenshot({ path: 'e2e/screenshots/tour-welcome.png' })
   // Advance to the bottom-nav step so the spotlight ring shows too.
   await page.getByRole('button', { name: /Suivant|Next/ }).click()
   await page.locator('.tour__ring').waitFor({ state: 'visible' })
-  await page.waitForTimeout(200)
+  await settled(page)
   await page.screenshot({ path: 'e2e/screenshots/tour-spotlight.png' })
 })
 
@@ -238,6 +231,14 @@ test('the welcome card offers a QUICK tour or the full one', async ({ page }) =>
   await expect(full, 'the choice belongs to the welcome card alone').toHaveCount(0)
 })
 
+// One tap on the tour's button, and the card it leaves behind has really changed (or closed).
+async function advance(page: Page, next: Locator) {
+  const card = () => page.locator('.tour').evaluateAll((els) => els[0]?.textContent ?? null)
+  const before = await card()
+  await next.click()
+  await expect.poll(card).not.toBe(before)
+}
+
 test('the quick tour stays quick — it never leaves the board', async ({ page }) => {
   test.setTimeout(120_000)
   await page.emulateMedia({ reducedMotion: 'reduce' })
@@ -253,8 +254,7 @@ test('the quick tour stays quick — it never leaves the board', async ({ page }
     if (!(await page.locator('.tour').isVisible())) break
     routes.add(new URL(page.url()).pathname)
     if (!(await next.isVisible())) break
-    await next.click()
-    await page.waitForTimeout(100)
+    await advance(page, next)
   }
   // The short tour is the 30-second orientation it says it is: it introduces the six
   // tabs, it does not WALK them. Someone who wanted that has the other door.
@@ -291,8 +291,7 @@ test('« Première fois » walks every section, and lands back where it started'
     if (!(await page.locator('.tour').isVisible())) break
     visited.add(routeOf())
     if (!(await next.isVisible())) break
-    await next.click()
-    await page.waitForTimeout(120)
+    await advance(page, next)
   }
 
   // Every hub tab, seen without the user having to find it.

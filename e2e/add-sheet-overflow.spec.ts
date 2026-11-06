@@ -1,5 +1,5 @@
-import { test, expect, type Page } from '@playwright/test'
-import { mockApi, seedState } from './mocks'
+import { test, expect } from './fixtures'
+import { settled } from './measure'
 
 // A bottom sheet is a vertical surface — it must never scroll left/right, and nothing
 // inside it may bleed off the right edge. Guards two regressions:
@@ -17,23 +17,10 @@ import { mockApi, seedState } from './mocks'
 // state-matrix suite.
 import { assertClean } from './overflow'
 
-async function boot(page: Page, width = 390) {
-  await page.setViewportSize({ width, height: 844 })
-  await page.addInitScript(() => {
-    try {
-      localStorage.setItem('babillard-tours-seen', JSON.stringify(['essentials']))
-    } catch {
-      /* noop */
-    }
-  })
-  await mockApi(page)
-  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
-}
-
 // Checked at both phone widths — content is tightest at 360.
 for (const width of [360, 390]) {
-  test(`board ＋ sheet never overflows sideways @${width}`, async ({ page }) => {
-    await boot(page, width)
+  test(`board ＋ sheet never overflows sideways @${width}`, async ({ page, app }) => {
+    await app.boot({ viewport: { width: width, height: 844 } })
     await page.goto('/board')
     await expect(page.locator('.board-wall')).toBeVisible({ timeout: 15_000 })
 
@@ -49,7 +36,7 @@ for (const width of [360, 390]) {
       const s = document.querySelector('.sheet') as HTMLElement | null
       if (s) s.scrollTop = s.scrollHeight
     })
-    await page.waitForTimeout(150)
+    await settled(page)
     await assertClean(page, 'chooser grid, scrolled')
 
     // State 2 — open the « Note rapide » box's 📎, which unfolds a Cluster of three
@@ -107,8 +94,8 @@ for (const width of [360, 390]) {
 // per-element bounds check: a face + a sentence row family is exactly the shape
 // (a long meal/list-item text beside an avatar) that bleeds on a narrow phone.
 for (const width of [360, 390]) {
-  test(`« Depuis ce matin » sheet never overflows sideways @${width}`, async ({ page }) => {
-    await boot(page, width)
+  test(`« Depuis ce matin » sheet never overflows sideways @${width}`, async ({ page, app }) => {
+    await app.boot({ viewport: { width: width, height: 844 } })
     await page.goto('/board')
     await expect(page.locator('.board-wall')).toBeVisible({ timeout: 15_000 })
 
@@ -125,8 +112,8 @@ for (const width of [360, 390]) {
 // checked too. The guard targets `.scene__body`, the scene's scroll box.
 const IDEAS_BOX = '.ideas-drawer .scene__body'
 for (const width of [360, 390]) {
-  test(`IdeasDrawer never overflows sideways @${width}`, async ({ page }) => {
-    await boot(page, width)
+  test(`IdeasDrawer never overflows sideways @${width}`, async ({ page, app }) => {
+    await app.boot({ viewport: { width: width, height: 844 } })
     await page.goto('/kitchen')
     await expect(page.locator('.kitchen')).toBeVisible({ timeout: 15_000 })
 
@@ -141,8 +128,10 @@ for (const width of [360, 390]) {
 
     // Sweep every other source tab.
     for (const label of ['Favoris', 'À écouler', 'Proposé par']) {
-      await page.locator('.ideas-drawer .subtabs__opt', { hasText: label }).click()
-      await page.waitForTimeout(150)
+      const tab = page.locator('.ideas-drawer .subtabs__opt', { hasText: label })
+      await tab.click()
+      await expect(tab).toHaveAttribute('aria-selected', 'true')
+      await settled(page)
       await assertClean(page, `ideas drawer, ${label} tab`, IDEAS_BOX, 'auto')
     }
   })

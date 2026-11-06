@@ -1,5 +1,6 @@
-import { test, expect, type Page } from '@playwright/test'
-import { mockApi, seedState } from './mocks'
+import type { Page } from '@playwright/test'
+import { test, expect } from './fixtures'
+import { settled } from './measure'
 
 // Landing a guide deep-link ON the thing it named.
 //
@@ -22,19 +23,17 @@ import { mockApi, seedState } from './mocks'
 
 const PHONE = { width: 390, height: 844 }
 
-async function boot(page: Page, url: string) {
-  await page.setViewportSize(PHONE)
-  await mockApi(page)
-  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
-  await page.goto(url)
-  await page.locator('.hub').first().waitFor({ state: 'visible', timeout: 15_000 })
-}
-
 /** Where the deep-link's highlighted target ended up, once everything settled. */
 async function landing(page: Page) {
   await page.locator('.guide__card').first().waitFor({ state: 'visible', timeout: 15_000 })
-  // Generous: the settle wait + smooth glide + the one verification pass.
-  await page.waitForTimeout(2000)
+  // The settle wait + smooth glide + the one verification pass: the target arrives on
+  // screen, then the page goes quiet, and only then is it read.
+  await expect.poll(() => measureTarget(page).then((l) => l?.onScreen ?? false), { timeout: 10_000 }).toBe(true)
+  await settled(page)
+  return measureTarget(page)
+}
+
+async function measureTarget(page: Page) {
   return await page.evaluate(() => {
     const pt = document.querySelector('.guide__point.is-target') as HTMLElement | null
     const card = document.querySelector('.guide__card.is-target') as HTMLElement | null
@@ -51,8 +50,8 @@ async function landing(page: Page) {
   })
 }
 
-test('a ?point deep-link lands ON the point, opened — not at the top of the page', async ({ page }) => {
-  await boot(page, '/settings?tab=guide&card=liste&point=9')
+test('a ?point deep-link lands ON the point, opened — not at the top of the page', async ({ page, app }) => {
+  await app.boot({ viewport: PHONE, route: '/settings?tab=guide&card=liste&point=9', wait: '.hub' })
   const l = await landing(page)
   expect(l).not.toBeNull()
   expect(l!.kind).toBe('point')
@@ -60,8 +59,8 @@ test('a ?point deep-link lands ON the point, opened — not at the top of the pa
   expect(l!.onScreen).toBe(true)
 })
 
-test('a card-only deep-link lands on the card, with air above it', async ({ page }) => {
-  await boot(page, '/settings?tab=guide&card=habits')
+test('a card-only deep-link lands on the card, with air above it', async ({ page, app }) => {
+  await app.boot({ viewport: PHONE, route: '/settings?tab=guide&card=habits', wait: '.hub' })
   const l = await landing(page)
   expect(l!.kind).toBe('card')
   expect(l!.onScreen).toBe(true)
@@ -70,25 +69,25 @@ test('a card-only deep-link lands on the card, with air above it', async ({ page
   expect(l!.top).toBeGreaterThan(0)
 })
 
-test('a RETIRED card id still lands on its host point (GUIDE_CARD_ALIAS)', async ({ page }) => {
+test('a RETIRED card id still lands on its host point (GUIDE_CARD_ALIAS)', async ({ page, app }) => {
   // `drawings` was merged into `mots`; the alias carries a point offset, so a
   // bookmarked link must land on the sub-point, not merely the host card.
-  await boot(page, '/settings?tab=guide&card=drawings')
+  await app.boot({ viewport: PHONE, route: '/settings?tab=guide&card=drawings', wait: '.hub' })
   const l = await landing(page)
   expect(l!.kind).toBe('point')
   expect(l!.onScreen).toBe(true)
 })
 
-test('reduced motion still lands (no animation, same destination)', async ({ page }) => {
+test('reduced motion still lands (no animation, same destination)', async ({ page, app }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
-  await boot(page, '/settings?tab=guide&card=liste&point=9')
+  await app.boot({ viewport: PHONE, route: '/settings?tab=guide&card=liste&point=9', wait: '.hub' })
   const l = await landing(page)
   expect(l!.kind).toBe('point')
   expect(l!.onScreen).toBe(true)
 })
 
-test('the real flow: a "?" bubble on La liste carries the reader to the right line', async ({ page }) => {
-  await boot(page, '/liste')
+test('the real flow: a "?" bubble on La liste carries the reader to the right line', async ({ page, app }) => {
+  await app.boot({ viewport: PHONE, route: '/liste', wait: '.hub' })
   // Arm help mode, then tap the ⚙ — the SIMPLE ↔ AVANCÉ chip.
   const toggle = page.locator('.help-toggle').first()
   await expect(toggle).toBeVisible()
