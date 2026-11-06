@@ -136,7 +136,7 @@ test.describe('guest link mint — durable (standing) links', () => {
     await expect(row.getByText('N’expire pas')).toBeVisible()
 
     // Cancel — no revoke fires; the row stays.
-    await row.getByRole('button', { name: 'Révoquer' }).click()
+    await row.getByRole('button', { name: 'Révoquer' }).first().click()
     const dialog = page.locator('.confirm')
     await expect(dialog).toBeVisible()
     await dialog.getByRole('button', { name: 'Annuler' }).click()
@@ -144,7 +144,7 @@ test.describe('guest link mint — durable (standing) links', () => {
     expect(revokes).toBe(0)
 
     // Confirm — the POST fires.
-    await row.getByRole('button', { name: 'Révoquer' }).click()
+    await row.getByRole('button', { name: 'Révoquer' }).first().click()
     await page.locator('.confirm').getByRole('button', { name: 'Révoquer', exact: true }).click()
     await expect.poll(() => revokes).toBeGreaterThan(0)
   })

@@ -90,7 +90,8 @@ test('what was handed out reads as ONE list — links and shared copies together
   const list = page.locator('.operator__guest-links', { hasText: 'Ce que j’ai partagé' })
   await expect(list).toBeVisible({ timeout: 15_000 })
   await expect(list).toContainText('Pâté chinois')
-  await expect(list.getByRole('button', { name: /Révoquer/ })).toHaveCount(1)
+  // One verb now: a link and a shared copy both say « Révoquer » (solidify 4.5).
+  await expect(list.getByRole('button', { name: /Révoquer/ })).toHaveCount(2)
   // One list, not two stacked: the old headings are gone.
   await expect(page.getByText('Liens actifs')).toHaveCount(0)
   await expect(page.getByText('Mes partages')).toHaveCount(0)
