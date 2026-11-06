@@ -84,9 +84,9 @@ export function EventForm({
   onCancel,
 }: {
   members: FormMember[]
-  value?: EventInit | null
+  value?: EventInit | null | undefined
   seedWith?: EventSeedWith | null
-  initialDate?: number // local-midnight unix s to pre-fill a NEW event's date (from the calendar)
+  initialDate?: number | undefined // local-midnight unix s to pre-fill a NEW event's date (from the calendar)
   defaultRide?: boolean // « L'auto »: open as a ride (Transport block expanded + car pre-picked)
   defaultActivity?: boolean // « Activité »: a recurring kid commitment — default weekly + open the logistics block
   onSaved: () => void

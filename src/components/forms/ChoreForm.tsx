@@ -55,8 +55,8 @@ export function ChoreForm({
   onCancel,
 }: {
   members: FormMember[]
-  value?: ChoreInit | null
-  initialStart?: number // local-midnight unix s to pre-fill a NEW chore's recurrence anchor (from the calendar)
+  value?: ChoreInit | null | undefined
+  initialStart?: number | undefined // local-midnight unix s to pre-fill a NEW chore's recurrence anchor (from the calendar)
   onSaved: () => void
   onCancel?: () => void
 }) {

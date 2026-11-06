@@ -22,7 +22,7 @@ const FLAKES = [
   { left: '93%', delay: '7s', dur: '17s', size: 3 },
 ]
 
-export function BoardCanvas({ weatherBucket }: { weatherBucket?: string | null }) {
+export function BoardCanvas({ weatherBucket }: { weatherBucket?: string | null | undefined }) {
   const enabled = useCanvasEnabled()
   if (!enabled) return null
   const s = season(Date.now())

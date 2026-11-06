@@ -81,7 +81,7 @@ export function MealPool<T extends { id: string; title: string }, O>({
   leadTo?: (item: T) => string | undefined
   leadToLabel?: string
   week: { date: number; label: string }[]
-  help?: HelpMode
+  help?: HelpMode | undefined
   helpKey: string
   labels: MealPoolLabels
   noMatchLabel?: string

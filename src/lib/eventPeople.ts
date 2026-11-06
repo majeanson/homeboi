@@ -21,7 +21,7 @@ export function parsePeopleIds(raw?: string | null): string[] {
 
 // The member ids an event concerns: its passengers set, else its legacy single
 // member_id, else none. (contact_id/business_id are the EXTERNAL « Avec », not people.)
-export function eventMembers(e: { member_id?: string | null; passengers?: string | null }): string[] {
+export function eventMembers(e: { member_id?: string | null | undefined; passengers?: string | null | undefined }): string[] {
   const ids = parsePeopleIds(e.passengers)
   if (ids.length) return ids
   return e.member_id ? [e.member_id] : []

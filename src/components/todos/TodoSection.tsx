@@ -38,7 +38,7 @@ import { templateOptions } from './comboOptions'
 interface FaceMember {
   id: string
   display_name: string
-  colour?: string
+  colour?: string | undefined
 }
 
 // À cocher — a calm check-off list (todos), drop-in for the board glance (global +
@@ -85,7 +85,7 @@ export function TodoSection({
   icon,
   tint,
 }: {
-  day?: number | null
+  day?: number | null | undefined
   title: string
   members?: FaceMember[]
   bento?: boolean

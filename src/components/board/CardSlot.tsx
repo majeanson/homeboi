@@ -77,10 +77,10 @@ export function CardSlot({
   id: BoardCardId
   zone: CardZone
   /** Lens-computed emptiness. Omit to let the card report its own. */
-  empty?: boolean
+  empty?: boolean | undefined
   /** Help mode is armed and this card has its own entry: a tap anywhere EXPLAINS the card
    *  instead of acting on what is under the finger. Set by Board, one place for all cards. */
-  explain?: () => void
+  explain?: (() => void) | undefined
   children: ReactNode
 }) {
   const t = useT()

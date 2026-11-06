@@ -10,7 +10,7 @@ import type { Lang } from '../../i18n'
 export interface FilTimed {
   id: string
   start_at: number
-  until?: number
+  until?: number | undefined
   node: ReactNode
 }
 export interface FilUntimed {

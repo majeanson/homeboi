@@ -21,7 +21,7 @@ export function recipeOptions(
   lowItems: string[],
   listItems: string[],
   t: T,
-  opts: { group?: string; readyBadge?: boolean; priority?: (r: Recipe) => string | null } = {},
+  opts: { group?: string | undefined; readyBadge?: boolean; priority?: ((r: Recipe) => string | null) | undefined } = {},
 ): ComboOption<Recipe>[] {
   const { group, readyBadge = true, priority } = opts
   // Badges only mean something against a low list — with an empty pantry-low every

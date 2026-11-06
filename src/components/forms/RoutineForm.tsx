@@ -62,11 +62,11 @@ export function RoutineForm({
   // Edit mode only: a delete affordance so a routine can be removed from the same
   // scene that edits it (no trip to Réglages ▸ Maison ▸ Tâches de la maison). The owner handles the
   // confirm + write + navigation; the button just calls this when present.
-  onDelete?: () => void
+  onDelete?: (() => void) | undefined
   // Edit mode only, operator only: mint a public /partage link for this routine's deck.
   // It lives here — on the routine's own scene — because tapping a routine card now RUNS
   // it, the way tapping a recipe opens the recipe (where its own « Partager » sits).
-  onShare?: () => void
+  onShare?: (() => void) | undefined
 }) {
   const t = useT()
   const o18n = useOperatorT()

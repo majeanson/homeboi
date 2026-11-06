@@ -29,7 +29,7 @@ export function ConnectPeople({
 }: {
   people: Person[]
   /** Pre-fill side A with this person (e.g. opened from their detail peek). */
-  seedAKey?: string
+  seedAKey?: string | undefined
   onConnected?: () => void
   onCancel?: () => void
 }) {

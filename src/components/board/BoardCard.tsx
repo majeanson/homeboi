@@ -15,7 +15,7 @@ import { useCardLens } from './CardLens'
 // those rows outright, so on an evening whose every item had gone by « Auj. » rendered an
 // empty body. Live rows always come first, so a dim row only ever takes the room nothing
 // else claimed.
-export type CompactRow = string | { lead?: string; label: string; dim?: boolean }
+export type CompactRow = string | { lead?: string | undefined; label: string; dim?: boolean }
 
 // A small secondary action pinned to a mini tile's bottom-right corner — its own tap
 // target, a `<Link>` rendered OUTSIDE the tile's button (never nested-interactive). One
@@ -57,8 +57,8 @@ export function SecLabel({
   nested = false,
 }: {
   label: string
-  count?: number
-  icon?: IconName
+  count?: number | undefined
+  icon?: IconName | undefined
   iconNode?: ReactNode
   /** One or two quiet controls pinned to the header's trailing edge — a card's own ＋
    *  (the notes card's quick composer), or the pencil/key pair « Aujourd'hui » mirrors
@@ -70,8 +70,8 @@ export function SecLabel({
    *  reading as a glance label and starts reading as a toolbar, and the reduce chip can
    *  make it four. Adding a fourth means finding one to merge, not widening the row. */
   action?: ReactNode
-  help?: HelpMode
-  helpKey?: string
+  help?: HelpMode | undefined
+  helpKey?: string | undefined
   /** A section INSIDE a card: the card's own header owns the reduce, not this one. */
   nested?: boolean
 }) {
@@ -178,13 +178,13 @@ export function CardMini({
   corner,
   onExpand,
 }: {
-  className?: string
-  style?: CSSProperties
+  className?: string | undefined
+  style?: CSSProperties | undefined
   label: string
   /** A shorter title JUST for the mini — the full `label` ellipsizes in a 142px header
    *  once a weather chip shares it (« Aujourd'hui » → « Auj. »). Falls back to `label`. */
-  compactLabel?: string
-  icon?: IconName
+  compactLabel?: string | undefined
+  icon?: IconName | undefined
   iconNode?: ReactNode
   hint?: ReactNode
   /** A small extra pinned to the trailing edge of the header — a weather chip on
@@ -193,17 +193,17 @@ export function CardMini({
   /** One row per thing the card holds, up to `WG_MINI_MAX_ITEMS` full ones — past that
    *  the rest fold into a trailing "+N de plus" row instead of listing further (see
    *  above). A row may lead with a short time/day token (see `CompactRow`). */
-  items?: readonly CompactRow[]
+  items?: readonly CompactRow[] | undefined
   body?: ReactNode
   /** When set, tapping the mini NAVIGATES here instead of growing the card in place — for
    *  a card whose compact form has nothing worth expanding into (an empty « L'auto » →
    *  « /voiture », an empty placeholder → the page that adds one). Skips tap-to-grow. */
-  to?: string
+  to?: string | undefined
   /** One or two small actions pinned to the tile's bottom-right corner — each its OWN tap
    *  target (« Aujourd'hui » → a pencil to « Planifier » + a key to « Avant de partir »).
    *  Rendered as sibling `<Link>`s outside the tile's button, so they're real controls, not
    *  nested-interactive HTML; tapping one navigates, tapping the rest of the tile grows. */
-  corner?: CornerAction | readonly CornerAction[]
+  corner?: CornerAction | readonly CornerAction[] | undefined
   onExpand: () => void
 }) {
   const t = useT()
@@ -427,22 +427,22 @@ export function BoardCard({
   style?: CSSProperties
   ariaLabel?: string
   label: string
-  count?: number
+  count?: number | undefined
   icon?: IconName
   iconNode?: ReactNode
   /** A quiet trailing control in the header (see `SecLabel.action`). */
   action?: ReactNode
-  help?: HelpMode
+  help?: HelpMode | undefined
   helpKey?: string
   compactItems?: readonly CompactRow[]
   compactHint?: ReactNode
   compactHead?: ReactNode
   /** A shorter title for the mini face only (see `CardMini.compactLabel`). */
-  compactLabel?: string
+  compactLabel?: string | undefined
   /** When set, the mini navigates here instead of growing (see `CardMini.to`). */
-  compactTo?: string
+  compactTo?: string | undefined
   /** One or two small corner actions on the mini (see `CardMini.corner`). */
-  compactCorner?: CornerAction | readonly CornerAction[]
+  compactCorner?: CornerAction | readonly CornerAction[] | undefined
   compact?: ReactNode
   children: ReactNode
 }) {

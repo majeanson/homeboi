@@ -76,8 +76,8 @@ export function NotesList({
   /** Deep-link focus (§892): when this note is in `notes`, scroll + pulse it once
    *  (and expand it in place, unless `openOnTap` already makes the row a direct
    *  door into the editor), then signal onFocused so the caller clears its one-shot id. */
-  focusId?: string | null
-  onFocused?: () => void
+  focusId?: string | null | undefined
+  onFocused?: (() => void) | undefined
   /** Rendered instead of the list when nothing is visible. */
   empty?: ReactNode
 }) {

@@ -169,29 +169,29 @@ export function Act({
 }: {
   cat: CatKey
   title: string
-  when?: string
-  who?: string // a quiet sub-line under the title
-  whoFaces?: Face[] // several household faces (an event's « Qui ») — a small stack under the title, in place of the `who` text
-  done?: boolean
+  when?: string | undefined
+  who?: string | undefined // a quiet sub-line under the title
+  whoFaces?: Face[] | undefined // several household faces (an event's « Qui ») — a small stack under the title, in place of the `who` text
+  done?: boolean | undefined
   past?: boolean // meal/event whose time has passed → struck-through, faded
   live?: boolean // a timed window spanning now (lib/itemLife isNowSec) → a static « en cours » accent in the row's tint
-  onCheck?: () => void
-  onActivate?: () => void // a plain navigation row: makes it a <button>, shows a caret
+  onCheck?: (() => void) | undefined
+  onActivate?: (() => void) | undefined // a plain navigation row: makes it a <button>, shows a caret
   // Tap the row to open the shared entity-detail peek (lib/detail). With NO check
   // the whole row opens it (reads like a nav row); WITH a check the row SPLITS —
   // the body opens the peek, the check disc stays its own tap target.
-  onOpen?: () => void
-  color?: string // overrides the category colour (member colour, task colour). Must be hex.
+  onOpen?: (() => void) | undefined
+  color?: string | undefined // overrides the category colour (member colour, task colour). Must be hex.
   mine?: boolean // belongs to the device's picked member → a quiet "you" accent
-  emoji?: string // glyph override shown in place of the Phosphor icon (legacy)
-  icon?: IconName // a specific Phosphor icon (e.g. a meal's slot icon) over the category one
-  photo?: string // an image shown IN the tile instead of the glyph (falls back to the icon)
+  emoji?: string | undefined // glyph override shown in place of the Phosphor icon (legacy)
+  icon?: IconName | undefined // a specific Phosphor icon (e.g. a meal's slot icon) over the category one
+  photo?: string | undefined // an image shown IN the tile instead of the glyph (falls back to the icon)
   badge?: React.ReactNode // a small pill/marker at the trailing edge, before any affordance
-  soon?: boolean // calm "Bientôt" reminder window is open now → a quiet clock chip (migration 0038)
+  soon?: boolean | undefined // calm "Bientôt" reminder window is open now → a quiet clock chip (migration 0038)
   // A row's own free-text note (a rendez-vous' « apporter la carte… », migration 0121)
   // as a second, quieter sub-line — clamped to two lines so a long one can never turn
   // a glance row into a paragraph; the detail peek carries it in full.
-  note?: string
+  note?: string | undefined
 }) {
   const t = useT()
   // Read-only guest: a check fires a write (mark done) — drop it so the row reads as
