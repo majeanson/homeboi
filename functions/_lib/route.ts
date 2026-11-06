@@ -16,6 +16,7 @@ import { type Actor, requireActor } from './household'
 import { aiUsable } from './aiPref'
 import { forbidden, serverError, serviceUnavailable } from './json'
 import { withIdempotency } from './idempotency'
+import { dropGoneFace } from './profile'
 import { runWithRequest } from './tz'
 import { isSandboxEmail } from './demoHousehold'
 import { nowSec } from './ids'
@@ -89,6 +90,7 @@ export function authed(
       if (opts?.requiresAi && !(await aiUsable(ctx.env, actor))) {
         return serviceUnavailable('IA indisponible.')
       }
+      if (!SAFE_METHODS.has(method)) ctx.request = (await dropGoneFace(ctx.env.DB, ctx.request, actor.householdId)) as typeof ctx.request
       // Idempotency dedup: every mutating writeWith call carries an Idempotency-Key
       // now (B-9, bmad/10) — the online attempt and a queued/replayed write reuse
       // the SAME key, so a lost-response double-tap or an outbox replay never
