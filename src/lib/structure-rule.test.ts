@@ -82,3 +82,21 @@ describe('a control glyph is an Icon', () => {
     expect(n).toBe(0)
   })
 })
+
+// A `!` is a claim the compiler cannot check (solidify 7.3, 2026-11-06). The plan counted 7;
+// oxlint counts 337 in production, 73 of them the `res!` of SearchPage, safe by its own guard.
+// Making the rule an error would rewrite them for little, so the count only falls. Scans src
+// only: the Worker has its own `body!` idiom after a validator. Planted red with one more.
+describe('non-null assertions only fall', () => {
+  const NON_NULL_MAX = 
+  it(`at most ${NON_NULL_MAX} in src`, () => {
+    const bang = /[w)]]!(?=[.[(,;)s])(?!=)/g
+    const n = files.reduce((sum, { text }) => {
+      const noStrings = text.replace(/'(?:[^'\
+]|\.)*'|"(?:[^"\
+]|\.)*"|`[^`]*`/g, "''")
+      return sum + (noStrings.match(bang) ?? []).length
+    }, 0)
+    expect(n).toBeLessThanOrEqual(NON_NULL_MAX)
+  })
+})
