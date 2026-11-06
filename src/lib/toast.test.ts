@@ -151,10 +151,12 @@ describe('the ways the app goes away', () => {
     expect(onCommit).toHaveBeenCalledTimes(1)
   })
 
-  it('a provider that unmounts commits what it held', () => {
+  it('a provider that unmounts commits what it held, and does not delete it twice', () => {
     const { unmount } = mount()
     const { onCommit } = held()
     unmount()
+    expect(onCommit).toHaveBeenCalledTimes(1)
+    vi.advanceTimersByTime(HOLD)
     expect(onCommit).toHaveBeenCalledTimes(1)
   })
 
