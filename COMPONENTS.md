@@ -672,6 +672,8 @@ What's still duplicated at the call sites. The primitive now exists for rows 1�
 | 9 | **Réglages sub-pill sprawl** ✅ | kitchen: 3 colour subs → 1 | **Done** (C-15, 2026-07-08) — kitchen's `tags`/`pills`/`measure` subs (Étiquettes de recettes, Pastilles de recettes, Couleurs des mesures) folded into ONE « Apparence » sub: `RecipeTagsSection`+`RecipePillsSection`+`MeasureColorsSection` stacked as sibling `OperatorSection` bodies under one pill (the board▸thisweek / settings▸system precedent — no nested `SubTabs`). **Standing rule adopted**: a new setting names the existing sub it merges into, never adds a pill (Réglages already counts 30+ subs). `LEGACY_SUB` (`pages/Operator.tsx`) folds the three retired within-tab `?sub=` ids to `apparence` so no old deep link 404s. |
 | 9 | **Inline forms → EditField** ✅ mostly | remaining `.operator__inline-form` body sub-fields | **Composite-form blocker resolved** (2026-06-29) — `EditField` grew an `as="div"` non-form mode, so the `ChoreForm`/`EventForm`/`RoutineForm` **title inputs** now use it (clear ✕ / mic, Enter via onKeyDown) inside the host `<form>` that keeps its single bottom submit. Left: the rest of each form's body fields (date/time/recur/colour) + EventForm's inline `.event-bring__add` list-builder stay plain `.input` inside `.operator__inline-form`. |
 
+The rows above are held by tests now, so a regression fails the build instead of waiting for this table: `empty-rule`, `chip-rule`, `status-rule`, `load-error-rule`, `overlay-naming`, `field-rule`, `segmented-rule`, `icon-button-rule`, `kit-class-rule`.
+
 ### EditField rollout
 Done: Liste add, kitchen meal/supper/note + meal rename, routine deck rows, device
 rename, postal, réserve add, **PantryTab low + use-soon add (voice)**, **recipesTags

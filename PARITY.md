@@ -363,7 +363,7 @@ Footnotes (verdicts recorded so far):
 3. **CONVERGED (mig 0087, already shipped).** The `color` outliers `tasks`/`home_projects`/`schedule_blocks`/`carnets` (+ the household JSON-pref columns) were renamed to `colour`; readers alias `colour AS color` so the API JSON stays byte-identical. Cells 🔶→✅. Only non-column spellings remain out of scope (the `color?` keys _inside_ reserve_locations/cars JSON, and the `avatar_kind='color'` discriminator value) — see UNIFORMIZING DB-2.
 4. Deliberate no-peek verdict recorded in `adapters.ts` L387-397 / UNIFORMIZING: tapping navigates to the full page/scene ("tap the thing, get the thing").
 5. **Dry-run confirmed 2026-07-10; FIXED (Wave S) 2026-07-10**: `habit` now has a `SEARCH_INDEX` entry (title) + a « Mes habitudes » SearchPage section → `/board/habitudes`. See ⁵¹.
-6. Guide card `habits` + `operatorHelp:habits` exist, but no « ? » help on the board/HabitudesPage surface itself and no tour step (audited 2026-07-10, Appendix A).
+6. Guide card `habits` and `operatorHelp:habits`. The board card answers the « ? » since 2026-11-05 (`card-habitudes`, solidify 4.3). No tour step, by design.
 7. Two-step R2 upload — exempt from useWrite/realtime per LIB-1 verdict.
 8. AI round-trip (capture classify / vide-frigo) cannot run offline, but the capture queues and replays: `e2e/capture-offline.spec.ts` (✅ since 2026-11-06).
 9. Board layout is device-local localStorage (`lib/boardCards`), not a server write.
@@ -1341,10 +1341,10 @@ Lean on the guards that exist; spend review attention on the rest.
 
 | Guard                                     | Dimensions                                                                                                        | The mechanism                                                                                                                                                                                                                               |
 | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Red build catches drift**               | D5 · D6 search (`searchLanding`) · D7 board help (`helpRegistry`) · D8 toddler (`toddler-*.spec`) · D11 empty (`empty-rule`) · D13/calm · D14 media-shape (`parallel-array-rule`) · D15 · D9 · D16                                                                                    | `realtime.test.ts` pins `keysForPath`; `calm-tenets.test.ts` blocks streak/points/badge/push/inventory; `tsc` enforces `typeof FR` EN-parity; `add-sheet-overflow`/`layout-overflow`/`screenshots` sweep 360 px; the feature's own e2e spec |
-| **Manual only — nothing fails the build** | D2 peek · D3 undo presence · D10 voice · D12 attribution | The Part 5 checklist walk + a reviewer reading the row                                                                                                                                                                                      |
+| **Red build catches drift**               | D2 peek (`detail-kind`) · D5 · D6 search (`searchLanding`) · D7 board help (`helpRegistry`) · D8 toddler (`toddler-*.spec`) · D11 empty (`empty-rule`) · D13/calm · D14 media-shape (`parallel-array-rule`) · D15 · D9 · D16                                                                                    | `realtime.test.ts` pins `keysForPath`; `calm-tenets.test.ts` blocks streak/points/badge/push/inventory; `tsc` enforces `typeof FR` EN-parity; `add-sheet-overflow`/`layout-overflow`/`screenshots` sweep 360 px; the feature's own e2e spec |
+| **Manual only — nothing fails the build** | D3 undo presence · D10 voice · D12 attribution | The Part 5 checklist walk + a reviewer reading the row                                                                                                                                                                                      |
 
-**Rule of thumb: the manual-only four are where features silently fall short** — they
+**Rule of thumb: the manual-only three are where features silently fall short** — they
 compile and pass tests while missing a peek, an empty state, a toddler lens, or a guide
 card. Score them explicitly, every time.
 
@@ -1390,7 +1390,7 @@ Gold-standard check (PARITY Part 6):
 
 ---
 
-## Appendix A — D7 discovery coverage, per channel (audited 2026-07-10, re-verified 2026-08-26)
+## Appendix A — D7 discovery coverage, per channel (audited 2026-07-10, re-verified 2026-11-06)
 
 Exact per-feature mapping of the three discovery channels. Sources:
 `src/lib/guideContent.ts` (**32** GUIDE cards), the 8 `*Help.ts` registries, **plus the
@@ -1431,9 +1431,9 @@ that could be armed at all, so its 34-entry help registry was unreachable).
 | F3 Todos               | ✅ `todos`                            | ✅ add:`todo`; board:`todos`; operator:`todoTemplates`                                                                                | ➖ᵀ                                         |
 | F4 Notes frigo         | ✅ `capture` pt 1                     | ✅ add:`note`                                                                                                                         | ✅ board:`add-note`                        |
 | F5 Mots                | ✅ `mots`                             | ✅ board:`mots`                                                                                                                                    | ➖ᵀ                                         |
-| F6 Habitudes           | ✅ `habits`                           | ✅ operator:`habits`; board:`defi` (DefiBlock); HabitudesPage `card="habits"`ᴰ                                                                | ➖ᵀ                                         |
-| F7 Photos/cadre        | ✅ `screensaver` + `set-display`      | ✅ operator:`photos`,`ambient`,`display`                                                                                              | ➖ᵀ                                         |
-| F8 Dessins galerie     | 🔶ᴳ via `mots` (alias `drawings`)     | ✅ DrawingGalleryPage `card="drawings"`ᴰ                                                                                                                                    | ➖ᵀ                                         |
+| F6 Habitudes           | ✅ `habits`                           | ✅ operator:`habits`; board:`defi` (DefiBlock); HabitudesPage `card="habits"`ᴰ · board:`card-habitudes` | ➖ᵀ                                         |
+| F7 Photos/cadre        | ✅ `screensaver` + `set-display`      | ✅ operator:`photos`,`ambient`,`display` · board:`card-photos` | ➖ᵀ                                         |
+| F8 Dessins galerie     | 🔶ᴳ via `mots` (alias `drawings`)     | ✅ DrawingGalleryPage `card="drawings"`ᴰ · board:`card-drawings` | ➖ᵀ                                         |
 | F9 Capture/AddSheet    | ✅ `capture`                          | ✅ the whole `addHelp` registry                                                                                                       | ✅ essentials:`add-fab`; board:`add-tiles` |
 | F10 Recherche          | ✅ `board` pts 4–5 (alias `search`)   | ✅ `search` key in board/kitchen/liste/cercle/routines registries                                                                     | ✅ board:`search`                          |
 | F11 Widget space       | ✅ `board-widgets`                    | ✅ operator:`boardLayout`                                                                                                             | ✅ board:`board-cards`                     |
@@ -1451,13 +1451,13 @@ that could be armed at all, so its 34-entry help registry was unreachable).
 | F23 Animaux            | ✅ `cercle` pt 1                      | ✅ add:`pet`                                                                                                                          | ➖ᵀ                                         |
 | F24 Business           | ✅ `cercle` pt 11                     | ✅ add:`business`; cercle:`business`                                                                                                  | ➖ᵀ                                         |
 | F25 Notes du cercle    | ✅ `cercle` pt 10                     | ✅ notes:`search`ᴺ                                                                                                                     | ➖ᵀ                                         |
-| F26 Carnets            | ✅ `carnets`                          | ✅ cercle:`carnets`                                                                                                                   | ➖ᵀ                                         |
+| F26 Carnets            | ✅ `carnets`                          | ✅ cercle:`carnets` · board:`card-carnets`,`card-seasonUpkeep` | ➖ᵀ                                         |
 | F27 Notre monde        | ✅ `cercle` pt 7                      | ✅ cercle:`monde`                                                                                                                     | ✅ cercle:`cercle-world`                   |
 | F28 Routines           | ✅ `routines` + `set-chores`          | ✅ add:`routine`; routines:`card`; operator:`calm`                                                                                    | ✅ routines: 4 steps                       |
 | F29 Mur de collants    | 🔶ᴳ `routines` pt 4 only              | ➖ᵀᵒ                                                                                                                                    | ➖ᵀ                                         |
 | F30 Jouer              | ✅ `routines` pt (post-Wave-H)        | ➖ᵀᵒ                                                                                                                                    | ➖ᵀ                                         |
-| F31 Voyage             | ✅ `voyage`                           | ✅ VoyagePage `card="voyage"`ᴰ                                                                                                             | ➖ᵀ                                         |
-| F32 L'auto             | ✅ `auto` + `set-agenda`              | ✅ add:`ride`; operator:`cars`,`schedule`                                                                                             | ➖ᵀ                                         |
+| F31 Voyage             | ✅ `voyage`                           | ✅ VoyagePage `card="voyage"`ᴰ · board:`card-voyage` | ➖ᵀ                                         |
+| F32 L'auto             | ✅ `auto` + `set-agenda`              | ✅ add:`ride`; operator:`cars`,`schedule` · board:`card-autoCard` | ➖ᵀ                                         |
 | F33 Partager/invités   | ✅ `share-access` + `set-devices`     | ✅ add:`share`; operator:`guest`                                                                                                      | ➖ᵀ                                         |
 | F34 Réglages/appareils | ✅ `settings` + `set-*` cards         | ✅ the whole `operatorHelp` registry                                                                                                  | ➖ᵀ                                         |
 
