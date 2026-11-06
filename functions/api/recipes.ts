@@ -251,26 +251,30 @@ export const onRequestPatch = authed(async (ctx, actor) => {
 export const onRequestDelete = authed(async (ctx, actor) => {
   const body = await readJson<{ id?: string }>(ctx.request)
   if (!body?.id) return badRequest('id requis.')
-  // Free the R2 blobs this recipe owned: its display picture (remote URLs aren't
-  // ours) AND every per-step photo key (feature #17 B). Best-effort, never blocks.
+  // The R2 blobs this recipe owns: its display picture (remote URLs aren't ours) AND
+  // every per-step photo key (feature #17 B). Read now, freed after the row is gone.
   const row = await ctx.env.DB.prepare(
     'SELECT image, steps_images_json, original_json FROM recipes WHERE id = ? AND household_id = ?',
   )
     .bind(body.id, actor.householdId)
     .first<{ image: string | null; steps_images_json: string | null; original_json: string | null }>()
+  // The hearts first and in one transaction: recipe_loves.recipe_id FK-references this
+  // row and D1 enforces it, so the other order 500s on any recipe someone loved. Scoped
+  // through the recipe's own household guard (the chores.ts pattern), so a wrong household
+  // wipes nothing and a heart from elsewhere cannot pin the row.
+  await ctx.env.DB.batch([
+    ctx.env.DB.prepare(
+      'DELETE FROM recipe_loves WHERE recipe_id IN (SELECT id FROM recipes WHERE id = ? AND household_id = ?)',
+    ).bind(body.id, actor.householdId),
+    ctx.env.DB.prepare('DELETE FROM recipes WHERE id = ? AND household_id = ?').bind(body.id, actor.householdId),
+  ])
+  // The blobs only once the row is really gone: freed before, a refused delete left the
+  // recipe standing with its photos destroyed.
   if (ctx.env.PHOTOS) {
     if (isR2Key(row?.image)) await deleteR2Blob(ctx.env.PHOTOS, row?.image)
     for (const k of stepImageKeys(row?.steps_images_json)) await deleteR2Blob(ctx.env.PHOTOS, k)
     // The source-card photos live in the original snapshot (photo-import path).
     for (const k of originalSourceImages(row?.original_json ?? null)) await deleteR2Blob(ctx.env.PHOTOS, k)
   }
-  await ctx.env.DB.prepare('DELETE FROM recipes WHERE id = ? AND household_id = ?')
-    .bind(body.id, actor.householdId)
-    .run()
-  // Free the recipe's favorite hearts (#21) — D1 doesn't cascade FKs, so clear
-  // them here or they'd linger as orphans keyed to a gone recipe.
-  await ctx.env.DB.prepare('DELETE FROM recipe_loves WHERE recipe_id = ? AND household_id = ?')
-    .bind(body.id, actor.householdId)
-    .run()
   return ok({ ok: true })
 })
