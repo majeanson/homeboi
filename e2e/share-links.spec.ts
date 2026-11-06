@@ -4,7 +4,7 @@ import { mockApi, seedState } from './mocks'
 // « Partager » (wave 2) — the SENDER flow: from a recipe view, « Partager » mints a real
 // /partage link (POST /api/share {kind:'recipe'}) and the sheet shows the copyable URL +
 // a scannable QR. The harness has no backend; the write returns a stub url, so we assert
-// the REQUEST fired (path + body) and the minted link renders — the interactions.spec
+// the REQUEST fired (path + body) and the minted link renders — the interactions-*.spec
 // discipline. The public /partage page it points at is covered in partage-public.spec.ts.
 
 const SHARE_URL = 'https://babillard.test/partage/shX'

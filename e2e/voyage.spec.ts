@@ -6,7 +6,7 @@ import { mockApi, seedState, BASE } from './mocks'
 // test (the shared mock returns {} for unknown GETs, which would render "not found").
 // Drives the real create → view → add-note → add/pack → edit → delete flow and asserts
 // the correct write fires each time (every mock write returns {ok:true}, so we assert
-// the request, not a refetched outcome — the interactions.spec discipline).
+// the request, not a refetched outcome — the interactions-*.spec discipline).
 
 const DAY = 86400
 

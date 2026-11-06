@@ -50,7 +50,7 @@ export default defineConfig({
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
     // CI runs retries: 0, so « on-first-retry » meant CI had NEVER recorded a trace — every
-    // CI flake was read blind (config-panels « a list row opens its editor scene »: 4
+    // CI flake was read blind (config-panels-maison « a list row opens its editor scene »: 4
     // reds, 1 in 27 cold local runs, cause unprovable, 2026-09-29). Keep one on failure
     // there; locally the retry still records it.
     trace: process.env.CI ? 'retain-on-failure' : 'on-first-retry',

@@ -5,7 +5,7 @@ import { mockApi, seedState, BASE, BOARD, MMID } from './mocks'
 // static screenshot frames never exercise: the « Disposition du babillard » toggle UI
 // (only its rendered RESULT was covered) and the board re-rendering under a picked face
 // (the face lens, beyond the greeting).
-// Same frontend-only harness as interactions.spec.ts: Vite + stubbed /api/**.
+// Same frontend-only harness as interactions-*.spec.ts: Vite + stubbed /api/**.
 
 async function board(page: Page, freezeClock = false) {
   await page.emulateMedia({ reducedMotion: 'reduce' })

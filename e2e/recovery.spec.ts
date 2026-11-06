@@ -2,7 +2,7 @@ import { test, expect, type Page } from '@playwright/test'
 import { mockApi, seedState } from './mocks'
 
 // Auth-loss recovery + the first-run welcome path. Same frontend-only harness
-// as interactions.spec.ts: Vite dev server + stubbed /api/** (see mocks.ts).
+// as interactions-*.spec.ts: Vite dev server + stubbed /api/** (see mocks.ts).
 // mockApi({ unauthorized: true }) turns every data route into a 401 —
 // a revoked device token or a dead session, as the client sees it.
 
