@@ -298,7 +298,7 @@ export function ToddlerBoard({
           {/* Restants à finir — read-aloud reminder to eat leftovers first. A
               pre-reader just sees/hears them; finishing one is a parent action. */}
           {kidSection(
-            t.kitchen.leftoversBoard,
+            t.kitchen.leftoversToPool,
             leftovers.map((l) => ({
               key: l.id,
               icon: pictoFor(l.title, '🍽'),

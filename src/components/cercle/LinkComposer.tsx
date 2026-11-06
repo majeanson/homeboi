@@ -117,7 +117,7 @@ export function LinkComposer({
   }
 
   async function removeLink(id: string) {
-    if (!(await confirm({ message: t.cercle.removeRelationship, tone: 'danger' }))) return
+    if (!(await confirm({ message: t.cercle.removeRelationshipConfirm, tone: 'danger' }))) return
     await write('cercle-links', { method: 'DELETE', body: { id }, affectedKeys: [CERCLE_KEY] })
     onChanged()
   }

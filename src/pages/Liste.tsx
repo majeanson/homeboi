@@ -850,7 +850,7 @@ export function Liste() {
           advanced={advanced}
           onToggle={help.pick('mode', () => setListeAdvanced(!advanced))}
           toSimple={t.list.modeToSimple}
-          toAdvanced={t.list.modeToAdvanced}
+          toAdvanced={t.mode.toAdvanced}
           tint={CATS.list.deep}
           className="help-pick"
         />

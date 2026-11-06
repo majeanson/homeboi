@@ -196,7 +196,7 @@ function HouseholdPets() {
   )
 
   async function remove(pet: Pet) {
-    if (!(await confirm({ title: p.delete, message: pet.name, tone: 'danger' }))) return
+    if (!(await confirm({ title: p.delete, message: p.deleteConfirm(pet.name), tone: 'danger' }))) return
     await write('pets', { method: 'DELETE', body: { id: pet.id }, affectedKeys: [CERCLE_KEY] }).catch(writeFailed)
   }
 

@@ -203,7 +203,7 @@ export function PetForm({ value, onSaved, onCancel }: { value?: Pet | null; onSa
   // the row list's undo toast, same endpoint + affected key so it lands identically.
   async function remove() {
     if (!value || busy) return
-    if (!(await confirm({ title: p.delete, message: value.name, tone: 'danger' }))) return
+    if (!(await confirm({ title: p.delete, message: p.deleteConfirm(value.name), tone: 'danger' }))) return
     setBusy(true)
     setErr(false)
     try {

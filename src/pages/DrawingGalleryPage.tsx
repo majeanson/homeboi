@@ -78,7 +78,7 @@ export function DrawingGalleryPage() {
     await (id ? update(id, png, scene) : save(png, scene)).catch(() => {})
   }
   async function onDelete(id: string) {
-    if (await confirm({ message: t.memo.galleryDelete, tone: 'danger' })) await remove(id).catch(() => {})
+    if (await confirm({ message: t.memo.galleryDeleteConfirm, tone: 'danger' })) await remove(id).catch(() => {})
   }
 
   return (

@@ -590,3 +590,37 @@ describe('the in-app lexicon', () => {
     ).toEqual([])
   })
 })
+
+// One verb per consequence (solidify 4.5): « Supprimer » = gone, « Retirer » = leaves this
+// screen, the thing survives. The key states the consequence, so a key and its word
+// must agree; `deleted`/`removed` are toasts and say what happened in their own words.
+// « reste » is a real word in prose, so it is held in the kitchen, where it named a thing.
+// Planted red with `removeLeftover: 'Effacer le restant'`.
+describe('glossary — the delete and remove keys say what they do', () => {
+  const walk = (o: unknown, p: string, out: [string, string][]) => {
+    if (typeof o === 'string') out.push([p, o])
+    else if (typeof o === 'function') {
+      try {
+        const v = (o as (a: string, b: number) => unknown)('Machin', 2)
+        if (typeof v === 'string') out.push([p, v])
+      } catch {
+        /* takes a shape we cannot fake */
+      }
+    } else if (o && typeof o === 'object') for (const [k, v] of Object.entries(o)) walk(v, p ? `${p}.${k}` : k, out)
+    return out
+  }
+  const all = [...walk(FR, '', []), ...walk(FR_OPERATOR, 'operator', [])]
+  const leaf = (p: string) => p.split('.').pop() ?? ''
+  it('a delete key says Supprimer', () => {
+    expect(all.filter(([p, v]) => /^delete(?!d)/.test(leaf(p)) && !/Supprim/.test(v))).toEqual([])
+  })
+  it('a remove key says Retirer', () => {
+    expect(all.filter(([p, v]) => /^remove(?!d)/.test(leaf(p)) && !/Retir/.test(v))).toEqual([])
+  })
+  it('Téléversement is gone, an upload is an Envoi', () => {
+    expect(all.filter(([, v]) => /Téléversement/.test(v))).toEqual([])
+  })
+  it('a leftover is a restant in the kitchen', () => {
+    expect(walk(FR.kitchen, 'kitchen', []).filter(([, v]) => /\b(un|le|du) reste\b/.test(v))).toEqual([])
+  })
+})

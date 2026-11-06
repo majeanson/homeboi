@@ -126,7 +126,7 @@ export function BusinessForm({
   // endpoint + affected key as BusinessesTab's row delete, so it lands identically.
   async function remove() {
     if (!value || busy) return
-    if (!(await confirm({ title: bz.delete, message: value.name, tone: 'danger' }))) return
+    if (!(await confirm({ title: bz.delete, message: bz.deleteConfirm(value.name), tone: 'danger' }))) return
     setBusy(true)
     setErr(false)
     try {

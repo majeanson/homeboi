@@ -49,7 +49,7 @@ export function useEventPeekActions(): EventPeekActions {
   const canShare = signedIn && acts
 
   async function del(e: PeekEvent) {
-    if (!(await confirm({ message: t.detail.deleteEvent, confirmLabel: t.common.delete, tone: 'danger' }))) return
+    if (!(await confirm({ message: t.detail.deleteEventConfirm, confirmLabel: t.common.delete, tone: 'danger' }))) return
     await write('events', { method: 'DELETE', body: { id: baseId(e.id) }, affectedKeys: [EVENTS_KEY, BOARD_KEY, MONTH_KEY] })
   }
 

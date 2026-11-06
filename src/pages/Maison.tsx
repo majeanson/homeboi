@@ -554,7 +554,7 @@ function MaisonParent() {
   }
 
   async function deletePet(pet: Pet) {
-    if (!(await confirm({ title: t.cercle.pet.delete, message: pet.name, tone: 'danger' }))) return
+    if (!(await confirm({ title: t.cercle.pet.delete, message: t.cercle.pet.deleteConfirm(pet.name), tone: 'danger' }))) return
     await write('pets', { method: 'DELETE', body: { id: pet.id }, affectedKeys: [CERCLE_KEY] })
   }
 

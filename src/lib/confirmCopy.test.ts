@@ -6,6 +6,9 @@ import { EN } from '../i18n.en'
 // FR/EN would stop holding them, and would go quiet rather than red.
 import { FR_OPERATOR } from '../i18n.operator'
 import { EN_OPERATOR } from '../i18n.operator.en'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { blankComments, sourceFiles } from './buildGuardScan'
 
 // A DESTRUCTIVE DIALOG MUST SAY WHAT IS LOST.
 //
@@ -83,4 +86,28 @@ describe('a destructive dialog says what is lost', () => {
       expect(short).toEqual([])
     })
   }
+})
+
+// The dictionary rule above only holds what is IN the dictionary. Three dialogs passed
+// `value.name` as the message (« Supprimer l'animal » over the word « Rex »), and two more
+// passed a button label. So a call site must hand confirm() a `…Confirm` key, which is
+// what brings it under the rule above. Planted red with `message: pet.name` in Maison.tsx.
+describe('every confirm() takes its message from a …Confirm key', () => {
+  const NOT_A_DESTRUCTIVE_DIALOG: Record<string, string> = {
+    'pages/SharedVoyagePage.tsx': 'keepCopyAsk is an offer to keep a copy, nothing is destroyed',
+  }
+  const root = join(__dirname, '..')
+  it('no bare name or label reaches a dialog', () => {
+    const stray: string[] = []
+    for (const f of sourceFiles(root)) {
+      if (/\.test\./.test(f) || /lib[\\/]confirm\.tsx$/.test(f)) continue
+      const rel = f.slice(root.length + 1).replace(/\\/g, '/')
+      if (rel in NOT_A_DESTRUCTIVE_DIALOG) continue
+      const src = blankComments(readFileSync(f, 'utf8'))
+      for (const m of src.matchAll(/\bconfirm\(\{[\s\S]{0,200}?message:\s*([^,\n}]+)/g)) {
+        if (!/Confirm\b/.test(m[1])) stray.push(`${rel}: ${m[1]}`)
+      }
+    }
+    expect(stray, 'add a …Confirm string that says what is lost').toEqual([])
+  })
 })

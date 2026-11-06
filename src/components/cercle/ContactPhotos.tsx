@@ -80,7 +80,7 @@ export function ContactPhotos({ contactId, memberPhoto }: { contactId: string; m
     // Deleting frees the R2 blob server-side — irreversible, so gate it behind a
     // confirm (no undo can bring the photo back). Matches the app's destructive-
     // delete convention (useConfirm for heavy deletes, undo toast for light ones).
-    if (!(await confirm({ message: t.cercle.removePhotoFromGallery, tone: 'danger' }))) return
+    if (!(await confirm({ message: t.cercle.removePhotoConfirm, tone: 'danger' }))) return
     try {
       // Also through useWrite — the delete carries no blob of its own (the server
       // frees the R2 object when it runs), so it is safe to queue.

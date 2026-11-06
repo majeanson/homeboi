@@ -490,7 +490,6 @@ export const FR = {
     dealLabel: 'Aubaine',
     // Le ⚙ SIMPLE ↔ AVANCÉ (lib/listeMode). Même formulation que « Les notes » :
     // le nom dit vers quoi va la PROCHAINE touche, jamais l'état courant.
-    modeToAdvanced: 'Mode avancé — modifier et supprimer sur chaque ligne',
     modeToSimple: 'Mode simple — juste la photo, le nom et la coche',
     clearChecked: 'Vider les cochés',
     // Sort toggle: keep the hand-dragged order, or auto-group by store aisle.
@@ -550,7 +549,7 @@ export const FR = {
     addTerm: 'Ajouter un terme…',
     unlinkDeal: 'Retirer le rabais',
     deleteItem: 'Supprimer de la liste',
-    deleteItemConfirm: 'Retirer cet article de la liste ? Il faudra le réécrire pour le remettre.',
+    deleteItemConfirm: 'Supprimer cet article de la liste ? Il faudra le réécrire pour le remettre.',
     openFlyer: 'Voir les rabais',
     share: 'Partager la liste',
   },
@@ -663,7 +662,7 @@ export const FR = {
     galleryEmpty: 'Aucun dessin gardé pour l’instant. Touche ＋ pour en faire un !',
     // B-11 (bmad/09) — l'âge de l'enfant au moment du dessin (« Léa · 3 ans »).
     ageN: (n: number) => (n === 1 ? '1 an' : `${n} ans`),
-    galleryDelete: 'Supprimer ce dessin pour de bon ?',
+    galleryDeleteConfirm: 'Supprimer ce dessin ? Il disparaît pour de bon.',
     galleryLink: 'La galerie',
     // #14 — convert a drawing both ways (gallery ↔ fridge note), keeping a copy so
     // a drawing is never lost. Each makes an INDEPENDENT copy (own R2 blobs).
@@ -998,7 +997,7 @@ export const FR = {
     // trip with no cover just shows its name, and R2-unset hides the picker's effect.
     cover: 'Photo du voyage',
     addCover: 'Ajouter une photo',
-    coverUploading: 'Téléversement…',
+    coverUploading: 'Envoi…',
     createTrip: 'Créer le voyage',
     createHint: 'Tu pourras ajouter l’itinéraire, les bagages et les documents ensuite.',
     // sub-tabs
@@ -1366,16 +1365,15 @@ export const FR = {
     reserveDefaultPantry: 'Garde-manger',
     reserveDefaultFreezer: 'Congélateur',
     leftovers: 'Restants',
-    leftoversBoard: 'Restants à finir',
     leftoversTag: 'Restants',
-    leftoversAdd: 'Ajouter un reste',
+    leftoversAdd: 'Ajouter un restant',
     leftoversEmpty: 'Pas de restants. Tant mieux !',
     leftoversFromMeal: 'Il en reste ?',
     // L'état « c'est fait » du menu ⋯ d'une recette — la bascule d'étiquette EST la
     // confirmation, la barre « Annuler » étant peinte sous la scène (z-index 40 vs 80).
     leftoversSaved: 'Dans les restants',
     leftoversToPool: 'À finir bientôt',
-    removeLeftover: 'Retirer le reste',
+    removeLeftover: 'Retirer le restant',
     aiWaking: 'L’IA se réveille… la première fois est plus longue.',
     // « Un seul tiroir d'idées-repas » (C-14) — the ONE IdeasDrawer, its source
     // chips, and the empty-day-tile kid-suggestion chip.
@@ -1832,12 +1830,12 @@ export const FR = {
     addPhoto: 'Ajouter une photo',
     changePhoto: 'Changer la photo',
     removePhoto: 'Retirer la photo',
-    deletePerson: 'Retirer du cercle',
+    deletePerson: 'Supprimer du cercle',
     // Le repli de ContactFields : tout ce qui vient APRÈS le nom et l'anniversaire.
     contactDetails: 'Coordonnées et détails',
     // …et celui de ContactForm, nommé par son contenu pour ne pas jumeler le précédent.
     moreDetails: 'Cadeaux, étiquettes et groupes',
-    deleteConfirm: (name: string) => `Retirer ${name} du cercle ? Ses liens seront effacés aussi.`,
+    deleteConfirm: (name: string) => `Supprimer ${name} du cercle ? Ses liens seront effacés aussi.`,
     call: 'Appeler',
     write: 'Écrire',
     exportVcard: 'Exporter (vCard)',
@@ -1850,6 +1848,7 @@ export const FR = {
     pickPerson: 'Choisir une personne',
     noRelationships: 'Aucun lien pour l’instant',
     removeRelationship: 'Retirer le lien',
+    removeRelationshipConfirm: 'Retirer ce lien ? Les deux personnes restent dans le cercle.',
     familyOf: (name: string) => `Famille ${name}`,
     familyGeneric: 'Famille',
     others: 'Autres personnes',
@@ -1937,6 +1936,7 @@ export const FR = {
     photoCaption: 'Légende (facultatif)',
     photoOnline: 'Hors ligne — branche-toi pour ajouter une photo',
     removePhotoFromGallery: 'Retirer la photo',
+    removePhotoConfirm: 'Retirer cette photo de la galerie ? Elle ne sera plus visible ici.',
     importContact: 'Importer un contact',
     importVcf: 'Importer un .vcf',
     importVcfDo: (n: number) => `Importer tout (${n})`,
@@ -2004,6 +2004,7 @@ export const FR = {
       servicedCarnets: 'A servi',
       addHint: 'Tes commerces et services — pour les joindre vite, tout noter et y prendre rendez-vous',
       add: 'Ajouter un commerce',
+      deleteConfirm: (name: string) => `Supprimer ${name} ? Sa fiche disparaît du cercle.`,
       edit: 'Modifier le commerce',
       empty: 'Aucun commerce encore. Ajoute le vétérinaire, le plombier, la clinique — pour les joindre d’un toucher.',
       name: 'Nom',
@@ -2029,6 +2030,7 @@ export const FR = {
     pet: {
       title: 'Animal',
       add: 'Ajouter un animal',
+      deleteConfirm: (name: string) => `Supprimer ${name} ? Sa fiche disparaît du cercle.`,
       addHint: 'Un animal de la maisonnée — vétérinaire, gamelle, micropuce et consignes pour la gardienne',
       edit: 'Modifier l’animal',
       name: 'Nom',
@@ -2662,8 +2664,8 @@ export const FR = {
     copied: 'Copié !',
     scanHint: 'Ou fais-le scanner :',
     activeShares: 'Familles partagées',
-    revoke: 'Retirer',
-    revokeConfirm: 'Retirer ce partage ? Le lien cessera de fonctionner.',
+    revoke: 'Révoquer',
+    revokeConfirm: 'Révoquer ce partage ? Le lien cessera de fonctionner.',
     noShares: 'Aucun partage actif.',
     sharesHint: 'Un lien de partage expire de lui-même après 30 jours.',
     truncated: (shared: number, total: number) =>
@@ -2701,8 +2703,8 @@ export const FR = {
     kinds: { recipe: 'Recette', event: 'Rendez-vous', routine: 'Routine', family: 'Famille' },
     // « Mes partages » — Réglages ▸ Système ▸ Appareils & accès : la liste à retirer.
     noShares: 'Aucun partage actif.',
-    revoke: 'Retirer',
-    revokeConfirm: 'Retirer ce partage ? Le lien cessera de fonctionner.',
+    revoke: 'Révoquer',
+    revokeConfirm: 'Révoquer ce partage ? Le lien cessera de fonctionner.',
     expiresOn: (date: string) => `Expire le ${date}`,
     sharedBy: (name: string) => `Partagé par ${name}`,
     // La page publique /partage.
@@ -3084,14 +3086,14 @@ export const FR = {
     aria: 'Détails',
     markDone: 'Marquer fait',
     // The day page's inline forms carry the delete door too (2026-09-16): the label
-    // names what goes, the confirm (deleteEvent) says what it costs.
+    // names what goes, the confirm (deleteEventConfirm) says what it costs.
     deleteEventLabel: 'Supprimer le rendez-vous',
     deleteChoreLabel: 'Supprimer la corvée',
     // « Reporter » (entretien) — postpone without checking: quiet, then it returns.
     postponeWeek: 'Reporter d’une semaine',
     postponeCycle: 'Au prochain cycle',
     markEaten: 'Marquer mangé',
-    deleteEvent: 'Supprimer ce rendez-vous ? Ceci le retire de partout.',
+    deleteEventConfirm: 'Supprimer ce rendez-vous ? Ceci le retire de partout.',
     openDay: 'Voir la journée',
     turn: 'Tour de',
     cook: 'Cuisine',
