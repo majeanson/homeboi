@@ -4,13 +4,14 @@
 
 ## The idea
 
-A task is one thing with four independent answers. Every existing flavour becomes a combination, not a type.
+A task is one thing with five independent answers. Every existing flavour becomes a combination, not a type.
 
 | Axis | Values | Today it lives in |
 | --- | --- | --- |
 | **Sur quoi ?** | nothing · a carnet (house, car, appliance, room, any « thing ») · a person · a pet · a project · a trip | only `home_projects.carnet_id` |
 | **Quand ?** | someday · a day · recurring, on a fixed grid or from the last time | `recur_json` on two tables, `todos.day` on the third |
 | **Qui ?** | anyone · one person · a rotation | `rotation_json`, `todos.member_id` |
+| **Effort** | optional: vite fait · un moment · un gros morceau | nowhere yet |
 | **Allure** | icon and colour, inherited from the subject, overridable | `colour` on two tables, nothing on `todos`, no icon column anywhere |
 
 Examples: gouttières (the house, every autumn) · sortir le bac (rotation, weekly, evening before) · a long-term todo (nothing, someday) · vaccin du chien (the pet, yearly).
@@ -20,6 +21,14 @@ Examples: gouttières (the house, every autumn) · sortir le bac (rotation, week
 - Phased, and each phase is a place we can stop.
 - « À faire » and « À compléter » merge into one board section. This reverses the June choice.
 - Fun v1 is subject identity AND full customization. Any real-world subject must fit.
+- The word is **« Tâche »** (EN « Task »), replacing « Corvée » as the general word.
+- A task has exactly one subject, or none. « Qui ? » stays a separate axis.
+- On a board row, the subject's icon leads and the title tint says who, as the compact rows rule already does.
+- A checked one-off stays ticked until the day ends, then clears by itself. « Effacer les cochées » can clear it sooner. Recurring tasks move to their next date.
+- Tasks get a fifth board view, **« Tâches »**, beside bento, semaine, mois and année (`BoardView` in `lib/boardview.ts`). It is their one home, and Réglages goes back to settings only.
+- That view has several ways to look at the same tasks: by horizon, by subject, by person. The bento board stays a glance of what is due.
+- Rotation is a per-task checkbox, offered on any recurring task, not a chore-only type.
+- **« Trouver quoi faire »**: a way to find a task by effort and by horizon, for « I have ten minutes » or « what should we plan this year? ».
 - Out of scope: La liste, routines, habits. Departure checklists stay as they are, and may become task templates later.
 - Unified and standardized throughout: one word, one scheduler, one subject link, one look, one row, one form, each held by a guard.
 
@@ -34,7 +43,7 @@ Examples: gouttières (the house, every autumn) · sortir le bac (rotation, week
 
 ### Phase 1: one word, one scheduler (no visible change)
 
-- Pick the noun in `glossary.ts`. **« Tâche » is listed today as a losing rival of « Corvée »**, so this is a deliberate glossary change, FR and EN, with the ratchet moved in the same commit.
+- `glossary.ts`: « Tâche » wins and « Corvée » steps down. Today « Tâche » is its listed rival, so the ratchet flips in the same commit, FR and EN. The Réglages pill « Tâches de la maison » stays valid.
 - Chores go through `_lib/upkeep.ts`, generalized, for due, overdue and next occurrence. Rotation stays its own question. `month.ts` and `board.ts` stop calling `expandRange` for tasks.
 - Guard: `task-scheduler-rule`, no recurrence expansion for tasks outside the scheduler.
 
@@ -47,6 +56,8 @@ Examples: gouttières (the house, every autumn) · sortir le bac (rotation, week
 - Each subject's page gets its tasks section, one component reused by carnet, person and pet.
 - **Stop point:** the concept exists for users even if the tables never merge.
 
+The « Tâches » board view ships in this phase, with its horizon, subject and person lenses, in the URL like every other view. Its body is lazy, like `WeekView`, so the eager chunk does not grow.
+
 ### Phase 3: look and customization
 
 - Migration: nullable `icon` and `colour` overrides on the task rows. `todos` gains both; the two others gain `icon`. Subjects gain an `icon` where they have none (carnets default by kind today).
@@ -57,6 +68,14 @@ Examples: gouttières (the house, every autumn) · sortir le bac (rotation, week
 - Starter packs from `SEASON_SEEDS`, grouped by subject: tap « La maison à l'automne », add several.
 - Guard: no task or subject form hand-rolls a colour or icon control.
 - **Stop point:** the fun is shipped.
+
+### Phase 3b: « Trouver quoi faire »
+
+- Migration: nullable `effort` on the task rows, `'quick' | 'medium' | 'big'`. A word, never minutes, and never a score.
+- A finder inside the « Tâches » view: two tap-to-pick rows, effort then horizon (cette semaine · ce mois-ci · un jour), and the list narrows. No total, no « 12 restantes ».
+- A task with no effort still appears, under every effort, so skipping the field never hides it.
+- Later, optional: « Surprends-moi » offers one task. The AI could guess effort at capture, confirmed by the user.
+- **Stop point.**
 
 ### Phase 4: one form, then decide on the tables
 
@@ -76,13 +95,7 @@ Examples: gouttières (the house, every autumn) · sortir le bac (rotation, week
 
 ## Risks
 
-- **Done means three things today.** A todo marks in place and is cleared later, a chore rotates, an upkeep stamps `last_done_at`. The `TaskItem` must carry one meaning per case, not pretend they match. This is the hardest design question and it belongs to Phase 2.
+- **Done means three things today.** A todo marks in place, a chore rotates, an upkeep stamps `last_done_at`. Settled for the user: a one-off stays ticked for the day, a recurring task moves on. The end-of-day clear must be derived on read, with no cron and no row rewrite, which matches the house rule in `_lib/recur.ts`. An offline tick replayed after midnight keeps its real day.
 - **Departure instances live in `todos`.** The merged section must keep filtering them out (`splitTodos`, `source_template_id`).
 - **Rotation in a phone-sized row.** The merged row must show whose turn it is without new furniture (see the compact rows rule).
 - **Board poll cost.** The board is the free-tier lever. Subject resolving must not add a query to the poll.
-
-## Open questions for the owner
-
-1. The word. « Tâche » reads naturally, but it reverses the glossary. Alternatives welcome.
-2. May a task have several subjects, or exactly one? One keeps everything simpler, and is my recommendation.
-3. Do people and pets show their tasks on their own page only, or also tint the board row?
