@@ -765,6 +765,12 @@
 .hub[data-surface='mobile'] .kid-exit-switch__label {
   display: none;
 }
+/* The kiosk rail does keep the words, and « Sortir du mode enfant » never fit one line
+   of it: « Sortir du mo… » at 820 and at 1280. Two lines fit the button's own height. */
+.hubnav__btn .kid-exit-switch__label {
+  white-space: normal;
+  line-height: 1.15;
+}
 /* The fill bar grows left→right over HOLD_MS so the hold has feedback. The
    duration mirrors HOLD_MS (3s) in ToddlerExitGate. */
 .kid-exit-switch__fill {

@@ -476,7 +476,7 @@ const E2E_LABEL_ALLOWED: Record<string, string> = {
   'La maisonnée démo': 'the demo household’s own name',
   'board ▸ à compléter': 'composer-fit’s own surface id, not a UI label',
   'cuisine ▸ la réserve': 'composer-fit’s own surface id, not a UI label',
-  'À la caisse: Oui': 'a composed assertion (label + state)',
+  'À la caisse : Oui': 'a composed assertion (label + state)',
   'Ajouter la sélection (2)': 'composed: the label carries a live count',
   'Ouvrir la vérification': 'composed from the recipe-review fixture',
   'Contacts d’urgence — Compléter': 'fixture form name + « Compléter »',

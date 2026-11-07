@@ -24,6 +24,29 @@ async function openBoard(app: App, opts: { hasSample: boolean; fresh?: boolean }
   await page.locator('.hub').first().waitFor({ state: 'visible', timeout: 15_000 })
 }
 
+// « Not loaded yet » is not « not done ». A finished household's board opened with 412px of
+// checklist over it until the paired devices arrived, then jumped back up. The matrix saw it
+// on board-kiosk (746px against a 368px budget) whenever that read lost the race.
+test('a finished household never sees the checklist while its devices load', async ({ page, app }) => {
+  await app.boot({ api: {} })
+  await page.route('**/api/seed', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ count: 0 }) }),
+  )
+  let release = () => {}
+  const held = new Promise<void>((r) => (release = r))
+  await page.route('**/api/pair/devices', async (route) => {
+    await held
+    await route.fallback()
+  })
+  await page.goto('/board')
+  await page.locator('.wg-slot').first().waitFor({ state: 'visible', timeout: 15_000 })
+  await page.waitForResponse('**/api/meals', { timeout: 5_000 }).catch(() => {})
+  await expect(page.locator('.welcome-card')).toHaveCount(0)
+  release()
+  await page.waitForResponse('**/api/pair/devices')
+  await expect(page.locator('.welcome-card')).toHaveCount(0)
+})
+
 test('demo present → only the explore banner shows; the setup checklist is suppressed', async ({ page, app }) => {
   await openBoard(app, { hasSample: true })
   const banner = page.locator('.sample-banner')

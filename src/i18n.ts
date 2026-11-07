@@ -415,7 +415,7 @@ export const FR = {
   },
   // Découvrir's calm discovery cards (bmad/08 B-11 + B-14).
   discover: {
-    didYouKnow: 'Le saviez-vous ?',
+    didYouKnow: 'Le saviez-vous ?',
     whatsNew: 'Quoi de neuf',
     tourStart: (n: number) => `Faire le tour (${n} trouvailles)`,
   },
@@ -1740,6 +1740,7 @@ export const FR = {
     // Première touche sur une étape déjà faite : on annonce, on n’agit pas encore.
     backTo: (label: string) => `Revenir à ${label} ? Tape encore.`,
     tapHear: 'Touche l’image pour l’écouter',
+    notesEmpty: 'Pas encore de notes. Demande à un grand d’en écrire une.',
     allDone: 'C’est fini ! Bravo.',
     again: 'Recommencer',
     routineDone: 'Fait',

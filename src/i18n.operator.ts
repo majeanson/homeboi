@@ -362,7 +362,7 @@ export const FR_OPERATOR = {
   aisleReset: 'Remettre l’ordre de départ',
   storeIncluded: 'Inclus',
   storeExcluded: 'Exclu',
-  storeCashier: 'À la caisse',
+  storeCashierState: (state: string) => `À la caisse : ${state}`,
   storeCashierOn: 'Oui',
   storeCashierOff: 'Non',
   storeCashierHint:

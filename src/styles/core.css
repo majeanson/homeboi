@@ -651,6 +651,7 @@ a {
    active .subtabs__opt / .operator__tab, .tdl-start…) still win on specificity. */
 button {
   color: inherit;
+  font-family: inherit;
 }
 
 /* --- Primitives ----------------------------------------------------------- */
@@ -1137,7 +1138,7 @@ html[data-embedded] .home {
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
   gap: 0.75rem;
 }
 .home__feature {
@@ -1201,7 +1202,7 @@ html[data-embedded] .home {
 /* First-run role choice: two honest cards, wall display vs personal device. */
 .setup__choices {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
   gap: var(--gap);
   margin-top: 1.75rem;
 }

@@ -92,6 +92,31 @@
     display: none;
   }
 }
+/* The simple lens grows the whole rem tree to 140%, discs included, and since it gained
+   the mic and the loupe (the `acts` flip, 2026-11-05) four of them left the title 60px:
+   « La c… », « Mais… » on every tab at 390. Same answer as 320px above, same disc: it is
+   decorative, the bar underneath already names the section, and the doors stay big —
+   big doors are the point of this lens. */
+@media (max-width: 560px) {
+  :root[data-lens='simple'] .app-head__actions > :last-child {
+    display: none;
+  }
+}
+/* …and at 320 three 140% discs still leave no title at all, so it takes its own line
+   above them; the bar's labels get the same brake the text ramp gives them (1 / 1.4,
+   --chrome-scale in core.css), only here where six columns truly have no room. */
+@media (max-width: 340px) {
+  :root[data-lens='simple'] .app-head {
+    flex-wrap: wrap;
+    row-gap: 0;
+  }
+  :root[data-lens='simple'] .app-head__main {
+    flex-basis: 100%;
+  }
+  :root[data-lens='simple'] .hubnav {
+    --chrome-scale: 0.71;
+  }
+}
 /* A-3 « Depuis ce matin »: the board greeting doubles as the peek trigger for a
    parent, non-guest device — reset the <button> chrome so it reads exactly like
    the plain-text greeting it replaces (same truncation, no visible affordance

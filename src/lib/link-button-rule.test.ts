@@ -126,4 +126,19 @@ describe('a class worn by a button and a link resets the button chrome', () => {
     const stale = Object.keys(ALLOWED).filter((c) => !shared.includes(c))
     expect(stale, 'these are exempted but no longer worn by both a button and a link — drop them').toEqual([])
   })
+
+  // The same UA dressing, one layer down. Without this line every <button> that names no
+  // font of its own renders in the browser's Arial: 70-odd classes measured 2026-11-06,
+  // from a toddler's « Noah · Dodo » to « Compris » — found by opening the PNG, again.
+  // `dressesTheBox` accepts padding alone, which is how this one got through: the nav class
+  // sets padding and a fill, and the exit gate's <button> still wore the UA's dark border.
+  it('the hub nav button resets the browser border', () => {
+    const rule = css.match(/^\.hubnav__btn \{([^}]*)\}/m)?.[1] ?? ''
+    expect(rule).toMatch(/border:\s*0/)
+  })
+
+  it('the base button rule takes the page font, not the browser one', () => {
+    const base = css.match(/^button \{([^}]*)\}/m)?.[1] ?? ''
+    expect(base).toMatch(/font-family:\s*inherit/)
+  })
 })

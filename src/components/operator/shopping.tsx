@@ -281,7 +281,7 @@ export function StoreFilterSection({ help }: { help?: HelpMode }) {
               {s.included &&
                 (isGuest() ? (
                   <span className="mono store-filter__till" title={o18n.storeCashierHint}>
-                    {o18n.storeCashier}: {s.tillHidden ? o18n.storeCashierOff : o18n.storeCashierOn}
+                    {o18n.storeCashierState(s.tillHidden ? o18n.storeCashierOff : o18n.storeCashierOn)}
                   </span>
                 ) : (
                   <button
@@ -292,7 +292,7 @@ export function StoreFilterSection({ help }: { help?: HelpMode }) {
                     aria-pressed={!s.tillHidden}
                     title={o18n.storeCashierHint}
                   >
-                    {o18n.storeCashier}: {s.tillHidden ? o18n.storeCashierOff : o18n.storeCashierOn}
+                    {o18n.storeCashierState(s.tillHidden ? o18n.storeCashierOff : o18n.storeCashierOn)}
                   </button>
                 ))}
             </li>
