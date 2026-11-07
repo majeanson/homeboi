@@ -44,6 +44,18 @@
   /* Extra right padding so the number-spinner arrows don't overlap the digit. */
   padding: 0.2rem 0.4rem 0.2rem 0.5rem;
 }
+/* The add row is an `.operator__inline-form`, whose `.input` flexes and floors at 100% on
+   a phone: the number ballooned and squeezed « tous les » onto two lines. Same compact
+   control as the rows above it. */
+.operator__inline-form .ghost-admin__cadence {
+  flex: none;
+  white-space: nowrap;
+}
+.operator__inline-form .input.ghost-admin__days {
+  flex: none;
+  width: 4.75rem;
+  min-width: 0;
+}
 
 /* "Bought often — track them?" — the conscious opt-in chips under the admin
    list. Same quiet chip language as the strip; the count whispers why it's
