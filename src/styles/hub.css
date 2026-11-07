@@ -81,6 +81,9 @@
   gap: 10px;
   min-height: 3.6rem;
   padding: 0 14px;
+  /* Worn by a <NavLink> and by the exit gate's <button>: the UA border is the only thing
+     the two would otherwise not share (the door read as a dark outlined pill). */
+  border: 0;
   border-radius: 16px;
   text-decoration: none;
   font-family: var(--display);
