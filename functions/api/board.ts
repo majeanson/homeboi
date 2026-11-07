@@ -1,8 +1,8 @@
 import { okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { localDayStart, addLocalDays } from '../_lib/ids'
-import { parseRecur, expandRange, occurrenceOn } from '../_lib/recur'
-import { upkeepStatus, upkeepOccurrences } from '../_lib/upkeep'
+import { parseRecur, expandRange } from '../_lib/recur'
+import { choreSchedule, upkeepStatus, upkeepOccurrences } from '../_lib/upkeep'
 import { isSoon as isSoonAt } from '../_lib/reminder'
 import { fetchBirthdayPeople, birthdayOccurrences } from '../_lib/birthdays'
 import { workOccurrencesInRange, parseScheduleBlockRow, type ScheduleBlock, type ScheduleBlockRow } from '../_lib/carResolve'
@@ -410,14 +410,12 @@ export const onRequestGet = authed(async (ctx, actor) => {
       if (c.last_done_at == null) todos.push(inst(today))
       continue
     }
-    // The chosen start date is the recurrence anchor; chores created before 0032
-    // (or with no explicit start) fall back to created_at, the old behaviour.
-    const anchor = c.recur_start ?? c.created_at
-    if (occurrenceOn(today, anchor, r) !== null) {
+    const schedule = choreSchedule(c)
+    if (upkeepOccurrences(schedule, today, tomorrow).length > 0) {
       const doneToday = c.last_done_at != null && c.last_done_at >= today
       if (!doneToday) choresToday.push(inst(today))
     } else {
-      const next = expandRange(anchor, r, tomorrow, weekEnd)[0]
+      const next = upkeepOccurrences(schedule, tomorrow, weekEnd)[0]
       if (next != null) choresUpcoming.push(inst(next))
     }
   }

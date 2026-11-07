@@ -43,17 +43,17 @@ Examples: gouttières (the house, every autumn) · sortir le bac (rotation, week
 
 ## Phases
 
-### Phase 1: one word, one scheduler (no visible change)
+### Phase 1: one scheduler (no visible change)
 
-- `glossary.ts`: « Tâche » wins and « Corvée » steps down. Today « Tâche » is its listed rival, so the ratchet flips in the same commit, FR and EN. The Réglages pill « Tâches de la maison » stays valid.
-- Chores go through `_lib/upkeep.ts`, generalized, for due, overdue and next occurrence. Rotation stays its own question. `month.ts` and `board.ts` stop calling `expandRange` for tasks.
-- Guard: `task-scheduler-rule`, no recurrence expansion for tasks outside the scheduler.
+- Done 2026-11-06: chores go through `_lib/upkeep.ts` via `choreSchedule`. Rotation stays its own question.
+- Guard: `taskSchedule-rule`, only the scheduler resolves a chore's anchor.
 
 ### Phase 2: « Sur quoi ? » and one board section
 
 - Migration: a soft subject ref, `subject_kind` + `subject_id`, nullable, no FK, on `tasks`, `todos` and `home_projects`. `carnet_id` stays and maps to `subject_kind = 'carnet'`, because migrations are never retro-churned.
 - One resolver, `subjectOf()`, answers name, link, icon and colour for any kind.
 - A read-side `TaskItem` shape over the three tables, built in `functions/_lib`, consumed by the board, month, year and search.
+- The word lands here, not earlier. `glossary.ts`: « Tâche » wins and « Corvée » steps down, with the ratchet flipped and about 57 lines of copy across 30 files, FR and EN, in the commit that merges the views. Earlier it would have sat beside « Entretien », « Projet » and « À compléter », which are still separate. The Réglages pill « Tâches de la maison » is the one collision to resolve.
 - The merged board card: one `Act` row, one section, filtered by subject or person. Old cards retire through the `boardCards` migration so saved layouts survive.
 - Each subject's page gets its tasks section, one component reused by carnet, person and pet.
 - **Stop point:** the concept exists for users even if the tables never merge.

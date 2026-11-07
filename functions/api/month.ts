@@ -2,7 +2,7 @@ import { okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { localDayStart } from '../_lib/ids'
 import { parseRecur, expandRange, rotationOffset } from '../_lib/recur'
-import { upkeepOccurrences } from '../_lib/upkeep'
+import { choreSchedule, upkeepOccurrences } from '../_lib/upkeep'
 import { planOccurrences, type PlanRow as TransferPlanRow } from '../_lib/transfers'
 import { fetchBirthdayPeople, birthdayOccurrences } from '../_lib/birthdays'
 import { workOccurrencesInRange, parseScheduleBlockRow, type ScheduleBlock, type ScheduleBlockRow } from '../_lib/carResolve'
@@ -310,16 +310,16 @@ export const onRequestGet = authed(async (ctx, actor) => {
   for (const c of choresRes.results) {
     const r = parseRecur(c.recur_json)
     if (!r) continue
-    const anchor = c.recur_start ?? c.created_at
+    const schedule = choreSchedule(c)
     const rot = parseRotation(c.rotation_json)
     // If today's turn was already done, the pending holder is the NEXT occurrence,
     // so count from tomorrow; otherwise the next occurrence on/after today is it.
     const refDay = c.last_done_at != null && c.last_done_at >= todayLocal ? todayLocal + DAY : todayLocal
-    const occs = expandRange(anchor, r, from, to)
+    const occs = upkeepOccurrences(schedule, from, to, { includeDone: true })
     // Each occurrence advances the rotation by one, so resolve the offset of the
     // first occurrence in the window once, then just step it forward.
     const firstOcc = occs[0]
-    let offset = firstOcc !== undefined ? rotationOffset(anchor, r, refDay, firstOcc) : 0
+    let offset = firstOcc !== undefined ? rotationOffset(schedule.at, r, refDay, firstOcc) : 0
     for (const at of occs) {
       const who = rot.length ? nameOf(rot[(((c.current_idx + offset) % rot.length) + rot.length) % rot.length] ?? null) : null
       chores.push({ id: `${c.id}#${at}`, title: c.title, color: c.color, who, day: dayOf(at) })

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { effectiveAnchor, upkeepOccurrences, upkeepStatus, nextCycleDay } from './upkeep'
-import { localDayStart } from './ids'
+import { choreSchedule, effectiveAnchor, upkeepOccurrences, upkeepStatus, nextCycleDay } from './upkeep'
+import { addLocalDays, localDayStart } from './ids'
+import { expandRange, occurrenceOn, parseRecur } from './recur'
 
 // Same convention as recur.test.ts: household-local (America/Toronto) midnights.
 const d = (y: number, m: number, day: number) => localDayStart(new Date(Date.UTC(y, m, day, 12)))
@@ -193,5 +194,37 @@ describe('« Reporter » (snoozed_until, mig 0120)', () => {
     expect(nextCycleDay(base, d(2026, 5, 5))).toBe(d(2026, 8, 5)) // due today → NEXT cycle
     expect(nextCycleDay(base, d(2026, 5, 10))).toBe(d(2026, 8, 5))
     expect(nextCycleDay(row({ at: d(2026, 5, 1) }), d(2026, 5, 10))).toBeNull()
+  })
+})
+
+// Solidifying the one task concept, phase 1: a chore answers through this scheduler too. The
+// old hand-written board and calendar lines are spelled here as the reference, so the move
+// proves it changed no date.
+describe('choreSchedule', () => {
+  const start = localDayStart(new Date(2026, 0, 5))
+  const weekly = JSON.stringify({ freq: 'weekly', weekdays: [1], interval: 2 })
+  const rule = parseRecur(weekly)!
+  const end = addLocalDays(start, 90)
+
+  it('anchors on the chosen start, else on created_at', () => {
+    expect(choreSchedule({ recur_start: 5, created_at: 9, recur_json: null, last_done_at: null }).at).toBe(5)
+    expect(choreSchedule({ recur_start: null, created_at: 9, recur_json: null, last_done_at: null }).at).toBe(9)
+  })
+  it('lands on the same days as the expander it replaced', () => {
+    const c = { recur_start: start, created_at: 1, recur_json: weekly, last_done_at: null }
+    expect(upkeepOccurrences(choreSchedule(c), start, end, { includeDone: true })).toEqual(expandRange(start, rule, start, end))
+    expect(upkeepOccurrences(choreSchedule(c), start, end)).toEqual(expandRange(start, rule, start, end))
+  })
+  it('a chore done today still occupies today, so the board does not list its next one', () => {
+    const today = start
+    const c = { recur_start: start, created_at: 1, recur_json: weekly, last_done_at: today + 3600 }
+    const landed = upkeepOccurrences(choreSchedule(c), today, addLocalDays(today, 1))
+    expect(landed.length > 0).toBe(occurrenceOn(today, start, rule) !== null)
+  })
+  it('agrees with occurrenceOn on every day of a season', () => {
+    const c = { recur_start: start, created_at: 1, recur_json: weekly, last_done_at: null }
+    for (let d = start; d < end; d = addLocalDays(d, 1)) {
+      expect(upkeepOccurrences(choreSchedule(c), d, addLocalDays(d, 1)).length > 0).toBe(occurrenceOn(d, start, rule) !== null)
+    }
   })
 })

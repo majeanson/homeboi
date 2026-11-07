@@ -38,6 +38,20 @@ const LOOKBACK_DAYS = 730
 
 const doneMode = (row: UpkeepRowLike): boolean => row.recur_from === 'done'
 
+// A chore (`tasks`) is the same schedule under older column names: its anchor is the chosen
+// start date, or created_at for a chore made before 0032. The one place that says so, so the
+// board and the calendar cannot disagree. Rotation stays its own question (_lib/recur).
+export const choreSchedule = (c: {
+  recur_start?: number | null
+  created_at: number
+  recur_json: string | null
+  last_done_at: number | null
+}): UpkeepRowLike & { at: number } => ({
+  at: c.recur_start ?? c.created_at,
+  recur_json: c.recur_json,
+  last_done_at: c.last_done_at,
+})
+
 const lastDoneDay = (row: UpkeepRowLike): number | null =>
   row.last_done_at != null ? localDayStart(new Date(row.last_done_at * 1000)) : null
 
