@@ -4,7 +4,9 @@
 
 ## The idea
 
-A task is one thing with five independent answers. Every existing flavour becomes a combination, not a type.
+**At its core, a task is a title and a checkbox: the most basic todo app.** Everything else is an optional layer on that same thing, up to the gouttières that recur every autumn and rotate between people. There are no types. Add a layer and the task gains a behaviour, remove it and the task loses it, with no conversion and no second kind of row.
+
+A task is one thing with five independent answers. Only the title is required. Every existing flavour becomes a combination, not a type.
 
 | Axis | Values | Today it lives in |
 | --- | --- | --- |
@@ -81,9 +83,10 @@ The « Tâches » board view ships in this phase, with its horizon, subject and 
 
 ### Phase 4: one form, then decide on the tables
 
-- One task form replaces `ChoreForm`, `HomeProjectForm` and the todo composer. Fields appear by axis, never by type.
+- One task form replaces `ChoreForm`, `HomeProjectForm` and the todo composer. It opens as one title field, and each layer (when, who, subject, effort, look) is one tap away. Fields appear by axis, never by type.
+- Guard: only `title` is required on the write path, and no form branches on a task type.
 - Capture: the AI intents and `recurParse` create one kind of thing.
-- **Owner gate:** only then decide whether `tasks` and `todos` physically merge into `home_projects`. Phases 1 to 3 do not depend on it.
+- **Owner gate:** only then decide whether `tasks` and `todos` physically merge into `home_projects`. Phases 1 to 3 do not depend on it, but « no types » is only fully true once they do, so that is the recommended end state.
 - If they merge, old endpoints stay as aliases, because a queued offline write or an old tab can still call them.
 
 ## Every phase must keep
