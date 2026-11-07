@@ -10,12 +10,13 @@ import { RecurPicker, type RecurValue } from '../RecurPicker'
 import { LeadPicker } from '../LeadPicker'
 import { StatusMessage } from '../StatusMessage'
 import { FormFooter } from '../FormFooter'
-import { MemberPicker } from '../MemberPicker'
+import { RotationField } from '../tasks/RotationField'
 import { toFace } from '../FormScene'
 import { anchorSecToDate, dateToAnchorSec, recurOf, todayAnchorDate } from '../../lib/recurLabel'
 import { choreTemplates } from '../../lib/routineTemplates'
 import { MONTH_KEY, CHORES_KEY, BOARD_KEY } from '../../lib/queryKeys'
 import { colourFor } from '../../lib/things'
+import { rotationOf } from '../../lib/tasks'
 
 // The complete chore (corvée) form — title (with common presets), a round-robin
 // rotation of members, a colour, and an optional schedule. Shared by Settings ▸
@@ -37,15 +38,6 @@ export interface ChoreInit {
   announce_evening?: number | null
 }
 
-function parseRotation(json: string | null | undefined): string[] {
-  if (!json) return []
-  try {
-    const v = JSON.parse(json)
-    return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []
-  } catch {
-    return []
-  }
-}
 
 export function ChoreForm({
   members,
@@ -65,7 +57,7 @@ export function ChoreForm({
   const { lang } = useLang()
   const presets = choreTemplates(lang)
   const [title, setTitle] = useState(value?.title ?? '')
-  const [rotation, setRotation] = useState<string[]>(parseRotation(value?.rotation_json))
+  const [rotation, setRotation] = useState<string[]>(rotationOf(value?.rotation_json))
   const [color, setColor] = useState(colourFor('chore', value?.color))
   // Optional schedule — "tous les jeudis". null = a standing chore (no schedule).
   const [recur, setRecur] = useState<RecurValue | null>(recurOf(value?.recur_json))
@@ -84,9 +76,6 @@ export function ChoreForm({
   const [err, setErr] = useState(false)
   const write = useWrite()
 
-  function toggleRot(id: string) {
-    setRotation((r) => (r.includes(id) ? r.filter((x) => x !== id) : [...r, id]))
-  }
   async function submit(e?: React.FormEvent) {
     e?.preventDefault()
     if (!title.trim() || busy) return
@@ -154,15 +143,8 @@ export function ChoreForm({
           </Chip>
         ))}
       </div>
-      {/* The round-robin rotation: tap faces in turn order; the ordinal badge shows
-          who takes the first turn (the rotation is an ordered id array). */}
-      <MemberPicker
-        faces={members.map(toFace)}
-        values={rotation}
-        onToggle={toggleRot}
-        ariaLabel={o18n.forWho}
-        ordinals
-      />
+      {/* « Qui ? »: one face, or, once it recurs, a rotation behind one checkbox. */}
+      <RotationField faces={members.map(toFace)} value={rotation} onChange={setRotation} recurring={!!recur} />
       <ColorPicker value={color} onChange={setColor} label={o18n.colorLabel} />
       <RecurPicker value={recur} onChange={setRecur} />
       {recur && (

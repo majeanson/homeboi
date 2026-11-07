@@ -56,6 +56,7 @@ Examples: gouttières (the house, every autumn) · sortir le bac (rotation, week
 - The word lands here, not earlier. `glossary.ts`: « Tâche » wins and « Corvée » steps down, with the ratchet flipped and about 57 lines of copy across 30 files, FR and EN, in the commit that merges the views. Earlier it would have sat beside « Entretien », « Projet » and « À compléter », which are still separate. The Réglages pill « Tâches de la maison » is the one collision to resolve.
 - The merged board card: one `Act` row, one section, filtered by subject or person. Old cards retire through the `boardCards` migration so saved layouts survive.
 - Each subject's page gets its tasks section, one component reused by carnet, person and pet.
+- Rotation is a checkbox on any recurring task. `home_projects` gained the same three columns as `tasks` (0147), all read through `_lib/rotation.ts`: one code path.
 - **Stop point:** the concept exists for users even if the tables never merge.
 
 The « Tâches » board view ships in this phase, with its horizon, subject and person lenses, in the URL like every other view. Its body is lazy, like `WeekView`, so the eager chunk does not grow.

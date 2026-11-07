@@ -983,6 +983,7 @@ function useFixtures(): [boolean, (on: boolean) => void] {
 }
 
 const TaskListSpecimen = lazy(() => import('../components/tasks/TaskSpecimens').then((m) => ({ default: m.TaskListSpecimen })))
+const RotationFieldSpecimen = lazy(() => import('../components/tasks/TaskSpecimens').then((m) => ({ default: m.RotationFieldSpecimen })))
 
 export function DevKit() {
   const t = useT()
@@ -2826,6 +2827,19 @@ export function DevKit() {
         <Demo label="due · whose turn · ticked">
           <Suspense fallback={null}>
             <TaskListSpecimen />
+          </Suspense>
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Rangées & actions',
+      name: 'RotationField',
+      file: 'components/tasks/RotationField.tsx',
+      kw: 'rotation tour chacun qui visage tâche récurrente',
+      render: () => (
+        <Demo label="a recurring task, two faces taking turns">
+          <Suspense fallback={null}>
+            <RotationFieldSpecimen />
           </Suspense>
         </Demo>
       ),

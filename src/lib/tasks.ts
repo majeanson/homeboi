@@ -32,6 +32,17 @@ export interface TaskItem {
 
 export const isTicked = (t: Pick<TaskItem, 'done'>): boolean => t.done === 'ticked'
 
+// A form's starting value: the ordered ids of a stored rotation.
+export function rotationOf(json: string | null | undefined): string[] {
+  if (!json) return []
+  try {
+    const v: unknown = JSON.parse(json)
+    return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string') : []
+  } catch {
+    return []
+  }
+}
+
 // A task follows the board's face lens the way a chore always has: mine, my rotation, or
 // nobody's. Same rule as boardModel's `mineChore`, for the same reason.
 export const mineTask = (t: Pick<TaskItem, 'who_id' | 'team'>, profileId: string | null | undefined): boolean =>

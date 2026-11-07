@@ -520,6 +520,8 @@ export const FR_OPERATOR = {
   thisWeekProjects: 'Projets',
   thisWeekChores: 'Tâches',
   taskPlanned: 'Tâche planifiée',
+  rotationLabel: 'Chacun son tour',
+  rotationHint: 'Touche les visages dans l’ordre : cocher la tâche passe au suivant.',
   thisWeekRoutines: 'Routines',
   thisWeekAheadEmpty: 'Rien de prévu cette semaine.',
   thisWeekBehindEmpty: 'La semaine commence — rien à montrer encore.',

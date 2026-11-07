@@ -1022,6 +1022,9 @@ export interface HomeProjectsWire {
     carnet_id: string | null
     subject_kind: string | null
     subject_id: string | null
+    rotation_json: string
+    current_idx: number
+    last_done_by: string | null
     nextAt: number | null
     dueToday: boolean
     overdueSince: number | null

@@ -63,6 +63,30 @@ describe('the task writes', () => {
   })
 })
 
+describe('rotation on any recurring task', () => {
+  it('a home row takes turns through the one code path, and a tick moves the turn', async () => {
+    const s = await household('tasks-rotate', undefined, { empty: true })
+    const a = await okJson<{ id: string }>(s.fetch('/api/members', { method: 'POST', body: { name: 'Léa' } }))
+    const b = await okJson<{ id: string }>(s.fetch('/api/members', { method: 'POST', body: { name: 'Noah' } }))
+    const home = await okJson<{ id: string }>(
+      s.fetch('/api/home-projects', { method: 'POST', body: { title: 'Gouttières', kind: 'upkeep', at: addLocalDays(today(), -7), recur: { freq: 'weekly', interval: 1, weekdays: [] }, rotation: [a.id, b.id] } }),
+    )
+    const first = (await board(s)).tasks.find((t) => t.id === home.id)
+    expect(first).toMatchObject({ who_id: a.id, team: [a.id, b.id] })
+    await s.fetch('/api/home-projects', { method: 'PATCH', body: { id: home.id } })
+    expect((await tasks(s)).tasks.find((t) => t.id === home.id)).toMatchObject({ who_id: b.id, dueToday: false })
+    expect(await env.DB.prepare('SELECT last_done_by FROM home_projects WHERE id = ?').bind(home.id).first()).toEqual({ last_done_by: a.id })
+  })
+
+  it('the rotation edits with the rest of the row', async () => {
+    const s = await household('tasks-rotate-edit', undefined, { empty: true })
+    const a = await okJson<{ id: string }>(s.fetch('/api/members', { method: 'POST', body: { name: 'Léa' } }))
+    const home = await okJson<{ id: string }>(s.fetch('/api/home-projects', { method: 'POST', body: { title: 'Toit', kind: 'plan' } }))
+    await s.fetch('/api/home-projects', { method: 'PATCH', body: { id: home.id, rotation: [a.id] } })
+    expect((await tasks(s)).tasks.find((t) => t.id === home.id)?.who_id).toBe(a.id)
+  })
+})
+
 describe('the task read', () => {
   it('holds all three tables and keeps departure instances out', async () => {
     const s = await household('tasks-all', undefined, { empty: true })

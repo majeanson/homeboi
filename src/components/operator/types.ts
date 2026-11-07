@@ -51,6 +51,7 @@ export interface HomeProject {
   carnet_id?: string | null // « Les carnets » link (migration 0082); null = household-level
   subject_kind?: string | null // « Sur quoi ? » (0146), soft ref; a carnet stays in carnet_id
   subject_id?: string | null
+  rotation_json?: string | null // « chacun son tour » (0147), an ordered id array
 }
 
 interface RoutineCard {

@@ -64,6 +64,21 @@ test('the view toggle offers it, and a peek edits in its own scene', async ({ pa
   await expect(page.locator('.detail-sheet').getByRole('link', { name: /Modifier/ }).or(page.locator('.detail-sheet'))).toBeVisible()
 })
 
+test('« Chacun son tour » is a checkbox on any recurring task, and posts the turn order', async ({ page, app }) => {
+  await app.boot({ route: '/home-project/new?kind=upkeep', wait: '.operator__chore-form' })
+  const form = page.locator('.operator__chore-form')
+  await form.getByRole('textbox').first().fill('Gouttières')
+  // Not offered until the task recurs: a one-off has no turns to take.
+  await expect(form.getByRole('checkbox', { name: 'Chacun son tour' })).toHaveCount(0)
+  await form.locator('.recur select').selectOption('weekly')
+  await form.getByRole('checkbox', { name: 'Chacun son tour' }).check()
+  await form.getByRole('button', { name: 'Papa', exact: true }).click()
+  await form.getByRole('button', { name: 'Maman', exact: true }).click()
+  const post = page.waitForRequest((r) => r.url().includes('/api/home-projects') && r.method() === 'POST')
+  await form.locator('button[type="submit"]').click()
+  expect(((await post).postDataJSON() as { rotation: string[] }).rotation).toHaveLength(2)
+})
+
 test('an old Réglages link lands on the view', async ({ page, app }) => {
   await app.boot({ route: '/settings?tab=maison&focus=chores', wait: '.tasks-view' })
   await expect(page).toHaveURL(/view=taches/)

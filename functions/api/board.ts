@@ -443,15 +443,17 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // detail peek reuse the BoardHomeInstance shape unchanged.
   const homeOverdue: BoardHomeOverdue[] = []
   for (const h of homeRows.results) {
+    const rotation = parseRotation(h.rotation_json)
+    const turn = turnOf(rotation, h.current_idx)
     const hinst = (at: number): BoardHomeInstance => ({
       id: h.id,
       title: h.title,
       color: h.color,
       at,
       soon: isSoon(at, h.lead_seconds),
-      who: null,
-      who_id: null,
-      team: [],
+      who: memberName(turn),
+      who_id: turn,
+      team: rotation,
       carnet_id: h.carnet_id,
       recurring: parseRecur(h.recur_json) != null,
     })

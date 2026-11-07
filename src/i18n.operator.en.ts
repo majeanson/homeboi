@@ -450,6 +450,8 @@ export const EN_OPERATOR: typeof FR_OPERATOR = {
   thisWeekProjects: 'Projects',
   thisWeekChores: 'Tasks',
   taskPlanned: 'Planned task',
+  rotationLabel: 'Take turns',
+  rotationHint: 'Tap the faces in order: ticking the task passes it to the next one.',
   thisWeekRoutines: 'Routines',
   thisWeekAheadEmpty: 'Nothing planned this week.',
   thisWeekBehindEmpty: 'The week’s just starting — nothing to show yet.',

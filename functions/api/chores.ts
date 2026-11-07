@@ -5,7 +5,7 @@ import { clearStatements } from '../_lib/taskItem'
 import { hexColor } from '../_lib/validate'
 import { normalizeRecur } from '../_lib/recur'
 import { subjectBinds, validSubject } from '../_lib/subject'
-import { nextTurnIdx, parseRotation, turnOf } from '../_lib/rotation'
+import { nextTurnIdx, parseRotation, prevTurnIdx, rotationJson, turnOf } from '../_lib/rotation'
 import type { Wire } from '../_lib/wire'
 
 const isString = (v: unknown): v is string => typeof v === 'string'
@@ -72,7 +72,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
       id,
       actor.householdId,
       title,
-      JSON.stringify(body?.rotation ?? []),
+      rotationJson(body?.rotation),
       color,
       recurJson(body?.recur),
       recurStart(body?.start),
@@ -144,10 +144,10 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       binds.push(body.title.trim())
     }
     if (body.rotation !== undefined) {
-      // GET reads turn as current_idx % rotation.length, so a shorter rotation
+      // The turn is read modulo its length (_lib/rotation), so a shorter rotation
       // can't index out of range — no need to reset current_idx here.
       sets.push('rotation_json = ?')
-      binds.push(JSON.stringify(Array.isArray(body.rotation) ? body.rotation.filter(isString) : []))
+      binds.push(rotationJson(body.rotation))
     }
     if (body.color !== undefined) {
       sets.push('colour = ?')
@@ -192,8 +192,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   // Untick a one-off: the row's own check is its undo, so a tick has to be takeable back.
   // It puts back exactly what the tick moved: the stamp, the turn, and the log line.
   if (body.undo) {
-    const rotation = parseRotation(chore.rotation_json)
-    const back = rotation.length ? (chore.current_idx - 1 + rotation.length) % rotation.length : 0
+    const back = prevTurnIdx(parseRotation(chore.rotation_json), chore.current_idx)
     await ctx.env.DB.batch([
       ctx.env.DB.prepare('DELETE FROM task_participants WHERE task_id = ? AND contributed_at = ?').bind(body.id, chore.last_done_at),
       ctx.env.DB.prepare('UPDATE tasks SET last_done_at = NULL, last_done_by = NULL, cleared_at = NULL, current_idx = ? WHERE id = ? AND household_id = ?').bind(back, body.id, actor.householdId),

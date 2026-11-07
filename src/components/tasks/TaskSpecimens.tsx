@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import { RotationField } from './RotationField'
 import { TaskList } from './TaskList'
 import { useTaskActions } from './useTaskActions'
 import type { TaskItem } from '../../lib/tasks'
@@ -30,6 +32,11 @@ const MEMBERS = [
   { id: 'm1', display_name: 'Camille', colour: 'var(--berry)', avatar_kind: 'initial', avatar_ref: '', is_child: 0 },
   { id: 'm2', display_name: 'Noah', colour: 'var(--sky)', avatar_kind: 'initial', avatar_ref: '', is_child: 0 },
 ]
+
+export function RotationFieldSpecimen() {
+  const [value, setValue] = useState<string[]>(['m1', 'm2'])
+  return <RotationField faces={MEMBERS.map((m) => ({ id: m.id, name: m.display_name, colour: m.colour }))} value={value} onChange={setValue} recurring />
+}
 
 // Three rows, three shapes of the one task: due, whose turn, ticked. The hook is the real one,
 // so a tap here writes like it would anywhere else (these ids are in no table).

@@ -17,6 +17,9 @@ import { parseMoney } from '../../lib/money'
 import { HOME_PROJECTS_KEY, MONTH_KEY, BOARD_KEY, CARNETS_KEY } from '../../lib/queryKeys'
 import type { HomeProject } from '../operator/types'
 import { colourFor } from '../../lib/things'
+import { rotationOf } from '../../lib/tasks'
+import { RotationField } from '../tasks/RotationField'
+import { toFace, type FormMember } from '../FormScene'
 
 // The "Projet / Entretien" (home_projects) form — title (with kind presets), free
 // notes, an optional target budget, a colour, an optional date + recurrence + calm
@@ -26,12 +29,16 @@ import { colourFor } from '../../lib/things'
 export function HomeProjectForm({
   kind,
   value,
+  members = [],
   carnetId,
   onSaved,
   onCancel,
 }: {
   kind: 'plan' | 'upkeep'
   value?: HomeProject | null
+  // The household, for « Qui ? ». Absent where the form opens without a roster: « Qui ? » then
+  // hides and the row's rotation is left as it was.
+  members?: FormMember[] | undefined
   // « Les carnets »: when set, this Entretien row belongs to a carnet (a house, a
   // car, the water heater) — it still surfaces on the board exactly the same.
   carnetId?: string | null | undefined
@@ -53,6 +60,7 @@ export function HomeProjectForm({
   // « À partir de la dernière fois » (recur_from, mig 0119) — the cycle re-anchors
   // on the last check-off. Only meaningful with a recurrence.
   const [fromDone, setFromDone] = useState(value?.recur_from === 'done')
+  const [rotation, setRotation] = useState<string[]>(rotationOf(value?.rotation_json))
   // Calm "Bientôt" lead — only meaningful with a date to anchor against.
   const [lead, setLead] = useState<number | null>(value?.lead_seconds ?? null)
   const [busy, setBusy] = useState(false)
@@ -78,6 +86,7 @@ export function HomeProjectForm({
       recurFrom: recur && fromDone ? 'done' : 'anchor',
       leadSeconds: anchor ? lead : null, // no date → no occurrence to remind about
       ...(carnetId !== undefined ? { carnetId } : {}),
+      ...(members.length > 0 ? { rotation } : {}),
     }
     try {
       await write('home-projects', {
@@ -95,6 +104,7 @@ export function HomeProjectForm({
         setRecur(null)
         setFromDone(false)
         setLead(null)
+        setRotation([])
       }
       onSaved()
     } catch {
@@ -188,6 +198,7 @@ export function HomeProjectForm({
         </>
       )}
       {(date || recur) && <LeadPicker value={lead} onChange={setLead} />}
+      {members.length > 0 && <RotationField faces={members.map(toFace)} value={rotation} onChange={setRotation} recurring={!!recur} />}
       {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
       <FormFooter
         saveLabel={value ? t.common.save : addLabel}

@@ -30,13 +30,14 @@ export function HomeProjectFormPage() {
   const editTitle = kind === 'upkeep' ? o18n.home.editEntretien : o18n.home.editProjet
   return (
     <FormScene card="set-chores" title={id ? editTitle : addTitle} icon={kind === 'upkeep' ? 'gear-six-bold' : 'paint-brush-bold'} fallback="/board?view=taches" kiosk={!!id}>
-      {(_members, close) =>
+      {(members, close) =>
         wait ?? (
           <>
             <HomeProjectForm
               key={project?.id ?? 'new'}
               kind={kind}
               value={project ?? null}
+              members={members}
               carnetId={project ? undefined : (carnetId ?? undefined)}
               onSaved={() => {
                 qc.invalidateQueries({ queryKey: HOME_PROJECTS_KEY })
