@@ -11,7 +11,7 @@ A task is one thing with five independent answers. Every existing flavour become
 | **Sur quoi ?** | nothing · a carnet (house, car, appliance, room, any « thing ») · a person · a pet · a project · a trip | only `home_projects.carnet_id` |
 | **Quand ?** | someday · a day · recurring, on a fixed grid or from the last time | `recur_json` on two tables, `todos.day` on the third |
 | **Qui ?** | anyone · one person · a rotation | `rotation_json`, `todos.member_id` |
-| **Effort** | optional: vite fait · un moment · un gros morceau | nowhere yet |
+| **Effort** | optional: five dots, one is simple, five is high effort | nowhere yet |
 | **Allure** | icon and colour, inherited from the subject, overridable | `colour` on two tables, nothing on `todos`, no icon column anywhere |
 
 Examples: gouttières (the house, every autumn) · sortir le bac (rotation, weekly, evening before) · a long-term todo (nothing, someday) · vaccin du chien (the pet, yearly).
@@ -71,8 +71,10 @@ The « Tâches » board view ships in this phase, with its horizon, subject and 
 
 ### Phase 3b: « Trouver quoi faire »
 
-- Migration: nullable `effort` on the task rows, `'quick' | 'medium' | 'big'`. A word, never minutes, and never a score.
-- A finder inside the « Tâches » view: two tap-to-pick rows, effort then horizon (cette semaine · ce mois-ci · un jour), and the list narrows. No total, no « 12 restantes ».
+- Migration: nullable `effort` integer, 1 to 5, on the task rows. Never minutes, and it rates a task, never a person.
+- One `EffortDots` control: five dots, tap to set, tap the same dot to clear. It builds on `Segmented` (`role=radiogroup`), so it keeps a label for screen readers and a keyboard path. Register in DevKit and COMPONENTS.md. The read-only row shows the same dots, small.
+- Optional in the form, behind a tap, so adding a task stays one field.
+- A finder inside the « Tâches » view: pick how much you have with the same five dots (showing that effort and below), then a horizon (cette semaine · ce mois-ci · un jour), and the list narrows. No total, no « 12 restantes ».
 - A task with no effort still appears, under every effort, so skipping the field never hides it.
 - Later, optional: « Surprends-moi » offers one task. The AI could guess effort at capture, confirmed by the user.
 - **Stop point.**
