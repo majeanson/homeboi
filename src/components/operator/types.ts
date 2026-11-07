@@ -25,6 +25,8 @@ export interface Chore {
   lead_seconds?: number | null
   // D-21 (bmad/10) « Sortir le bac »: opt-in "evening before" board announce.
   announce_evening?: number | null
+  subject_kind?: string | null // « Sur quoi ? » (0146), soft ref
+  subject_id?: string | null
 }
 // "Projets & Entretien" (home_projects) — the longer-horizon home work under
 // Corvées. ONE row shape; `kind` discriminates the two sub-tabs. A row may carry
@@ -47,6 +49,8 @@ export interface HomeProject {
   lead_seconds?: number | null
   last_done_at?: number | null
   carnet_id?: string | null // « Les carnets » link (migration 0082); null = household-level
+  subject_kind?: string | null // « Sur quoi ? » (0146), soft ref; a carnet stays in carnet_id
+  subject_id?: string | null
 }
 
 interface RoutineCard {

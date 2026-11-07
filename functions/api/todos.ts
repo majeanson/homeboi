@@ -3,6 +3,7 @@ import { authed } from '../_lib/route'
 import { newId, nowSec, localDayStart } from '../_lib/ids'
 import { profileMemberId } from '../_lib/profile'
 import { deleteHealing, healClear } from '../_lib/staleDelete'
+import { subjectBinds, validSubject } from '../_lib/subject'
 
 // À cocher — standalone check-off lists (todos), separate from the loose-chore
 // "À faire" board section (`tasks` table + the board payload's `todos` field). A
@@ -47,9 +48,11 @@ interface TodoRow {
   section: string | null
   source_template_id: string | null
   created_at: number
+  subject_kind: string | null // soft ref (0146): what this task is about, no FK
+  subject_id: string | null
 }
 
-const COLS = 'id, title, day, member_id, done_at, position, section, source_template_id, created_at'
+const COLS = 'id, title, day, member_id, done_at, position, section, source_template_id, created_at, subject_kind, subject_id'
 
 // Reserved, non-template `source_template_id` for a FREE-TYPED « Avant de partir »
 // item (typed into the departure card, not instantiated from a saved checklist). The
@@ -113,7 +116,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {
-  const body = await readJson<{ title?: string; day?: number | null; templateId?: string; departure?: boolean; section?: string }>(
+  const body = await readJson<{ title?: string; day?: number | null; templateId?: string; departure?: boolean; section?: string; subject?: unknown }>(
     ctx.request,
   )
   const day = typeof body?.day === 'number' && Number.isFinite(body.day) ? body.day : null
@@ -186,17 +189,18 @@ export const onRequestPost = authed(async (ctx, actor) => {
     return ok({ ok: true, id })
   }
 
+  const [subjectKind, subjectId] = subjectBinds(await validSubject(ctx.env.DB, actor.householdId, body?.subject))
   await ctx.env.DB.batch([
     ctx.env.DB.prepare(
-      'INSERT INTO todos (id, household_id, title, day, member_id, position, done_at, section, source_template_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 0, NULL, NULL, NULL, ?, ?)',
-    ).bind(id, actor.householdId, title.slice(0, TITLE_MAX), day, mid, ts, ts),
+      'INSERT INTO todos (id, household_id, title, day, member_id, position, done_at, section, source_template_id, subject_kind, subject_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 0, NULL, NULL, NULL, ?, ?, ?, ?)',
+    ).bind(id, actor.householdId, title.slice(0, TITLE_MAX), day, mid, subjectKind, subjectId, ts, ts),
     sweepStale(ctx.env.DB, actor.householdId, today),
   ])
   return ok({ ok: true, id })
 })
 
 export const onRequestPatch = authed(async (ctx, actor) => {
-  const body = await readJson<{ id?: string; done?: boolean; title?: string; clearChecked?: boolean; ids?: unknown; items?: unknown; asOf?: unknown }>(
+  const body = await readJson<{ id?: string; done?: boolean; title?: string; subject?: unknown; clearChecked?: boolean; ids?: unknown; items?: unknown; asOf?: unknown }>(
     ctx.request,
   )
 
@@ -269,6 +273,12 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   if (typeof body?.title === 'string' && body.title.trim()) {
     await ctx.env.DB.prepare('UPDATE todos SET title = ?, updated_at = ? WHERE id = ? AND household_id = ?')
       .bind(body.title.trim().slice(0, TITLE_MAX), ts, id, actor.householdId)
+      .run()
+  }
+  if (body?.subject !== undefined) {
+    const [subjectKind, subjectId] = subjectBinds(await validSubject(ctx.env.DB, actor.householdId, body.subject))
+    await ctx.env.DB.prepare('UPDATE todos SET subject_kind = ?, subject_id = ?, updated_at = ? WHERE id = ? AND household_id = ?')
+      .bind(subjectKind, subjectId, ts, id, actor.householdId)
       .run()
   }
   return ok({ ok: true })

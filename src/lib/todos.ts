@@ -22,6 +22,8 @@ export interface Todo {
   position: number
   section: string | null
   source_template_id: string | null
+  subject_kind?: string | null // « Sur quoi ? » (0146): soft ref, no FK. Absent on an optimistic row.
+  subject_id?: string | null
 }
 
 // A template item is EITHER a plain label OR a reference to another template

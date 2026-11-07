@@ -544,6 +544,8 @@ export interface ChoresWire {
     recur_start: number | null
     lead_seconds: number | null
     announce_evening: number | null
+    subject_kind: string | null
+    subject_id: string | null
   }[]
 }
 
@@ -881,6 +883,8 @@ export interface TodosWire {
     section: string | null
     source_template_id: string | null
     created_at: number
+    subject_kind: string | null
+    subject_id: string | null
   }[]
 }
 
@@ -973,6 +977,8 @@ export interface HomeProjectsWire {
     last_done_at: number | null
     snoozed_until: number | null
     carnet_id: string | null
+    subject_kind: string | null
+    subject_id: string | null
     nextAt: number | null
     dueToday: boolean
     overdueSince: number | null

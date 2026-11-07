@@ -423,8 +423,8 @@ const GHOST_MANAGE = {
 
 const CHORES = {
   chores: [
-    { id: 'c1', title: 'Sortir les poubelles', rotation_json: JSON.stringify(['m1', 'm2']), current_idx: 0, last_done_at: null, last_done_by: null, color: '#88A36F', recur_json: null, recur_start: null, lead_seconds: null, announce_evening: null },
-    { id: 'c2', title: 'Vaisselle', rotation_json: JSON.stringify(['m2', 'm1']), current_idx: 1, last_done_at: BASE - DAY, last_done_by: null, color: '#7BB0C9', recur_json: null, recur_start: null, lead_seconds: null, announce_evening: null },
+    { id: 'c1', title: 'Sortir les poubelles', rotation_json: JSON.stringify(['m1', 'm2']), current_idx: 0, last_done_at: null, last_done_by: null, color: '#88A36F', recur_json: null, recur_start: null, lead_seconds: null, announce_evening: null, subject_kind: null, subject_id: null },
+    { id: 'c2', title: 'Vaisselle', rotation_json: JSON.stringify(['m2', 'm1']), current_idx: 1, last_done_at: BASE - DAY, last_done_by: null, color: '#7BB0C9', recur_json: null, recur_start: null, lead_seconds: null, announce_evening: null, subject_kind: null, subject_id: null },
   ],
 }
 
@@ -527,10 +527,10 @@ export const CAR = {
 const TODAY_DAY = localDayStart(new Date())
 const TODOS = {
   todos: [
-    { id: 'td1', title: 'Clés + téléphone + portefeuille', day: null, member_id: null, done_at: null, position: 0, section: null, source_template_id: null, created_at: BASE },
-    { id: 'td2', title: 'Boîte à lunch des enfants', day: null, member_id: 'm1', done_at: null, position: 1, section: null, source_template_id: null, created_at: BASE },
-    { id: 'td3', title: 'Vérifier les portes', day: TODAY_DAY, member_id: null, done_at: null, position: 0, section: 'Avant de partir', source_template_id: 'tpl1', created_at: BASE },
-    { id: 'td4', title: 'Bouteille d’eau', day: TODAY_DAY, member_id: null, done_at: null, position: 1, section: 'Avant de partir', source_template_id: 'tpl1', created_at: BASE },
+    { id: 'td1', title: 'Clés + téléphone + portefeuille', day: null, member_id: null, done_at: null, position: 0, section: null, source_template_id: null, created_at: BASE, subject_kind: null, subject_id: null },
+    { id: 'td2', title: 'Boîte à lunch des enfants', day: null, member_id: 'm1', done_at: null, position: 1, section: null, source_template_id: null, created_at: BASE, subject_kind: null, subject_id: null },
+    { id: 'td3', title: 'Vérifier les portes', day: TODAY_DAY, member_id: null, done_at: null, position: 0, section: 'Avant de partir', source_template_id: 'tpl1', created_at: BASE, subject_kind: null, subject_id: null },
+    { id: 'td4', title: 'Bouteille d’eau', day: TODAY_DAY, member_id: null, done_at: null, position: 1, section: 'Avant de partir', source_template_id: 'tpl1', created_at: BASE, subject_kind: null, subject_id: null },
   ],
 }
 

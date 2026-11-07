@@ -29,7 +29,7 @@
 | --- | --- |
 | **What it is** | A calm household command-center for a cheap always-on wall tablet. Single-page React app + one Cloudflare Worker (static assets + `/api/*`) + D1 + Workers AI + R2. FR-CA first. |
 | **Code** | ~157k lines across 955 `.ts`/`.tsx` files (`src/`, `functions/`, `worker/`) |
-| **Schema** | 143 forward-only migrations (0143 = la table `mots` s'en va) |
+| **Schema** | 144 forward-only migrations (0146 = le sujet d'une tâche) |
 | **Tests** | 3 038 unit tests in 264 files (2026-11-05, night) · 156 real-runtime cases in 24 files (`npm run test:d1`, the Worker in workerd against a real D1) · 195 Playwright spec files |
 | **Deploy** | Push to `main` → CI (typecheck · test · build · bundle budget · **test:d1** · knip) gates `db:migrate:prod` + `wrangler deploy`. E2E is decoupled (`workflow_run`), runs after a green CI, never blocks the ship. |
 | **Second interface** | `/api/mcp` — read-only over the household — of the 12 tools, most proxy a GET handler that already exists, so the caps, the recurrence expansion and the time zone are decided once and inherited. (This row lives HERE, not in §3: docCounts derives that number from the registry, and the claim died the first time §3 rotated.) |
@@ -112,6 +112,9 @@ now, so the repo-wide count is honest for the first time.
 ---
 
 ## 3. What just shipped
+
+### Une seule notion de tâche, phase 2 — 2026-11-06
+`plans/2026-11-06-TACHE-UNIFIEE.md`. Une tâche a un sujet ou aucun : `subject_kind` + `subject_id` (0146) sur `tasks`, `todos`, `home_projects`, référence douce sans clé étrangère ; `carnet_id` reste et se lit comme le genre `carnet`.
 
 ### La revue à l'œil des vagues visuelles — 2026-11-06
 Les images ont été ouvertes, pas seulement la matrice relue. Trouvé et corrigé : la vue simple coupait le titre de chaque onglet et débordait de 44px sous 390 ; 70 classes de bouton restaient en Arial ; la porte de sortie portait la bordure du navigateur et son libellé était coupé ; le dépliage de Field avait perdu la marge des champs de Réglages ; la rangée d'ajout de la liste fantôme ; le ＋ promis aux tout-petits qui n'en ont pas. **`board-kiosk` à 746px n'était pas la mosaïque** : stable de 300ms à 6s, c'était `WelcomeCard` qui comptait « pas encore chargé » comme « pas fait », 412px de liste d'accueil sur une maisonnée complète à chaque chargement à froid. `sm.config.ts` lit enfin `PW_PORT`.

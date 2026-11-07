@@ -20,6 +20,15 @@ const columnLines = (sql: string) =>
     .split('\n')
     .filter((l) => /^\s*(ALTER TABLE .* ADD COLUMN\s+)?[a-z_]+\s+(TEXT|INTEGER|REAL|BLOB)\b/i.test(l))
 
+// A soft subject ref (0146) names one of five tables by its `*_kind` column, so a FK could
+// only ever be wrong, and NOT NULL would make « no subject » unsayable. The rest of the
+// convention is the comment CLAUDE.md asks of every soft ref, here on the file as a whole.
+const softRefLines = (sql: string) =>
+  sql
+    .replace(/--[^\n]*/g, '')
+    .split('\n')
+    .filter((l) => /\bsubject_(kind|id)\b/i.test(l))
+
 describe('migrations after 0145 follow the conventions', () => {
   it('the frozen line still exists (canary)', () => {
     expect(readdirSync(__dirname).some((f) => f.startsWith('0145_'))).toBe(true)
@@ -28,6 +37,12 @@ describe('migrations after 0145 follow the conventions', () => {
     const lines = columnLines(readFileSync(join(__dirname, f), 'utf8'))
     it(`${f}: colour and position, in their one spelling`, () => {
       expect(lines.filter((l) => /\b(color|sort_order|sort)\s+(TEXT|INTEGER|REAL)/i.test(l))).toEqual([])
+    })
+    it(`${f}: a subject ref is soft, nullable and commented as such`, () => {
+      const sql = readFileSync(join(__dirname, f), 'utf8')
+      const refs = softRefLines(sql)
+      expect(refs.filter((l) => /NOT NULL|REFERENCES/i.test(l))).toEqual([])
+      if (refs.length > 0) expect(sql).toMatch(/PAS DE CLÉ ÉTRANGÈRE/)
     })
     it(`${f}: a *_json column is NOT NULL with a default`, () => {
       expect(lines.filter((l) => /_json\s+TEXT/i.test(l) && !/NOT NULL/i.test(l) && !/DEFAULT/i.test(l))).toEqual([])

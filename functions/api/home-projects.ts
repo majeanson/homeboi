@@ -4,6 +4,7 @@ import { newId, nowSec, localDayStart } from '../_lib/ids'
 import { hexColor } from '../_lib/validate'
 import { normalizeRecur } from '../_lib/recur'
 import { upkeepStatus, nextCycleDay } from '../_lib/upkeep'
+import { validSubject, type SubjectRef } from '../_lib/subject'
 import { addLocalDays } from '../_lib/ids'
 
 // "Projets & Entretien" — the longer-horizon home work that lives under Corvées
@@ -68,6 +69,13 @@ async function validCarnetId(db: D1Database, hh: string, v: unknown): Promise<st
   return owns ? id : null
 }
 
+// One subject, two storages (migration 0146): a carnet stays in carnet_id, where every older
+// reader already looks; any other kind goes to subject_kind/subject_id and clears carnet_id.
+const subjectCols = (ref: SubjectRef | null): { carnetId: string | null; subjectKind: string | null; subjectId: string | null } =>
+  ref?.kind === 'carnet'
+    ? { carnetId: ref.id, subjectKind: null, subjectId: null }
+    : { carnetId: null, subjectKind: ref?.kind ?? null, subjectId: ref?.id ?? null }
+
 interface ProjectRow {
   id: string
   kind: string
@@ -82,11 +90,13 @@ interface ProjectRow {
   last_done_at: number | null
   snoozed_until: number | null
   carnet_id: string | null
+  subject_kind: string | null // soft ref (0146), no FK; a carnet stays in carnet_id
+  subject_id: string | null
 }
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const { results } = await ctx.env.DB.prepare(
-    'SELECT id, kind, title, notes, budget_cents, colour AS color, at, recur_json, recur_from, lead_seconds, last_done_at, snoozed_until, carnet_id FROM home_projects WHERE household_id = ? ORDER BY created_at',
+    'SELECT id, kind, title, notes, budget_cents, colour AS color, at, recur_json, recur_from, lead_seconds, last_done_at, snoozed_until, carnet_id, subject_kind, subject_id FROM home_projects WHERE household_id = ? ORDER BY created_at',
   )
     .bind(actor.householdId)
     .all<ProjectRow>()
@@ -110,15 +120,20 @@ export const onRequestPost = authed(async (ctx, actor) => {
     recurFrom?: unknown
     leadSeconds?: number | null
     carnetId?: string | null
+    subject?: unknown
   }>(ctx.request)
   const title = body?.title?.trim()
   if (!title) return badRequest('Titre requis.')
   const id = newId()
   const ts = nowSec()
   const at = atSec(body?.at)
-  const carnetId = await validCarnetId(ctx.env.DB, actor.householdId, body?.carnetId)
+  // `subject` wins when both are sent; `carnetId` remains the older spelling of one kind of it.
+  const cols =
+    body?.subject !== undefined
+      ? subjectCols(await validSubject(ctx.env.DB, actor.householdId, body.subject, id))
+      : { carnetId: await validCarnetId(ctx.env.DB, actor.householdId, body?.carnetId), subjectKind: null, subjectId: null }
   await ctx.env.DB.prepare(
-    'INSERT INTO home_projects (id, household_id, kind, title, notes, budget_cents, colour, at, recur_json, recur_from, lead_seconds, carnet_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO home_projects (id, household_id, kind, title, notes, budget_cents, colour, at, recur_json, recur_from, lead_seconds, carnet_id, subject_kind, subject_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
   )
     .bind(
       id,
@@ -132,7 +147,9 @@ export const onRequestPost = authed(async (ctx, actor) => {
       recurJson(body?.recur),
       recurFromOf(body?.recurFrom),
       at ? leadSeconds(body?.leadSeconds) : null, // a lead needs an occurrence date to anchor against
-      carnetId,
+      cols.carnetId,
+      cols.subjectKind,
+      cols.subjectId,
       ts,
       ts,
     )
@@ -164,6 +181,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     recurFrom?: unknown
     leadSeconds?: number | null
     carnetId?: string | null
+    subject?: unknown
     snooze?: unknown
   }>(ctx.request)
   if (!body?.id) return badRequest('id requis.')
@@ -203,7 +221,8 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     body.recur !== undefined ||
     body.recurFrom !== undefined ||
     body.leadSeconds !== undefined ||
-    body.carnetId !== undefined
+    body.carnetId !== undefined ||
+    body.subject !== undefined
   if (editsContent) {
     const sets: string[] = []
     const binds: unknown[] = []
@@ -239,8 +258,13 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       sets.push('lead_seconds = ?')
       binds.push(leadSeconds(body.leadSeconds))
     }
-    if (body.carnetId !== undefined) {
-      sets.push('carnet_id = ?')
+    if (body.subject !== undefined) {
+      const cols = subjectCols(await validSubject(ctx.env.DB, actor.householdId, body.subject, body.id))
+      sets.push('carnet_id = ?', 'subject_kind = ?', 'subject_id = ?')
+      binds.push(cols.carnetId, cols.subjectKind, cols.subjectId)
+    } else if (body.carnetId !== undefined) {
+      // The older door still means « one subject »: naming a carnet clears any other kind.
+      sets.push('carnet_id = ?', 'subject_kind = NULL', 'subject_id = NULL')
       binds.push(await validCarnetId(ctx.env.DB, actor.householdId, body.carnetId))
     }
     if (!sets.length) return ok({ ok: true })

@@ -3,6 +3,7 @@ import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { hexColor } from '../_lib/validate'
 import { normalizeRecur } from '../_lib/recur'
+import { subjectBinds, validSubject } from '../_lib/subject'
 import type { Wire } from '../_lib/wire'
 
 const isString = (v: unknown): v is string => typeof v === 'string'
@@ -39,7 +40,7 @@ const announceEvening = (v: unknown): number | null => (v ? 1 : null)
 // Aujourd'hui / À venir; created_at is the recurrence anchor.
 export const onRequestGet = authed(async (ctx, actor) => {
   const { results } = await ctx.env.DB.prepare(
-    'SELECT id, title, rotation_json, current_idx, last_done_at, last_done_by, colour AS color, recur_json, recur_start, lead_seconds, announce_evening FROM tasks WHERE household_id = ? ORDER BY created_at',
+    'SELECT id, title, rotation_json, current_idx, last_done_at, last_done_by, colour AS color, recur_json, recur_start, lead_seconds, announce_evening, subject_kind, subject_id FROM tasks WHERE household_id = ? ORDER BY created_at',
   )
     .bind(actor.householdId)
     .all<Wire['chores']['chores'][number]>()
@@ -55,13 +56,15 @@ export const onRequestPost = authed(async (ctx, actor) => {
     start?: unknown
     leadSeconds?: number | null
     announceEvening?: boolean
+    subject?: unknown
   }>(ctx.request)
   const title = body?.title?.trim()
   if (!title) return badRequest('Titre requis.')
   const id = newId()
   const color = hexColor(body?.color, '#88a36f')
+  const [subjectKind, subjectId] = subjectBinds(await validSubject(ctx.env.DB, actor.householdId, body?.subject))
   await ctx.env.DB.prepare(
-    'INSERT INTO tasks (id, household_id, title, rotation_json, current_idx, colour, recur_json, recur_start, lead_seconds, announce_evening, created_at) VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO tasks (id, household_id, title, rotation_json, current_idx, colour, recur_json, recur_start, lead_seconds, announce_evening, subject_kind, subject_id, created_at) VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?)',
   )
     .bind(
       id,
@@ -73,6 +76,8 @@ export const onRequestPost = authed(async (ctx, actor) => {
       recurStart(body?.start),
       leadSeconds(body?.leadSeconds),
       announceEvening(body?.announceEvening),
+      subjectKind,
+      subjectId,
       nowSec(),
     )
     .run()
@@ -100,6 +105,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     start?: unknown
     leadSeconds?: number | null
     announceEvening?: boolean
+    subject?: unknown
   }>(ctx.request)
   if (!body?.id) return badRequest('id requis.')
 
@@ -115,7 +121,8 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     body.color !== undefined ||
     body.recur !== undefined ||
     body.leadSeconds !== undefined ||
-    body.announceEvening !== undefined
+    body.announceEvening !== undefined ||
+    body.subject !== undefined
   if (editsContent) {
     const sets: string[] = []
     const binds: unknown[] = []
@@ -148,6 +155,10 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     if (body.announceEvening !== undefined) {
       sets.push('announce_evening = ?')
       binds.push(announceEvening(body.announceEvening))
+    }
+    if (body.subject !== undefined) {
+      sets.push('subject_kind = ?', 'subject_id = ?')
+      binds.push(...subjectBinds(await validSubject(ctx.env.DB, actor.householdId, body.subject)))
     }
     if (!sets.length) return ok({ ok: true })
     binds.push(body.id, actor.householdId)
