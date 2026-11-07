@@ -3,6 +3,8 @@ import { authed } from '../_lib/route'
 import { localDayStart, addLocalDays } from '../_lib/ids'
 import { parseRecur, expandRange } from '../_lib/recur'
 import { choreSchedule, upkeepStatus, upkeepOccurrences } from '../_lib/upkeep'
+import { parseRotation, turnOf } from '../_lib/rotation'
+import { CHORE_TASK_COLS, HOME_TASK_COLS, choreTask, homeTask, present, type ChoreTaskRow, type HomeTaskRow } from '../_lib/taskItem'
 import { isSoon as isSoonAt } from '../_lib/reminder'
 import { fetchBirthdayPeople, birthdayOccurrences } from '../_lib/birthdays'
 import { workOccurrencesInRange, parseScheduleBlockRow, type ScheduleBlock, type ScheduleBlockRow } from '../_lib/carResolve'
@@ -163,10 +165,10 @@ export const onRequestGet = authed(async (ctx, actor) => {
       .bind(hh)
       .all<BoardListItem>(),
     ctx.env.DB.prepare(
-      'SELECT id, title, rotation_json, current_idx, last_done_at, colour AS color, recur_json, recur_start, lead_seconds, announce_evening, created_at FROM tasks WHERE household_id = ? ORDER BY created_at',
+      `SELECT ${CHORE_TASK_COLS}, announce_evening FROM tasks WHERE household_id = ? ORDER BY created_at`,
     )
       .bind(hh)
-      .all<Omit<BoardChore, 'helpers'>>(),
+      .all<ChoreTaskRow & Omit<BoardChore, 'helpers'>>(),
     // « Mots » — the fridge (uncleared), newest first. Since 0142 a paper may be addressed
     // (for_member_id) and scheduled (surface_at). Two things are decided HERE, not in
     // the card, because a client-side hide is a hide the payload still carries:
@@ -355,7 +357,17 @@ export const onRequestGet = authed(async (ctx, actor) => {
     seenByTask.set(h.task_id, seen)
   }
   const choresOut = chores.results.map((c) => ({
-    ...c,
+    id: c.id,
+    title: c.title,
+    rotation_json: c.rotation_json,
+    current_idx: c.current_idx,
+    last_done_at: c.last_done_at,
+    color: c.color,
+    recur_json: c.recur_json,
+    recur_start: c.recur_start,
+    lead_seconds: c.lead_seconds,
+    announce_evening: c.announce_evening,
+    created_at: c.created_at,
     helpers: helpersByTask.get(c.id) ?? [],
   }))
 
@@ -369,22 +381,11 @@ export const onRequestGet = authed(async (ctx, actor) => {
   type ChoreSrc = Omit<BoardChore, 'helpers'>
   // The rotation as member ids — the whole team sharing the chore. Empty when
   // there's no rotation (an unassigned "Maisonnée" task shown to everyone).
-  const teamIds = (c: ChoreSrc): string[] => {
-    try {
-      const p = JSON.parse(c.rotation_json)
-      if (Array.isArray(p)) return p.filter((x): x is string => typeof x === 'string')
-    } catch {
-      /* malformed rotation → no team */
-    }
-    return []
-  }
+  const teamIds = (c: ChoreSrc): string[] => parseRotation(c.rotation_json)
   // Whose turn it is, as a member id (rotation + current_idx). Null when there's
   // no rotation — an unassigned "Maisonnée" task. The board's personal-focus
   // filter keeps these visible to everyone alongside the picked member's own.
-  const whoseTurnId = (c: ChoreSrc): string | null => {
-    const rot = teamIds(c)
-    return rot[c.current_idx % rot.length] ?? null
-  }
+  const whoseTurnId = (c: ChoreSrc): string | null => turnOf(teamIds(c), c.current_idx)
   const whoseTurn = (c: ChoreSrc): string | null => memberName(whoseTurnId(c))
   const choresToday: BoardChoreInstance[] = []
   const choresUpcoming: BoardChoreInstance[] = []
@@ -427,22 +428,13 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // rows (at IS NULL) stay quiet — they live only in Réglages. Checkable off the
   // board (sets last_done_at), so "done this cycle" mirrors a chore. No rotation
   // (who/team empty); the row's own colour + title emoji distinguish it.
+  // The undated half of the WHERE is an undated row ticked today: it has no cell on any
+  // calendar, but it stays ticked on the board until the day ends like any other one-off.
   const homeRows = await ctx.env.DB.prepare(
-    'SELECT id, title, colour AS color, at, recur_json, recur_from, lead_seconds, last_done_at, snoozed_until, carnet_id FROM home_projects WHERE household_id = ? AND at IS NOT NULL',
+    `SELECT ${HOME_TASK_COLS} FROM home_projects WHERE household_id = ? AND (at IS NOT NULL OR last_done_at >= ?)`,
   )
-    .bind(hh)
-    .all<{
-      id: string
-      title: string
-      color: string | null
-      at: number
-      recur_json: string | null
-      recur_from: string | null
-      lead_seconds: number | null
-      last_done_at: number | null
-      snoozed_until: number | null
-      carnet_id: string | null
-    }>()
+    .bind(hh, today)
+    .all<HomeTaskRow>()
   const homeToday: BoardHomeInstance[] = []
   const homeUpcoming: BoardHomeInstance[] = []
   // The calm carry-forward: a missed due date (recurring cycle or dated one-off)
@@ -483,6 +475,12 @@ export const onRequestGet = authed(async (ctx, actor) => {
   }
   homeUpcoming.sort((a, b) => a.at - b.at)
   homeOverdue.sort((a, b) => a.overdueSince - b.overdueSince)
+
+  // The same two tables as tasks, for the merged board section. Same rows, no extra read:
+  // a subject resolves on the client from what it already holds (src/lib/subjects.ts).
+  const tasks = [...homeRows.results.map((h) => homeTask(h, today, now)), ...chores.results.map((c) => choreTask(c, today, now))]
+    .filter(present)
+    .filter((i) => i.onBoard)
 
   // Today's meals, in the household's slot order (Réglages ▸ Repas; déjeuner →
   // dîner → collation → souper → dessert out of the box) so the board reads
@@ -541,6 +539,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     homeUpcoming,
     homeOverdue,
     todos,
+    tasks,
     notes: notes.results,
     leftovers: leftoversRes.results,
   })

@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import type { BoardEvent, BoardMealBrief, BoardNote, CercleContact, DealRow, EventsWire, HabitsWire, HealthWire, MealRow, MemberRow, RecipeWireRow, TransfersWire, Wire } from '../functions/_lib/wire'
+import type { BoardEvent, BoardMealBrief, BoardNote, CercleContact, DealRow, EventsWire, HabitsWire, HealthWire, MealRow, MemberRow, RecipeWireRow, TaskItem, TransfersWire, Wire } from '../functions/_lib/wire'
 import { addLocalDays, localDayStart } from '../src/lib/localDay'
 
 // Deterministic API stubs so screenshots render populated, calm surfaces with
@@ -66,6 +66,30 @@ const boardEvent = (e: Pick<BoardEvent, 'id' | 'title' | 'start_at' | 'all_day' 
   ...e,
 })
 const mealBrief = (m: Pick<BoardMealBrief, 'id' | 'title' | 'cook_member_id'> & Partial<BoardMealBrief>): BoardMealBrief => ({ is_leftover: 0, recipe_id: null, ...m })
+// One task row as _lib/taskItem.ts stamps it: due today unless the fixture says otherwise.
+export const boardTask = (t: Pick<TaskItem, 'source' | 'id' | 'title'> & Partial<TaskItem>): TaskItem => ({
+  key: `${t.source}:${t.id}`,
+  color: null,
+  subject: null,
+  kind: null,
+  recurring: false,
+  recurJson: null,
+  day: localDayStart(new Date()),
+  dueToday: true,
+  overdueSince: null,
+  snoozedUntil: null,
+  soon: false,
+  done: 'open',
+  doneAt: null,
+  who_id: null,
+  team: [],
+  onBoard: true,
+  ...t,
+})
+// A someday task: in the Tâches view, never on the bento board.
+export const somedayTask = (t: Pick<TaskItem, 'source' | 'id' | 'title'> & Partial<TaskItem>): TaskItem =>
+  boardTask({ day: null, dueToday: false, onBoard: false, ...t })
+
 const boardMeal = (m: Pick<BoardMealBrief, 'id' | 'title' | 'cook_member_id'> & { slot: string; position: number; recipe_id?: string | null }) => ({ is_leftover: 0, recipe_id: null, ...m })
 const mealRow = (m: Omit<MealRow, 'suggested_by' | 'recipe_id' | 'is_leftover'> & Partial<MealRow>): MealRow => ({ suggested_by: null, recipe_id: null, is_leftover: 0, ...m })
 const fridgeNote = (n: Pick<BoardNote, 'id' | 'text' | 'member_id' | 'created_at'>): BoardNote => ({
@@ -192,6 +216,9 @@ export const BOARD = {
     { id: 't1', title: 'Appeler le garagiste', color: null, at: BASE, soon: false, who: 'Maman', who_id: 'm1', team: [], announce_evening: false },
     { id: 't2', title: 'Sortir le recyclage', color: '#88A36F', at: BASE, soon: false, who: null, who_id: null, team: [], announce_evening: false },
   ],
+  // The chores + home rows as tasks: the merged board section. Same fixture as the instance
+  // arrays above, the shape the server stamps through _lib/taskItem.ts.
+  tasks: [boardTask({ source: 'chore', id: 'c1', title: 'Sortir les poubelles', color: '#88A36F', recurring: true, who_id: 'm3', team: ['m3'] })],
   // Undated leftovers to finish — the "Restants à finir" reminder card.
   leftovers: [{ id: 'lo1', title: 'Pâté chinois', recipe_id: null, source_meal_id: null }],
 }
@@ -526,6 +553,11 @@ export const CAR = {
 // on what "today" means whatever timezone the runner sits in.
 const TODAY_DAY = localDayStart(new Date())
 const TODOS = {
+  // The two standing rows are someday tasks now: they live in the Tâches view.
+  items: [
+    somedayTask({ source: 'todo', id: 'td1', title: 'Clés + téléphone + portefeuille' }),
+    somedayTask({ source: 'todo', id: 'td2', title: 'Boîte à lunch des enfants', who_id: 'm1' }),
+  ],
   todos: [
     { id: 'td1', title: 'Clés + téléphone + portefeuille', day: null, member_id: null, done_at: null, position: 0, section: null, source_template_id: null, created_at: BASE, subject_kind: null, subject_id: null },
     { id: 'td2', title: 'Boîte à lunch des enfants', day: null, member_id: 'm1', done_at: null, position: 1, section: null, source_template_id: null, created_at: BASE, subject_kind: null, subject_id: null },
@@ -966,6 +998,23 @@ export const ROUTES: Partial<Wire> = {
   'guest/whoami': { scope: 'guest', kind: null },
   'home-pins': { pins: [] },
   'home-projects': { projects: [] },
+  tasks: {
+    tasks: [
+      boardTask({ source: 'chore', id: 'c1', title: 'Sortir les poubelles', color: '#88A36F', recurring: true, who_id: 'm3', team: ['m3', 'm4'], recurJson: JSON.stringify({ freq: 'weekly', interval: 1, weekdays: [] }) }),
+      boardTask({ source: 'home', id: 'hp1', title: 'Nettoyer les gouttières', kind: 'upkeep', recurring: true, subject: { kind: 'carnet', id: 'car1' }, dueToday: false, overdueSince: BASE - 10 * DAY, day: BASE + 90 * DAY }),
+      somedayTask({ source: 'todo', id: 'td1', title: 'Clés + téléphone + portefeuille' }),
+      somedayTask({ source: 'todo', id: 'td2', title: 'Boîte à lunch des enfants', who_id: 'm1' }),
+      somedayTask({ source: 'chore', id: 'c9', title: 'Réparer la clôture', subject: { kind: 'project', id: 'hp9' } }),
+    ],
+    subjects: {
+      carnets: [{ id: 'car1', name: 'La maison', kind: 'home', color: '#5891AC', facts: null }],
+      contacts: [],
+      pets: [{ id: 'pet1', name: 'Rex', colour: '#F2A03D' }],
+      projects: [{ id: 'hp9', title: 'Le jardin', color: '#88A36F' }],
+      trips: [],
+    },
+    history: [],
+  },
   intake: { submissions: [] },
   'meal-leftovers': { leftovers: [] },
   notes: { notes: [], more: false },

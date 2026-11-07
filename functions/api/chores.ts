@@ -1,9 +1,10 @@
-import { badRequest, notFound, ok, parseJsonArray, readJson, okWire } from '../_lib/json'
+import { badRequest, notFound, ok, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { hexColor } from '../_lib/validate'
 import { normalizeRecur } from '../_lib/recur'
 import { subjectBinds, validSubject } from '../_lib/subject'
+import { nextTurnIdx, parseRotation, turnOf } from '../_lib/rotation'
 import type { Wire } from '../_lib/wire'
 
 const isString = (v: unknown): v is string => typeof v === 'string'
@@ -176,9 +177,9 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     .first<{ rotation_json: string; current_idx: number }>()
   if (!chore) return notFound('Corvée introuvable.')
 
-  const rotation = parseJsonArray<string>(chore.rotation_json, isString)
-  const turnMember = rotation.length ? rotation[chore.current_idx % rotation.length] : null
-  const nextIdx = rotation.length ? (chore.current_idx + 1) % rotation.length : 0
+  const rotation = parseRotation(chore.rotation_json)
+  const turnMember = turnOf(rotation, chore.current_idx)
+  const nextIdx = nextTurnIdx(rotation, chore.current_idx)
 
   const complete = body.complete !== false // default: a parent completing
   const role = body.role === 'child' ? 'child' : 'parent'

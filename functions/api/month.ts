@@ -2,6 +2,7 @@ import { okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { localDayStart } from '../_lib/ids'
 import { parseRecur, expandRange, rotationOffset } from '../_lib/recur'
+import { parseRotation, turnOf } from '../_lib/rotation'
 import { choreSchedule, upkeepOccurrences } from '../_lib/upkeep'
 import { planOccurrences, type PlanRow as TransferPlanRow } from '../_lib/transfers'
 import { fetchBirthdayPeople, birthdayOccurrences } from '../_lib/birthdays'
@@ -291,15 +292,6 @@ export const onRequestGet = authed(async (ctx, actor) => {
   }
 
   const nameOf = (id: string | null) => (id && members.results.find((m) => m.id === id)?.display_name) || null
-  const parseRotation = (rotationJson: string): string[] => {
-    try {
-      const p = JSON.parse(rotationJson)
-      if (Array.isArray(p)) return p.filter((x): x is string => typeof x === 'string')
-    } catch {
-      /* malformed rotation → no turn */
-    }
-    return []
-  }
   // Recurring chores expanded across the window. The rotation's stored current_idx
   // is the holder of the next PENDING occurrence and advances only on completion —
   // so we PROJECT it forward per occurrence (rotationOffset) instead of labelling
@@ -321,7 +313,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     const firstOcc = occs[0]
     let offset = firstOcc !== undefined ? rotationOffset(schedule.at, r, refDay, firstOcc) : 0
     for (const at of occs) {
-      const who = rot.length ? nameOf(rot[(((c.current_idx + offset) % rot.length) + rot.length) % rot.length] ?? null) : null
+      const who = nameOf(turnOf(rot, c.current_idx + offset))
       chores.push({ id: `${c.id}#${at}`, title: c.title, color: c.color, who, day: dayOf(at) })
       offset++
     }

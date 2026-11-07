@@ -208,6 +208,32 @@ export interface BoardDayNote {
   text: string
   member_id: string | null
 }
+// A task, read side, over the three tables (_lib/taskItem.ts). `done` has one meaning per
+// case: 'ticked' is a one-off checked today and not yet cleared; everything else, including
+// a recurring task checked this morning, reads 'open' with `doneAt` saying when it last was.
+export interface TaskItem {
+  key: string
+  source: 'chore' | 'todo' | 'home'
+  id: string
+  title: string
+  color: string | null
+  subject: { kind: 'carnet' | 'person' | 'pet' | 'project' | 'trip'; id: string } | null
+  kind: 'plan' | 'upkeep' | null
+  recurring: boolean
+  recurJson: string | null
+  /** The next date it is due, as a local midnight. Null = un jour. */
+  day: number | null
+  dueToday: boolean
+  overdueSince: number | null
+  snoozedUntil: number | null
+  soon: boolean
+  done: 'open' | 'ticked'
+  doneAt: number | null
+  who_id: string | null
+  team: string[]
+  /** Due, owed or ticked today: what the bento board shows. */
+  onBoard: boolean
+}
 export interface BoardWire {
   syncedAt: number
   scope: string
@@ -232,6 +258,8 @@ export interface BoardWire {
   homeUpcoming: BoardHomeInstance[]
   homeOverdue: BoardHomeOverdue[]
   todos: BoardChoreInstance[]
+  /** Chores + home_projects as tasks. The third table rides /api/todos `items`, its own poll. */
+  tasks: TaskItem[]
   notes: BoardNote[]
   leftovers: { id: string; title: string; recipe_id: string | null; source_meal_id: string | null }[]
 }
@@ -886,6 +914,21 @@ export interface TodosWire {
     subject_kind: string | null
     subject_id: string | null
   }[]
+  /** The loose rows as tasks; departure instances are absent by construction. */
+  items: TaskItem[]
+}
+
+export interface TasksWire {
+  tasks: TaskItem[]
+  subjects: {
+    carnets: { id: string; name: string; kind: string; color: string | null; facts: { emoji: string } | null }[]
+    contacts: { id: string; name: string; colour: string | null }[]
+    pets: { id: string; name: string; colour: string | null }[]
+    projects: { id: string; title: string; color: string | null }[]
+    trips: { id: string; title: string; colour: string | null }[]
+  }
+  /** Only with `?subject=`: what was done, when and by whom. Never a total. */
+  history: { key: string; title: string; at: number; who_id: string | null }[]
 }
 
 export interface TodoTemplatesWire {
@@ -1174,6 +1217,7 @@ export type Wire = {
   'guest/whoami': GuestWhoamiWire
   'home-pins': HomePinsWire
   'home-projects': HomeProjectsWire
+  tasks: TasksWire
   intake: IntakeWire
   'meal-leftovers': MealLeftoversWire
   notes: NotesWire

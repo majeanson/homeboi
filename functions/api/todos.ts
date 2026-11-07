@@ -4,6 +4,7 @@ import { newId, nowSec, localDayStart } from '../_lib/ids'
 import { profileMemberId } from '../_lib/profile'
 import { deleteHealing, healClear } from '../_lib/staleDelete'
 import { subjectBinds, validSubject } from '../_lib/subject'
+import { present, todoTask } from '../_lib/taskItem'
 
 // À cocher — standalone check-off lists (todos), separate from the loose-chore
 // "À faire" board section (`tasks` table + the board payload's `todos` field). A
@@ -73,6 +74,7 @@ const sweepStale = (db: D1Database, householdId: string, today: number) =>
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const dateParam = new URL(ctx.request.url).searchParams.get('date')
+  const today = localDayStart(new Date())
   let rows
   if (dateParam !== null) {
     const day = Number(dateParam)
@@ -100,19 +102,23 @@ export const onRequestGet = authed(async (ctx, actor) => {
     //   • `day IS NOT NULL` — globals are already covered by the first clause.
     // Nothing is rewritten and nothing is deleted: the row keeps its own day, and
     // the client shows it as overdue (the same treatment Entretien already gets).
-    const today = localDayStart(new Date())
     rows = await ctx.env.DB.prepare(
       `SELECT ${COLS} FROM todos
          WHERE household_id = ?
            AND (day IS NULL
                 OR day = ?
                 OR (day < ? AND day IS NOT NULL AND source_template_id IS NULL AND done_at IS NULL))
+           AND NOT (day IS NULL AND done_at < ? AND source_template_id IS NULL AND section IS NULL)
          ORDER BY created_at, position`,
     )
-      .bind(actor.householdId, today, today)
+      .bind(actor.householdId, today, today, today)
       .all<TodoRow>()
+    // The AND NOT is the merged board section: a standing to-do ticked on an earlier day has
+    // CLEARED, on read, with no cron and no row rewrite (_lib/taskItem.ts). It stays in the
+    // table as history. A legacy sectioned row keeps its old behaviour: it waits for
+    // « Vider les cochés », see splitTodos.
   }
-  return okWire('todos', { todos: rows.results })
+  return okWire('todos', { todos: rows.results, items: rows.results.map((r) => todoTask(r, today)).filter(present) })
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {

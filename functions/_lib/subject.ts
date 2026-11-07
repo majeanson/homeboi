@@ -12,6 +12,17 @@ export interface SubjectRef {
 
 const isKind = (v: unknown): v is SubjectKind => typeof v === 'string' && (SUBJECT_KINDS as readonly string[]).includes(v)
 
+// What a row says. `carnet_id` reads as subject_kind 'carnet': a home_projects row keeps its
+// carnet there (the migration's note), so both spellings answer the same question here and
+// nowhere else. Garbage in the kind column reads as no subject rather than a bad link.
+export function subjectFromRow(row: {
+  subject_kind?: string | null
+  subject_id?: string | null
+  carnet_id?: string | null
+}): SubjectRef | null {
+  if (isKind(row.subject_kind) && row.subject_id) return { kind: row.subject_kind, id: row.subject_id }
+  return row.carnet_id ? { kind: 'carnet', id: row.carnet_id } : null
+}
 
 // The shape a client sends: `{ kind, id }`, or null to clear. Anything else is no subject.
 export function parseSubject(v: unknown): SubjectRef | null {
