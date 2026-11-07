@@ -44,7 +44,7 @@ test('the à-la-caisse flag is independent of the include allowlist', async ({ p
   await expect(row).toBeVisible()
   const [req] = await Promise.all([
     page.waitForRequest(isApi('PATCH', 'household'), { timeout: 20_000 }),
-    row.getByRole('button', { name: 'À la caisse: Oui' }).click(),
+    row.getByRole('button', { name: 'À la caisse : Oui' }).click(),
   ])
   const body = JSON.parse(req.postData() || '{}') as {
     cashierExcludedStores?: string[]

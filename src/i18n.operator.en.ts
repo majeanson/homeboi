@@ -305,7 +305,7 @@ export const EN_OPERATOR: typeof FR_OPERATOR = {
   aisleReset: 'Back to the starting order',
   storeIncluded: 'Included',
   storeExcluded: 'Excluded',
-  storeCashier: 'At the till',
+  storeCashierState: (state: string) => `At the till: ${state}`,
   storeCashierOn: 'Yes',
   storeCashierOff: 'No',
   storeCashierHint:
