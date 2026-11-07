@@ -2,7 +2,7 @@ import { useT } from '../../i18n'
 import { useWrite, wrote } from '../../lib/write'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { useRecordUndo } from '../../lib/toast'
-import { settingsHref } from '../../lib/settingsNav'
+
 import { BOARD_KEY, CHORES_KEY, HOME_PROJECTS_KEY, MONTH_KEY, CARNETS_KEY } from '../../lib/queryKeys'
 import { useQueryClient } from '@tanstack/react-query'
 import { MEALS_KEY, MEAL_HISTORY_KEY, type MealRow } from '../kitchen/types'
@@ -58,10 +58,9 @@ export function useChoreRemovals() {
           affectedKeys: [BOARD_KEY, HOME_PROJECTS_KEY, MONTH_KEY, CARNETS_KEY],
         }),
       ),
-    // A corvée / projet is edited INLINE in Réglages (its row expands into the ＋ form),
-    // so there is no edit scene to open: these name that place (door #11, the mirror).
-    choreEditHref: settingsHref({ tab: 'maison', focus: 'chores' }),
-    homeEditHref: settingsHref({ tab: 'maison', focus: 'homeProjects' }),
+    // A task's edit scene. Reachable from a calendar occurrence too, whose id is `base#at`.
+    choreEditHref: (id: string) => `/chore/${id.split('#')[0]}`,
+    homeEditHref: (id: string) => `/home-project/${id.split('#')[0]}`,
   }
 }
 

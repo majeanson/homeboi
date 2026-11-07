@@ -5,6 +5,21 @@
 .todo-sec {
   margin-top: 0.5rem;
 }
+/* « Tâches », the fifth board view: a lens, one field, then groups. */
+.tasks-view {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+.tasks-view__focus {
+  margin: 0;
+}
+.tasks-view__group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+/* A subject's page: its tasks, then what was done, names and dates. */
 /* The merged task list: the shared `.act` rows, one gap, and the add bar off the last row. */
 .task-rows {
   display: flex;

@@ -12,14 +12,17 @@
 //   • annee  — « L'année » (A-1, bmad/09): twelve mini-months of only the year's
 //              FIXED points (fêtes, birthdays, trips, upkeep, long jeu) — a
 //              horizon, not a planner; tap a month to open it in Mois.
+//   • taches — « Tâches » (2026-11-06): every task, undated ones included, by horizon,
+//              subject or person. Not a zoom on the calendar: the one home for browsing
+//              tasks, because the bento only glances at what is due.
 // The per-person split is the FACE PICKER beside the toggle (Maisonnée = everyone,
 // a face = just their items), not a separate layout. A single day is the DAY PAGE
 // (/kitchen/day/:date), reached by tapping a date in Mois — not a glance view.
 // (The retired next/lanes/moment/jour layouts migrate to 'bento' below.)
 // Persisted to localStorage; the corner toggle on the board flips it.
-export type BoardView = 'bento' | 'semaine' | 'month' | 'annee'
+export type BoardView = 'bento' | 'semaine' | 'month' | 'annee' | 'taches'
 
-export const BOARD_VIEWS: readonly BoardView[] = ['bento', 'semaine', 'month', 'annee']
+export const BOARD_VIEWS: readonly BoardView[] = ['bento', 'semaine', 'month', 'annee', 'taches']
 
 const KEY = 'babillard-boardview'
 
@@ -28,10 +31,10 @@ export const DEFAULT_BOARD_VIEW: BoardView = 'bento'
 
 export function readBoardView(): BoardView {
   try {
-    // Only 'month'/'annee' survive as alternates; every legacy value (next/lanes/
-    // moment/jour) falls through to the default grid so an old device doesn't land nowhere.
+    // Only the live alternates survive; every legacy value (next/lanes/moment/jour) falls
+    // through to the default grid so an old device doesn't land nowhere.
     const v = localStorage.getItem(KEY)
-    if (v === 'semaine' || v === 'month' || v === 'annee') return v
+    if (v === 'semaine' || v === 'month' || v === 'annee' || v === 'taches') return v
   } catch {
     /* noop */
   }

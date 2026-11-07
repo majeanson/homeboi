@@ -158,8 +158,8 @@ test('scene-add-routine', async ({ page, app }) => {
 
 // ── Settings interactive sub-states ────────────────────────────────────────
 // Themed-tab nav order: decouvrir(0) board(1) kitchen(2) liste(3) notes(4)
-// maison(5) settings(6) — Maison's own sub order is routines(0) chores(1)
-// todos(2) members(3) cercle(4) cars(5) schedule(6) annee(7). The existing
+// maison(5) settings(6) — Maison's own sub order is routines(0) todos(1)
+// members(2) cercle(3) cars(4) schedule(5) annee(6). The existing
 // settings-sections.spec captures each section's DEFAULT; these are the states
 // that only appear after a click inside a section.
 
@@ -185,8 +185,7 @@ test('settings-recur-weekly', async ({ page, app }) => {
 // add form).
 test('settings-deck-palette', async ({ page, app }) => {
   // Routines is its own sub-section under Maison (and its default) — deep-link to it.
-  // (?tab=chores is a legacy id that folds to Maison too, but names its OWN default
-  // sub, Corvées — ?tab=maison&sub=routines is the direct, unambiguous path.)
+
   await app.boot(at('/settings?tab=maison&sub=routines'))
   await page.getByRole('button', { name: 'Créer une routine' }).click() // → /routine/new scene
   await page.locator('.deck__add').waitFor({ state: 'visible' })

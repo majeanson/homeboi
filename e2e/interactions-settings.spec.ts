@@ -68,15 +68,10 @@ test.describe('settings forms', () => {
     await expectApi(page, 'POST', 'events', () => form.locator('button[type="submit"]').click())
   })
 
-  test('add a chore', async ({ page }) => {
-    // Chores stack under Maison ▸ « Routines & listes » (routines · tâches ·
-    // à compléter, 2026-09-08) — the chores card is addressed by its #op-chores
-    // anchor, since the routines card above it has an .operator__add of its own.
-    await page.locator('.operator__tabs').getByRole('tab', { name: 'Maison', exact: true }).click()
-    await page.locator('.operator__subs').getByRole('tab', { name: 'Routines & listes', exact: true }).click()
-    // Adding a chore opens the full-screen /chore/new scene (Réglages rows are
-    // edit/remove only).
-    await page.locator('#op-chores .operator__add').first().click()
+  test('add a planned task', async ({ page }) => {
+    // Tasks left Réglages for the board's Tâches view, whose door opens the same scene.
+    await APP('/board?view=taches')(page)
+    await page.getByRole('link', { name: 'Une tâche qui revient' }).click()
     await page.waitForURL(/\/chore\/new/)
     const form = page.locator('.scene .operator__chore-form')
     await form.locator('input.input').first().fill('Balayer la cuisine')

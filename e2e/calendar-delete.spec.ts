@@ -80,7 +80,7 @@ test.describe('Mois — the day panel’s peeks can delete', () => {
     expect(req.postDataJSON()).toMatchObject({ id: 'ev1' })
   })
 
-  test('a task: the peek offers « Modifier » (→ Réglages) and « Supprimer » (deferred behind the undo toast)', async ({ page }) => {
+  test('a task: the peek offers « Modifier » (→ its scene) and « Supprimer » (deferred behind the undo toast)', async ({ page }) => {
     await seed(page)
     const panel = await openMonthPanel(page)
     const row = panel.locator('.act', { hasText: 'Sortir le recyclage' })

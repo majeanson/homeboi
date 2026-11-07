@@ -74,9 +74,9 @@ export const SETTINGS_TREE = {
     history: [s('history', 'household'), s('ghost', 'household')],
   },
   maison: {
-    // Tâches de la maison: the kid routines, the corvées (+ projets/entretien
-    // behind ChoresTabPanel's own inner tabs), the « à compléter » templates.
-    routines: [s('routines', 'household'), s('chores', 'household'), s('todoTemplates', 'household')],
+    // Routines & listes: the kid routines and the departure-list templates. Tasks left on
+    // 2026-11-06: browsing them is the board's Tâches view, and Réglages is settings.
+    routines: [s('routines', 'household'), s('todoTemplates', 'household')],
     // La maisonnée: who lives here, and the cercle's groups.
     members: [s('members', 'operator'), s('cercleGroups', 'operator')],
     // L'auto & horaires: the vehicles, and the per-member work hours that drive them.
@@ -155,9 +155,15 @@ export const LEGACY_SUB: { readonly [T in SettingsTabId]?: Readonly<Record<strin
   board: { thisweek: 'events' },
   kitchen: { tags: 'apparence', pills: 'apparence', measure: 'apparence' },
   liste: { aisles: 'shop', stores: 'shop', ghost: 'history' },
-  maison: { chores: 'routines', todos: 'routines', cercle: 'members', schedule: 'cars' },
+  maison: { todos: 'routines', cercle: 'members', schedule: 'cars' },
   settings: { guest: 'tablets', system: 'tablets', ambient: 'display', photos: 'display', calm: 'display', voice: 'ai' },
 }
+
+// The sections that LEFT Réglages for a surface of their own. An old link to one still has to
+// land somewhere true, and that somewhere is not a settings page: it is the board's Tâches
+// view. Operator redirects before anything renders. Forward-only, like the two maps around it.
+export const SETTINGS_MOVED_OUT: ReadonlySet<string> = new Set(['chores', 'homeProjects', 'homeEntretien', 'choreLedger'])
+export const TASKS_VIEW_HREF = '/board?view=taches'
 
 // Every retired TAB id → the themed tab (and sub) that hosts it now, so ANY old
 // /settings?tab=… link still lands. `bySub` handles the three old tabs whose subs
@@ -179,7 +185,6 @@ export const LEGACY_TAB: Readonly<
     sub: 'events',
     bySub: { cars: { tab: 'maison', sub: 'cars' }, schedule: { tab: 'maison', sub: 'cars' } },
   },
-  chores: { tab: 'maison', sub: 'routines' },
   recipes: { tab: 'kitchen', sub: 'apparence' },
   shopping: { tab: 'liste', sub: 'shop' },
   display: { tab: 'settings', sub: 'display', bySub: { layout: { tab: 'board', sub: 'layout' } } },

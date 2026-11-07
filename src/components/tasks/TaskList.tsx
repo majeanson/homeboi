@@ -125,7 +125,7 @@ export function TaskRow({
         // Save, the door it has always had. Everything else opens the peek.
         onOpen={item.source === 'todo' ? (ro ? undefined : () => { setText(item.title); setEditing(true) }) : peek}
         // The tint IS the "who" on screen, and colour says nothing to a screen reader.
-        badge={who && !rotates(item) ? <span className="sr-only">{who.display_name}</span> : undefined}
+        srWho={who && !rotates(item) ? who.display_name : undefined}
       />
     </div>
   )

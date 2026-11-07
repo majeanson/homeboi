@@ -177,14 +177,10 @@ test('renaming a member patches it by id, keeping colour and child flag', async 
 })
 
 test('a season seed posts a dated upkeep with its cadence and lead time', async ({ page }) => {
-  await page.goto('/settings?tab=maison&focus=chores')
-  // ChoresTabPanel's own inner row (tâches · projets · entretien) sits ABOVE the
-  // #op-chores card and swaps it for Entretien's — so go through the panel, and
-  // scope the seed to the Entretien card by its title.
-  const panel = page.locator('#operator-panel')
-  await expect(page.locator('#op-chores')).toBeVisible()
-  await panel.getByRole('tab', { name: 'Entretien' }).click()
-  const card = panel.locator('.operator__section', { hasText: 'Idées de saison' })
+  // The seeds moved to the Tâches view with the rest of the browsing, behind a fold.
+  await page.goto('/board?view=taches')
+  const card = page.locator('.season-seeds')
+  await card.getByRole('button', { name: 'Idées de saison' }).click()
   const [req] = await Promise.all([
     page.waitForRequest(isApi('POST', 'home-projects'), { timeout: 20_000 }),
     card.getByRole('button', { name: /Poser les pneus/ }).click(),

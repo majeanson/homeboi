@@ -753,6 +753,7 @@ export const EN: typeof FR = {
     semaine: 'The week',
     month: 'Month',
     annee: 'The year',
+    taches: 'Tasks',
     nextUp: 'Up next',
   },
   yearView: {
@@ -2597,6 +2598,17 @@ export const EN: typeof FR = {
   // Tasks: the board view and what it names. The winning word lives in lib/glossary.
   tasks: {
     subjectKinds: { carnet: 'Notebook', person: 'Person', pet: 'Pet', project: 'Project', trip: 'Trip' },
+    lensLabel: 'Look by',
+    lens: { horizon: 'When', sujet: 'Subject', qui: 'Person' },
+    horizons: { late: 'Waiting', today: 'Today', week: 'This week', month: 'This month', later: 'Later', someday: 'Someday' },
+    noSubject: 'No subject',
+    allSubjects: 'All subjects',
+    addPlanned: 'A task that comes back',
+    addUpkeep: 'Upkeep',
+    addProject: 'A project',
+    ledger: 'Who did what this week',
+    history: 'What was done',
+
   },
   // To tick — standalone check-off lists (todos), distinct from "À faire"
   // (one-off chores). Global or pinned to a day; reusable departure templates.

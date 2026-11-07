@@ -59,7 +59,6 @@ export const FR_OPERATOR = {
   deleteMemberConfirm: (name: string) =>
     `Supprimer « ${name} » de la maisonnée ? Ses routines seront aussi effacées; les rendez-vous et tâches resteront, sans personne d’assigné.`,
   editChore: 'Modifier la tâche',
-  deleteChore: 'Supprimer la tâche',
   ledgerTitle: 'Qui a fait quoi cette semaine ?',
   ledgerEmpty: 'Rien de noté pour l’instant. Ça se remplira tout seul.',
   ledgerHelperChild: 'Un coup de main',
@@ -115,8 +114,6 @@ export const FR_OPERATOR = {
     subCorvees: 'Tâches',
     subProjets: 'Projets',
     subEntretien: 'Entretien',
-    projetsTitle: 'Projets de la maison',
-    entretienTitle: 'Entretien',
     addProjet: 'Ajouter un projet',
     addEntretien: 'Ajouter un entretien',
     // A-4 (bmad/09) — les rituels de saison offerts (pneus, gouttières, abris).
@@ -130,8 +127,6 @@ export const FR_OPERATOR = {
     deleteProjet: 'Supprimer le projet',
     editEntretien: 'Modifier l’entretien',
     deleteEntretien: 'Supprimer l’entretien',
-    emptyProjets: 'Aucun projet. Un projet, c’est un chantier avec une date — « Repeindre la chambre ». Ajoute-le avec le bouton ci-dessus.',
-    emptyEntretien: 'Aucun entretien. Ajoute ce qui revient — « Changer le filtre » — ou touche une idée de saison plus haut.',
     budgetLabel: 'Budget visé',
     budgetPlaceholder: 'ex. 15 000',
     notesLabel: 'Notes',
@@ -141,7 +136,6 @@ export const FR_OPERATOR = {
     // re-anchors on the last check-off instead of the fixed date grid.
     fromLastDone: 'À partir de la dernière fois',
     fromLastDoneHint: 'La prochaine échéance se compte depuis la dernière coche, pas depuis la date fixe.',
-    fromLastDoneShort: 'depuis la dernière fois',
     snoozedUntil: (d: string) => `Reporté au ${d}`,
     // Seasonal cadence presets (upkeep form) — one tap fills date + recurrence.
     seasonLabel: 'Rythmes de saison :',

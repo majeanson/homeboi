@@ -7,7 +7,7 @@ import { healingClearBody, healingDeleteBody } from '../../lib/staleDelete'
 import { mintTmpId } from '../../lib/tmpIds'
 import { BOARD_KEY, CARNETS_KEY, CHORES_KEY, HOME_PROJECTS_KEY, MONTH_KEY, TASKS_KEY, TODOS_KEY } from '../../lib/queryKeys'
 import { todayLocalDay } from '../../lib/localDay'
-import { settingsHref } from '../../lib/settingsNav'
+
 import { isTicked, type TaskItem } from '../../lib/tasks'
 import type { SubjectRef } from '../../lib/subjects'
 import type { Todo, TodosData } from '../../lib/todos'
@@ -206,9 +206,9 @@ export function useTaskActions(scope: QueryKey = BOARD_KEY) {
     })
   }
 
-  // A chore or a home row is edited in Réglages for now; a to-do renames in place.
+  // A chore or a home row opens its scene; a to-do renames in place.
   const editHref = (item: TaskItem): string | undefined =>
-    item.source === 'todo' ? undefined : settingsHref({ tab: 'maison', focus: item.source === 'chore' ? 'chores' : 'homeProjects' })
+    item.source === 'todo' ? undefined : item.source === 'chore' ? `/chore/${item.id}` : `/home-project/${item.id}`
 
   return { tick, postpone, rename, setSubject, remove, clearTicked, add, editHref, visible: held.visible }
 }

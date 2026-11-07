@@ -49,6 +49,7 @@ export function FormScene({
   icon,
   fallback,
   card,
+  kiosk = false,
   children,
 }: {
   title: string
@@ -60,6 +61,9 @@ export function FormScene({
   // the guide: precisely the screens where a first-timer meets fields she must
   // interpret. One prop, five scenes.
   card?: string
+  // An EDIT scene a parent-mode kiosk may open: the handlers let a kiosk edit a task, and this
+  // scene is that door now it no longer lives inline in Réglages. Creating stays operator-only.
+  kiosk?: boolean | undefined
   // Render-prop so the page can wire the form's onSaved (invalidate + close).
   children: (members: FormMember[], close: () => void) => ReactNode
 }) {
@@ -69,12 +73,12 @@ export function FormScene({
   const { data } = useQuery({
     queryKey: MEMBERS_KEY,
     queryFn: () => api<{ members: FormMember[] }>('members'),
-    enabled: signedIn,
+    enabled: signedIn || kiosk,
   })
 
   // Wait for the auth check before bouncing — a transient loading=false flash
   // would otherwise redirect a signed-in operator on a cold deep-link.
-  if (!loading && !signedIn) return <Navigate to={fallback} replace />
+  if (!loading && !signedIn && !kiosk) return <Navigate to={fallback} replace />
   // Read-only guest (incl. the operator's settings preview, which IS signed in so
   // the check above won't catch it): these are pure create forms — bounce out.
   if (isGuest()) return <Navigate to={fallback} replace />

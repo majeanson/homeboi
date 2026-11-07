@@ -64,7 +64,7 @@ const link = (ref: SubjectRef): string => {
     case 'pet':
       return `/cercle/pet/${ref.id}`
     case 'project':
-      return `/board?view=taches&par=sujet&sujet=${ref.kind}:${ref.id}`
+      return `/board?view=taches&par=sujet&sujet=project:${ref.id}`
     case 'trip':
       return `/voyage/${ref.id}`
   }

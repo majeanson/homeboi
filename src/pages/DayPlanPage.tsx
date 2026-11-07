@@ -32,6 +32,7 @@ import { Fil } from '../components/board/Fil'
 import { EditField } from '../components/EditField'
 import { tripCategoryIcon, type TripCategory } from '../components/voyage/voyage'
 import { TodoSection } from '../components/todos/TodoSection'
+import { FormDelete } from '../components/FormDelete'
 import { EventForm, type EventInit } from '../components/forms/EventForm'
 import { ChoreForm, type ChoreInit } from '../components/forms/ChoreForm'
 import { useEventPeekActions } from '../components/detail/EventPeekActions'
@@ -901,7 +902,7 @@ function DayPlanScene() {
                   onOpen={() =>
                     detail.open(
                       buildChore({ id: h.id, title: h.title, color: h.color, at: date, who: null, who_id: null }, detailCtx, {
-                        editHref: ro ? undefined : removals.homeEditHref,
+                        editHref: ro ? undefined : removals.homeEditHref(h.id),
                         onDelete: ro ? undefined : () => removals.removeHome(h),
                       }),
                     )
@@ -996,15 +997,4 @@ function DayPlanScene() {
   )
 }
 
-// « Supprimer » under an inline edit form (a rendez-vous, a corvée). One danger button,
-// full width like the form's own buttons, so the door to remove a wrong entry sits where
-// the entry is being looked at — the peek offers the same one elsewhere.
-function FormDelete({ label, onDelete }: { label: string; onDelete: () => void }) {
-  return (
-    <div className="day-plan__form-delete">
-      <button type="button" className="btn btn--danger" onClick={onDelete}>
-        <InlineIcon name="trash-bold" /> {label}
-      </button>
-    </div>
-  )
-}
+

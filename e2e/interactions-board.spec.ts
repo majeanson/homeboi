@@ -57,24 +57,11 @@ test.describe('recurring chores on the board', () => {
     await expect(page.locator('.act', { hasText: 'Vaisselle' })).toBeVisible()
   })
 
-  test('a chore can be given a weekly schedule in settings (PATCH recur)', async ({ page }) => {
-    // Name the chores SECTION: the pill it lives under is derived (subOfFocus), so
-    // this link survives the next pill reshuffle untouched.
-    await APP('/settings?tab=maison&focus=chores')(page)
-    await settle(page, '.operator__tabs')
-    // The "Céduler"-only expander is gone — a chore row is now a ListRow whose
-    // RowActions ✏️ ("Modifier la tâche") expands the SAME full ChoreForm (one
-    // editor) with the RecurPicker. The .operator__chore-row class only appears on
-    // the row while it's editing, so target the edit button via the chores CARD's
-    // list (#op-chores — the routines card above it has a list of its own).
-    await page
-      .locator('#op-chores .operator__list')
-      .first()
-      .locator('li')
-      .first()
-      .getByRole('button', { name: 'Modifier la tâche' })
-      .click()
-    const form = page.locator('.operator__chore-row--editing .operator__chore-form')
+  test('a task can be given a weekly schedule in its own scene (PATCH recur)', async ({ page }) => {
+    // Tasks left Réglages: the peek's « Modifier » opens /chore/:id, one editor with the
+    // RecurPicker, the same form that creates one.
+    await APP('/chore/c1')(page)
+    const form = page.locator('.scene .operator__chore-form')
     await form.locator('.recur select').selectOption('weekly')
     await expectApi(page, 'PATCH', 'chores', () =>
       form.getByRole('button', { name: 'Enregistrer' }).click(),

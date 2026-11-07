@@ -69,6 +69,7 @@ import { BoardViewToggle, TodayFaceRow } from '../components/board/chrome'
 const WeekView = lazy(() => import('../components/board/WeekView').then((m) => ({ default: m.WeekView })))
 const MonthView = lazy(() => import('../components/board/MonthView').then((m) => ({ default: m.MonthView })))
 const YearView = lazy(() => import('../components/board/YearView').then((m) => ({ default: m.YearView })))
+const TasksView = lazy(() => import('../components/board/TasksView').then((m) => ({ default: m.TasksView })))
 
 // …and then fetched anyway, once the board has settled. Splitting them keeps 82 KB out
 // of the path to FIRST PAINT, which is the number that matters on a slow wall tablet;
@@ -93,6 +94,7 @@ function warmCalendars() {
     void import('../components/board/WeekView')
     void import('../components/board/MonthView')
     void import('../components/board/YearView')
+    void import('../components/board/TasksView')
   }
   const ric = (window as { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => void }).requestIdleCallback
   if (ric) ric(go, { timeout: 4000 })
@@ -252,7 +254,7 @@ export function Board() {
   // Contextual "?" help for the view toggle (lib/helpMode): arm it, tap a view to
   // learn what it shows instead of switching. Label = the view's own name.
   const help = useHelpMode(BOARD_HELP, (k) => {
-    if (k.startsWith('view-')) return t.boardView[k.slice(5) as 'bento' | 'semaine' | 'month' | 'annee']
+    if (k.startsWith('view-')) return t.boardView[k.slice(5) as 'bento' | 'semaine' | 'month' | 'annee' | 'taches']
     if (k.startsWith('card-')) return t.boardCard[k.slice(5) as BoardCardId]
     const titles: Record<string, string> = {
       todos: t.board.todos,
@@ -829,7 +831,7 @@ export function Board() {
         detail.open(
           buildChore(c, detailCtx, {
             upcoming: true,
-            editHref: ro ? undefined : removals.choreEditHref,
+            editHref: ro ? undefined : removals.choreEditHref(c.id),
             onDelete: ro ? undefined : () => removals.removeChore(c),
           }),
         )
@@ -852,7 +854,7 @@ export function Board() {
         detail.open(
           buildChore(c, detailCtx, {
             upcoming: true,
-            editHref: ro ? undefined : removals.homeEditHref,
+            editHref: ro ? undefined : removals.homeEditHref(c.id),
             onDelete: ro ? undefined : () => removals.removeHome(c),
           }),
         )
@@ -1710,6 +1712,10 @@ export function Board() {
       ) : view === 'month' ? (
         <Suspense fallback={<Skeleton variant="card" count={6} />}>
           <MonthView members={data.members} lang={lang} t={t} todayDay={todayDay} />
+        </Suspense>
+      ) : view === 'taches' ? (
+        <Suspense fallback={<Skeleton variant="card" count={6} />}>
+          <TasksView members={data.members} todayDay={todayDay} />
         </Suspense>
       ) : view === 'annee' ? (
         <Suspense fallback={<Skeleton variant="card" count={6} />}>

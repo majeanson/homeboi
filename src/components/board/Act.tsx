@@ -151,6 +151,7 @@ export function Act({
   title,
   when,
   who,
+  srWho,
   whoFaces,
   done,
   past,
@@ -171,6 +172,7 @@ export function Act({
   title: string
   when?: string | undefined
   who?: string | undefined // a quiet sub-line under the title
+  srWho?: string | undefined // who, for a screen reader only, when the title tint says it on screen
   whoFaces?: Face[] | undefined // several household faces (an event's « Qui ») — a small stack under the title, in place of the `who` text
   done?: boolean | undefined
   past?: boolean // meal/event whose time has passed → struck-through, faded
@@ -240,6 +242,7 @@ export function Act({
       <span className="title" style={(done || past) ? undefined : { color: tintInk(spine) }}>
         {title}
       </span>
+      {srWho && <span className="sr-only">{srWho}</span>}
       {whoFaces && whoFaces.length > 0 ? (
         <AvatarStack faces={whoFaces} size={18} className="act__pax" />
       ) : (

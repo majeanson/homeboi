@@ -24,7 +24,6 @@ const TAB_CASES: [string, string][] = [
   ['household', 'maison'],
   ['devices', 'settings'],
   ['agenda', 'board'],
-  ['chores', 'maison'],
   ['recipes', 'kitchen'],
   ['shopping', 'liste'],
   ['display', 'settings'],

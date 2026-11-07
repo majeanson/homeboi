@@ -446,8 +446,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Changer la vue', en: 'Change the view' },
         detail: {
-          fr: 'Quatre zooms : la Grille (la journée), La semaine (sept jours écrits au long), le Mois et L’année. Le visage choisi filtre tout — [[mot:maisonnee|Maisonnée]] montre tout le monde, un visage montre ses affaires à lui, et une ligne sous les commandes dit ce qui est à lui en ce moment (un mot qui attend, son prochain rendez-vous, la routine du moment), rien quand rien n’attend.',
-          en: 'Four zooms: the Grid (the day), The week (seven days spelled out), the Month and The year. The picked face filters everything — Household shows everyone, a face shows just their things, and one line under the controls says what is theirs right now (a message waiting, their next appointment, the routine of the moment), nothing when nothing is pending.',
+          fr: 'Cinq vues : la Grille (la journée), La semaine (sept jours écrits au long), le Mois, L’année et les Tâches. Le visage choisi filtre tout — [[mot:maisonnee|Maisonnée]] montre tout le monde, un visage montre ses affaires à lui, et une ligne sous les commandes dit ce qui est à lui en ce moment (un mot qui attend, son prochain rendez-vous, la routine du moment), rien quand rien n’attend.',
+          en: 'Five views: the Grid (the day), The week (seven days spelled out), the Month, The year and Tasks. The picked face filters everything — Household shows everyone, a face shows just their things, and one line under the controls says what is theirs right now (a message waiting, their next appointment, the routine of the moment), nothing when nothing is pending.',
         },
       },
       {
@@ -1075,7 +1075,7 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Monte la rotation des tâches et les routines d’enfants une fois ; ça tourne ensuite tout seul.',
           en: 'Build the task rotation and the kid routines once; they then run on their own.',
         },
-        route: '/settings?tab=maison&sub=routines&focus=chores',
+        route: '/board?view=taches',
       },
       {
         label: { fr: 'Réservé au parent', en: 'Parent-only' },
@@ -1511,8 +1511,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Cette saison', en: 'This season' },
         detail: {
-          fr: 'L’entretien qui revient se regroupe par saison : une carte « Cet hiver / Ce printemps… » sur le babillard et un aperçu dans Réglages ▸ Maison ▸ Routines & listes ▸ Entretien montrent ce qui s’en vient avant que la saison tourne — calfeutrer les fenêtres, vider les gouttières, changer le filtre.',
-          en: 'Recurring upkeep groups by season: a “This winter / This spring…” card on the board and a glance in Settings ▸ Home ▸ Routines & lists ▸ Upkeep show what’s coming before the season turns — caulk the windows, clear the gutters, change the filter.',
+          fr: 'L’entretien qui revient se regroupe par saison : une carte « Cet hiver / Ce printemps… » sur le babillard montre ce qui s’en vient avant que la saison tourne — calfeutrer les fenêtres, vider les gouttières, changer le filtre.',
+          en: 'Recurring upkeep groups by season: a “This winter / This spring…” card on the board shows what’s coming before the season turns — caulk the windows, clear the gutters, change the filter.',
         },
       },
       {
@@ -2160,7 +2160,7 @@ export const GUIDE: GuideEntry[] = [
     id: 'set-chores',
     icon: 'broom-bold',
     group: 'settings',
-    settings: '/settings?tab=maison&sub=routines&focus=chores',
+    settings: '/settings?tab=maison&sub=routines&focus=routines',
     title: { fr: 'Tâches & routines', en: 'Tasks & routines' },
     what: {
       fr: 'Les tâches, les routines des enfants et les listes de départ.',
@@ -2205,8 +2205,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Le journal des tâches', en: 'The task ledger' },
         detail: {
-          fr: 'Sous les tâches, un coup d’œil « qui a fait quoi cette semaine » : les noms et les visages, le jour où c’est arrivé. C’est tout — aucun nombre, aucun classement, aucun « meilleur ».',
-          en: 'Below the tasks, a “who did what this week” glance: the names and faces, the day it happened. That’s all — no counts, no ranking, no “top helper”.',
+          fr: 'Dans la vue Tâches, un coup d’œil « qui a fait quoi cette semaine » : les noms et les visages, le jour où c’est arrivé. C’est tout — aucun nombre, aucun classement, aucun « meilleur ».',
+          en: 'In the Tasks view, a “who did what this week” glance: the names and faces, the day it happened. That’s all — no counts, no ranking, no “top helper”.',
         },
         why: {
           fr: 'Pour voir que la maison a roulé sans en faire un concours — fidèle au calme, jamais un tableau de pointage.',
@@ -2249,8 +2249,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Projets & entretien', en: 'Plans & maintenance' },
         detail: {
-          fr: 'Sous les tâches, deux listes pour les plus gros sujets : les Projets (un jour, sans date) et l’Entretien qui revient tout seul — « tous les 3 mois », ou « Chaque automne ». Un entretien manqué attend calmement sur « À faire » jusqu’à sa coche, et « À partir de la dernière fois » compte le prochain depuis cette coche.',
-          en: 'Under tasks, two lists for the bigger topics: Plans (someday, no date) and Maintenance that comes back on its own — “every 3 months”, or “Every fall”. A missed upkeep waits calmly on “To do” until you check it, and “From the last time” counts the next one from that check-off.',
+          fr: 'Dans la vue Tâches, deux portes pour les plus gros sujets : les Projets (un jour, sans date) et l’Entretien qui revient tout seul — « tous les 3 mois », ou « Chaque automne ». Un entretien manqué attend calmement sur « À faire » jusqu’à sa coche, et « À partir de la dernière fois » compte le prochain depuis cette coche.',
+          en: 'In the Tasks view, two doors for the bigger topics: Plans (someday, no date) and Maintenance that comes back on its own — “every 3 months”, or “Every fall”. A missed upkeep waits calmly on “To do” until you check it, and “From the last time” counts the next one from that check-off.',
         },
         route: '/home-project/new',
       },

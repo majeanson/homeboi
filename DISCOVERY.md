@@ -114,7 +114,7 @@ cards. 25 old ids retired into hosts — `GUIDE_CARD_ALIAS` keeps every old
 | settings | share-access (+share, +share-target) | — | settings▸tablets&focus=guestLinks |
 | set-* | set-household (+account) | — | maison▸members&focus=members |
 | set-* | set-agenda (+activities) | — | board▸events&focus=events |
-| set-* | set-chores (+home-projects) | — | maison▸routines&focus=chores |
+| set-* | set-chores (+home-projects) | — | maison▸routines&focus=routines |
 | set-* | set-shopping | — | liste▸shop&focus=shop |
 | set-* | set-recipes | — | kitchen▸apparence&focus=recipeTags |
 | set-* | set-devices (+pairing, +cast-tv) | — | settings▸tablets&focus=devices |
@@ -135,7 +135,7 @@ the one source; this is a reading of it, not a second copy:
 | kitchen | `reserve` → Emplacements de la réserve | reserveLocations |
 | liste | `shop` → Magasinage | shop · aisleOrder · storeFilter |
 | liste | `history` → Historique & suivi | history · ghost |
-| maison | `routines` → Tâches de la maison | routines · chores · todoTemplates |
+| maison | `routines` → Routines & listes | routines · todoTemplates (tasks left for the board's Tâches view: `SETTINGS_MOVED_OUT` redirects `chores`, `homeProjects`, `homeEntretien`, `choreLedger`) |
 | maison | `members` → La maisonnée | members · cercleGroups |
 | maison | `cars` → L'auto & horaires | cars · schedule |
 | maison | `annee` → Cette année | houseDiary |

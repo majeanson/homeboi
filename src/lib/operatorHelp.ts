@@ -288,22 +288,6 @@ export const OPERATOR_HELP = {
       en: `What the household did this week — who did what, which day. No scores or rankings, just names and faces.`,
     },
   },
-  homeProjets: {
-    card: 'set-chores',
-    point: 8,
-    body: {
-      fr: `Les grands projets : rénover, budgéter, planifier. Sans date, ils restent ici, au calme.`,
-      en: `The bigger plans: renovate, budget, plan ahead. With no date they rest here, calmly.`,
-    },
-  },
-  homeEntretien: {
-    card: 'set-chores',
-    point: 8,
-    body: {
-      fr: `L'entretien qui revient : filtre, gouttières, arbres. Avec une date, il s'affiche au babillard.`,
-      en: `The upkeep that comes back: filter, gutters, trees. With a date it shows on the board.`,
-    },
-  },
   houseDiary: {
     // « La maison cette année » — the cercle card's « Fêtes et bilan de l'année » point.
     card: 'cercle',
@@ -369,14 +353,6 @@ export const OPERATOR_HELP = {
     body: {
       fr: `Un jeton pour Claude (ou un autre agent) : il pourra LIRE la maisonnée — les repas, la liste, le calendrier, les recettes — et rien d'autre. Aucun ajout, aucune modification, aucune suppression. Le jeton s'affiche une seule fois ; il apparaît ensuite dans la liste des appareils ci-dessus et se révoque du même bouton.`,
       en: `A token for Claude (or any other agent): it will be able to READ the household — meals, the list, the calendar, recipes — and nothing else. No adding, no editing, no deleting. The token is shown once; it then appears in the device list above and is revoked with the same button.`,
-    },
-  },
-  chores: {
-    card: 'set-chores',
-    point: 1,
-    body: {
-      fr: `Les tâches qui existent, pour les modifier, les céduler ou les retirer. « Céduler » leur donne un jour qui revient — c'est ce qui les fait apparaître sur le babillard toutes seules. Aucun compte, aucun classement : qui a fait quoi se lit dans le journal des tâches.`,
-      en: `The tasks that exist, to edit, schedule or remove. "Schedule" gives one a day that comes back — that is what makes it appear on the board by itself. No counts, no ranking: who did what is read in the task log.`,
     },
   },
   routines: {

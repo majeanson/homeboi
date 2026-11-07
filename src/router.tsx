@@ -242,7 +242,9 @@ export function AppRoutes() {
         <Route path="/jouer" element={<JouerPage />} />
         <Route path="/event/new" element={<EventFormPage />} />
         <Route path="/chore/new" element={<ChoreFormPage />} />
+        <Route path="/chore/:id" element={<ChoreFormPage />} />
         <Route path="/home-project/new" element={<HomeProjectFormPage />} />
+        <Route path="/home-project/:id" element={<HomeProjectFormPage />} />
         <Route path="/routine/new" element={<RoutineFormPage />} />
         {/* The opt-in sticker wall (static path — declared before /routine/:id). */}
         <Route path="/routine/stickers" element={<StickerWallPage />} />

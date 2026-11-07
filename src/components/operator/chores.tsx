@@ -1,6 +1,5 @@
-import { useState } from 'react'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
-import { useQueryClient, type QueryClient } from '@tanstack/react-query'
+import { type QueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { useOperatorT } from '../../i18n.operator'
 import { useWrite, writeFailed } from '../../lib/write'
@@ -12,99 +11,11 @@ import { InlineIcon } from '../Icon'
 import { Chip } from '../Chip'
 import { RowActions } from '../RowActions'
 import { type HelpMode } from '../../lib/helpMode'
-import { ListRow } from '../ListRow'
 import { EmptyState } from '../EmptyState'
 import { OperatorSection } from './OperatorSection'
-import { ChoreForm } from '../forms/ChoreForm'
 import { useNavigate } from 'react-router-dom'
-import { colourFor } from '../../lib/things'
-import { recurLabel } from '../../lib/recurLabel'
-import { CHORES_KEY, MEMBERS_KEY, ROUTINES_KEY, BOARD_KEY, MONTH_KEY } from '../../lib/queryKeys'
-import { type Chore, type Routine } from './types'
-
-export function ChoresSection({ chores, onChange, help }: { chores: Chore[]; onChange: () => void; help?: HelpMode | undefined }) {
-  const t = useT()
-  const o18n = useOperatorT()
-  const { open } = useAddSheet()
-  const removal = useDeferredRemoval(CHORES_KEY)
-  const write = useWrite()
-  // Same reason as agenda.tsx's events: DayPlanPage reads CHORES_KEY `live`, so an
-  // optimistic cache hide is undone by the next poll mid-undo. See the note there.
-  function remove(c: Chore) {
-    removal.remove([c.id], t.undo.cleared(c.title), async () => {
-      // BOARD + MONTH too: a due chore shows on the board card and the month
-      // grid — a CHORES-only invalidate left the deleted row there until poll
-      // (the invalidation-drift class, 2026-09-03; ChoreForm carries the same list).
-      await write('chores', { method: 'DELETE', body: { id: c.id }, affectedKeys: [CHORES_KEY, BOARD_KEY, MONTH_KEY] })
-      onChange()
-    })
-  }
-
-  return (
-    <OperatorSection title={o18n.chores} help={help} helpKey="chores">
-      <ul className="operator__list">
-        {removal.visible(chores).map((c) => (
-          <ChoreRow key={c.id} chore={c} onChange={onChange} onRemove={() => remove(c)} />
-        ))}
-      </ul>
-      {/* Creating a chore is the same ＋ as everywhere; Réglages edits/removes the
-          ones that exist (the rows above). Hidden for a read-only guest. */}
-      {!isGuest() && (
-        <button type="button" className="btn btn--primary operator__add" onClick={() => open('chore', ['chore'])}>
-          <InlineIcon name="plus-bold" /> {o18n.addChore}
-        </button>
-      )}
-    </OperatorSection>
-  )
-}
-
-// One chore row. Tapping ✏️ expands the SAME ＋ form, prefilled — one editor for
-// title, rotation, colour and schedule (the old "Céduler"-only expander is now
-// just part of full edit). 🗑️ removes it (deferred undo).
-function ChoreRow({ chore, onChange, onRemove }: { chore: Chore; onChange: () => void; onRemove: () => void }) {
-  const o18n = useOperatorT()
-  const t = useT()
-  const qc = useQueryClient()
-  const [editing, setEditing] = useState(false)
-  const label = recurLabel(chore.recur_json, t)
-  // The rotation form needs the household roster; it's already cached by the
-  // Réglages shell (the Household tab / board both read ['members']).
-  const members = qc.getQueryData<{ members: { id: string; display_name: string }[] }>(MEMBERS_KEY)?.members ?? []
-
-  if (editing)
-    return (
-      <li className="operator__chore-row operator__chore-row--editing">
-        <ChoreForm
-          key={chore.id}
-          members={members}
-          value={chore}
-          onSaved={() => {
-            setEditing(false)
-            onChange()
-          }}
-          onCancel={() => setEditing(false)}
-        />
-      </li>
-    )
-
-  return (
-    <li>
-      <ListRow
-        leading={<span className="operator__avatar" style={{ background: colourFor('chore', chore.color) }} aria-hidden="true" />}
-        title={chore.title}
-        subtitle={label || undefined}
-        actions={
-          <RowActions
-            onEdit={() => setEditing(true)}
-            onDelete={onRemove}
-            editLabel={o18n.editChore}
-            deleteLabel={o18n.deleteChore}
-          />
-        }
-      />
-    </li>
-  )
-}
+import { ROUTINES_KEY } from '../../lib/queryKeys'
+import { type Routine } from './types'
 
 export function RoutinesSection({ routines, onChange, help }: { routines: Routine[]; onChange: () => void; help?: HelpMode }) {
   const o18n = useOperatorT()

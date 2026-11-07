@@ -7,10 +7,11 @@ import { type IconName } from '../Icon'
 import { MemberSwitcher } from '../MemberSwitcher'
 import { type Dict, type Member } from './types'
 
-// A tiny segmented control in the board header — three zoom levels on the same
-// household: « Grille » (today) · « Mois » (the calendar) · « L'année » (the
-// horizon of fixed points). The per-person split is the face picker beside it — not a
+// A tiny segmented control in the board header — the zoom levels on the same household:
+// « Grille » (today) · « La semaine » · « Mois » (the calendar) · « L'année » (the horizon of
+// fixed points) · « Tâches ». The per-person split is the face picker beside it — not a
 // layout here. Calm and small; the choice is remembered per device.
+type ViewHelpKey = 'view-bento' | 'view-semaine' | 'view-month' | 'view-annee' | 'view-taches'
 export function BoardViewToggle({
   view,
   onChange,
@@ -25,15 +26,16 @@ export function BoardViewToggle({
   // instead of switching to it. Returns the onClick to use. Omit for normal use. The
   // key param is the two BOARD_HELP keys this toggle owns (a subset of the board's
   // help keys), so the surface's narrowed `help.pick` stays contravariantly assignable.
-  pick?: (key: 'view-bento' | 'view-semaine' | 'view-month' | 'view-annee', run: () => void) => () => void
+  pick?: (key: ViewHelpKey, run: () => void) => () => void
   // When help mode is armed, highlight the options as "tap me to learn".
   armed?: boolean
 }) {
-  const opts: { v: BoardView; k: 'view-bento' | 'view-semaine' | 'view-month' | 'view-annee'; icon: IconName; label: string }[] = [
+  const opts: { v: BoardView; k: ViewHelpKey; icon: IconName; label: string }[] = [
     { v: 'bento', k: 'view-bento', icon: 'calendar-blank-bold', label: t.boardView.bento },
     { v: 'semaine', k: 'view-semaine', icon: 'stack-bold', label: t.boardView.semaine },
     { v: 'month', k: 'view-month', icon: 'calendar-dots-bold', label: t.boardView.month },
     { v: 'annee', k: 'view-annee', icon: 'sun-horizon-bold', label: t.boardView.annee },
+    { v: 'taches', k: 'view-taches', icon: 'check-square-bold', label: t.boardView.taches },
   ]
   return (
     <Segmented

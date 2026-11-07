@@ -37,5 +37,5 @@ test('a chore is findable, and lands on its section', async ({ page, app }) => {
     wait: '.search__row',
   })
   await page.locator('.search__row', { hasText: 'Vaisselle' }).click()
-  await expect(page).toHaveURL(/\/settings/)
+  await expect(page).toHaveURL(/view=taches/)
 })

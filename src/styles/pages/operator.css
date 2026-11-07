@@ -240,18 +240,7 @@
    shrinks (min-width:0) and wraps its own text instead, so it can't overrun.
    (Ghost/store rows keep the generic wrap on purpose — they carry several
    controls that SHOULD stack on a narrow phone.) */
-.operator__list li.operator__chore-row,
 .operator__list li.operator__routine-row {
-  flex-wrap: nowrap;
-}
-/* A chore row carries an inline schedule editor that drops under it when open. */
-.operator__chore-row {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  /* Stay one row: the name column (flex:1, min-width:0) wraps its own text and the
-     ✏️/🗑️ pair stays anchored right — never dropping to a lonely second line like
-     the old flex-wrap did once the recurrence label widened the row. */
   flex-wrap: nowrap;
 }
 /* Routine row: same one-row contract. The name takes the slack, the moment-of-day

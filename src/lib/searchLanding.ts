@@ -1,5 +1,5 @@
 import { localDayStart } from './localDay'
-import { settingsHref } from './settingsNav'
+import { TASKS_VIEW_HREF } from './settingsNav'
 
 // WHERE A SEARCH HIT LANDS (solidify 4.2, 2026-11-05) — ONE table. Two rules:
 //   · an entity with its OWN SCENE opens that scene (a recipe, a person, a trip);
@@ -48,7 +48,7 @@ export function landingFor(hit: SearchHit): string {
     case 'idea':
       return `/kitchen/idees?tab=kid&item=${hit.id}`
     case 'project':
-      return hit.carnetId ? `/cercle/carnet/${hit.carnetId}` : settingsHref({ tab: 'maison', focus: 'chores' })
+      return hit.carnetId ? `/cercle/carnet/${hit.carnetId}` : TASKS_VIEW_HREF
     case 'carnetEntry':
       return `/cercle/carnet/${hit.carnetId}?seg=carnet`
     case 'meal':
@@ -58,7 +58,7 @@ export function landingFor(hit: SearchHit): string {
     case 'group':
       return hit.family ? `/cercle/family/${hit.id}` : '/maison?section=social'
     case 'chore':
-      return settingsHref({ tab: 'maison', focus: 'chores' })
+      return TASKS_VIEW_HREF
     case 'pantry':
       return '/kitchen?tab=pantry'
     case 'car':

@@ -18,12 +18,12 @@ describe('search landing — one table', () => {
     expect(landingFor({ kind: 'todo', id: 't' })).toBe('/board?item=t')
     expect(landingFor({ kind: 'idea', id: 'i' })).toBe('/kitchen/idees?tab=kid&item=i')
   })
-  it('a chore lands on its Réglages section', () => {
-    expect(landingFor({ kind: 'chore' })).toContain('focus=chores')
+  it('a chore lands on the Tâches view', () => {
+    expect(landingFor({ kind: 'chore' })).toBe('/board?view=taches')
   })
-  it('a project without a carnet falls back to its Réglages section', () => {
+  it('a project without a carnet falls back to the Tâches view', () => {
     expect(landingFor({ kind: 'project', carnetId: 'c' })).toBe('/cercle/carnet/c')
-    expect(landingFor({ kind: 'project', carnetId: null })).toContain('focus=chores')
+    expect(landingFor({ kind: 'project', carnetId: null })).toBe('/board?view=taches')
   })
   it('every search row takes its destination from the table', () => {
     // Plant: a hand-spelled <Link to="/drawings"> in SearchPage fails here. The guide hits

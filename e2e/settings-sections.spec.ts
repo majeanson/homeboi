@@ -15,7 +15,7 @@ const SECTIONS = [
   // (LEGACY_TAB folds them onto the themed tabs — see settings-aliases.spec).
   // 'cercle' and 'routines' themselves are now retired tab ids too, folding onto
   // 'maison'.
-  'household', 'agenda', 'chores', 'shopping', 'cercle', 'routines',
+  'household', 'agenda', 'shopping', 'cercle', 'routines',
   'recipes', 'ghost', 'devices', 'photos', 'week', 'display', 'calm', 'ai',
 ]
 

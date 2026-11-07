@@ -909,6 +909,7 @@ export const FR = {
     semaine: 'La semaine',
     month: 'Mois',
     annee: 'L’année',
+    taches: 'Tâches',
     // « Prochainement » — the next still-to-come timed thing today, surfaced as a calm
     // lead at the top of the Grille day (the one glance the retired « Maintenant » gave).
     nextUp: 'Prochainement',
@@ -2982,6 +2983,17 @@ export const FR = {
   // Tâches : la vue du babillard et ce qu'elle nomme. Le mot gagnant est dans lib/glossary.
   tasks: {
     subjectKinds: { carnet: 'Carnet', person: 'Personne', pet: 'Animal', project: 'Projet', trip: 'Voyage' },
+    lensLabel: 'Regarder par',
+    lens: { horizon: 'Quand', sujet: 'Sujet', qui: 'Personne' },
+    horizons: { late: 'En attente', today: 'Aujourd’hui', week: 'Cette semaine', month: 'Ce mois-ci', later: 'Plus tard', someday: 'Un jour' },
+    noSubject: 'Sans sujet',
+    allSubjects: 'Tous les sujets',
+    addPlanned: 'Une tâche qui revient',
+    addUpkeep: 'Un entretien',
+    addProject: 'Un projet',
+    ledger: 'Qui a fait quoi cette semaine',
+    history: 'Ce qui a été fait',
+
   },
   // À cocher — listes à cocher autonomes (todos), distinctes du « À faire »
   // (corvées ponctuelles). Globales ou rattachées à une journée; modèles de

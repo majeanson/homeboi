@@ -37,6 +37,14 @@ export const BOARD_HELP = {
       en: 'The year: the horizon — holidays, birthdays, trips, upkeep. Tap a month to open it.',
     },
   },
+  'view-taches': {
+    card: 'todos',
+    point: 1,
+    body: {
+      fr: 'Les tâches : toutes, même celles sans date, par horizon, par sujet ou par personne. La grille, elle, ne montre que ce qui est dû.',
+      en: 'Tasks: all of them, even the undated ones, by horizon, by subject or by person. The grid only shows what is due.',
+    },
+  },
   // The « À faire » card is the loose to-do home since the « Avant de partir » split
   // (mig 0116): one-off things, standing or pinned to today. The reusable departure
   // checklists live on their own card now.

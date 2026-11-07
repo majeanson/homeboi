@@ -1,6 +1,6 @@
 import { Loading } from '../components/Fallback'
 import { Fragment, useCallback, useEffect, type CSSProperties, type ReactNode } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../i18n'
 import { useOperatorT } from '../i18n.operator'
@@ -21,7 +21,7 @@ import { CoOperatorsSection } from '../components/operator/CoOperatorsSection'
 import { SessionsSection } from '../components/operator/SessionsSection'
 import { EventsSection, SchoolYearSection } from '../components/operator/agenda'
 import { RoutinesSection } from '../components/operator/chores'
-import { ChoresTabPanel } from '../components/operator/homeProjects'
+
 import { PhotosSection, RecapSection } from '../components/operator/media'
 import { ThisWeekTogetherSection } from '../components/operator/ThisWeekTogetherSection'
 import { RecipeTagsSection, RecipeBookmarkletSection } from '../components/operator/recipesTags'
@@ -54,6 +54,8 @@ import {
   SUB_GOTO,
   SUB_LABEL_KEY,
   LEGACY_TAB,
+  SETTINGS_MOVED_OUT,
+  TASKS_VIEW_HREF,
   LEGACY_SUB,
   subOfFocus, tabOfFocus,
   visibleSections,
@@ -62,8 +64,8 @@ import {
   type SettingsSectionKey,
 } from '../lib/settingsNav'
 import { scrollBehavior } from '../lib/motion'
-import { MEMBERS_KEY, DEVICES_KEY, CHORES_KEY, EVENTS_KEY, BOARD_KEY, CERCLE_KEY, ROUTINES_KEY, HEALTH_KEY } from '../lib/queryKeys'
-import type { Member, Device, Chore, Routine, EventRow } from '../components/operator/types'
+import { MEMBERS_KEY, DEVICES_KEY, EVENTS_KEY, BOARD_KEY, CERCLE_KEY, ROUTINES_KEY, HEALTH_KEY } from '../lib/queryKeys'
+import type { Member, Device, Routine, EventRow } from '../components/operator/types'
 
 // Réglages is one panel per tab; this list drives the tab strip. Deep links
 // (/settings?tab=<id>) select the matching tab — the active tab lives in the URL
@@ -98,7 +100,17 @@ const SECTIONS: { id: string; icon: IconName }[] = [
 // (those two tabs are hidden + the server keeps their writes operator-only). A
 // locked/toddler kiosk never gets here — HubLayout redirects it away. Each section
 // is a thin CRUD strip — no dashboards, nothing to optimize-against (NFR-CALM).
+// A section that moved out of Réglages (settingsNav SETTINGS_MOVED_OUT) keeps its old links
+// honest: they land on the surface that holds it now, before any of the hub mounts.
 export function Operator() {
+  const [params] = useSearchParams()
+  const focus = params.get('focus')
+  const moved = params.get('tab') === 'chores' || params.get('sub') === 'chores' || (focus != null && SETTINGS_MOVED_OUT.has(focus))
+  if (moved) return <Navigate to={TASKS_VIEW_HREF} replace />
+  return <OperatorHub />
+}
+
+function OperatorHub() {
   const t = useT()
   const o18n = useOperatorT()
   const nav = useNavigate()
@@ -124,13 +136,13 @@ export function Operator() {
   const loadHousehold = canEnter && !guest
   const membersQ = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: Member[] }>('members'), enabled: loadHousehold })
   const devicesQ = useQuery({ queryKey: DEVICES_KEY, queryFn: () => api<{ devices: Device[] }>('pair/devices'), enabled: signedIn })
-  const choresQ = useQuery({ queryKey: CHORES_KEY, queryFn: () => api<{ chores: Chore[] }>('chores'), enabled: loadHousehold })
+
   const routinesQ = useQuery({ queryKey: ROUTINES_KEY, queryFn: () => api<{ routines: Routine[] }>('routines'), enabled: loadHousehold })
   const eventsQ = useQuery({ queryKey: EVENTS_KEY, queryFn: () => api<{ events: EventRow[] }>('events'), enabled: loadHousehold })
 
   const members = membersQ.data?.members ?? []
   const devices = devicesQ.data?.devices ?? []
-  const chores = choresQ.data?.chores ?? []
+
   const routines = routinesQ.data?.routines ?? []
   const events = eventsQ.data?.events ?? []
   // The household AI on/off state. The SWITCH lives in the IA tab (components/
@@ -144,7 +156,7 @@ export function Operator() {
   // CERCLE_KEY too: a member is a person in Le cercle, so a rename/recolour/delete
   // must refresh the circle (which reads /api/cercle, not /api/members).
   const load = useCallback(() => {
-    for (const key of [MEMBERS_KEY, DEVICES_KEY, CHORES_KEY, ROUTINES_KEY, EVENTS_KEY, HEALTH_KEY, BOARD_KEY, CERCLE_KEY]) {
+    for (const key of [MEMBERS_KEY, DEVICES_KEY, ROUTINES_KEY, EVENTS_KEY, HEALTH_KEY, BOARD_KEY, CERCLE_KEY]) {
       qc.invalidateQueries({ queryKey: key })
     }
   }, [qc])
@@ -301,6 +313,7 @@ export function Operator() {
       calm: o18n.calmTitle,
       mealSlots: o18n.mealColors,
       todoTemplates: t.todos.templatesTitle,
+      choreLedger: o18n.ledgerTitle,
       recipeTags: o18n.tagsTitle,
       shop: o18n.shopping,
       storeFilter: o18n.storeFilter,
@@ -318,7 +331,7 @@ export function Operator() {
       remarks: t.remarks.title,
       ai: o18n.aiTitle,
       guest: t.guest.title,
-      choreLedger: o18n.ledgerTitle,
+
       cercleGroups: o18n.cercleGroupsTitle,
       houseDiary: o18n.diaryTitle,
       // FIFTEEN keys had no entry here and fell through to `labels[k] ?? k`, so an
@@ -335,14 +348,13 @@ export function Operator() {
       coop: t.coop.title,
       sessions: t.sessions.title,
       thisWeek: o18n.thisWeekTitle,
-      homeProjets: o18n.home.projetsTitle,
-      homeEntretien: o18n.home.entretienTitle,
+
       schoolYear: o18n.schoolYearTitle,
       events: o18n.events,
       members: o18n.members,
       devices: o18n.devices,
       mcpAgent: o18n.agentTitle,
-      chores: o18n.chores,
+
       routines: o18n.routines,
     }
     return labels[k] ?? k
@@ -401,7 +413,7 @@ export function Operator() {
     ghost: <GhostSection help={operatorHelp} />,
     // maison
     routines: <RoutinesSection routines={routines} onChange={load} help={operatorHelp} />,
-    chores: <ChoresTabPanel chores={chores} onChange={load} help={operatorHelp} />,
+
     todoTemplates: <TodoTemplatesSection help={operatorHelp} />,
     members: <MembersSection members={members} onChange={load} help={operatorHelp} />,
     cercleGroups: <CercleGroupsSection help={operatorHelp} />,
@@ -468,8 +480,8 @@ export function Operator() {
   // The current tab's sub-sections + which one is open, held in the URL (?sub=<key>)
   // so a sub-tab survives a refresh / return-from-scene and composes with ?tab=. The
   // sub fallback is worked out just below (a retired sub, a ?focus= section, a
-  // retired-tab alias, else the tab's first pill — so /settings?tab=chores opens
-  // Maison ▸ « Tâches de la maison »). useTabParam folds an out-of-set ?sub (e.g.
+  // retired-tab alias, else the tab's first pill — so /settings?tab=todos opens
+  // Maison ▸ « Routines & listes »). useTabParam folds an out-of-set ?sub (e.g.
   // left over from another tab) to that fallback, so switching tabs always lands on
   // a valid sub.
   //

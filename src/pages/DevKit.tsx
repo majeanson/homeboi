@@ -101,6 +101,7 @@ import { BoardCard } from '../components/board/BoardCard'
 import { MealPool } from '../components/kitchen/MealPool'
 import { Fil } from '../components/board/Fil'
 import { TodoSection } from '../components/todos/TodoSection'
+import { FormDelete } from '../components/FormDelete'
 
 import { RecurPicker, type RecurValue } from '../components/RecurPicker'
 import { LeadPicker } from '../components/LeadPicker'
@@ -2802,6 +2803,17 @@ export function DevKit() {
       render: () => (
         <Demo label="open the peek (sample event model)">
           <DetailSheetDemo />
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Rangées & actions',
+      name: 'FormDelete',
+      file: 'components/FormDelete.tsx',
+      kw: 'supprimer delete danger formulaire edit',
+      render: () => (
+        <Demo label="under an edit form">
+          <FormDelete label="Supprimer la tâche" onDelete={() => {}} />
         </Demo>
       ),
     },

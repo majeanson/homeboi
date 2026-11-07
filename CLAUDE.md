@@ -520,7 +520,7 @@ all follow it, and each section owns one colour (`SECTION_TINT`).
 
 | Tab          | Route       | French name  | What it is                                                                                   |
 | ------------ | ----------- | ------------ | -------------------------------------------------------------------------------------------- |
-| **Board**    | `/board`    | Le babillard | Kiosk glance surface: clock, agenda, "ce soir" (supper), the list, chores, upcoming. A **widget space**: every card lives in a zone (`band` on top, `grid` = the masonry), with a width and an empty-card mode. Hold a card → edit mode (`?edit=1`); Réglages ▸ Disposition is its accessible mirror. |
+| **Board**    | `/board`    | Le babillard | Kiosk glance surface: clock, agenda, "ce soir" (supper), the list, tasks, upcoming; `?view=` adds week, month, year and « Tâches ». A **widget space**: every card lives in a zone (`band` on top, `grid` = the masonry), with a width and an empty-card mode. Hold a card → edit mode (`?edit=1`); Réglages ▸ Disposition is its accessible mirror. |
 | **Kitchen**  | `/kitchen`  | La cuisine   | Garde-manger: 7-day supper plan, recipes, "running low," meal suggestions, deals/flyers.     |
 | **Liste**    | `/liste`    | La liste     | The single active shared list (see below).                                                   |
 | **Notes**    | `/notes`    | Les notes    | The durable family-notes board (`family_notes`), for one member or the whole Maisonnée — rich notes, voice memos, drawings. Teal, inherited from Le cercle, where it used to be a sub-tab. Comprendre-only in Réglages (no settings subs). Distinct from the board's fridge **mots**. |

@@ -164,7 +164,7 @@ describe('who sees what — derived from access, never an allowlist', () => {
 describe('settingsHref names the section and derives the pill', () => {
   it('derives ?sub from ?focus', () => {
     expect(settingsHref({ tab: 'settings', focus: 'calm' })).toBe('/settings?tab=settings&sub=display&focus=calm')
-    expect(settingsHref({ tab: 'maison', focus: 'chores' })).toBe('/settings?tab=maison&sub=routines&focus=chores')
+    expect(settingsHref({ tab: 'maison', focus: 'todoTemplates' })).toBe('/settings?tab=maison&sub=routines&focus=todoTemplates')
   })
   it('keeps an explicit sub, and a bare tab', () => {
     expect(settingsHref({ tab: 'kitchen', sub: 'meals' })).toBe('/settings?tab=kitchen&sub=meals')

@@ -31,7 +31,7 @@ interface LedgerRow {
   helpers: Helper[]
 }
 
-// Page-local query key: the ledger is read only here (Réglages ▸ Maison ▸ Tâches de la maison), so it
+// Page-local query key: the ledger is read only here (the board's Tâches view), so it
 // stays beside its component rather than in src/lib/queryKeys.ts (cross-page only).
 const LEDGER_KEY = ['chores-ledger']
 

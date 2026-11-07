@@ -40,7 +40,6 @@ export const EN_OPERATOR: typeof FR_OPERATOR = {
   deleteMemberConfirm: (name: string) =>
     `Remove "${name}" from the household? Their routines will be erased too; appointments and tasks stay, with no one assigned.`,
   editChore: 'Edit task',
-  deleteChore: 'Delete task',
   ledgerTitle: 'Who did what this week?',
   ledgerEmpty: 'Nothing noted yet. This fills in on its own.',
   ledgerHelperChild: 'A helping hand',
@@ -91,8 +90,6 @@ export const EN_OPERATOR: typeof FR_OPERATOR = {
     subCorvees: 'Tasks',
     subProjets: 'Plans',
     subEntretien: 'Maintenance',
-    projetsTitle: 'Home plans',
-    entretienTitle: 'Maintenance',
     addProjet: 'Add a plan',
     addEntretien: 'Add maintenance',
     // A-4 (bmad/09) — the offered season rituals (tires, gutters, shelter).
@@ -103,8 +100,6 @@ export const EN_OPERATOR: typeof FR_OPERATOR = {
     deleteProjet: 'Delete plan',
     editEntretien: 'Edit maintenance',
     deleteEntretien: 'Delete maintenance',
-    emptyProjets: 'No plans. A plan is a job with a date — “Repaint the bedroom”. Add one with the button above.',
-    emptyEntretien: 'No upkeep. Add what comes back — “Change the filter” — or tap a season idea above.',
     budgetLabel: 'Target budget',
     budgetPlaceholder: 'e.g. 15,000',
     notesLabel: 'Notes',
@@ -112,7 +107,6 @@ export const EN_OPERATOR: typeof FR_OPERATOR = {
     dateLabel: 'Date (optional)',
     fromLastDone: 'From the last time',
     fromLastDoneHint: 'The next due date counts from the last check-off, not the fixed date.',
-    fromLastDoneShort: 'from the last time',
     snoozedUntil: (d: string) => `Postponed to ${d}`,
     seasonLabel: 'Season rhythms:',
     everySeason: 'Every season',

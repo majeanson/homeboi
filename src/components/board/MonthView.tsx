@@ -501,7 +501,7 @@ export function MonthView({
             onOpen={() =>
               detail.open(
                 buildChore({ id: c.id, title: c.title, color: c.color, at: c.day, who: c.who, who_id: choreWhoId(c.who) }, detailCtx, {
-                  editHref: ro ? undefined : removals.choreEditHref,
+                  editHref: ro ? undefined : removals.choreEditHref(c.id),
                   onDelete: ro ? undefined : () => removals.removeChore(c),
                 }),
               )
@@ -520,7 +520,7 @@ export function MonthView({
             onOpen={() =>
               detail.open(
                 buildChore({ id: h.id, title: h.title, color: h.color, at: h.day, who: null, who_id: null }, detailCtx, {
-                  editHref: ro ? undefined : removals.homeEditHref,
+                  editHref: ro ? undefined : removals.homeEditHref(h.id),
                   onDelete: ro ? undefined : () => removals.removeHome(h),
                 }),
               )
