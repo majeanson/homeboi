@@ -415,7 +415,7 @@ export const FR = {
   },
   // Découvrir's calm discovery cards (bmad/08 B-11 + B-14).
   discover: {
-    didYouKnow: 'Le saviez-vous ?',
+    didYouKnow: 'Le saviez-vous ?',
     whatsNew: 'Quoi de neuf',
     tourStart: (n: number) => `Faire le tour (${n} trouvailles)`,
   },
