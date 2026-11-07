@@ -118,13 +118,14 @@ export function WelcomeCard({ members }: { members: { id: string }[] }) {
   // • pair: the operator's paired-device list. Operator-scoped, so it's gated to a
   //   signed-in session; on a kiosk (no session) it stays unfetched and the step
   //   simply waits — it can only be done from operator Réglages anyway.
-  const plannedMeals = useMeals().data?.days.length ?? 0
-  const pairedDevices =
-    useQuery({
-      queryKey: DEVICES_KEY,
-      queryFn: () => api<{ devices: { id: string }[] }>('pair/devices'),
-      enabled: signedIn,
-    }).data?.devices.length ?? 0
+  const meals = useMeals()
+  const devices = useQuery({
+    queryKey: DEVICES_KEY,
+    queryFn: () => api<{ devices: { id: string }[] }>('pair/devices'),
+    enabled: signedIn,
+  })
+  const plannedMeals = meals.data?.days.length ?? 0
+  const pairedDevices = devices.data?.devices.length ?? 0
 
   // Where the first two try-this chips land (sandbox only — nothing is fetched otherwise).
   // The recipe is the spaghetti when the seed has it, else the first; the routine is the
@@ -162,6 +163,11 @@ export function WelcomeCard({ members }: { members: { id: string }[] }) {
   // EXCEPT in a sandbox: there the seed IS the point, and this card's try-this face
   // is the visitor's guidance (the claim strip above handles "keep it").
   if (!sandbox && (hasSample || samplePending)) return null
+  // The same guard for the two steps that are unknown until their read lands. Counting
+  // « not loaded » as « not done » put 412px of checklist over a finished household's
+  // board on a cold load, then dropped the board back up when the devices arrived.
+  // isLoading, not isPending: a paused offline read must not hide the card for good.
+  if (!sandbox && (meals.isLoading || devices.isLoading)) return null
 
   // Every step is data-driven: it ticks only when the real thing exists, so tapping
   // a link and backing out can never false-complete a step (it just won't be done).
