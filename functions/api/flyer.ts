@@ -1,4 +1,4 @@
-import { badRequest, ok, serviceUnavailable } from '../_lib/json'
+import { badRequest, serviceUnavailable, okWire } from '../_lib/json'
 import { householdFlippLang, resolveFlippLang } from '../_lib/flippLang'
 import { authed } from '../_lib/route'
 import { isPostal, normalizePostal, householdPostal } from '../_lib/postal'
@@ -161,5 +161,5 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const validFrom = mostCommon((payload.items ?? []).map((it) => it.valid_from))
   const validTo = mostCommon((payload.items ?? []).map((it) => it.valid_to))
 
-  return ok({ flyerId: Number(id), postal, validFrom, validTo, pages, items })
+  return okWire('flyer', { flyerId: Number(id), postal, validFrom, validTo, pages, items })
 })

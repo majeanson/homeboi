@@ -1,4 +1,4 @@
-import { badRequest, ok, readJson, parseJsonArray } from '../_lib/json'
+import { badRequest, ok, readJson, parseJsonArray, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { nowSec } from '../_lib/ids'
 import { getPref, setPref } from '../_lib/householdPrefs'
@@ -237,7 +237,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const colors = await readColors(ctx.env, actor.householdId)
   const pills = await readPills(ctx.env, actor.householdId)
   const tagSlots = await readTagSlots(ctx.env, actor.householdId)
-  return ok({ presets, used, colors, pills, tagSlots })
+  return okWire('recipe-tags', { presets, used, colors, pills, tagSlots })
 })
 
 export const onRequestPatch = authed(async (ctx, actor) => {

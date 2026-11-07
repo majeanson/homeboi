@@ -1,4 +1,4 @@
-import { badRequest, notFound, ok, readJson } from '../_lib/json'
+import { badRequest, notFound, ok, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { CAP_SQL, capped } from '../_lib/listCap'
 import { newId, nowSec } from '../_lib/ids'
@@ -52,7 +52,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     .bind(actor.householdId)
     .all<FamilyNoteRow>()
   const { rows: notes, more } = capped(rows.results)
-  return ok({ notes, more })
+  return okWire('family-notes', { notes, more })
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {

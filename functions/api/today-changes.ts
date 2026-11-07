@@ -1,4 +1,4 @@
-import { ok } from '../_lib/json'
+import { okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { localDayStart } from '../_lib/ids'
 
@@ -37,7 +37,7 @@ interface ChangeRow {
 }
 
 export const onRequestGet = authed(async (ctx, actor) => {
-  if (actor.scope === 'guest') return ok({ entries: [] })
+  if (actor.scope === 'guest') return okWire('today-changes', { entries: [] })
 
   const hh = actor.householdId
   const since = localDayStart(new Date(Date.now()))
@@ -238,5 +238,5 @@ export const onRequestGet = authed(async (ctx, actor) => {
     })),
   ]
 
-  return ok({ entries })
+  return okWire('today-changes', { entries })
 })

@@ -1,4 +1,4 @@
-import { ok, badRequest, readJson } from '../_lib/json'
+import { ok, badRequest, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { deleteR2Blob } from '../_lib/r2'
@@ -62,7 +62,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // Orphan sweep — best-effort, never blocks the read (shared with intake).
   await sweepAbandonedStagedMedia(ctx.env.DB, ctx.env.PHOTOS, hh, 'postbox', referenced)
 
-  return ok({ messages })
+  return okWire('postbox', { messages })
 }, 'operator')
 
 // PATCH { id, status: 'accepted' | 'dismissed' } → review one message. On accept it

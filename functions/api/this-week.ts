@@ -1,4 +1,4 @@
-import { ok } from '../_lib/json'
+import { okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { localDayStart, addLocalDays } from '../_lib/ids'
 import { parseRecur, expandRange } from '../_lib/recur'
@@ -188,7 +188,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     .filter((p) => p.last_done_at != null && p.last_done_at >= weekStart && p.last_done_at < today)
     .map((p) => ({ title: p.title, color: p.color }))
 
-  return ok({
+  return okWire('this-week', {
     today,
     weekStart,
     weekEnd,

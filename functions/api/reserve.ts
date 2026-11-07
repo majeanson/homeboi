@@ -1,6 +1,7 @@
-import { badRequest, ok, readJson } from '../_lib/json'
+import { badRequest, ok, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
+import type { Wire } from '../_lib/wire'
 
 // La réserve — a reminder list of items stashed in the freezer / back of the
 // pantry (the stuff that's "behind everything" and gets forgotten). Same minimal
@@ -13,8 +14,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
     'SELECT id, item, location_id, marked_at FROM pantry_reserve WHERE household_id = ? ORDER BY marked_at DESC',
   )
     .bind(actor.householdId)
-    .all()
-  return ok({ reserve: results })
+    .all<Wire['reserve']['reserve'][number]>()
+  return okWire('reserve', { reserve: results })
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {

@@ -1,7 +1,8 @@
-import { badRequest, ok, readJson } from '../_lib/json'
+import { badRequest, ok, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { localDayStart, newId, nowSec } from '../_lib/ids'
 import { householdMealLayout } from '../_lib/mealSlots'
+import type { Wire } from '../_lib/wire'
 
 // "Restants" (leftovers) — the UNDATED pool. A leftover dish you want to finish
 // but haven't pinned to a day yet; it surfaces as a calm "eat these first"
@@ -19,8 +20,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
     'SELECT id, title, recipe_id, source_meal_id, created_at FROM meal_leftovers WHERE household_id = ? ORDER BY created_at DESC',
   )
     .bind(actor.householdId)
-    .all()
-  return ok({ leftovers: results })
+    .all<Wire['meal-leftovers']['leftovers'][number]>()
+  return okWire('meal-leftovers', { leftovers: results })
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {

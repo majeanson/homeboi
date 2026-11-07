@@ -1,5 +1,5 @@
 import type { Env } from '../_lib/env'
-import { badRequest, ok, readJson } from '../_lib/json'
+import { badRequest, ok, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { normalizeItem } from '../_lib/normalize'
@@ -99,7 +99,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     )
     // Frequent untracked buys, offered for a one-tap deliberate opt-in.
     const candidates = trackCandidates(log, overrides.map(toOverride), stapleList)
-    return ok({ items, candidates })
+    return okWire('ghost', { items, candidates })
   }
 
   const openKeys = new Set(open.map((r) => normalizeItem(r.text)).filter(Boolean))
@@ -122,7 +122,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     .filter((o) => o.standing && !openKeys.has(o.item_key))
     .map((o) => ({ key: o.item_key, label: o.label }))
     .sort((a, b) => a.label.localeCompare(b.label))
-  return ok({ ghosts, staples: standing })
+  return okWire('ghost', { ghosts, staples: standing })
 })
 
 // Clamp a cadence to a sane whole-day range, or null to clear it (fall back to

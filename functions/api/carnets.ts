@@ -1,4 +1,4 @@
-import { badRequest, notFound, ok, readJson, serviceUnavailable } from '../_lib/json'
+import { badRequest, notFound, ok, readJson, serviceUnavailable, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { hexColor } from '../_lib/validate'
@@ -110,7 +110,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     )
       .bind(actor.householdId)
       .all<CarnetRow>()
-    return ok({ carnets: arch.results.map(mapRow), soon: [] })
+    return okWire('carnets', { carnets: arch.results.map(mapRow), soon: [] })
   }
   const rows = await ctx.env.DB.prepare(
     `SELECT id, parent_id, kind, name, media_key, colour AS color, facts_json, installed_at, lifespan_months, link_id, notes, position AS sort
@@ -120,7 +120,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     .bind(actor.householdId)
     .all<CarnetRow>()
   const life = await fetchCarnetLifeItems(ctx.env.DB, actor.householdId)
-  return ok({
+  return okWire('carnets', {
     carnets: rows.results.map(mapRow),
     soon: carnetLifeSoon(life, nowSec()),
   })

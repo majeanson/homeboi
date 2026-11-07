@@ -1,10 +1,11 @@
-import { badRequest, ok, readJson } from '../_lib/json'
+import { badRequest, ok, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { localDayStart, newId, nowSec } from '../_lib/ids'
 import { profileMemberId } from '../_lib/profile'
 import { ingredientName } from '../_lib/ingredient'
 import { householdMealLayout, mealOrderSql } from '../_lib/mealSlots'
 import { swapAt } from '../../src/lib/reorder'
+import type { MealRow } from '../_lib/wire'
 
 // Meal plan as a ROLLING window: today through today + N days, where N is the
 // household's « Jours affichés » (`windowDays` on the mealSlots preference,
@@ -66,15 +67,15 @@ export const onRequestGet = authed(async (ctx, actor) => {
       `SELECT id, date, slot, title, cook_member_id, suggested_by, recipe_id, position, is_leftover FROM meals WHERE household_id = ? AND date = ? ORDER BY ${MEAL_ORDER}`,
     )
       .bind(actor.householdId, dateParam)
-      .all()
-    return ok({ days: results, weekStart: today, windowDays, recent: [] })
+      .all<MealRow>()
+    return okWire('meals', { days: results, weekStart: today, windowDays, recent: [] })
   }
 
   const { results } = await ctx.env.DB.prepare(
     `SELECT id, date, slot, title, cook_member_id, suggested_by, recipe_id, position, is_leftover FROM meals WHERE household_id = ? AND date >= ? AND date < ? ORDER BY date, ${MEAL_ORDER}`,
   )
     .bind(actor.householdId, today, today + DAY * windowDays)
-    .all()
+    .all<MealRow>()
 
   // The last RECENT_DAYS days of planned, non-leftover meals (today included),
   // newest first, deduped by title so a recurring meal shows once. Powers the
@@ -83,7 +84,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     `SELECT id, date, slot, title, cook_member_id, suggested_by, recipe_id, position, is_leftover FROM meals WHERE household_id = ? AND is_leftover = 0 AND date >= ? AND date <= ? ORDER BY date DESC, ${MEAL_ORDER}`,
   )
     .bind(actor.householdId, today - DAY * RECENT_DAYS, today)
-    .all<{ title: string }>()
+    .all<MealRow>()
   const seen = new Set<string>()
   const recent = recentRows.filter((m) => {
     const k = m.title.trim().toLowerCase()
@@ -92,7 +93,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     return true
   })
 
-  return ok({ days: results, weekStart: today, windowDays, recent })
+  return okWire('meals', { days: results, weekStart: today, windowDays, recent })
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {

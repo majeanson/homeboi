@@ -1,4 +1,4 @@
-import { badRequest, notFound, ok, readJson } from '../_lib/json'
+import { badRequest, notFound, ok, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { hexColor } from '../_lib/validate'
@@ -54,7 +54,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   )
     .bind(actor.householdId)
     .all<MemberRow>()
-  return ok({ members: results })
+  return okWire('members', { members: results })
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {

@@ -1,6 +1,7 @@
-import { badRequest, ok, readJson } from '../_lib/json'
+import { badRequest, ok, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
+import type { Wire } from '../_lib/wire'
 
 // "À utiliser bientôt" — things you HAVE and want to finish (the complement of
 // pantry-low). Unlike pantry-low, marking one does NOT add it to the shopping
@@ -11,8 +12,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
     'SELECT id, item, marked_at FROM pantry_use_soon WHERE household_id = ? ORDER BY marked_at DESC',
   )
     .bind(actor.householdId)
-    .all()
-  return ok({ soon: results })
+    .all<Wire['use-soon']['soon'][number]>()
+  return okWire('use-soon', { soon: results })
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {

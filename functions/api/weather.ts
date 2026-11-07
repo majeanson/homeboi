@@ -1,4 +1,4 @@
-import { ok } from '../_lib/json'
+import { okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { householdPostal } from '../_lib/postal'
 import { wmoBucket, type WeatherBucket } from '../_lib/weather'
@@ -33,9 +33,9 @@ interface HourOutlook {
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const postal = await householdPostal(ctx.env, actor.householdId)
-  if (!postal) return ok({ weather: null, tomorrow: null, hours: null })
+  if (!postal) return okWire('weather', { weather: null, tomorrow: null, hours: null })
   const wx = await fetchWeather(postal)
-  return ok(wx ?? { weather: null, tomorrow: null, hours: null })
+  return okWire('weather', wx ?? { weather: null, tomorrow: null, hours: null })
 })
 
 async function fetchWeather(

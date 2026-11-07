@@ -1,4 +1,4 @@
-import { badRequest, notFound, ok, readJson } from '../_lib/json'
+import { badRequest, notFound, ok, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec, localDayStart } from '../_lib/ids'
 import { hexColor } from '../_lib/validate'
@@ -95,7 +95,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // dueToday are the calm carry-forward the board and season card render.
   const today = localDayStart(new Date(nowSec() * 1000))
   const projects = results.map((p) => ({ ...p, ...upkeepStatus(p, today) }))
-  return ok({ projects })
+  return okWire('home-projects', { projects })
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {

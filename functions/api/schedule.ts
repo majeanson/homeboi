@@ -1,4 +1,4 @@
-import { badRequest, notFound, ok, readJson } from '../_lib/json'
+import { badRequest, notFound, ok, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec, localDayStart, localDayOfWeek } from '../_lib/ids'
 import { parseRecur } from '../_lib/recur'
@@ -111,7 +111,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   )
     .bind(actor.householdId)
     .all<BlockRow>()
-  return ok({ blocks: results.map(toClient) })
+  return okWire('schedule', { blocks: results.map(toClient) })
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {

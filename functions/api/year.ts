@@ -1,4 +1,4 @@
-import { ok } from '../_lib/json'
+import { okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { localDayStart } from '../_lib/ids'
 import { parseRecur, expandRange } from '../_lib/recur'
@@ -28,7 +28,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   let to = Math.floor(Number(url.searchParams.get('to')))
   // Bad/missing window → an empty horizon rather than a 400 (the month read's rule).
   if (!Number.isFinite(from) || !Number.isFinite(to) || from <= 0 || to <= from) {
-    return ok({ birthdays: [], events: [], upkeep: [], life: [], trips: [] })
+    return okWire('year', { birthdays: [], events: [], upkeep: [], life: [], trips: [] })
   }
   to = Math.min(to, from + MAX_DAYS * DAY)
 
@@ -104,5 +104,5 @@ export const onRequestGet = authed(async (ctx, actor) => {
     trips.push({ id: tr.id, title: tr.title, colour: tr.colour, start_at: tr.start_at, end_at: tr.end_at, shared: true })
   }
 
-  return ok({ birthdays, events, upkeep, life, trips })
+  return okWire('year', { birthdays, events, upkeep, life, trips })
 })

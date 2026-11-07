@@ -1,3 +1,5 @@
+import type { Wire } from './wire'
+
 // Tiny response helpers. Use these instead of hand-rolling `new Response` so
 // status codes stay consistent across handlers (same idea as the portal's
 // _lib/json.ts).
@@ -21,6 +23,32 @@ function body(data: unknown, status: number): Response {
 }
 
 export const ok = (data: unknown = { ok: true }) => body(data, 200)
+// THE SERVER SIDE OF THE WIRE CONTRACT. `Wire` (_lib/wire.ts) types what e2e/mocks.ts stubs;
+// okWire binds a GET handler to the same entry, so the two sides are one compile error
+// apart. Plain assignability would only hold half of that: a missing key fails, but a row
+// from `.map()` or `.all<Row>()` is not a fresh literal, so an EXTRA key passes in silence,
+// and most keys live in rows. NoExtra turns any key `Wire` does not know, at any depth,
+// into `never`. The route is an argument and not a type parameter because TypeScript cannot
+// infer T beside an explicit R, and because mocksContract.test.ts greps it.
+//
+// What this cannot see: `.all<Row>()` is a cast, so a column added to a SELECT without
+// touching Row stays invisible. And `any` (JSON.parse) and `unknown` in Wire end the check
+// at that depth. Same bytes as ok(): this function adds nothing at run time.
+type Fit<T, W> = W extends unknown ? (T extends W ? W : never) : never
+type KeysOf<W> = W extends unknown ? keyof W : never
+type Prop<W, K> = W extends unknown ? (K extends keyof W ? W[K] : never) : never
+type Item<W> = W extends readonly (infer V)[] ? V : never
+type NoExtra<T, W> = 0 extends 1 & T
+  ? T
+  : unknown extends W
+    ? T
+    : T extends readonly (infer E)[]
+      ? NoExtra<E, Item<W>>[]
+      : T extends object
+        ? { [K in keyof T]: K extends KeysOf<Fit<T, W>> ? NoExtra<T[K], Prop<Fit<T, W>, K>> : never }
+        : T
+export const okWire = <R extends keyof Wire, T extends Wire[R]>(_route: R, data: T & NoExtra<T, Wire[R]>) => ok(data)
+
 export const created = (data: unknown) => body(data, 201)
 export const badRequest = (message: string) => body({ error: message }, 400)
 export const unauthorized = (message = 'Not signed in.') => body({ error: message }, 401)

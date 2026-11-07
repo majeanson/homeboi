@@ -1,4 +1,4 @@
-import { badRequest, ok, serviceUnavailable } from '../_lib/json'
+import { badRequest, serviceUnavailable, okWire } from '../_lib/json'
 import { householdFlippLang, resolveFlippLang } from '../_lib/flippLang'
 import { authed } from '../_lib/route'
 import { isPostal, normalizePostal, householdPostal } from '../_lib/postal'
@@ -134,5 +134,5 @@ export const onRequestGet = authed(async (ctx, actor) => {
       : (a.validFrom ?? '').localeCompare(b.validFrom ?? '') || a.merchant.localeCompare(b.merchant),
   )
 
-  return ok({ postal, count: flyers.length, flyers })
+  return okWire('flyers', { postal, count: flyers.length, flyers })
 })

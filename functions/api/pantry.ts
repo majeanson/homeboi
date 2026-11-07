@@ -1,6 +1,7 @@
-import { badRequest, ok, readJson } from '../_lib/json'
+import { badRequest, ok, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
+import type { Wire } from '../_lib/wire'
 
 // "Low / out" only — never a full inventory (brief tenet 3). Marking something
 // low ONLY records that it's running low — it does NOT touch the shared list.
@@ -12,8 +13,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
     'SELECT id, item, marked_at FROM pantry_low WHERE household_id = ? ORDER BY marked_at DESC',
   )
     .bind(actor.householdId)
-    .all()
-  return ok({ low: results })
+    .all<Wire['pantry']['low'][number]>()
+  return okWire('pantry', { low: results })
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {

@@ -1,7 +1,8 @@
-import { badRequest, ok, readJson } from '../_lib/json'
+import { badRequest, ok, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { localDayStart, newId, nowSec } from '../_lib/ids'
 import { profileMemberId } from '../_lib/profile'
+import type { Wire } from '../_lib/wire'
 
 // Day notes — a free-text memo pinned to ONE day of the meal week (see migration
 // 0028). Distinct from fridge notes (functions/api/notes.ts), which are
@@ -20,8 +21,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
     'SELECT id, date, text, member_id, updated_at FROM day_notes WHERE household_id = ? AND date >= ? ORDER BY date',
   )
     .bind(actor.householdId, today)
-    .all()
-  return ok({ notes: results })
+    .all<Wire['day-notes']['notes'][number]>()
+  return okWire('day-notes', { notes: results })
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {

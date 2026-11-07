@@ -1,7 +1,8 @@
-import { badRequest, notFound, ok, readJson } from '../_lib/json'
+import { badRequest, notFound, ok, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { localDayStart, newId, nowSec } from '../_lib/ids'
 import { normalizeRecur } from '../_lib/recur'
+import type { Wire } from '../_lib/wire'
 
 // Events (the agenda the board merges). Until now events could only be born from
 // a capture; this is the operator's direct CRUD so a typo can be fixed and a
@@ -28,8 +29,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
   if (id) {
     const row = await ctx.env.DB.prepare(`SELECT ${EVENT_COLS} FROM events WHERE id = ? AND household_id = ?`)
       .bind(id, actor.householdId)
-      .first()
-    return ok({ events: row ? [row] : [] })
+      .first<Wire['events']['events'][number]>()
+    return okWire('events', { events: row ? [row] : [] })
   }
   // Otherwise the management/agenda list: upcoming one-offs (today forward) PLUS
   // every recurring series (whose anchor may be in the past, e.g. "garbage every
@@ -43,8 +44,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
       ORDER BY start_at LIMIT 100`,
   )
     .bind(actor.householdId, today)
-    .all()
-  return ok({ events: results })
+    .all<Wire['events']['events'][number]>()
+  return okWire('events', { events: results })
 })
 
 interface EventBody {

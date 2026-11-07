@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import type { BoardEvent, BoardMealBrief, BoardNote, CercleContact, DealRow, EventsWire, HabitsWire, HealthWire, MealRow, MemberRow, RecipeWireRow, Wire } from '../functions/_lib/wire'
+import type { BoardEvent, BoardMealBrief, BoardNote, CercleContact, DealRow, EventsWire, HabitsWire, HealthWire, MealRow, MemberRow, RecipeWireRow, TransfersWire, Wire } from '../functions/_lib/wire'
 import { addLocalDays, localDayStart } from '../src/lib/localDay'
 
 // Deterministic API stubs so screenshots render populated, calm surfaces with
@@ -180,8 +180,8 @@ export const BOARD = {
     fridgeNote({ id: 'n2', text: 'Rendez-vous dentiste jeudi', member_id: 'm2', created_at: BASE }),
   ],
   // A recurring chore due today (Léa's turn) + one coming up later this week.
-  choresToday: [{ id: 'c1', title: 'Sortir les poubelles', color: '#88A36F', at: BASE, who: 'Léa', who_id: 'm3' }],
-  choresUpcoming: [{ id: 'c2', title: 'Vaisselle', color: '#7BB0C9', at: BASE + 3 * DAY, who: 'Papa', who_id: 'm2' }],
+  choresToday: [{ id: 'c1', title: 'Sortir les poubelles', color: '#88A36F', at: BASE, soon: false, who: 'Léa', who_id: 'm3', team: ['m3'], announce_evening: false }],
+  choresUpcoming: [{ id: 'c2', title: 'Vaisselle', color: '#7BB0C9', at: BASE + 3 * DAY, soon: false, who: 'Papa', who_id: 'm2', team: ['m2'], announce_evening: false }],
   // The carnets' upkeep rows ride the same read; none is due on the fixture's day.
   homeToday: [],
   homeUpcoming: [],
@@ -453,7 +453,7 @@ const YEAR = {
 
 const DEVICES = {
   devices: [
-    { id: 'd1', label: 'Tablette cuisine', last_seen_at: BASE - 600, created_at: BASE - 30 * DAY },
+    { id: 'd1', label: 'Tablette cuisine', kind: 'kiosk', last_seen_at: BASE - 600, created_at: BASE - 30 * DAY, revoked_at: null },
   ],
 }
 
@@ -652,6 +652,7 @@ const TRANSFER_PLAN = {
   catchup: { behindMemberId: 'm2', gapCents: 7_200_000, asOf: MMID - 14 * DAY, termEnd: MMID + 365 * DAY },
   colour: null,
   position: 0,
+  note: null,
   due: [MMID - 14 * DAY, MMID, MMID + 14 * DAY],
   projection: {
     behindMemberId: 'm2',
@@ -667,7 +668,7 @@ const TRANSFER_PLAN = {
     projectedRemainingCents: 6_250_000,
   },
 }
-const TRANSFERS = {
+const TRANSFERS: TransfersWire = {
   today: MMID,
   more: false,
   plans: [TRANSFER_PLAN],
@@ -775,7 +776,7 @@ export const ROUTES: Partial<Wire> = {
   'use-soon': { soon: [{ id: 'u1', item: 'Épinards', marked_at: BASE - 3 * 3600 }, { id: 'u2', item: 'Crème', marked_at: BASE - 8 * 3600 }] },
   // Per-day kitchen memos (La cuisine grid). One note on day-one so the feature
   // renders; an empty/absent `notes` must never crash the page (Kitchen guards it).
-  'day-notes': { notes: [{ id: 'dn1', date: BASE, text: 'Sans gluten ce soir', member_id: 'm1' }] },
+  'day-notes': { notes: [{ id: 'dn1', date: BASE, text: 'Sans gluten ce soir', member_id: 'm1', updated_at: BASE }] },
   // AI-failure journal (Réglages). Empty is the normal, healthy state.
   'ai-errors': { errors: [] },
   // « Les remarques » (0136). Empty by default: the section's own spec seeds what it
@@ -949,8 +950,8 @@ export const ROUTES: Partial<Wire> = {
   // populated wall; the images resolve via /api/img/* (served a tiny SVG below).
   drawings: {
     drawings: [
-      { id: 'dg1', member_id: 'm3', media_key: 'nm_g1', scene_key: 'ns_g1', created_at: BASE },
-      { id: 'dg2', member_id: 'm1', media_key: 'nm_g2', scene_key: null, created_at: BASE - DAY },
+      { id: 'dg1', member_id: 'm3', media_key: 'nm_g1', scene_key: 'ns_g1', created_at: BASE, saved_at: null },
+      { id: 'dg2', member_id: 'm1', media_key: 'nm_g2', scene_key: null, created_at: BASE - DAY, saved_at: null },
     ],
     more: false,
   },
@@ -967,7 +968,7 @@ export const ROUTES: Partial<Wire> = {
   'home-projects': { projects: [] },
   intake: { submissions: [] },
   'meal-leftovers': { leftovers: [] },
-  notes: { notes: [] },
+  notes: { notes: [], more: false },
   // Never empty on the real wire: whoever asks is the first operator on it.
   'operator-invite': { operators: [{ email: 'famille@exemple.ca', createdAt: BASE - 30 * DAY, isSelf: true }] },
   postbox: { messages: [] },

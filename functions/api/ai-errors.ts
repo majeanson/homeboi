@@ -1,4 +1,4 @@
-import { ok, badRequest, readJson } from '../_lib/json'
+import { ok, badRequest, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { profileMemberId } from '../_lib/profile'
@@ -39,7 +39,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   )
     .bind(actor.householdId, LIST_MAX)
     .all<{ id: string; feature: string; message: string; created_at: number }>()
-  return ok({ errors: rows.results })
+  return okWire('ai-errors', { errors: rows.results })
 })
 
 export const onRequestDelete = authed(async (ctx, actor) => {

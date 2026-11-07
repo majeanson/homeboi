@@ -1,4 +1,4 @@
-import { badRequest, notFound, ok } from '../_lib/json'
+import { badRequest, notFound, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { parseOriginal } from '../_lib/recipeWire'
 
@@ -28,5 +28,5 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // simply has no snapshot (hand-typed), which is a valid `null`.
   if (!row) return notFound('Recette introuvable.')
 
-  return ok({ original: parseOriginal(row.original_json) })
+  return okWire('recipe-original', { original: parseOriginal(row.original_json) })
 })

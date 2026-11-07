@@ -1,8 +1,9 @@
-import { badRequest, notFound, ok, parseJsonArray, readJson } from '../_lib/json'
+import { badRequest, notFound, ok, parseJsonArray, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { hexColor } from '../_lib/validate'
 import { normalizeRecur } from '../_lib/recur'
+import type { Wire } from '../_lib/wire'
 
 const isString = (v: unknown): v is string => typeof v === 'string'
 const recurJson = (recur: unknown): string | null => {
@@ -41,8 +42,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
     'SELECT id, title, rotation_json, current_idx, last_done_at, last_done_by, colour AS color, recur_json, recur_start, lead_seconds, announce_evening FROM tasks WHERE household_id = ? ORDER BY created_at',
   )
     .bind(actor.householdId)
-    .all()
-  return ok({ chores: results })
+    .all<Wire['chores']['chores'][number]>()
+  return okWire('chores', { chores: results })
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {

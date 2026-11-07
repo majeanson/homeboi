@@ -1,4 +1,4 @@
-import { ok, badRequest, notFound, readJson, parseJsonArray } from '../_lib/json'
+import { ok, badRequest, notFound, readJson, parseJsonArray, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { copyR2Blob } from '../_lib/r2'
 import {
@@ -175,10 +175,10 @@ export const onRequestGet = authed(async (ctx, actor) => {
     } catch {
       return notFound('Ce partage n’existe plus.')
     }
-    return ok({ kind: share.kind, label: share.label, payload, sourceName: share.sourceName })
+    return okWire('share', { kind: share.kind, label: share.label, payload, sourceName: share.sourceName })
   }
   const shares = await listLiveShares(ctx.env, actor.householdId)
-  return ok({ shares })
+  return okWire('share', { shares })
 })
 
 export const onRequestDelete = authed(async (ctx, actor) => {

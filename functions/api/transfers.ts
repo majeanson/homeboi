@@ -1,4 +1,4 @@
-import { badRequest, notFound, ok, readJson } from '../_lib/json'
+import { badRequest, notFound, ok, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { CAP_SQL, capped } from '../_lib/listCap'
 import { newId, nowSec } from '../_lib/ids'
@@ -132,7 +132,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // projection computed over rows the reader cannot see would be unexplainable.
   const { rows, more } = capped(transfersRes.results)
 
-  return ok({
+  return okWire('transfers', {
     today,
     // True when the household has more recorded transfers than the read cap — nothing
     // renders it yet, but the surface has the fact rather than a silent gap.

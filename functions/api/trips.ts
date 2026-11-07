@@ -1,4 +1,4 @@
-import { badRequest, notFound, ok, readJson, parseJsonArray } from '../_lib/json'
+import { badRequest, notFound, ok, readJson, parseJsonArray, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { deleteR2Blob } from '../_lib/r2'
@@ -54,7 +54,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     .bind(actor.householdId)
     .all<TripRow>()
   const trips = rows.results.map((r) => ({ ...r, members: parseJsonArray<string>(r.members) }))
-  return ok({ trips })
+  return okWire('trips', { trips })
 }, 'operator')
 
 export const onRequestPost = authed(async (ctx, actor) => {

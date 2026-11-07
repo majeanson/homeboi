@@ -1,4 +1,4 @@
-import { forbidden, notFound, ok, readJson } from '../_lib/json'
+import { forbidden, notFound, ok, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { issueOperatorInvite, OPERATOR_INVITE_TTL } from '../_lib/auth'
@@ -54,7 +54,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   )
     .bind(actor.householdId)
     .all<{ email: string; created_at: number }>()
-  return ok({
+  return okWire('operator-invite', {
     operators: rows.results.map((r) => ({ email: r.email, createdAt: r.created_at, isSelf: r.email === actor.email })),
   })
 }, 'operator')

@@ -1,4 +1,4 @@
-import { badRequest, notFound, ok, readJson, serviceUnavailable } from '../_lib/json'
+import { badRequest, notFound, ok, readJson, serviceUnavailable, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { deleteR2Blob, uploadR2Media } from '../_lib/r2'
@@ -73,7 +73,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
          FROM care_log WHERE household_id = ? ORDER BY at DESC, created_at DESC`
   const stmt = ctx.env.DB.prepare(sql)
   const rows = await (carnet ? stmt.bind(actor.householdId, carnet) : stmt.bind(actor.householdId)).all<LogRow>()
-  return ok({
+  return okWire('care-log', {
     entries: rows.results.map((r) => ({
       id: r.id,
       carnetId: r.carnet_id,

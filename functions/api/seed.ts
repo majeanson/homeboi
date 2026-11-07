@@ -1,4 +1,4 @@
-import { ok } from '../_lib/json'
+import { ok, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { countSampleData, seedSampleData, clearSampleData } from '../_lib/sampleData'
 
@@ -16,7 +16,7 @@ import { countSampleData, seedSampleData, clearSampleData } from '../_lib/sample
 // never a row the operator created while exploring. Media-free → clear is pure DB.
 
 export const onRequestGet = authed(async (ctx, actor) => {
-  return ok({ count: await countSampleData(ctx.env, actor.householdId) })
+  return okWire('seed', { count: await countSampleData(ctx.env, actor.householdId) })
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {

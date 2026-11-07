@@ -1,7 +1,8 @@
-import { ok } from '../_lib/json'
+import { okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { localDayStart } from '../_lib/ids'
 import { householdMealLayout, mealOrderSql } from '../_lib/mealSlots'
+import type { MealRow } from '../_lib/wire'
 
 // « Historique » — every planned meal, newest day first, since the household
 // began. The meals table never deletes past rows (the 10-day countdown window
@@ -45,7 +46,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     )
       .bind(hh, today + DAY)
       .all<{ title: string; recipe_id: string | null; times: number; last_at: number }>()
-    return ok({ dishes: results.map(({ title, recipe_id, last_at }) => ({ title, recipe_id, last_at })) })
+    return okWire('meal-history', { dishes: results.map(({ title, recipe_id, last_at }) => ({ title, recipe_id, last_at })) })
   }
 
   // The distinct planned days of this page first (empty days simply don't
@@ -57,7 +58,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   )
     .bind(hh, before, PAGE_DAYS + 1)
     .all<{ date: number }>()
-  if (dayRows.length === 0) return ok({ days: [], nextBefore: null })
+  if (dayRows.length === 0) return okWire('meal-history', { days: [], nextBefore: null })
 
   const hasMore = dayRows.length > PAGE_DAYS
   const page = hasMore ? dayRows.slice(0, PAGE_DAYS) : dayRows
@@ -68,7 +69,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     `SELECT id, date, slot, title, cook_member_id, suggested_by, recipe_id, position, is_leftover FROM meals WHERE household_id = ? AND date >= ? AND date < ? ORDER BY date DESC, ${MEAL_ORDER}`,
   )
     .bind(hh, oldest, before)
-    .all()
+    .all<MealRow>()
 
-  return ok({ days: results, nextBefore: hasMore ? oldest : null })
+  return okWire('meal-history', { days: results, nextBefore: hasMore ? oldest : null })
 })

@@ -1,4 +1,4 @@
-import { badRequest, forbidden, notFound, ok, readJson } from '../_lib/json'
+import { badRequest, forbidden, notFound, ok, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { deleteR2Blob, copyR2Blob } from '../_lib/r2'
@@ -74,7 +74,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     // myHouseholdId lets the SPA tell OWN vs other households' packing bags apart
     // (own = editable, others = read-only). The membership rows all carry household_id
     // but none is flagged "me", so the actor's household is named explicitly here.
-    return ok({
+    return okWire('shared-trip', {
       trip: shapeTrip(gate.trip, members, gate.membership.role),
       myHouseholdId: gate.membership.household_id,
     })
@@ -96,7 +96,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     rows.results.map((r) => r.id),
   )
   const trips = rows.results.map(({ my_role, ...t }) => shapeTrip(t, members, my_role))
-  return ok({ trips })
+  return okWire('shared-trip', { trips })
 }, 'operator')
 
 // POST: create from scratch OR promote an existing private trip. Branches on `fromTripId`.

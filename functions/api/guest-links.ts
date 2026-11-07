@@ -1,6 +1,7 @@
-import { badRequest, ok, readJson } from '../_lib/json'
+import { badRequest, ok, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { nowSec } from '../_lib/ids'
+import type { Wire } from '../_lib/wire'
 
 // The operator's active share-links — list + revoke (REVIEW-PASS §509). Guest tokens
 // are stateless HMAC capabilities; the `guests` row (migration 0098, written at mint by
@@ -18,8 +19,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
       ORDER BY created_at DESC`,
   )
     .bind(actor.householdId, nowSec())
-    .all()
-  return ok({ links: results })
+    .all<Wire['guest-links']['links'][number]>()
+  return okWire('guest-links', { links: results })
 }, 'operator')
 
 // Revoke one link by its token id. Idempotent (the `revoked_at IS NULL` guard makes a

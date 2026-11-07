@@ -1,4 +1,4 @@
-import { ok } from '../_lib/json'
+import { okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { localDayStart, addLocalDays } from '../_lib/ids'
 
@@ -119,5 +119,5 @@ export const onRequestGet = authed(async (ctx, actor) => {
     (a, b) => b.date - a.date || a.choreTitle.localeCompare(b.choreTitle),
   )
 
-  return ok({ since, ledger })
+  return okWire('chores-ledger', { since, ledger })
 })

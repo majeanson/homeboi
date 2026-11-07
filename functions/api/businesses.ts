@@ -1,4 +1,4 @@
-import { badRequest, notFound, ok, readJson, serviceUnavailable } from '../_lib/json'
+import { badRequest, notFound, ok, readJson, serviceUnavailable, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { deleteR2Blob, uploadR2Media } from '../_lib/r2'
@@ -66,7 +66,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     byBiz.set(r.bid, list)
   }
 
-  return ok({
+  return okWire('businesses', {
     businesses: rows.results.map((b) => ({
       id: b.id,
       name: b.name,

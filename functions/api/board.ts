@@ -1,4 +1,4 @@
-import { ok } from '../_lib/json'
+import { okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { localDayStart, addLocalDays } from '../_lib/ids'
 import { parseRecur, expandRange, occurrenceOn } from '../_lib/recur'
@@ -7,6 +7,7 @@ import { isSoon as isSoonAt } from '../_lib/reminder'
 import { fetchBirthdayPeople, birthdayOccurrences } from '../_lib/birthdays'
 import { workOccurrencesInRange, parseScheduleBlockRow, type ScheduleBlock, type ScheduleBlockRow } from '../_lib/carResolve'
 import { householdMealLayout } from '../_lib/mealSlots'
+import type { BoardChore, BoardChoreInstance, BoardDayNote, BoardHomeInstance, BoardHomeOverdue, BoardListItem, BoardMeal, BoardMealBrief, BoardNote, BoardWire, MemberRow } from '../_lib/wire'
 
 interface Ev {
   id: string
@@ -97,29 +98,29 @@ export const onRequestGet = authed(async (ctx, actor) => {
       'SELECT id, display_name, avatar_kind, avatar_ref, colour, is_child FROM members WHERE household_id = ? ORDER BY position, created_at',
     )
       .bind(hh)
-      .all(),
+      .all<MemberRow>(),
     ctx.env.DB.prepare(
       'SELECT id, title, start_at, all_day, end_at, car_id, member_id, passengers, contact_id, business_id, bring_template_id, notes, lead_seconds, (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name, (SELECT address FROM contacts WHERE contacts.id = events.contact_id) AS contact_address, (SELECT name FROM businesses WHERE businesses.id = events.business_id) AS business_name, (SELECT colour FROM businesses WHERE businesses.id = events.business_id) AS business_colour, (SELECT address FROM businesses WHERE businesses.id = events.business_id) AS business_address FROM events WHERE household_id = ? AND recur_json IS NULL AND start_at >= ? AND start_at < ? ORDER BY all_day DESC, start_at',
     )
       .bind(hh, today, tomorrow)
-      .all(),
+      .all<EvRow>(),
     ctx.env.DB.prepare(
       'SELECT id, title, start_at, all_day, end_at, car_id, member_id, passengers, contact_id, business_id, bring_template_id, notes, lead_seconds, (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name, (SELECT address FROM contacts WHERE contacts.id = events.contact_id) AS contact_address, (SELECT name FROM businesses WHERE businesses.id = events.business_id) AS business_name, (SELECT colour FROM businesses WHERE businesses.id = events.business_id) AS business_colour, (SELECT address FROM businesses WHERE businesses.id = events.business_id) AS business_address FROM events WHERE household_id = ? AND recur_json IS NULL AND start_at >= ? AND start_at < ? ORDER BY all_day DESC, start_at',
     )
       .bind(hh, tomorrow, dayAfter)
-      .all(),
+      .all<EvRow>(),
     // First hero meal of today/tomorrow (the headline). ORDER BY position so
     // "first" is deterministic now that a slot can hold several meals.
     ctx.env.DB.prepare(
       'SELECT id, title, cook_member_id, is_leftover, recipe_id FROM meals WHERE household_id = ? AND slot = ? AND date >= ? AND date < ? ORDER BY position, created_at, id LIMIT 1',
     )
       .bind(hh, heroSlot, mealToday, mealTomorrow)
-      .all(),
+      .all<BoardMealBrief>(),
     ctx.env.DB.prepare(
       'SELECT id, title, cook_member_id, is_leftover, recipe_id FROM meals WHERE household_id = ? AND slot = ? AND date >= ? AND date < ? ORDER BY position, created_at, id LIMIT 1',
     )
       .bind(hh, heroSlot, mealTomorrow, mealDayAfter)
-      .all(),
+      .all<BoardMealBrief>(),
     // EVERY meal planned for today (all slots, N per slot) — the board shows the
     // full day's table, not just tonight's supper hero. Ordered by time then
     // position; sorted again client-side by slot (stable, so position holds).
@@ -127,13 +128,13 @@ export const onRequestGet = authed(async (ctx, actor) => {
       'SELECT id, slot, title, cook_member_id, position, is_leftover, recipe_id FROM meals WHERE household_id = ? AND date >= ? AND date < ? ORDER BY position, created_at, id',
     )
       .bind(hh, mealToday, mealTomorrow)
-      .all(),
+      .all<BoardMeal>(),
     // Today's day note — the per-day memo from La cuisine (functions/api/day-notes).
     ctx.env.DB.prepare(
       'SELECT id, text, member_id FROM day_notes WHERE household_id = ? AND date >= ? AND date < ? LIMIT 1',
     )
       .bind(hh, mealToday, mealTomorrow)
-      .all(),
+      .all<BoardDayNote>(),
     // Tomorrow's full meal table + its day note — surfaced in the Demain section
     // so prep that has to happen the night before (thaw the chicken, soak the
     // beans, "sortir le poulet") is visible TODAY, while there's still time.
@@ -141,12 +142,12 @@ export const onRequestGet = authed(async (ctx, actor) => {
       'SELECT id, slot, title, cook_member_id, position, is_leftover, recipe_id FROM meals WHERE household_id = ? AND date >= ? AND date < ? ORDER BY position, created_at, id',
     )
       .bind(hh, mealTomorrow, mealDayAfter)
-      .all(),
+      .all<BoardMeal>(),
     ctx.env.DB.prepare(
       'SELECT id, text, member_id FROM day_notes WHERE household_id = ? AND date >= ? AND date < ? LIMIT 1',
     )
       .bind(hh, mealTomorrow, mealDayAfter)
-      .all(),
+      .all<BoardDayNote>(),
     // The whole active list — unchecked AND checked. A check is a mark, not a
     // move: checked rows stay in place (struck through) until "Clear checked"
     // removes them, so checked_at rides along to drive that struck state.
@@ -160,12 +161,12 @@ export const onRequestGet = authed(async (ctx, actor) => {
       'SELECT id, text, source, added_by, deal_json, search_terms, checked_at, non_urgent FROM list_items WHERE household_id = ? ORDER BY position IS NULL, position, created_at, id',
     )
       .bind(hh)
-      .all(),
+      .all<BoardListItem>(),
     ctx.env.DB.prepare(
       'SELECT id, title, rotation_json, current_idx, last_done_at, colour AS color, recur_json, recur_start, lead_seconds, announce_evening, created_at FROM tasks WHERE household_id = ? ORDER BY created_at',
     )
       .bind(hh)
-      .all(),
+      .all<Omit<BoardChore, 'helpers'>>(),
     // « Mots » — the fridge (uncleared), newest first. Since 0142 a paper may be addressed
     // (for_member_id) and scheduled (surface_at). Two things are decided HERE, not in
     // the card, because a client-side hide is a hide the payload still carries:
@@ -183,7 +184,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
         ORDER BY created_at DESC LIMIT 12`,
     )
       .bind(hh, now, actor.scope === 'guest' ? 1 : 0)
-      .all(),
+      .all<BoardNote>(),
     // "Restants à finir" — undated leftovers to eat before cooking the rest. A
     // calm nudge, newest first; planning or finishing one happens from the card.
     // recipe_id/source_meal_id ride along so the board's « planifier ce soir » can
@@ -194,7 +195,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
       'SELECT id, title, recipe_id, source_meal_id FROM meal_leftovers WHERE household_id = ? ORDER BY created_at DESC',
     )
       .bind(hh)
-      .all(),
+      .all<BoardWire['leftovers'][number]>(),
     // « L'auto » work-schedule blocks (#28) — the recurring "who's out / car taken"
     // windows. Derived onto the day below (never event rows), like birthdays. Tiny
     // table (a few rows/household), so it rides the board poll cheaply.
@@ -217,7 +218,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     'SELECT id, title, start_at, all_day, end_at, car_id, member_id, passengers, contact_id, business_id, bring_template_id, notes, lead_seconds, (SELECT first_name FROM contacts WHERE contacts.id = events.contact_id) AS contact_name, (SELECT address FROM contacts WHERE contacts.id = events.contact_id) AS contact_address, (SELECT name FROM businesses WHERE businesses.id = events.business_id) AS business_name, (SELECT colour FROM businesses WHERE businesses.id = events.business_id) AS business_colour, (SELECT address FROM businesses WHERE businesses.id = events.business_id) AS business_address FROM events WHERE household_id = ? AND recur_json IS NULL AND start_at >= ? AND start_at < ? ORDER BY start_at LIMIT 8',
   )
     .bind(hh, dayAfter, weekEnd)
-    .all()
+    .all<EvRow>()
 
   // Recurring series live as one row each; expand them across the board window
   // (today → week end) into concrete occurrences, then bucket into the same
@@ -295,8 +296,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
   }))
   const bdayIn = (from: number, to: number) => bdayOccs.filter((e) => e.start_at >= from && e.start_at < to)
   // One-off rows carry lead_seconds from SQL; derive each row's `soon` here.
-  const oneOff = (rows: unknown) =>
-    (rows as EvRow[]).map((r) => ({
+  const oneOff = (rows: EvRow[]) =>
+    rows.map((r) => ({
       id: r.id,
       title: r.title,
       start_at: r.start_at,
@@ -353,7 +354,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     helpersByTask.set(h.task_id, list)
     seenByTask.set(h.task_id, seen)
   }
-  const choresOut = (chores.results as { id: string }[]).map((c) => ({
+  const choresOut = chores.results.map((c) => ({
     ...c,
     helpers: helpersByTask.get(c.id) ?? [],
   }))
@@ -363,42 +364,9 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // the week surfaces on À venir. Whose-turn rides along (rotation + current_idx).
   // Non-recurring chores have no schedule, so they surface as one-off to-dos
   // (the `todos` slice below) until they're checked off.
-  interface ChoreInst {
-    id: string
-    title: string
-    color: string | null
-    at: number
-    soon: boolean // within its calm "Bientôt" lead window right now
-    who: string | null
-    who_id: string | null
-    // Every member in the rotation (not just whose turn). The board's personal
-    // focus shows a shared chore to ANYONE on the team, even when it's not their
-    // turn — they can still do it; `who`/`who_id` say whose turn it currently is.
-    team: string[]
-    carnet_id?: string | null // « Les carnets » link (mig 0082) — set only on home-project rows
-    // Home-project rows only: the row has a recurrence, so « Reporter » can offer
-    // « au prochain cycle » (a one-off has no cycle — the client offers only a week).
-    recurring?: boolean
-    // D-21: this recurring chore's "evening before" board announce is on. Read by
-    // src/lib/boardModel.ts against choresUpcoming's `at` to synthesize the
-    // announce line the night before — see migration 0109.
-    announce_evening?: boolean
-  }
   const memberName = (id: string | null) =>
-    (id && (members.results as { id: string; display_name: string }[]).find((m) => m.id === id)?.display_name) || null
-  type ChoreSrc = {
-    id: string
-    title: string
-    color: string | null
-    rotation_json: string
-    current_idx: number
-    last_done_at: number | null
-    recur_json: string | null
-    recur_start: number | null
-    lead_seconds: number | null
-    announce_evening: number | null
-    created_at: number
-  }
+    (id && members.results.find((m) => m.id === id)?.display_name) || null
+  type ChoreSrc = Omit<BoardChore, 'helpers'>
   // The rotation as member ids — the whole team sharing the chore. Empty when
   // there's no rotation (an unassigned "Maisonnée" task shown to everyone).
   const teamIds = (c: ChoreSrc): string[] => {
@@ -418,15 +386,15 @@ export const onRequestGet = authed(async (ctx, actor) => {
     return rot[c.current_idx % rot.length] ?? null
   }
   const whoseTurn = (c: ChoreSrc): string | null => memberName(whoseTurnId(c))
-  const choresToday: ChoreInst[] = []
-  const choresUpcoming: ChoreInst[] = []
+  const choresToday: BoardChoreInstance[] = []
+  const choresUpcoming: BoardChoreInstance[] = []
   // One-off to-dos: non-recurring, not-yet-done tasks (a captured "corvée" or a
   // standing chore with no schedule). These never had a home on Aujourd'hui;
   // now they surface as a checkable "À faire" list until completed (last_done_at).
-  const todos: ChoreInst[] = []
-  for (const c of chores.results as ChoreSrc[]) {
+  const todos: BoardChoreInstance[] = []
+  for (const c of chores.results) {
     const r = parseRecur(c.recur_json)
-    const inst = (at: number): ChoreInst => ({
+    const inst = (at: number): BoardChoreInstance => ({
       id: c.id,
       title: c.title,
       color: c.color,
@@ -477,15 +445,15 @@ export const onRequestGet = authed(async (ctx, actor) => {
       snoozed_until: number | null
       carnet_id: string | null
     }>()
-  const homeToday: ChoreInst[] = []
-  const homeUpcoming: ChoreInst[] = []
+  const homeToday: BoardHomeInstance[] = []
+  const homeUpcoming: BoardHomeInstance[] = []
   // The calm carry-forward: a missed due date (recurring cycle or dated one-off)
   // stays on « À faire » until someone checks the row — derived by _lib/upkeep,
   // never a materialized row. `at` carries the missed date so day labels / the
-  // detail peek reuse the ChoreInst shape unchanged.
-  const homeOverdue: (ChoreInst & { overdueSince: number })[] = []
+  // detail peek reuse the BoardHomeInstance shape unchanged.
+  const homeOverdue: BoardHomeOverdue[] = []
   for (const h of homeRows.results) {
-    const hinst = (at: number): ChoreInst => ({
+    const hinst = (at: number): BoardHomeInstance => ({
       id: h.id,
       title: h.title,
       color: h.color,
@@ -524,9 +492,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // lists the rest here so nothing planned for the day is hidden. Stable sort, so
   // the SQL position order holds within a slot that has several meals.
   const slotRank = new Map(mealLayout.order.map((s, i) => [s as string, i]))
-  type DayMeal = { id: string; slot: string; title: string; cook_member_id: string | null; position?: number; is_leftover?: number }
-  const bySlot = (rows: unknown) =>
-    (rows as DayMeal[]).sort((a, b) => (slotRank.get(a.slot) ?? 9) - (slotRank.get(b.slot) ?? 9))
+  const bySlot = (rows: BoardMeal[]) =>
+    rows.sort((a, b) => (slotRank.get(a.slot) ?? 9) - (slotRank.get(b.slot) ?? 9))
   const todayMeals = bySlot(todayMealsRes.results)
   const tomorrowMeals = bySlot(tomorrowMealsRes.results)
   // All of today's hero meals — the board's "Ce soir" lists every one, not just the first.
@@ -547,7 +514,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     holds_car: o.holdsCar ? 1 : 0,
   }))
 
-  return ok({
+  return okWire('board', {
     syncedAt: Math.floor(Date.now() / 1000),
     scope: actor.scope,
     members: members.results,

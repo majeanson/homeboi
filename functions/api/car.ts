@@ -1,4 +1,4 @@
-import { ok } from '../_lib/json'
+import { okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { localDayStart, addLocalDays } from '../_lib/ids'
 import { membersOutAt, type CarDayOverride } from '../_lib/carResolve'
@@ -112,7 +112,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const status = todayDay ? carStatusAt(todayDay.carSpans, now, dayEnd) : { free: true as const }
   const membersOut = todayInRange ? membersOutAt(today, occ.blocks, now, overrideFor(occ, today)) : []
 
-  return ok({
+  return okWire('car', {
     cars: occ.cars,
     // Which car the resolved spans/conflicts are about. The client seeds a localized
     // default car when the household never configured one (lib/carPrefs), so it must

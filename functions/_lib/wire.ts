@@ -12,8 +12,8 @@
 //
 // Pure types, no imports, so e2e/ (compiled with DOM + node, not workers-types) can
 // import it. One interface per handler, added as each fixture is typed; the handler
-// builds a `const wire: XWire = {…}` and returns `ok(wire)`, so a key added on one side
-// is a compile error on the other.
+// answers through `okWire('route', body)`, so a key added on one side is a compile error on
+// the other.
 
 export interface HealthWire {
   ok: boolean
@@ -54,11 +54,15 @@ export interface HealthWire {
 // read from the handler. A key seen only as null, or a list seen only empty, got its
 // type from the column or the handler.
 //
-// What holds them: the FIXTURE side is held by tsc (`ROUTES: Partial<Wire>` in
-// e2e/mocks.ts). The HANDLER side is not yet. Only `health` builds `const wire: HealthWire`;
-// the others still `ok({...})` an untyped object, because this pass did not touch
-// production handlers. A handler that grows a key will not fail tsc until it adopts its
-// interface the way health.ts did. `unknown[]` marks a list no fixture has a row for.
+// What holds them: tsc, on both sides. The fixture through `ROUTES: Partial<Wire>` in
+// e2e/mocks.ts, the handler through `okWire('route', body)` (_lib/json.ts), which refuses a
+// missing key and, at any depth, a key this file does not know. Binding the 64 handlers
+// (2026-11-06) corrected this file against each handler's real type: the method above had
+// missed every key its sample left out, and a second face behind a query parameter
+// (`ghost?view=manage`, `share?s=`, `shared-trip?id=`). Those faces are unions now.
+// `unknown` is left only where the value really is free-form JSON (a share's payload, a
+// recipe pill, a pet's weights, a contact's custom fields), and it ends the check there.
+// src/lib/mocksContract.test.ts counts the routes still unbound.
 
 /** A member row as /api/members and /api/board serve it: snake_case, the raw table. */
 export interface MemberRow {
@@ -82,7 +86,8 @@ export interface MemberFull extends MemberRow {
 export interface AuthMeWire {
   signedIn: boolean
   email?: string
-  household?: { id: string; name: string; tier: string }
+  /** Null when the operator row has no household (a join that came back empty). */
+  household?: { id: string; name: string; tier: string } | null
   /** Which household FACE this account is (migration 0130), or null. */
   memberId?: string | null
   /** False only when mail is on and this address has not confirmed. */
@@ -110,10 +115,10 @@ export interface BoardEvent {
   soon: boolean
   /** Derived birthday rows only: they carry these and none of the columns above but `soon`. */
   birthday?: boolean
-  age?: number
+  age?: number | null
   gift_ideas?: string | null
 }
-/** `upcoming` mixes event rows with derived birthdays, which have no event columns. */
+/** `today`, `tomorrow` and `upcoming` mix event rows with derived birthdays, which have no event columns. */
 export type BoardUpcoming = Pick<BoardEvent, 'id' | 'title' | 'start_at' | 'all_day' | 'member_id' | 'soon'> & Partial<BoardEvent>
 
 export interface BoardMealBrief {
@@ -149,26 +154,31 @@ export interface BoardChore {
   lead_seconds: number | null
   announce_evening: number | null
   created_at: number
-  helpers: { name: string; role: string }[]
+  helpers: { name: string | null; role: string }[]
 }
-export interface BoardChoreInstance {
+interface BoardInstance {
   id: string
   title: string
   color: string | null
   at: number
+  /** Inside its calm « Bientôt » lead window right now. */
+  soon: boolean
   who: string | null
   who_id: string | null
-}
-export interface BoardHomeInstance extends BoardChoreInstance {
-  soon: boolean
+  /** Every member of the rotation, not just whose turn: a shared chore shows to anyone on it. */
   team: string[]
+}
+/** A chore or a todo. `announce_evening`: src/lib/boardModel.ts builds the night-before line from it. */
+export interface BoardChoreInstance extends BoardInstance {
+  announce_evening: boolean
+}
+export interface BoardHomeInstance extends BoardInstance {
   carnet_id: string | null
+  /** « Reporter » offers « au prochain cycle » only when true. */
   recurring: boolean
 }
-export interface BoardTodo extends BoardChoreInstance {
-  soon: boolean
-  team: string[]
-  announce_evening: boolean
+export interface BoardHomeOverdue extends BoardHomeInstance {
+  overdueSince: number
 }
 export interface BoardNote {
   id: string
@@ -186,7 +196,7 @@ export interface BoardNote {
 }
 export interface BoardWork {
   id: string
-  label: string
+  label: string | null
   at: number
   endAt: number
   member_id: string
@@ -202,9 +212,9 @@ export interface BoardWire {
   syncedAt: number
   scope: string
   members: MemberRow[]
-  today: BoardEvent[]
+  today: BoardUpcoming[]
   work: BoardWork[]
-  tomorrow: BoardEvent[]
+  tomorrow: BoardUpcoming[]
   upcoming: BoardUpcoming[]
   tonight: BoardMealBrief | null
   tonightMeals: BoardMeal[]
@@ -220,8 +230,8 @@ export interface BoardWire {
   choresUpcoming: BoardChoreInstance[]
   homeToday: BoardHomeInstance[]
   homeUpcoming: BoardHomeInstance[]
-  homeOverdue: BoardHomeInstance[]
-  todos: BoardTodo[]
+  homeOverdue: BoardHomeOverdue[]
+  todos: BoardChoreInstance[]
   notes: BoardNote[]
   leftovers: { id: string; title: string; recipe_id: string | null; source_meal_id: string | null }[]
 }
@@ -259,11 +269,9 @@ export interface MealsWire {
 }
 
 /** Two faces of one route: the paged past, and `?summary=1`'s dish list. */
-export interface MealHistoryWire {
-  days?: MealRow[]
-  nextBefore?: number | null
-  dishes?: { title: string; recipe_id: string | null; last_at: number }[]
-}
+export type MealHistoryWire =
+  | { days: MealRow[]; nextBefore: number | null }
+  | { dishes: { title: string; recipe_id: string | null; last_at: number }[] }
 
 export interface MealIdeasWire {
   ideas: { id: string; title: string; recipe_id: string | null; suggested_by: string | null; date: number | null; created_at: number }[]
@@ -276,7 +284,7 @@ export interface UseSoonWire {
   soon: { id: string; item: string; marked_at: number }[]
 }
 export interface DayNotesWire {
-  notes: { id: string; date: number; text: string; member_id: string | null }[]
+  notes: { id: string; date: number; text: string; member_id: string | null; updated_at: number }[]
 }
 export interface AiErrorsWire {
   errors: { id: string; feature: string; message: string; created_at: number }[]
@@ -317,8 +325,8 @@ export interface TripsWire {
     id: string
     title: string
     destination: string | null
-    start_at: number
-    end_at: number
+    start_at: number | null
+    end_at: number | null
     members: string[]
     media_kind: string | null
     media_key: string | null
@@ -338,14 +346,14 @@ export interface CarnetsWire {
     name: string
     mediaKey: string | null
     color: string | null
-    facts: Record<string, string> | null
+    facts: Record<string, unknown> | null
     installedAt: number | null
     lifespanMonths: number | null
     linkId: string | null
     notes: string | null
     sort: number
   }[]
-  soon: unknown[]
+  soon: { id: string; carnetId: string; name: string; kind: string; color: string | null; at: number; monthsLeft: number }[]
 }
 
 export interface RecipeWireRow {
@@ -395,6 +403,10 @@ export interface RoutineCard {
   icon: string
   label: string
   narration?: string
+  seconds?: number
+  tip?: string
+  clipKey?: string
+  photoKey?: string
 }
 export interface RoutinesWire {
   routines: {
@@ -410,7 +422,7 @@ export interface RoutinesWire {
     cardsNarration: (string | null)[]
     cardsPhoto: (string | null)[]
     doneIdx: number[]
-    timers: Record<string, unknown>
+    timers: Record<number, { endsAt: number } | { left: number }>
   }[]
   date: number
 }
@@ -425,7 +437,8 @@ export interface HabitRow {
   target: number | null
   unit: string
   cadence: string
-  recur: Record<string, unknown> | null
+  /** The raw rule JSON: the form re-hydrates it with recurOf(). */
+  recur: string | null
   week_times: number | null
   day_times: number | null
   every_hours: number | null
@@ -439,7 +452,7 @@ export interface HabitRow {
 export interface HabitsWire {
   habits: HabitRow[]
   days: { habit_id: string; day: number; value: number; slips: number; member_id: string | null; note: string | null }[]
-  marks: { habit_id: string; day: number; member_id: string }[]
+  marks: { habit_id: string; day: number; member_id: string | null }[]
   today: number
 }
 
@@ -450,9 +463,21 @@ export interface MonthWire {
     at: number
     all_day: number
     member_id: string | null
+    end_at?: number | null
+    car_id?: string | null
+    passengers?: string | null
+    contact_id?: string | null
+    contact_name?: string | null
+    contact_address?: string | null
+    business_id?: string | null
+    business_name?: string | null
+    business_colour?: string | null
+    business_address?: string | null
+    bring_template_id?: string | null
+    notes?: string | null
     day: number
     birthday?: boolean
-    age?: number
+    age?: number | null
     end?: number
     work?: boolean
     color?: string | null
@@ -462,9 +487,19 @@ export interface MonthWire {
   chores: { id: string; title: string; color: string | null; who: string | null; day: number }[]
   dayNotes: { id: string; text: string; member_id: string | null; day: number }[]
   todos: { id: string; title: string; member_id: string | null; day: number; section: string | null }[]
-  homeProjects: unknown[]
-  trips: unknown[]
-  tripPlans: unknown[]
+  homeProjects: { id: string; kind: string; title: string; color: string | null; day: number }[]
+  trips: { id: string; title: string; colour: string; start_at: number; end_at: number; shared?: true }[]
+  tripPlans: {
+    id: string
+    trip_id: string
+    category: string
+    label: string | null
+    text: string
+    media_kind: string | null
+    colour: string
+    day: number
+    shared?: true
+  }[]
   habits: {
     id: string
     habit_id: string
@@ -477,15 +512,15 @@ export interface MonthWire {
     done: boolean
   }[]
   /** Absent on the bad-window early return, so a reader has to guard it (dayLines.ts does). */
-  transfers?: unknown[]
+  transfers?: { id: string; planId: string; title: string; colour: string | null; day: number }[]
 }
 
 export interface YearWire {
-  birthdays: { id: string; name: string; day: number; age: number; memberId?: string }[]
+  birthdays: { id: string; name: string; day: number; age: number | null; memberId: string | null }[]
   events: { id: string; title: string; day: number }[]
   upkeep: { id: string; kind: string; title: string; color: string | null; day: number }[]
   life: { carnetId: string; name: string; color: string | null; day: number }[]
-  trips: { id: string; title: string; colour: string | null; start_at: number; end_at: number }[]
+  trips: { id: string; title: string; colour: string | null; start_at: number; end_at: number; shared?: true }[]
 }
 
 export interface MembersWire {
@@ -493,7 +528,7 @@ export interface MembersWire {
 }
 
 export interface PairDevicesWire {
-  devices: { id: string; label: string | null; last_seen_at: number | null; created_at: number }[]
+  devices: { id: string; label: string | null; kind: string; created_at: number; last_seen_at: number | null; revoked_at: number | null }[]
 }
 
 export interface ChoresWire {
@@ -538,6 +573,11 @@ export interface TakeoutBackupsWire {
   backups: { date: string; bytes: number }[]
 }
 
+interface WireCar {
+  id: string
+  name: string
+  color?: string
+}
 export interface HouseholdWire {
   name: string
   tz: string
@@ -552,16 +592,16 @@ export interface HouseholdWire {
   mealHours: Record<string, number>
   mealWindowDays: number
   measureColors: Record<string, string>
-  reserveLocations: string[] | null
-  cars: { id: string; name: string; color: string }[] | null
+  reserveLocations: { id: string; name: string; color?: string }[] | null
+  cars: WireCar[] | null
   aisleOrder: string[] | null
   aisleOverrides: Record<string, string>
   aiEnabled: boolean
-  schoolYear: Record<string, unknown> | null
+  schoolYear: { firstDay: number; lastDay: number; breaks: { from: number; to: number; label?: string }[] } | null
   wifiSsid: string | null
   wifiPassword: string | null
   houseRules: string | null
-  binDay: number | string | null
+  binDay: string | null
 }
 
 export interface CerclePet {
@@ -588,7 +628,7 @@ export interface CercleContact {
   birthday: string | null
   email: string | null
   phone: string | null
-  address: string | null
+  address: Record<string, string> | null
   notes: string | null
   tags: string[]
   memberId: string | null
@@ -638,7 +678,7 @@ export interface BusinessesWire {
     notes: string | null
     photoKey: string | null
     colour: string | null
-    servicedCarnets: unknown[]
+    servicedCarnets: { id: string; name: string; kind: string }[]
   }[]
 }
 
@@ -700,10 +740,25 @@ export interface FlyerWire {
   })[]
 }
 
-export interface GhostWire {
-  ghosts: { key: string; label: string; status: string; cadenceDays: number | null; lastAt: number | null; count: number }[]
-  staples: unknown[]
-}
+/** Two faces: the ranked list, and `?view=manage`'s settings table. */
+export type GhostWire =
+  | {
+      ghosts: { key: string; label: string; status: string; cadenceDays: number; lastAt: number | null; count: number }[]
+      staples: { key: string; label: string }[]
+    }
+  | {
+      items: {
+        key: string
+        label: string
+        cadenceDays: number | null
+        source: string
+        muted: boolean
+        standing: boolean
+        count: number
+        lastAt: number | null
+      }[]
+      candidates: { key: string; label: string; count: number; cadenceDays: number }[]
+    }
 
 export interface FamilyNotesWire {
   notes: {
@@ -728,13 +783,14 @@ export interface TransfersWire {
   plans: {
     id: string
     title: string
-    amountCents: number
-    recur: { freq: string; interval: number }
+    amountCents: number | null
+    recur: { freq: string; interval?: number; weekdays?: number[] } | null
     anchorAt: number
     shares: Record<string, number>
     catchup: { behindMemberId: string; gapCents: number; asOf: number; termEnd: number } | null
     colour: string | null
     position: number
+    note: string | null
     due: number[]
     projection: {
       behindMemberId: string
@@ -752,9 +808,9 @@ export interface TransfersWire {
   }[]
   transfers: {
     id: string
-    memberId: string
+    memberId: string | null
     sentAt: number
-    lines: { kind: string; planId?: string; dueAt?: number; amountCents: number }[]
+    lines: ({ kind: 'plan'; planId: string; dueAt: number; amountCents: number } | { kind: 'topup'; amountCents: number } | { kind: 'other'; label: string; amountCents: number })[]
     totalCents: number
     memo: string | null
     reference: string | null
@@ -767,22 +823,22 @@ export interface RecapWire {
 }
 
 export interface AReglerWire {
-  signals: { kind: string; key: string; label: string; sub?: string; at?: number; href: string }[]
+  signals: { kind: string; key: string; label: string; sub?: string | undefined; at?: number; href: string }[]
 }
 
 export interface CarSpan {
   start: number
   end: number
-  label: string
-  holderId: string | null
+  label?: string | undefined
+  holderId?: string | null
 }
 export interface CarWire {
-  cars: { id: string; name: string; color: string }[]
+  cars: WireCar[]
   primaryCarId: string
   hasSchedule: boolean
   now: number
   today: number
-  status: { free: boolean; until?: number; span?: CarSpan; committed?: boolean }
+  status: { free: boolean; until?: number | undefined; span?: CarSpan; committed?: boolean }
   membersOut: string[]
   days: {
     day: number
@@ -793,7 +849,7 @@ export interface CarWire {
       title: string
       at: number
       allDay: number
-      carId: string
+      carId: string | null
       passengers: string[]
       memberId: string | null
       contactId: string | null
@@ -802,7 +858,15 @@ export interface CarWire {
       businessName: string | null
       conflict: boolean
     }[]
-    override: Record<string, unknown> | null
+    override: {
+      carId: string
+      day: number
+      free: boolean
+      holderId?: string | null
+      startMin?: number | null
+      endMin?: number | null
+      label?: string | null
+    } | null
   }[]
 }
 
@@ -830,7 +894,7 @@ export interface TodoTemplatesWire {
 }
 
 export interface DrawingsWire {
-  drawings: { id: string; member_id: string | null; media_key: string; scene_key: string | null; created_at: number }[]
+  drawings: { id: string; member_id: string | null; media_key: string; scene_key: string | null; created_at: number; saved_at: number | null }[]
   more: boolean
 }
 
@@ -850,9 +914,8 @@ export interface TodayChangesWire {
 }
 
 // ── The twenty read by a page and answered `{}` until 2026-11-06 ─────────────────────
-// Found by the recorder behind e2e/unknown-gets.json on the whole suite. Same method as
-// above. Most of their fixtures are the empty calm default, and where the sample was empty
-// too the rows stay `unknown[]` until a fixture has one.
+// Found by the recorder behind e2e/unknown-gets.json on the whole suite. Most of their
+// fixtures are the empty calm default; the row types come from the handlers.
 
 export interface CareLogWire {
   entries: {
@@ -869,17 +932,31 @@ export interface CareLogWire {
 }
 export interface ChoresLedgerWire {
   since: number
-  ledger: unknown[]
+  ledger: {
+    date: number
+    choreId: string
+    choreTitle: string
+    choreColor: string | null
+    helpers: { memberId: string | null; name: string | null; role: string; avatarKind: string | null; avatarRef: string | null; colour: string | null }[]
+  }[]
 }
 export interface GuestLinksWire {
-  links: unknown[]
+  links: {
+    id: string
+    kind: string
+    target_key: string | null
+    standing: number
+    label: string | null
+    created_at: number
+    expires_at: number
+  }[]
 }
 export interface GuestWhoamiWire {
   scope: string
   kind: string | null
 }
 export interface HomePinsWire {
-  pins: unknown[]
+  pins: { id: string; carnetId: string; kind: string; label: string; detail: string | null; mediaKey: string | null; sort: number }[]
 }
 export interface HomeProjectsWire {
   projects: {
@@ -902,32 +979,61 @@ export interface HomeProjectsWire {
     snoozedUntil: number | null
   }[]
 }
+interface IntakePerson {
+  firstName: string
+  lastName: string
+  nickname: string
+  birthday: string | null
+  gender: 'm' | 'f' | null
+  email: string
+  phone: string
+  address: { street?: string; city?: string; state?: string; postalCode?: string; country?: string } | null
+  notes: string
+  photoKey: string | null
+}
 export interface IntakeWire {
-  submissions: unknown[]
+  submissions: {
+    id: string
+    targetKey: string | null
+    createdAt: number
+    self: IntakePerson
+    household: IntakePerson[]
+    links: { aIndex: number; bIndex: number; type: string }[]
+    pets: { name: string; species: string; photoKey: string | null; ownerIndex: number }[]
+  }[]
 }
 export interface MealLeftoversWire {
   leftovers: { id: string; title: string; recipe_id: string | null; source_meal_id: string | null; created_at: number }[]
 }
 export interface NotesWire {
   notes: (BoardNote & { surface_at: number | null; updated_at: number | null; dismissed_at: number | null })[]
+  more: boolean
 }
 export interface OperatorInviteWire {
   operators: { email: string; createdAt: number; isSelf: boolean }[]
 }
 export interface PostboxWire {
-  messages: unknown[]
+  messages: {
+    id: string
+    senderName: string
+    text: string
+    mediaKind: string | null
+    mediaKey: string | null
+    sceneKey: string | null
+    createdAt: number
+  }[]
 }
 export interface RecipeLovesWire {
   loves: { recipe_id: string; member_id: string }[]
 }
 export interface ReserveWire {
-  reserve: unknown[]
+  reserve: { id: string; item: string; location_id: string | null; marked_at: number }[]
 }
 export interface ScheduleWire {
   blocks: {
     id: string
     memberId: string
-    label: string
+    label: string | null
     startMin: number
     endMin: number
     weekdays: number[]
@@ -941,24 +1047,73 @@ export interface SeedWire {
   /** How many sample rows are still in the household: > 0 shows the examples banner. */
   count: number
 }
-export interface ShareWire {
-  shares: unknown[]
+/** Two faces: the ledger, and `?s=<id>`'s one share (`payload` is free-form, per kind). */
+export type ShareWire =
+  | { shares: { id: string; kind: string; label: string; createdAt: number; expiresAt: number | null }[] }
+  | { kind: string; label: string; payload: unknown; sourceName: string | null }
+interface SharedTrip {
+  id: string
+  owner_household_id: string
+  title: string
+  destination: string | null
+  start_at: number | null
+  end_at: number | null
+  media_kind: string | null
+  media_key: string | null
+  colour: string
+  notes: string | null
+  invite_nonce: string
+  position: number
+  created_at: number
+  updated_at: number | null
+  members: { household_id: string; label: string; colour: string; role: string }[]
+  myRole: string
 }
-export interface SharedTripWire {
-  trips: unknown[]
+/** Two faces: the list, and `?id=<id>`'s one trip. */
+export type SharedTripWire = { trips: SharedTrip[] } | { trip: SharedTrip; myHouseholdId: string }
+interface WeekFace {
+  memberId: string | null
+  name: string | null
+  avatarKind: string | null
+  avatarRef: string | null
+  colour: string | null
 }
 export interface ThisWeekWire {
   today: number
   weekStart: number
   weekEnd: number
-  ahead: { meals: unknown[]; events: unknown[]; birthdays: unknown[]; work: unknown[]; projects: unknown[] }
-  behind: { chores: unknown[]; routines: unknown[]; projects: unknown[] }
+  ahead: {
+    meals: { date: number; slot: string; title: string }[]
+    events: { title: string; at: number; allDay: number; who: string | null }[]
+    birthdays: { name: string; at: number; age: number | null }[]
+    work: { at: number; label: string | null; who: string | null; face: WeekFace }[]
+    projects: { title: string; at: number; color: string | null }[]
+  }
+  behind: {
+    chores: { date: number; choreTitle: string; choreColor: string | null; helpers: WeekFace[] }[]
+    routines: { name: string; who: string | null; face: WeekFace }[]
+    projects: { title: string; color: string | null }[]
+  }
 }
 export interface TripNotesWire {
-  notes: unknown[]
+  notes: {
+    id: string
+    trip_id: string
+    category: string
+    label: string | null
+    text: string
+    media_kind: string | null
+    media_key: string | null
+    scene_key: string | null
+    member_id: string | null
+    date: number | null
+    position: number
+    created_at: number
+    updated_at: number | null
+  }[]
 }
 export interface TripPackingWire {
-  items: unknown[]
+  items: { id: string; trip_id: string; member_id: string | null; text: string; packed_at: number | null; position: number; created_at: number }[]
 }
 
 // THE MAP e2e/mocks.ts is typed against: route path → what its GET answers.

@@ -1,4 +1,4 @@
-import { ok } from '../_lib/json'
+import { okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { localDayStart } from '../_lib/ids'
 import { parseRecur, expandRange, rotationOffset } from '../_lib/recur'
@@ -30,7 +30,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // Bad/missing window → empty calendar rather than a 400; the view just shows
   // empty cells, mirroring how the board tolerates a thin frame.
   if (!Number.isFinite(from) || !Number.isFinite(to) || from <= 0 || to <= from) {
-    return ok({ events: [], meals: [], chores: [], dayNotes: [], todos: [], homeProjects: [], trips: [], tripPlans: [], habits: [] })
+    return okWire('month', { events: [], meals: [], chores: [], dayNotes: [], todos: [], homeProjects: [], trips: [], tripPlans: [], habits: [] })
   }
   to = Math.min(to, from + MAX_DAYS * DAY)
 
@@ -444,5 +444,5 @@ export const onRequestGet = authed(async (ctx, actor) => {
     }
   }
 
-  return ok({ events, meals, chores, dayNotes, todos, homeProjects, trips, tripPlans, habits, transfers })
+  return okWire('month', { events, meals, chores, dayNotes, todos, homeProjects, trips, tripPlans, habits, transfers })
 })

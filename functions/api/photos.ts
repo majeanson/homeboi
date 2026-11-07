@@ -1,4 +1,4 @@
-import { badRequest, ok, readJson, serviceUnavailable } from '../_lib/json'
+import { badRequest, ok, readJson, serviceUnavailable, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { deleteR2Blob, uploadR2Media } from '../_lib/r2'
@@ -18,7 +18,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   )
     .bind(actor.householdId)
     .all<{ id: string; r2_key: string; saved_at: number | null }>()
-  return ok({ photos: results.map((p) => ({ id: p.id, key: p.r2_key, saved_at: p.saved_at })) })
+  return okWire('photos', { photos: results.map((p) => ({ id: p.id, key: p.r2_key, saved_at: p.saved_at })) })
 })
 
 // « Garder » (0140, PLAN-mots C1): a photo kept for the « Souvenirs » shelf — the same

@@ -1,4 +1,4 @@
-import { badRequest, notFound, ok, parseJsonArray, readJson } from '../_lib/json'
+import { badRequest, notFound, ok, parseJsonArray, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { localDayStart, newId, nowSec } from '../_lib/ids'
 import { deleteR2Blob } from '../_lib/r2'
@@ -168,7 +168,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
       timers: sanitizeTimers(timersByRoutine.get(r.id)),
     }
   })
-  return ok({ routines: out, date: today })
+  return okWire('routines', { routines: out, date: today })
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {

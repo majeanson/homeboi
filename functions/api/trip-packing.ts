@@ -1,4 +1,4 @@
-import { badRequest, notFound, ok, readJson } from '../_lib/json'
+import { badRequest, notFound, ok, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 
@@ -36,7 +36,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   )
     .bind(actor.householdId, tripId)
     .all<PackingRow>()
-  return ok({ items: rows.results })
+  return okWire('trip-packing', { items: rows.results })
 }, 'operator')
 
 export const onRequestPost = authed(async (ctx, actor) => {

@@ -1,5 +1,5 @@
 import type { Env } from '../../_lib/env'
-import { ok } from '../../_lib/json'
+import { okWire } from '../../_lib/json'
 import { currentOperator } from '../../_lib/auth'
 import { mailEnabled } from '../../_lib/mail'
 
@@ -9,7 +9,7 @@ export const onRequestGet: PagesFunction<Env> = async (ctx) => {
   // Version-checked (0134): a cookie revoked by a reset or « Se déconnecter partout »
   // answers signed-out here too, so the shell and the API agree.
   const op = await currentOperator(ctx.env, ctx.request)
-  if (!op) return ok({ signedIn: false })
+  if (!op) return okWire('auth/me', { signedIn: false })
   const email = op.email
   const row = await ctx.env.DB.prepare(
     `SELECT h.id AS id, h.name AS name, h.tier AS tier, o.member_id AS member_id, o.verified_at AS verified_at
@@ -22,7 +22,7 @@ export const onRequestGet: PagesFunction<Env> = async (ctx) => {
   // phone can start as the person holding it instead of asking on every new device.
   // Sent flat rather than inside `household`: it is a property of the ACCOUNT, and the
   // same household hands a different answer to each of its operators.
-  return ok({
+  return okWire('auth/me', {
     signedIn: true,
     email,
     household: row ? { id: row.id, name: row.name, tier: row.tier } : null,

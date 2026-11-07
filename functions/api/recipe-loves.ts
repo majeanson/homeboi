@@ -1,4 +1,4 @@
-import { badRequest, ok, readJson } from '../_lib/json'
+import { badRequest, ok, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { nowSec } from '../_lib/ids'
 import { profileMemberId } from '../_lib/profile'
@@ -23,7 +23,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const rows = await ctx.env.DB.prepare('SELECT recipe_id, member_id FROM recipe_loves WHERE household_id = ?')
     .bind(actor.householdId)
     .all<LoveRow>()
-  return ok({ loves: rows.results })
+  return okWire('recipe-loves', { loves: rows.results })
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {

@@ -1,4 +1,4 @@
-import { ok } from '../_lib/json'
+import { okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 
 // The board's calm "daily wonder" band, served from one of several free, documented
@@ -58,9 +58,9 @@ export const onRequestGet = authed(async (ctx) => {
   const order = dedupe([source, 'bing', 'wiki', 'apod'])
   for (const s of order) {
     const wonder = await fetchOne(s, key, lang)
-    if (wonder) return ok({ wonder })
+    if (wonder) return okWire('wonder', { wonder })
   }
-  return ok({ wonder: null })
+  return okWire('wonder', { wonder: null })
 })
 
 function fetchOne(s: Source, key: string, lang: Lang): Promise<Wonder | null> {

@@ -1,4 +1,4 @@
-import { ok, withAiError } from '../_lib/json'
+import { withAiError, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { weeklyRecap, resolveLang } from '../_lib/ai'
 import { addLocalDays, dayStart, nowSec } from '../_lib/ids'
@@ -43,5 +43,5 @@ export const onRequestGet = authed(async (ctx, actor) => {
     resolveLang(ctx.env, ctx.request),
     report,
   )
-  return withAiError(ok({ recap }), report)
+  return withAiError(okWire('recap', { recap }), report)
 }, undefined, { requiresAi: true })

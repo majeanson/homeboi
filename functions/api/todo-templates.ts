@@ -1,4 +1,4 @@
-import { badRequest, ok, readJson } from '../_lib/json'
+import { badRequest, ok, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 
@@ -87,7 +87,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     position: r.position,
     items: parseItems(r.items_json),
   }))
-  return ok({ templates })
+  return okWire('todo-templates', { templates })
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {

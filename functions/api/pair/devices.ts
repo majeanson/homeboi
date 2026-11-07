@@ -1,7 +1,8 @@
-import { badRequest, ok, readJson, serverError } from '../../_lib/json'
+import { badRequest, ok, readJson, serverError, okWire } from '../../_lib/json'
 import { authed } from '../../_lib/route'
 import { issueDeviceToken } from '../../_lib/auth'
 import { newId, newShortCode, nowSec, sha256Hex } from '../../_lib/ids'
+import type { Wire } from '../../_lib/wire'
 
 // List paired tablets (operator) and revoke one. Revocation is the whole
 // reason device-pairing beats a static capability URL: a lost tablet is killed
@@ -16,8 +17,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
        FROM devices WHERE household_id = ? ORDER BY created_at DESC`,
   )
     .bind(actor.householdId)
-    .all()
-  return ok({ devices: results })
+    .all<Wire['pair/devices']['devices'][number]>()
+  return okWire('pair/devices', { devices: results })
 }, 'operator')
 
 export const onRequestPost = authed(async (ctx, actor) => {

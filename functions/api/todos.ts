@@ -1,4 +1,4 @@
-import { badRequest, notFound, ok, readJson } from '../_lib/json'
+import { badRequest, notFound, ok, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec, localDayStart } from '../_lib/ids'
 import { profileMemberId } from '../_lib/profile'
@@ -46,6 +46,7 @@ interface TodoRow {
   position: number
   section: string | null
   source_template_id: string | null
+  created_at: number
 }
 
 const COLS = 'id, title, day, member_id, done_at, position, section, source_template_id, created_at'
@@ -108,7 +109,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
       .bind(actor.householdId, today, today)
       .all<TodoRow>()
   }
-  return ok({ todos: rows.results })
+  return okWire('todos', { todos: rows.results })
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {

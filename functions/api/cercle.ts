@@ -1,4 +1,4 @@
-import { badRequest, notFound, ok, readJson, serviceUnavailable } from '../_lib/json'
+import { badRequest, notFound, ok, readJson, serviceUnavailable, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { deleteR2Blob, uploadR2Media } from '../_lib/r2'
@@ -170,7 +170,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     .bind(actor.householdId)
     .all<PetRow>()
 
-  return ok({
+  return okWire('cercle', {
     members: members.results.map((m) => ({
       id: m.id,
       displayName: m.display_name,

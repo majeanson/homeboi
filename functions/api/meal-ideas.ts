@@ -1,6 +1,7 @@
-import { badRequest, ok, readJson } from '../_lib/json'
+import { badRequest, ok, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
+import type { Wire } from '../_lib/wire'
 
 // The "general ideas" pool (see migration 0025). A reusable shortlist of meal
 // ideas not yet pinned to a day — free text ("tacos") or a saved-recipe shortcut
@@ -13,8 +14,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
     'SELECT id, title, recipe_id, suggested_by, date, created_at FROM meal_ideas WHERE household_id = ? ORDER BY created_at DESC',
   )
     .bind(actor.householdId)
-    .all()
-  return ok({ ideas: results })
+    .all<Wire['meal-ideas']['ideas'][number]>()
+  return okWire('meal-ideas', { ideas: results })
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {

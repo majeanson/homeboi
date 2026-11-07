@@ -62,12 +62,12 @@ function tsFiles(dir: string): string[] {
   })
 }
 
-/** Every multi-row read (`.all<…>()`) whose nearest preceding SELECT has no LIMIT. */
+/** Every multi-row read (`.all()`, `.all<…>()`) whose nearest preceding SELECT has no LIMIT. */
 function uncapped(): string[] {
   const out: string[] = []
   for (const file of tsFiles(API)) {
     const src = readFileSync(file, 'utf8')
-    const re = /\.all<[^>]*>\(\)/g
+    const re = /\.all(?:<[\s\S]*?>)?\(\)/g
     let m: RegExpExecArray | null
     while ((m = re.exec(src))) {
       // Look back for the query this read belongs to. A window rather than a parse:
@@ -92,7 +92,12 @@ describe('multi-row reads with no LIMIT', () => {
   // Where it stood once the time-growing reads were capped (2026-09-15). LOWER this as
   // more get bounded; never raise it. A new uncapped read on a table that accumulates is
   // the thing this is here to stop.
-  const FLOOR = 124
+  //
+  // 124 → 145 on 2026-11-06, and no read was added: the scan only knew `.all<Row>()`, so a
+  // bare `.all()` was never counted. Binding the GET handlers to Wire gave those reads
+  // type arguments and they surfaced (178 `.all` sites before and after, no SQL touched).
+  // The scan now reads both forms; 145 is what the code holds.
+  const FLOOR = 145
 
   it('never grows', () => {
     const found = uncapped()

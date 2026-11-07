@@ -1,4 +1,4 @@
-import { badRequest, ok, readJson } from '../_lib/json'
+import { badRequest, ok, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { isPostal, normalizePostal, householdPostal } from '../_lib/postal'
 import { cleanFlippLang, householdFlippLang, setHouseholdFlippLang } from '../_lib/flippLang'
@@ -58,7 +58,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const aiEnabled = await householdAiEnabled(ctx.env, actor.householdId)
   const shareInfo = await householdShareInfo(ctx.env, actor.householdId)
   const schoolYear = await householdSchoolYear(ctx.env, actor.householdId)
-  return ok({
+  return okWire('household', {
     name,
     tz,
     postal,

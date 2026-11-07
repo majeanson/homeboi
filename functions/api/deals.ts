@@ -1,6 +1,6 @@
 import type { Env } from '../_lib/env'
 import { householdFlippLang, resolveFlippLang } from '../_lib/flippLang'
-import { badRequest, ok, serviceUnavailable } from '../_lib/json'
+import { badRequest, serviceUnavailable, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { isPostal, normalizePostal, householdPostal } from '../_lib/postal'
 import { householdIncludedStores, storeKey } from '../_lib/stores'
@@ -168,7 +168,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
     return true
   })
 
-  const deals: Deal[] = merged
+  // Required: this door always sets the three keys Deal leaves optional for old staged deals.
+  const deals: Required<Deal>[] = merged
     .map((it) => {
       const u = computeUnitPrice({
         price: typeof it.current_price === 'number' ? it.current_price : null,
@@ -206,7 +207,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // hasn't switched it off) — otherwise deals just show without the ≈ unit price.
   if (await aiUsable(ctx.env, actor)) await sniperFill(ctx.env, deals, uiLang)
   sortBestFirst(deals)
-  return ok({ query: q, postal, count: deals.length, deals })
+  return okWire('deals', { query: q, postal, count: deals.length, deals })
 })
 
 // AI size-sniper fallback: for deals the regex couldn't size, ask the model to

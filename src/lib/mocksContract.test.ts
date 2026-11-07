@@ -109,3 +109,71 @@ describe('e2e mocks ↔ worker route table', () => {
     expect(Object.keys(mod.ROUTES[canary] ?? {}).length).toBeGreaterThanOrEqual(15)
   })
 })
+
+// THE OTHER HALF (2026-11-06). The fixtures above follow `Wire`, and until today only
+// `health` built its answer on that type, so a handler could gain or lose a key and nothing
+// failed. okWire('route', body) (functions/_lib/json.ts) is the binding: tsc refuses a
+// missing key and, at any depth, a key `Wire` does not know. tsc only sees the sites that
+// use it, though, and a bare ok() compiles forever. So this counts the routes the type does
+// not reach. Bound means: the GET handler answers through okWire, naming its own route, on
+// every path, and has no ok() or new Response() left. UNBOUND is the exact set, so a route
+// that gets bound has to leave it (the stale check), and UNBOUND_MAX only falls.
+//
+// The 15 FIXTURELESS routes above have no `Wire` entry, so they are outside this count.
+const UNBOUND: Record<string, string> = {}
+const UNBOUND_MAX = 0
+
+function wireRoutes(): string[] {
+  const src = readFileSync(join(rootDir, 'functions/_lib/wire.ts'), 'utf8')
+  const start = src.indexOf('export type Wire = {')
+  return [...src.slice(start, src.indexOf('\n}', start)).matchAll(/^\s*'?([a-z][a-z0-9/-]*)'?: \w+$/gm)].map((m) => m[1]!)
+}
+
+// The GET handler's text: from its export to the next one, so a helper below it is read
+// too. Comments are dropped so a sentence that says ok( cannot redden, or hide, anything.
+function getHandler(route: string): { all: string; get: string } {
+  const routes = readFileSync(join(rootDir, 'worker/routes.ts'), 'utf8')
+  const files = new Map([...routes.matchAll(/import \* as (\w+) from '\.\.\/(functions\/api\/.+)'/g)].map((m) => [m[1]!, m[2]!]))
+  const mod = tableEntries().find((e) => e.key === route)?.mod
+  const file = mod ? files.get(mod) : undefined
+  if (!file) return { all: '', get: '' }
+  const all = readFileSync(join(rootDir, `${file}.ts`), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
+  const start = all.search(/export const onRequest(Get)?\b/)
+  if (start < 0) return { all, get: '' }
+  const next = all.slice(start + 1).search(/^export const onRequest/m)
+  return { all, get: next < 0 ? all.slice(start) : all.slice(start, start + 1 + next) }
+}
+
+// Why a route does not count as bound, or null when it does.
+function whyUnbound(route: string): string | null {
+  const { all, get } = getHandler(route)
+  if (!get) return 'no GET handler found'
+  if (/\bok\(/.test(get)) return 'a bare ok() is left in the GET handler'
+  if (/new Response\(/.test(get)) return 'a new Response() is left in the GET handler'
+  const named = [...all.matchAll(/\bokWire\(\s*'([^']*)'/g)].map((m) => m[1])
+  if (named.length === 0) return 'no okWire() in the handler'
+  if ((all.match(/\bokWire\(/g) ?? []).length !== named.length) return 'an okWire() whose route is not a literal'
+  if (named.some((n) => n !== route)) return `an okWire() names another route: ${named.join(', ')}`
+  if ((get.match(/\bokWire\(/g) ?? []).length !== named.length) return 'an okWire() outside the GET handler'
+  return null
+}
+
+describe('Wire ↔ the GET handlers', () => {
+  it('found the routes (a parser reading nothing would pass the exact-set check below)', () => {
+    const routes = wireRoutes()
+    expect(routes).toEqual(expect.arrayContaining(['auth/me', 'board', 'health', 'trip-packing']))
+    expect(routes.length).toBeGreaterThanOrEqual(64)
+    expect(whyUnbound('health')).toBeNull()
+    expect(getHandler('board').get).toContain("okWire('board'")
+  })
+
+  it(`the Wire routes not bound on the server are exactly the ${Object.keys(UNBOUND).length} named above`, () => {
+    const unbound = wireRoutes().filter((r) => whyUnbound(r) !== null)
+    const detail = unbound.filter((r) => !(r in UNBOUND)).map((r) => `${r}: ${whyUnbound(r)}`).join('; ')
+    expect(unbound.sort(), `answer through okWire, or name the route in UNBOUND with why it cannot. ${detail}`).toEqual(Object.keys(UNBOUND).sort())
+  })
+
+  it(`at most ${UNBOUND_MAX} of them (ratchet: lower it when one gets bound, never raise it)`, () => {
+    expect(Object.keys(UNBOUND).length).toBeLessThanOrEqual(UNBOUND_MAX)
+  })
+})

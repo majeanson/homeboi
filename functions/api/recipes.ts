@@ -1,4 +1,4 @@
-import { badRequest, ok, created, notFound, readJson } from '../_lib/json'
+import { badRequest, ok, created, notFound, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { deleteR2Blob } from '../_lib/r2'
 import { newId, nowSec } from '../_lib/ids'
@@ -143,7 +143,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // SELECTed: healTruncatedSteps reads it to restore steps the old 200-char cap
   // chopped — it is read, not sent.
   const recipes = (results ?? []).map(recipeListItem)
-  return ok({ recipes })
+  return okWire('recipes', { recipes })
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {

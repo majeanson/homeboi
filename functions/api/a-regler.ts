@@ -1,4 +1,4 @@
-import { ok, badRequest, readJson } from '../_lib/json'
+import { ok, badRequest, readJson, okWire } from '../_lib/json'
 import type { Env } from '../_lib/env'
 import { authed } from '../_lib/route'
 import { localDayStart, addLocalDays, nowSec } from '../_lib/ids'
@@ -57,7 +57,7 @@ const HERO_CUTOFF_GRACE_MIN = 30
 export const onRequestGet = authed(async (ctx, actor) => {
   // A sitter never gets the friction scan — it's a parent's mental-load surface, not
   // a to-do handed to a guest. Short-circuit BEFORE any query (cheap + explicit).
-  if (actor.scope === 'guest') return ok({ signals: [] })
+  if (actor.scope === 'guest') return okWire('a-regler', { signals: [] })
 
   const hh = actor.householdId
   const now = nowSec()
@@ -290,7 +290,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
 
   // Soonest first, then cap — calm: a short list, never a backlog.
   live.sort((a, b) => (a.at ?? Infinity) - (b.at ?? Infinity))
-  return ok({ signals: live.slice(0, CAP) })
+  return okWire('a-regler', { signals: live.slice(0, CAP) })
 })
 
 // The household's still-active snoozes, pruning the expired ones on the way past.

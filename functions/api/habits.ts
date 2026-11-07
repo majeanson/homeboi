@@ -1,4 +1,4 @@
-import { badRequest, notFound, ok, readJson } from '../_lib/json'
+import { badRequest, notFound, ok, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { localDayStart, addLocalDays, newId, nowSec } from '../_lib/ids'
 import { parseRecur, normalizeRecur, expandRange, type Recur } from '../_lib/recur'
@@ -215,7 +215,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     }
   })
 
-  return ok({ habits, days: days.results, marks: marks.results, today })
+  return okWire('habits', { habits, days: days.results, marks: marks.results, today })
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {

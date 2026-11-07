@@ -3,7 +3,7 @@ import { rateLimitEnabled } from '../_lib/rateLimit'
 import { alertsEnabled } from '../_lib/nightly'
 import { deployHookEnabled } from '../_lib/deployHook'
 import type { Env } from '../_lib/env'
-import { ok } from '../_lib/json'
+import { okWire } from '../_lib/json'
 import { resolveActor } from '../_lib/household'
 import { householdAiEnabled } from '../_lib/aiPref'
 import { inviteRequired } from '../_lib/signupGate'
@@ -70,5 +70,5 @@ export const onRequestGet: PagesFunction<Env> = async (ctx) => {
     // stays a secret and never appears here.
     contact: ctx.env.CONTACT_EMAIL ?? null,
   }
-  return ok(wire)
+  return okWire('health', wire)
 }

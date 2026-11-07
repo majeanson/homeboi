@@ -1,4 +1,4 @@
-import { badRequest, notFound, ok, readJson } from '../_lib/json'
+import { badRequest, notFound, ok, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { profileMemberId } from '../_lib/profile'
@@ -108,7 +108,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     if (list) list.push(e)
     else byRemark.set(e.remark_id, [e])
   }
-  return ok({ remarks: remarks.map((r) => ({ ...r, events: byRemark.get(r.id) ?? [] })) })
+  return okWire('remarks', { remarks: remarks.map((r) => ({ ...r, events: byRemark.get(r.id) ?? [] })) })
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {
