@@ -38,6 +38,8 @@ import { CarnetDocs } from '../components/cercle/CarnetDocs'
 import { CareLogForm } from '../components/cercle/CareLogForm'
 import { HomePinForm } from '../components/cercle/HomePinForm'
 import { HomeProjectForm } from '../components/forms/HomeProjectForm'
+import { SubjectTasks } from '../components/tasks/SubjectTasks'
+import type { TaskItem } from '../lib/tasks'
 import { Img } from '../components/Img'
 
 type Seg = 'surveiller' | 'carnet'
@@ -45,6 +47,8 @@ type Seg = 'surveiller' | 'carnet'
 // /cercle/carnet/:id — one carnet's full scene. A 2-segment toggle (« À surveiller »
 // = what's due + the long jeu; « Le carnet » = the information: identité, ses choses,
 // historique, entretien). The hero adapts by kind. Read-only for a guest.
+const isCarnetUpkeep = (t: TaskItem) => t.source === 'home' && t.kind === 'upkeep'
+
 export function CercleCarnetPage() {
   const t = useT()
   const { lang } = useLang()
@@ -472,6 +476,10 @@ export function CercleCarnetPage() {
                 })
               )}
             </section>
+
+            {/* Tâches: the same section a person and a pet get. The upkeep rows are listed
+                just above with their cadence, so they do not read twice here. */}
+            <SubjectTasks subject={{ kind: 'carnet', id: carnet.id }} hide={isCarnetUpkeep} />
 
             {/* En cas de pépin — the house map (home carnets only). */}
             {carnet.kind === 'home' && (

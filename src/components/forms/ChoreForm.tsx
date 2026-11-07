@@ -17,6 +17,8 @@ import { choreTemplates } from '../../lib/routineTemplates'
 import { MONTH_KEY, CHORES_KEY, BOARD_KEY } from '../../lib/queryKeys'
 import { colourFor } from '../../lib/things'
 import { rotationOf } from '../../lib/tasks'
+import { subjectRefOf, type SubjectRef } from '../../lib/subjects'
+import { SubjectPicker } from '../tasks/SubjectPicker'
 
 // The complete chore (corvée) form — title (with common presets), a round-robin
 // rotation of members, a colour, and an optional schedule. Shared by Settings ▸
@@ -36,6 +38,8 @@ export interface ChoreInit {
   recur_start?: number | null
   lead_seconds?: number | null
   announce_evening?: number | null
+  subject_kind?: string | null
+  subject_id?: string | null
 }
 
 
@@ -58,6 +62,7 @@ export function ChoreForm({
   const presets = choreTemplates(lang)
   const [title, setTitle] = useState(value?.title ?? '')
   const [rotation, setRotation] = useState<string[]>(rotationOf(value?.rotation_json))
+  const [subject, setSubject] = useState<SubjectRef | null>(subjectRefOf(value))
   const [color, setColor] = useState(colourFor('chore', value?.color))
   // Optional schedule — "tous les jeudis". null = a standing chore (no schedule).
   const [recur, setRecur] = useState<RecurValue | null>(recurOf(value?.recur_json))
@@ -84,6 +89,7 @@ export function ChoreForm({
     const fields = {
       title: title.trim(),
       rotation,
+      subject,
       color,
       recur,
       start: recur ? dateToAnchorSec(start) : null,
@@ -101,6 +107,7 @@ export function ChoreForm({
         // closes the inline form via onSaved).
         setTitle('')
         setRotation([])
+        setSubject(null)
         setColor('#88A36F')
         setRecur(null)
         setStart(todayAnchorDate())
@@ -145,6 +152,7 @@ export function ChoreForm({
       </div>
       {/* « Qui ? »: one face, or, once it recurs, a rotation behind one checkbox. */}
       <RotationField faces={members.map(toFace)} value={rotation} onChange={setRotation} recurring={!!recur} />
+      <SubjectPicker value={subject} onChange={setSubject} />
       <ColorPicker value={color} onChange={setColor} label={o18n.colorLabel} />
       <RecurPicker value={recur} onChange={setRecur} />
       {recur && (

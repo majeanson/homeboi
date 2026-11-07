@@ -79,11 +79,11 @@ export const onRequestGet = authed(async (ctx, actor) => {
     // A guest link can be minted to the household's own data, so the address book stays
     // out of it. A task about someone then reads as its kind, with no name.
     actor.scope === 'guest'
-      ? Promise.resolve({ results: [] as { id: string; first_name: string; last_name: string; nickname: string | null }[] })
+      ? Promise.resolve({ results: [] as { id: string; first_name: string; last_name: string; nickname: string | null; member_id: string | null }[] })
       : db
-          .prepare('SELECT id, first_name, last_name, nickname FROM contacts WHERE household_id = ? ORDER BY first_name LIMIT ?')
+          .prepare('SELECT id, first_name, last_name, nickname, member_id FROM contacts WHERE household_id = ? ORDER BY first_name LIMIT ?')
           .bind(hh, ROWS_MAX)
-          .all<{ id: string; first_name: string; last_name: string; nickname: string | null }>(),
+          .all<{ id: string; first_name: string; last_name: string; nickname: string | null; member_id: string | null }>(),
     db.prepare('SELECT id, name, colour FROM pets WHERE household_id = ? AND deleted_at IS NULL ORDER BY name LIMIT ?').bind(hh, ROWS_MAX).all<{ id: string; name: string; colour: string | null }>(),
     db.prepare('SELECT id, title, colour FROM trips WHERE household_id = ? AND deleted_at IS NULL ORDER BY start_at DESC LIMIT ?').bind(hh, ROWS_MAX).all<{ id: string; title: string; colour: string | null }>(),
   ])
@@ -111,7 +111,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     ].filter(present),
     subjects: {
       carnets: carnets.results.map((c) => ({ id: c.id, name: c.name, kind: c.kind, color: c.color, facts: emojiOf(c.facts_json) })),
-      contacts: contacts.results.map((c) => ({ id: c.id, name: c.nickname || [c.first_name, c.last_name].filter(Boolean).join(' '), colour: null })),
+      contacts: contacts.results.map((c) => ({ id: c.id, name: c.nickname || [c.first_name, c.last_name].filter(Boolean).join(' '), colour: null, member_id: c.member_id })),
       pets: pets.results,
       projects: homes.results.filter((h) => h.kind === 'plan').map((h) => ({ id: h.id, title: h.title, color: h.color })),
       trips: trips.results,

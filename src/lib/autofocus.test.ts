@@ -46,6 +46,7 @@ const ALLOWED: Record<string, string> = {
   'components/todos/TodoSection.tsx': `${INLINE}: the row edit, and the SectionAdd ＋ forwarded as addAutoFocus`,
   'components/tasks/TaskList.tsx': `${INLINE}: a task's rename, and the SectionAdd ＋ forwarded to the add field`,
   'pages/Board.tsx': `${INLINE}: the task card's SectionAdd ＋`,
+  'components/tasks/SubjectTasks.tsx': `${INLINE}: the section's SectionAdd ＋`,
   'components/board/CercleNotesCard.tsx': `${INLINE}: the card's SectionAdd ＋`,
   'components/cercle/ContactForm.tsx': `${INLINE}: « ＋ groupe » chip — the person form itself does NOT focus`,
   'pages/Maison.tsx': `${INLINE}: a group header's edit`,

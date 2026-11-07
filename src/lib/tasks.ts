@@ -30,6 +30,13 @@ export interface TaskItem {
 }
 
 
+export interface TaskHistoryLine {
+  key: string
+  title: string
+  at: number
+  who_id: string | null
+}
+
 export const isTicked = (t: Pick<TaskItem, 'done'>): boolean => t.done === 'ticked'
 
 // A form's starting value: the ordered ids of a stored rotation.

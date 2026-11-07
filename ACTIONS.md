@@ -108,6 +108,8 @@ at all (❌).
 | Tâche · **Vider les cochés** | ✅ one button under the rows, no count | — | — | — | — | deferred, one toast over up to three tables; a to-do is deleted, a chore or a home row keeps its history (`cleared_at`) | ✅ |
 | Tâche · edit / **delete** | — | — | ✅ « Modifier » + 🗑 (⋯) — the SAME peek from the board, the Tâches view, a subject's page, the Mois day panel and the day page (`buildChore`); the day page's inline form carries « Supprimer la tâche » too | — | — | deferred | ✅ |
 | Tâche · postpone | — | — | ✅ Reporter ×2 (peek, home rows) | — | — | deferred | ✅ |
+| Tâche · parcourir (vue « Tâches », `?view=taches`) | ✅ `Segmented` par horizon, sujet, personne (`?par=`) · un champ pour ajouter, classé « Un jour » | — | same rows, same peek | ✅ the view's field | — | — | ✅ |
+| Tâche · sur un sujet (carnet, personne, animal) | ✅ `SubjectTasks` : same rows, ＋ `SectionAdd` files it here | — | same peek · « Sur quoi ? » door in the peek | — | — | same tiers | ✅ |
 | Tâche sans scène (to-do) · rename / delete | ✅ tap the row → inline edit (🗑 lives inside) | — | ➖ expands in place | ✅ `SectionAdd` on the card (today, or « Un jour ») + ＋ `todo` | — | deferred | ✅ |
 | Liste à compléter (modèle) · rename / add-item / reorder / include | — | — | — | — | ✅ maison▸routines▸todoTemplates: a row per list (name + count), ✏ → the `/liste-modele/:id` scene (the only editor) | — | ✅ |
 | Projets & Entretien | — | — | one row, the Tâche rows above | ＋ `chores-pick` | — | — | ✅ |

@@ -2986,6 +2986,7 @@ export const FR = {
     lensLabel: 'Regarder par',
     lens: { horizon: 'Quand', sujet: 'Sujet', qui: 'Personne' },
     horizons: { late: 'En attente', today: 'Aujourd’hui', week: 'Cette semaine', month: 'Ce mois-ci', later: 'Plus tard', someday: 'Un jour' },
+    subjectLabel: 'Sur quoi ?',
     noSubject: 'Sans sujet',
     allSubjects: 'Tous les sujets',
     addPlanned: 'Une tâche qui revient',
@@ -2993,6 +2994,7 @@ export const FR = {
     addProject: 'Un projet',
     ledger: 'Qui a fait quoi cette semaine',
     history: 'Ce qui a été fait',
+    subjectEmpty: 'Rien pour l’instant.',
 
   },
   // À cocher — listes à cocher autonomes (todos), distinctes du « À faire »

@@ -922,7 +922,7 @@ export interface TasksWire {
   tasks: TaskItem[]
   subjects: {
     carnets: { id: string; name: string; kind: string; color: string | null; facts: { emoji: string } | null }[]
-    contacts: { id: string; name: string; colour: string | null }[]
+    contacts: { id: string; name: string; colour: string | null; member_id: string | null }[]
     pets: { id: string; name: string; colour: string | null }[]
     projects: { id: string; title: string; color: string | null }[]
     trips: { id: string; title: string; colour: string | null }[]

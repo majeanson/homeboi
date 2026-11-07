@@ -983,6 +983,8 @@ function useFixtures(): [boolean, (on: boolean) => void] {
 }
 
 const TaskListSpecimen = lazy(() => import('../components/tasks/TaskSpecimens').then((m) => ({ default: m.TaskListSpecimen })))
+const SubjectTasksSpecimen = lazy(() => import('../components/tasks/TaskSpecimens').then((m) => ({ default: m.SubjectTasksSpecimen })))
+const SubjectPickerSpecimen = lazy(() => import('../components/tasks/TaskSpecimens').then((m) => ({ default: m.SubjectPickerSpecimen })))
 const RotationFieldSpecimen = lazy(() => import('../components/tasks/TaskSpecimens').then((m) => ({ default: m.RotationFieldSpecimen })))
 
 export function DevKit() {
@@ -2827,6 +2829,32 @@ export function DevKit() {
         <Demo label="due · whose turn · ticked">
           <Suspense fallback={null}>
             <TaskListSpecimen />
+          </Suspense>
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Rangées & actions',
+      name: 'SubjectTasks',
+      file: 'components/tasks/SubjectTasks.tsx',
+      kw: 'tâche sujet carnet personne animal historique',
+      render: () => (
+        <Demo label="a subject's section (live read)">
+          <Suspense fallback={null}>
+            <SubjectTasksSpecimen />
+          </Suspense>
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Rangées & actions',
+      name: 'SubjectPicker',
+      file: 'components/tasks/SubjectPicker.tsx',
+      kw: 'sur quoi sujet carnet personne animal projet voyage select',
+      render: () => (
+        <Demo label="« Sur quoi ? »">
+          <Suspense fallback={null}>
+            <SubjectPickerSpecimen />
           </Suspense>
         </Demo>
       ),

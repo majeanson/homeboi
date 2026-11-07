@@ -1,5 +1,8 @@
 import { useState } from 'react'
+import type { SubjectRef } from '../../lib/subjects'
 import { RotationField } from './RotationField'
+import { SubjectPicker } from './SubjectPicker'
+import { SubjectTasks } from './SubjectTasks'
 import { TaskList } from './TaskList'
 import { useTaskActions } from './useTaskActions'
 import type { TaskItem } from '../../lib/tasks'
@@ -32,6 +35,15 @@ const MEMBERS = [
   { id: 'm1', display_name: 'Camille', colour: 'var(--berry)', avatar_kind: 'initial', avatar_ref: '', is_child: 0 },
   { id: 'm2', display_name: 'Noah', colour: 'var(--sky)', avatar_kind: 'initial', avatar_ref: '', is_child: 0 },
 ]
+
+export function SubjectTasksSpecimen() {
+  return <SubjectTasks subject={{ kind: 'carnet', id: 'c1' }} />
+}
+
+export function SubjectPickerSpecimen() {
+  const [value, setValue] = useState<SubjectRef | null>(null)
+  return <SubjectPicker value={value} onChange={setValue} />
+}
 
 export function RotationFieldSpecimen() {
   const [value, setValue] = useState<string[]>(['m1', 'm2'])

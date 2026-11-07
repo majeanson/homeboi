@@ -11,6 +11,7 @@ import { CERCLE_KEY, BOARD_KEY } from '../lib/queryKeys'
 import { SceneHead } from '../components/SceneHead'
 import { loadStateOf } from '../components/Fallback'
 import { PetForm } from '../components/cercle/PetForm'
+import { SubjectTasks } from '../components/tasks/SubjectTasks'
 import type { Pet } from '../lib/cercle'
 
 interface CercleData {
@@ -55,6 +56,7 @@ export function CerclePetPage() {
           }}
           onCancel={close}
         />
+        {pet && <SubjectTasks subject={{ kind: 'pet', id: pet.id }} />}
       </div>
     </div>
   )

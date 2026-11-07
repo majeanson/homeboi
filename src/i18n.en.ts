@@ -2601,6 +2601,7 @@ export const EN: typeof FR = {
     lensLabel: 'Look by',
     lens: { horizon: 'When', sujet: 'Subject', qui: 'Person' },
     horizons: { late: 'Waiting', today: 'Today', week: 'This week', month: 'This month', later: 'Later', someday: 'Someday' },
+    subjectLabel: 'About what?',
     noSubject: 'No subject',
     allSubjects: 'All subjects',
     addPlanned: 'A task that comes back',
@@ -2608,6 +2609,7 @@ export const EN: typeof FR = {
     addProject: 'A project',
     ledger: 'Who did what this week',
     history: 'What was done',
+    subjectEmpty: 'Nothing yet.',
 
   },
   // To tick — standalone check-off lists (todos), distinct from "À faire"

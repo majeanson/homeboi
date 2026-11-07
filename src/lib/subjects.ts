@@ -20,6 +20,14 @@ export interface SubjectRef {
   id: string
 }
 
+// What a stored row says, for a form opening on it. The client's half of `subjectFromRow`
+// (functions/_lib/subject.ts): `carnet_id` reads as kind 'carnet'.
+const KINDS: readonly string[] = ['carnet', 'person', 'pet', 'project', 'trip']
+export function subjectRefOf(row: { subject_kind?: string | null | undefined; subject_id?: string | null | undefined; carnet_id?: string | null | undefined } | null | undefined): SubjectRef | null {
+  if (row?.subject_kind && row.subject_id && KINDS.includes(row.subject_kind)) return { kind: row.subject_kind as SubjectKind, id: row.subject_id }
+  return row?.carnet_id ? { kind: 'carnet', id: row.carnet_id } : null
+}
+
 // The rows each kind reads. Structural, so the board's snake_case members, a cached /api/cercle
 // frame and the /api/tasks `subjects` block all fit without a mapping step.
 interface Named {
@@ -28,7 +36,7 @@ interface Named {
 export interface SubjectLookup {
   members?: readonly (Named & { display_name: string; colour?: string | null | undefined })[] | undefined
   carnets?: readonly (Named & { name: string; kind: string; color?: string | null | undefined; facts?: Carnet['facts'] | undefined })[] | undefined
-  contacts?: readonly (Named & { name: string; colour?: string | null | undefined })[] | undefined
+  contacts?: readonly (Named & { name: string; colour?: string | null | undefined; member_id?: string | null | undefined })[] | undefined
   pets?: readonly (Named & { name: string; colour?: string | null | undefined })[] | undefined
   projects?: readonly (Named & { title: string; color?: string | null | undefined })[] | undefined
   trips?: readonly (Named & { title: string; colour?: string | null | undefined })[] | undefined
@@ -83,7 +91,11 @@ export function subjectOf(ref: SubjectRef | null | undefined, lookup: SubjectLoo
     }
     case 'person': {
       const m = byId(lookup.members)
-      if (m) return { ...base, name: m.display_name, colour: m.colour ?? null }
+      if (m) {
+        // A member has a page only through a linked contact; otherwise their door is the family.
+        const linked = lookup.contacts?.find((x) => x.member_id === m.id)
+        return { ...base, name: m.display_name, colour: m.colour ?? null, to: linked ? `/cercle/person/${linked.id}` : '/maison?section=family' }
+      }
       const c = byId(lookup.contacts)
       return c ? { ...base, name: c.name, colour: c.colour ?? null } : base
     }

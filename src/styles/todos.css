@@ -20,6 +20,21 @@
   gap: 0.4rem;
 }
 /* A subject's page: its tasks, then what was done, names and dates. */
+/* A subject's page: its tasks, then what was done, names and dates. */
+.subject-tasks {
+  margin-top: 0.75rem;
+}
+.task-history {
+  margin: 0.4rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.task-history__when {
+  color: var(--ink-soft);
+}
 /* The merged task list: the shared `.act` rows, one gap, and the add bar off the last row. */
 .task-rows {
   display: flex;

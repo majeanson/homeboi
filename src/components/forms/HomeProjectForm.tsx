@@ -18,6 +18,8 @@ import { HOME_PROJECTS_KEY, MONTH_KEY, BOARD_KEY, CARNETS_KEY } from '../../lib/
 import type { HomeProject } from '../operator/types'
 import { colourFor } from '../../lib/things'
 import { rotationOf } from '../../lib/tasks'
+import { subjectRefOf, type SubjectRef } from '../../lib/subjects'
+import { SubjectPicker } from '../tasks/SubjectPicker'
 import { RotationField } from '../tasks/RotationField'
 import { toFace, type FormMember } from '../FormScene'
 
@@ -61,6 +63,7 @@ export function HomeProjectForm({
   // on the last check-off. Only meaningful with a recurrence.
   const [fromDone, setFromDone] = useState(value?.recur_from === 'done')
   const [rotation, setRotation] = useState<string[]>(rotationOf(value?.rotation_json))
+  const [subject, setSubject] = useState<SubjectRef | null>(subjectRefOf(value))
   // Calm "Bientôt" lead — only meaningful with a date to anchor against.
   const [lead, setLead] = useState<number | null>(value?.lead_seconds ?? null)
   const [busy, setBusy] = useState(false)
@@ -85,7 +88,8 @@ export function HomeProjectForm({
       recur,
       recurFrom: recur && fromDone ? 'done' : 'anchor',
       leadSeconds: anchor ? lead : null, // no date → no occurrence to remind about
-      ...(carnetId !== undefined ? { carnetId } : {}),
+      // A carnet's own section files the row back onto that carnet; every other form asks.
+      ...(carnetId !== undefined ? { carnetId } : { subject }),
       ...(members.length > 0 ? { rotation } : {}),
     }
     try {
@@ -105,6 +109,7 @@ export function HomeProjectForm({
         setFromDone(false)
         setLead(null)
         setRotation([])
+        setSubject(null)
       }
       onSaved()
     } catch {
@@ -199,6 +204,7 @@ export function HomeProjectForm({
       )}
       {(date || recur) && <LeadPicker value={lead} onChange={setLead} />}
       {members.length > 0 && <RotationField faces={members.map(toFace)} value={rotation} onChange={setRotation} recurring={!!recur} />}
+      {carnetId === undefined && <SubjectPicker value={subject} onChange={setSubject} exclude={value?.id} />}
       {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
       <FormFooter
         saveLabel={value ? t.common.save : addLabel}

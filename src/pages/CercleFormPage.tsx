@@ -9,6 +9,7 @@ import { isGuest } from '../lib/device'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { CERCLE_KEY, BOARD_KEY, A_REGLER_KEY } from '../lib/queryKeys'
 import { SceneHead } from '../components/SceneHead'
+import { SubjectTasks } from '../components/tasks/SubjectTasks'
 import { loadStateOf } from '../components/Fallback'
 import { ContactForm } from '../components/cercle/ContactForm'
 import type { Contact, ContactLink, Member, ContactGroupRaw } from '../lib/cercle'
@@ -65,6 +66,8 @@ export function CercleFormPage() {
             close()
           }}
         />
+        {/* A contact linked to a member IS that member: one person, one list of tasks. */}
+        {contact && <SubjectTasks subject={{ kind: 'person', id: contact.memberId ?? contact.id }} />}
       </div>
     </div>
   )
