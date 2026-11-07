@@ -126,7 +126,7 @@
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
   gap: 0.45rem 0.8rem;
 }
 .cook__full-ings li {
@@ -237,7 +237,7 @@
   margin: 0 auto;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
   gap: 0.35rem 0.8rem;
   width: 100%;
   max-width: 100%;
@@ -376,7 +376,7 @@
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
   gap: 0.3rem 0.9rem;
   text-align: left;
   font-size: calc(1.05rem * var(--ds, 1));
@@ -699,6 +699,7 @@
    2.5rem), so nothing below jumps when it expands. */
 .kitchen__recipe-searchbar {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
   margin-bottom: 0.6rem;
@@ -1144,7 +1145,7 @@
 /* --- Réglages ▸ Affichage: editable measuring-tool colours ----------------- */
 .measure-colors {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 13rem), 1fr));
   gap: 0.5rem 1rem;
   margin: 0.6rem 0 1rem;
 }

@@ -3,7 +3,7 @@
    run so a parent recognizes it at a glance. ------------------------------------ */
 .routines-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
   gap: 1rem;
 }
 /* Moment-of-day sections: the overview now reads like the day itself (matin →
@@ -364,6 +364,7 @@
 .routine-card__foot {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: 0.5rem;
   margin-top: auto;
