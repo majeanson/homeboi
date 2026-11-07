@@ -651,6 +651,7 @@ a {
    active .subtabs__opt / .operator__tab, .tdl-start…) still win on specificity. */
 button {
   color: inherit;
+  font-family: inherit;
 }
 
 /* --- Primitives ----------------------------------------------------------- */
