@@ -1740,6 +1740,7 @@ export const FR = {
     // Première touche sur une étape déjà faite : on annonce, on n’agit pas encore.
     backTo: (label: string) => `Revenir à ${label} ? Tape encore.`,
     tapHear: 'Touche l’image pour l’écouter',
+    notesEmpty: 'Pas encore de notes. Demande à un grand d’en écrire une.',
     allDone: 'C’est fini ! Bravo.',
     again: 'Recommencer',
     routineDone: 'Fait',

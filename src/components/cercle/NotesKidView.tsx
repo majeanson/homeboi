@@ -79,7 +79,7 @@ export function NotesKidView() {
     <main className="cercle-kid">
       <h1 className="cercle-kid__title">{t.nav.notes}</h1>
       {notes.length === 0 ? (
-        <EmptyState>{fn.empty}</EmptyState>
+        <EmptyState>{t.kid.notesEmpty}</EmptyState>
       ) : (
         <>
           <p className="cercle-kid__hint mono">{t.kid.tapHear}</p>

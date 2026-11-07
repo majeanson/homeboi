@@ -1488,6 +1488,7 @@ export const EN: typeof FR = {
     stepNow: 'you are here',
     backTo: (label: string) => `Go back to ${label}? Tap again.`,
     tapHear: 'Tap the picture to hear it',
+    notesEmpty: 'No notes yet. Ask a grown-up to write one.',
     allDone: 'All done! Nice.',
     again: 'Do it again',
     routineDone: 'Done',
