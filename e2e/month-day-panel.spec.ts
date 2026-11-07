@@ -415,7 +415,7 @@ test.describe('Mois — the legend lens', () => {
   // now, so it has to be keyboard-operable and it must not bleed off a 390px phone.
   test('is keyboard-operable and fits a phone', async ({ page }) => {
     await moisSeeded(page, PHONE)
-    const chip = page.locator('.monthv__legend-item', { hasText: 'Corvées' })
+    const chip = page.locator('.monthv__legend-item', { hasText: 'Tâches' })
     await chip.focus()
     await page.keyboard.press('Enter')
     await expect(chip).toHaveAttribute('aria-pressed', 'true')

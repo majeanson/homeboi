@@ -744,7 +744,7 @@ function DayPlanScene() {
 
         {/* The day's sections, in the order the day is actually PLANNED: what is
             already booked and can't move (Rendez-vous ▸ Corvées ▸ Projets), then what
-            you decide around it (À compléter). It used to open on the todo
+            you decide around it (the day's own list). It used to open on the todo
             list and the meal editor, with the day's own schedule scrolled off below
             them — you had to leave the page to remember what the day held (Marc,
             2026-08-26). Les repas is the « Repas » face now, one tab over.
@@ -918,7 +918,7 @@ function DayPlanScene() {
               component reads as one of this page's sections rather than a guest. */}
           <TodoSection
             day={date}
-            title={t.todos.title}
+            title={t.todos.dayTitle}
             members={formMembers}
             bento={false}
             icon="check-square-bold"

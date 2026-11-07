@@ -179,6 +179,19 @@ describe('defaults reproduce the board we already ship', () => {
   })
 })
 
+// The merged « Tâches » card keeps the `todos` id on purpose. « À compléter » never was a card of
+// its own (it rode inside this one), so no id retires, and a device's saved place, width and
+// mode carry over untouched. This pins that promise: a saved layout survives the merge.
+describe('the merged task card', () => {
+  it('keeps a saved layout as it was', () => {
+    const saved = { band: ['todos', 'notes'], grid: ['today'], size: { todos: 'full' }, mode: { todos: 'always' } } as never
+    const out = reconcile(saved)
+    expect(out.band.slice(0, 2)).toEqual(['todos', 'notes'])
+    expect(out.size.todos).toBe('full')
+    expect(out.mode.todos).toBe('always')
+  })
+})
+
 describe('visibleCards', () => {
   it('mounts auto + always, and only drops never', () => {
     const p = reconcile({ mode: { today: 'never', upcoming: 'auto', tomorrow: 'always' } })

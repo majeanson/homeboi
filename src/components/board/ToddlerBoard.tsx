@@ -308,10 +308,11 @@ export function ToddlerBoard({
             })),
           )}
           {kidSection(t.board.today, eventTiles(todayEvents))}
-          {/* Chores due today, as read-aloud tiles — whose turn rides in the sub. */}
-          {kidSection(
-            t.board.chores,
-            todayChores.map((c) => ({
+          {/* « Tâches » — read aloud too. Mirrors the parent board's ONE card: what is due,
+              whose turn rides in the sub, and the one-offs, in a single section, so a
+              pre-reader sees everything left to do in one place. */}
+          {kidSection(t.board.todos, [
+            ...todayChores.map((c) => ({
               key: c.id,
               icon: pictoFor(c.title, '🧹'),
               label: c.title,
@@ -319,11 +320,6 @@ export function ToddlerBoard({
               narration: c.who ? `${c.title}. ${c.who}` : c.title,
               color: c.color ?? undefined,
             })),
-          )}
-          {/* « À faire » — read aloud too. Mirrors the parent board's ONE to-do card:
-              the loose one-off tasks AND the checklists (« À compléter ») in a single
-              section, so a pre-reader sees everything left to do in one place. */}
-          {kidSection(t.board.todos, [
             ...todayTodos.map((c) => ({
               key: c.id,
               icon: pictoFor(c.title, '✅'),
@@ -341,7 +337,7 @@ export function ToddlerBoard({
             })),
           ])}
           {/* « Avant de partir » — the morning's leaving checklist, as its OWN
-              section rather than folded into « À faire ».
+              section rather than folded into « Tâches ».
               WHY IT MATTERS HERE: on a locked kiosk (?kid=1) the parent departure
               CARD is unreachable without the 3 s hold + arithmetic gate — every
               morning, and a one-tablet household is exactly the household that

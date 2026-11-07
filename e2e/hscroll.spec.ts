@@ -17,7 +17,7 @@ import { boxOf, fontsReady } from './measure'
 //
 // The row under test moved (2026-09-08): Réglages went 28 → 14 pills and no pill row
 // outgrows a desktop any more, so the geometry that made the bug is a PHONE width,
-// where Maison's four (« Tâches de la maison · La maisonnée · L'auto & horaires ·
+// where Maison's four (« Routines & listes · La maisonnée · L'auto & horaires ·
 // Cette année ») still outgrow 390px. The mechanics under test are identical: a
 // mouse (fine pointer) on a hidden-scrollbar row. Playwright's desktop Chromium keeps
 // a fine pointer at any viewport size, so the chevrons render.

@@ -30,7 +30,7 @@ test('a marked word in the guide is tappable and pops its definition', async ({ 
   const card = page.locator('.guide__card.is-target')
   await card.locator('.guide__point-title').first().click()
 
-  const mark = page.locator('.gloss__word', { hasText: 'corvées' }).first()
+  const mark = page.locator('.gloss__word', { hasText: 'tâches' }).first()
 
   // The lazy chunk has to land before the dotted button exists at all — until then the
   // Suspense fallback renders the bare word, which is the correct-looking failure.
@@ -41,12 +41,9 @@ test('a marked word in the guide is tappable and pops its definition', async ({ 
   const pop = page.locator('.gloss__pop')
   await expect(pop).toBeVisible()
   // The definition comes from the term table, which arrives via its own dynamic import.
-  // Asserting the MIDDLE of the sentence on purpose: the first word of corvée's own
-  // definition is « tâche », a declared rival, and `glossary.test.ts` rightly refuses to
-  // let a spec pin a word that is on its way out — it caught this line when it was
-  // written. A definition may explain a term in ordinary language; a spec may not nail
-  // that language down.
-  await expect(pop).toContainText('du ménage qui revient')
+  // Asserting the MIDDLE of the sentence on purpose: a definition may explain a term in
+  // ordinary language; a spec may not nail its first word down.
+  await expect(pop).toContainText('case à cocher')
   await expect(mark).toHaveAttribute('aria-expanded', 'true')
 
   // IT FLOATS over the paragraph now, so the one thing that can go wrong is the one
@@ -64,14 +61,14 @@ test('a marked word in the guide is tappable and pops its definition', async ({ 
 
 test('the floating definition stays on screen at 320px', async ({ page }) => {
   // THE 390px CASE ABOVE DOES NOT EXERCISE THE CLAMP — proven by deleting the clamp and
-  // watching it still pass: « corvées » happens to start early enough on its line that a
+  // watching it still pass: « tâches » happens to start early enough on its line that a
   // 22rem popover anchored to it still fits. A guard that cannot be made red by removing
   // the thing it guards is a decoration, so the real test is the tightest width the repo
   // supports, where the popover is wider than the room to the right of almost any word.
   await page.setViewportSize({ width: 320, height: 844 })
   await page.goto('/settings?tab=guide&card=first-time')
   await page.locator('.guide__card.is-target .guide__point-title').first().click()
-  await page.locator('.gloss__word', { hasText: 'corvées' }).first().click()
+  await page.locator('.gloss__word', { hasText: 'tâches' }).first().click()
 
   const pop = page.locator('.gloss__pop')
   await expect(pop).toBeVisible()
@@ -95,7 +92,7 @@ test('the floating definition is dismissible without finding the word again', as
   // word a second time". Escape and an outside tap both close it.
   await page.goto('/settings?tab=guide&card=first-time')
   await page.locator('.guide__card.is-target .guide__point-title').first().click()
-  const mark = page.locator('.gloss__word', { hasText: 'corvées' }).first()
+  const mark = page.locator('.gloss__word', { hasText: 'tâches' }).first()
 
   await mark.click()
   await expect(page.locator('.gloss__pop')).toBeVisible()

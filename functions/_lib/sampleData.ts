@@ -450,24 +450,26 @@ export async function seedSampleData(env: Env, householdId: string, ts = nowSec(
 
     // tasks (chores) with a fair rotation (faces, never counts). A household's real
     // weekly chore board — parents share the heavy ones, the kids own a light one each.
-    // `idx` is whose turn it is NOW, and « À faire » shows exactly that — so it is set so the
+    // `idx` is whose turn it is NOW, and « Tâches » shows exactly that — so it is set so the
     // board reads fair at a glance: Maman 3, Papa 3, Léa 1, Noah 1 (a stranger counts).
     ...(
       [
-        ['Sortir les poubelles', [maman, papa], 0, '#88A36F'],
-        ['Vaisselle', [papa, maman], 0, '#7BB0C9'],
-        ['Lessive', [maman, papa], 0, '#B06A93'],
-        ['Passer l’aspirateur', [papa, maman], 0, '#5891AC'],
-        ['Nettoyer la salle de bain', [maman, papa], 0, '#88A36F'],
-        ['Tondre la pelouse', [papa], 0, '#88A36F'],
-        ['Litière du chat', [lea, noah], 0, '#F2A03D'],
-        ['Nourrir le chien', [noah, lea], 0, '#F2A03D'],
-      ] as [string, string[], number, string][]
-    ).map(([title, rotation, idx, colour]) =>
+        ['Sortir les poubelles', [maman, papa], 0, '#88A36F', d0],
+        ['Vaisselle', [papa, maman], 0, '#7BB0C9', d0],
+        ['Lessive', [maman, papa], 0, '#B06A93', d1],
+        ['Passer l’aspirateur', [papa, maman], 0, '#5891AC', d2],
+        ['Nettoyer la salle de bain', [maman, papa], 0, '#88A36F', d3],
+        ['Tondre la pelouse', [papa], 0, '#88A36F', d4],
+        ['Litière du chat', [lea, noah], 0, '#F2A03D', d0],
+        ['Nourrir le chien', [noah, lea], 0, '#F2A03D', d5],
+      ] as [string, string[], number, string, number][]
+      // Weekly, from a day this week: the bento shows what is DUE, and a task with no date
+      // lives in the Tâches view, so an all-undated seed would leave the demo's card empty.
+    ).map(([title, rotation, idx, colour, start]) =>
       P(
-        `INSERT INTO tasks (id, household_id, title, rotation_json, current_idx, colour, created_at, is_sample)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      ).bind(newId(), h, title, JSON.stringify(rotation), idx, colour, ts, S),
+        `INSERT INTO tasks (id, household_id, title, rotation_json, current_idx, colour, recur_json, recur_start, created_at, is_sample)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).bind(newId(), h, title, JSON.stringify(rotation), idx, colour, JSON.stringify({ freq: 'weekly', interval: 1, weekdays: [] }), start, ts, S),
     ),
 
     // notes — a few fridge notes, each tinted to whoever left it.

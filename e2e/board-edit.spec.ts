@@ -493,10 +493,10 @@ test.describe('cross-zone cards keep rendering', () => {
 })
 
 // « Avant de partir » split (mig 0116): checklist instances live on the departure
-// card; « À faire » shows only the loose todos. The fixtures serve two loose
+// card; « Tâches » shows only the loose todos. The fixtures serve two loose
 // standing todos + an instantiated « Avant de partir » pinned to today.
 test.describe('the departure card owns the checklists', () => {
-  test('instances fold on « Avant de partir »; « À faire » stays loose-only', async ({ page }) => {
+  test('instances fold on « Avant de partir »; « Tâches » stays loose-only', async ({ page }) => {
     await open(page)
 
     const dep = page.locator('.wg-slot[data-card="departure"]')
@@ -510,12 +510,12 @@ test.describe('the departure card owns the checklists', () => {
     // The door to the full departure scene rides the card on every day.
     await expect(dep.locator('a[href$="/board/departure"]')).toBeVisible()
 
-    // « À faire » keeps the loose todos and must NOT show the instance rows or the
+    // « Tâches » keeps the loose todos and must NOT show the instance rows or the
     // template picker (instantiation is a departure gesture now — plain text add only).
     const todos = page.locator('.wg-slot[data-card="todos"]')
     await todos.scrollIntoViewIfNeeded()
-    await expect(todos.locator('.todo-row', { hasText: 'Clés + téléphone + portefeuille' })).toBeVisible()
-    await expect(todos.locator('.todo-row', { hasText: 'Vérifier les portes' })).toHaveCount(0)
+    await expect(todos.locator('.act', { hasText: 'Clés + téléphone + portefeuille' })).toBeVisible()
+    await expect(todos.locator('.act', { hasText: 'Vérifier les portes' })).toHaveCount(0)
     await expect(todos.locator('.todo-fold')).toHaveCount(0)
   })
 

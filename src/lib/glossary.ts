@@ -136,34 +136,22 @@ const ENTITIES: GlossaryTerm[] = [
   {
     id: 'corvee',
     scope: 'entity',
-    fr: 'Corvée',
-    en: 'Chore',
+    fr: 'Tâche',
+    en: 'Task',
     def: {
-      fr: 'Une tâche du ménage qui revient : sortir les poubelles, vider le lave-vaisselle. Elle tourne entre les personnes de la maisonnée.',
-      en: 'A household task that comes back: taking out the bins, emptying the dishwasher. It rotates between the people of the household.',
-    },
-    card: 'set-chores',
-    codeIds: ['tasks', 'task_participants'],
-    rivals: { fr: ['Tâche'] },
-    why:
-      '« Tâches de la maison » is a Réglages PILL that stacks three sections (routines, corvées, ' +
-      'à compléter) — a container name, not a synonym. Only a lone « tâche » standing for one ' +
-      'corvée is a rival.',
-  },
-  {
-    id: 'a-completer',
-    scope: 'entity',
-    fr: 'À compléter',
-    en: 'To finish',
-    def: {
-      fr: 'Une chose à faire une seule fois, qu’on coche et qui s’en va — pas une corvée qui revient chaque semaine.',
-      en: 'Something to do once, ticked off and gone — not a chore that comes back every week.',
+      fr: 'Un titre et une case à cocher. Elle peut porter sur quelque chose, avoir une date, revenir, ou passer d’une personne à l’autre.',
+      en: 'A title and a checkbox. It can be about something, have a date, come back, or pass from one person to the next.',
     },
     card: 'todos',
-    codeIds: ['todos', 'todo_templates'],
+    codeIds: ['corvee', 'tasks', 'todos', 'chores', 'home_projects', 'task_participants', 'todo_templates'],
+    rivals: { fr: ['Corvée', 'À compléter'], en: ['Chore', 'To-do', 'To complete'] },
     why:
-      'The code says `todos`; the app has never shown that word. The surface is « À compléter », ' +
-      'and its Réglages home sits under the « Tâches de la maison » pill — a container name, not a synonym.',
+      '2026-11-06: « Tâche » won and « Corvée » stepped down (plans/2026-11-06-TACHE-UNIFIEE.md). There are no ' +
+      'types: « À faire », « À compléter », « Corvée » and « Projet » were one idea with four words, and the board ' +
+      'merged them. The term id stays `corvee` because `[[mot:corvee|…]]` tokens are frozen, and every code id ' +
+      'above keeps its name. The Réglages pill that said « Tâches de la maison » is « Routines & listes » now: ' +
+      'it holds routines and departure lists, no tasks, so the word cannot collide. « À compléter » survives as ' +
+      'one badge on a recipe draft, which is another idea: see the ceiling.',
   },
   {
     id: 'rendez-vous',
@@ -444,8 +432,8 @@ const SURFACES: GlossaryTerm[] = [
     fr: 'Le babillard',
     en: 'The board',
     def: {
-      fr: 'L’écran d’un coup d’œil : l’heure, la journée, le souper, les corvées. C’est ce que la tablette montre au mur.',
-      en: 'The at-a-glance screen: the time, the day, supper, the chores. It is what the wall tablet shows.',
+      fr: 'L’écran d’un coup d’œil : l’heure, la journée, le souper, les tâches. C’est ce que la tablette montre au mur.',
+      en: 'The at-a-glance screen: the time, the day, supper, the tasks. It is what the wall tablet shows.',
     },
     card: 'board',
   },

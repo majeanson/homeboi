@@ -80,7 +80,7 @@ test.describe('Mois — the day panel’s peeks can delete', () => {
     expect(req.postDataJSON()).toMatchObject({ id: 'ev1' })
   })
 
-  test('a corvée: the peek offers « Modifier » (→ Réglages) and « Supprimer » (deferred behind the undo toast)', async ({ page }) => {
+  test('a task: the peek offers « Modifier » (→ Réglages) and « Supprimer » (deferred behind the undo toast)', async ({ page }) => {
     await seed(page)
     const panel = await openMonthPanel(page)
     const row = panel.locator('.act', { hasText: 'Sortir le recyclage' })
@@ -158,13 +158,13 @@ test.describe('the day page can delete what it edits', () => {
     expect(req.postDataJSON()).toMatchObject({ id: 'ev1' })
   })
 
-  test('a corvée edited inline shows « Supprimer la corvée » → the row hides, the write waits behind the toast', async ({ page }) => {
+  test('a task edited inline shows « Supprimer la tâche » → the row hides, the write waits behind the toast', async ({ page }) => {
     await seed(page)
     await page.goto(`/kitchen/day/${MMID}`)
     await page.locator('.scene').waitFor({ state: 'visible', timeout: 15_000 })
     const row = page.locator('.act', { hasText: 'Sortir le recyclage' })
     await row.first().click()
-    const del = page.getByRole('button', { name: 'Supprimer la corvée' })
+    const del = page.getByRole('button', { name: 'Supprimer la tâche' })
     await expect(del).toBeVisible()
     await del.click()
     await expect(row).toHaveCount(0)

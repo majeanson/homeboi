@@ -1,6 +1,6 @@
 import { badRequest, notFound, ok, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
-import { newId, nowSec, localDayStart } from '../_lib/ids'
+import { newId, nowSec, localDayStart, tickedAt } from '../_lib/ids'
 import { profileMemberId } from '../_lib/profile'
 import { deleteHealing, healClear } from '../_lib/staleDelete'
 import { subjectBinds, validSubject } from '../_lib/subject'
@@ -206,7 +206,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
 })
 
 export const onRequestPatch = authed(async (ctx, actor) => {
-  const body = await readJson<{ id?: string; done?: boolean; title?: string; subject?: unknown; clearChecked?: boolean; ids?: unknown; items?: unknown; asOf?: unknown }>(
+  const body = await readJson<{ id?: string; done?: boolean; doneAt?: unknown; title?: string; subject?: unknown; clearChecked?: boolean; ids?: unknown; items?: unknown; asOf?: unknown }>(
     ctx.request,
   )
 
@@ -268,7 +268,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   if (typeof body?.done === 'boolean') {
     await ctx.env.DB.batch([
       ctx.env.DB.prepare('UPDATE todos SET done_at = ?, updated_at = ? WHERE id = ? AND household_id = ?').bind(
-        body.done ? ts : null,
+        body.done ? tickedAt(body.doneAt, ts) : null,
         ts,
         id,
         actor.householdId,

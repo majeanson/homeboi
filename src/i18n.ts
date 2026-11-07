@@ -37,8 +37,7 @@ export const FR = {
     homeProjects: 'Projets & entretien',
     auto: 'L’auto',
     routines: 'Routines',
-    chores: 'À faire',
-    todos: 'À compléter',
+    tasks: 'Tâches',
     pantry: 'Garde-manger & réserve',
     events: 'Rendez-vous',
     listItems: 'La liste',
@@ -64,7 +63,7 @@ export const FR = {
       meal: 'Repas',
       event: 'Rendez-vous',
       list: 'La liste',
-      chore: 'Corvée',
+      chore: 'Tâche',
       recipe: 'Recette',
       cercle: 'Famille',
       note: 'Note',
@@ -97,7 +96,7 @@ export const FR = {
     lists: 'Listes de départ',
     open: 'Ouvrir l’écran de départ',
     today: 'Aujourd’hui',
-    chores: 'Les corvées',
+    chores: 'Les tâches',
     bring: 'À apporter',
     bringAdd: 'Ajouter à cocher',
     allDay: 'Toute la journée',
@@ -310,7 +309,7 @@ export const FR = {
   today: { morning: 'Bon matin', afternoon: 'Bon après-midi', evening: 'Bonne soirée' },
   home: {
     title: 'Toute la maisonnée, d’un coup d’œil.',
-    lead: 'Le souper, les rendez-vous, la liste d’épicerie, les corvées. Un enfant de trois ans peut faire sa routine tout seul. Pas de points, pas de notifications, pas de ménage à faire dans l’app.',
+    lead: 'Le souper, les rendez-vous, la liste d’épicerie, les tâches. Un enfant de trois ans peut faire sa routine tout seul. Pas de points, pas de notifications, pas de ménage à faire dans l’app.',
     ctaPair: 'Jumeler une tablette',
     calmTitle: 'Calme par choix',
     kidTitle: 'Fait pour un pré-lecteur',
@@ -332,7 +331,7 @@ export const FR = {
     featSupper: 'Le souper & l’épicerie',
     featSupperBody: 'Planifie les repas de la semaine — la liste d’épicerie se remplit toute seule. Recettes, rabais de circulaire, mode cuisson pas-à-pas.',
     featAgenda: 'L’agenda & les listes',
-    featAgendaBody: 'Rendez-vous, corvées, à-faire. Écris en mots normaux ou dicte — « dentiste pour Léa mardi 15h » se range au bon jour, au bon nom.',
+    featAgendaBody: 'Rendez-vous, tâches, à-faire. Écris en mots normaux ou dicte — « dentiste pour Léa mardi 15h » se range au bon jour, au bon nom.',
     featRoutines: 'Les routines des enfants',
     featRoutinesBody: 'Des cartes en images lues à voix haute. Un pré-lecteur fait sa routine tout seul — sans points ni récompenses.',
     featCercle: 'Le cercle',
@@ -448,7 +447,7 @@ export const FR = {
     voice: 'Parler',
     listening: 'J’écoute…',
     routed: 'Ajouté :',
-    types: { event: 'Rendez-vous', task: 'Corvée', 'list-item': 'Liste', 'pantry-low': 'Manque', meal: 'Souper', leftover: 'Restants', upkeep: 'Entretien', note: 'Note' },
+    types: { event: 'Rendez-vous', task: 'Tâche', 'list-item': 'Liste', 'pantry-low': 'Manque', meal: 'Souper', leftover: 'Restants', upkeep: 'Entretien', note: 'Note' },
     degraded: 'L’IA ne répond pas — choisis le type toi-même.',
     failed: 'La capture n’a pas fonctionné. Ton texte est gardé, réessaie.',
     // A-2 (bmad/10): offline (or a transport hiccup), the raw text is queued and
@@ -752,9 +751,9 @@ export const FR = {
     listEmpty: 'Liste vide. Rien à acheter.',
     // The « Simple » board's fourth zone heading (the fridge notes, inline).
     notes: 'Notes',
-    chores: 'Les corvées',
-    todos: 'À faire',
-    // Umbrella for the bunched « Restants à finir » + « À faire » board card.
+    chores: 'Les tâches',
+    todos: 'Tâches',
+    // Umbrella for the bunched « Restants à finir » + « Tâches » board card.
     toFinish: 'À finir',
     upcoming: 'À venir',
     soon: 'Bientôt',
@@ -947,7 +946,7 @@ export const FR = {
     tomorrow: 'Demain',
     countdown: 'Le décompte',
     toFinish: 'À finir',
-    todos: 'À faire',
+    todos: 'Tâches',
     upcoming: 'À venir',
     cercleNotes: 'Les notes',
     voyage: 'Prochain voyage',
@@ -1175,8 +1174,8 @@ export const FR = {
     // Shape-key labels for the calendar dots (● rendez-vous · ▪ repas · ◆ corvée · ○ note).
     legendEvents: 'Rendez-vous',
     legendMeals: 'Repas',
-    legendChores: 'Corvées',
-    legendTodos: 'À compléter',
+    legendChores: 'Tâches',
+    legendTodos: 'À cocher',
     legendNotes: 'Notes',
     // …and the legend is also the calendar's HIGHLIGHT LENS: tap an entry to light that
     // kind across the whole month and roll it up in the panel below.
@@ -2980,19 +2979,22 @@ export const FR = {
     failed: 'Le réseau n’a pas répondu.',
     retry: 'Réessayer',
   },
-  // À compléter — listes à cocher autonomes (todos), distinctes du « À faire »
+  // Tâches : la vue du babillard et ce qu'elle nomme. Le mot gagnant est dans lib/glossary.
+  tasks: {
+    subjectKinds: { carnet: 'Carnet', person: 'Personne', pet: 'Animal', project: 'Projet', trip: 'Voyage' },
+  },
+  // À cocher — listes à cocher autonomes (todos), distinctes du « À faire »
   // (corvées ponctuelles). Globales ou rattachées à une journée; modèles de
   // départ réutilisables. Voir src/lib/todos.ts + TodoSection.tsx.
   todos: {
-    title: 'À compléter',
-    empty: 'Rien à compléter. Les petits trucs à ne pas oublier — un formulaire, un appel — s’ajoutent ici.',
-    addPlaceholder: 'Ajouter à compléter…',
-    // Second add-button on the board glance: pin the new todo to today instead of
-    // « en tout temps » — so it lands in the Aujourd’hui group and rolls off later.
-    // Full label when the card is wide enough; `addTodayShort` on a narrow card
-    // (CSS container query swaps them — see .todo-addtoday in todos.css).
-    addToday: 'Pour aujourd’hui',
-    addTodayShort: 'Pour ajd',
+    title: 'Tâches',
+    // The day page's own list, beside « Les tâches » that come back: same word, two lists.
+    dayTitle: 'Pour cette journée',
+    // A task's one field. On the board the main button means « today », this one keeps it
+    // for later, in the Tâches view: a someday task does not sit on the glance.
+    addSomeday: 'Un jour',
+    empty: 'Rien pour l’instant. Les petits trucs à ne pas oublier — un formulaire, un appel — s’ajoutent ici.',
+    addPlaceholder: 'Ajouter une tâche…',
     check: 'Cocher',
     uncheck: 'Décocher',
     clearChecked: 'Vider les cochés',
@@ -3001,7 +3003,7 @@ export const FR = {
     removed: (s: string) => `« ${s} » retiré`,
     clearedN: (n: number) => `${n} retiré${n > 1 ? 's' : ''}`,
     // Portée choisie dans la feuille ＋ : standing (en tout temps), aujourd’hui, ou une date précise.
-    scopeGlobal: 'En tout temps',
+    scopeGlobal: 'Un jour',
     scopeToday: 'Aujourd’hui',
     // A loose to-do left on a past day. It used to vanish from every glance the
     // moment its day passed (bmad/11 tier-1 seam #3); it now waits here, calmly,
@@ -3012,7 +3014,7 @@ export const FR = {
     // « En tout temps » elle s’ajoute pour aujourd’hui, et cette ligne le dit.
     templateDayHint: 'Une liste s’ajoute pour la journée — ici, aujourd’hui.',
     // Réglages ▸ Maison ▸ Tâches de la maison (modèles de listes).
-    templatesTitle: 'Listes à compléter',
+    templatesTitle: 'Listes de départ',
     includeList: 'Inclure une liste…',
     listDeleted: 'Liste supprimée',
     templateName: 'Nom de la liste',
@@ -3092,7 +3094,7 @@ export const FR = {
     // The day page's inline forms carry the delete door too (2026-09-16): the label
     // names what goes, the confirm (deleteEventConfirm) says what it costs.
     deleteEventLabel: 'Supprimer le rendez-vous',
-    deleteChoreLabel: 'Supprimer la corvée',
+    deleteChoreLabel: 'Supprimer la tâche',
     // « Reporter » (entretien) — postpone without checking: quiet, then it returns.
     postponeWeek: 'Reporter d’une semaine',
     postponeCycle: 'Au prochain cycle',

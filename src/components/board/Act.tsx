@@ -276,7 +276,7 @@ export function Act({
         </button>
         {mineEl}
         {badgeEl}
-        <CheckDisc className="act__checkbtn" done={done} onClick={onCheck} label={t.detail.markDone} />
+        <CheckDisc className="act__checkbtn" done={done} onClick={onCheck} label={`${done ? t.todos.uncheck : t.detail.markDone} — ${title}`} />
       </div>
     )
   }

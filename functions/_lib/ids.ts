@@ -43,6 +43,18 @@ export async function sha256Hex(input: string): Promise<string> {
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 
+// The real moment of a tick, not the moment it reached the server. A check held in the
+// offline outbox past midnight has to keep its own day, or a task done at 23:50 reads as
+// done tomorrow: a one-off would stay ticked a day too long, and a « from the last time »
+// cycle would re-anchor late. The client sends the gesture's time; this bounds it, so a
+// wrong clock can neither stamp the future nor reach further back than a phone can
+// plausibly have been offline.
+const TICK_MAX_AGE = 30 * 86400
+export function tickedAt(sent: unknown, now: number): number {
+  const n = Number(sent)
+  return Number.isFinite(n) && n > 0 && n <= now && n >= now - TICK_MAX_AGE ? Math.floor(n) : now
+}
+
 export const nowSec = () => Math.floor(Date.now() / 1000)
 
 // Unix-seconds midnight (local-ish, UTC-based) for a given Date. Meal/event

@@ -71,7 +71,7 @@ const DOORS: Door[] = [
     act: async (p) => {
       const todos = p.locator('.wg-slot[data-card="todos"]')
       await todos.scrollIntoViewIfNeeded()
-      await todos.locator('.todo-row', { hasText: 'Clés + téléphone + portefeuille' }).locator('.todo-row__name').click()
+      await todos.locator('.act', { hasText: 'Clés + téléphone + portefeuille' }).locator('.act__hit').click()
     },
     proof: (p) => expect(p.locator('input:focus, textarea:focus')).toHaveCount(1),
   },

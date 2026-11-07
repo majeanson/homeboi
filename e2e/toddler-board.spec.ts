@@ -103,9 +103,9 @@ test('the weather stays on an otherwise empty day — and then it is NOT all-cle
 // « Avant de partir » on the kid lens (bmad/11 tier-1 seam #4). On a locked kiosk
 // (?kid=1) the parent departure CARD sits behind a 3 s hold + an arithmetic gate —
 // every morning, for the one-tablet household that needs it most at 7h10. The items
-// did already reach this board, but folded into « À faire », where « prends ta boîte
+// did already reach this board, but folded into « Tâches », where « prends ta boîte
 // à lunch » read the same as « ranger ta chambre ». They are their own section now.
-test('the leaving checklist is its own section, not mixed into « À faire »', async ({ page }) => {
+test('the leaving checklist is its own section, not mixed into « Tâches »', async ({ page }) => {
   await kidBoard(page)
 
   // The fixture's departure instances (source_template_id set) group under their own
@@ -114,10 +114,10 @@ test('the leaving checklist is its own section, not mixed into « À faire »', 
   // a loaded CI runner the to-dos had not answered yet — it read [] (2026-09-23;
   // reproduced with a 1.5 s API delay).
   await expect(page.locator('.today-kid__h', { hasText: 'Avant de partir' })).toBeVisible()
-  await expect(page.locator('.today-kid__h', { hasText: 'À faire' })).toBeVisible()
+  await expect(page.locator('.today-kid__h', { hasText: 'Tâches' })).toBeVisible()
   const heads = await page.locator('.today-kid__h').allInnerTexts()
   expect(heads).toContain('Avant de partir')
-  expect(heads).toContain('À faire')
+  expect(heads).toContain('Tâches')
 
   const depart = page.locator('.today-kid__section', { hasText: 'Avant de partir' })
   await expect(depart.locator('.bigtile').first()).toBeVisible()

@@ -46,8 +46,8 @@ export const FR_OPERATOR = {
     'Le jeton n’est montré qu’une fois. Copie la commande, colle-la dans ton terminal. Tu peux le révoquer en tout temps dans la liste ci-dessus.',
   agentCopy: 'Copier la commande',
   agentCopied: 'Copié',
-  chores: 'Corvées',
-  addChore: 'Ajouter une corvée',
+  chores: 'Tâches',
+  addChore: 'Ajouter une tâche',
   schedule: 'Céduler',
   routines: 'Routines (mode enfant)',
   addRoutine: 'Créer une routine',
@@ -57,9 +57,9 @@ export const FR_OPERATOR = {
   detailInCercleHint: 'Coordonnées, anniversaire, genre et liens familiaux y vivent.',
   deleteMember: 'Supprimer la personne',
   deleteMemberConfirm: (name: string) =>
-    `Supprimer « ${name} » de la maisonnée ? Ses routines seront aussi effacées; les rendez-vous et corvées resteront, sans personne d’assigné.`,
-  editChore: 'Modifier la corvée',
-  deleteChore: 'Supprimer la corvée',
+    `Supprimer « ${name} » de la maisonnée ? Ses routines seront aussi effacées; les rendez-vous et tâches resteront, sans personne d’assigné.`,
+  editChore: 'Modifier la tâche',
+  deleteChore: 'Supprimer la tâche',
   ledgerTitle: 'Qui a fait quoi cette semaine ?',
   ledgerEmpty: 'Rien de noté pour l’instant. Ça se remplira tout seul.',
   ledgerHelperChild: 'Un coup de main',
@@ -67,7 +67,7 @@ export const FR_OPERATOR = {
   diaryTab: 'Cette année',
   diaryTitle: 'La maison cette année',
   diaryHint:
-    'Ce que la maison a vécu, mois par mois — les soins notés, les corvées faites, les voyages terminés, les dessins gardés. Des noms et des dates, jamais des comptes.',
+    'Ce que la maison a vécu, mois par mois — les soins notés, les tâches faites, les voyages terminés, les dessins gardés. Des noms et des dates, jamais des comptes.',
   diaryEmpty: 'L’année s’écrira ici, un moment à la fois.',
   diaryDrawing: 'Un dessin gardé',
   editRoutine: 'Modifier la routine',
@@ -112,7 +112,7 @@ export const FR_OPERATOR = {
   announceEveningHint: 'Le babillard affichera une ligne calme le soir d’avant (« Ce soir » — pas une notification).',
   // Projets & Entretien — the longer-horizon home work under Corvées (#home-projects).
   home: {
-    subCorvees: 'Corvées',
+    subCorvees: 'Tâches',
     subProjets: 'Projets',
     subEntretien: 'Entretien',
     projetsTitle: 'Projets de la maison',
@@ -154,7 +154,7 @@ export const FR_OPERATOR = {
     done: 'Fait',
     // The ＋ « Corvées » sub-choice prompt (board AddSheet): chore vs the two
     // home-project kinds.
-    pickKind: 'Corvée, entretien ou projet ?',
+    pickKind: 'Une tâche qui revient, un entretien ou un projet ?',
   },
   cardWord: 'mot',
   addCard: 'carte',
@@ -524,7 +524,8 @@ export const FR_OPERATOR = {
   thisWeekBirthdays: 'Anniversaires',
   thisWeekWork: 'Au travail',
   thisWeekProjects: 'Projets',
-  thisWeekChores: 'Corvées',
+  thisWeekChores: 'Tâches',
+  taskPlanned: 'Tâche planifiée',
   thisWeekRoutines: 'Routines',
   thisWeekAheadEmpty: 'Rien de prévu cette semaine.',
   thisWeekBehindEmpty: 'La semaine commence — rien à montrer encore.',
@@ -573,7 +574,7 @@ export const FR_OPERATOR = {
   // holds, in the order it holds it — lib/settingsNav SUB_LABEL_KEY points here.
   subAgendaWeek: 'Agenda & semaine',
   subHistoryTracking: 'Historique & suivi',
-  subHomeTasks: 'Tâches de la maison',
+  subHomeTasks: 'Routines & listes',
   subCarsHours: 'L’auto & horaires',
   // Short on purpose: at 31 characters the first Système pill alone filled a 390px
   // row and the merge had bought nothing — the cards inside say the rest.
@@ -595,8 +596,8 @@ export const FR_OPERATOR = {
   fetesLabel: 'Les fêtes au calendrier',
   fetesHint: 'Les fêtes du Québec et du Canada s’annoncent d’elles-mêmes sur le babillard (Saint-Jean, Action de grâce, Noël…). Juste une ligne calme — rien à gérer, rien à créer.',
   // D-21 (bmad/10) « Sortir le bac » — the flagged-chore evening announce, per-device opt-out.
-  binAnnounceLabel: 'L’annonce du soir (corvées)',
-  binAnnounceHint: 'Une corvée cochée « Annoncer la veille au soir » se rappelle d’elle-même le soir d’avant — « c’est le soir du bac bleu ».',
+  binAnnounceLabel: 'L’annonce du soir (tâches)',
+  binAnnounceHint: 'Une tâche cochée « Annoncer la veille au soir » se rappelle d’elle-même le soir d’avant — « c’est le soir du bac bleu ».',
   // E-35 — « Emporter mes données » (Réglages ▸ Système ▸ Appareils & accès).
   takeoutTitle: 'Emporter mes données',
   takeoutHint: 'Tout ce que Babillard garde pour ta maisonnée, en un seul fichier JSON — à toi. Une copie de secours se fait aussi chaque nuit, automatiquement.',

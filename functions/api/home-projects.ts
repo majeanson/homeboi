@@ -1,6 +1,7 @@
 import { badRequest, notFound, ok, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
-import { newId, nowSec, localDayStart } from '../_lib/ids'
+import { newId, nowSec, localDayStart, tickedAt } from '../_lib/ids'
+import { clearStatements } from '../_lib/taskItem'
 import { hexColor } from '../_lib/validate'
 import { normalizeRecur } from '../_lib/recur'
 import { upkeepStatus, nextCycleDay } from '../_lib/upkeep'
@@ -183,7 +184,18 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     carnetId?: string | null
     subject?: unknown
     snooze?: unknown
+    doneAt?: unknown
+    undo?: boolean
+    clearChecked?: boolean
+    ids?: unknown
   }>(ctx.request)
+  // « Vider les cochés »: these rows are history, so the bulk gesture stamps them out of the
+  // day and deletes nothing (_lib/taskItem).
+  if (body?.clearChecked) {
+    const ids = Array.isArray(body.ids) ? body.ids.filter((x): x is string => typeof x === 'string') : []
+    if (ids.length > 0) await ctx.env.DB.batch(clearStatements(ctx.env.DB, 'home_projects', actor.householdId, ids, nowSec()))
+    return ok({ ok: true })
+  }
   if (!body?.id) return badRequest('id requis.')
 
   if (body.snooze !== undefined) {
@@ -278,14 +290,25 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     return ok({ ok: true })
   }
 
-  // Complete: stamp this cycle done. A recurring upkeep's next occurrence then
-  // shows; a one-off drops from the active list (mirrors a chore's last_done_at).
-  // Also clears any « reporté » — done beats postponed.
-  const ts = nowSec()
+  // Untick a one-off: the row's own check is its undo (mirrors a chore).
+  if (body.undo) {
+    const res = await ctx.env.DB.prepare(
+      'UPDATE home_projects SET last_done_at = NULL, cleared_at = NULL, updated_at = ? WHERE id = ? AND household_id = ?',
+    )
+      .bind(nowSec(), body.id, actor.householdId)
+      .run()
+    if (!res.meta.changes) return notFound('Introuvable.')
+    return ok({ ok: true })
+  }
+
+  // Complete: stamp this cycle done, at the moment it really happened. A recurring upkeep's
+  // next occurrence then shows; a one-off stays ticked for the day (mirrors a chore's
+  // last_done_at). Also clears any « reporté » — done beats postponed.
+  const now = nowSec()
   const res = await ctx.env.DB.prepare(
     'UPDATE home_projects SET last_done_at = ?, snoozed_until = NULL, updated_at = ? WHERE id = ? AND household_id = ?',
   )
-    .bind(ts, ts, body.id, actor.householdId)
+    .bind(tickedAt(body.doneAt, now), now, body.id, actor.householdId)
     .run()
   if (!res.meta.changes) return notFound('Introuvable.')
   return ok({ ok: true, done: true })

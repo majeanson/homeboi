@@ -1,3 +1,4 @@
+import type { TaskItem } from './tasks'
 import { describe, it, expect } from 'vitest'
 import { buildBoardModel, NEXT_UP_GRACE_SEC, type BoardModelInput } from './boardModel'
 import {
@@ -174,11 +175,27 @@ describe('boardModel', () => {
       ['a non-supper meal', { todayMeals: [meal()] }],
       ['a supper', { tonightMeals: [meal({ slot: 'supper' })] }],
       ['a leftover', { leftovers: [{ id: 'l1', title: 'Restants' }] }],
-      ['a loose todo', { todos: [chore({ id: 't1' })] }],
     ]
     it.each(dayClearCases)('flips false when there is %s', (_label, dataOverride) => {
       const model = buildBoardModel(baseInput({ data: mkData(dataOverride) }))
       expect(model.dayClear).toBe(false)
+    })
+    // The merged card (2026-11-06): the day is clear when no task is open on it. A someday
+    // one-off (`data.todos`) lives in the Tâches view now, and a ticked row is done.
+    const task = (over: Partial<TaskItem>): TaskItem => ({
+      key: 'todo:t', source: 'todo', id: 't', title: 'T', color: null, subject: null, kind: null, recurring: false,
+      recurJson: null, day: null, dueToday: true, overdueSince: null, snoozedUntil: null, soon: false, done: 'open',
+      doneAt: null, who_id: null, team: [], onBoard: true, ...over,
+    })
+    it('flips false on an open task, stays clear on a ticked one and on someday', () => {
+      expect(buildBoardModel(baseInput({ data: mkData(), tasks: [task({})] })).dayClear).toBe(false)
+      expect(buildBoardModel(baseInput({ data: mkData(), tasks: [task({ done: 'ticked' })] })).dayClear).toBe(true)
+      expect(buildBoardModel(baseInput({ data: mkData({ todos: [chore({ id: 't1' })] }) })).dayClear).toBe(true)
+    })
+    it('the card keeps a ticked row, narrows to a face, and drops a held one', () => {
+      const rows = [task({ id: 'a', key: 'a', who_id: 'm1' }), task({ id: 'b', key: 'b', who_id: 'm2' }), task({ id: 'c', key: 'c' })]
+      expect(buildBoardModel(baseInput({ data: mkData(), tasks: rows, profileId: 'm1' })).tasks.map((x) => x.id)).toEqual(['a', 'c'])
+      expect(buildBoardModel(baseInput({ data: mkData(), tasks: rows, pendingDone: new Set(['a']) })).tasks.map((x) => x.id)).toEqual(['b', 'c'])
     })
     it('flips false on a work window today', () => {
       const model = buildBoardModel(baseInput({ data: mkData({ work: [work()] }) }))

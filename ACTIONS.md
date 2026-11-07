@@ -104,13 +104,13 @@ at all (❌).
 | Event · delete | — | — | ✅ peek **visible danger button**ᴳ (out of the ⋯ since 2026-09-16¹²); also under the day page's inline edit form (« Supprimer le rendez-vous ») | — | — | confirm¹ | ✅ |
 | Event · create | — | — | — | ✅ ＋ `event`; day-page `SectionAdd` | — | — | ✅ |
 | Fête / announce · open | ❌ static `Act`, no `onOpen` (Board.tsx:591) | — | ❌² | — | — | — | ✅ |
-| Chore · check / **edit** / **delete** | ✅ disc | — | ✅ « Fait » + **« Modifier » → Réglages ▸ Corvées (mirror)** + **🗑 (⋯)** — the SAME peek from the board, the Mois day panel and the day page's entretien rows (`useChoreRemovals`, 2026-09-16¹²); the day page's inline chore form carries « Supprimer la corvée » too | — | ✅ Réglages row | deferred | ✅ |
-| Chore · edit | ❌ no door on board³ | — | ➖³ peek = Fait/Reporter only | — | ✅ maison▸chores | — | ✅ |
-| Chore · postpone | — | — | ✅ Reporter ×2 (peek only) | — | — | — | ✅ |
-| Todo « À compléter » · check / rename / delete | ✅ disc; tap name → inline edit (🗑 lives inside) | — | ➖ expands in place | ✅ `SectionAdd` + ＋ `todo` | maison▸todos (templates) | deferred | ✅ |
+| **Tâche** (the merged card, `components/tasks/*`) · check | ✅ disc. A one-off ticks in place and stays until the day ends; a recurring one moves to its next date | — | ✅ « Fait » (peek) | — | — | one-off: inline toggle, the row's own second tap undoes it, no toast · recurring: deferred | ✅ |
+| Tâche · **Vider les cochés** | ✅ one button under the rows, no count | — | — | — | — | deferred, one toast over up to three tables; a to-do is deleted, a chore or a home row keeps its history (`cleared_at`) | ✅ |
+| Tâche · edit / **delete** | — | — | ✅ « Modifier » + 🗑 (⋯) — the SAME peek from the board, the Tâches view, a subject's page, the Mois day panel and the day page (`buildChore`); the day page's inline form carries « Supprimer la tâche » too | — | — | deferred | ✅ |
+| Tâche · postpone | — | — | ✅ Reporter ×2 (peek, home rows) | — | — | deferred | ✅ |
+| Tâche sans scène (to-do) · rename / delete | ✅ tap the row → inline edit (🗑 lives inside) | — | ➖ expands in place | ✅ `SectionAdd` on the card (today, or « Un jour ») + ＋ `todo` | — | deferred | ✅ |
 | Liste à compléter (modèle) · rename / add-item / reorder / include | — | — | — | — | ✅ maison▸routines▸todoTemplates: a row per list (name + count), ✏ → the `/liste-modele/:id` scene (the only editor) | — | ✅ |
-| Projets & Entretien · check / postpone | ✅ disc | — | ✅ Fait + Reporter (semaine/cycle) | ＋ `chores-pick` | ✅ maison▸chores | deferred | ✅ |
-| Projets & Entretien · edit / **delete** | ❌³ | — | ✅ peek « Modifier » (→ Réglages) + 🗑 (⋯) — board, Mois day panel AND the day page row (2026-09-16¹²) | — | ✅ only editor | deferred | ✅ |
+| Projets & Entretien | — | — | one row, the Tâche rows above | ＋ `chores-pick` | — | — | ✅ |
 | Meal (Ce soir / Demain) · open | ✅ tap → **always the peek** (`useOpenMeal`) | — | ✅ `buildMeal` — « Voir la journée » + « Ouvrir la recette » + primary « Cuisiner »; restants/retirer fold into ⋯¹⁰ — « Retirer du plan » now offered from the Mois day panel too (`useRemoveMealFromPlan`, 2026-09-16¹²) | ＋ `meal` | kitchen▸meals | — | ✅ |
 | Leftover · done / plan tonight | ✅ disc (Fini) | — | ✅ Ce soir (peek only) | ＋ `leftovers` | — | deferred | ✅ |
 | Fridge note · dismiss one | ✅ tap (text) / ✕ (media) | — | ➖ no peek⁴ | strip ＋ → `?plus=note` | — | ❌ none⁵ (media: confirmᴿ) | ✅ |

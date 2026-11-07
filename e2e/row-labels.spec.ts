@@ -54,9 +54,11 @@ test('a todo row says WHICH todo, on both of its controls', async ({ page }) => 
 
   const todos = page.locator('.wg-slot[data-card="todos"]')
   await todos.scrollIntoViewIfNeeded()
-  const row = todos.locator('.todo-row', { hasText: 'Clés + téléphone + portefeuille' })
+  const row = todos.locator('.act', { hasText: 'Clés + téléphone + portefeuille' })
   await expect(row).toBeVisible()
 
-  await expect(row.locator('.todo-row__check')).toHaveAccessibleName(/Cocher.*Clés/)
-  await expect(row.locator('.todo-row__name')).toHaveAccessibleName(/Modifier.*Clés/)
+  // The merged card's row is the shared Act: the check names the row it ticks, and the
+  // body's own text names itself.
+  await expect(row.locator('.act__checkbtn')).toHaveAccessibleName(/Fait.*Clés|Marquer.*Clés/)
+  await expect(row.locator('.act__hit')).toHaveAccessibleName(/Clés/)
 })

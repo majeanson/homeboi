@@ -5,7 +5,7 @@ import { todayLocalDay, addLocalDays } from '../src/lib/localDay'
 // « Planifier une journée » (/kitchen/day/:date) after the 2026-08-26 pass:
 //
 //  1. ORDER — the day's schedule leads. What is already booked and can't move
-//     (Rendez-vous ▸ Les corvées ▸ Projets) comes before what you decide around it
+//     (Rendez-vous ▸ Les tâches ▸ Projets) comes before what you decide around it
 //     (À compléter). It used to open on the todo list and the meal
 //     editor, with the day's own agenda scrolled off below them.
 //     2026-09-02: the scene split into TWO FACES behind a `?vue=` sub-tab row —
@@ -15,7 +15,7 @@ import { todayLocalDay, addLocalDays } from '../src/lib/localDay'
 //  2. ONE ANATOMY — every section is a SecLabel header (glyph · title · rule ·
 //     count) whose trailing ＋ is the shared SectionAdd, then its rows, then the
 //     composer that ＋ opened. No hand-rolled headings, no full-width
-//     « Ajouter un rendez-vous / une corvée » bar camping under each list, and no
+//     « Ajouter un rendez-vous / une tâche » bar camping under each list, and no
 //     dashed per-slot « ＋ Ajouter » pill in the meal planner.
 //  3. NOTES ON A RENDEZ-VOUS (migration 0121) — a rendez-vous carries its own
 //     free-text note, shown as a second sub-line on its row.
@@ -97,14 +97,14 @@ async function openDay(
   await expect(page.locator('.day-plan__sections')).toBeVisible({ timeout: 15_000 })
 }
 
-test('the day leads with its schedule: Rendez-vous and Les corvées come first', async ({ page }) => {
+test('the day leads with its schedule: Rendez-vous and Les tâches come first', async ({ page }) => {
   await openDay(page)
   // The default « Journée » face is the agenda alone — the meal planner is the
   // « Repas » face, one sub-tab over (no « Les repas » section stacked below).
   const headings = (await page.locator('.day-plan__sections .sec-label b').allInnerTexts()).map((s) => s.trim())
   // Projets & Entretien is absent (nothing lands on this day) — it only shows when
   // there is something, and it is a mirror of Réglages ▸ Corvées, not a home.
-  expect(headings).toEqual(['Rendez-vous', 'Les corvées', 'À compléter'])
+  expect(headings).toEqual(['Rendez-vous', 'Les tâches', 'Pour cette journée'])
   await expect(page.locator('.day-mng__sec')).toHaveCount(0)
   // Flipping to « Repas » shows the planner (the slot sections), not the agenda.
   await page.getByRole('tab', { name: 'Repas' }).click()
@@ -128,13 +128,13 @@ test('every section carries its ＋ in the header — no add bar under the list'
   await plus.click()
   await expect(rdv.locator('.operator__inline-form')).toHaveCount(0)
 
-  // The corvées section is the SAME anatomy, not a variation on it.
-  const chores = page.locator('.day-plan__sec').filter({ hasText: 'Les corvées' })
+  // The tâches section is the SAME anatomy, not a variation on it.
+  const chores = page.locator('.day-plan__sec').filter({ hasText: 'Les tâches' })
   await chores.locator('.sec-label .sec-label__actbtn').click()
   await expect(chores.locator('.operator__inline-form')).toBeVisible()
 })
 
-test('« À compléter » keeps its picker behind the same header ＋', async ({ page }) => {
+test('« Pour cette journée » keeps its picker behind the same header ＋', async ({ page }) => {
   await openDay(page)
   const todos = page.locator('.todo-sec')
   // The add field is NOT open by default any more — the section leads with its rows.

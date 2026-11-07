@@ -63,7 +63,7 @@ test.describe('recurring chores on the board', () => {
     await APP('/settings?tab=maison&focus=chores')(page)
     await settle(page, '.operator__tabs')
     // The "Céduler"-only expander is gone — a chore row is now a ListRow whose
-    // RowActions ✏️ ("Modifier la corvée") expands the SAME full ChoreForm (one
+    // RowActions ✏️ ("Modifier la tâche") expands the SAME full ChoreForm (one
     // editor) with the RecurPicker. The .operator__chore-row class only appears on
     // the row while it's editing, so target the edit button via the chores CARD's
     // list (#op-chores — the routines card above it has a list of its own).
@@ -72,7 +72,7 @@ test.describe('recurring chores on the board', () => {
       .first()
       .locator('li')
       .first()
-      .getByRole('button', { name: 'Modifier la corvée' })
+      .getByRole('button', { name: 'Modifier la tâche' })
       .click()
     const form = page.locator('.operator__chore-row--editing .operator__chore-form')
     await form.locator('.recur select').selectOption('weekly')

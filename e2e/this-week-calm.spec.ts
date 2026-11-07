@@ -5,7 +5,7 @@ import { mockApi, seedState } from './mocks'
 // inherits its one hard rule: it says WHO, never HOW MANY. No tally, no ranking, no
 // streak, no score (NFR-CALM-1) — the file says so at the top, and until now nothing
 // held it there. The section rendered in the screenshot sweep, but nothing ever
-// ASSERTED faces-not-counts (REVIEW-PASS « e2e gaps »), so a well-meaning "3 corvées
+// ASSERTED faces-not-counts (REVIEW-PASS « e2e gaps »), so a well-meaning "3 tâches
 // cette semaine" could have landed without a single test objecting.
 //
 // The fixture deliberately gives one chore THREE helpers and repeats a face across

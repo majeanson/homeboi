@@ -348,6 +348,8 @@ export function buildChore(
     // for this row. Overflow, because a glance surface must not put a destructive tap
     // beside a « Fait ».
     onDelete?: (() => void) | undefined
+    // « Sur quoi ? »: the door to what this task is about, resolved by subjectOf().
+    subject?: { label: string; to: string; icon: IconName } | undefined
   },
 ): DetailModel {
   const { t, lang, members } = ctx
@@ -360,6 +362,7 @@ export function buildChore(
     actions.push({ key: 'postpone-week', label: t.detail.postponeWeek, icon: 'clock-bold', run: opts.onPostponeWeek })
   if (opts?.onPostponeCycle)
     actions.push({ key: 'postpone-cycle', label: t.detail.postponeCycle, icon: 'arrow-counter-clockwise-bold', run: opts.onPostponeCycle })
+  if (opts?.subject) actions.push({ key: 'subject', label: opts.subject.label, icon: opts.subject.icon, href: opts.subject.to })
   if (opts?.editHref)
     actions.push({ key: 'edit', label: t.common.edit, icon: 'pencil-simple-bold', href: opts.editHref, overflow: true })
   if (opts?.onDelete)

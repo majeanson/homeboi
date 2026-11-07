@@ -139,6 +139,7 @@ describe('optimistic tmp ids live only where the server heals them', () => {
     'src/pages/Liste.tsx': 'list',
     'src/pages/QuickAddPage.tsx': 'list',
     'src/components/todos/TodoSection.tsx': 'todos',
+    'src/components/tasks/useTaskActions.ts': 'todos',
   }
   it('mintTmpId() is called only from the known doors', () => {
     const callers = sources()

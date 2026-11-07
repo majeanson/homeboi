@@ -40,23 +40,23 @@ export const ADD_HELP = {
     card: 'set-chores',
     point: 0,
     body: {
-      fr: 'Ajoute une corvée, ponctuelle ou récurrente, avec qui s’en occupe.',
-      en: 'Add a chore, one-off or recurring, with who handles it.',
+      fr: 'Ajoute une tâche, ponctuelle ou récurrente, avec qui s’en occupe.',
+      en: 'Add a task, one-off or recurring, with who handles it.',
     },
   },
   'chores-pick': {
     card: 'set-chores',
     point: 0,
     body: {
-      fr: 'Choisis : une corvée, un entretien qui revient, ou un projet de la maison.',
-      en: 'Choose: a chore, recurring maintenance, or a home project.',
+      fr: 'Choisis : une tâche, un entretien qui revient, ou un projet de la maison.',
+      en: 'Choose: a task, recurring maintenance, or a home project.',
     },
   },
   todo: {
     card: 'todos',
     point: 0,
     body: {
-      fr: 'Ajoute une chose « à compléter » : en tout temps, ou juste pour aujourd’hui. Coche-la quand c’est fait.',
+      fr: 'Ajoute une tâche : pour un jour ou juste pour aujourd’hui. Coche-la quand c’est fait.',
       en: 'Add something “to complete”: anytime, or just for today. Check it off when done.',
     },
   },

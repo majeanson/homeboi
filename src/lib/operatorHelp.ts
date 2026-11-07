@@ -309,8 +309,8 @@ export const OPERATOR_HELP = {
     card: 'cercle',
     point: 6,
     body: {
-      fr: `Le journal calme de l'année : les soins notés aux carnets, les corvées faites, les voyages terminés, les dessins gardés — mois par mois. Des noms et des dates, jamais des comptes. Rien à tenir : ça s'écrit tout seul.`,
-      en: `The year's calm journal: the care noted in the carnets, the chores done, the trips taken, the drawings kept — month by month. Names and dates, never counts. Nothing to maintain: it writes itself.`,
+      fr: `Le journal calme de l'année : les soins notés aux carnets, les tâches faites, les voyages terminés, les dessins gardés — mois par mois. Des noms et des dates, jamais des comptes. Rien à tenir : ça s'écrit tout seul.`,
+      en: `The year's calm journal: the care noted in the carnets, the tasks done, the trips taken, the drawings kept — month by month. Names and dates, never counts. Nothing to maintain: it writes itself.`,
     },
   },
   schoolYear: {
@@ -351,8 +351,8 @@ export const OPERATOR_HELP = {
     card: 'set-household',
     point: 0,
     body: {
-      fr: `Les personnes de ta maisonnée : leur nom, leur couleur, leur visage, et « enfant » pour celles qui voient la vue tout-en-images. C'est cette liste qui remplit les visages « Aujourd'hui », les corvées et les routines. Le nom de la maisonnée se change ici aussi.`,
-      en: `The people in your household: name, colour, face, and "child" for the ones who get the all-pictures view. This list is what fills the "Aujourd'hui" faces, the chores and the routines. The household's own name changes here too.`,
+      fr: `Les personnes de ta maisonnée : leur nom, leur couleur, leur visage, et « enfant » pour celles qui voient la vue tout-en-images. C'est cette liste qui remplit les visages « Aujourd'hui », les tâches et les routines. Le nom de la maisonnée se change ici aussi.`,
+      en: `The people in your household: name, colour, face, and "child" for the ones who get the all-pictures view. This list is what fills the "Aujourd'hui" faces, the tasks and the routines. The household's own name changes here too.`,
     },
   },
   devices: {
@@ -375,8 +375,8 @@ export const OPERATOR_HELP = {
     card: 'set-chores',
     point: 1,
     body: {
-      fr: `Les corvées qui existent, pour les modifier, les céduler ou les retirer. « Céduler » leur donne un jour qui revient — c'est ce qui les fait apparaître sur le babillard toutes seules. Aucun compte, aucun classement : qui a fait quoi se lit dans le journal des corvées.`,
-      en: `The chores that exist, to edit, schedule or remove. "Schedule" gives one a day that comes back — that is what makes it appear on the board by itself. No counts, no ranking: who did what is read in the chore log.`,
+      fr: `Les tâches qui existent, pour les modifier, les céduler ou les retirer. « Céduler » leur donne un jour qui revient — c'est ce qui les fait apparaître sur le babillard toutes seules. Aucun compte, aucun classement : qui a fait quoi se lit dans le journal des tâches.`,
+      en: `The tasks that exist, to edit, schedule or remove. "Schedule" gives one a day that comes back — that is what makes it appear on the board by itself. No counts, no ranking: who did what is read in the task log.`,
     },
   },
   routines: {

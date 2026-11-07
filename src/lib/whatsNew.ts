@@ -31,8 +31,8 @@ export const WHATS_NEW: WhatsNewEntry[] = [
   {
     id: 'reglages-14-pastilles',
     text: {
-      fr: 'Réglages respire : 14 pastilles au lieu de 28 — chaque réglage est resté, regroupé avec ses voisins (Affichage & veille, Tâches de la maison, Voix & IA…).',
-      en: 'Settings breathe: 14 pills instead of 28 — every setting stayed, grouped with its neighbours (Display & idle, Household tasks, Voice & AI…).',
+      fr: 'Réglages respire : 14 pastilles au lieu de 28 — chaque réglage est resté, regroupé avec ses voisins (Affichage & veille, Routines & listes, Voix & IA…).',
+      en: 'Settings breathe: 14 pills instead of 28 — every setting stayed, grouped with its neighbours (Display & idle, Routines & lists, Voice & AI…).',
     },
     card: 'settings',
   },
@@ -87,8 +87,8 @@ export const WHATS_NEW: WhatsNewEntry[] = [
   {
     id: 'sortir-le-bac',
     text: {
-      fr: 'Nouveau : coche « Annoncer la veille au soir » dans une corvée récurrente — le babillard le rappelle « Ce soir », le soir d’avant.',
-      en: 'New: check “Announce the evening before” on a recurring chore — the board reminds you “Tonight”, the evening before.',
+      fr: 'Nouveau : coche « Annoncer la veille au soir » dans une tâche récurrente — le babillard le rappelle « Ce soir », le soir d’avant.',
+      en: 'New: check “Announce the evening before” on a recurring task — the board reminds you “Tonight”, the evening before.',
     },
     card: 'board',
   },
@@ -191,8 +191,8 @@ export const WHATS_NEW: WhatsNewEntry[] = [
   {
     id: 'house-diary',
     text: {
-      fr: 'Nouveau : « La maison cette année » — le journal calme de l’année (soins, corvées, voyages, dessins), dans Réglages ▸ Maison ▸ Cette année.',
-      en: 'New: “The home this year” — the year’s calm journal (care, chores, trips, drawings), in Settings ▸ Home ▸ This year.',
+      fr: 'Nouveau : « La maison cette année » — le journal calme de l’année (soins, tâches, voyages, dessins), dans Réglages ▸ Maison ▸ Cette année.',
+      en: 'New: “The home this year” — the year’s calm journal (care, tasks, trips, drawings), in Settings ▸ Home ▸ This year.',
     },
     card: 'cercle',
   },

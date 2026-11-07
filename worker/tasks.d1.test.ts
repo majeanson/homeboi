@@ -14,6 +14,55 @@ const todos = (s: Session) => okJson<TodosWire>(s.fetch('/api/todos'))
 const addTodo = (s: Session, body: Record<string, unknown>) => okJson<{ id: string }>(s.fetch('/api/todos', { method: 'POST', body }))
 const titles = (xs: { title: string }[]) => xs.map((x) => x.title).sort()
 
+describe('the task writes', () => {
+  it('a tick keeps its real moment, however late it reaches the server', async () => {
+    const s = await household('tasks-offline', undefined, { empty: true })
+    const last = today() - 600 // 23:50 last night, held in the outbox past midnight
+    const todo = await addTodo(s, { title: 'Formulaire' })
+    await s.fetch('/api/todos', { method: 'PATCH', body: { id: todo.id, done: true, doneAt: last } })
+    expect(await env.DB.prepare('SELECT done_at FROM todos WHERE id = ?').bind(todo.id).first()).toEqual({ done_at: last })
+    expect((await todos(s)).items, 'its day has passed: already cleared').toEqual([])
+
+    const chore = await okJson<{ id: string }>(s.fetch('/api/chores', { method: 'POST', body: { title: 'Bac' } }))
+    await s.fetch('/api/chores', { method: 'PATCH', body: { id: chore.id, complete: true, doneAt: last } })
+    expect(await env.DB.prepare('SELECT last_done_at FROM tasks WHERE id = ?').bind(chore.id).first()).toEqual({ last_done_at: last })
+  })
+
+  it('a clock in the future cannot stamp the future', async () => {
+    const s = await household('tasks-clock', undefined, { empty: true })
+    const todo = await addTodo(s, { title: 'Formulaire' })
+    await s.fetch('/api/todos', { method: 'PATCH', body: { id: todo.id, done: true, doneAt: Math.floor(Date.now() / 1000) + 86400 } })
+    const row = await env.DB.prepare('SELECT done_at FROM todos WHERE id = ?').bind(todo.id).first<{ done_at: number }>()
+    expect(row!.done_at).toBeLessThanOrEqual(Math.floor(Date.now() / 1000))
+  })
+
+  it('a one-off unticks: the stamp, the turn and the log line all go back', async () => {
+    const s = await household('tasks-untick', undefined, { empty: true })
+    const a = await okJson<{ id: string }>(s.fetch('/api/members', { method: 'POST', body: { name: 'Léa' } }))
+    const b = await okJson<{ id: string }>(s.fetch('/api/members', { method: 'POST', body: { name: 'Noah' } }))
+    const chore = await okJson<{ id: string }>(s.fetch('/api/chores', { method: 'POST', body: { title: 'Bac', rotation: [a.id, b.id] } }))
+    await s.fetch('/api/chores', { method: 'PATCH', body: { id: chore.id, complete: true } })
+    await s.fetch('/api/chores', { method: 'PATCH', body: { id: chore.id, undo: true } })
+    expect(await env.DB.prepare('SELECT last_done_at, current_idx FROM tasks WHERE id = ?').bind(chore.id).first()).toEqual({ last_done_at: null, current_idx: 0 })
+    expect(await env.DB.prepare('SELECT COUNT(*) AS n FROM task_participants WHERE task_id = ?').bind(chore.id).first()).toEqual({ n: 0 })
+
+    const home = await okJson<{ id: string }>(s.fetch('/api/home-projects', { method: 'POST', body: { title: 'Filtre', kind: 'upkeep', at: today() } }))
+    await s.fetch('/api/home-projects', { method: 'PATCH', body: { id: home.id } })
+    await s.fetch('/api/home-projects', { method: 'PATCH', body: { id: home.id, undo: true } })
+    expect((await board(s)).tasks.map((t) => t.done)).toEqual(['open'])
+  })
+
+  it('« Vider les cochés » leaves the row as history and keeps every other row', async () => {
+    const s = await household('tasks-clearsoon', undefined, { empty: true })
+    const home = await okJson<{ id: string }>(s.fetch('/api/home-projects', { method: 'POST', body: { title: 'Filtre', kind: 'upkeep', at: today() } }))
+    const keep = await okJson<{ id: string }>(s.fetch('/api/home-projects', { method: 'POST', body: { title: 'Toit', kind: 'upkeep', at: today() } }))
+    await s.fetch('/api/home-projects', { method: 'PATCH', body: { id: home.id } })
+    await s.fetch('/api/home-projects', { method: 'PATCH', body: { clearChecked: true, ids: [home.id] } })
+    expect((await board(s)).tasks.map((t) => t.id)).toEqual([keep.id])
+    expect(await env.DB.prepare('SELECT last_done_at IS NOT NULL AS kept FROM home_projects WHERE id = ?').bind(home.id).first()).toEqual({ kept: 1 })
+  })
+})
+
 describe('the task read', () => {
   it('holds all three tables and keeps departure instances out', async () => {
     const s = await household('tasks-all', undefined, { empty: true })

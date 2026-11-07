@@ -147,12 +147,16 @@ import { useEscapeKey } from '../lib/sceneNav'
 // and stays empty — no counters, no score for clearing it. The board has two
 // glances — « Grille » (this file) and « Mois » (MonthView) — with the face picker
 // as the per-person lens; the card/section atoms live in src/components/board/*.
-import { BOARD_KEY, TODOS_KEY, WEATHER_KEY, MONTH_KEY, CHORES_KEY, HOME_PROJECTS_KEY, CARNETS_KEY, ROUTINES_KEY } from '../lib/queryKeys'
+import { BOARD_KEY, TODOS_KEY, TASKS_KEY, WEATHER_KEY, ROUTINES_KEY } from '../lib/queryKeys'
 import { useMots, waitingMots } from '../lib/mots'
 import { pickMyNext, pickMyRoutine } from '../lib/pourToi'
 import { tintInk } from '../lib/colors'
 import { useChoreRemovals, useRemoveMealFromPlan } from '../components/detail/EntityRemovals'
 import { TodoSection } from '../components/todos/TodoSection'
+import { TaskList, TaskQuickAdd } from '../components/tasks/TaskList'
+import { useTaskActions } from '../components/tasks/useTaskActions'
+import { type SubjectLookup } from '../lib/subjects'
+import { type TaskItem } from '../lib/tasks'
 import { type TodosData, todosKey, todosPath, splitTodos } from '../lib/todos'
 import { useDeferredRemoval, heldIds } from '../lib/useDeferredRemoval'
 import { isGuest, isDisplay } from '../lib/device'
@@ -295,6 +299,11 @@ export function Board() {
   // the stale pre-write frame (the resurrection class, 2026-10-06). Tapping Annuler
   // means the completion simply never happens (no rotation advance, no credit).
   const held = useDeferredRemoval(BOARD_KEY)
+  // The merged card's actions, scoped to the same key so a held row hides through `pendingDone`.
+  const taskActions = useTaskActions(BOARD_KEY)
+  // A passive read: if the Tâches view has already fetched the subjects, a row can name them.
+  // `enabled: false` never fetches, so the board gains no request.
+  const { data: tasksFrame } = useQuery({ queryKey: TASKS_KEY, queryFn: () => api<{ subjects?: SubjectLookup }>('tasks'), enabled: false })
   const pendingDone = heldIds(BOARD_KEY)
   const pendingLeftover = pendingDone
   // « L'année » → « Mois » drill-down: a tapped mini-month lands the Mois view on that
@@ -382,19 +391,19 @@ export function Board() {
   // clearly on top. Keeps its own last-good-frame + shuffle (lib ApodFrame).
   const { wonder, shuffle: shuffleWonder, pick: pickWonder } = useWonder()
 
-  // À compléter (todos, migration 0046) — its own light poll, separate from the
-  // loose-chore "À faire" the board payload already carries (data.todos). The
-  // parent grid renders the full <TodoSection>; this read backs the toddler tiles
-  // + the "all clear" check. Open-only for the read-aloud kid view.
+  // The to-dos' own light poll (migration 0046), separate from the board payload. The
+  // merged « Tâches » card reads its `items`, the same TaskItem shape the payload carries for
+  // the other two tables. `openTodos` backs the toddler tiles and the simple board. The
+  // departure checklists it also holds keep the day from reading as clear, so the
+  // all-clear hero can't contradict a pending list; `splitTodos` is THE discriminator.
   const { data: todosData } = useQuery({ queryKey: TODOS_KEY, queryFn: () => api<TodosData>('todos'), ...live })
   const openTodos = (todosData?.todos ?? []).filter((td) => td.done_at == null)
-  // The « Avant de partir » split (mig 0116): the « À faire » card shows only the
-  // LOOSE open todos; the TOTAL (`openTodos`) keeps feeding dayClear + the toddler
-  // tiles, so the all-clear hero can't contradict a pending departure checklist.
-  // `splitTodos` is THE one loose/checklist discriminator — the card's grown body
-  // (<TodoSection show='loose'>) buckets with it too, so the mini can never name a
-  // row (e.g. a legacy pre-0116 sectioned instance) that the grown card then hides.
-  const openLoose = splitTodos(openTodos).loose
+  const todoSplit = splitTodos(openTodos)
+  const openChecklists = todoSplit.checklists.reduce((n, g) => n + g.todos.length, 0)
+  // Nothing on the bento is someday: those live in the Tâches view.
+  const allBoardTasks: TaskItem[] = [...(data?.tasks ?? []), ...(todosData?.items ?? []).filter((i) => i.onBoard)]
+  const openSomeday = todoSplit.loose.filter((td) => td.day == null).length
+  const openDueLoose = todoSplit.loose.length - openSomeday
 
   // Tomorrow's per-day À compléter todos — surfaced inside the Demain card so a
   // checklist pinned to tomorrow is visible there too. The À compléter card itself
@@ -485,8 +494,10 @@ export function Board() {
     pendingLeftover,
     hasWeather: !!weather,
     hasTomorrowWx: !!tomorrowWx,
-    openTodosCount: openTodos.length,
+    openTodosCount: openChecklists + openDueLoose,
+    openSomedayCount: openSomeday,
     tomorrowTodoCount,
+    tasks: allBoardTasks,
   })
   // The day's hero slot as the MODEL resolved it (off the board payload, not off the
   // household setting directly) — so « Ce soir »'s icon, label, colour and its meals
@@ -502,14 +513,10 @@ export function Board() {
   // day page while the undo is open. The doors themselves live in ONE hook
   // (components/detail/EntityRemovals) that the month panel and the day page share.
   const removals = useChoreRemovals()
-  // Rows whose removal is still settling drop out here (and on every other surface in
-  // the scope) until a fresh frame proves the DELETE landed.
-  const todayChores = removals.visibleChores(model.today.chores)
-  const todayTodos = model.today.todos
-  const todayHome = removals.visibleHome(model.today.home)
-  const overdueHome = removals.visibleHome(model.today.homeOverdue)
   const tomorrowEvents = model.tomorrow.events
   const upcomingEvents = model.upcoming.events
+  // Rows whose removal is still settling drop out here (and on every other surface in
+  // the scope) until a fresh frame proves the DELETE landed.
   const upcomingChores = removals.visibleChores(model.upcoming.chores)
   const upcomingHome = removals.visibleHome(model.upcoming.home)
   const leftovers = model.leftovers
@@ -797,26 +804,8 @@ export function Board() {
   const planLeftoverTonight = (l: { id: string; title: string; recipe_id?: string | null; source_meal_id?: string | null }) =>
     void planLeftover(l, todayDay, heroSlot as MealSlot)
 
-  // A due recurring chore, surfaced on the board. Tapping marks it done (advances
-  // the rotation server-side). DEFERRED: hide it now (pendingDone) and hold the
-  // PATCH behind the undo toast, so a mis-tap costs nothing — and because the write
-  // is merely held, an undo means the rotation never advanced (no server "un-do"
-  // for completion exists, so deferring is the only correct way to take it back).
-  const markChoreDone = (c: ChoreInstance) => {
-    // CHORES + MONTH too: completing advances the rotation server-side, so
-    // the Réglages chores list (CHORES_KEY, live on DayPlanPage too) and the
-    // month grid change with it — BOARD alone left them stale until poll.
-    held.remove([c.id], t.undo.choreDone(c.title), () =>
-      write('chores', {
-            method: 'PATCH',
-            body: { id: c.id, complete: true },
-            affectedKeys: [BOARD_KEY, CHORES_KEY, MONTH_KEY],
-          }),
-    )
-  }
-  // "Fini" a leftover from the board (we ate it). DEFERRED behind the undo toast,
-  // mirroring markChoreDone: hide it now (pendingLeftover), hold the DELETE, and a
-  // tap of Annuler leaves it in the pool.
+  // "Fini" a leftover from the board (we ate it). DEFERRED behind the undo toast: hide it
+  // now (pendingLeftover), hold the DELETE, and a tap of Annuler leaves it in the pool.
   const markLeftoverDone = (l: { id: string; title: string }) => {
     // BOTH keys: the kitchen's Restants strip shows this row too, and a
     // board-only invalidate left it stale until its next poll (2026-09-03).
@@ -824,127 +813,47 @@ export function Board() {
       write('meal-leftovers', { method: 'DELETE', body: { id: l.id }, affectedKeys: [BOARD_KEY, LEFTOVERS_KEY] }),
     )
   }
-  const choreAct = (c: ChoreInstance, withDay?: boolean) => (
+  // What's coming later this week, on « À venir »: a look ahead, so these rows carry their
+  // day and no check. What is due now lives on the merged « Tâches » card.
+  const choreAct = (c: ChoreInstance) => (
     <Act
       key={c.id}
       cat="chore"
       title={c.title}
-      when={withDay ? withRel(formatDayMaybeYear(c.at, lang), c.at) : undefined}
+      when={withRel(formatDayMaybeYear(c.at, lang), c.at)}
       who={c.who ?? undefined}
       color={c.color ?? undefined}
       mine={!!profileId && c.who_id === profileId}
       soon={c.soon}
-      onCheck={withDay || ro ? undefined : () => markChoreDone(c)}
       onOpen={() =>
         detail.open(
           buildChore(c, detailCtx, {
-            upcoming: withDay,
-            onDone: withDay || ro ? undefined : () => markChoreDone(c),
-            // A corvée is edited inline in Réglages ▸ Corvées & routines — this names
-            // that place rather than leaving someone to hunt for it (door #11).
+            upcoming: true,
             editHref: ro ? undefined : removals.choreEditHref,
-            onDelete: ro ? undefined : () => removeChore(c),
+            onDelete: ro ? undefined : () => removals.removeChore(c),
           }),
         )
       }
     />
   )
-
-  // Removing a corvée / a projet from where you SEE it. Deferred, matching the tier
-  // its own check uses on this surface — the shared doors (EntityRemovals).
-  const removeChore = (c: ChoreInstance) => removals.removeChore(c)
-  const removeHomeProject = (c: ChoreInstance) => removals.removeHome(c)
-
-  // A one-off to-do (non-recurring task). Checking it marks it done server-side
-  // (same /chores PATCH — sets last_done_at), so it drops off the next board read.
-  // DEFERRED behind the undo toast, mirroring markChoreDone: hide it now, hold the
-  // write, and a tap of Annuler leaves it un-done.
-  const markTodoDone = (c: ChoreInstance) => {
-    // CHORES + MONTH too: completing advances the rotation server-side, so
-    // the Réglages chores list (CHORES_KEY, live on DayPlanPage too) and the
-    // month grid change with it — BOARD alone left them stale until poll.
-    held.remove([c.id], t.undo.todoDone(c.title), () =>
-      write('chores', {
-            method: 'PATCH',
-            body: { id: c.id, complete: true },
-            affectedKeys: [BOARD_KEY, CHORES_KEY, MONTH_KEY],
-          }),
-    )
-  }
-  const todoAct = (c: ChoreInstance) => (
-    <Act
-      key={c.id}
-      cat="chore"
-      title={c.title}
-      who={c.who ?? undefined}
-      color={c.color ?? undefined}
-      mine={!!profileId && c.who_id === profileId}
-      soon={c.soon}
-      onCheck={ro ? undefined : () => markTodoDone(c)}
-      onOpen={() => detail.open(buildChore(c, detailCtx, { todo: true, onDone: ro ? undefined : () => markTodoDone(c) }))}
-    />
-  )
-
-  // "Projets & Entretien" occurrence — checking it stamps last_done_at server-side
-  // (home-projects PATCH with id alone), so a recurring upkeep's next occurrence
-  // shows and a one-off drops off. DEFERRED behind the undo toast, like markChoreDone.
-  const markHomeDone = (c: ChoreInstance) => {
-    // The full HomeProjectForm list: stamping last_done_at re-derives nextAt
-    // (recur_from 'done' re-anchors), which the month grid, Réglages ▸ Projets
-    // and a carnet's own rows all display — BOARD alone left them stale.
-    held.remove([c.id], t.undo.choreDone(c.title), () =>
-      write('home-projects', {
-            method: 'PATCH',
-            body: { id: c.id },
-            affectedKeys: [BOARD_KEY, HOME_PROJECTS_KEY, MONTH_KEY, CARNETS_KEY],
-          }),
-    )
-  }
-  // « Reporter » — postpone an owed/due entretien without checking it: the row
-  // goes quiet and returns on its own (next week, or the next scheduled cycle).
-  // Same deferral shape as markHomeDone: hidden at once via pendingDone, the
-  // PATCH held behind the undo toast, offline-safe through useWrite.
-  const postponeHome = (c: ChoreInstance, mode: 'week' | 'cycle') => {
-    // Same list as markHomeDone: a snooze moves the next occurrence, which
-    // the month grid + Réglages ▸ Projets + carnet rows display too.
-    held.remove([c.id], t.undo.postponed(c.title), () =>
-      write('home-projects', {
-            method: 'PATCH',
-            body: { id: c.id, snooze: mode },
-            affectedKeys: [BOARD_KEY, HOME_PROJECTS_KEY, MONTH_KEY, CARNETS_KEY],
-          }),
-    )
-  }
-  const homeAct = (c: ChoreInstance, withDay?: boolean, overdue?: boolean) => {
+  const homeAct = (c: ChoreInstance) => {
     // A carnet-scoped row wears its thing's emoji so « Le chauffe-eau · filtre » reads
-    // at a glance — but it stays an ordinary checkable Entretien row in place.
+    // at a glance.
     const carnet = c.carnet_id ? carnetById.get(c.carnet_id) : undefined
     return (
     <Act
       key={c.id}
       cat="chore"
       title={carnet ? `${carnetEmoji(carnet)} ${c.title}` : c.title}
-      // Overdue carry-forward: a muted « owed since » date (c.at is the missed
-      // date) — calm, no badge/count. Otherwise the upcoming day label as before.
-      when={overdue ? t.board.lateSince(formatDayMaybeYear(c.at, lang)) : withDay ? withRel(formatDayMaybeYear(c.at, lang), c.at) : undefined}
+      when={withRel(formatDayMaybeYear(c.at, lang), c.at)}
       color={c.color ?? undefined}
       soon={c.soon}
-      onCheck={withDay || ro ? undefined : () => markHomeDone(c)}
       onOpen={() =>
         detail.open(
           buildChore(c, detailCtx, {
-            upcoming: withDay,
-            overdue,
-            onDone: withDay || ro ? undefined : () => markHomeDone(c),
-            // « Reporter » rides the peek (actions live behind the detail door) —
-            // only on a due/owed row, never a read-only guest; « au prochain
-            // cycle » only when the row actually recurs.
-            onPostponeWeek: withDay || ro ? undefined : () => postponeHome(c, 'week'),
-            onPostponeCycle: withDay || ro || !c.recurring ? undefined : () => postponeHome(c, 'cycle'),
-            // Same two doors the corvée just gained: a projet/entretien is edited in
-            // Réglages ▸ Corvées & routines, and removable from where it is seen.
+            upcoming: true,
             editHref: ro ? undefined : removals.homeEditHref,
-            onDelete: ro ? undefined : () => removeHomeProject(c),
+            onDelete: ro ? undefined : () => removals.removeHome(c),
           }),
         )
       }
@@ -1150,9 +1059,9 @@ export function Board() {
   const todayItems: CompactRow[] = [
     ...(prepMeal ? [{ label: prepMeal.title }] : []),
     ...liveMeals.map((m) => ({ label: m.title })),
-    // Timed events lead with their hour; meals/chores/home are untimed → a plain dot.
+    // Timed events lead with their hour; meals are untimed → a plain dot.
     // When the ribbon is active the mini names the same things it places (timed events
-    // + work windows, then chores + all-day); otherwise it lists the flat agenda.
+    // + work windows, then all-day); otherwise it lists the flat agenda.
     ...(filActive
       ? [
           // The ribbon path lists the day WHOLE (past items dimmed in place rather than
@@ -1161,14 +1070,9 @@ export function Board() {
           // ahead.
           ...filTimed.map((e) => ({ lead: e.all_day ? undefined : formatTime(e.start_at, lang), label: e.title, dim: evtPast(e) })),
           ...filWork.map((w) => ({ lead: formatTime(w.at, lang), label: w.label || t.board.atWork, dim: isPastSec(w.endAt ?? w.at, nowMs) })),
-          ...todayChores.map((c) => ({ label: c.title })),
           ...filUntimed.map((e) => ({ label: e.title })),
         ]
-      : [
-          ...liveEvents.map((e) => ({ lead: e.all_day ? undefined : formatTime(e.start_at, lang), label: e.title })),
-          ...todayChores.map((c) => ({ label: c.title })),
-        ]),
-    ...todayHome.map((c) => ({ label: c.title })),
+      : liveEvents.map((e) => ({ lead: e.all_day ? undefined : formatTime(e.start_at, lang), label: e.title }))),
   ]
   const todayCount = todayItems.length
   // Everything the tile can say, live first: past rows only ever use the room the live
@@ -1247,7 +1151,7 @@ export function Board() {
 )}
 {/* The calm "Rien de prévu" only stands in on a quiet day with nothing planned
     (a busy day is never empty — `filActive` needs ≥2 timed things to begin with). */}
-{!dayClear && !filActive && todayEvents.length === 0 && todayChores.length === 0 && todayHome.length === 0 && otherMeals.length === 0 ? (
+{!dayClear && !filActive && todayEvents.length === 0 && otherMeals.length === 0 ? (
   <EmptyState tone="calm" guide={{ card: 'board' }}>{t.board.todayClear}</EmptyState>
 ) : (
   <>
@@ -1266,18 +1170,14 @@ export function Board() {
     {filActive && (
       /* « Le fil du jour » — a busy day read as a SHAPE: timed events + L'auto rides
          + work windows placed on a time axis (past dimmed in place, a « maintenant »
-         marker), chores + all-day events pooled under « À tout moment ». Rows reuse
-         the card's own renderers, so a tap opens the same peek and a chore's check
-         still ticks. `home` tasks (untimed, family-wide) stay in the plain list below. */
+         marker), all-day events pooled under « À tout moment ». Rows reuse the card's
+         own renderers, so a tap opens the same peek. Tasks live on their own card. */
       <Fil
         timed={[
           ...filTimed.map((e) => ({ id: e.id, start_at: e.start_at, until: e.end_at ?? undefined, node: eventAct(e) })),
           ...filWork.map((w) => ({ id: `work-${w.id}`, start_at: w.at, until: w.endAt, node: workAct(w) })),
         ]}
-        untimed={[
-          ...todayChores.map((c) => ({ id: c.id, node: choreAct(c) })),
-          ...filUntimed.map((e) => ({ id: e.id, node: eventAct(e) })),
-        ]}
+        untimed={filUntimed.map((e) => ({ id: e.id, node: eventAct(e) }))}
         anytimeLabel={t.board.anytime}
         nowLabel={t.board.now}
         freeLabel={t.board.free}
@@ -1285,14 +1185,12 @@ export function Board() {
       />
     )}
     {(() => {
-      // The flat agenda rows (quiet-day events + chores, plus Projets & Entretien
-      // due today). On a very busy day the grown card used to stretch unbounded;
-      // clamp past ~8 rows behind a quiet « +N de plus » Disclosure (the same
-      // fold the past-items record below uses). The Fil above stays whole — its
-      // time axis IS the busy-day shape, and it dims the past in place.
-      const flat = filActive
-        ? todayHome.map((c) => homeAct(c))
-        : [...liveEvents.map(eventAct), ...todayChores.map((c) => choreAct(c)), ...todayHome.map((c) => homeAct(c))]
+      // The flat agenda rows (a quiet day's events). On a very busy day the grown
+      // card used to stretch unbounded; clamp past ~8 rows behind a quiet « +N de
+      // plus » Disclosure (the same fold the past-items record below uses). The Fil
+      // above stays whole — its time axis IS the busy-day shape, and it dims the past
+      // in place.
+      const flat = filActive ? [] : liveEvents.map(eventAct)
       const MAX_FLAT = 8
       if (flat.length <= MAX_FLAT) return flat
       return (
@@ -1541,35 +1439,27 @@ export function Board() {
       ))}
     </Section>
   ) : null
-  // « À faire » — the LOOSE to-do home (the « Avant de partir » split, mig 0116).
-  // Loose one-off tasks (data.todos, often dictated) sit under the « À faire »
-  // header; the loose « À compléter » todos (global + pinned-to-today, plain text
-  // add + « Pour aujourd'hui ») ride below via the embedded TodoSection. The
-  // departure checklist instances and the template picker moved to the « Avant de
-  // partir » card — instantiation is a departure gesture now.
-  // NFR-CALM: suppressed on a genuinely clear day (dayClear already requires
-  // todayTodos + openTodos empty), so the reassuring all-clear hero isn't
-  // contradicted by an empty card that can only ever offer an add affordance —
-  // a card that can't "stay empty". The ＋ FAB remains the add path on such days.
-  nodes.todos = dayClear ? null : (
+  // « Tâches » — ONE section for what the household has to do today, whichever table a
+  // row lives in (lib/tasks, plan de la tâche unifiée). It holds what is due, what is owed
+  // and what was ticked today; someday tasks live in the Tâches view. Departure checklist
+  // instances are not tasks: the server leaves them out, and they stay on their own card.
+  // NFR-CALM: on a genuinely clear day with nothing ticked either, the card goes, so the
+  // all-clear hero isn't contradicted by an empty frame that can only offer an add.
+  const boardTasks = model.tasks
+  const subjectLookup: SubjectLookup = { ...tasksFrame?.subjects, members: data.members, carnets: carnetsData?.carnets }
+  nodes.todos = dayClear && boardTasks.length === 0 ? null : (
     <Section
       label={t.board.todos}
       icon="check-bold"
       tint="var(--terracotta)"
       help={help}
       helpKey="todos"
-      // Compact: everything THIS card holds, by name — the loose one-off tasks AND
-      // the open loose « À compléter » todos. Checklist-instance rows belong to the
-      // « Avant de partir » card's mini, not this one.
-      compactItems={[...overdueHome.map((c) => c.title), ...todayTodos.map((c) => c.title), ...openLoose.map((td) => td.title)]}
+      // Compact: everything THIS card holds, by name. Struck when ticked, like the row.
+      compactItems={boardTasks.map((c) => ({ label: c.title, dim: c.done === 'ticked' }))}
       // A day that isn't `dayClear` can still hold nothing THIS card owns (its things
       // are elsewhere — meals, events). Say « Rien à faire » rather than leave the tile
-      // blank; the hint only renders when there is not one row to name.
-      compactHint={
-        overdueHome.length + todayTodos.length + openLoose.length > 0
-          ? String(overdueHome.length + todayTodos.length + openLoose.length)
-          : t.board.nothingTodo
-      }
+      // blank; the hint only renders when there is not one row to name. Never a count.
+      compactHint={boardTasks.length > 0 ? undefined : t.board.nothingTodo}
       // The add box lives behind the header ＋, exactly like the « Notes » card: a
       // glance card shouldn't carry a permanently-open text field — it's the one thing
       // on the board you can't scan past. Tap ＋, write, and it closes itself.
@@ -1577,21 +1467,8 @@ export function Board() {
       // mini face like every other write affordance here.
       action={<SectionAdd open={todoAdd.open} onToggle={todoAdd.toggle} label={t.common.add} />}
     >
-      {/* Entretien carry-forward: missed due dates wait here, calmly, until
-          checked — above the day's loose to-dos so an owed thing reads first. */}
-      {overdueHome.map((c) => homeAct(c, false, true))}
-      {todayTodos.map(todoAct)}
-      <TodoSection
-        title={t.todos.title}
-        members={data.members}
-        bento={false}
-        show="loose"
-        // 'none' keeps the list read-only until the ＋ opens the field; 'plain' is the
-        // text-only add (template instantiation lives on the departure card).
-        picker={todoAdd.open ? 'plain' : 'none'}
-        addAutoFocus={todoAdd.autoFocus}
-        onAdded={todoAdd.close}
-      />
+      <TaskList items={boardTasks} members={data.members} lookup={subjectLookup} actions={taskActions} emptyText={t.todos.empty} />
+      {todoAdd.open && <TaskQuickAdd actions={taskActions} today={todayDay} autoFocus={todoAdd.autoFocus} onAdded={todoAdd.close} />}
     </Section>
   )
   // « À venir » — upcoming events/chores (null when none).
@@ -1637,9 +1514,9 @@ export function Board() {
     ),
   )}
   {/* Recurring chores coming up later this week, with their day. */}
-  {upcomingChores.map((c) => choreAct(c, true))}
+  {upcomingChores.map(choreAct)}
   {/* Projets & Entretien coming up this week, with their day. */}
-  {upcomingHome.map((c) => homeAct(c, true))}
+  {upcomingHome.map(homeAct)}
     </Section>
   ) : null
   // « Prochain voyage » — the next upcoming trip; hides itself when none.

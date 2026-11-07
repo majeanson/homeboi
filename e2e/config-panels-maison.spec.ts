@@ -178,7 +178,7 @@ test('renaming a member patches it by id, keeping colour and child flag', async 
 
 test('a season seed posts a dated upkeep with its cadence and lead time', async ({ page }) => {
   await page.goto('/settings?tab=maison&focus=chores')
-  // ChoresTabPanel's own inner row (corvées · projets · entretien) sits ABOVE the
+  // ChoresTabPanel's own inner row (tâches · projets · entretien) sits ABOVE the
   // #op-chores card and swaps it for Entretien's — so go through the panel, and
   // scope the seed to the Entretien card by its title.
   const panel = page.locator('#operator-panel')
@@ -267,7 +267,7 @@ test('deleting a member asks first, says what is lost, and only then DELETEs by 
   const card = page.locator('#op-members')
   await card.getByRole('button', { name: 'Supprimer la personne' }).first().click()
 
-  // This is a CASCADE (their routines go; rendez-vous and corvées detach), so it is
+  // This is a CASCADE (their routines go; rendez-vous and tâches detach), so it is
   // confirm-gated rather than undo-gated. Two halves, and the first is the one that
   // actually protects someone: backing out must send nothing at all.
   const dialog = page.locator('.confirm')

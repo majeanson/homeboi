@@ -139,6 +139,10 @@ const ONLINE_ONLY = [
   // B-11 (bmad/10) — /dev/kit is a dev-only component gallery, never a kiosk
   // surface; accept no offline gallery rather than tax every install.
   //
+  // 120 → 130 KB on 2026-11-07: the task family's specimens took it to 121 KB, with their
+  // bodies already moved to a lazy TaskSpecimens chunk. This chunk is dev-only and never
+  // precached; the eager caps, which do cost a kiosk something, did not move.
+  //
   // 105 → 120 KB later the same day: the fixture switch (« Données : Exemple ») and the
   // first four board-card specimens it unlocks took it to 104 KB, which leaves no room
   // for the next entry. The catalogue is SUPPOSED to keep growing — that is the whole
@@ -153,7 +157,7 @@ const ONLINE_ONLY = [
   // DrawPad) and it landed at 94 KB. Almost all of that is the specimen PROSE,
   // which is the point of the page. Raised deliberately, not to unblock a push —
   // this chunk is lazy, un-precached, and reachable only from Réglages ▸ Système.
-  { re: /^DevKit-/, cap: 120 * KB },
+  { re: /^DevKit-/, cap: 130 * KB },
 ]
 
 // Lazy chunks that ARE required in the precache (unlike ONLINE_ONLY) but are too

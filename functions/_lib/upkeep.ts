@@ -14,9 +14,9 @@
 //                        3 months after the last completion. Until a first
 //                        completion exists, the anchor grid applies.
 //
-// Offline note: a complete replayed from the outbox stamps last_done_at at
-// REPLAY time, so 'done' mode re-anchors late by the offline gap. Accepted —
-// a calm, self-correcting drift (the next completion re-anchors again).
+// Offline note: a complete replayed from the outbox stamps last_done_at at the
+// moment of the tick, not of the replay (`tickedAt`, _lib/ids), so 'done' mode
+// re-anchors on the real day.
 
 import { localDayStart, addLocalDays } from './ids'
 import { parseRecur, expandRange, occurrenceOn, lastOccurrenceOnOrBefore } from './recur'

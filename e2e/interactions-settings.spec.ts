@@ -69,11 +69,11 @@ test.describe('settings forms', () => {
   })
 
   test('add a chore', async ({ page }) => {
-    // Chores stack under Maison ▸ « Tâches de la maison » (routines · corvées ·
+    // Chores stack under Maison ▸ « Routines & listes » (routines · tâches ·
     // à compléter, 2026-09-08) — the chores card is addressed by its #op-chores
     // anchor, since the routines card above it has an .operator__add of its own.
     await page.locator('.operator__tabs').getByRole('tab', { name: 'Maison', exact: true }).click()
-    await page.locator('.operator__subs').getByRole('tab', { name: 'Tâches de la maison', exact: true }).click()
+    await page.locator('.operator__subs').getByRole('tab', { name: 'Routines & listes', exact: true }).click()
     // Adding a chore opens the full-screen /chore/new scene (Réglages rows are
     // edit/remove only).
     await page.locator('#op-chores .operator__add').first().click()

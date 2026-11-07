@@ -1,5 +1,6 @@
 import { FR } from '../../i18n'
 import type { Member } from '../../lib/members'
+import type { TaskItem } from '../../lib/tasks'
 
 // The one-shot /board payload, shared by the Board page and its extracted
 // pieces (views, chrome). The list/members slices are also read by Liste and
@@ -168,6 +169,8 @@ export interface BoardData {
   // standing chores with no schedule). Surfaced on Aujourd'hui; checking one
   // marks it done so it drops off. Shares the ChoreInstance shape.
   todos: ChoreInstance[]
+  // The chores + home rows as tasks (the merged card). To-dos ride /api/todos `items`.
+  tasks?: TaskItem[] | undefined
   // "Projets & Entretien" (home_projects) — DATED home work surfaced like chores:
   // an occurrence today is checkable on Aujourd'hui (homeToday), the next one this
   // week shows on À venir (homeUpcoming). Undated plans stay quiet (Réglages only).

@@ -29,8 +29,7 @@ export const EN: typeof FR = {
     homeProjects: 'Projects & upkeep',
     auto: 'The car',
     routines: 'Routines',
-    chores: 'To do',
-    todos: 'To-dos',
+    tasks: 'Tasks',
     pantry: 'Pantry & reserve',
     events: 'Appointments',
     listItems: 'The list',
@@ -55,7 +54,7 @@ export const EN: typeof FR = {
       meal: 'Meal',
       event: 'Appointment',
       list: 'The list',
-      chore: 'Chore',
+      chore: 'Task',
       recipe: 'Recipe',
       cercle: 'Family',
       note: 'Note',
@@ -85,7 +84,7 @@ export const EN: typeof FR = {
     lists: 'Leaving checklists',
     open: 'Open the departure screen',
     today: 'Today',
-    chores: 'Chores',
+    chores: 'Tasks',
     bring: 'What to bring',
     bringAdd: 'Add to checklist',
     allDay: 'All day',
@@ -248,7 +247,7 @@ export const EN: typeof FR = {
   today: { morning: 'Good morning', afternoon: 'Good afternoon', evening: 'Good evening' },
   home: {
     title: 'The whole household, at a glance.',
-    lead: 'Supper, appointments, the grocery list, the chores. A three-year-old can run their own routine. No points, no notifications, no app-housekeeping.',
+    lead: 'Supper, appointments, the grocery list, the tasks. A three-year-old can run their own routine. No points, no notifications, no app-housekeeping.',
     ctaPair: 'Pair a tablet',
     calmTitle: 'Calm on purpose',
     kidTitle: 'Built for a pre-reader',
@@ -268,7 +267,7 @@ export const EN: typeof FR = {
     featSupper: 'Supper & groceries',
     featSupperBody: 'Plan the week’s meals — the grocery list fills itself. Recipes, flyer deals, step-by-step cook mode.',
     featAgenda: 'Agenda & lists',
-    featAgendaBody: 'Appointments, chores, to-dos. Type in plain words or dictate — “dentist for Léa tuesday 3pm” files on the right day, under the right name.',
+    featAgendaBody: 'Appointments, tasks, tasks. Type in plain words or dictate — “dentist for Léa tuesday 3pm” files on the right day, under the right name.',
     featRoutines: 'Kids’ routines',
     featRoutinesBody: 'Big picture cards, read aloud on the device. A pre-reader runs their own routine — no points, no rewards.',
     featCercle: 'The circle',
@@ -382,7 +381,7 @@ export const EN: typeof FR = {
     voice: 'Speak',
     listening: 'Listening…',
     routed: 'Added:',
-    types: { event: 'Appointment', task: 'Chore', 'list-item': 'List', 'pantry-low': 'Low', meal: 'Supper', leftover: 'Leftovers', upkeep: 'Upkeep', note: 'Note' },
+    types: { event: 'Appointment', task: 'Task', 'list-item': 'List', 'pantry-low': 'Low', meal: 'Supper', leftover: 'Leftovers', upkeep: 'Upkeep', note: 'Note' },
     degraded: 'The AI isn’t answering — pick the type yourself.',
     failed: 'Capture didn’t go through. Your text is kept — try again.',
     queued: 'Offline — it’s kept. It’ll be filed once you’re back online.',
@@ -631,9 +630,9 @@ export const EN: typeof FR = {
     listEmpty: 'List empty. Nothing to buy.',
     // The "Simple" board's fourth zone heading (the fridge notes, inline).
     notes: 'Notes',
-    chores: 'Chores',
-    todos: 'To do',
-    // Umbrella for the bunched leftovers + to-dos board card.
+    chores: 'Tasks',
+    todos: 'Tasks',
+    // Umbrella for the bunched leftovers + tasks board card.
     toFinish: 'To finish',
     upcoming: 'Coming up',
     soon: 'Soon',
@@ -786,7 +785,7 @@ export const EN: typeof FR = {
     tomorrow: 'Tomorrow',
     countdown: 'The countdown',
     toFinish: 'To finish',
-    todos: 'To do',
+    todos: 'Tasks',
     upcoming: 'Coming up',
     cercleNotes: 'Notes',
     voyage: 'Next trip',
@@ -988,8 +987,8 @@ export const EN: typeof FR = {
     // Shape-key labels for the calendar dots (● event · ▪ meal · ◆ chore · ○ note).
     legendEvents: 'Appointments',
     legendMeals: 'Meals',
-    legendChores: 'Chores',
-    legendTodos: 'To complete',
+    legendChores: 'Tasks',
+    legendTodos: 'To tick',
     legendNotes: 'Notes',
     // …and the legend is also the calendar's HIGHLIGHT LENS: tap an entry to light that
     // kind across the whole month and roll it up in the panel below.
@@ -2595,20 +2594,18 @@ export const EN: typeof FR = {
     failed: 'The network didn’t answer.',
     retry: 'Try again',
   },
-  // To complete — standalone check-off lists (todos), distinct from "À faire"
+  // Tasks: the board view and what it names. The winning word lives in lib/glossary.
+  tasks: {
+    subjectKinds: { carnet: 'Notebook', person: 'Person', pet: 'Pet', project: 'Project', trip: 'Trip' },
+  },
+  // To tick — standalone check-off lists (todos), distinct from "À faire"
   // (one-off chores). Global or pinned to a day; reusable departure templates.
   todos: {
-    title: 'To complete',
-    empty: 'Nothing to complete. The little things to remember — a form, a phone call — land here.',
-    // Shorter than it reads in French on purpose, which is the reverse of the usual
-    // problem: at 390px this box is 213px wide inside and « Add something to complete… »
-    // measured 218px, so the ELLIPSIS was cut to two dots — a placeholder that ends in
-    // « complete.. » looks like a typo rather than an invitation. « Ajouter à compléter… »
-    // needs 160px and never had the issue; the EN lens twin is what caught it
-    // (2026-09-14), exactly as it caught the truncated greeting four days earlier.
-    addPlaceholder: 'Add a to-do…',
-    addToday: 'For today',
-    addTodayShort: 'Today',
+    title: 'Tasks',
+    empty: 'Nothing yet. The little things to remember — a form, a phone call — land here.',
+    addPlaceholder: 'Add a task…',
+    dayTitle: 'For this day',
+    addSomeday: 'Someday',
     check: 'Check',
     uncheck: 'Uncheck',
     clearChecked: 'Clear checked',
@@ -2616,7 +2613,7 @@ export const EN: typeof FR = {
     added: (s: string) => `"${s}" added`,
     removed: (s: string) => `"${s}" removed`,
     clearedN: (n: number) => `${n} removed`,
-    scopeGlobal: 'Anytime',
+    scopeGlobal: 'Someday',
     scopeToday: 'Today',
     scopeOverdue: 'Overdue',
     scopeDate: 'A date',
@@ -2682,7 +2679,7 @@ export const EN: typeof FR = {
     aria: 'Details',
     markDone: 'Mark done',
     deleteEventLabel: 'Delete this appointment',
-    deleteChoreLabel: 'Delete this chore',
+    deleteChoreLabel: 'Delete this task',
     postponeWeek: 'Postpone a week',
     postponeCycle: 'Until the next cycle',
     markEaten: 'Mark eaten',

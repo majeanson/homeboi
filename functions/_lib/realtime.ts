@@ -100,17 +100,17 @@ const SILENT_PATHS = new Set<string>([
 const PATH_KEYS: Record<string, string[][]> = {
   // A restore replaces the whole household: every open surface must refetch. The
   // client invalidates everything itself too — this is for the OTHER devices.
-  'takeout/restore': [['board'], ['month'], ['members'], ['cercle'], ['chores'], ['todos'], ['meals'], ['recipes'], ['list-history'], ['ghosts'], ['household'], ['trips'], ['habits'], ['transfers'], ['family-notes'], ['home-projects'], ['carnets'], ['day-notes']],
+  'takeout/restore': [['board'], ['month'], ['members'], ['cercle'], ['chores'], ['todos'], ['tasks'], ['meals'], ['recipes'], ['list-history'], ['ghosts'], ['household'], ['trips'], ['habits'], ['transfers'], ['family-notes'], ['home-projects'], ['carnets'], ['day-notes']],
   // The shared list — drives the board glance, ghost strip, and list history.
   list: [['board'], ['ghosts'], ['list-history']],
   // Chores + the rotation ledger feed the board, the chores tab, and the month.
-  chores: [['chores'], ['board'], ['month']],
+  chores: [['chores'], ['board'], ['month'], ['tasks']],
   'chores-ledger': [['chores'], ['board'], ['month']],
   // Projets & Entretien (home_projects): dated upkeep shows on the board + month,
   // and the Réglages sub-tabs read ['home-projects']. Mirrors the chores keys.
   // …and ['carnets']: « Projets & Entretien » rows render inside a carnet's own
   // sections, so another device sitting on that carnet was stale until its next poll.
-  'home-projects': [['home-projects'], ['board'], ['month'], ['carnets']],
+  'home-projects': [['home-projects'], ['board'], ['month'], ['carnets'], ['tasks']],
   // « Les carnets » (cared-for things): the tree feeds the cercle SubTab + the
   // board's « Les carnets » glance; a care-log entry refreshes the same surfaces.
   carnets: [['carnets'], ['board']],
@@ -215,7 +215,7 @@ const PATH_KEYS: Record<string, string[][]> = {
   // poll re-reads too. Prefix-invalidating ['todos'] also refreshes day-scoped
   // queries (['todos', <day>]). ['month'] too — dated todos show on the calendar.
   // Templates only feed Réglages + the picker chips.
-  todos: [['todos'], ['board'], ['month']],
+  todos: [['todos'], ['board'], ['month'], ['tasks']],
   'todo-templates': [['todo-templates']],
   // « Partager » — a snapshot share create/revoke only changes the sender's « Mes
   // partages » ledger (Réglages ▸ Partage + the ShareModal), so nudge that one cache.

@@ -190,10 +190,10 @@ test.describe('board layout customization', () => {
     // The band it never stored is reconstructed, canonically.
     await expect(page.locator('.board-band > .wg-slot[data-card="heroes"]')).toHaveCount(1)
 
-    // The panel reads the migrated value, not the raw one. Read « À faire »: the other
+    // The panel reads the migrated value, not the raw one. Read « Tâches »: the other
     // seeded id, « moments », is retired and has no row at all any more.
     await openLayout(page)
-    await expect(rowFor(page, 'À faire').locator('.board-layout__toggle')).toContainText('Jamais')
+    await expect(rowFor(page, 'Tâches').locator('.board-layout__toggle')).toContainText('Jamais')
   })
 
   test('« Voir dans l’app » on the layout sub opens the board’s own editor', async ({ page }) => {

@@ -279,7 +279,7 @@ describe('prose breadcrumbs name live Réglages destinations', () => {
     expect(scan('x Réglages ▸ Système ▸ Appareils & accès. y')).toEqual([])
     expect(scan('x Settings ▸ System ▸ Devices & access: y')).toEqual([])
     expect(scan('x dans Réglages ▸ Magasinage : y')).toEqual([])
-    expect(scan('x Réglages ▸ Maison ▸ Tâches de la maison ▸ Entretien montrent y')).toEqual([])
+    expect(scan('x Réglages ▸ Maison ▸ Routines & listes : y')).toEqual([])
     expect(scan('x Réglages ▸ Guide.').length).toBe(1)
   })
 

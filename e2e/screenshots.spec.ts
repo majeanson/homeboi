@@ -155,7 +155,7 @@ test('board respects a custom card layout', async ({ page }) => {
   await page.goto('/board')
   await settle(page, '.hub')
   await page.locator('.board-grid').first().waitFor({ timeout: 8000 })
-  // « À faire » (todos) is hidden → its card is absent from the board.
+  // « Tâches » (todos) is hidden → its card is absent from the board.
   //
   // Assert the SLOT, not `.todo-sec`. That class stopped being the todos card's alone when
   // the « Avant de partir » split (mig 0116) embedded TodoSections elsewhere — the day card
@@ -180,8 +180,8 @@ test('board layout panel toggle hides a card', async ({ page }) => {
   // « Disposition du babillard » is the layout sub-section of « Le babillard ».
   await page.goto('/settings?tab=display&sub=layout')
   await page.locator('.board-layout').first().waitFor({ timeout: 15000 })
-  // Hide « À faire » (the unified to-do card) via its show/hide toggle.
-  const row = page.locator('.board-layout__row', { hasText: 'À faire' }).first()
+  // Hide « Tâches » (the merged card) via its show/hide toggle.
+  const row = page.locator('.board-layout__row', { hasText: 'Tâches' }).first()
   await row.locator('.board-layout__toggle').click()
   // The layout lives in this browser's localStorage: the goto must not outrun the write.
   await expect.poll(() => page.evaluate(() => localStorage.getItem('babillard-card-prefs'))).toContain('todos')

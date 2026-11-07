@@ -137,7 +137,7 @@ export interface BoardCardMeta {
 // door, and « Aujourd'hui » always holds the day. Everything else already
 // collapsed itself with `return null`, which is exactly `'auto'`.
 //
-// « À faire » is `auto` with a subtler emptiness than "no rows": it stays on a busy day
+// « Tâches » is `auto` with a subtler emptiness than "no rows": it stays on a busy day
 // even with an empty list (to offer the add button) and disappears only on a genuinely
 // clear day — so its empty signal is `dayClear`, passed by the lens. Same knob, different
 // question.

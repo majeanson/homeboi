@@ -25,8 +25,8 @@ export const BOARD_HELP = {
     // to it, and the cells can spell themselves out.
     point: 11,
     body: {
-      fr: 'Le mois : la vue d’ensemble. Touche une journée — elle reste à l’écran, et son ⋯ y ajoute un rendez-vous, une corvée, un repas ou une note.',
-      en: 'The month: the big picture. Tap a day — it stays on screen, and its ⋯ adds an event, a chore, a meal or a note to it.',
+      fr: 'Le mois : la vue d’ensemble. Touche une journée — elle reste à l’écran, et son ⋯ y ajoute un rendez-vous, une tâche, un repas ou une note.',
+      en: 'The month: the big picture. Tap a day — it stays on screen, and its ⋯ adds an event, a task, a meal or a note to it.',
     },
   },
   'view-annee': {
@@ -43,8 +43,8 @@ export const BOARD_HELP = {
   todos: {
     card: 'todos',
     body: {
-      fr: '« À faire » : des choses ponctuelles à cocher, puis c’est fini (souvent dictées) — en tout temps ou pour aujourd’hui. Tes listes qui reviennent (sac de piscine, avant de partir…) vivent sur la carte « Avant de partir ».',
-      en: '“À faire”: one-off things you tick off, then they’re done (often dictated) — standing or for today. Your recurring checklists (pool bag, before leaving…) live on the “Before you go” card.',
+      fr: 'Tâches : ce qui est dû aujourd’hui, ce qui attend, et ce que tu as coché. Une tâche cochée reste jusqu’à la fin du jour. Tes listes qui reviennent (sac de piscine…) vivent sur la carte « Avant de partir ».',
+      en: 'Tasks: what is due today, what is waiting, and what you ticked. A ticked task stays until the day ends. Your recurring checklists (pool bag…) live on the “Before you go” card.',
     },
   },
   // « Avant de partir » — the departure card: today's checklists + bring-lists + the
@@ -52,8 +52,8 @@ export const BOARD_HELP = {
   departure: {
     card: 'board',
     body: {
-      fr: '« Avant de partir » : tes listes de départ du jour (à cocher, réutilisables d’un tap), le « à apporter » des activités, et la porte vers l’écran de départ complet — météo, horaire, corvées, l’auto.',
-      en: '“Before you go”: today’s leaving checklists (tickable, reusable in one tap), each activity’s “what to bring”, and the door to the full departure screen — weather, schedule, chores, the car.',
+      fr: '« Avant de partir » : tes listes de départ du jour (à cocher, réutilisables d’un tap), le « à apporter » des activités, et la porte vers l’écran de départ complet — météo, horaire, tâches, l’auto.',
+      en: '“Before you go”: today’s leaving checklists (tickable, reusable in one tap), each activity’s “what to bring”, and the door to the full departure screen — weather, schedule, tasks, the car.',
     },
   },
   // « Le défi du jour » — the day-long family défi on the Habitudes card. Deep-links to
@@ -79,8 +79,8 @@ export const BOARD_HELP = {
   today: {
     card: 'board',
     body: {
-      fr: 'Aujourd’hui : l’agenda du jour — repas, événements, corvées. Les jours chargés, il se lit comme « le fil du jour » : rendez-vous et heures de travail placés dans l’ordre de l’heure, avec un repère « Maintenant ». « Demain » se range en dessous quand il y a quelque chose à préparer.',
-      en: 'Today: the day’s agenda — meals, events, chores. On a busy day it reads as “the day’s timeline”: appointments and work hours placed in time order, with a “Now” marker. “Tomorrow” tucks in below when there’s something to prep.',
+      fr: 'Aujourd’hui : l’agenda du jour — repas, événements. Les jours chargés, il se lit comme « le fil du jour » : rendez-vous et heures de travail placés dans l’ordre de l’heure, avec un repère « Maintenant ». « Demain » se range en dessous quand il y a quelque chose à préparer.',
+      en: 'Today: the day’s agenda — meals, events. On a busy day it reads as “the day’s timeline”: appointments and work hours placed in time order, with a “Now” marker. “Tomorrow” tucks in below when there’s something to prep.',
     },
   },
   toFinish: {

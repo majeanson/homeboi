@@ -9,7 +9,7 @@ import '../styles/cercle.css'
 import '../styles/voyage.css'
 // devkit.css — the gallery's own scaffolding chrome (never leaked into the app).
 import '../styles/devkit.css'
-import { useState, useEffect, type ReactNode } from 'react'
+import { Suspense, lazy, useState, useEffect, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { loadFixtureRoutes, installFixtureFetch } from '../lib/devFixtures'
 import { DayNote } from '../components/board/DayNote'
@@ -101,6 +101,7 @@ import { BoardCard } from '../components/board/BoardCard'
 import { MealPool } from '../components/kitchen/MealPool'
 import { Fil } from '../components/board/Fil'
 import { TodoSection } from '../components/todos/TodoSection'
+
 import { RecurPicker, type RecurValue } from '../components/RecurPicker'
 import { LeadPicker } from '../components/LeadPicker'
 import { BigTiles, Sayable } from '../components/BigTiles'
@@ -979,6 +980,8 @@ function useFixtures(): [boolean, (on: boolean) => void] {
   }, [on, qc])
   return [on, setOn]
 }
+
+const TaskListSpecimen = lazy(() => import('../components/tasks/TaskSpecimens').then((m) => ({ default: m.TaskListSpecimen })))
 
 export function DevKit() {
   const t = useT()
@@ -2804,6 +2807,19 @@ export function DevKit() {
     },
     {
       cat: 'Rangées & actions',
+      name: 'TaskList',
+      file: 'components/tasks/TaskList.tsx',
+      kw: 'tâche task row case cocher rotation sujet subject un jour',
+      render: () => (
+        <Demo label="due · whose turn · ticked">
+          <Suspense fallback={null}>
+            <TaskListSpecimen />
+          </Suspense>
+        </Demo>
+      ),
+    },
+    {
+      cat: 'Rangées & actions',
       name: 'TodoSection',
       file: 'components/todos/TodoSection.tsx',
       kw: 'todo à compléter checklist check-off départ modèle template global journée',
@@ -2812,7 +2828,7 @@ export function DevKit() {
       // chips, "Effacer cochées". The board uses bento; the day page passes false.
       render: () => (
         <Demo label="board glance (global + today)">
-          <TodoSection title="À compléter" members={[{ id: 'm1', display_name: 'Camille', colour: PALETTE[2] }]} />
+          <TodoSection title="Tâches" members={[{ id: 'm1', display_name: 'Camille', colour: PALETTE[2] }]} />
         </Demo>
       ),
     },

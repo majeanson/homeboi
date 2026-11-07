@@ -120,8 +120,8 @@ const BASE_TOURS: Tour[] = [
         },
         title: { fr: 'Bienvenue sur Babillard', en: 'Welcome to Babillard' },
         body: {
-          fr: 'Babillard, c’est toute la maisonnée d’un coup d’œil : l’agenda, le souper, les listes, les corvées et les routines des enfants. Pas de points, pas de notifications. Un tour rapide en 30 secondes, ou la visite complète des six sections — au choix, et tu peux arrêter n’importe quand.',
-          en: 'Babillard is your whole household at a glance: the agenda, supper, lists, chores and the kids’ routines. No points, no notifications. A quick 30-second tour, or the full walk through all six sections — your call, and you can stop anytime.',
+          fr: 'Babillard, c’est toute la maisonnée d’un coup d’œil : l’agenda, le souper, les listes, les tâches et les routines des enfants. Pas de points, pas de notifications. Un tour rapide en 30 secondes, ou la visite complète des six sections — au choix, et tu peux arrêter n’importe quand.',
+          en: 'Babillard is your whole household at a glance: the agenda, supper, lists, tasks and the kids’ routines. No points, no notifications. A quick 30-second tour, or the full walk through all six sections — your call, and you can stop anytime.',
         },
       },
       {

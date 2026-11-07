@@ -142,7 +142,7 @@ test('scene-add-chore', async ({ page, app }) => {
   await page.locator('.add-fab').click()
   // Target « Corvées » by label (the tile order shifted as ride/activity tiles were
   // added), then its first sub-choice (Corvée → /chore/new scene).
-  await page.getByRole('dialog').locator('.cat-pick', { hasText: 'Corvées' }).click()
+  await page.getByRole('dialog').locator('.cat-pick', { hasText: 'Tâche planifiée' }).click()
   await page.locator('.addsheet__chorepick .cat-pick').first().click()
   await page.locator('.scene .operator__chore-form').waitFor({ state: 'visible' })
   await shoot(page, 'scene-add-chore-phone', false)

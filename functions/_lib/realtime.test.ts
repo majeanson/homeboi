@@ -12,7 +12,7 @@ describe('keysForPath', () => {
   })
 
   it('maps chores and the chores ledger to chores + board + month', () => {
-    expect(keysForPath('chores')).toEqual([['chores'], ['board'], ['month']])
+    expect(keysForPath('chores')).toEqual([['chores'], ['board'], ['month'], ['tasks']])
     expect(keysForPath('chores-ledger')).toEqual([['chores'], ['board'], ['month']])
   })
 
@@ -84,7 +84,7 @@ describe('keysForPath', () => {
   })
 
   it('maps À compléter todos to todos + board + month, templates to their own key', () => {
-    expect(keysForPath('todos')).toEqual([['todos'], ['board'], ['month']])
+    expect(keysForPath('todos')).toEqual([['todos'], ['board'], ['month'], ['tasks']])
     expect(keysForPath('todo-templates')).toEqual([['todo-templates']])
   })
 
@@ -215,7 +215,7 @@ describe('keysForPath', () => {
   it('normalizes leading slash, api/ prefix, query string and trailing slash', () => {
     expect(keysForPath('/api/list')).toEqual([['board'], ['ghosts'], ['list-history']])
     expect(keysForPath('api/meals?date=123')).toEqual([['meals'], ['board'], ['a-regler'], ['meal-history'], ['month']])
-    expect(keysForPath('chores/')).toEqual([['chores'], ['board'], ['month']])
+    expect(keysForPath('chores/')).toEqual([['chores'], ['board'], ['month'], ['tasks']])
     // A full URL pathname (what route.ts passes) works too.
     expect(keysForPath('/api/events')).toEqual([['events'], ['board'], ['month'], ['a-regler'], ['car']])
   })

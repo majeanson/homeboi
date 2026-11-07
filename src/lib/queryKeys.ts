@@ -34,6 +34,9 @@ export const LOVES_KEY = ['recipe-loves']
 // invalidating TODOS_KEY refreshes both. Templates feed Réglages + the picker.
 export const TODOS_KEY = ['todos']
 export const TODO_TEMPLATES_KEY = ['todo-templates']
+// /api/tasks — every task as one list, for the « Tâches » board view and a subject's page. A
+// cold read, never polled: realtime and the writes' affectedKeys keep it fresh.
+export const TASKS_KEY = ['tasks']
 // « Les remarques » (0136) — what the household notices about the app. Shared, because
 // three surfaces read it: the Réglages section, the board card, and the composer that
 // invalidates after filing one from anywhere (the « ? » chip, a crash screen).

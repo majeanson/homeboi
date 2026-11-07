@@ -1,6 +1,7 @@
 import { badRequest, notFound, ok, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
-import { newId, nowSec } from '../_lib/ids'
+import { newId, nowSec, tickedAt } from '../_lib/ids'
+import { clearStatements } from '../_lib/taskItem'
 import { hexColor } from '../_lib/validate'
 import { normalizeRecur } from '../_lib/recur'
 import { subjectBinds, validSubject } from '../_lib/subject'
@@ -107,7 +108,18 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     leadSeconds?: number | null
     announceEvening?: boolean
     subject?: unknown
+    doneAt?: unknown
+    undo?: boolean
+    clearChecked?: boolean
+    ids?: unknown
   }>(ctx.request)
+  // « Vider les cochés »: these rows are history, so the bulk gesture stamps them out of the
+  // day and deletes nothing (_lib/taskItem).
+  if (body?.clearChecked) {
+    const ids = Array.isArray(body.ids) ? body.ids.filter(isString) : []
+    if (ids.length > 0) await ctx.env.DB.batch(clearStatements(ctx.env.DB, 'tasks', actor.householdId, ids, nowSec()))
+    return ok({ ok: true })
+  }
   if (!body?.id) return badRequest('id requis.')
 
   // Editing the chore — a distinct shape from marking done: any of title /
@@ -171,11 +183,23 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   }
 
   const chore = await ctx.env.DB.prepare(
-    'SELECT rotation_json, current_idx FROM tasks WHERE id = ? AND household_id = ?',
+    'SELECT rotation_json, current_idx, last_done_at FROM tasks WHERE id = ? AND household_id = ?',
   )
     .bind(body.id, actor.householdId)
-    .first<{ rotation_json: string; current_idx: number }>()
+    .first<{ rotation_json: string; current_idx: number; last_done_at: number | null }>()
   if (!chore) return notFound('Corvée introuvable.')
+
+  // Untick a one-off: the row's own check is its undo, so a tick has to be takeable back.
+  // It puts back exactly what the tick moved: the stamp, the turn, and the log line.
+  if (body.undo) {
+    const rotation = parseRotation(chore.rotation_json)
+    const back = rotation.length ? (chore.current_idx - 1 + rotation.length) % rotation.length : 0
+    await ctx.env.DB.batch([
+      ctx.env.DB.prepare('DELETE FROM task_participants WHERE task_id = ? AND contributed_at = ?').bind(body.id, chore.last_done_at),
+      ctx.env.DB.prepare('UPDATE tasks SET last_done_at = NULL, last_done_by = NULL, cleared_at = NULL, current_idx = ? WHERE id = ? AND household_id = ?').bind(back, body.id, actor.householdId),
+    ])
+    return ok({ ok: true })
+  }
 
   const rotation = parseRotation(chore.rotation_json)
   const turnMember = turnOf(rotation, chore.current_idx)
@@ -184,7 +208,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   const complete = body.complete !== false // default: a parent completing
   const role = body.role === 'child' ? 'child' : 'parent'
   const memberId = body.memberId ?? turnMember
-  const ts = nowSec()
+  const ts = tickedAt(body.doneAt, nowSec())
 
   const writes = [
     ctx.env.DB.prepare(

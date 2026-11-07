@@ -12,7 +12,7 @@ import { live } from '../../lib/query'
 import { isGuest } from '../../lib/device'
 import { useCreateWithUndo } from '../../lib/undoCreate'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
-import { TODOS_KEY, TODO_TEMPLATES_KEY, MONTH_KEY } from '../../lib/queryKeys'
+import { TODOS_KEY, TODO_TEMPLATES_KEY, MONTH_KEY, TASKS_KEY } from '../../lib/queryKeys'
 import { todayLocalDay } from '../../lib/localDay'
 import {
   type Todo,
@@ -204,7 +204,7 @@ export function TodoSection({
       section: asDeparture ? t.departure.adhocSection : null,
       source_template_id: asDeparture ? DEPARTURE_ADHOC : null,
     }
-    const insert = (d: TodosData | undefined): TodosData => (d ? { todos: [...d.todos, tmpRow] } : { todos: [tmpRow] })
+    const insert = (d: TodosData | undefined): TodosData => (d ? { ...d, todos: [...d.todos, tmpRow] } : { todos: [tmpRow] })
     await createWithUndo({
       endpoint: 'todos',
       body: asDeparture
@@ -237,11 +237,18 @@ export function TodoSection({
     const next = todo.done_at == null ? Math.floor(Date.now() / 1000) : null
     void write('todos', {
       method: 'PATCH',
-      body: { id: todo.id, done: next != null },
-      affectedKeys: [TODOS_KEY, MONTH_KEY],
+      body: { id: todo.id, done: next != null, ...(next != null ? { doneAt: next } : {}) },
+      affectedKeys: [TODOS_KEY, TASKS_KEY, MONTH_KEY],
       optimistic: (qc) =>
         qc.setQueriesData<TodosData>({ queryKey: TODOS_KEY }, (d) =>
-          d ? { todos: d.todos.map((x) => (x.id === todo.id ? { ...x, done_at: next } : x)) } : d,
+          d
+            ? {
+                ...d,
+                todos: d.todos.map((x) => (x.id === todo.id ? { ...x, done_at: next } : x)),
+                // The same row as a task, or the board card would disagree until a refetch.
+                ...(d.items ? { items: d.items.map((x) => (x.id === todo.id ? { ...x, done: next != null ? ('ticked' as const) : ('open' as const), doneAt: next } : x)) } : {}),
+              }
+            : d,
         ),
     }).catch(writeFailed)
   }
@@ -261,7 +268,13 @@ export function TodoSection({
       // appears in (board glance + any open day cache) so both surfaces agree at once.
       optimistic: (qc) =>
         qc.setQueriesData<TodosData>({ queryKey: TODOS_KEY }, (d) =>
-          d ? { todos: d.todos.map((x) => (x.id === todo.id ? { ...x, title: value } : x)) } : d,
+          d
+            ? {
+                ...d,
+                todos: d.todos.map((x) => (x.id === todo.id ? { ...x, title: value } : x)),
+                ...(d.items ? { items: d.items.map((x) => (x.id === todo.id ? { ...x, title: value } : x)) } : {}),
+              }
+            : d,
         ),
     }).catch(writeFailed)
     setEditId(null)
@@ -478,23 +491,6 @@ export function TodoSection({
           submitLabel={t.common.add}
           submitLeadingIcon="plus-bold"
           autoFocus={addAutoFocus}
-          // Board glance only (scope null = global ∪ today): a second button pins the
-          // add to today instead of « en tout temps », straight from this standing card.
-          // Full label « Pour aujourd’hui » when the card is wide enough; a CSS container
-          // query (todos.css) swaps to the short « Pour ajd » on a narrow card.
-          // NOT on the checklists surface (the departure card): everything there is for
-          // today by definition, so the global-vs-today choice is redundant noise.
-          {...(scope === null && show !== 'checklists'
-            ? {
-                secondaryLabel: (
-                  <>
-                    <span className="todo-addtoday__full">{t.todos.addToday}</span>
-                    <span className="todo-addtoday__short">{t.todos.addTodayShort}</span>
-                  </>
-                ),
-                onSecondary: (v: string) => void add(v, todayLocalDay()),
-              }
-            : {})}
           placeholder={t.todos.addPlaceholder}
           ariaLabel={t.todos.addPlaceholder}
           limit={TODO_TITLE_MAX}

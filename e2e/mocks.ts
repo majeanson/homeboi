@@ -545,21 +545,21 @@ export const CAR = {
   ],
 }
 
-// « À compléter » (#17) — the real todos list, served at /api/todos (board glance =
-// global + today). Two standing LOOSE items (« À faire » card) plus an instantiated
-// « Avant de partir » checklist pinned to TODAY (source_template_id set, mig 0116 —
-// the departure card + scene render these; the « À faire » card must NOT). Same
+// The todos list, served at /api/todos (board glance = global + today). Two LOOSE items
+// (`items`: the « Tâches » card) plus an instantiated « Avant de partir » checklist pinned
+// to TODAY (source_template_id set, mig 0116 — the departure card + scene render these; the
+// « Tâches » card must NOT, and they have no `items` row). Same
 // day helper as every other mock anchor (yearDay) so the fixture and the app agree
 // on what "today" means whatever timezone the runner sits in.
 const TODAY_DAY = localDayStart(new Date())
 const TODOS = {
-  // The two standing rows are someday tasks now: they live in the Tâches view.
+  // One loose row pinned to today (on the bento card), one someday (in the Tâches view only).
   items: [
-    somedayTask({ source: 'todo', id: 'td1', title: 'Clés + téléphone + portefeuille' }),
+    boardTask({ source: 'todo', id: 'td1', title: 'Clés + téléphone + portefeuille' }),
     somedayTask({ source: 'todo', id: 'td2', title: 'Boîte à lunch des enfants', who_id: 'm1' }),
   ],
   todos: [
-    { id: 'td1', title: 'Clés + téléphone + portefeuille', day: null, member_id: null, done_at: null, position: 0, section: null, source_template_id: null, created_at: BASE, subject_kind: null, subject_id: null },
+    { id: 'td1', title: 'Clés + téléphone + portefeuille', day: TODAY_DAY, member_id: null, done_at: null, position: 0, section: null, source_template_id: null, created_at: BASE, subject_kind: null, subject_id: null },
     { id: 'td2', title: 'Boîte à lunch des enfants', day: null, member_id: 'm1', done_at: null, position: 1, section: null, source_template_id: null, created_at: BASE, subject_kind: null, subject_id: null },
     { id: 'td3', title: 'Vérifier les portes', day: TODAY_DAY, member_id: null, done_at: null, position: 0, section: 'Avant de partir', source_template_id: 'tpl1', created_at: BASE, subject_kind: null, subject_id: null },
     { id: 'td4', title: 'Bouteille d’eau', day: TODAY_DAY, member_id: null, done_at: null, position: 1, section: 'Avant de partir', source_template_id: 'tpl1', created_at: BASE, subject_kind: null, subject_id: null },
@@ -1002,7 +1002,7 @@ export const ROUTES: Partial<Wire> = {
     tasks: [
       boardTask({ source: 'chore', id: 'c1', title: 'Sortir les poubelles', color: '#88A36F', recurring: true, who_id: 'm3', team: ['m3', 'm4'], recurJson: JSON.stringify({ freq: 'weekly', interval: 1, weekdays: [] }) }),
       boardTask({ source: 'home', id: 'hp1', title: 'Nettoyer les gouttières', kind: 'upkeep', recurring: true, subject: { kind: 'carnet', id: 'car1' }, dueToday: false, overdueSince: BASE - 10 * DAY, day: BASE + 90 * DAY }),
-      somedayTask({ source: 'todo', id: 'td1', title: 'Clés + téléphone + portefeuille' }),
+      boardTask({ source: 'todo', id: 'td1', title: 'Clés + téléphone + portefeuille' }),
       somedayTask({ source: 'todo', id: 'td2', title: 'Boîte à lunch des enfants', who_id: 'm1' }),
       somedayTask({ source: 'chore', id: 'c9', title: 'Réparer la clôture', subject: { kind: 'project', id: 'hp9' } }),
     ],

@@ -47,7 +47,7 @@ for (const d of DEVICES) {
   // "sometimes" stayed buried. viewportVars now re-pins across the settle window. ---
   test(`kb ${d.name}: board todo add`, async ({ page }) => {
     await open(page, '/board')
-    const add = page.getByPlaceholder('Ajouter à compléter…').first()
+    const add = page.getByPlaceholder('Ajouter une tâche…').first()
     await add.scrollIntoViewIfNeeded()
     await add.focus()
     await openKeyboard(page, d.kb)
@@ -77,7 +77,7 @@ for (const d of DEVICES) {
   // pull ANY stranded field back above the keyboard on the next keystroke. ---
   test(`kb ${d.name}: typing pulls a stranded field back above the keyboard`, async ({ page }) => {
     await open(page, '/board')
-    const add = page.getByPlaceholder('Ajouter à compléter…').first()
+    const add = page.getByPlaceholder('Ajouter une tâche…').first()
     await add.scrollIntoViewIfNeeded()
     await add.focus()
     await openKeyboard(page, d.kb)
@@ -220,7 +220,7 @@ for (const d of DEVICES) {
   // its field to a navigation.
   test(`kb ${d.name}: recipe sheet`, async ({ page }) => {
     await open(page, '/board')
-    const add = page.getByPlaceholder('Ajouter à compléter…').first()
+    const add = page.getByPlaceholder('Ajouter une tâche…').first()
     await add.scrollIntoViewIfNeeded()
     await add.focus()
     await openKeyboard(page, d.kb)
@@ -482,7 +482,7 @@ test('a keyboard that vanishes with the route leaves no dead band on the next sc
   const open = boot({ w: 390, h: 844 })
   await open(page, '/board')
 
-  const add = page.getByPlaceholder('Ajouter à compléter…').first()
+  const add = page.getByPlaceholder('Ajouter une tâche…').first()
   await add.scrollIntoViewIfNeeded()
   await add.focus()
   await openKeyboard(page, 291)
@@ -504,7 +504,7 @@ test('a keyboard that is genuinely still up keeps its fit across a navigation', 
   const open = boot({ w: 390, h: 844 })
   await open(page, '/board')
 
-  const add = page.getByPlaceholder('Ajouter à compléter…').first()
+  const add = page.getByPlaceholder('Ajouter une tâche…').first()
   await add.scrollIntoViewIfNeeded()
   await add.focus()
   await openKeyboard(page, 291)
@@ -526,7 +526,7 @@ test('a keyboard that vanishes with its sheet is cleared by the next tap', async
   const open = boot({ w: 390, h: 844 })
   await open(page, '/board')
 
-  const add = page.getByPlaceholder('Ajouter à compléter…').first()
+  const add = page.getByPlaceholder('Ajouter une tâche…').first()
   await add.scrollIntoViewIfNeeded()
   await add.focus()
   await openKeyboard(page, 291)
@@ -561,7 +561,7 @@ test('a keyboard that vanishes with nothing touched clears itself within a tick'
   const open = boot({ w: 390, h: 844 })
   await open(page, '/board')
 
-  const add = page.getByPlaceholder('Ajouter à compléter…').first()
+  const add = page.getByPlaceholder('Ajouter une tâche…').first()
   await add.scrollIntoViewIfNeeded()
   await add.focus()
   await openKeyboard(page, 291)

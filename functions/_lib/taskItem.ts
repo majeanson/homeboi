@@ -206,3 +206,14 @@ export function todoTask(td: TodoTaskRow, today: number): TaskItem | null {
 }
 
 export const present = (x: TaskItem | null): x is TaskItem => x != null
+
+// « Vider les cochés » on the two tables whose rows are history: it stamps, it does not
+// delete. D1 caps bound variables, so the ids go in slices (the todos clear does the same).
+export function clearStatements(db: D1Database, table: 'tasks' | 'home_projects', householdId: string, ids: readonly string[], ts: number): D1PreparedStatement[] {
+  const out: D1PreparedStatement[] = []
+  for (let i = 0; i < ids.length; i += 50) {
+    const slice = ids.slice(i, i + 50)
+    out.push(db.prepare(`UPDATE ${table} SET cleared_at = ? WHERE household_id = ? AND id IN (${slice.map(() => '?').join(',')})`).bind(ts, householdId, ...slice))
+  }
+  return out
+}

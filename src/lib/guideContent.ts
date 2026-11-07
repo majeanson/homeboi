@@ -307,8 +307,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'C’est quoi, Babillard', en: 'What Babillard is' },
         detail: {
-          fr: 'Un centre de commande familial pour une tablette laissée au mur : l’agenda du jour, le souper de ce soir, les listes, les [[mot:corvee|corvées]] et les routines des enfants.',
-          en: 'A household command-centre for a tablet left on the wall: today’s agenda, tonight’s supper, the lists, the chores and the kids’ routines.',
+          fr: 'Un centre de commande familial pour une tablette laissée au mur : l’agenda du jour, le souper de ce soir, les listes, les [[mot:corvee|tâches]] et les routines des enfants.',
+          en: 'A household command-centre for a tablet left on the wall: today’s agenda, tonight’s supper, the lists, the tasks and the kids’ routines.',
         },
         why: {
           fr: 'Calme par choix : pas de points ni de notifications, rien à entretenir pour le plaisir.',
@@ -378,8 +378,8 @@ export const GUIDE: GuideEntry[] = [
     settings: '/settings?tab=board',
     title: { fr: 'Le babillard', en: 'The board' },
     what: {
-      fr: 'L’écran coup d’œil : l’heure, la journée, le souper et les corvées.',
-      en: 'The glance screen: the time, the day, supper and the chores.',
+      fr: 'L’écran coup d’œil : l’heure, la journée, le souper et les tâches.',
+      en: 'The glance screen: the time, the day, supper and the tasks.',
     },
     points: [
       // ⚠ Help registries + GUIDE_CARD_ALIAS deep-link into this card BY POINT
@@ -389,8 +389,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Le bouton ＋ ici', en: 'The ＋ button here' },
         detail: {
-          fr: 'Le ＋ (en bas) ajoute : une note, un rendez-vous, une corvée, un à-faire, un [[mot:mot|mot]] à laisser, un voyage, ou planifier la journée.',
-          en: 'The ＋ (bottom) adds: a note, an appointment, a chore, a to-do, a note to leave, a trip, or plan the day.',
+          fr: 'Le ＋ (en bas) ajoute : une note, un rendez-vous, une tâche, un [[mot:mot|mot]] à laisser, un voyage, ou planifier la journée.',
+          en: 'The ＋ (bottom) adds: a note, an appointment, a task, a note to leave, a trip, or plan the day.',
         },
         route: '/board?plus=1',
       },
@@ -438,8 +438,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Avant de partir', en: 'Before you go' },
         detail: {
-          fr: 'Sa propre carte sur le babillard : tes listes de départ du jour (à cocher, réutilisables d’un geste), le « à apporter » des activités, et la porte vers l’écran de départ complet — météo, horaire, corvées, l’auto. Une liste de départ vit UN jour, puis s’efface d’elle-même.',
-          en: 'Its own board card: today’s leaving checklists (tickable, reusable in one gesture), each activity’s “what to bring”, and the door to the full departure screen — weather, schedule, chores, the car. A leaving checklist lives ONE day, then clears itself.',
+          fr: 'Sa propre carte sur le babillard : tes listes de départ du jour (à cocher, réutilisables d’un geste), le « à apporter » des activités, et la porte vers l’écran de départ complet — météo, horaire, tâches, l’auto. Une liste de départ vit UN jour, puis s’efface d’elle-même.',
+          en: 'Its own board card: today’s leaving checklists (tickable, reusable in one gesture), each activity’s “what to bring”, and the door to the full departure screen — weather, schedule, tasks, the car. A leaving checklist lives ONE day, then clears itself.',
         },
         route: '/board/departure',
       },
@@ -476,8 +476,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Le mois, jour par jour', en: 'The month, day by day' },
         detail: {
-          fr: 'Dans la vue Mois, touche une date : elle s’allume et le détail de la journée s’ouvre juste en dessous, avec un ⋯ qui ajoute un rendez-vous, une corvée, un repas ou la note du jour à CETTE date. La légende sous le calendrier est un projecteur : touche « Rendez-vous » (ou Repas, Corvées…) et toutes les journées qui en portent s’allument d’un coup.',
-          en: 'In the Month view, tap a date: it lights up and the day’s detail opens right below, with a ⋯ that adds an event, a chore, a meal or the day note to THAT date. The legend under the calendar is a spotlight: tap “Events” (or Meals, Chores…) and every day carrying one lights up at once.',
+          fr: 'Dans la vue Mois, touche une date : elle s’allume et le détail de la journée s’ouvre juste en dessous, avec un ⋯ qui ajoute un rendez-vous, une tâche, un repas ou la note du jour à CETTE date. La légende sous le calendrier est un projecteur : touche « Rendez-vous » (ou Repas, Tâches…) et toutes les journées qui en portent s’allument d’un coup.',
+          en: 'In the Month view, tap a date: it lights up and the day’s detail opens right below, with a ⋯ that adds an event, a task, a meal or the day note to THAT date. The legend under the calendar is a spotlight: tap “Events” (or Meals, Tasks…) and every day carrying one lights up at once.',
         },
       },
     ],
@@ -522,8 +522,8 @@ export const GUIDE: GuideEntry[] = [
           en: 'The moment a food is almost gone, flag it “running low”: it jumps straight onto the grocery list. It’s just a flag, not an inventory to keep current.',
         },
         why: {
-          fr: 'Pour ne pas l’oublier à la prochaine commande — et parce qu’« un drapeau, pas un inventaire » garde la cuisine calme, sans corvée de comptage.',
-          en: 'So you don’t forget it next shop — and because “a flag, not an inventory” keeps the kitchen calm, with no counting chore.',
+          fr: 'Pour ne pas l’oublier à la prochaine commande — et parce qu’« un drapeau, pas un inventaire » garde la cuisine calme, sans rien à compter.',
+          en: 'So you don’t forget it next shop — and because “a flag, not an inventory” keeps the kitchen calm, with nothing to count.',
         },
       },
       {
@@ -665,8 +665,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Créée dans Réglages, jouée partout', en: 'Built in Settings, played anywhere' },
         detail: {
-          fr: 'Les étapes et les images se montent dans Réglages ▸ Maison ▸ Tâches de la maison. Touche ▶ « Faire » pour lancer la routine depuis ton téléphone et la faire avec l’enfant, minuteries comprises.',
-          en: 'Steps and pictures are built in Settings ▸ Home ▸ Household tasks. Tap ▶ “Do” to start the routine from your phone and do it with the child, timers included.',
+          fr: 'Les étapes et les images se montent dans Réglages ▸ Maison ▸ Routines & listes. Touche ▶ « Faire » pour lancer la routine depuis ton téléphone et la faire avec l’enfant, minuteries comprises.',
+          en: 'Steps and pictures are built in Settings ▸ Home ▸ Routines & lists. Tap ▶ “Do” to start the routine from your phone and do it with the child, timers included.',
         },
         route: '/settings?tab=maison&sub=routines&focus=routines',
       },
@@ -1034,8 +1034,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Les réglages de la maison', en: 'The home’s settings' },
         detail: {
-          fr: 'Toutes les sous-sections se règlent au même endroit — corvées, membres, l’auto, les horaires.',
-          en: 'Every sub-section is set up in one place — chores, members, the car, the schedules.',
+          fr: 'Toutes les sous-sections se règlent au même endroit — tâches, membres, l’auto, les horaires.',
+          en: 'Every sub-section is set up in one place — tasks, members, the car, the schedules.',
         },
         route: '/settings?tab=maison',
       },
@@ -1048,8 +1048,8 @@ export const GUIDE: GuideEntry[] = [
     route: '/settings',
     title: { fr: 'Réglages', en: 'Settings' },
     what: {
-      fr: 'Le poste du parent : les personnes, les appareils, les corvées, l’affichage.',
-      en: 'The parent’s station: people, devices, chores, display.',
+      fr: 'Le poste du parent : les personnes, les appareils, les tâches, l’affichage.',
+      en: 'The parent’s station: people, devices, tasks, display.',
     },
     points: [
       // ⚠ GUIDE_CARD_ALIAS ('offline' → base 4) indexes into this card — append only.
@@ -1070,10 +1070,10 @@ export const GUIDE: GuideEntry[] = [
         route: '/settings?tab=settings&sub=tablets&focus=devices',
       },
       {
-        label: { fr: 'Corvées & routines', en: 'Chores & routines' },
+        label: { fr: 'Tâches & routines', en: 'Tasks & routines' },
         detail: {
-          fr: 'Monte la rotation des corvées et les routines d’enfants une fois ; ça tourne ensuite tout seul.',
-          en: 'Build the chore rotation and the kid routines once; they then run on their own.',
+          fr: 'Monte la rotation des tâches et les routines d’enfants une fois ; ça tourne ensuite tout seul.',
+          en: 'Build the task rotation and the kid routines once; they then run on their own.',
         },
         route: '/settings?tab=maison&sub=routines&focus=chores',
       },
@@ -1182,8 +1182,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Des raccourcis selon la section', en: 'Shortcuts per section' },
         detail: {
-          fr: 'Sur le babillard, le ＋ offre aussi « Planifier aujourd’hui » et « Planifier demain » — toute la journée d’un coup : repas, rendez-vous, corvées, note.',
-          en: 'On the board, the ＋ also offers “Plan today” and “Plan tomorrow” — the whole day at once: meals, events, chores, note.',
+          fr: 'Sur le babillard, le ＋ offre aussi « Planifier aujourd’hui » et « Planifier demain » — toute la journée d’un coup : repas, rendez-vous, tâches, note.',
+          en: 'On the board, the ＋ also offers “Plan today” and “Plan tomorrow” — the whole day at once: meals, events, tasks, note.',
         },
       },
       {
@@ -1355,33 +1355,33 @@ export const GUIDE: GuideEntry[] = [
     id: 'todos',
     icon: 'check-bold',
     group: 'concepts',
-    title: { fr: 'À faire & à compléter', en: 'To do & to complete' },
+    title: { fr: 'Les tâches', en: 'Tasks' },
     what: {
-      fr: 'Les p’tites tâches du jour — « appeler le dentiste » — à cocher.',
-      en: 'The day’s small tasks — “call the dentist” — to check off.',
+      fr: 'Un titre et une case à cocher. Tout le reste est en option.',
+      en: 'A title and a checkbox. Everything else is optional.',
     },
     points: [
       {
         label: { fr: 'Tâche ou liste de départ ?', en: 'Task, or leaving list?' },
         detail: {
-          fr: '« À faire » : une chose ponctuelle — tu la dictes, tu coches, c’est fini. Une liste de départ (sac de piscine, avant de partir) se prépare une fois et se réutilise d’un tap, sur la carte « [[card:board|Avant de partir]] ».',
-          en: '“À faire”: a one-off thing — dictate it, tick it, done. A leaving checklist (pool bag, before leaving) is set up once and reused in one tap, on the “[[card:board|Before you go]]” card.',
+          fr: 'Cochée, une tâche reste barrée jusqu’à la fin du jour, puis s’efface ; celle qui revient passe à sa prochaine date. Une liste de départ se prépare une fois et se réutilise d’un tap, sur la carte « [[card:board|Avant de partir]] ».',
+          en: 'Ticked, a task stays struck through until the day ends, then clears; one that comes back moves to its next date. A leaving checklist is set up once and reused in one tap, on the “[[card:board|Before you go]]” card.',
         },
         why: { fr: 'Une chose vite faite et une liste qu’on garde, ce n’est pas pareil — chacune a sa carte.', en: 'A quick one-off and a list you keep aren’t the same — each has its own card.' },
       },
       {
-        label: { fr: 'Globale ou pour une journée', en: 'Global or for one day' },
+        label: { fr: 'Un jour, ou une date', en: 'Someday, or a date' },
         detail: {
-          fr: 'Depuis le ＋ du babillard, choisis « En tout temps » (ça reste jusqu’à effacé) ou « Aujourd’hui ». Sur la page d’une journée (dans La cuisine), tu l’ajoutes directement à cette date.',
-          en: 'From the board ＋, pick “Anytime” (it stays until cleared) or “Today”. On a day’s page (in the kitchen), you add it straight onto that date.',
+          fr: 'La carte du babillard montre ce qui est dû ; une tâche pour « Un jour » attend dans la vue [[card:board|Tâches]]. Sur la page d’une journée (dans La cuisine), tu l’ajoutes directement à cette date.',
+          en: 'The board card shows what is due; a “Someday” task waits in the [[card:board|Tasks]] view. On a day’s page (in the kitchen), you add it straight onto that date.',
         },
         why: { fr: 'Ce qui traîne dans la tête se pose quelque part de calme.', en: 'What’s rattling in your head lands somewhere calm.' },
       },
       {
         label: { fr: 'Listes de départ', en: 'Departure lists' },
         detail: {
-          fr: 'Prépare des modèles réutilisables dans Réglages ▸ Maison ▸ Tâches de la maison (« Avant de partir », « Chez grand-papa ») : d’un geste, tout le modèle s’ajoute en cochables pour la journée, et s’efface de lui-même le lendemain. Ils vivent sur leur propre carte « [[card:board|Avant de partir]] » — coche ici, c’est coché partout.',
-          en: 'Prep reusable templates in Settings ▸ Home ▸ Household tasks (“Before leaving”, “At grandpa’s”): one tap drops the whole list in as check-offs for the day, and it clears itself the next day. They live on their own “[[card:board|Before you go]]” card — tick it there, it’s ticked everywhere.',
+          fr: 'Prépare des modèles réutilisables dans Réglages ▸ Maison ▸ Routines & listes (« Avant de partir », « Chez grand-papa ») : d’un geste, tout le modèle s’ajoute en cochables pour la journée, et s’efface de lui-même le lendemain. Ils vivent sur leur propre carte « [[card:board|Avant de partir]] » — coche ici, c’est coché partout.',
+          en: 'Prep reusable templates in Settings ▸ Home ▸ Routines & lists (“Before leaving”, “At grandpa’s”): one tap drops the whole list in as check-offs for the day, and it clears itself the next day. They live on their own “[[card:board|Before you go]]” card — tick it there, it’s ticked everywhere.',
         },
         why: { fr: 'On y pense une fois, pas chaque fois qu’on court.', en: 'You think it through once, not every time you’re rushing out.' },
       },
@@ -1401,7 +1401,7 @@ export const GUIDE: GuideEntry[] = [
         },
       },
     ],
-    // The card lives on the board; its "À compléter" templates are the Régler side.
+    // The card lives on the board; its departure templates are the Régler side.
     route: '/board',
     settings: '/settings?tab=maison&sub=routines&focus=todoTemplates',
   },
@@ -1511,8 +1511,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Cette saison', en: 'This season' },
         detail: {
-          fr: 'L’entretien qui revient se regroupe par saison : une carte « Cet hiver / Ce printemps… » sur le babillard et un aperçu dans Réglages ▸ Maison ▸ Tâches de la maison ▸ Entretien montrent ce qui s’en vient avant que la saison tourne — calfeutrer les fenêtres, vider les gouttières, changer le filtre.',
-          en: 'Recurring upkeep groups by season: a “This winter / This spring…” card on the board and a glance in Settings ▸ Home ▸ Household tasks ▸ Upkeep show what’s coming before the season turns — caulk the windows, clear the gutters, change the filter.',
+          fr: 'L’entretien qui revient se regroupe par saison : une carte « Cet hiver / Ce printemps… » sur le babillard et un aperçu dans Réglages ▸ Maison ▸ Routines & listes ▸ Entretien montrent ce qui s’en vient avant que la saison tourne — calfeutrer les fenêtres, vider les gouttières, changer le filtre.',
+          en: 'Recurring upkeep groups by season: a “This winter / This spring…” card on the board and a glance in Settings ▸ Home ▸ Routines & lists ▸ Upkeep show what’s coming before the season turns — caulk the windows, clear the gutters, change the filter.',
         },
       },
       {
@@ -2032,8 +2032,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Couleur', en: 'Colour' },
         detail: {
-          fr: 'La couleur de la personne apparaît partout : événements, corvées, pastille de visage.',
-          en: 'The person’s colour appears everywhere: events, chores, face dot.',
+          fr: 'La couleur de la personne apparaît partout : événements, tâches, pastille de visage.',
+          en: 'The person’s colour appears everywhere: events, tasks, face dot.',
         },
         why: {
           fr: 'Un même repère visuel pour savoir à qui appartient quoi, sans lire.',
@@ -2047,8 +2047,8 @@ export const GUIDE: GuideEntry[] = [
           en: 'Below the members, “The circle” keeps extended family and friends (grandparents, sitter, neighbours) and clusters them into families. See [[card:cercle|The circle]] for the detail; you can break a group here without losing the people.',
         },
         why: {
-          fr: 'La maisonnée, c’est le noyau qui a des corvées et des routines ; le cercle, c’est tout le monde autour qu’on relie à un événement ou une fête.',
-          en: 'The household is the core that gets chores and routines; the circle is everyone around it you can attach to an event or a birthday.',
+          fr: 'La maisonnée, c’est le noyau qui a des tâches et des routines ; le cercle, c’est tout le monde autour qu’on relie à un événement ou une fête.',
+          en: 'The household is the core that gets tasks and routines; the circle is everyone around it you can attach to an event or a birthday.',
         },
       },
       // Appended: the retired 'account' card (alias base 5).
@@ -2161,22 +2161,22 @@ export const GUIDE: GuideEntry[] = [
     icon: 'broom-bold',
     group: 'settings',
     settings: '/settings?tab=maison&sub=routines&focus=chores',
-    title: { fr: 'Corvées & routines', en: 'Chores & routines' },
+    title: { fr: 'Tâches & routines', en: 'Tasks & routines' },
     what: {
-      fr: 'Les corvées, les routines des enfants et les listes « À compléter ».',
-      en: 'Chores, the kids’ routines and the “To complete” lists.',
+      fr: 'Les tâches, les routines des enfants et les listes de départ.',
+      en: 'Tasks, the kids’ routines and the departure lists.',
     },
     points: [
       // ⚠ GUIDE_CARD_ALIAS ('home-projects' → base 8, 'set-routines' → base 4) — append only.
       {
-        label: { fr: 'Créer une corvée', en: 'Create a chore' },
+        label: { fr: 'Créer une tâche', en: 'Create a task' },
         detail: {
           fr: 'Donne-lui un titre et une couleur. Tu peux l’assigner à une personne.',
           en: 'Give it a title and a colour. You can assign it to a person.',
         },
         why: {
-          fr: 'La corvée s’affiche sur le babillard avec « c’est le tour de… » ; ajoute d’abord les membres, car la rotation se choisit parmi eux.',
-          en: 'The chore shows on the board with “whose turn it is…”; add members first, since the rotation is picked from them.',
+          fr: 'La tâche s’affiche sur le babillard avec « c’est le tour de… » ; ajoute d’abord les membres, car la rotation se choisit parmi eux.',
+          en: 'The task shows on the board with “whose turn it is…”; add members first, since the rotation is picked from them.',
         },
         route: '/chore/new',
       },
@@ -2187,26 +2187,26 @@ export const GUIDE: GuideEntry[] = [
           en: 'The “Schedule” button opens the recurrence — every N days/weeks/months/years, and for “weekly” a choice of days (S M T W T F S) — plus a start date.',
         },
         why: {
-          fr: 'Pour que la corvée revienne et tourne toute seule, sans la recréer chaque fois.',
-          en: 'So the chore comes back and rotates on its own, without recreating it each time.',
+          fr: 'Pour que la tâche revienne et tourne toute seule, sans la recréer chaque fois.',
+          en: 'So the task comes back and rotates on its own, without recreating it each time.',
         },
       },
       {
         label: { fr: 'Effacer un horaire', en: 'Clear a schedule' },
         detail: {
-          fr: 'Remets la récurrence à « Jamais » et la corvée redevient ponctuelle.',
-          en: 'Set the recurrence back to “Never” and the chore becomes one-off again.',
+          fr: 'Remets la récurrence à « Jamais » et la tâche redevient ponctuelle.',
+          en: 'Set the recurrence back to “Never” and the task becomes one-off again.',
         },
         why: {
-          fr: 'Pour une corvée qui n’arrive qu’une fois — elle quitte le babillard une fois faite.',
-          en: 'For a chore that happens only once — it leaves the board once it’s done.',
+          fr: 'Pour une tâche qui n’arrive qu’une fois — elle quitte le babillard une fois faite.',
+          en: 'For a task that happens only once — it leaves the board once it’s done.',
         },
       },
       {
-        label: { fr: 'Le journal des corvées', en: 'The chore ledger' },
+        label: { fr: 'Le journal des tâches', en: 'The task ledger' },
         detail: {
-          fr: 'Sous les corvées, un coup d’œil « qui a fait quoi cette semaine » : les noms et les visages, le jour où c’est arrivé. C’est tout — aucun nombre, aucun classement, aucun « meilleur ».',
-          en: 'Below the chores, a “who did what this week” glance: the names and faces, the day it happened. That’s all — no counts, no ranking, no “top helper”.',
+          fr: 'Sous les tâches, un coup d’œil « qui a fait quoi cette semaine » : les noms et les visages, le jour où c’est arrivé. C’est tout — aucun nombre, aucun classement, aucun « meilleur ».',
+          en: 'Below the tasks, a “who did what this week” glance: the names and faces, the day it happened. That’s all — no counts, no ranking, no “top helper”.',
         },
         why: {
           fr: 'Pour voir que la maison a roulé sans en faire un concours — fidèle au calme, jamais un tableau de pointage.',
@@ -2240,7 +2240,7 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
-        label: { fr: 'Listes « À compléter »', en: '“To complete” lists' },
+        label: { fr: 'Listes de départ', en: 'Departure lists' },
         detail: {
           fr: 'Prépare ici tes listes à cocher réutilisables (sac de piscine, « Avant de partir »). Préparées une fois, elles s’ajoutent d’un seul geste sur la carte « [[card:board|Avant de partir]] » du babillard, pour la journée.',
           en: 'Build your reusable check-off lists here (pool bag, “Before leaving”). Set up once, they drop onto the board’s “[[card:board|Before you go]]” card in one tap, for the day.',
@@ -2249,8 +2249,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Projets & entretien', en: 'Plans & maintenance' },
         detail: {
-          fr: 'Sous les corvées, deux listes pour les plus gros sujets : les Projets (un jour, sans date) et l’Entretien qui revient tout seul — « tous les 3 mois », ou « Chaque automne ». Un entretien manqué attend calmement sur « À faire » jusqu’à sa coche, et « À partir de la dernière fois » compte le prochain depuis cette coche.',
-          en: 'Under chores, two lists for the bigger topics: Plans (someday, no date) and Maintenance that comes back on its own — “every 3 months”, or “Every fall”. A missed upkeep waits calmly on “To do” until you check it, and “From the last time” counts the next one from that check-off.',
+          fr: 'Sous les tâches, deux listes pour les plus gros sujets : les Projets (un jour, sans date) et l’Entretien qui revient tout seul — « tous les 3 mois », ou « Chaque automne ». Un entretien manqué attend calmement sur « À faire » jusqu’à sa coche, et « À partir de la dernière fois » compte le prochain depuis cette coche.',
+          en: 'Under tasks, two lists for the bigger topics: Plans (someday, no date) and Maintenance that comes back on its own — “every 3 months”, or “Every fall”. A missed upkeep waits calmly on “To do” until you check it, and “From the last time” counts the next one from that check-off.',
         },
         route: '/home-project/new',
       },
@@ -2709,7 +2709,7 @@ export const GUIDE: GuideEntry[] = [
         label: { fr: 'Disposition du babillard', en: 'Board layout' },
         detail: {
           fr: 'Choisis quelles cartes du babillard afficher (Aujourd’hui, L’auto, À faire, À venir, Dessins…) et glisse-les dans l’ordre voulu. Propre à CET appareil — la tablette murale et ton téléphone gardent chacun leur disposition.',
-          en: 'Choose which board cards show (Today, The car, To do, Coming up, Drawings…) and drag them into the order you want. Specific to THIS device — the wall tablet and your phone keep their own layout.',
+          en: 'Choose which board cards show (Today, The car, Tasks, Coming up, Drawings…) and drag them into the order you want. Specific to THIS device — the wall tablet and your phone keep their own layout.',
         },
         why: {
           fr: 'Pour que le babillard montre ce qui compte pour TOI sur CET écran — la tablette glanceable, ton téléphone plus court.',

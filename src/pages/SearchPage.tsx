@@ -742,9 +742,10 @@ export function SearchPage() {
               },
 
               {
-                best: res!.todos.best,
-                node: res!.todos.items.length > 0 && (
-              <Section key="todos" label={t.search.todos}>
+                // One word, one section: a to-do and a recurring task are both « Tâches ».
+                best: Math.max(res?.todos.best ?? 0, res?.chores.best ?? 0),
+                node: (res?.todos.items.length ?? 0) + (res?.chores.items.length ?? 0) > 0 && (
+              <Section key="tasks" label={t.search.tasks}>
                 {res!.todos.items.map((td) => (
                   <Link key={td.id} to={landingFor({ kind: 'todo', id: td.id })} className="search__row">
                     <span className="search__pic" aria-hidden="true" style={{ color: CATS.chore.deep }}>
@@ -756,14 +757,6 @@ export function SearchPage() {
                     <Icon name="arrow-right-bold" size={16} />
                   </Link>
                 ))}
-              </Section>
-                ),
-              },
-
-              {
-                best: res!.chores.best,
-                node: res!.chores.items.length > 0 && (
-              <Section key="chores" label={t.search.chores}>
                 {res!.chores.items.map((c) => (
                   <Link key={c.id} to={landingFor({ kind: 'chore' })} className="search__row">
                     <span className="search__pic" aria-hidden="true" style={{ color: CATS.chore.deep }}>

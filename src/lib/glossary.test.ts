@@ -114,14 +114,16 @@ const occurrences = (haystack: string[], form: string) => {
 // a floor rather than to zero. Day 2 of UNIFY.md spends these down.
 const RIVAL_CEILING: Record<string, number> = {
   'fr:Enlever': 0,
-  // Spent 2 → 1 on 2026-09-09. The one left is « Tâches de la maison », a Réglages pill
-  // stacking THREE different entity types (routines · corvées · modèles de liste), so it
-  // is a container name rather than a second word for corvée — checked against
-  // `SETTINGS_TREE`, not assumed. It is a FLOOR, not a target: writing « target 0 » for
-  // a line that must never reach 0 is how a ratchet comes to look permanently unfinished
-  // and stops being read. The one spent was prose in the Entretien section calling an
-  // entretien « n'importe quelle tâche ».
-  'fr:Tâche': 1,
+  // THE RATCHET FLIPPED, 2026-11-06 (plans/2026-11-06-TACHE-UNIFIEE.md): « Tâche » won.
+  // « Corvée » is at zero in the dictionaries and may not come back; the plain-language use
+  // (a défi card, « faire sa corvée ») lives in lib/defiDeck.ts, outside the dictionaries.
+  'fr:Corvée': 0,
+  'en:Chore': 0,
+  'en:To-do': 0,
+  'en:To complete': 0,
+  // One floor: `recipes.draftBadge`, a recipe draft waiting to be finished. Another idea
+  // that happens to share the words, and no task ever wears it.
+  'fr:À compléter': 1,
   'fr:Événement': 0,
   // Pinned at 0 on the day it was swept (2026-09-09), not at its old 17: Marc settled
   // « rendez-vous » → Appointment, and the EN copy was fixed in the same commit that

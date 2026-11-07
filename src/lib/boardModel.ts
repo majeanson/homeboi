@@ -5,6 +5,7 @@ import { holidaysOnDay, holidaysInRange, schoolDayKind, type Holiday, type Schoo
 import { pickNextEventToday, BOARD_NEXTUP } from './ambientScene'
 import { isMealSlot, type MealSlot } from './mealSlots'
 import type { MealPrefs } from './mealPrefs'
+import { boardOrder, isTicked, mineTask, type TaskItem } from './tasks'
 import type { Lang } from '../i18n'
 import type { BoardData, EventRow, ChoreInstance, MealRow, DayMealRow, WorkRow } from '../components/board/types'
 
@@ -82,13 +83,19 @@ export interface BoardModelInput {
   // one /api/board read) — the model asks "is there one?", never the payload.
   hasWeather: boolean
   hasTomorrowWx: boolean
-  // « À compléter » (todos table) open counts — today's + tomorrow's, each its own
-  // poll (lib/todos), outside the /api/board payload.
+  // Open rows of the todos table — today's + tomorrow's, each its own poll (lib/todos),
+  // outside the /api/board payload. `openTodosCount` is what keeps the day from reading as
+  // clear: due, owed, and departure checklists. Someday rows do not, but the kid
+  // view still lists them, so they keep its all-clear down through `openSomedayCount`.
   openTodosCount: number
+  openSomedayCount?: number
   tomorrowTodoCount: number
+  // All three task tables, as the board card reads them: payload + to-do items.
+  tasks?: readonly TaskItem[]
 }
 
 export interface BoardModel {
+  tasks: TaskItem[]
   today: {
     events: ModelEvent[]
     chores: ChoreInstance[]
@@ -176,6 +183,7 @@ const choreAnnounceRow = (c: ChoreInstance, dayNow: number): EventRow => ({
 export function buildBoardModel(input: BoardModelInput): BoardModel {
   const { data, nowMs, lang, profileId, fetesOn, binAnnounceOn, mealPrefs, hasWeather, hasTomorrowWx, openTodosCount, tomorrowTodoCount } =
     input
+  const openSomedayCount = input.openSomedayCount ?? 0
   const schoolYear = input.schoolYear ?? null
   const pendingDone = input.pendingDone ?? new Set<string>()
   const pendingLeftover = input.pendingLeftover ?? new Set<string>()
@@ -203,6 +211,10 @@ export function buildBoardModel(input: BoardModelInput): BoardModel {
   const mineChore = (c: ChoreInstance) =>
     !focusing || c.who_id === profileId || c.who_id === null || (!!profileId && !!c.team?.includes(profileId))
   const mineWork = (w: WorkRow) => !focusing || w.member_id === profileId || w.member_id === null
+
+  // The merged « Tâches » card: all three tables, the same face lens, held rows out, and
+  // what is owed reading first. A rotation stays visible to the whole team on anyone's turn.
+  const boardTasks = boardOrder((input.tasks ?? []).filter((t) => mineTask(t, profileId)).filter((t) => !pendingDone.has(t.id)))
 
   // D-21: a flagged recurring chore's "evening before" announce — DERIVED off
   // choresUpcoming's next occurrence, never a stored row (the fête pattern above).
@@ -311,11 +323,11 @@ export function buildBoardModel(input: BoardModelInput): BoardModel {
     todayEvents.length === 0 &&
     todayChores.length === 0 &&
     todayHome.length === 0 &&
-    overdueHome.length === 0 && // an owed entretien must keep the « À faire » card up
+    overdueHome.length === 0 && // an owed task must keep the card up
+    boardTasks.every(isTicked) && // a ticked row is not a reason the day isn't clear
     otherToday.length === 0 &&
     tonightAll.length === 0 &&
     leftovers.length === 0 &&
-    todayTodos.length === 0 &&
     openTodosCount === 0 &&
     filWork.length === 0
 
@@ -331,6 +343,7 @@ export function buildBoardModel(input: BoardModelInput): BoardModel {
     todayChores.length === 0 &&
     todayTodos.length === 0 &&
     openTodosCount === 0 &&
+    openSomedayCount === 0 &&
     !data?.tomorrowNote &&
     tomorrowEvents.length === 0 &&
     (data?.tomorrowMeals?.length ?? 0) === 0
@@ -350,6 +363,7 @@ export function buildBoardModel(input: BoardModelInput): BoardModel {
     tomorrowSchoolKind !== null
 
   return {
+    tasks: boardTasks,
     today: { events: todayEvents, chores: todayChores, todos: todayTodos, home: todayHome, homeOverdue: overdueHome, work: filWork },
     tomorrow: { events: tomorrowEvents },
     upcoming: { events: upcomingEvents, chores: upcomingChores, home: upcomingHome },

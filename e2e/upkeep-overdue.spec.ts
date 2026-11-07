@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 import { test, expect } from './fixtures'
-import { BOARD } from './mocks'
+import { BOARD, boardTask } from './mocks'
 
 // « Entretiens saisonniers » — the overdue carry-forward. A missed upkeep due date
 // (server `homeOverdue`, functions/_lib/upkeep) rides the « À faire » card as a
@@ -24,12 +24,14 @@ const OVERDUE = {
   overdueSince: BOARD.syncedAt - 12 * DAY,
 }
 
-const OPEN = { route: '/board', wait: '.board-grid .wg-slot', api: { overrides: { board: { ...BOARD, homeOverdue: [OVERDUE] } } } }
+// The merged card reads `tasks`: the same row, as _lib/taskItem.ts stamps it.
+const TASK = boardTask({ source: 'home', id: OVERDUE.id, title: OVERDUE.title, kind: 'upkeep', recurring: true, dueToday: false, overdueSince: OVERDUE.overdueSince, day: OVERDUE.overdueSince + 90 * 86400 })
+const OPEN = { route: '/board', wait: '.board-grid .wg-slot', api: { overrides: { board: { ...BOARD, homeOverdue: [OVERDUE], tasks: [TASK] } } } }
 
 const row = (page: Page) =>
   page.locator('.wg-slot[data-card="todos"] .act').filter({ hasText: 'Nettoyer les gouttières' })
 
-test('an overdue entretien waits on « À faire » with its calm owed-since line', async ({ page, app }) => {
+test('an overdue entretien waits on « Tâches » with its calm owed-since line', async ({ page, app }) => {
   await app.boot(OPEN)
   const r = row(page)
   await r.scrollIntoViewIfNeeded()
