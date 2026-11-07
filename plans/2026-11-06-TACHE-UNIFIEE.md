@@ -1,6 +1,6 @@
-# Babillard: one task concept (draft for the owner's review)
+# Babillard: one task concept
 
-**Status:** plan only, nothing built. Decisions below are the owner's (2026-11-06).
+**Status:** phases 1 and 2 built (2026-11-07). Phases 3, 3b and 4 are not. Decisions below are the owner's (2026-11-06).
 
 ## The idea
 

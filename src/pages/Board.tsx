@@ -291,6 +291,8 @@ export function Board() {
       // instantiated yesterday lingers on the departure card past midnight.
       // TODOS_KEY prefix-matches the day pages (['todos', <day>]) too.
       qc.invalidateQueries({ queryKey: TODOS_KEY })
+      // A ticked one-off clears when the day ends, on read: the next read is what clears it.
+      qc.invalidateQueries({ queryKey: TASKS_KEY })
     }
   }, [nowMs, qc])
   // Chores/todos/leftovers whose "done" write is DEFERRED behind the undo toast, held
