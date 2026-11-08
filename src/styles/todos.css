@@ -386,3 +386,9 @@
   flex-direction: column;
   gap: 6px;
 }
+
+/* A starter pack's pictures beside its one button: what it adds, never how many. */
+.season-seeds__glyphs {
+  font-size: 1.05rem;
+  letter-spacing: 2px;
+}

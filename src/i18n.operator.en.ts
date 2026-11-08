@@ -96,6 +96,8 @@ export const EN_OPERATOR: typeof FR_OPERATOR = {
     seedsTitle: 'Season ideas',
     seedsHint: 'The big local rituals, ready to add — one tap puts them in Maintenance like any task. The ✕ hides them for good.',
     seedDismiss: 'Hide this idea',
+    packName: (kind: 'home' | 'auto' | null, s: 'winter' | 'spring' | 'summer' | 'autumn') =>
+      `${kind === 'home' ? 'The house' : kind === 'auto' ? 'The car' : 'Everywhere'} ${{ winter: 'in the winter', spring: 'in the spring', summer: 'in the summer', autumn: 'in the fall' }[s]}`,
     editProjet: 'Edit plan',
     deleteProjet: 'Delete plan',
     editEntretien: 'Edit maintenance',

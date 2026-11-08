@@ -123,6 +123,9 @@ export const FR_OPERATOR = {
     // sans répéter « entretien » deux fois dans la même phrase (UNIFY, 2026-09-09).
     seedsHint: 'Les grands rituels d’ici, prêts à ajouter — un toucher les met dans l’Entretien, comme si tu l’avais inscrit toi-même. Le ✕ les cache pour de bon.',
     seedDismiss: 'Cacher cette idée',
+    // A starter pack (phase 3): the seeds of one subject and one season, added in one tap.
+    packName: (kind: 'home' | 'auto' | null, s: 'winter' | 'spring' | 'summer' | 'autumn') =>
+      `${kind === 'home' ? 'La maison' : kind === 'auto' ? 'L’auto' : 'Partout'} ${{ winter: 'l’hiver', spring: 'au printemps', summer: 'l’été', autumn: 'à l’automne' }[s]}`,
     editProjet: 'Modifier le projet',
     deleteProjet: 'Supprimer le projet',
     editEntretien: 'Modifier l’entretien',

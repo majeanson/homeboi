@@ -3,6 +3,7 @@ import { createDeviceStore } from './createDeviceStore'
 import { api } from './api'
 import { HOUSEHOLD_KEY } from './queryKeys'
 import { addLocalDays, localDayOfWeek } from './localDay'
+import { season, type Season } from './season'
 
 // D-16 (bmad/09) — the derived-year layer, starting with A-2 « les fêtes
 // québécoises et canadiennes ». Same design law as `_lib/birthdays`: annual
@@ -328,6 +329,33 @@ export const SEASON_SEEDS: SeasonSeed[] = [
     leadWeeks: 2,
   },
 ]
+
+// STARTER PACKS (plan de la tâche unifiée, phase 3): the seeds that share a subject and a season,
+// offered as one tap, « La maison à l'automne ». DERIVED from the seeds, never a second list: a
+// seed's season is its anchor month's, its subject is its carnet kind. A pack needs two seeds,
+// or it is just a seed. Ordered from the season that comes next, so October offers autumn first.
+export interface SeasonPack {
+  id: string
+  carnetKind: SeasonSeed['carnetKind']
+  season: Season
+  seeds: SeasonSeed[]
+}
+
+const SEASON_ORDER: Season[] = ['winter', 'spring', 'summer', 'autumn']
+
+export function seasonPacks(seeds: readonly SeasonSeed[], nowMs: number = Date.now()): SeasonPack[] {
+  const byKey = new Map<string, SeasonPack>()
+  for (const seed of seeds) {
+    const s = season(new Date(2001, seed.anchor.month - 1, seed.anchor.day).getTime())
+    const id = `${seed.carnetKind ?? 'any'}-${s}`
+    const pack = byKey.get(id)
+    if (pack) pack.seeds.push(seed)
+    else byKey.set(id, { id, carnetKind: seed.carnetKind, season: s, seeds: [seed] })
+  }
+  const now = SEASON_ORDER.indexOf(season(nowMs))
+  const ahead = (s: Season) => (SEASON_ORDER.indexOf(s) - now + 4) % 4
+  return [...byKey.values()].filter((p) => p.seeds.length > 1).sort((a, b) => ahead(a.season) - ahead(b.season))
+}
 
 // The NEXT local-midnight occurrence of a month/day anchor from `nowMs` — the
 // `at` a seed's home_projects row anchors its recurrence on.

@@ -88,3 +88,33 @@ test('« Sur quoi ? » makes a new thing in place, and saving it does not save t
   await expect(dialog).toHaveCount(0)
   expect(chores).toEqual([])
 })
+
+test('a starter pack adds a season of one subject in one tap, and one « Annuler » takes it all back', async ({ page, app }) => {
+  const posts: { title: string; icon: string }[] = []
+  const deletes: string[] = []
+  let n = 0
+  // After boot: a later route wins, and the boot installs the mock API.
+  await app.boot({ route: '/board?view=taches', wait: '.tasks-view' })
+  await page.route('**/api/home-projects', async (route) => {
+    const m = route.request().method()
+    if (m === 'POST') {
+      posts.push(route.request().postDataJSON())
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: `pack-${++n}` }) })
+    }
+    if (m === 'DELETE') {
+      deletes.push((route.request().postDataJSON() as { id: string }).id)
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) })
+    }
+    return route.fallback()
+  })
+  await page.locator('.season-seeds').getByRole('button', { name: 'Idées de saison' }).click()
+  const pack = page.locator('.season-seeds__pack').filter({ hasText: 'La maison' }).first()
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/packs.png`, fullPage: true })
+  await expect(pack).not.toContainText(/[0-9]/)
+  await pack.getByRole('button').click()
+  await expect.poll(() => posts.length).toBeGreaterThan(1)
+  // Each seed brings its own picture as the task's icon.
+  expect(posts.every((x) => typeof x.icon === 'string' && x.icon.length > 0)).toBe(true)
+  await page.getByRole('button', { name: 'Annuler' }).first().click()
+  await expect.poll(() => deletes.length).toBe(posts.length)
+})

@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { SEASON_SEEDS, seasonPacks } from './year'
 import {
   easter,
   HOLIDAYS,
@@ -240,5 +241,23 @@ describe('schoolDayKind (D-17)', () => {
     expect(schoolDayKind(monAfterDst, dstSy, true)).toBe('school')
     // The DST Sunday itself is a weekend — silent regardless.
     expect(schoolDayKind(local('2026-03-08T12:00:00Z'), dstSy, true)).toBeNull()
+  })
+})
+
+describe('seasonPacks (starter packs)', () => {
+  const oct = new Date(2026, 9, 10).getTime()
+  it('groups the seeds by subject and season, a pack needs two, and the coming season leads', () => {
+    const packs = seasonPacks(SEASON_SEEDS, oct)
+    expect(packs.map((p) => p.id)).toEqual(['home-autumn', 'home-spring'])
+    expect(packs[0]!.seeds.map((s) => s.id)).toEqual(['gouttieres', 'abris', 'filtre-fournaise', 'detecteurs', 'robinets-exterieurs', 'calfeutrage'])
+    // The tires are the car's only autumn seed: a pack of one is just a seed.
+    expect(packs.flatMap((p) => p.seeds).some((s) => s.id === 'pneus')).toBe(false)
+  })
+  it('in April the spring pack comes first', () => {
+    expect(seasonPacks(SEASON_SEEDS, new Date(2026, 3, 2).getTime())[0]!.id).toBe('home-spring')
+  })
+  it('what is already covered leaves the pack', () => {
+    const left = SEASON_SEEDS.filter((s) => !['gouttieres', 'abris', 'filtre-fournaise', 'detecteurs', 'robinets-exterieurs'].includes(s.id))
+    expect(seasonPacks(left, oct).map((p) => p.id)).toEqual(['home-spring'])
   })
 })

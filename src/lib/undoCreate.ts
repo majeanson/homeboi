@@ -48,6 +48,46 @@ export interface CreateWithUndoOpts {
   afterUndo?: () => void
 }
 
+// MANY creates, ONE undo: a starter pack (« La maison à l'automne ») adds several rows with one
+// tap, and one « Annuler » takes back every row the server named. Same rule as above for a
+// queued create (no id, nothing to delete), and a failed write reports once, calmly.
+export interface CreateManyWithUndoOpts {
+  endpoint: string
+  bodies: object[]
+  affectedKeys: QueryKey[]
+  message: string
+}
+
+export function useCreateManyWithUndo() {
+  const write = useWrite()
+  const recordUndo = useRecordUndo()
+  return useCallback(
+    async (opts: CreateManyWithUndoOpts): Promise<string[]> => {
+      const ids: string[] = []
+      let failed: unknown = null
+      // One after another: a pack is a handful of rows, and order keeps the list as listed.
+      for (const body of opts.bodies) {
+        const res = await write<{ id?: string }>(opts.endpoint, { method: 'POST', body, affectedKeys: opts.affectedKeys }).catch((err: unknown) => {
+          failed ??= err
+          return null
+        })
+        const id = createdId(res)
+        if (id) ids.push(id)
+      }
+      if (failed) writeFailed(failed)
+      if (ids.length > 0)
+        recordUndo({
+          message: opts.message,
+          onUndo: () => {
+            for (const id of ids) void write(opts.endpoint, { method: 'DELETE', body: { id }, affectedKeys: opts.affectedKeys }).catch(writeFailed)
+          },
+        })
+      return ids
+    },
+    [write, recordUndo],
+  )
+}
+
 export function useCreateWithUndo() {
   const write = useWrite()
   const recordUndo = useRecordUndo()
