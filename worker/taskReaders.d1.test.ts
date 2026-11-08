@@ -4,6 +4,7 @@ import { household, okJson, type Session } from '../functions/test/d1'
 import { addLocalDays, localDayStart } from '../functions/_lib/ids'
 import { gatherAskSnapshot } from '../functions/_lib/askSnapshot'
 import type { Env } from '../functions/_lib/env'
+import { recapTaskTitles } from '../functions/_lib/taskViews'
 
 // EVERY READER OF A TASK, BEFORE AND AFTER (plans/2026-11-06-TACHE-UNIFIEE.md, « retire the
 // faces »). The readers were rewritten onto one row shape (`_lib/taskItem.ts`) with nothing
@@ -208,6 +209,13 @@ for (const [tag, instant] of Object.entries(INSTANTS)) {
     it('the ledger and « Cette semaine »', async () => {
       expect(await read('/api/chores-ledger')).toMatchSnapshot()
       expect(await read('/api/this-week')).toMatchSnapshot()
+    })
+
+    it('the weekly recap’s « done this week » (it needs a model, so its read is compared with the old query, frozen)', async () => {
+      const since = addLocalDays(f().today, -7)
+      const old = await env.DB.prepare("SELECT title FROM home_projects WHERE household_id = ? AND kind = 'chore' AND last_done_at >= ? LIMIT 20").bind(f().s.householdId, since).all<{ title: string }>()
+      expect(old.results.length, 'canary: chores were done this week').toBeGreaterThan(2)
+      expect(await recapTaskTitles(env.DB, f().s.householdId, since)).toEqual(old.results.map((r) => r.title))
     })
 
     it('what the house assistant is told', async () => {

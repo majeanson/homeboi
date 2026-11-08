@@ -2,8 +2,7 @@ import { okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { localDayStart } from '../_lib/ids'
 import { parseRecur, expandRange } from '../_lib/recur'
-import { upkeepOccurrences } from '../_lib/upkeep'
-import { FACE } from '../_lib/taskItem'
+import { yearTaskCells } from '../_lib/taskViews'
 import { fetchBirthdayPeople, birthdayOccurrences } from '../_lib/birthdays'
 import { fetchCarnetLifeItems, replacementAt } from '../_lib/carnetLife'
 
@@ -33,7 +32,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   }
   to = Math.min(to, from + MAX_DAYS * DAY)
 
-  const [birthdayPeople, recurring, homeRes, lifeItems, tripsRes, sharedTripsRes] = await Promise.all([
+  const [birthdayPeople, recurring, upkeep, lifeItems, tripsRes, sharedTripsRes] = await Promise.all([
     // Automatic birthdays — derived from members + contacts, never event rows.
     fetchBirthdayPeople(ctx.env.DB, hh),
     ctx.env.DB.prepare(
@@ -41,11 +40,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
     )
       .bind(hh)
       .all<{ id: string; title: string; start_at: number; recur_json: string }>(),
-    ctx.env.DB.prepare(
-      `SELECT id, kind, title, colour AS color, at, recur_json, recur_from, last_done_at FROM home_projects WHERE household_id = ? AND ${FACE.home} AND at IS NOT NULL`,
-    )
-      .bind(hh)
-      .all<{ id: string; kind: string; title: string; color: string | null; at: number; recur_json: string | null; recur_from: string | null; last_done_at: number | null }>(),
+    // Upkeep/project cadences: every occurrence in the window (_lib/taskViews).
+    yearTaskCells(ctx.env.DB, hh, from, to, dayOf),
     // « Le long jeu » — things with an install date + service life (carnetLife).
     fetchCarnetLifeItems(ctx.env.DB, hh),
     // Trips overlapping the window — household + shared, the /api/month pair.
@@ -77,18 +73,6 @@ export const onRequestGet = authed(async (ctx, actor) => {
     if (!r || r.freq !== 'yearly') continue
     for (const at of expandRange(e.start_at, r, from, to)) {
       events.push({ id: `${e.id}#${at}`, title: e.title, day: dayOf(at) })
-    }
-  }
-
-  // Upkeep/project cadences — every occurrence in the window (recurring rows
-  // expanded, one-offs on their day), the same expansion /api/month does.
-  const upkeep: { id: string; kind: string; title: string; color: string | null; day: number }[] = []
-  for (const h of homeRes.results) {
-    // Shared expander (_lib/upkeep); includeDone because a horizon, like the month
-    // grid, records the day — a completed one-off keeps its marker.
-    const recurring = parseRecur(h.recur_json) != null
-    for (const at of upkeepOccurrences(h, from, to, { includeDone: true })) {
-      upkeep.push({ id: recurring ? `${h.id}#${at}` : h.id, kind: h.kind, title: h.title, color: h.color, day: dayOf(at) })
     }
   }
 

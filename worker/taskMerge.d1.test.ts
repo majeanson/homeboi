@@ -3,7 +3,7 @@ import { applyD1Migrations } from 'cloudflare:test'
 import { env } from 'cloudflare:workers'
 import { household, okJson, type Session } from '../functions/test/d1'
 import { addLocalDays, localDayStart } from '../functions/_lib/ids'
-import { HOME_TASK_COLS, choreTask, homeTask, present, todoTask, type ChoreTaskRow, type HomeTaskRow, type TodoTaskRow } from '../functions/_lib/taskItem'
+import { choreTask, homeTask, present, todoTask, type ChoreTaskRow, type HomeTaskRow, type TodoTaskRow } from '../functions/_lib/taskItem'
 import { upkeepStatus } from '../functions/_lib/upkeep'
 import { freshIdMap, idsIn } from '../functions/_lib/restore'
 import type { Takeout } from '../functions/_lib/takeout'
@@ -45,6 +45,9 @@ const MONTHLY = JSON.stringify({ freq: 'monthly', interval: 1 })
 type Row = Record<string, unknown>
 
 // ── The OLD readers, verbatim from the code before 0150 ───────────────────────────────────
+// The home columns the readers selected (frozen here: the readers moved to _lib/taskViews).
+const HOME_TASK_COLS =
+  'id, kind, title, colour AS color, at, recur_json, recur_from, lead_seconds, last_done_at, snoozed_until, cleared_at, rotation_json, current_idx, carnet_id, subject_kind, subject_id, icon, effort'
 const OLD_CHORE_COLS =
   'id, title, colour AS color, rotation_json, current_idx, last_done_at, cleared_at, recur_json, recur_start, lead_seconds, subject_kind, subject_id, icon, effort, created_at'
 const OLD = {

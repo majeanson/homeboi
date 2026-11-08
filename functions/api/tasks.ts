@@ -2,26 +2,11 @@ import { badRequest, notFound, ok, okWire, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { localDayStart, newId, nowSec } from '../_lib/ids'
 import { profileMemberId } from '../_lib/profile'
-import { parseSubject, validSubject, type SubjectRef } from '../_lib/subject'
-import {
-  CHORE_TASK_COLS,
-  FACE,
-  HOME_TASK_COLS,
-  choreTask,
-  deleteTaskStatements,
-  faceOfKind,
-  homeTask,
-  present,
-  todoRowsSql,
-  todoTask,
-  type ChoreTaskRow,
-  type Face,
-  type HomeTaskRow,
-  type TodoTaskRow,
-} from '../_lib/taskItem'
+import { parseSubject, validSubject } from '../_lib/subject'
+import { deleteTaskStatements, faceOfKind, type Face } from '../_lib/taskItem'
+import { allTasks, subjectHistory } from '../_lib/taskViews'
 import { bodyAxes, faceColumns, homeKind, type TaskBody } from '../_lib/taskWrite'
 import { faceAfter, taskTarget } from '../../src/lib/taskTarget'
-import type { TasksWire } from '../_lib/wire'
 
 // /api/tasks — the household's tasks as ONE list, and the one form's door.
 //
@@ -49,67 +34,14 @@ const HISTORY_MAX = 30
 const ROWS_MAX = 500
 const TITLE_MAX = 2000
 
-async function historyOf(db: D1Database, hh: string, ref: SubjectRef, today: number): Promise<TasksWire['history']> {
-  // A carnet on a home row lives in carnet_id (migration 0146).
-  const homeMatch = ref.kind === 'carnet' ? 'carnet_id = ?' : 'subject_kind = ? AND subject_id = ?'
-  const homeBinds = ref.kind === 'carnet' ? [ref.id] : [ref.kind, ref.id]
-  const [chores, homes, todos] = await Promise.all([
-    db
-      .prepare(
-        `SELECT t.id, t.title, tp.contributed_at AS at, tp.member_id AS who_id
-           FROM task_participants tp
-           JOIN home_projects t ON t.id = tp.task_id AND t.household_id = ? AND t.${FACE.chore}
-          WHERE t.subject_kind = ? AND t.subject_id = ?
-          ORDER BY tp.contributed_at DESC LIMIT ?`,
-      )
-      .bind(hh, ref.kind, ref.id, HISTORY_MAX)
-      .all<{ id: string; title: string; at: number; who_id: string | null }>(),
-    db
-      .prepare(
-        `SELECT id, title, last_done_at AS at, last_done_by AS who_id FROM home_projects WHERE household_id = ? AND ${FACE.home} AND last_done_at IS NOT NULL AND ${homeMatch} ORDER BY last_done_at DESC LIMIT ?`,
-      )
-      .bind(hh, ...homeBinds, HISTORY_MAX)
-      .all<{ id: string; title: string; at: number; who_id: string | null }>(),
-    db
-      .prepare(
-        todoRowsSql(
-          'id, title, done_at AS at, member_id AS who_id',
-          'WHERE subject_kind = ?2 AND subject_id = ?3 AND done_at IS NOT NULL AND done_at < ?4 ORDER BY done_at DESC LIMIT ?5',
-        ),
-      )
-      .bind(hh, ref.kind, ref.id, today, HISTORY_MAX)
-      .all<{ id: string; title: string; at: number; who_id: string | null }>(),
-  ])
-  const line = (source: string) => (r: { id: string; title: string; at: number; who_id: string | null }) => ({
-    key: `${source}:${r.id}:${r.at}`,
-    title: r.title,
-    at: r.at,
-    who_id: r.who_id,
-  })
-  return [...chores.results.map(line('chore')), ...homes.results.map(line('home')), ...todos.results.map(line('todo'))]
-    .sort((a, b) => b.at - a.at)
-    .slice(0, HISTORY_MAX)
-}
-
 export const onRequestGet = authed(async (ctx, actor) => {
   const hh = actor.householdId
   const db = ctx.env.DB
   const now = nowSec()
   const today = localDayStart(new Date(now * 1000))
 
-  const [chores, homes, todos, carnets, contacts, pets, trips] = await Promise.all([
-    db.prepare(`SELECT ${CHORE_TASK_COLS} FROM home_projects WHERE household_id = ? AND ${FACE.chore} ORDER BY created_at LIMIT ?`).bind(hh, ROWS_MAX).all<ChoreTaskRow>(),
-    db.prepare(`SELECT ${HOME_TASK_COLS} FROM home_projects WHERE household_id = ? AND ${FACE.home} ORDER BY created_at LIMIT ?`).bind(hh, ROWS_MAX).all<HomeTaskRow>(),
-    // Loose rows only, and only what has not cleared. A departure instance is not a task.
-    db
-      .prepare(
-        todoRowsSql(
-          'id, title, day, member_id, done_at, section, source_template_id, subject_kind, subject_id, icon, colour AS color, effort',
-          'WHERE source_template_id IS NULL AND section IS NULL AND (done_at IS NULL OR done_at >= ?2) ORDER BY created_at, position LIMIT ?3',
-        ),
-      )
-      .bind(hh, today, ROWS_MAX)
-      .all<TodoTaskRow>(),
+  const [all, carnets, contacts, pets, trips] = await Promise.all([
+    allTasks(db, hh, today, now, ROWS_MAX),
     db
       .prepare('SELECT id, name, kind, colour AS color, facts_json FROM carnets WHERE household_id = ? AND archived_at IS NULL ORDER BY position, name LIMIT ?')
       .bind(hh, ROWS_MAX)
@@ -145,19 +77,15 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const ref = raw && sep > 0 ? parseSubject({ kind: raw.slice(0, sep), id: raw.slice(sep + 1) }) : null
 
   return okWire('tasks', {
-    tasks: [
-      ...homes.results.map((h) => homeTask(h, today, now)),
-      ...chores.results.map((c) => choreTask(c, today, now)),
-      ...todos.results.map((td) => todoTask(td, today)),
-    ].filter(present),
+    tasks: all.tasks,
     subjects: {
       carnets: carnets.results.map((c) => ({ id: c.id, name: c.name, kind: c.kind, color: c.color, facts: emojiOf(c.facts_json) })),
       contacts: contacts.results.map((c) => ({ id: c.id, name: c.nickname || [c.first_name, c.last_name].filter(Boolean).join(' '), colour: null, member_id: c.member_id })),
       pets: pets.results,
-      projects: homes.results.filter((h) => h.kind === 'plan').map((h) => ({ id: h.id, title: h.title, color: h.color, icon: h.icon })),
+      projects: all.projects.map((h) => ({ id: h.id, title: h.title, color: h.color, icon: h.icon })),
       trips: trips.results,
     },
-    history: ref ? await historyOf(db, hh, ref, today) : [],
+    history: ref ? await subjectHistory(db, hh, ref, today, HISTORY_MAX) : [],
   })
 })
 

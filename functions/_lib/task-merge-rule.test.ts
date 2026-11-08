@@ -44,12 +44,13 @@ const TODOS_FILES: Record<string, string> = {
 const ANY_FACE: Record<string, string> = {
   'functions/_lib/members.ts': 'a deleted member is detached from every task, whatever face it wears',
   'functions/_lib/sampleData.ts': '« Vider les exemples » clears the log lines of every sample task',
+  'functions/_lib/taskViews.ts': 'its one row helper reads every face; each caller names its face (task-faces-rule.test.ts holds that)',
 }
 
 describe('one table of tasks', () => {
   it('walks the Worker’s sources (canary: a scan that reads nothing passes everything)', () => {
     expect(files.length).toBeGreaterThan(150)
-    expect(hits(/\bFROM home_projects\b/g).length).toBeGreaterThan(20)
+    expect(hits(/\bFROM home_projects\b/g).length).toBeGreaterThan(10)
     expect(files.find((f) => f.rel === 'functions/api/todos.ts')?.src).toMatch(/INSERT INTO todos/)
   })
 

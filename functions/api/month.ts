@@ -1,10 +1,8 @@
 import { okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { localDayStart } from '../_lib/ids'
-import { parseRecur, expandRange, rotationOffset } from '../_lib/recur'
-import { parseRotation, turnOf } from '../_lib/rotation'
-import { choreSchedule, upkeepOccurrences } from '../_lib/upkeep'
-import { FACE, todoRowsSql } from '../_lib/taskItem'
+import { parseRecur, expandRange } from '../_lib/recur'
+import { monthTaskCells, monthTaskReads } from '../_lib/taskViews'
 import { planOccurrences, type PlanRow as TransferPlanRow } from '../_lib/transfers'
 import { fetchBirthdayPeople, birthdayOccurrences } from '../_lib/birthdays'
 import { workOccurrencesInRange, parseScheduleBlockRow, type ScheduleBlock, type ScheduleBlockRow } from '../_lib/carResolve'
@@ -40,7 +38,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // meals query can sort by it, exactly like /api/meals and the board.
   const MEAL_ORDER = mealOrderSql((await householdMealLayout(ctx.env, hh)).order)
 
-  const [members, oneOff, recurring, mealsRes, dayNotesRes, choresRes, todosRes, birthdayPeople, scheduleRes, carDayRes, homeRes, tripsRes, tripPlansRes, sharedTripsRes, sharedPlansRes, habitsRes, habitDaysRes] = await Promise.all([
+  const [members, oneOff, recurring, mealsRes, dayNotesRes, taskReads, birthdayPeople, scheduleRes, carDayRes, tripsRes, tripPlansRes, sharedTripsRes, sharedPlansRes, habitsRes, habitDaysRes] = await Promise.all([
     ctx.env.DB.prepare('SELECT id, display_name FROM members WHERE household_id = ?')
       .bind(hh)
       .all<{ id: string; display_name: string }>(),
@@ -70,31 +68,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     )
       .bind(hh, from - DAY, to + DAY)
       .all<{ id: string; text: string; member_id: string | null; date: number }>(),
-    ctx.env.DB.prepare(
-      `SELECT id, title, colour AS color, rotation_json, current_idx, last_done_at, recur_json, at AS recur_start, created_at FROM home_projects WHERE household_id = ? AND ${FACE.chore}`,
-    )
-      .bind(hh)
-      .all<{
-        id: string
-        title: string
-        color: string | null
-        rotation_json: string
-        current_idx: number
-        last_done_at: number | null
-        recur_json: string | null
-        recur_start: number | null
-        created_at: number
-      }>(),
-    // À compléter todos pinned to a DAY (migration 0046/0047) — open ones only, so
-    // the calendar shows what's still to do. `day` is already local midnight, so a
-    // direct range match works (no ±DAY re-bucket needed). Global (day NULL) todos
-    // have no calendar cell, like fridge notes. The loose ones from the spine and the
-    // departure instances from `todos`, as one list (todoRowsSql, 0150).
-    ctx.env.DB.prepare(
-      todoRowsSql('id, title, member_id, day, section', 'WHERE day IS NOT NULL AND day >= ?2 AND day < ?3 AND done_at IS NULL ORDER BY day, position, created_at'),
-    )
-      .bind(hh, from, to)
-      .all<{ id: string; title: string; member_id: string | null; day: number; section: string | null }>(),
+    monthTaskReads(ctx.env.DB, hh, from, to),
     // Automatic birthdays — derived from members + contacts, never stored as events.
     fetchBirthdayPeople(ctx.env.DB, hh),
     // « L'auto » work-schedule blocks (#28) — derived onto each matching day across
@@ -112,14 +86,6 @@ export const onRequestGet = authed(async (ctx, actor) => {
     ctx.env.DB.prepare('SELECT day FROM car_day WHERE household_id = ? AND day >= ? AND day < ?')
       .bind(hh, from, to)
       .all<{ day: number }>(),
-    // "Projets & Entretien" (home_projects, #home-projects) — DATED rows only;
-    // recurring expand across the window, one-off land on their day. Like chores,
-    // they ride the same calendar. Undated rows (at IS NULL) have no cell.
-    ctx.env.DB.prepare(
-      `SELECT id, kind, title, colour AS color, at, recur_json, recur_from, last_done_at FROM home_projects WHERE household_id = ? AND ${FACE.home} AND at IS NOT NULL`,
-    )
-      .bind(hh)
-      .all<{ id: string; kind: string; title: string; color: string | null; at: number; recur_json: string | null; recur_from: string | null; last_done_at: number | null }>(),
     // « Voyage » — trips overlapping the window. A trip is a multi-day BAND (the
     // client draws a bar across its days), not a per-day dot; the day page reads the
     // same rows to show its "Voyage — Jour N" header. Dated trips only (an undated
@@ -286,55 +252,9 @@ export const onRequestGet = authed(async (ctx, actor) => {
     if (inRange(day)) dayNotes.push({ id: n.id, text: n.text, member_id: n.member_id, day })
   }
 
-  // Dated todos — already bucketed on a local-midnight `day`, the same key the grid
-  // groups by. (inRange is a belt-and-braces guard; the SQL already bounds it.)
-  const todos: { id: string; title: string; member_id: string | null; day: number; section: string | null }[] = []
-  for (const td of todosRes.results) {
-    if (inRange(td.day)) todos.push({ id: td.id, title: td.title, member_id: td.member_id, day: td.day, section: td.section })
-  }
-
+  // Every task cell (chores, home rows, dated to-dos), from one row shape (_lib/taskViews).
   const nameOf = (id: string | null) => (id && members.results.find((m) => m.id === id)?.display_name) || null
-  // Recurring chores expanded across the window. The rotation's stored current_idx
-  // is the holder of the next PENDING occurrence and advances only on completion —
-  // so we PROJECT it forward per occurrence (rotationOffset) instead of labelling
-  // every future cell with today's holder. Non-recurring chores have no schedule,
-  // so they never land on the calendar.
-  const todayLocal = localDayStart(new Date())
-  const chores: { id: string; title: string; color: string | null; who: string | null; day: number }[] = []
-  for (const c of choresRes.results) {
-    const r = parseRecur(c.recur_json)
-    if (!r) continue
-    const schedule = choreSchedule(c)
-    const rot = parseRotation(c.rotation_json)
-    // If today's turn was already done, the pending holder is the NEXT occurrence,
-    // so count from tomorrow; otherwise the next occurrence on/after today is it.
-    const refDay = c.last_done_at != null && c.last_done_at >= todayLocal ? todayLocal + DAY : todayLocal
-    const occs = upkeepOccurrences(schedule, from, to, { includeDone: true })
-    // Each occurrence advances the rotation by one, so resolve the offset of the
-    // first occurrence in the window once, then just step it forward.
-    const firstOcc = occs[0]
-    let offset = firstOcc !== undefined ? rotationOffset(schedule.at, r, refDay, firstOcc) : 0
-    for (const at of occs) {
-      const who = nameOf(turnOf(rot, c.current_idx + offset))
-      chores.push({ id: `${c.id}#${at}`, title: c.title, color: c.color, who, day: dayOf(at) })
-      offset++
-    }
-  }
-
-  // "Projets & Entretien" expanded across the window: recurring via the shared
-  // expander (anchored on `at`), one-off bucketed on their day. `kind` rides along
-  // so the client can tint/label projet vs entretien.
-  const homeProjects: { id: string; kind: string; title: string; color: string | null; day: number }[] = []
-  for (const h of homeRes.results) {
-    // Shared expander (_lib/upkeep) so « à partir de la dernière fois » rows land on
-    // their true dates here too. includeDone: a calendar cell is a record of the day,
-    // so a completed one-off keeps its cell (past cells stay best-effort, like the
-    // chore rotation's history).
-    const recurring = parseRecur(h.recur_json) != null
-    for (const at of upkeepOccurrences(h, from, to, { includeDone: true })) {
-      homeProjects.push({ id: recurring ? `${h.id}#${at}` : h.id, kind: h.kind, title: h.title, color: h.color, day: dayOf(at) })
-    }
-  }
+  const { chores, homeProjects, todos } = monthTaskCells(taskReads, from, to, { dayOf, inRange, nameOf })
 
   // Trips ride through as-is (the client clamps the band to the visible window).
   // `shared?: true` re-targets the client's tap to /voyage/partage/:id (« Voyage

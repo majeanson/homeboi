@@ -2,7 +2,7 @@ import { okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { localDayStart, addLocalDays } from '../_lib/ids'
 import { parseRecur, expandRange } from '../_lib/recur'
-import { FACE } from '../_lib/taskItem'
+import { weekTasks } from '../_lib/taskViews'
 import { fetchBirthdayPeople, birthdayOccurrences } from '../_lib/birthdays'
 import { workOccurrencesInRange, parseScheduleBlockRow, type ScheduleBlockRow } from '../_lib/carResolve'
 
@@ -57,12 +57,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
     )
       .bind(hh)
       .all<{ id: string; title: string; start_at: number; all_day: number; member_id: string | null; recur_json: string }>(),
-    // Projects: upcoming (dated in range) AND advanced this week (last_done_at in window).
-    ctx.env.DB.prepare(
-      `SELECT title, at, last_done_at, colour AS color FROM home_projects WHERE household_id = ? AND ${FACE.home} AND ((at >= ? AND at < ?) OR (last_done_at >= ? AND last_done_at < ?))`,
-    )
-      .bind(hh, today, weekEnd, weekStart, today)
-      .all<{ title: string; at: number | null; last_done_at: number | null; color: string | null }>(),
+    // Projects: upcoming (dated in range) AND advanced this week (_lib/taskViews).
+    weekTasks(ctx.env.DB, hh, today, weekEnd, weekStart),
     // Week behind — chores done (the append-only attribution log; faces, no count).
     ctx.env.DB.prepare(
       `SELECT tp.task_id, tp.role, tp.contributed_at, tp.member_id,
@@ -136,10 +132,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     .sort((a, b) => a.at - b.at)
     .map((o) => ({ at: o.at, label: o.label, who: nameOf(o.memberId), face: faceOf(o.memberId) }))
 
-  const projectsAhead = projects.results
-    .filter((p) => p.at != null && p.at >= today && p.at < weekEnd)
-    .sort((a, b) => (a.at ?? 0) - (b.at ?? 0))
-    .map((p) => ({ title: p.title, at: p.at as number, color: p.color }))
+  const projectsAhead = projects.ahead
 
   // ---- Week behind ----------------------------------------------------------
   // Chore faces: group by (local day, chore), each person once (named by name,
@@ -185,9 +178,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     routinesDone.push({ name: r.name, who: nameOf(r.member_id), face: faceOf(r.member_id) })
   }
 
-  const projectsDone = projects.results
-    .filter((p) => p.last_done_at != null && p.last_done_at >= weekStart && p.last_done_at < today)
-    .map((p) => ({ title: p.title, color: p.color }))
+  const projectsDone = projects.done
 
   return okWire('this-week', {
     today,

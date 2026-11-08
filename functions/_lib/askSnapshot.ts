@@ -17,7 +17,7 @@
 // Worker CPU budget and an unbounded household would otherwise decide how long it took.
 
 import type { Env } from './env'
-import { FACE } from './taskItem'
+import { askTaskTitles } from './taskViews'
 import { fetchBirthdayPeople } from './birthdays'
 import { fetchCarnetLifeItems } from './carnetLife'
 import type { ScheduleBlockRow } from './carResolve'
@@ -89,9 +89,7 @@ export async function gatherAskSnapshot(env: Env, householdId: string, today: nu
     env.DB.prepare('SELECT text FROM list_items WHERE household_id = ? AND checked_at IS NULL ORDER BY created_at LIMIT 60')
       .bind(hh)
       .all<{ text: string }>(),
-    env.DB.prepare(`SELECT title FROM home_projects WHERE household_id = ? AND ${FACE.chore} ORDER BY created_at LIMIT 30`)
-      .bind(hh)
-      .all<{ title: string }>(),
+    askTaskTitles(env.DB, hh),
     env.DB.prepare(
       // Not a scheduled one (0142): « Sa fête » must not be spoiled by asking the house.
       // media_kind rides along: a drawing or a voice memo has no text, and without its
@@ -137,7 +135,7 @@ export async function gatherAskSnapshot(env: Env, householdId: string, today: nu
     events: expandAskEvents(oneOffEvents.results, recurEvents.results, rangeStart, rangeEnd),
     birthdays: birthdaysForPrompt(birthdayPeople, rangeStart, birthdayRangeEnd),
     list: list.results,
-    chores: chores.results,
+    chores,
     notes: notes.results,
     contacts: contacts.results,
     businesses: businesses.results,

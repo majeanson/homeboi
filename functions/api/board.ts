@@ -2,14 +2,12 @@ import { okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { localDayStart, addLocalDays } from '../_lib/ids'
 import { parseRecur, expandRange } from '../_lib/recur'
-import { choreSchedule, upkeepStatus, upkeepOccurrences } from '../_lib/upkeep'
-import { parseRotation, turnOf } from '../_lib/rotation'
-import { CHORE_TASK_COLS, FACE, HOME_TASK_COLS, choreTask, homeTask, present, type ChoreTaskRow, type HomeTaskRow } from '../_lib/taskItem'
+import { boardTaskFields, boardTaskRows } from '../_lib/taskViews'
 import { isSoon as isSoonAt } from '../_lib/reminder'
 import { fetchBirthdayPeople, birthdayOccurrences } from '../_lib/birthdays'
 import { workOccurrencesInRange, parseScheduleBlockRow, type ScheduleBlock, type ScheduleBlockRow } from '../_lib/carResolve'
 import { householdMealLayout } from '../_lib/mealSlots'
-import type { BoardChore, BoardChoreInstance, BoardDayNote, BoardHomeInstance, BoardHomeOverdue, BoardListItem, BoardMeal, BoardMealBrief, BoardNote, BoardWire, MemberRow } from '../_lib/wire'
+import type { BoardDayNote, BoardListItem, BoardMeal, BoardMealBrief, BoardNote, BoardWire, MemberRow } from '../_lib/wire'
 
 interface Ev {
   id: string
@@ -95,7 +93,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const mealLayout = await householdMealLayout(ctx.env, hh)
   const heroSlot = mealLayout.hero
 
-  const [members, todayEvents, tomorrowEvents, tonightMeal, tomorrowMeal, todayMealsRes, dayNoteRes, tomorrowMealsRes, tomorrowNoteRes, openList, chores, notes, leftoversRes, scheduleRes, carDayRes] = await Promise.all([
+  const [members, todayEvents, tomorrowEvents, tonightMeal, tomorrowMeal, todayMealsRes, dayNoteRes, tomorrowMealsRes, tomorrowNoteRes, openList, taskRows, notes, leftoversRes, scheduleRes, carDayRes] = await Promise.all([
     ctx.env.DB.prepare(
       'SELECT id, display_name, avatar_kind, avatar_ref, colour, is_child FROM members WHERE household_id = ? ORDER BY position, created_at',
     )
@@ -164,11 +162,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     )
       .bind(hh)
       .all<BoardListItem>(),
-    ctx.env.DB.prepare(
-      `SELECT ${CHORE_TASK_COLS}, announce_evening FROM home_projects WHERE household_id = ? AND ${FACE.chore} ORDER BY created_at`,
-    )
-      .bind(hh)
-      .all<ChoreTaskRow & Omit<BoardChore, 'helpers'>>(),
+    boardTaskRows(ctx.env.DB, hh, today),
     // « Mots » — the fridge (uncleared), newest first. Since 0142 a paper may be addressed
     // (for_member_id) and scheduled (surface_at). Two things are decided HERE, not in
     // the card, because a client-side hide is a hide the payload still carries:
@@ -356,133 +350,11 @@ export const onRequestGet = authed(async (ctx, actor) => {
     helpersByTask.set(h.task_id, list)
     seenByTask.set(h.task_id, seen)
   }
-  const choresOut = chores.results.map((c) => ({
-    id: c.id,
-    title: c.title,
-    rotation_json: c.rotation_json,
-    current_idx: c.current_idx,
-    last_done_at: c.last_done_at,
-    color: c.color,
-    recur_json: c.recur_json,
-    recur_start: c.recur_start,
-    lead_seconds: c.lead_seconds,
-    announce_evening: c.announce_evening,
-    created_at: c.created_at,
-    helpers: helpersByTask.get(c.id) ?? [],
-  }))
-
-  // Recurring chores expanded onto the day: those that occur TODAY (and aren't
-  // already done today) surface on Aujourd'hui; otherwise the next occurrence in
-  // the week surfaces on À venir. Whose-turn rides along (rotation + current_idx).
-  // Non-recurring chores have no schedule, so they surface as one-off to-dos
-  // (the `todos` slice below) until they're checked off.
+  // Every task section of the board, from one row shape (_lib/taskViews: the one file that
+  // still knows the faces, and why).
   const memberName = (id: string | null) =>
     (id && members.results.find((m) => m.id === id)?.display_name) || null
-  type ChoreSrc = Omit<BoardChore, 'helpers'>
-  // The rotation as member ids — the whole team sharing the chore. Empty when
-  // there's no rotation (an unassigned "Maisonnée" task shown to everyone).
-  const teamIds = (c: ChoreSrc): string[] => parseRotation(c.rotation_json)
-  // Whose turn it is, as a member id (rotation + current_idx). Null when there's
-  // no rotation — an unassigned "Maisonnée" task. The board's personal-focus
-  // filter keeps these visible to everyone alongside the picked member's own.
-  const whoseTurnId = (c: ChoreSrc): string | null => turnOf(teamIds(c), c.current_idx)
-  const whoseTurn = (c: ChoreSrc): string | null => memberName(whoseTurnId(c))
-  const choresToday: BoardChoreInstance[] = []
-  const choresUpcoming: BoardChoreInstance[] = []
-  // One-off to-dos: non-recurring, not-yet-done tasks (a captured "corvée" or a
-  // standing chore with no schedule). These never had a home on Aujourd'hui;
-  // now they surface as a checkable "À faire" list until completed (last_done_at).
-  const todos: BoardChoreInstance[] = []
-  for (const c of chores.results) {
-    const r = parseRecur(c.recur_json)
-    const inst = (at: number): BoardChoreInstance => ({
-      id: c.id,
-      title: c.title,
-      color: c.color,
-      at,
-      soon: isSoon(at, c.lead_seconds),
-      who: whoseTurn(c),
-      who_id: whoseTurnId(c),
-      team: teamIds(c),
-      announce_evening: c.announce_evening === 1,
-    })
-    if (!r) {
-      // No schedule → a to-do. Show it until it's marked done.
-      if (c.last_done_at == null) todos.push(inst(today))
-      continue
-    }
-    const schedule = choreSchedule(c)
-    if (upkeepOccurrences(schedule, today, tomorrow).length > 0) {
-      const doneToday = c.last_done_at != null && c.last_done_at >= today
-      if (!doneToday) choresToday.push(inst(today))
-    } else {
-      const next = upkeepOccurrences(schedule, tomorrow, weekEnd)[0]
-      if (next != null) choresUpcoming.push(inst(next))
-    }
-  }
-  choresUpcoming.sort((a, b) => a.at - b.at)
-
-  // "Projets & Entretien" (home_projects, #home-projects) dated rows surface like
-  // recurring chores: an occurrence TODAY (and not already done) shows on
-  // Aujourd'hui; otherwise the next occurrence this week shows on À venir. Undated
-  // rows (at IS NULL) stay quiet — they live only in Réglages. Checkable off the
-  // board (sets last_done_at), so "done this cycle" mirrors a chore. No rotation
-  // (who/team empty); the row's own colour + title emoji distinguish it.
-  // The undated half of the WHERE is an undated row ticked today: it has no cell on any
-  // calendar, but it stays ticked on the board until the day ends like any other one-off.
-  const homeRows = await ctx.env.DB.prepare(
-    `SELECT ${HOME_TASK_COLS} FROM home_projects WHERE household_id = ? AND ${FACE.home} AND (at IS NOT NULL OR last_done_at >= ?)`,
-  )
-    .bind(hh, today)
-    .all<HomeTaskRow>()
-  const homeToday: BoardHomeInstance[] = []
-  const homeUpcoming: BoardHomeInstance[] = []
-  // The calm carry-forward: a missed due date (recurring cycle or dated one-off)
-  // stays on « À faire » until someone checks the row — derived by _lib/upkeep,
-  // never a materialized row. `at` carries the missed date so day labels / the
-  // detail peek reuse the BoardHomeInstance shape unchanged.
-  const homeOverdue: BoardHomeOverdue[] = []
-  for (const h of homeRows.results) {
-    const rotation = parseRotation(h.rotation_json)
-    const turn = turnOf(rotation, h.current_idx)
-    const hinst = (at: number): BoardHomeInstance => ({
-      id: h.id,
-      title: h.title,
-      color: h.color,
-      at,
-      soon: isSoon(at, h.lead_seconds),
-      who: memberName(turn),
-      who_id: turn,
-      team: rotation,
-      carnet_id: h.carnet_id,
-      recurring: parseRecur(h.recur_json) != null,
-    })
-    // ONE shared derivation (_lib/upkeep) — the same expansion month/year/GET use,
-    // so 'anchor' vs « à partir de la dernière fois » rows agree on every surface.
-    const st = upkeepStatus(h, today)
-    if (st.dueToday) homeToday.push(hinst(today))
-    else if (st.snoozedUntil != null) {
-      // « Reporté »: quiet until its return day — which previews on À venir when it
-      // lands within the week (never sooner; the whole point is the pause).
-      if (st.nextAt != null && st.nextAt >= tomorrow && st.nextAt < weekEnd) homeUpcoming.push(hinst(st.nextAt))
-    } else {
-      const next = upkeepOccurrences(h, tomorrow, weekEnd)[0]
-      if (next != null) homeUpcoming.push(hinst(next))
-    }
-    // Suppressed while dueToday: checking today's occurrence stamps last_done_at,
-    // which covers the missed one too — showing both would double the same chore.
-    if (st.overdueSince != null && !st.dueToday) {
-      homeOverdue.push({ ...hinst(st.overdueSince), overdueSince: st.overdueSince })
-    }
-  }
-  homeUpcoming.sort((a, b) => a.at - b.at)
-  homeOverdue.sort((a, b) => a.overdueSince - b.overdueSince)
-
-  // The same two tables as tasks, for the merged board section. Same rows, no extra read:
-  // a subject resolves on the client from what it already holds (src/lib/subjects.ts).
-  const tasks = [...homeRows.results.map((h) => homeTask(h, today, now)), ...chores.results.map((c) => choreTask(c, today, now))]
-    .filter(present)
-    .filter((i) => i.onBoard)
+  const taskFields = boardTaskFields(taskRows, { today, tomorrow, weekEnd, now, memberName, helpers: (id) => helpersByTask.get(id) ?? [] })
 
   // Today's meals, in the household's slot order (Réglages ▸ Repas; déjeuner →
   // dîner → collation → souper → dessert out of the box) so the board reads
@@ -534,14 +406,14 @@ export const onRequestGet = authed(async (ctx, actor) => {
     tomorrowMeals,
     tomorrowNote: tomorrowNoteRes.results[0] ?? null,
     list: openList.results,
-    chores: choresOut,
-    choresToday,
-    choresUpcoming,
-    homeToday,
-    homeUpcoming,
-    homeOverdue,
-    todos,
-    tasks,
+    chores: taskFields.chores,
+    choresToday: taskFields.choresToday,
+    choresUpcoming: taskFields.choresUpcoming,
+    homeToday: taskFields.homeToday,
+    homeUpcoming: taskFields.homeUpcoming,
+    homeOverdue: taskFields.homeOverdue,
+    todos: taskFields.todos,
+    tasks: taskFields.tasks,
     notes: notes.results,
     leftovers: leftoversRes.results,
   })

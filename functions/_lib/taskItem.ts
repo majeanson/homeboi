@@ -14,10 +14,10 @@ import type { TaskItem } from './wire'
 // THE FACES. A spine row's `kind` says which payload it wears: 'chore' (the old `tasks`),
 // 'todo' (the old loose `todos`), 'plan' / 'upkeep' (the old home rows). It is a reader's need,
 // never a form's question: the board, the calendar, the day page and the three alias endpoints
-// still speak those three shapes. Each face is read through its own SELECT below, aliased back
-// into its old row shape, so every derivation downstream is the code that ran before the merge
-// (worker/taskMerge.d1.test.ts holds the two equal). A reader names a face with these, never
-// with a string of its own (`task-merge-rule.test.ts`).
+// still speak those three shapes. A READER does not come here: it reads one row shape through
+// _lib/taskViews.ts, which turns a row into its face's old shape (the builders below) and holds
+// the table of what still differs by face (`task-faces-rule.test.ts`). The alias endpoints and
+// the form's write path name a face with these, never with a string of their own.
 //
 // DONE MEANS ONE THING PER CASE, and the case is the schedule, never the table:
 //   · a ONE-OFF is checked on a day. It stays ticked until that day ends, then it has cleared
@@ -109,14 +109,9 @@ export type Face = keyof typeof FACE
 /** The face a stored `kind` wears. */
 export const faceOfKind = (kind: string | null | undefined): Face => (kind === 'chore' ? 'chore' : kind === 'todo' ? 'todo' : 'home')
 
-// The columns each reader must SELECT for its face. Named here so a query cannot forget one.
-// A chore's start lives in the spine's `at` (0150), read back under its old name: NULL still
-// means « from created_at » (choreSchedule).
-export const CHORE_TASK_COLS =
-  'id, title, colour AS color, rotation_json, current_idx, last_done_at, cleared_at, recur_json, at AS recur_start, lead_seconds, subject_kind, subject_id, icon, effort, created_at'
-export const HOME_TASK_COLS =
-  'id, kind, title, colour AS color, at, recur_json, recur_from, lead_seconds, last_done_at, snoozed_until, cleared_at, rotation_json, current_idx, carnet_id, subject_kind, subject_id, icon, effort'
-
+// The old row shapes each face's builder reads (_lib/taskViews makes them from one row). A
+// chore's start lives in the spine's `at` (0150), read as `recur_start`: NULL still means
+// « from created_at » (choreSchedule).
 export interface ChoreTaskRow {
   id: string
   title: string
