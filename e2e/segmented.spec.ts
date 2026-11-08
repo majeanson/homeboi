@@ -6,7 +6,8 @@ import { test, expect } from './fixtures'
 test('the board view switch is a radiogroup: one tab stop, arrows select', async ({ page, app }) => {
   await app.boot({ route: '/board', wait: '.hub' })
   const group = page.getByRole('radiogroup', { name: /vue|view/i }).first()
-  await expect(group.getByRole('radio')).toHaveCount(4)
+  // Five since the « Tâches » view (unified tasks, phase 2).
+  await expect(group.getByRole('radio')).toHaveCount(5)
   await expect(group.locator('[tabindex="0"]')).toHaveCount(1)
 
   await group.getByRole('radio', { checked: true }).focus()
