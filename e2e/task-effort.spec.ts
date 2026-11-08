@@ -50,7 +50,7 @@ test('the task form: effort is one tap away, a dot sends, the same dot clears', 
   await expect(dots.nth(3)).toHaveAttribute('aria-checked', 'false')
   await dots.nth(1).click()
   // A title and an effort: a to-do (effort never routes, lib/taskTarget).
-  const post = page.waitForRequest((r) => r.url().includes('/api/todos') && r.method() === 'POST')
+  const post = page.waitForRequest((r) => r.url().includes('/api/tasks') && r.method() === 'POST')
   await form.locator('button[type="submit"]').last().click()
   expect((await post).postDataJSON()).toMatchObject({ title: 'Laver les fenêtres', effort: 2 })
 })
@@ -139,7 +139,7 @@ test('a to-do’s one form holds its effort, and saving patches it', async ({ pa
   await expect(edit.getByRole('button', { name: /^Effort/ })).toHaveAttribute('aria-expanded', 'true')
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/effort-todo-edit-390.png`, fullPage: true })
   await edit.getByRole('radio', { name: /Tout simple/ }).click()
-  const patch = page.waitForRequest((r) => r.url().includes('/api/todos') && r.method() === 'PATCH')
+  const patch = page.waitForRequest((r) => r.url().includes('/api/tasks') && r.method() === 'PATCH')
   await edit.locator('button[type="submit"]').last().click()
   expect((await patch).postDataJSON()).toMatchObject({ id: 'e-quick', title: 'Appeler la garderie', effort: null })
 })

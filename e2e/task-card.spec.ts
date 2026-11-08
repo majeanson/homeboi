@@ -71,7 +71,7 @@ test('the ＋ adds for today, and « Un jour » keeps it off the glance', async 
   await c.scrollIntoViewIfNeeded()
   await c.locator('.sec-label__actbtn').click()
   await c.getByPlaceholder('Ajouter une tâche…').fill('Appeler la garderie')
-  const post = page.waitForRequest((r) => r.url().includes('/api/todos') && r.method() === 'POST')
+  const post = page.waitForRequest((r) => r.url().includes('/api/tasks') && r.method() === 'POST')
   await c.getByRole('button', { name: 'Un jour' }).click()
   expect(((await post).postDataJSON() as { day: number | null }).day).toBeNull()
   await expect(c).not.toContainText('Appeler la garderie')

@@ -25,7 +25,7 @@ const SAMPLE_TABLES = [
   'contact_links', // polymorphic edges (no DB FK, but conceptually first)
   'recipe_loves', // → recipes, members
   'care_log', // → carnets
-  'home_projects', // soft-ref carnets
+  'home_projects', // soft-ref carnets; every sample task since 0150 (chores + loose to-dos)
   'carnets', // flat (all parent_id NULL) → after its care_log/pins
   'pets', // soft-ref businesses
   'contacts', // → members (member_id)
@@ -42,7 +42,6 @@ const SAMPLE_TABLES = [
   'events',
   'meals', // → recipes, so before recipes
   'list_items',
-  'tasks',
   'notes',
   'pantry_low',
   'routines',
@@ -82,6 +81,10 @@ export async function clearSampleData(env: Env, householdId: string): Promise<vo
   for (const mm of sampleMembers) await freeMemberMediaBlobs(env, householdId, mm.id)
   await env.DB.batch([
     ...sampleMembers.flatMap((mm) => memberRefStatements(env, householdId, mm.id)),
+    // A sample chore someone ticked while exploring carries « qui a aidé » lines. Since 0150
+    // their task_id is a soft ref (no FK would remove them, nor block the delete), so they go
+    // first, or they would outlive their task.
+    env.DB.prepare('DELETE FROM task_participants WHERE task_id IN (SELECT id FROM home_projects WHERE household_id = ? AND is_sample = 1)').bind(householdId),
     ...SAMPLE_TABLES.map((tbl) =>
       env.DB.prepare(`DELETE FROM ${tbl} WHERE household_id = ? AND is_sample = 1`).bind(householdId),
     ),
@@ -467,9 +470,10 @@ export async function seedSampleData(env: Env, householdId: string, ts = nowSec(
       // lives in the Tâches view, so an all-undated seed would leave the demo's card empty.
     ).map(([title, rotation, idx, colour, start]) =>
       P(
-        `INSERT INTO tasks (id, household_id, title, rotation_json, current_idx, colour, recur_json, recur_start, created_at, is_sample)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      ).bind(newId(), h, title, JSON.stringify(rotation), idx, colour, JSON.stringify({ freq: 'weekly', interval: 1, weekdays: [] }), start, ts, S),
+        // A chore is a task on the spine (0150): its start is `at`.
+        `INSERT INTO home_projects (id, household_id, kind, title, rotation_json, current_idx, colour, recur_json, at, created_at, updated_at, is_sample)
+         VALUES (?, ?, 'chore', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).bind(newId(), h, title, JSON.stringify(rotation), idx, colour, JSON.stringify({ freq: 'weekly', interval: 1, weekdays: [] }), start, ts, ts, S),
     ),
 
     // notes — a few fridge notes, each tinted to whoever left it.
@@ -525,8 +529,9 @@ export async function seedSampleData(env: Env, householdId: string, ts = nowSec(
       ] as [string, string | null, number | null, number][]
     ).map(([title, mid, day, pos]) =>
       P(
-        `INSERT INTO todos (id, household_id, title, day, member_id, position, created_at, updated_at, is_sample)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        // A loose to-do is a task on the spine (0150): its day is `at`, its author `member_id`.
+        `INSERT INTO home_projects (id, household_id, kind, title, at, member_id, position, colour, created_at, updated_at, is_sample)
+         VALUES (?, ?, 'todo', ?, ?, ?, ?, NULL, ?, ?, ?)`,
       ).bind(newId(), h, title, day, mid, pos, ts, ts, S),
     ),
 

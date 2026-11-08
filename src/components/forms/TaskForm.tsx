@@ -11,7 +11,7 @@ import { choreTemplates, homeProjectTemplates } from '../../lib/routineTemplates
 import { everySeasonAnchorDate, nextSeasonAnchorDate, type Season } from '../../lib/season'
 import { subjectOf, suggestIcon } from '../../lib/subjects'
 import { draftTarget, draftUnheld, emptyDraft, taskWrite, type TaskDraft } from '../../lib/taskSave'
-import type { TaskTable } from '../../lib/taskTarget'
+import type { TaskFace } from '../../lib/taskTarget'
 import { useCreateWithUndo } from '../../lib/undoCreate'
 import { useVoiceInput } from '../../lib/useVoiceInput'
 import { useWrite } from '../../lib/write'
@@ -35,14 +35,15 @@ import { SubjectPicker, useInheritedLook, useSubjectLookup } from '../tasks/Subj
 // It opens as ONE title field. Every other answer is a layer, folded, one tap away: Quand ?,
 // Qui ?, Sur quoi ?, Allure, Effort, Notes et budget. A fold that holds an answer opens itself
 // and says it while closed (LEAN invariant 1). There is no « type » to pick, and this file never
-// asks which table a task lives in: a NEW task goes where its layers say (`taskTarget`), an
-// edit stays where it is, and both are written through the one save adapter (lib/taskSave).
+// asks which face a task wears: every save goes through the one save adapter (lib/taskSave) to
+// one endpoint, and the server picks the face from the layers (`taskTarget`, `faceAfter`).
 // `task-form-rule.test.ts` holds both halves: only the title is required, and no branch here
-// names a table.
+// names a face.
 //
-// An edit can add a layer its row cannot keep yet (a recurrence on a to-do, notes on a chore).
-// The form says so in one calm line, and saves the rest: nothing is dropped unsaid. Those cases
-// are the table merge's to-do list.
+// Since the merge (0150) an edit keeps every layer: a row that gains one its face does not
+// show moves up to a face that does. One combination still has no face: « annoncer la veille »
+// with a home-only layer (notes, a budget…). The form says so in one calm line, and saves the
+// rest: nothing is dropped unsaid.
 
 type Idea = ComboOption<{ title: string } | { extra: unknown }>
 
@@ -55,7 +56,7 @@ export function TaskForm({
   onCancel,
 }: {
   /** An existing task: where it lives, and what it says now. Absent = a new task. */
-  value?: { table: TaskTable; id: string; draft: TaskDraft } | null | undefined
+  value?: { table: TaskFace; id: string; draft: TaskDraft } | null | undefined
   /** A new task's starting answers, from the door that opened it (a day, a subject, a kind). */
   seed?: TaskDraft | undefined
   /** More picks for the title field (the ＋ sheet's departure checklists), and what one does. */
@@ -81,7 +82,7 @@ export function TaskForm({
   const membersQ = useQuery({ queryKey: MEMBERS_KEY, queryFn: () => api<{ members: FormMember[] }>('members') })
   const members = membersQ.data?.members ?? []
 
-  // Where this task is (an edit) or will go (a new one), and what that table cannot keep.
+  // The face this task wears (an edit) or will wear (a new one), and what that save cannot keep.
   const table = value?.table ?? draftTarget(draft)
   const lost = draftUnheld(table, draft)
 

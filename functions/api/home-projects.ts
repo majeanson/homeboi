@@ -1,82 +1,36 @@
 import { badRequest, notFound, ok, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec, localDayStart, tickedAt } from '../_lib/ids'
-import { clearStatements } from '../_lib/taskItem'
+import { clearStatements, deleteTaskStatements, FACE } from '../_lib/taskItem'
 import { nextTurnIdx, parseRotation, prevTurnIdx, rotationJson, turnOf } from '../_lib/rotation'
+import { budgetCents, dateSec, DEFAULT_COLOUR, homeKind, leadSeconds, notesOf, recurFromOf, recurJson, subjectCols } from '../_lib/taskWrite'
 import { emojiIcon, hexColor, taskEffort } from '../_lib/validate'
-import { normalizeRecur } from '../_lib/recur'
 import { upkeepStatus, nextCycleDay } from '../_lib/upkeep'
-import { validSubject, type SubjectRef } from '../_lib/subject'
+import { validSubject } from '../_lib/subject'
 import { addLocalDays } from '../_lib/ids'
 
-// "Projets & Entretien" — the longer-horizon home work that lives under Corvées
-// but isn't a chore (see migration 0074). ONE table, `kind` ('plan'|'upkeep')
-// discriminates the two faces; the frontend filters by kind. A row may carry BOTH
-// a budget AND a recurrence (a water-heater replacement is both maintenance and a
-// budgeted purchase). Modelled on chores.ts: the board expands recurring/dated
-// rows onto Aujourd'hui / À venir, and the same edit-vs-complete PATCH split lets
-// a kiosk check an upkeep occurrence off the board. NFR-CALM-1: budget is a
-// descriptive target only (no progress bar), no rotation, no counts.
-
-const kindOf = (v: unknown): 'plan' | 'upkeep' => (v === 'upkeep' ? 'upkeep' : 'plan')
-
-// What the recurrence counts from (migration 0119): the fixed anchor grid, or
-// « à partir de la dernière fois » (last_done_at re-anchors the cycle).
-const recurFromOf = (v: unknown): 'anchor' | 'done' => (v === 'done' ? 'done' : 'anchor')
-
-const recurJson = (recur: unknown): string | null => {
-  const r = normalizeRecur(recur)
-  return r ? JSON.stringify(r) : null
-}
-
-// The date this item targets / its recurrence anchors from (unix-seconds, local
-// midnight of the picked day). null = undated → never surfaces in dated views.
-const atSec = (v: unknown): number | null => {
-  const n = Number(v)
-  return Number.isFinite(n) && n > 0 ? Math.floor(n) : null
-}
-
-// Optional TARGET amount in cents (no progress-to-goal — NFR-CALM-1). null clears it.
-const budgetCents = (v: unknown): number | null => {
-  if (v === null) return null
-  const n = Number(v)
-  return Number.isFinite(n) && n >= 0 ? Math.floor(n) : null
-}
-
-const notesOf = (v: unknown): string | null => {
-  if (typeof v !== 'string') return null
-  const s = v.trim()
-  return s ? s : null
-}
-
-// Calm "Bientôt" lead window, clamped to [1 s .. 7 days] like chores/events.
-const MAX_LEAD = 7 * 86400
-const leadSeconds = (v: unknown): number | null => {
-  const n = Number(v)
-  return Number.isFinite(n) && n > 0 ? Math.min(Math.floor(n), MAX_LEAD) : null
-}
-
-// A nullable carnet_id (migration 0082) optionally ties an Entretien row to a
-// « carnet » (a house, a car, the water heater). NULL = an ordinary household-level
-// Projet/Entretien. The row surfaces on the board exactly the same either way — the
-// carnet link just lets « Les carnets » group + brand it (reuse seam #1).
-const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v.trim() : null)
+// "Projets & Entretien" — the longer-horizon home work (see migration 0074). Since 0150 the
+// table is the SPINE every task lives in, and this endpoint reads and writes only its HOME face
+// (`kind` 'plan' | 'upkeep'), with the shapes it always had: a queued offline write or an old
+// tab can still call it, and the Réglages lists, the carnets and the season card read it. A
+// chore or a to-do on the same table never shows up here (FACE.home). The one form writes
+// through /api/tasks; a row's tick, snooze, delete and « Vider » still come here.
+//
+// `kind` ('plan'|'upkeep') discriminates the two faces; the frontend filters by kind. A row may
+// carry BOTH a budget AND a recurrence (a water-heater replacement is both maintenance and a
+// budgeted purchase). The board expands recurring/dated rows onto Aujourd'hui / À venir, and
+// the edit-vs-complete PATCH split lets a kiosk check an upkeep occurrence off the board.
+// NFR-CALM-1: budget is a descriptive target only (no progress bar), no counts.
 
 // A carnet_id is only honoured when it names a carnet THIS household owns (mirrors
 // care-log / home-pins). A foreign/garbage id stores NULL rather than a dangling link.
+const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v.trim() : null)
 async function validCarnetId(db: D1Database, hh: string, v: unknown): Promise<string | null> {
   const id = str(v)
   if (!id) return null
   const owns = await db.prepare('SELECT id FROM carnets WHERE id = ? AND household_id = ?').bind(id, hh).first<{ id: string }>()
   return owns ? id : null
 }
-
-// One subject, two storages (migration 0146): a carnet stays in carnet_id, where every older
-// reader already looks; any other kind goes to subject_kind/subject_id and clears carnet_id.
-const subjectCols = (ref: SubjectRef | null): { carnetId: string | null; subjectKind: string | null; subjectId: string | null } =>
-  ref?.kind === 'carnet'
-    ? { carnetId: ref.id, subjectKind: null, subjectId: null }
-    : { carnetId: null, subjectKind: ref?.kind ?? null, subjectId: ref?.id ?? null }
 
 interface ProjectRow {
   id: string
@@ -103,7 +57,7 @@ interface ProjectRow {
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const { results } = await ctx.env.DB.prepare(
-    'SELECT id, kind, title, notes, budget_cents, colour AS color, at, recur_json, recur_from, lead_seconds, last_done_at, snoozed_until, carnet_id, subject_kind, subject_id, rotation_json, current_idx, last_done_by, icon, effort FROM home_projects WHERE household_id = ? ORDER BY created_at',
+    `SELECT id, kind, title, notes, budget_cents, colour AS color, at, recur_json, recur_from, lead_seconds, last_done_at, snoozed_until, carnet_id, subject_kind, subject_id, rotation_json, current_idx, last_done_by, icon, effort FROM home_projects WHERE household_id = ? AND ${FACE.home} ORDER BY created_at`,
   )
     .bind(actor.householdId)
     .all<ProjectRow>()
@@ -136,32 +90,32 @@ export const onRequestPost = authed(async (ctx, actor) => {
   if (!title) return badRequest('Titre requis.')
   const id = newId()
   const ts = nowSec()
-  const at = atSec(body?.at)
+  const at = dateSec(body?.at)
   // `subject` wins when both are sent; `carnetId` remains the older spelling of one kind of it.
   const cols =
     body?.subject !== undefined
-      ? subjectCols(await validSubject(ctx.env.DB, actor.householdId, body.subject, id))
-      : { carnetId: await validCarnetId(ctx.env.DB, actor.householdId, body?.carnetId), subjectKind: null, subjectId: null }
+      ? subjectCols('home', await validSubject(ctx.env.DB, actor.householdId, body.subject, id))
+      : { carnet_id: await validCarnetId(ctx.env.DB, actor.householdId, body?.carnetId), subject_kind: null, subject_id: null }
   await ctx.env.DB.prepare(
     'INSERT INTO home_projects (id, household_id, kind, title, notes, budget_cents, colour, icon, effort, at, recur_json, recur_from, lead_seconds, carnet_id, subject_kind, subject_id, rotation_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
   )
     .bind(
       id,
       actor.householdId,
-      kindOf(body?.kind),
+      homeKind(body?.kind),
       title,
       notesOf(body?.notes),
       budgetCents(body?.budgetCents),
-      hexColor(body?.color, '#88a36f'),
+      hexColor(body?.color, DEFAULT_COLOUR),
       emojiIcon(body?.icon),
       taskEffort(body?.effort),
       at,
       recurJson(body?.recur),
       recurFromOf(body?.recurFrom),
       at ? leadSeconds(body?.leadSeconds) : null, // a lead needs an occurrence date to anchor against
-      cols.carnetId,
-      cols.subjectKind,
-      cols.subjectId,
+      cols.carnet_id,
+      cols.subject_kind,
+      cols.subject_id,
       rotationJson(body?.rotation),
       ts,
       ts,
@@ -208,7 +162,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   // day and deletes nothing (_lib/taskItem).
   if (body?.clearChecked) {
     const ids = Array.isArray(body.ids) ? body.ids.filter((x): x is string => typeof x === 'string') : []
-    if (ids.length > 0) await ctx.env.DB.batch(clearStatements(ctx.env.DB, 'home_projects', actor.householdId, ids, nowSec()))
+    if (ids.length > 0) await ctx.env.DB.batch(clearStatements(ctx.env.DB, 'home', actor.householdId, ids, nowSec()))
     return ok({ ok: true })
   }
   if (!body?.id) return badRequest('id requis.')
@@ -220,7 +174,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       const today = localDayStart(new Date(nowSec() * 1000))
       if (body.snooze === 'cycle') {
         const row = await ctx.env.DB.prepare(
-          'SELECT at, recur_json, recur_from, last_done_at FROM home_projects WHERE id = ? AND household_id = ?',
+          `SELECT at, recur_json, recur_from, last_done_at FROM home_projects WHERE id = ? AND household_id = ? AND ${FACE.home}`,
         )
           .bind(body.id, actor.householdId)
           .first<{ at: number | null; recur_json: string | null; recur_from: string | null; last_done_at: number | null }>()
@@ -231,7 +185,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       }
     }
     const res = await ctx.env.DB.prepare(
-      'UPDATE home_projects SET snoozed_until = ?, updated_at = ? WHERE id = ? AND household_id = ?',
+      `UPDATE home_projects SET snoozed_until = ?, updated_at = ? WHERE id = ? AND household_id = ? AND ${FACE.home}`,
     )
       .bind(until, nowSec(), body.id, actor.householdId)
       .run()
@@ -270,7 +224,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     }
     if (body.color !== undefined) {
       sets.push('colour = ?')
-      binds.push(hexColor(body.color, '#88a36f'))
+      binds.push(hexColor(body.color, DEFAULT_COLOUR))
     }
     if (body.icon !== undefined) {
       sets.push('icon = ?')
@@ -283,7 +237,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     }
     if (body.at !== undefined) {
       sets.push('at = ?')
-      binds.push(atSec(body.at))
+      binds.push(dateSec(body.at))
     }
     if (body.recur !== undefined) {
       sets.push('recur_json = ?')
@@ -298,9 +252,9 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       binds.push(leadSeconds(body.leadSeconds))
     }
     if (body.subject !== undefined) {
-      const cols = subjectCols(await validSubject(ctx.env.DB, actor.householdId, body.subject, body.id))
+      const cols = subjectCols('home', await validSubject(ctx.env.DB, actor.householdId, body.subject, body.id))
       sets.push('carnet_id = ?', 'subject_kind = ?', 'subject_id = ?')
-      binds.push(cols.carnetId, cols.subjectKind, cols.subjectId)
+      binds.push(cols.carnet_id, cols.subject_kind, cols.subject_id)
     } else if (body.carnetId !== undefined) {
       // The older door still means « one subject »: naming a carnet clears any other kind.
       sets.push('carnet_id = ?', 'subject_kind = NULL', 'subject_id = NULL')
@@ -314,14 +268,14 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     sets.push('updated_at = ?')
     binds.push(nowSec())
     binds.push(body.id, actor.householdId)
-    const res = await ctx.env.DB.prepare(`UPDATE home_projects SET ${sets.join(', ')} WHERE id = ? AND household_id = ?`)
+    const res = await ctx.env.DB.prepare(`UPDATE home_projects SET ${sets.join(', ')} WHERE id = ? AND household_id = ? AND ${FACE.home}`)
       .bind(...binds)
       .run()
     if (!res.meta.changes) return notFound('Introuvable.')
     return ok({ ok: true })
   }
 
-  const turn = await ctx.env.DB.prepare('SELECT rotation_json, current_idx, last_done_at FROM home_projects WHERE id = ? AND household_id = ?')
+  const turn = await ctx.env.DB.prepare(`SELECT rotation_json, current_idx, last_done_at FROM home_projects WHERE id = ? AND household_id = ? AND ${FACE.home}`)
     .bind(body.id, actor.householdId)
     .first<{ rotation_json: string; current_idx: number; last_done_at: number | null }>()
   if (!turn) return notFound('Introuvable.')
@@ -332,7 +286,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     // Nothing to take back: a replayed or doubled untick must not walk the turn backwards.
     if (turn.last_done_at == null) return ok({ ok: true })
     await ctx.env.DB.prepare(
-      'UPDATE home_projects SET last_done_at = NULL, last_done_by = NULL, cleared_at = NULL, current_idx = ?, updated_at = ? WHERE id = ? AND household_id = ?',
+      `UPDATE home_projects SET last_done_at = NULL, last_done_by = NULL, cleared_at = NULL, current_idx = ?, updated_at = ? WHERE id = ? AND household_id = ? AND ${FACE.home}`,
     )
       .bind(prevTurnIdx(rotation, turn.current_idx), nowSec(), body.id, actor.householdId)
       .run()
@@ -344,7 +298,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   // last_done_at). Also clears any « reporté » — done beats postponed.
   const now = nowSec()
   const res = await ctx.env.DB.prepare(
-    'UPDATE home_projects SET last_done_at = ?, last_done_by = ?, current_idx = ?, snoozed_until = NULL, updated_at = ? WHERE id = ? AND household_id = ?',
+    `UPDATE home_projects SET last_done_at = ?, last_done_by = ?, current_idx = ?, snoozed_until = NULL, updated_at = ? WHERE id = ? AND household_id = ? AND ${FACE.home}`,
   )
     .bind(tickedAt(body.doneAt, now), turnOf(rotation, turn.current_idx), nextTurnIdx(rotation, turn.current_idx), now, body.id, actor.householdId)
     .run()
@@ -355,8 +309,8 @@ export const onRequestPatch = authed(async (ctx, actor) => {
 export const onRequestDelete = authed(async (ctx, actor) => {
   const body = await readJson<{ id?: string }>(ctx.request)
   if (!body?.id) return badRequest('id requis.')
-  await ctx.env.DB.prepare('DELETE FROM home_projects WHERE id = ? AND household_id = ?')
-    .bind(body.id, actor.householdId)
-    .run()
+  // Any face, with its « qui a aidé » lines: a capture's compensating undo sends every captured
+  // task here (CaptureForm maps `home_projects` to this endpoint), whatever face it wears.
+  await ctx.env.DB.batch(deleteTaskStatements(ctx.env.DB, actor.householdId, body.id))
   return ok({ ok: true })
 })

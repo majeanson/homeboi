@@ -127,7 +127,7 @@ describe('a swiped line dies even when the client aimed at a stale id', () => {
 describe('a deleted todo dies even when the client aimed at a stale id', () => {
   const nowSec = () => Math.floor(Date.now() / 1000)
   const titles = async (s: Session) =>
-    (await env.DB.prepare('SELECT title FROM todos WHERE household_id = ? ORDER BY created_at').bind(s.householdId).all<{ title: string }>()).results.map(
+    (await env.DB.prepare("SELECT title FROM home_projects WHERE household_id = ? AND kind = 'todo' ORDER BY created_at").bind(s.householdId).all<{ title: string }>()).results.map(
       (r) => r.title,
     )
 
@@ -215,7 +215,7 @@ describe('« Vider les cochés » survives a stale snapshot', () => {
     const mkTodo = async (title: string) =>
       ((await (await s.fetch('/api/todos', { method: 'POST', body: { title } })).json()) as { id: string }).id
     const titles = async () =>
-      (await env.DB.prepare('SELECT title FROM todos WHERE household_id = ? ORDER BY created_at').bind(s.householdId).all<{ title: string }>()).results.map((r) => r.title)
+      (await env.DB.prepare("SELECT title FROM home_projects WHERE household_id = ? AND kind = 'todo' ORDER BY created_at").bind(s.householdId).all<{ title: string }>()).results.map((r) => r.title)
     const done = await mkTodo('Appeler le dentiste')
     await s.fetch('/api/todos', { method: 'PATCH', body: { id: done, done: true } })
     await mkTodo('Payer le loyer') // not done: must survive

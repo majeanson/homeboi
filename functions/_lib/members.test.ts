@@ -40,6 +40,10 @@ function tablesReferencingMembers(): Set<string> {
   }
   // A table a later migration DROPPED references nothing any more (0143 dropped `mots`).
   for (const d of schema.matchAll(/drop\s+table\s+(?:if\s+exists\s+)?(\w+)/g)) tables.delete(d[1]!)
+  // …and a REBUILD lives on under its final name (0150: task_participants_new → task_participants).
+  for (const r of schema.matchAll(/alter\s+table\s+(\w+)\s+rename\s+to\s+(\w+)/g)) {
+    if (tables.delete(r[1]!)) tables.add(r[2]!)
+  }
   return tables
 }
 

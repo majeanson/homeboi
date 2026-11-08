@@ -17,6 +17,7 @@
 // Worker CPU budget and an unbounded household would otherwise decide how long it took.
 
 import type { Env } from './env'
+import { FACE } from './taskItem'
 import { fetchBirthdayPeople } from './birthdays'
 import { fetchCarnetLifeItems } from './carnetLife'
 import type { ScheduleBlockRow } from './carResolve'
@@ -88,7 +89,7 @@ export async function gatherAskSnapshot(env: Env, householdId: string, today: nu
     env.DB.prepare('SELECT text FROM list_items WHERE household_id = ? AND checked_at IS NULL ORDER BY created_at LIMIT 60')
       .bind(hh)
       .all<{ text: string }>(),
-    env.DB.prepare('SELECT title FROM tasks WHERE household_id = ? ORDER BY created_at LIMIT 30')
+    env.DB.prepare(`SELECT title FROM home_projects WHERE household_id = ? AND ${FACE.chore} ORDER BY created_at LIMIT 30`)
       .bind(hh)
       .all<{ title: string }>(),
     env.DB.prepare(

@@ -23,7 +23,7 @@ test('a carnet lists its tasks once, and adds one that files itself here', async
   await expect(s).not.toContainText('Filtre')
   await s.locator('.sec-label__actbtn').click()
   await s.getByPlaceholder('Ajouter une tâche…').fill('Appeler le couvreur')
-  const post = page.waitForRequest((r) => r.url().includes('/api/todos') && r.method() === 'POST')
+  const post = page.waitForRequest((r) => r.url().includes('/api/tasks') && r.method() === 'POST')
   await s.getByPlaceholder('Ajouter une tâche…').press('Enter')
   expect(((await post).postDataJSON() as { subject: unknown }).subject).toEqual({ kind: 'carnet', id: 'k1' })
 })

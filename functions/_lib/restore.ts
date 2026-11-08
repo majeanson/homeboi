@@ -179,6 +179,79 @@ export interface RestoreSummary {
 // note — its author (`author_member_id`) as `member_id`, its recipient (`member_id`) as
 // `for_member_id` — and the `mots` table leaves the dump. Pure; unit-tested.
 export function upgradeTakeout(t: Takeout): Takeout {
+  return upgradeTasks(upgradeMots(t))
+}
+
+// A copy taken BEFORE migration 0150 holds its chores in `tasks` (a table that no longer exists)
+// and its loose to-dos in `todos`. Skipping `tasks` would lose every chore, and inserting the
+// loose to-dos into `todos` would put them where nothing reads tasks any more. So the dump is
+// brought forward the way 0150 brought the database, column by column (the migration's header
+// is the map): each chore becomes a spine row of kind 'chore' (its start, `recur_start`, in
+// `at`), each loose to-do one of kind 'todo' (its day in `at`, its tick in `last_done_at`), and
+// the departure instances stay in `todos`. Ids are kept, so `task_participants.task_id` still
+// points at its chore. A row the dump already holds on the spine is never duplicated. Pure;
+// unit-tested, and worker/taskMerge.d1.test.ts restores a real pre-merge copy end to end.
+const v = (x: unknown): unknown => (x === undefined ? null : x)
+export function upgradeTasks(t: Takeout): Takeout {
+  const chores = t.tables.tasks
+  const todos = t.tables.todos ?? []
+  const loose = todos.filter((r) => r.source_template_id == null && r.section == null)
+  if (!chores && loose.length === 0) return t
+  const rest = { ...t.tables }
+  delete rest.tasks
+  const spine = rest.home_projects ?? []
+  const known = new Set(spine.map((r) => r.id))
+  const moved = [
+    ...(chores ?? []).map((r) => ({
+      id: r.id,
+      household_id: r.household_id,
+      kind: 'chore',
+      title: r.title,
+      colour: v(r.colour ?? r.color ?? '#88a36f'),
+      at: v(r.recur_start),
+      recur_json: v(r.recur_json),
+      recur_from: 'anchor',
+      lead_seconds: v(r.lead_seconds),
+      announce_evening: v(r.announce_evening),
+      last_done_at: v(r.last_done_at),
+      last_done_by: v(r.last_done_by),
+      cleared_at: v(r.cleared_at),
+      rotation_json: v(r.rotation_json ?? '[]'),
+      current_idx: v(r.current_idx ?? 0),
+      subject_kind: v(r.subject_kind),
+      subject_id: v(r.subject_id),
+      icon: v(r.icon),
+      effort: v(r.effort),
+      is_sample: v(r.is_sample ?? 0),
+      created_at: r.created_at,
+      updated_at: r.created_at,
+    })),
+    ...loose.map((r) => ({
+      id: r.id,
+      household_id: r.household_id,
+      kind: 'todo',
+      title: r.title,
+      colour: v(r.colour),
+      at: v(r.day),
+      last_done_at: v(r.done_at),
+      member_id: v(r.member_id),
+      position: v(r.position ?? 0),
+      subject_kind: v(r.subject_kind),
+      subject_id: v(r.subject_id),
+      icon: v(r.icon),
+      effort: v(r.effort),
+      is_sample: v(r.is_sample ?? 0),
+      created_at: r.created_at,
+      updated_at: v(r.updated_at ?? r.created_at),
+    })),
+  ].filter((r) => !known.has(r.id))
+  return {
+    ...t,
+    tables: { ...rest, todos: todos.filter((r) => !loose.includes(r)), home_projects: [...spine, ...moved] },
+  }
+}
+
+function upgradeMots(t: Takeout): Takeout {
   const mots = t.tables.mots
   if (!mots) return t
   const rest = { ...t.tables }

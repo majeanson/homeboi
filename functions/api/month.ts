@@ -4,6 +4,7 @@ import { localDayStart } from '../_lib/ids'
 import { parseRecur, expandRange, rotationOffset } from '../_lib/recur'
 import { parseRotation, turnOf } from '../_lib/rotation'
 import { choreSchedule, upkeepOccurrences } from '../_lib/upkeep'
+import { FACE, todoRowsSql } from '../_lib/taskItem'
 import { planOccurrences, type PlanRow as TransferPlanRow } from '../_lib/transfers'
 import { fetchBirthdayPeople, birthdayOccurrences } from '../_lib/birthdays'
 import { workOccurrencesInRange, parseScheduleBlockRow, type ScheduleBlock, type ScheduleBlockRow } from '../_lib/carResolve'
@@ -70,7 +71,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
       .bind(hh, from - DAY, to + DAY)
       .all<{ id: string; text: string; member_id: string | null; date: number }>(),
     ctx.env.DB.prepare(
-      'SELECT id, title, colour AS color, rotation_json, current_idx, last_done_at, recur_json, recur_start, created_at FROM tasks WHERE household_id = ?',
+      `SELECT id, title, colour AS color, rotation_json, current_idx, last_done_at, recur_json, at AS recur_start, created_at FROM home_projects WHERE household_id = ? AND ${FACE.chore}`,
     )
       .bind(hh)
       .all<{
@@ -87,9 +88,10 @@ export const onRequestGet = authed(async (ctx, actor) => {
     // À compléter todos pinned to a DAY (migration 0046/0047) — open ones only, so
     // the calendar shows what's still to do. `day` is already local midnight, so a
     // direct range match works (no ±DAY re-bucket needed). Global (day NULL) todos
-    // have no calendar cell, like fridge notes.
+    // have no calendar cell, like fridge notes. The loose ones from the spine and the
+    // departure instances from `todos`, as one list (todoRowsSql, 0150).
     ctx.env.DB.prepare(
-      'SELECT id, title, member_id, day, section FROM todos WHERE household_id = ? AND day IS NOT NULL AND day >= ? AND day < ? AND done_at IS NULL ORDER BY day, position, created_at',
+      todoRowsSql('id, title, member_id, day, section', 'WHERE day IS NOT NULL AND day >= ?2 AND day < ?3 AND done_at IS NULL ORDER BY day, position, created_at'),
     )
       .bind(hh, from, to)
       .all<{ id: string; title: string; member_id: string | null; day: number; section: string | null }>(),
@@ -114,7 +116,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     // recurring expand across the window, one-off land on their day. Like chores,
     // they ride the same calendar. Undated rows (at IS NULL) have no cell.
     ctx.env.DB.prepare(
-      'SELECT id, kind, title, colour AS color, at, recur_json, recur_from, last_done_at FROM home_projects WHERE household_id = ? AND at IS NOT NULL',
+      `SELECT id, kind, title, colour AS color, at, recur_json, recur_from, last_done_at FROM home_projects WHERE household_id = ? AND ${FACE.home} AND at IS NOT NULL`,
     )
       .bind(hh)
       .all<{ id: string; kind: string; title: string; color: string | null; at: number; recur_json: string | null; recur_from: string | null; last_done_at: number | null }>(),

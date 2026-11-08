@@ -4,19 +4,24 @@ import { newId, nowSec, localDayStart, tickedAt } from '../_lib/ids'
 import { profileMemberId } from '../_lib/profile'
 import { deleteHealing, healClear } from '../_lib/staleDelete'
 import { subjectBinds, validSubject } from '../_lib/subject'
-import { present, todoTask } from '../_lib/taskItem'
+import { FACE, present, todoRowsSql, todoTask } from '../_lib/taskItem'
 import { emojiIcon, hexColorOrNull, taskEffort } from '../_lib/validate'
 
-// À cocher — standalone check-off lists (todos), separate from the loose-chore
-// "À faire" board section (`tasks` table + the board payload's `todos` field). A
-// todo is GLOBAL (day NULL) or pinned to one calendar DAY. "Done" is a mark in
-// place (done_at); "Effacer cochées" deletes the checked rows. Migration 0046.
+// À cocher — standalone check-off lists (todos). A todo is GLOBAL (day NULL) or pinned to one
+// calendar DAY. "Done" is a mark in place (done_at); "Effacer cochées" deletes the checked
+// rows. Migration 0046.
 //
-// Two KINDS of row share the table (mig 0116): a LOOSE todo (« À compléter »,
-// source_template_id NULL) and a departure CHECKLIST INSTANCE (« Avant de partir »,
-// source_template_id = the todo_templates id it was instantiated from). An instance
-// is ALWAYS day-pinned — a template POST without a day defaults to today rather than
-// 400 (the offline outbox replays queued POSTs; a reject would strand them) — and
+// AN ALIAS since 0150, over TWO tables. A LOOSE to-do (« À compléter ») is a task now and lives
+// on the spine (`home_projects`, kind 'todo': its day in `at`, its tick in `last_done_at`). A
+// departure CHECKLIST INSTANCE (« Avant de partir », source_template_id = the todo_templates
+// id it was instantiated from, mig 0116) is not a task and stays in `todos`. This endpoint
+// keeps the shapes it always had — a queued offline write from yesterday's bundle or an old
+// tab can still call it — by reading both through `todoRowsSql` and by writing an id to
+// whichever table holds it (an UPDATE that matches nothing changes nothing; ids never collide
+// across the two). A new loose row goes to the spine; the one form writes through /api/tasks.
+//
+// An instance is ALWAYS day-pinned — a template POST without a day defaults to today rather
+// than 400 (the offline outbox replays queued POSTs; a reject would strand them) — and
 // past-day instances are swept opportunistically on the next write (never in GET:
 // a guest GET must not write). A past day page may briefly show a stale instance
 // until that write lands — invisible on the board, calm-acceptable.
@@ -53,7 +58,7 @@ interface TodoRow {
   subject_kind: string | null // soft ref (0146): what this task is about, no FK
   subject_id: string | null
   icon: string | null // 0148: the look's override; null = « comme le sujet »
-  color: string | null // todos.colour (0148), nullable, read as `color` like the two other task tables
+  color: string | null // colour (0148), nullable, read as `color` like the two other faces
   effort: number | null // 0149: 1 to 5, null = not said
 }
 
@@ -76,6 +81,19 @@ const sweepStale = (db: D1Database, householdId: string, today: number) =>
     .prepare('DELETE FROM todos WHERE household_id = ? AND source_template_id IS NOT NULL AND day IS NOT NULL AND day < ?')
     .bind(householdId, today)
 
+// One change to one to-do, on whichever table holds it: the spine's spelling for a loose row
+// (`at`, `last_done_at`), the old one for a departure instance. `sets` is written in the spine's
+// column names; the departure side renames the two that differ.
+function bothTables(db: D1Database, hh: string, id: string, sets: Record<string, unknown>, departureOnly?: string): D1PreparedStatement[] {
+  const spineCols = Object.keys(sets)
+  const oldName = (c: string) => (c === 'at' ? 'day' : c === 'last_done_at' ? 'done_at' : c)
+  const vals = spineCols.map((c) => sets[c])
+  return [
+    db.prepare(`UPDATE home_projects SET ${spineCols.map((c) => `${c} = ?`).join(', ')} WHERE id = ? AND household_id = ? AND ${FACE.todo}`).bind(...vals, id, hh),
+    db.prepare(`UPDATE todos SET ${spineCols.map((c) => `${oldName(c)} = ?`).join(', ')} WHERE id = ? AND household_id = ?${departureOnly ?? ''}`).bind(...vals, id, hh),
+  ]
+}
+
 export const onRequestGet = authed(async (ctx, actor) => {
   const dateParam = new URL(ctx.request.url).searchParams.get('date')
   const today = localDayStart(new Date())
@@ -83,9 +101,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   if (dateParam !== null) {
     const day = Number(dateParam)
     if (!Number.isFinite(day)) return badRequest('date invalide.')
-    rows = await ctx.env.DB.prepare(
-      `SELECT ${COLS} FROM todos WHERE household_id = ? AND day = ? ORDER BY created_at, position`,
-    )
+    rows = await ctx.env.DB.prepare(todoRowsSql(COLS, 'WHERE day = ?2 ORDER BY created_at, position'))
       .bind(actor.householdId, day)
       .all<TodoRow>()
   } else {
@@ -107,15 +123,16 @@ export const onRequestGet = authed(async (ctx, actor) => {
     // Nothing is rewritten and nothing is deleted: the row keeps its own day, and
     // the client shows it as overdue (the same treatment Entretien already gets).
     rows = await ctx.env.DB.prepare(
-      `SELECT ${COLS} FROM todos
-         WHERE household_id = ?
-           AND (day IS NULL
-                OR day = ?
-                OR (day < ? AND day IS NOT NULL AND source_template_id IS NULL AND done_at IS NULL))
-           AND NOT (day IS NULL AND done_at IS NOT NULL AND done_at < ? AND source_template_id IS NULL AND section IS NULL)
+      todoRowsSql(
+        COLS,
+        `WHERE (day IS NULL
+                OR day = ?2
+                OR (day < ?2 AND day IS NOT NULL AND source_template_id IS NULL AND done_at IS NULL))
+           AND NOT (day IS NULL AND done_at IS NOT NULL AND done_at < ?2 AND source_template_id IS NULL AND section IS NULL)
          ORDER BY created_at, position`,
+      ),
     )
-      .bind(actor.householdId, today, today, today)
+      .bind(actor.householdId, today)
       .all<TodoRow>()
     // The AND NOT is the merged board section: a standing to-do ticked on an earlier day has
     // CLEARED, on read, with no cron and no row rewrite (_lib/taskItem.ts). It stays in the
@@ -201,10 +218,11 @@ export const onRequestPost = authed(async (ctx, actor) => {
     return ok({ ok: true, id })
   }
 
+  // A loose to-do: a task, on the spine. Its author (the acting profile) is `member_id`.
   const [subjectKind, subjectId] = subjectBinds(await validSubject(ctx.env.DB, actor.householdId, body?.subject))
   await ctx.env.DB.batch([
     ctx.env.DB.prepare(
-      'INSERT INTO todos (id, household_id, title, day, member_id, position, done_at, section, source_template_id, subject_kind, subject_id, icon, colour, effort, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 0, NULL, NULL, NULL, ?, ?, ?, ?, ?, ?, ?)',
+      "INSERT INTO home_projects (id, household_id, kind, title, at, member_id, position, subject_kind, subject_id, icon, colour, effort, created_at, updated_at) VALUES (?, ?, 'todo', ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?)",
     ).bind(id, actor.householdId, title.slice(0, TITLE_MAX), day, mid, subjectKind, subjectId, emojiIcon(body?.icon), hexColorOrNull(body?.color), taskEffort(body?.effort), ts, ts),
     sweepStale(ctx.env.DB, actor.householdId, today),
   ])
@@ -228,9 +246,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       // that already existed when the client ticked it (_lib/staleDelete.healClear). A stale
       // snapshot used to delete nothing and answer « ok »; if NOTHING is left to clear it is
       // a 404 now, so the client never trusts a deletion that did not happen.
-      const { results: rows } = await ctx.env.DB.prepare(
-        'SELECT id, title AS text, done_at, created_at FROM todos WHERE household_id = ?',
-      )
+      const { results: rows } = await ctx.env.DB.prepare(todoRowsSql('id, title AS text, done_at, created_at', ''))
         .bind(actor.householdId)
         .all<{ id: string; text: string; done_at: number | null; created_at: number }>()
       const named = new Set(ids)
@@ -243,20 +259,21 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       )
       const doomed = [...matched, ...healed].map((r) => r.id)
       if (doomed.length === 0) return notFound('Aucune tâche à effacer.')
-      // D1 caps bound variables per statement — delete in slices instead of one huge IN (…).
+      // D1 caps bound variables per statement — delete in slices instead of one huge IN (…),
+      // from both tables (an id is in exactly one of them).
       const slices: string[][] = []
       for (let i = 0; i < doomed.length; i += 50) slices.push(doomed.slice(i, i + 50))
+      const marks = (slice: string[]) => slice.map(() => '?').join(',')
       await ctx.env.DB.batch([
-        ...slices.map((slice) =>
-          ctx.env.DB.prepare(`DELETE FROM todos WHERE household_id = ? AND id IN (${slice.map(() => '?').join(',')})`).bind(
-            actor.householdId,
-            ...slice,
-          ),
-        ),
+        ...slices.flatMap((slice) => [
+          ctx.env.DB.prepare(`DELETE FROM home_projects WHERE household_id = ? AND ${FACE.todo} AND id IN (${marks(slice)})`).bind(actor.householdId, ...slice),
+          ctx.env.DB.prepare(`DELETE FROM todos WHERE household_id = ? AND id IN (${marks(slice)})`).bind(actor.householdId, ...slice),
+        ]),
         sweepStale(ctx.env.DB, actor.householdId, today),
       ])
     } else if (!ids) {
       await ctx.env.DB.batch([
+        ctx.env.DB.prepare(`DELETE FROM home_projects WHERE household_id = ? AND ${FACE.todo} AND last_done_at IS NOT NULL`).bind(actor.householdId),
         ctx.env.DB.prepare('DELETE FROM todos WHERE household_id = ? AND done_at IS NOT NULL').bind(actor.householdId),
         sweepStale(ctx.env.DB, actor.householdId, today),
       ])
@@ -268,60 +285,37 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   if (!id) return badRequest('id requis.')
   const ts = nowSec()
   const today = localDayStart(new Date())
+  const db = ctx.env.DB
+  const hh = actor.householdId
   // Toggle/rename ride the sweep too — checking a box is the household's most
   // frequent todos write, and without it a check-only household never sheds its
   // past-day instances ("every write path" must actually mean every write path).
   if (typeof body?.done === 'boolean') {
-    await ctx.env.DB.batch([
-      ctx.env.DB.prepare('UPDATE todos SET done_at = ?, updated_at = ? WHERE id = ? AND household_id = ?').bind(
-        body.done ? tickedAt(body.doneAt, ts) : null,
-        ts,
-        id,
-        actor.householdId,
-      ),
-      sweepStale(ctx.env.DB, actor.householdId, today),
-    ])
+    await db.batch([...bothTables(db, hh, id, { last_done_at: body.done ? tickedAt(body.doneAt, ts) : null, updated_at: ts }), sweepStale(db, hh, today)])
   }
   if (typeof body?.title === 'string' && body.title.trim()) {
-    await ctx.env.DB.prepare('UPDATE todos SET title = ?, updated_at = ? WHERE id = ? AND household_id = ?')
-      .bind(body.title.trim().slice(0, TITLE_MAX), ts, id, actor.householdId)
-      .run()
+    await db.batch(bothTables(db, hh, id, { title: body.title.trim().slice(0, TITLE_MAX), updated_at: ts }))
   }
   if (body?.subject !== undefined) {
-    const [subjectKind, subjectId] = subjectBinds(await validSubject(ctx.env.DB, actor.householdId, body.subject))
-    await ctx.env.DB.prepare('UPDATE todos SET subject_kind = ?, subject_id = ?, updated_at = ? WHERE id = ? AND household_id = ?')
-      .bind(subjectKind, subjectId, ts, id, actor.householdId)
-      .run()
+    const [subjectKind, subjectId] = subjectBinds(await validSubject(db, hh, body.subject))
+    await db.batch(bothTables(db, hh, id, { subject_kind: subjectKind, subject_id: subjectId, updated_at: ts }))
   }
   // The look (0148). Each half on its own: null puts the subject's back.
   if (body?.icon !== undefined || body?.color !== undefined) {
-    const sets: string[] = []
-    const binds: unknown[] = []
-    if (body.icon !== undefined) {
-      sets.push('icon = ?')
-      binds.push(emojiIcon(body.icon))
-    }
-    if (body.color !== undefined) {
-      sets.push('colour = ?')
-      binds.push(hexColorOrNull(body.color))
-    }
-    await ctx.env.DB.prepare(`UPDATE todos SET ${sets.join(', ')}, updated_at = ? WHERE id = ? AND household_id = ?`)
-      .bind(...binds, ts, id, actor.householdId)
-      .run()
+    const sets: Record<string, unknown> = {}
+    if (body.icon !== undefined) sets.icon = emojiIcon(body.icon)
+    if (body.color !== undefined) sets.colour = hexColorOrNull(body.color)
+    await db.batch(bothTables(db, hh, id, { ...sets, updated_at: ts }))
   }
   // The day (phase 4, the one task form): a household-local midnight, or null for « un jour ».
   // Only a LOOSE to-do moves: a departure instance's day is what sweeps it, so it keeps its own.
   if (body?.day !== undefined) {
     const day = typeof body.day === 'number' && Number.isFinite(body.day) ? Math.floor(body.day) : null
-    await ctx.env.DB.prepare('UPDATE todos SET day = ?, updated_at = ? WHERE id = ? AND household_id = ? AND source_template_id IS NULL')
-      .bind(day, ts, id, actor.householdId)
-      .run()
+    await db.batch(bothTables(db, hh, id, { at: day, updated_at: ts }, ' AND source_template_id IS NULL'))
   }
   // The effort (0149): null, or anything that is not a dot from 1 to 5, clears it.
   if (body?.effort !== undefined) {
-    await ctx.env.DB.prepare('UPDATE todos SET effort = ?, updated_at = ? WHERE id = ? AND household_id = ?')
-      .bind(taskEffort(body.effort), ts, id, actor.householdId)
-      .run()
+    await db.batch(bothTables(db, hh, id, { effort: taskEffort(body.effort), updated_at: ts }))
   }
   return ok({ ok: true })
 })
@@ -331,7 +325,8 @@ export const onRequestDelete = authed(async (ctx, actor) => {
   const id = body?.id?.trim()
   if (!id) return badRequest('id requis.')
   // Optimistic rows exist here too (TodoSection mints tmp- ids), so a vacuous « ok » on
-  // an id the DB never had would let the row come back — see _lib/staleDelete.
+  // an id the DB never had would let the row come back — see _lib/staleDelete, which reads
+  // and deletes across both tables a to-do may live in.
   const r = await deleteHealing(ctx.env.DB, {
     table: 'todos',
     textColumn: 'title',

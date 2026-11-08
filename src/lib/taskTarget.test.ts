@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { axesOf, taskTarget, unheldAxes, type TaskAxes, type TaskAxis, type TaskTable } from './taskTarget'
+import { axesOf, faceAfter, taskTarget, unheldAxes, type TaskAxes, type TaskAxis, type TaskFace } from './taskTarget'
 
 const WEEKLY = { freq: 'weekly', interval: 1, weekdays: [2] }
 
 describe('taskTarget: the one rule, by example', () => {
-  it.each<[string, TaskAxes, TaskTable]>([
+  it.each<[string, TaskAxes, TaskFace]>([
     ['a bare title is a to-do', { title: 'Appeler la garderie' }, 'todo'],
     ['a date alone is a to-do on that day', { title: 'Formulaire', date: '2026-11-12' }, 'todo'],
     ['a subject, a look and an effort never route', { title: 'Vérifier le toit' }, 'todo'],
@@ -57,9 +57,9 @@ describe('taskTarget: every combination', () => {
     budgetCents: on.has('budget') ? 100 : null,
     kind: on.has('kind') ? 'plan' : null,
   })
-  const order: TaskTable[] = ['todo', 'chore', 'home']
+  const order: TaskFace[] = ['todo', 'chore', 'home']
   it('all 512: the first table that holds them all, else home losing only the evening', () => {
-    const seen = new Set<TaskTable>()
+    const seen = new Set<TaskFace>()
     for (let mask = 0; mask < 1 << flags.length; mask++) {
       const d = build(new Set(flags.filter((_, i) => mask & (1 << i))))
       const got = taskTarget(d)
@@ -85,5 +85,23 @@ describe('unheldAxes: what an edit cannot keep, by table', () => {
   })
   it('a home row keeps everything but the evening line', () => {
     expect(unheldAxes('home', { title: 'x', recur: WEEKLY, announceEvening: true, rotation: ['a', 'b'], notes: 'n' })).toEqual(['evening'])
+  })
+})
+
+describe('faceAfter: an edit keeps its face while it shows every layer, and only ever moves up', () => {
+  it('stays put when its face shows everything', () => {
+    expect(faceAfter('todo', { title: 'x', date: '2026-11-12' })).toBe('todo')
+    expect(faceAfter('chore', { title: 'x', recur: WEEKLY, rotation: ['a'] })).toBe('chore')
+  })
+  it('a to-do that gains a person becomes a chore; one that gains notes, a home row', () => {
+    expect(faceAfter('todo', { title: 'x', rotation: ['m1'] })).toBe('chore')
+    expect(faceAfter('todo', { title: 'x', notes: 'n' })).toBe('home')
+  })
+  it('never moves down: a chore emptied of its layers stays a chore, a home row stays home', () => {
+    expect(faceAfter('chore', { title: 'x' })).toBe('chore')
+    expect(faceAfter('home', { title: 'x' })).toBe('home')
+  })
+  it('the one combination no face shows: the evening line with a home-only layer goes home', () => {
+    expect(faceAfter('chore', { title: 'x', recur: WEEKLY, announceEvening: true, notes: 'n' })).toBe('home')
   })
 })

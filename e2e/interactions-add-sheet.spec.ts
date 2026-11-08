@@ -111,7 +111,7 @@ test.describe('add sheet', () => {
 
   // F3 « À compléter » (PARITY Wave E, entry 10) — the board todo card was smoke
   // -rendered only; nothing created a todo. The board ＋ « Tâches » tile opens the one task
-  // form, folded to its title: a bare title is a to-do, so it POSTs /api/todos.
+  // form, folded to its title: a bare title is a to-do, and the one form POSTs /api/tasks (0150).
   test('the board ＋ « Tâches » box posts a todo', async ({ page }) => {
     await APP('/board')(page)
     await settle(page, '.hub')
@@ -119,7 +119,7 @@ test.describe('add sheet', () => {
     await expect(page.locator('.sheet.show')).toBeVisible()
     await page.locator('.cat-pick', { hasText: 'Tâches' }).click()
     await page.locator('.addsheet__todo input.edit-field__input').fill('Sac de piscine')
-    await expectApi(page, 'POST', 'todos', () =>
+    await expectApi(page, 'POST', 'tasks', () =>
       page.locator('.addsheet__todo button[type="submit"]').click(),
     )
   })

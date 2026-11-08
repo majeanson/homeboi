@@ -35,7 +35,9 @@ export const onRequestGet = authed(async (ctx, actor) => {
       : defaultSince
 
   // JOIN (not IN-subquery) so the planner walks the household's few tasks via
-  // tasks_household_idx, then task_participants_task_idx(task_id, contributed_at).
+  // home_projects_household_idx, then task_participants_task_idx(task_id, contributed_at).
+  // Every face: only a chore's tick writes a line, and a chore that an edit moved up to a home
+  // row keeps its history (0150).
   // LEFT JOIN members: a member may have been deleted (the contribution stays as
   // an anonymous record) → null name, the client shows a calm generic helper label.
   const rows = await ctx.env.DB.prepare(
@@ -44,7 +46,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
             t.title AS chore_title, t.colour AS chore_color,
             m.display_name AS name, m.avatar_kind, m.avatar_ref, m.colour
        FROM task_participants tp
-       JOIN tasks t ON t.id = tp.task_id AND t.household_id = ?
+       JOIN home_projects t ON t.id = tp.task_id AND t.household_id = ?
        LEFT JOIN members m ON m.id = tp.member_id
       WHERE tp.contributed_at >= ?
       ORDER BY tp.contributed_at DESC`,

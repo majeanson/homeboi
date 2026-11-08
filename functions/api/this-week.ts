@@ -2,6 +2,7 @@ import { okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { localDayStart, addLocalDays } from '../_lib/ids'
 import { parseRecur, expandRange } from '../_lib/recur'
+import { FACE } from '../_lib/taskItem'
 import { fetchBirthdayPeople, birthdayOccurrences } from '../_lib/birthdays'
 import { workOccurrencesInRange, parseScheduleBlockRow, type ScheduleBlockRow } from '../_lib/carResolve'
 
@@ -58,7 +59,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
       .all<{ id: string; title: string; start_at: number; all_day: number; member_id: string | null; recur_json: string }>(),
     // Projects: upcoming (dated in range) AND advanced this week (last_done_at in window).
     ctx.env.DB.prepare(
-      'SELECT title, at, last_done_at, colour AS color FROM home_projects WHERE household_id = ? AND ((at >= ? AND at < ?) OR (last_done_at >= ? AND last_done_at < ?))',
+      `SELECT title, at, last_done_at, colour AS color FROM home_projects WHERE household_id = ? AND ${FACE.home} AND ((at >= ? AND at < ?) OR (last_done_at >= ? AND last_done_at < ?))`,
     )
       .bind(hh, today, weekEnd, weekStart, today)
       .all<{ title: string; at: number | null; last_done_at: number | null; color: string | null }>(),
@@ -68,7 +69,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
               t.title AS chore_title, t.colour AS chore_color,
               m.display_name AS name, m.avatar_kind, m.avatar_ref, m.colour
          FROM task_participants tp
-         JOIN tasks t ON t.id = tp.task_id AND t.household_id = ?
+         JOIN home_projects t ON t.id = tp.task_id AND t.household_id = ?
          LEFT JOIN members m ON m.id = tp.member_id
         WHERE tp.contributed_at >= ? AND tp.contributed_at < ?
         ORDER BY tp.contributed_at DESC`,

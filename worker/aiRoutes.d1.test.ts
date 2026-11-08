@@ -143,7 +143,7 @@ describe('le bilan de la semaine', () => {
     await okJson(s.fetch('/api/events', { method: 'POST', body: { title: 'Fête passée', startAt: day(-1) + 3600 } }))
     await okJson(s.fetch('/api/events', { method: 'POST', body: { title: 'Rendez-vous à venir', startAt: day(2) + 3600 } }))
     const { id } = await okJson<{ id: string }>(s.fetch('/api/chores', { method: 'POST', body: { title: 'Vaisselle faite' } }))
-    await env.DB.prepare('UPDATE tasks SET last_done_at = ? WHERE id = ?').bind(day(-1), id).run()
+    await env.DB.prepare('UPDATE home_projects SET last_done_at = ? WHERE id = ?').bind(day(-1), id).run()
     await okJson(other.fetch('/api/meals', { method: 'POST', body: { date: today(), title: 'Souper du voisin', slot: 'supper' } }))
     ai.on(TEXT, reply('  Une semaine douce, entre lasagne et vaisselle.  '))
 

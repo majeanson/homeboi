@@ -3,54 +3,63 @@ import { localDayStart } from './localDay'
 import { clearWrites, draftUnheld, emptyDraft, removeBody, taskRead, taskScene, taskWrite, tickBody } from './taskSave'
 import type { TaskItem } from './tasks'
 
-// THE SAVE ADAPTER: the bodies the one form sends. worker/taskForm.d1.test.ts sends these same
-// literals to the real endpoints (it cannot import this module: workerd has no DOM), so a change
+// THE SAVE ADAPTER: the bodies the one form sends. Since 0150 every save goes to /api/tasks in
+// one spelling, and the SERVER picks the face. worker/taskForm.d1.test.ts sends these same
+// literals to the real endpoint (it cannot import this module: workerd has no DOM), so a change
 // here that is not mirrored there fails one of the two.
-const NONE = { subject: null, icon: null, color: null, effort: null }
 const UTC = (y: number, m: number, d: number) => Math.floor(Date.UTC(y, m - 1, d) / 1000)
 const WEEKLY = { freq: 'weekly' as const, interval: 1, weekdays: [2] }
+const BARE = {
+  subject: null,
+  icon: null,
+  color: null,
+  effort: null,
+  day: null,
+  at: null,
+  recur: null,
+  recurFrom: 'anchor',
+  leadSeconds: null,
+  announceEvening: false,
+  rotation: [],
+  notes: null,
+  budgetCents: null,
+  kind: null,
+}
 
-describe('taskWrite: a new task goes where the rule says, spelled its table’s way', () => {
-  it('a bare title is a to-do with no day', () => {
-    expect(taskWrite(emptyDraft({ title: '  Appeler la garderie ' }))).toMatchObject({
-      endpoint: 'todos',
-      method: 'POST',
-      body: { title: 'Appeler la garderie', ...NONE, day: null },
+describe('taskWrite: one endpoint, one spelling of every layer', () => {
+  it('a bare title: every layer empty', () => {
+    expect(taskWrite(emptyDraft({ title: '  Appeler la garderie ' }))).toMatchObject({ endpoint: 'tasks', method: 'POST', body: { title: 'Appeler la garderie', ...BARE } })
+  })
+  it('a date goes twice: a household-local midnight (a to-do’s) and a UTC anchor (the scheduled faces’)', () => {
+    expect(taskWrite(emptyDraft({ title: 'Formulaire', date: '2030-03-14' })).body).toEqual({
+      title: 'Formulaire',
+      ...BARE,
+      day: localDayStart(new Date(Date.UTC(2030, 2, 14, 12))),
+      at: UTC(2030, 3, 14),
     })
   })
-  it('a to-do’s date is a household-local midnight', () => {
-    expect(taskWrite(emptyDraft({ title: 'Formulaire', date: '2030-03-14' })).body).toEqual({ title: 'Formulaire', ...NONE, day: localDayStart(new Date(Date.UTC(2030, 2, 14, 12))) })
+  it('a recurrence with no date counts from today', () => {
+    const w = taskWrite(emptyDraft({ title: 'Bac', recur: WEEKLY }))
+    expect(w.body).toMatchObject({ recur: WEEKLY, day: null })
+    expect(typeof w.body.at).toBe('number')
   })
-  it('a recurrence is a chore, anchored on its UTC start; lead and evening ride along', () => {
-    expect(taskWrite(emptyDraft({ title: 'Sortir le bac', recur: WEEKLY, date: '2030-03-12', lead: 3600, announceEvening: true }))).toMatchObject({
-      endpoint: 'chores',
-      body: { title: 'Sortir le bac', ...NONE, rotation: [], recur: WEEKLY, start: UTC(2030, 3, 12), leadSeconds: 3600, announceEvening: true },
-    })
+  it('notes, a budget and a door’s kind ride along as typed; the server decides what they mean', () => {
+    expect(taskWrite(emptyDraft({ title: 'Cuisine', notes: ' trois devis ', budget: '15 000', kind: 'plan' })).body).toMatchObject({ notes: 'trois devis', budgetCents: 1_500_000, kind: 'plan' })
   })
-  it('notes and a budget go home; a one-off is a project', () => {
-    expect(taskWrite(emptyDraft({ title: 'Cuisine', notes: ' trois devis ', budget: '15 000' }))).toMatchObject({
-      endpoint: 'home-projects',
-      body: { title: 'Cuisine', ...NONE, notes: 'trois devis', budgetCents: 1_500_000, at: null, recur: null, recurFrom: 'anchor', leadSeconds: null, rotation: [], kind: 'plan' },
-    })
-  })
-  it('a person on a dated one-off goes home, with its date', () => {
-    expect(taskWrite(emptyDraft({ title: 'Peinturer', date: '2030-03-14', rotation: ['m1'] })).body).toMatchObject({ at: UTC(2030, 3, 14), rotation: ['m1'], kind: 'plan' })
-  })
-  it('a recurring home row is upkeep unless the door said otherwise', () => {
-    expect(taskWrite(emptyDraft({ title: 'Filtre', recur: WEEKLY, recurFrom: 'done' })).body).toMatchObject({ kind: 'upkeep', recurFrom: 'done' })
-    expect(taskWrite(emptyDraft({ title: 'Cuisine', kind: 'plan', recur: WEEKLY })).body).toMatchObject({ kind: 'plan' })
+  it('an edit PATCHes the same body with its id, whatever face the row wears', () => {
+    const w = taskWrite(emptyDraft({ title: 'Toit', subject: { kind: 'carnet', id: 'k1' } }), { table: 'todo', id: 't1' })
+    expect(w).toMatchObject({ endpoint: 'tasks', method: 'PATCH', body: { id: 't1', title: 'Toit', subject: { kind: 'carnet', id: 'k1' } } })
+    // Every face's surfaces hear it: an edit can move a row from one face to another.
+    expect(w.affectedKeys.length).toBe(7)
   })
 })
 
-describe('taskWrite: an edit keeps its table and sends only what it holds', () => {
-  it('a to-do edit PATCHes the day and the subject, and drops what it cannot hold', () => {
-    const w = taskWrite(emptyDraft({ title: 'Toit', date: '2030-05-02', subject: { kind: 'carnet', id: 'k1' }, recur: WEEKLY, notes: 'x' }), { table: 'todo', id: 't1' })
-    expect(w).toMatchObject({ endpoint: 'todos', method: 'PATCH' })
-    expect(w.body).toEqual({ id: 't1', title: 'Toit', subject: { kind: 'carnet', id: 'k1' }, icon: null, color: null, effort: null, day: localDayStart(new Date(Date.UTC(2030, 4, 2, 12))) })
-    expect(draftUnheld('todo', emptyDraft({ title: 'Toit', recur: WEEKLY, notes: 'x' }))).toEqual(['recur', 'notes'])
+describe('draftUnheld: an edit moves up instead of dropping a layer', () => {
+  it('a to-do that gains a recurrence and notes keeps both (it becomes a home row)', () => {
+    expect(draftUnheld('todo', emptyDraft({ title: 'Toit', recur: WEEKLY, notes: 'x' }))).toEqual([])
   })
-  it('a home edit never sends a kind (the column is not editable)', () => {
-    expect(taskWrite(emptyDraft({ title: 'X', kind: 'upkeep' }), { table: 'home', id: 'h1' }).body).not.toHaveProperty('kind')
+  it('the one combination no face shows: the evening line with a home-only layer', () => {
+    expect(draftUnheld('chore', emptyDraft({ title: 'Bac', recur: WEEKLY, announceEvening: true, notes: 'x' }))).toEqual(['evening'])
   })
 })
 

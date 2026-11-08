@@ -118,7 +118,8 @@ const DAY = 86_400
 // the side of saying less. One EXISTS per table, OR-ed: D1 refuses a compound SELECT of
 // this many UNION terms (« too many terms », found by worker/strangers.d1.test.ts), and
 // an EXISTS stops at the first row per household anyway.
-const WROTE = ['list_items', 'meals', 'events', 'tasks', 'members']
+// `home_projects` is every task since 0150 (it was `tasks`, the chores alone).
+const WROTE = ['list_items', 'meals', 'events', 'home_projects', 'members']
   .map((t) => `EXISTS (SELECT 1 FROM ${t} x WHERE x.household_id = h.id AND x.created_at > ?1)`)
   .concat('EXISTS (SELECT 1 FROM usage_daily u WHERE u.household_id = h.id AND u.updated_at > ?1)')
   .join(' OR ')

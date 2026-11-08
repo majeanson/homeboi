@@ -1,48 +1,29 @@
 import { badRequest, notFound, ok, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec, tickedAt } from '../_lib/ids'
-import { clearStatements } from '../_lib/taskItem'
+import { clearStatements, deleteTaskStatements, FACE } from '../_lib/taskItem'
+import { announceEvening, dateSec, DEFAULT_COLOUR, leadSeconds, recurJson } from '../_lib/taskWrite'
 import { emojiIcon, hexColor, taskEffort } from '../_lib/validate'
-import { normalizeRecur } from '../_lib/recur'
 import { subjectBinds, validSubject } from '../_lib/subject'
 import { nextTurnIdx, parseRotation, prevTurnIdx, rotationJson, turnOf } from '../_lib/rotation'
 import type { Wire } from '../_lib/wire'
 
 const isString = (v: unknown): v is string => typeof v === 'string'
-const recurJson = (recur: unknown): string | null => {
-  const r = normalizeRecur(recur)
-  return r ? JSON.stringify(r) : null
-}
-// The recurrence anchor the operator chose (unix-seconds, UTC-midnight of the
-// picked day). null = no explicit start → the board falls back to created_at.
-const recurStart = (start: unknown): number | null => {
-  const n = Number(start)
-  return Number.isFinite(n) && n > 0 ? Math.floor(n) : null
-}
 
-// Calm "Bientôt" lead window: how far before an occurrence the board highlights
-// the chore (never a push — NFR-CALM-1). Clamp to null or [1 s .. 7 days], matching
-// the À venir window. Chores anchor at local midnight, so this is mostly day-scale.
-const MAX_LEAD = 7 * 86400
-const leadSeconds = (v: unknown): number | null => {
-  const n = Number(v)
-  return Number.isFinite(n) && n > 0 ? Math.min(Math.floor(n), MAX_LEAD) : null
-}
-
-// D-21 (bmad/10): opt-in "evening before" board announce for a recurring chore
-// (« c'est le soir du bac bleu ») — a single nullable 0/1, stored 1 or NULL
-// (never a bare 0, keeps the column's "unset" and "off" reading the same way
-// lead_seconds does above).
-const announceEvening = (v: unknown): number | null => (v ? 1 : null)
-
+// AN ALIAS since 0150: chores live on the spine (`home_projects`, kind 'chore'), and this
+// endpoint keeps the request and response shapes it always had, because a queued offline write
+// from yesterday's bundle or a tab left open can still call it. The one form writes through
+// /api/tasks; a row's tick, untick, delete and « Vider » still come here (lib/taskSave).
+//
 // Chores with a round-robin rotation and an optional recurrence ("tous les
 // jeudis", see _lib/recur). The ONLY "credit" that exists is last_done_by +
 // whose-turn — no points, no streak (NFR-CALM-1). Marking done advances the
 // rotation and stamps who/when. The board expands recurring chores onto
-// Aujourd'hui / À venir; created_at is the recurrence anchor.
+// Aujourd'hui / À venir. The start a household chose lives in the spine's `at` and is read back
+// as `recur_start`; NULL is still « from created_at » (0032, choreSchedule).
 export const onRequestGet = authed(async (ctx, actor) => {
   const { results } = await ctx.env.DB.prepare(
-    'SELECT id, title, rotation_json, current_idx, last_done_at, last_done_by, colour AS color, recur_json, recur_start, lead_seconds, announce_evening, subject_kind, subject_id, icon, effort FROM tasks WHERE household_id = ? ORDER BY created_at',
+    `SELECT id, title, rotation_json, current_idx, last_done_at, last_done_by, colour AS color, recur_json, at AS recur_start, lead_seconds, announce_evening, subject_kind, subject_id, icon, effort FROM home_projects WHERE household_id = ? AND ${FACE.chore} ORDER BY created_at`,
   )
     .bind(actor.householdId)
     .all<Wire['chores']['chores'][number]>()
@@ -65,26 +46,27 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const title = body?.title?.trim()
   if (!title) return badRequest('Titre requis.')
   const id = newId()
-  const color = hexColor(body?.color, '#88a36f')
+  const ts = nowSec()
   const [subjectKind, subjectId] = subjectBinds(await validSubject(ctx.env.DB, actor.householdId, body?.subject))
   await ctx.env.DB.prepare(
-    'INSERT INTO tasks (id, household_id, title, rotation_json, current_idx, colour, icon, effort, recur_json, recur_start, lead_seconds, announce_evening, subject_kind, subject_id, created_at) VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    "INSERT INTO home_projects (id, household_id, kind, title, rotation_json, current_idx, colour, icon, effort, recur_json, at, lead_seconds, announce_evening, subject_kind, subject_id, created_at, updated_at) VALUES (?, ?, 'chore', ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
   )
     .bind(
       id,
       actor.householdId,
       title,
       rotationJson(body?.rotation),
-      color,
+      hexColor(body?.color, DEFAULT_COLOUR),
       emojiIcon(body?.icon),
       taskEffort(body?.effort),
       recurJson(body?.recur),
-      recurStart(body?.start),
+      dateSec(body?.start),
       leadSeconds(body?.leadSeconds),
       announceEvening(body?.announceEvening),
       subjectKind,
       subjectId,
-      nowSec(),
+      ts,
+      ts,
     )
     .run()
   return ok({ id, title })
@@ -123,17 +105,15 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   // day and deletes nothing (_lib/taskItem).
   if (body?.clearChecked) {
     const ids = Array.isArray(body.ids) ? body.ids.filter(isString) : []
-    if (ids.length > 0) await ctx.env.DB.batch(clearStatements(ctx.env.DB, 'tasks', actor.householdId, ids, nowSec()))
+    if (ids.length > 0) await ctx.env.DB.batch(clearStatements(ctx.env.DB, 'chore', actor.householdId, ids, nowSec()))
     return ok({ ok: true })
   }
   if (!body?.id) return badRequest('id requis.')
 
   // Editing the chore — a distinct shape from marking done: any of title /
   // rotation / color / recur present means "edit this chore in place". One write
-  // covers everything the form changed, so the same ＋ form that creates a chore
-  // also edits it (rename, re-pick the rotation, recolour, re-schedule) without
-  // recreating it. `start` rides along to anchor a recur. A parent-mode kiosk may
-  // edit too (only member admin + device pairing stay operator-only).
+  // covers everything the form changed. `start` rides along to anchor a recur. A parent-mode
+  // kiosk may edit too (only member admin + device pairing stay operator-only).
   const editsContent =
     body.title !== undefined ||
     body.rotation !== undefined ||
@@ -159,7 +139,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     }
     if (body.color !== undefined) {
       sets.push('colour = ?')
-      binds.push(hexColor(body.color, '#88a36f'))
+      binds.push(hexColor(body.color, DEFAULT_COLOUR))
     }
     if (body.icon !== undefined) {
       // null (or anything that is not an emoji) puts the subject's icon back (0148).
@@ -175,8 +155,8 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       sets.push('recur_json = ?')
       binds.push(recurJson(body.recur))
       if (body.start !== undefined) {
-        sets.push('recur_start = ?')
-        binds.push(recurStart(body.start))
+        sets.push('at = ?') // the start, in the spine's at (0150)
+        binds.push(dateSec(body.start))
       }
     }
     if (body.leadSeconds !== undefined) {
@@ -192,8 +172,9 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       binds.push(...subjectBinds(await validSubject(ctx.env.DB, actor.householdId, body.subject)))
     }
     if (!sets.length) return ok({ ok: true })
-    binds.push(body.id, actor.householdId)
-    const res = await ctx.env.DB.prepare(`UPDATE tasks SET ${sets.join(', ')} WHERE id = ? AND household_id = ?`)
+    sets.push('updated_at = ?')
+    binds.push(nowSec(), body.id, actor.householdId)
+    const res = await ctx.env.DB.prepare(`UPDATE home_projects SET ${sets.join(', ')} WHERE id = ? AND household_id = ? AND ${FACE.chore}`)
       .bind(...binds)
       .run()
     if (!res.meta.changes) return notFound('Corvée introuvable.')
@@ -201,7 +182,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   }
 
   const chore = await ctx.env.DB.prepare(
-    'SELECT rotation_json, current_idx, last_done_at FROM tasks WHERE id = ? AND household_id = ?',
+    `SELECT rotation_json, current_idx, last_done_at FROM home_projects WHERE id = ? AND household_id = ? AND ${FACE.chore}`,
   )
     .bind(body.id, actor.householdId)
     .first<{ rotation_json: string; current_idx: number; last_done_at: number | null }>()
@@ -215,7 +196,9 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     const back = prevTurnIdx(parseRotation(chore.rotation_json), chore.current_idx)
     await ctx.env.DB.batch([
       ctx.env.DB.prepare('DELETE FROM task_participants WHERE task_id = ? AND contributed_at = ?').bind(body.id, chore.last_done_at),
-      ctx.env.DB.prepare('UPDATE tasks SET last_done_at = NULL, last_done_by = NULL, cleared_at = NULL, current_idx = ? WHERE id = ? AND household_id = ?').bind(back, body.id, actor.householdId),
+      ctx.env.DB.prepare(
+        `UPDATE home_projects SET last_done_at = NULL, last_done_by = NULL, cleared_at = NULL, current_idx = ? WHERE id = ? AND household_id = ? AND ${FACE.chore}`,
+      ).bind(back, body.id, actor.householdId),
     ])
     return ok({ ok: true })
   }
@@ -237,7 +220,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   if (complete) {
     writes.push(
       ctx.env.DB.prepare(
-        'UPDATE tasks SET last_done_at = ?, last_done_by = ?, current_idx = ? WHERE id = ? AND household_id = ?',
+        `UPDATE home_projects SET last_done_at = ?, last_done_by = ?, current_idx = ? WHERE id = ? AND household_id = ? AND ${FACE.chore}`,
       ).bind(ts, turnMember, nextIdx, body.id, actor.householdId),
     )
   }
@@ -248,15 +231,9 @@ export const onRequestPatch = authed(async (ctx, actor) => {
 export const onRequestDelete = authed(async (ctx, actor) => {
   const body = await readJson<{ id?: string }>(ctx.request)
   if (!body?.id) return badRequest('id requis.')
-  // task_participants.task_id FK-references this task, so D1 blocks the delete
-  // until the contribution log is gone. Clear it first in one transaction. The
-  // participants are scoped through the task's own household guard, so a wrong
-  // household can't wipe another's log.
-  await ctx.env.DB.batch([
-    ctx.env.DB.prepare(
-      'DELETE FROM task_participants WHERE task_id IN (SELECT id FROM tasks WHERE id = ? AND household_id = ?)',
-    ).bind(body.id, actor.householdId),
-    ctx.env.DB.prepare('DELETE FROM tasks WHERE id = ? AND household_id = ?').bind(body.id, actor.householdId),
-  ])
+  // The « qui a aidé » lines go first, in the same transaction (_lib/taskItem). Any face, on
+  // purpose: a capture's « Corriger » in a bundle from before 0150 sends a captured task here
+  // (CaptureForm's CAPTURE_UNDO_EP maps `tasks` to this endpoint), whatever face it now wears.
+  await ctx.env.DB.batch(deleteTaskStatements(ctx.env.DB, actor.householdId, body.id))
   return ok({ ok: true })
 })

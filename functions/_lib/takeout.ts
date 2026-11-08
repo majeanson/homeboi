@@ -41,7 +41,8 @@ export const TAKEOUT_EXCLUDE = new Set([
 // Tables scoped only through a parent (no household_id column of their own).
 const VIA_PARENT: Record<string, { parent: string; fk: string }> = {
   contact_group_members: { parent: 'contact_groups', fk: 'group_id' },
-  task_participants: { parent: 'tasks', fk: 'task_id' },
+  // Every task is on the spine since 0150 (it was `tasks`, the chores alone).
+  task_participants: { parent: 'home_projects', fk: 'task_id' },
   routine_runs: { parent: 'routines', fk: 'routine_id' },
   // « Les remarques » (0136). Without this line the journal — every explanation, every
   // « pas réglé » note, every attachment key — is absent from each takeout AND from the

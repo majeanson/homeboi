@@ -42,7 +42,7 @@ test('the task form: the look is folded, suggests from the title, and sends a pi
     expect(b.x + b.width).toBeLessThanOrEqual(390)
   }
   // A title and a look, nothing else: a to-do (lib/taskTarget), wearing the pick.
-  const post = page.waitForRequest((r) => r.url().includes('/api/todos') && r.method() === 'POST')
+  const post = page.waitForRequest((r) => r.url().includes('/api/tasks') && r.method() === 'POST')
   await form.locator('button[type="submit"]').last().click()
   const body = (await post).postDataJSON() as { icon: string | null; color: string | null }
   expect(body.icon).toBe('🍂')
@@ -64,16 +64,16 @@ test('a to-do opens the one form, its look already open, and saving patches it',
   // …and its subject too: « Sur quoi ? » can change after creation (phase 2's leftover door).
   await expect(edit.getByRole('button', { name: /Sur quoi/ })).toHaveAttribute('aria-expanded', 'true')
   await edit.getByRole('button', { name: 'Comme le sujet' }).click()
-  // A layer a to-do cannot keep yet: the form says so in one calm line, and saves the rest.
+  // A recurrence on a to-do: since the merge (0150) nothing is « not kept yet ». The row moves
+  // up to the face that shows a recurrence, so the form has no line to say, and sends it.
   // (It is due today, so « Quand ? » holds a date and opened itself.)
   await expect(edit.getByRole('button', { name: /^Quand/ })).toHaveAttribute('aria-expanded', 'true')
   await edit.locator('.recur select').selectOption('weekly')
-  await expect(edit.locator('.status-msg--info')).toContainText('ne garde pas encore de récurrence')
-  const patch = page.waitForRequest((r) => r.url().includes('/api/todos') && r.method() === 'PATCH')
+  await expect(edit.locator('.status-msg--info')).toHaveCount(0)
+  const patch = page.waitForRequest((r) => r.url().includes('/api/tasks') && r.method() === 'PATCH')
   await edit.locator('button[type="submit"]').last().click()
   const body = (await patch).postDataJSON() as Record<string, unknown>
-  expect(body).toMatchObject({ id: 'l-own', icon: '🐶', color: null, subject: { kind: 'carnet', id: 'car1' } })
-  expect(body).not.toHaveProperty('recur')
+  expect(body).toMatchObject({ id: 'l-own', icon: '🐶', color: null, subject: { kind: 'carnet', id: 'car1' }, recur: { freq: 'weekly' } })
 })
 
 test('« Une chose à moi »: a thing carnet with its own name and look', async ({ page, app }) => {
@@ -93,7 +93,7 @@ test('« Sur quoi ? » makes a new thing in place, and saving it does not save t
   await app.boot({ route: '/chore/new', wait: '.task-form' })
   const chores: string[] = []
   page.on('request', (r) => {
-    if (/\/api\/(chores|todos|home-projects)/.test(r.url()) && r.method() === 'POST') chores.push(r.url())
+    if (/\/api\/(tasks|chores|todos|home-projects)$/.test(r.url()) && r.method() === 'POST') chores.push(r.url())
   })
   const form = page.locator('.task-form')
   await form.getByPlaceholder(/tâche/i).first().fill('Tondre')

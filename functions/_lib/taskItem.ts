@@ -6,9 +6,18 @@ import { subjectFromRow } from './subject'
 import { taskEffort } from './validate'
 import type { TaskItem } from './wire'
 
-// A TASK, READ SIDE — one shape over the three tables (plans/2026-11-06-TACHE-UNIFIEE.md). The
-// rows stay in `tasks`, `todos` and `home_projects`; this is what they look like to a reader,
-// so the board, the Tâches view and a subject's page cannot each decide what « done » means.
+// A TASK, READ SIDE — one shape over every task row (plans/2026-11-06-TACHE-UNIFIEE.md). Since
+// migration 0150 every task lives in ONE table, `home_projects` (« the spine »); this is what a
+// row looks like to a reader, so the board, the Tâches view and a subject's page cannot each
+// decide what « done » means.
+//
+// THE FACES. A spine row's `kind` says which payload it wears: 'chore' (the old `tasks`),
+// 'todo' (the old loose `todos`), 'plan' / 'upkeep' (the old home rows). It is a reader's need,
+// never a form's question: the board, the calendar, the day page and the three alias endpoints
+// still speak those three shapes. Each face is read through its own SELECT below, aliased back
+// into its old row shape, so every derivation downstream is the code that ran before the merge
+// (worker/taskMerge.d1.test.ts holds the two equal). A reader names a face with these, never
+// with a string of its own (`task-merge-rule.test.ts`).
 //
 // DONE MEANS ONE THING PER CASE, and the case is the schedule, never the table:
 //   · a ONE-OFF is checked on a day. It stays ticked until that day ends, then it has cleared
@@ -90,9 +99,21 @@ function fromSchedule(s: Scheduled, today: number, now: number): TaskItem | null
   return { ...item, onBoard: onBoardNow(item) }
 }
 
-// The columns each reader must SELECT for its table. Named here so a query cannot forget one.
+/** Each face as a WHERE term on the spine (`home_projects`, the one table every task lives in since 0150). */
+export const FACE = {
+  chore: "kind = 'chore'",
+  todo: "kind = 'todo'",
+  home: "kind IN ('plan', 'upkeep')",
+} as const
+export type Face = keyof typeof FACE
+/** The face a stored `kind` wears. */
+export const faceOfKind = (kind: string | null | undefined): Face => (kind === 'chore' ? 'chore' : kind === 'todo' ? 'todo' : 'home')
+
+// The columns each reader must SELECT for its face. Named here so a query cannot forget one.
+// A chore's start lives in the spine's `at` (0150), read back under its old name: NULL still
+// means « from created_at » (choreSchedule).
 export const CHORE_TASK_COLS =
-  'id, title, colour AS color, rotation_json, current_idx, last_done_at, cleared_at, recur_json, recur_start, lead_seconds, subject_kind, subject_id, icon, effort, created_at'
+  'id, title, colour AS color, rotation_json, current_idx, last_done_at, cleared_at, recur_json, at AS recur_start, lead_seconds, subject_kind, subject_id, icon, effort, created_at'
 export const HOME_TASK_COLS =
   'id, kind, title, colour AS color, at, recur_json, recur_from, lead_seconds, last_done_at, snoozed_until, cleared_at, rotation_json, current_idx, carnet_id, subject_kind, subject_id, icon, effort'
 
@@ -225,13 +246,48 @@ export function todoTask(td: TodoTaskRow, today: number): TaskItem | null {
 
 export const present = (x: TaskItem | null): x is TaskItem => x != null
 
-// « Vider les cochés » on the two tables whose rows are history: it stamps, it does not
-// delete. D1 caps bound variables, so the ids go in slices (the todos clear does the same).
-export function clearStatements(db: D1Database, table: 'tasks' | 'home_projects', householdId: string, ids: readonly string[], ts: number): D1PreparedStatement[] {
+// EVERY TO-DO ROW, in the old `todos` shape: the loose ones from the spine's 'todo' face, the
+// departure checklist instances from `todos`, which keeps them (they are not tasks). `todos` is
+// read WHOLE, not only its departure rows: a loose row an old Worker wrote there during the
+// minute between the migration and the deploy stays visible and editable through the alias,
+// until a later migration moves it. `?1` is the household; the caller numbers its own binds
+// from `?2`. `section` and `source_template_id` are NULL on the spine's side by construction.
+export const todoRowsSql = (select: string, rest: string): string =>
+  `WITH todo_rows AS (
+     SELECT id, household_id, title, at AS day, member_id, last_done_at AS done_at, position, NULL AS section, NULL AS source_template_id,
+            created_at, updated_at, subject_kind, subject_id, icon, colour, effort
+       FROM home_projects WHERE household_id = ?1 AND kind = 'todo'
+     UNION ALL
+     SELECT id, household_id, title, day, member_id, done_at, position, section, source_template_id,
+            created_at, updated_at, subject_kind, subject_id, icon, colour, effort
+       FROM todos WHERE household_id = ?1
+   )
+   SELECT ${select} FROM todo_rows ${rest}`
+
+// Deleting a task: its « qui a aidé » lines first. `task_participants.task_id` is a soft ref
+// since 0150 (no FK to block or cascade), so nothing else would remove them; they are scoped
+// through the task's own household guard, so a wrong household cannot wipe another's log.
+// Any face: an id names one row, and every door that deletes a task (the aliases, /api/tasks,
+// a capture's « Corriger ») may be handed any face's id since 0150.
+export function deleteTaskStatements(db: D1Database, householdId: string, id: string): D1PreparedStatement[] {
+  return [
+    db.prepare('DELETE FROM task_participants WHERE task_id IN (SELECT id FROM home_projects WHERE id = ? AND household_id = ?)').bind(id, householdId),
+    db.prepare('DELETE FROM home_projects WHERE id = ? AND household_id = ?').bind(id, householdId),
+  ]
+}
+
+// « Vider les cochés » on the faces whose rows are history (a chore, a home row): it stamps, it
+// does not delete. A to-do's clear deletes, as it always has (/api/todos). D1 caps bound
+// variables, so the ids go in slices (the todos clear does the same).
+export function clearStatements(db: D1Database, face: 'chore' | 'home', householdId: string, ids: readonly string[], ts: number): D1PreparedStatement[] {
   const out: D1PreparedStatement[] = []
   for (let i = 0; i < ids.length; i += 50) {
     const slice = ids.slice(i, i + 50)
-    out.push(db.prepare(`UPDATE ${table} SET cleared_at = ? WHERE household_id = ? AND id IN (${slice.map(() => '?').join(',')})`).bind(ts, householdId, ...slice))
+    out.push(
+      db
+        .prepare(`UPDATE home_projects SET cleared_at = ? WHERE household_id = ? AND ${FACE[face]} AND id IN (${slice.map(() => '?').join(',')})`)
+        .bind(ts, householdId, ...slice),
+    )
   }
   return out
 }

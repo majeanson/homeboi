@@ -9,7 +9,7 @@ import { useT } from '../i18n'
 import { api } from '../lib/api'
 import { inputFromLocalDay } from '../lib/localDay'
 import { doorKind, emptyDraft, taskRead } from '../lib/taskSave'
-import type { TaskTable } from '../lib/taskTarget'
+import type { TaskFace } from '../lib/taskTarget'
 
 // THE ONE TASK FORM as a full-screen scene (tall forms strand under a phone's keyboard in a
 // sheet). Every old door still lands here, so no link breaks:
@@ -17,9 +17,9 @@ import type { TaskTable } from '../lib/taskTarget'
 //   /home-project/new    a new task. `?kind=plan|upkeep` and `?carnet=<id>` (a carnet's
 //                        Entretien section) seed it: the door names the kind, the household never does.
 //   /chore/:id, /home-project/:id, /todo/:id
-//                        an edit, in the row's own table; every peek's « Modifier » opens one.
+//                        an edit of a row wearing that face; every peek's « Modifier » opens one.
 // Which cache holds the row is the save adapter's answer (`taskRead`), never this page's.
-export function TaskFormPage({ table }: { table?: TaskTable | undefined }) {
+export function TaskFormPage({ table }: { table?: TaskFace | undefined }) {
   const t = useT()
   const f = t.tasks.form
   const { id } = useParams()

@@ -2,6 +2,7 @@ import { withAiError, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { weeklyRecap, resolveLang } from '../_lib/ai'
 import { addLocalDays, dayStart, nowSec } from '../_lib/ids'
+import { FACE } from '../_lib/taskItem'
 
 // On-demand weekly recap. Reads the last 7 days of events / suppers / chores
 // done and asks for a gentle 2-sentence reflection (NFR-CALM: no stats). One
@@ -27,7 +28,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     ctx.env.DB.prepare('SELECT title FROM meals WHERE household_id = ? AND date >= ? AND date <= ? ORDER BY date LIMIT 20')
       .bind(hh, since, now)
       .all<{ title: string }>(),
-    ctx.env.DB.prepare('SELECT title FROM tasks WHERE household_id = ? AND last_done_at >= ? LIMIT 20')
+    ctx.env.DB.prepare(`SELECT title FROM home_projects WHERE household_id = ? AND ${FACE.chore} AND last_done_at >= ? LIMIT 20`)
       .bind(hh, since)
       .all<{ title: string }>(),
   ])

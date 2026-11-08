@@ -13,7 +13,9 @@ import { resolveMemberByName } from '../_lib/members'
 import { householdMealLayout } from '../_lib/mealSlots'
 import { normalizeItem } from '../_lib/normalize'
 import { lineSameItem } from '../_lib/listMatch'
-import { taskTarget, type TaskTable } from '../../src/lib/taskTarget'
+import { taskTarget, type TaskFace } from '../../src/lib/taskTarget'
+import { deleteTaskStatements } from '../_lib/taskItem'
+import { faceColumns } from '../_lib/taskWrite'
 import type { Recur } from '../_lib/recur'
 
 // What a captured task says, read off the words: a recurrence (the model's, else the regex), a
@@ -38,27 +40,26 @@ interface CapturedTask {
   recur: Recur | null
   rotation: string[]
 }
-// Each table's own INSERT, looked up by `taskTarget`'s answer: the columns are the ones the
-// three endpoints write, nothing more. A to-do's member_id is the acting profile, like POST
-// /api/todos; the kind of a home row is never asked (a recurrence is upkeep, else a project).
-const TASK_TABLE: Record<TaskTable, string> = { todo: 'todos', chore: 'tasks', home: 'home_projects' }
-const TASK_INSERT: Record<TaskTable, (env: Env, t: CapturedTask) => Promise<unknown>> = {
-  todo: (env, t) =>
-    env.DB.prepare(
-      'INSERT INTO todos (id, household_id, title, day, member_id, position, done_at, section, source_template_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 0, NULL, NULL, NULL, ?, ?)',
-    )
-      .bind(t.id, t.hh, t.title, t.day, t.addedBy, t.ts, t.ts)
-      .run(),
-  chore: (env, t) =>
-    env.DB.prepare('INSERT INTO tasks (id, household_id, title, rotation_json, recur_json, recur_start, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
-      .bind(t.id, t.hh, t.title, JSON.stringify(t.rotation), t.recur ? JSON.stringify(t.recur) : null, t.recur ? t.day : null, t.ts)
-      .run(),
-  home: (env, t) =>
-    env.DB.prepare(
-      'INSERT INTO home_projects (id, household_id, kind, title, at, recur_json, rotation_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-    )
-      .bind(t.id, t.hh, t.recur ? 'upkeep' : 'plan', t.title, t.day, t.recur ? JSON.stringify(t.recur) : null, JSON.stringify(t.rotation), t.ts, t.ts)
-      .run(),
+// One INSERT on the spine (0150), in the face `taskTarget` answers, with the columns that
+// face's door writes (_lib/taskWrite). A captured day is a local midnight whatever the face:
+// a chore keeps it only as a recurrence's start. A to-do's member_id is the acting profile,
+// like POST /api/todos; the kind of a home row is never asked (a recurrence is upkeep, else a
+// project).
+function insertTask(env: Env, face: TaskFace, t: CapturedTask): Promise<unknown> {
+  const cols: Record<string, unknown> = {
+    id: t.id,
+    household_id: t.hh,
+    kind: face === 'home' ? (t.recur ? 'upkeep' : 'plan') : face,
+    title: t.title,
+    ...faceColumns(face, { day: t.day, at: t.day, recur: t.recur, rotation: t.rotation }, null),
+    member_id: face === 'todo' ? t.addedBy : null,
+    created_at: t.ts,
+    updated_at: t.ts,
+  }
+  const names = Object.keys(cols)
+  return env.DB.prepare(`INSERT INTO home_projects (${names.join(', ')}) VALUES (${names.map(() => '?').join(', ')})`)
+    .bind(...names.map((n) => cols[n]))
+    .run()
 }
 
 // THE SPINE. One free-text (or already-transcribed voice) capture in; the
@@ -121,12 +122,19 @@ type Cleanup = { table: string; id: string }
 
 // Only these tables can be cleaned up, and only within the actor's household — so
 // a round-tripped ref grants no reach the actor doesn't already have.
+// `tasks` and `todos` are what a capture answered before 0150 (a correction can arrive from a
+// tab that captured before the deploy): every task is on the spine now, so all three task
+// names delete there, with the row's « qui a aidé » lines (_lib/taskItem). A departure row is
+// never a capture's, so `todos` needs no second table.
 const CLEANUP_TABLES = new Set(['events', 'tasks', 'todos', 'list_items', 'pantry_low', 'meals', 'meal_leftovers', 'home_projects', 'notes'])
+const TASK_CLEANUP = new Set(['tasks', 'todos', 'home_projects'])
 
 async function applyCleanup(env: Env, hh: string, undo: Cleanup[]): Promise<void> {
   const dels = (Array.isArray(undo) ? undo : [])
     .filter((r) => r && typeof r.id === 'string' && typeof r.table === 'string' && CLEANUP_TABLES.has(r.table))
-    .map((r) => env.DB.prepare(`DELETE FROM ${r.table} WHERE id = ? AND household_id = ?`).bind(r.id, hh))
+    .flatMap((r) =>
+      TASK_CLEANUP.has(r.table) ? deleteTaskStatements(env.DB, hh, r.id) : [env.DB.prepare(`DELETE FROM ${r.table} WHERE id = ? AND household_id = ?`).bind(r.id, hh)],
+    )
   if (dels.length) await env.DB.batch(dels)
 }
 
@@ -205,7 +213,7 @@ async function routeIntent(
     // ONE KIND OF THING (phase 4 of the unified task). A chore and an « entretien » are the same
     // task with different layers, so both intents land through the same rule as a typed task
     // (`taskTarget`, src/lib/taskTarget.ts): « sortir les poubelles chaque mardi » said or typed
-    // ends up in the same table, with the same recurrence. The AI's recur hint is re-validated
+    // wears the same face, with the same recurrence. The AI's recur hint is re-validated
     // (normalizeRecur); the raw words are the regex backstop (parseRecurPhrase), for both
     // intents and for the manual « Tâche » re-route, where no AI ran.
     case 'task':
@@ -213,9 +221,9 @@ async function routeIntent(
       const title = p.title || raw
       const t = captureTask(raw, p, forMember?.id ?? null, ts)
       const id = newId()
-      const where = taskTarget({ title, date: t.day, recur: t.recur, rotation: t.rotation })
-      await TASK_INSERT[where](env, { id, hh, title, addedBy, ts, ...t })
-      return { kind: 'task', label: withWho(title), cleanup: [{ table: TASK_TABLE[where], id }] }
+      const face = taskTarget({ title, date: t.day, recur: t.recur, rotation: t.rotation })
+      await insertTask(env, face, { id, hh, title, addedBy, ts, ...t })
+      return { kind: 'task', label: withWho(title), cleanup: [{ table: 'home_projects', id }] }
     }
     case 'list-item': {
       const itemText = p.item || p.text || raw

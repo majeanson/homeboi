@@ -79,7 +79,7 @@ test.describe('settings forms', () => {
     await form.locator('input.input').first().fill('Balayer la cuisine')
     await form.getByRole('button', { name: /^Quand/ }).click()
     await form.locator('.recur select').selectOption('weekly')
-    await expectApi(page, 'POST', 'chores', () => form.locator('button[type="submit"]').click())
+    await expectApi(page, 'POST', 'tasks', () => form.locator('button[type="submit"]').click())
   })
 
   test('add a kid routine', async ({ page }) => {

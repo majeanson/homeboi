@@ -1,4 +1,5 @@
 import { normalizeItem } from './normalize'
+import { FACE, todoRowsSql } from './taskItem'
 
 // THE delete for a resource whose client paints OPTIMISTIC rows (`tmp-…` ids): the
 // list and the todos. Everything else here deletes by an id the server minted, and a
@@ -39,24 +40,31 @@ export async function deleteHealing(
   },
 ): Promise<StaleDelete> {
   const { table, textColumn, householdId, id } = spec
-  const res = await db.prepare(`DELETE FROM ${table} WHERE id = ? AND household_id = ?`).bind(id, householdId).run()
-  if (res.meta.changes > 0) return { outcome: 'deleted', id }
+  // A to-do lives in one of two tables since 0150: a loose one on the spine (kind 'todo'), a
+  // departure instance in `todos`. Ids never collide across them (the migration kept them
+  // apart by its primary key), so deleting an id from both deletes exactly one row.
+  const removeById = async (rowId: string): Promise<number> => {
+    if (table !== 'todos') return (await db.prepare(`DELETE FROM ${table} WHERE id = ? AND household_id = ?`).bind(rowId, householdId).run()).meta.changes
+    const [spine, rest] = await db.batch([
+      db.prepare(`DELETE FROM home_projects WHERE id = ? AND household_id = ? AND ${FACE.todo}`).bind(rowId, householdId),
+      db.prepare('DELETE FROM todos WHERE id = ? AND household_id = ?').bind(rowId, householdId),
+    ])
+    return (spine?.meta.changes ?? 0) + (rest?.meta.changes ?? 0)
+  }
+  if ((await removeById(id)) > 0) return { outcome: 'deleted', id }
 
   const asOf = typeof spec.asOf === 'number' && Number.isFinite(spec.asOf) ? Math.floor(spec.asOf) : null
   const key = typeof spec.text === 'string' && spec.text.trim() ? normalizeItem(spec.text) : ''
   if (key && asOf) {
-    const { results } = await db
-      .prepare(
-        // Open rows first (a still-to-do line is the one being swiped), oldest first.
-        `SELECT id, ${textColumn} AS text FROM ${table} WHERE household_id = ? AND created_at <= ? ORDER BY ${
-          table === 'todos' ? 'done_at' : 'checked_at'
-        } IS NOT NULL, created_at`,
-      )
-      .bind(householdId, asOf)
-      .all<{ id: string; text: string }>()
+    // Open rows first (a still-to-do line is the one being swiped), oldest first.
+    const stmt =
+      table === 'todos'
+        ? db.prepare(todoRowsSql(`id, ${textColumn} AS text`, 'WHERE created_at <= ?2 ORDER BY done_at IS NOT NULL, created_at')).bind(householdId, asOf)
+        : db.prepare(`SELECT id, ${textColumn} AS text FROM ${table} WHERE household_id = ? AND created_at <= ? ORDER BY checked_at IS NOT NULL, created_at`).bind(householdId, asOf)
+    const { results } = await stmt.all<{ id: string; text: string }>()
     const hit = results.find((r) => normalizeItem(r.text) === key)
     if (hit) {
-      await db.prepare(`DELETE FROM ${table} WHERE id = ? AND household_id = ?`).bind(hit.id, householdId).run()
+      await removeById(hit.id)
       // The field diagnostic: `wrangler tail` names the stale id's shape (tmp- vs real)
       // the next time a device does this, without a repro session.
       console.warn(`${table} DELETE healed a stale id onto the same item: ${id} → ${hit.id}`)

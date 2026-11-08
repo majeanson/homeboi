@@ -41,7 +41,7 @@ describe('demo sandbox', () => {
     // Its operator row was the session's kill switch.
     expect((await anon('/api/board', { headers: { Cookie: old.cookie } })).status).toBe(401)
     // And no orphan rows remain in the tables the sweep inventories.
-    for (const table of ['members', 'recipes', 'events', 'tasks', 'routines', 'notes', 'list_items']) {
+    for (const table of ['members', 'recipes', 'events', 'home_projects', 'routines', 'notes', 'list_items']) {
       const row = await env.DB.prepare(`SELECT COUNT(*) AS n FROM ${table} WHERE household_id = ?`).bind(old.householdId).first<{ n: number }>()
       expect(row?.n, table).toBe(0)
     }

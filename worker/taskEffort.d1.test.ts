@@ -34,7 +34,7 @@ describe('the effort of a task', () => {
     got = await tasks(s)
     expect(effortIn(got.tasks, rated.id)).toBeNull()
     await patch(s, 'chores', { id: plain.id, title: 'Bac bleu' })
-    expect(await stored('tasks', plain.id), 'an edit that does not send the effort leaves it').toBeNull()
+    expect(await stored('home_projects', plain.id), 'an edit that does not send the effort leaves it').toBeNull()
   })
 
   it('anything that is not a dot from 1 to 5 stores NULL, on POST and on PATCH', async () => {
@@ -43,14 +43,14 @@ describe('the effort of a task', () => {
     const b = await post(s, 'todos', { title: 'B', effort: 6 })
     const c = await post(s, 'home-projects', { title: 'C', kind: 'plan', effort: '3' })
     const d = await post(s, 'todos', { title: 'D', effort: 2.5 })
-    expect(await stored('tasks', a.id)).toBeNull()
-    expect(await stored('todos', b.id)).toBeNull()
+    expect(await stored('home_projects', a.id)).toBeNull()
+    expect(await stored('home_projects', b.id)).toBeNull()
     expect(await stored('home_projects', c.id)).toBeNull()
-    expect(await stored('todos', d.id)).toBeNull()
+    expect(await stored('home_projects', d.id)).toBeNull()
     await patch(s, 'todos', { id: d.id, effort: 3 })
-    expect(await stored('todos', d.id)).toBe(3)
+    expect(await stored('home_projects', d.id)).toBe(3)
     await patch(s, 'todos', { id: d.id, effort: 'beaucoup' })
-    expect(await stored('todos', d.id)).toBeNull()
+    expect(await stored('home_projects', d.id)).toBeNull()
   })
 
   it('a to-do: NULL effort reads back open on /api/todos and /api/tasks, beside a rated one', async () => {
@@ -72,7 +72,7 @@ describe('the effort of a task', () => {
     expect(effortIn(all.tasks, rated.id), '/api/tasks SELECTs the column for to-dos too').toBe(1)
     // A PATCH that only sends the effort leaves the look and the title alone.
     await patch(s, 'todos', { id: rated.id, effort: 5 })
-    expect(await env.DB.prepare('SELECT title, effort, icon FROM todos WHERE id = ?').bind(rated.id).first()).toEqual({ title: 'Appeler', effort: 5, icon: null })
+    expect(await env.DB.prepare('SELECT title, effort, icon FROM home_projects WHERE id = ?').bind(rated.id).first()).toEqual({ title: 'Appeler', effort: 5, icon: null })
   })
 
   it('a home row: the effort reaches the board, the Tâches view and the edit form', async () => {
@@ -98,6 +98,6 @@ describe('the effort of a task', () => {
     const s = await household('effort-sweep', undefined, { empty: true })
     const a = await post(s, 'todos', { title: 'A', effort: 3 })
     await deleteHousehold(env as unknown as Env, s.householdId)
-    expect(await env.DB.prepare('SELECT id FROM todos WHERE id = ?').bind(a.id).first()).toBeNull()
+    expect(await env.DB.prepare('SELECT id FROM home_projects WHERE id = ?').bind(a.id).first()).toBeNull()
   })
 })

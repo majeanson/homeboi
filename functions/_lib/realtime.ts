@@ -216,6 +216,9 @@ const PATH_KEYS: Record<string, string[][]> = {
   // queries (['todos', <day>]). ['month'] too — dated todos show on the calendar.
   // Templates only feed Réglages + the picker chips.
   todos: [['todos'], ['board'], ['month'], ['tasks']],
+  // The one task form's door (0150). It writes any face, and an edit can move a row from one
+  // face to another, so every surface that shows a face hears it: the union of the three aliases.
+  tasks: [['tasks'], ['board'], ['month'], ['chores'], ['todos'], ['home-projects'], ['carnets']],
   'todo-templates': [['todo-templates']],
   // « Partager » — a snapshot share create/revoke only changes the sender's « Mes
   // partages » ledger (Réglages ▸ Partage + the ShareModal), so nudge that one cache.

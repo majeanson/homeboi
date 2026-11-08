@@ -63,7 +63,7 @@ describe('repartir à neuf', () => {
     expect((await reset(a, { password: a.password, name: 'Maisonnée reset-go' })).status).toBe(200)
 
     // The content is gone — examples AND the family's own rows — and the blob with it.
-    for (const table of ['members', 'recipes', 'events', 'tasks', 'routines', 'notes', 'list_items', 'photos']) {
+    for (const table of ['members', 'recipes', 'events', 'home_projects', 'routines', 'notes', 'list_items', 'photos']) {
       expect(await n(`SELECT COUNT(*) AS n FROM ${table} WHERE household_id = ?`, a.householdId), table).toBe(0)
     }
     expect(await bucket.get(key),'a reset frees R2 — nothing will point at that blob again').toBeNull()

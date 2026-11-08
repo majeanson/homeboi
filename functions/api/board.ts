@@ -4,7 +4,7 @@ import { localDayStart, addLocalDays } from '../_lib/ids'
 import { parseRecur, expandRange } from '../_lib/recur'
 import { choreSchedule, upkeepStatus, upkeepOccurrences } from '../_lib/upkeep'
 import { parseRotation, turnOf } from '../_lib/rotation'
-import { CHORE_TASK_COLS, HOME_TASK_COLS, choreTask, homeTask, present, type ChoreTaskRow, type HomeTaskRow } from '../_lib/taskItem'
+import { CHORE_TASK_COLS, FACE, HOME_TASK_COLS, choreTask, homeTask, present, type ChoreTaskRow, type HomeTaskRow } from '../_lib/taskItem'
 import { isSoon as isSoonAt } from '../_lib/reminder'
 import { fetchBirthdayPeople, birthdayOccurrences } from '../_lib/birthdays'
 import { workOccurrencesInRange, parseScheduleBlockRow, type ScheduleBlock, type ScheduleBlockRow } from '../_lib/carResolve'
@@ -165,7 +165,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
       .bind(hh)
       .all<BoardListItem>(),
     ctx.env.DB.prepare(
-      `SELECT ${CHORE_TASK_COLS}, announce_evening FROM tasks WHERE household_id = ? ORDER BY created_at`,
+      `SELECT ${CHORE_TASK_COLS}, announce_evening FROM home_projects WHERE household_id = ? AND ${FACE.chore} ORDER BY created_at`,
     )
       .bind(hh)
       .all<ChoreTaskRow & Omit<BoardChore, 'helpers'>>(),
@@ -327,12 +327,12 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // Recent helpers per chore (shared-task attribution). Today's contributions
   // only, so "aidé par" reflects who pitched in on the current run, not history.
   // JOIN (not IN-subquery) so the planner walks the household's few tasks via
-  // tasks_household_idx, then task_participants_task_idx(task_id, contributed_at)
+  // home_projects_household_idx, then task_participants_task_idx(task_id, contributed_at)
   // per task — this read rides the 10 s kiosk poll, it must stay index-only.
   const helps = await ctx.env.DB.prepare(
     `SELECT tp.task_id, tp.role, m.display_name AS name
        FROM task_participants tp
-       JOIN tasks t ON t.id = tp.task_id AND t.household_id = ?
+       JOIN home_projects t ON t.id = tp.task_id AND t.household_id = ?
        LEFT JOIN members m ON m.id = tp.member_id
       WHERE tp.contributed_at >= ?
       ORDER BY tp.contributed_at DESC`,
@@ -431,7 +431,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // The undated half of the WHERE is an undated row ticked today: it has no cell on any
   // calendar, but it stays ticked on the board until the day ends like any other one-off.
   const homeRows = await ctx.env.DB.prepare(
-    `SELECT ${HOME_TASK_COLS} FROM home_projects WHERE household_id = ? AND (at IS NOT NULL OR last_done_at >= ?)`,
+    `SELECT ${HOME_TASK_COLS} FROM home_projects WHERE household_id = ? AND ${FACE.home} AND (at IS NOT NULL OR last_done_at >= ?)`,
   )
     .bind(hh, today)
     .all<HomeTaskRow>()

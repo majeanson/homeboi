@@ -29,6 +29,14 @@ const softRefLines = (sql: string) =>
     .split('\n')
     .filter((l) => /\bsubject_(kind|id)\b/i.test(l))
 
+// A REBUILD re-declares columns an older migration made: they are not new columns, and changing
+// their meaning inside a rebuild would change every reader at once. Each one is named, with why.
+const CARRIED: Record<string, readonly string[]> = {
+  // The spine rebuild (0150) carries home_projects.recur_json from 0074 (and tasks' from 0019):
+  // NULL means « no recurrence », and every reader on both sides tests it that way.
+  '0150_tasks_one_table.sql': ['recur_json'],
+}
+
 describe('migrations after 0145 follow the conventions', () => {
   it('the frozen line still exists (canary)', () => {
     expect(readdirSync(__dirname).some((f) => f.startsWith('0145_'))).toBe(true)
@@ -45,7 +53,8 @@ describe('migrations after 0145 follow the conventions', () => {
       if (refs.length > 0) expect(sql).toMatch(/PAS DE CLÉ ÉTRANGÈRE/)
     })
     it(`${f}: a *_json column is NOT NULL with a default`, () => {
-      expect(lines.filter((l) => /_json\s+TEXT/i.test(l) && !/NOT NULL/i.test(l) && !/DEFAULT/i.test(l))).toEqual([])
+      const carried = CARRIED[f] ?? []
+      expect(lines.filter((l) => /_json\s+TEXT/i.test(l) && !/NOT NULL/i.test(l) && !/DEFAULT/i.test(l) && !carried.some((c) => new RegExp(`^\\s*${c}\\s`).test(l)))).toEqual([])
     })
   }
 })

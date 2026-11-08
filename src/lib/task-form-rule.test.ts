@@ -32,7 +32,8 @@ function handler(src: string, name: string): string {
 }
 const refusals = (body: string) => [...body.matchAll(/\bbadRequest\(\s*'([^']*)'/g)].map((m) => m[1])
 
-const TASK_APIS = ['functions/api/chores.ts', 'functions/api/todos.ts', 'functions/api/home-projects.ts']
+// The one form's door (/api/tasks, 0150) and the three aliases it left standing.
+const TASK_APIS = ['functions/api/tasks.ts', 'functions/api/chores.ts', 'functions/api/todos.ts', 'functions/api/home-projects.ts']
 const POST_OK = new Set(['Titre requis.', 'Modèle introuvable.'])
 const PATCH_OK = new Set(['id requis.', 'snooze invalide.'])
 
