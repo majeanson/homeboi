@@ -3,6 +3,7 @@ import { choreSchedule, upkeepStatus, type UpkeepRowLike } from './upkeep'
 import { isSoon } from './reminder'
 import { parseRotation, turnOf } from './rotation'
 import { subjectFromRow } from './subject'
+import { taskEffort } from './validate'
 import type { TaskItem } from './wire'
 
 // A TASK, READ SIDE — one shape over the three tables (plans/2026-11-06-TACHE-UNIFIEE.md). The
@@ -47,6 +48,7 @@ interface Scheduled {
   title: string
   color: string | null
   icon: string | null
+  effort: number | null
   ref: ReturnType<typeof subjectFromRow>
   schedule: UpkeepRowLike
   lead: number | null | undefined
@@ -70,6 +72,7 @@ function fromSchedule(s: Scheduled, today: number, now: number): TaskItem | null
     title: s.title,
     color: s.color,
     icon: s.icon,
+    effort: s.effort,
     subject: s.ref,
     kind: s.kind,
     recurring,
@@ -89,9 +92,9 @@ function fromSchedule(s: Scheduled, today: number, now: number): TaskItem | null
 
 // The columns each reader must SELECT for its table. Named here so a query cannot forget one.
 export const CHORE_TASK_COLS =
-  'id, title, colour AS color, rotation_json, current_idx, last_done_at, cleared_at, recur_json, recur_start, lead_seconds, subject_kind, subject_id, icon, created_at'
+  'id, title, colour AS color, rotation_json, current_idx, last_done_at, cleared_at, recur_json, recur_start, lead_seconds, subject_kind, subject_id, icon, effort, created_at'
 export const HOME_TASK_COLS =
-  'id, kind, title, colour AS color, at, recur_json, recur_from, lead_seconds, last_done_at, snoozed_until, cleared_at, rotation_json, current_idx, carnet_id, subject_kind, subject_id, icon'
+  'id, kind, title, colour AS color, at, recur_json, recur_from, lead_seconds, last_done_at, snoozed_until, cleared_at, rotation_json, current_idx, carnet_id, subject_kind, subject_id, icon, effort'
 
 export interface ChoreTaskRow {
   id: string
@@ -107,6 +110,7 @@ export interface ChoreTaskRow {
   subject_kind: string | null
   subject_id: string | null
   icon: string | null
+  effort: number | null
   created_at: number
 }
 
@@ -119,6 +123,7 @@ export function choreTask(c: ChoreTaskRow, today: number, now: number): TaskItem
       title: c.title,
       color: c.color,
       icon: c.icon,
+      effort: taskEffort(c.effort),
       ref: subjectFromRow(c),
       // A one-off chore has no date unless one was chosen. choreSchedule's created_at
       // fallback is a RECURRENCE anchor: used here, every undated chore would be overdue.
@@ -147,6 +152,7 @@ export interface HomeTaskRow extends UpkeepRowLike {
   subject_kind: string | null
   subject_id: string | null
   icon: string | null
+  effort: number | null
 }
 
 export function homeTask(h: HomeTaskRow, today: number, now: number): TaskItem | null {
@@ -157,6 +163,7 @@ export function homeTask(h: HomeTaskRow, today: number, now: number): TaskItem |
       title: h.title,
       color: h.color,
       icon: h.icon,
+      effort: taskEffort(h.effort),
       ref: subjectFromRow(h),
       schedule: h,
       lead: h.lead_seconds,
@@ -182,6 +189,7 @@ export interface TodoTaskRow {
   subject_id?: string | null
   icon?: string | null
   color?: string | null
+  effort?: number | null
 }
 
 // A departure instance answers null: it is not a task (see the header).
@@ -197,6 +205,7 @@ export function todoTask(td: TodoTaskRow, today: number): TaskItem | null {
     title: td.title,
     color: td.color ?? null,
     icon: td.icon ?? null,
+    effort: taskEffort(td.effort),
     subject: subjectFromRow(td),
     kind: null,
     recurring: false,

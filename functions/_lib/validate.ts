@@ -30,6 +30,15 @@ export function emojiIcon(value: unknown): string | null {
   return v
 }
 
+// A task's effort (0149): five dots, 1 = tout simple, 5 = gros effort. An integer in range,
+// or null = « pas dit ». Anything else (0, 6, 2.5, '3', true) is null too: a body that cannot
+// say a dot says nothing, rather than being rounded into one. The ONE door every task write
+// takes for this column (`effort-rule.test.ts`).
+export const EFFORT_MAX = 5
+export function taskEffort(value: unknown): number | null {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= EFFORT_MAX ? value : null
+}
+
 // A safe R2 object-key segment: 1–64 chars, [A-Za-z0-9_-] only. Used to validate
 // client-supplied media keys before they touch the bucket.
 export function isValidR2Key(key: unknown): key is string {

@@ -2,7 +2,7 @@ import { badRequest, notFound, ok, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec, tickedAt } from '../_lib/ids'
 import { clearStatements } from '../_lib/taskItem'
-import { emojiIcon, hexColor } from '../_lib/validate'
+import { emojiIcon, hexColor, taskEffort } from '../_lib/validate'
 import { normalizeRecur } from '../_lib/recur'
 import { subjectBinds, validSubject } from '../_lib/subject'
 import { nextTurnIdx, parseRotation, prevTurnIdx, rotationJson, turnOf } from '../_lib/rotation'
@@ -42,7 +42,7 @@ const announceEvening = (v: unknown): number | null => (v ? 1 : null)
 // Aujourd'hui / À venir; created_at is the recurrence anchor.
 export const onRequestGet = authed(async (ctx, actor) => {
   const { results } = await ctx.env.DB.prepare(
-    'SELECT id, title, rotation_json, current_idx, last_done_at, last_done_by, colour AS color, recur_json, recur_start, lead_seconds, announce_evening, subject_kind, subject_id, icon FROM tasks WHERE household_id = ? ORDER BY created_at',
+    'SELECT id, title, rotation_json, current_idx, last_done_at, last_done_by, colour AS color, recur_json, recur_start, lead_seconds, announce_evening, subject_kind, subject_id, icon, effort FROM tasks WHERE household_id = ? ORDER BY created_at',
   )
     .bind(actor.householdId)
     .all<Wire['chores']['chores'][number]>()
@@ -60,6 +60,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
     announceEvening?: boolean
     subject?: unknown
     icon?: unknown
+    effort?: unknown
   }>(ctx.request)
   const title = body?.title?.trim()
   if (!title) return badRequest('Titre requis.')
@@ -67,7 +68,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const color = hexColor(body?.color, '#88a36f')
   const [subjectKind, subjectId] = subjectBinds(await validSubject(ctx.env.DB, actor.householdId, body?.subject))
   await ctx.env.DB.prepare(
-    'INSERT INTO tasks (id, household_id, title, rotation_json, current_idx, colour, icon, recur_json, recur_start, lead_seconds, announce_evening, subject_kind, subject_id, created_at) VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO tasks (id, household_id, title, rotation_json, current_idx, colour, icon, effort, recur_json, recur_start, lead_seconds, announce_evening, subject_kind, subject_id, created_at) VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
   )
     .bind(
       id,
@@ -76,6 +77,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
       rotationJson(body?.rotation),
       color,
       emojiIcon(body?.icon),
+      taskEffort(body?.effort),
       recurJson(body?.recur),
       recurStart(body?.start),
       leadSeconds(body?.leadSeconds),
@@ -111,6 +113,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     announceEvening?: boolean
     subject?: unknown
     icon?: unknown
+    effort?: unknown
     doneAt?: unknown
     undo?: boolean
     clearChecked?: boolean
@@ -139,7 +142,8 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     body.leadSeconds !== undefined ||
     body.announceEvening !== undefined ||
     body.subject !== undefined ||
-    body.icon !== undefined
+    body.icon !== undefined ||
+    body.effort !== undefined
   if (editsContent) {
     const sets: string[] = []
     const binds: unknown[] = []
@@ -161,6 +165,11 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       // null (or anything that is not an emoji) puts the subject's icon back (0148).
       sets.push('icon = ?')
       binds.push(emojiIcon(body.icon))
+    }
+    if (body.effort !== undefined) {
+      // null (or anything that is not a dot from 1 to 5) clears it (0149).
+      sets.push('effort = ?')
+      binds.push(taskEffort(body.effort))
     }
     if (body.recur !== undefined) {
       sets.push('recur_json = ?')

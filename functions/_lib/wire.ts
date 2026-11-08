@@ -220,6 +220,8 @@ export interface TaskItem {
   color: string | null
   /** The raw stored icon (0148): an emoji, or null = « comme le sujet ». */
   icon: string | null
+  /** Five dots (0149): 1 = tout simple, 5 = gros effort. Null = not said. */
+  effort: number | null
   subject: { kind: 'carnet' | 'person' | 'pet' | 'project' | 'trip'; id: string } | null
   kind: 'plan' | 'upkeep' | null
   recurring: boolean
@@ -578,6 +580,7 @@ export interface ChoresWire {
     subject_kind: string | null
     subject_id: string | null
     icon: string | null
+    effort: number | null
   }[]
 }
 
@@ -920,6 +923,7 @@ export interface TodosWire {
     subject_id: string | null
     icon: string | null
     color: string | null
+    effort: number | null
   }[]
   /** The loose rows as tasks; departure instances are absent by construction. */
   items: TaskItem[]
@@ -1033,6 +1037,7 @@ export interface HomeProjectsWire {
     current_idx: number
     last_done_by: string | null
     icon: string | null
+    effort: number | null
     nextAt: number | null
     dueToday: boolean
     overdueSince: number | null

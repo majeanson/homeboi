@@ -75,6 +75,7 @@ export const DEMO_SANDBOX_IDLE_TTL = 2 * 3600
 // whatever order the tables go in. worker/taskSubject.d1.test.ts sweeps one to prove it.
 // The look of a task (0148: `icon` on three task tables and `pets`, `colour` on `todos`) is
 // the same case: plain columns, no ref at all. worker/taskLook.d1.test.ts sweeps one.
+// So is the effort of a task (0149, `effort` on the three task tables): worker/taskEffort.d1.test.ts.
 
 // Self-referencing FKs that must be nulled before the bulk DELETE — SQLite checks
 // FKs per row, so a parent row deleted before its child row in the SAME statement

@@ -14,6 +14,8 @@ export interface TaskItem {
   color: string | null
   /** The raw stored icon (0148), an emoji, or null = « comme le sujet ». */
   icon: string | null
+  /** Five dots (0149): 1 = tout simple, 5 = gros effort. Null = not said, and never hidden. */
+  effort: number | null
   subject: SubjectRef | null
   kind: 'plan' | 'upkeep' | null
   recurring: boolean

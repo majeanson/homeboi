@@ -68,7 +68,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     // Loose rows only, and only what has not cleared. A departure instance is not a task.
     db
       .prepare(
-        'SELECT id, title, day, member_id, done_at, section, source_template_id, subject_kind, subject_id, icon, colour AS color FROM todos WHERE household_id = ? AND source_template_id IS NULL AND section IS NULL AND (done_at IS NULL OR done_at >= ?) ORDER BY created_at, position LIMIT ?',
+        'SELECT id, title, day, member_id, done_at, section, source_template_id, subject_kind, subject_id, icon, colour AS color, effort FROM todos WHERE household_id = ? AND source_template_id IS NULL AND section IS NULL AND (done_at IS NULL OR done_at >= ?) ORDER BY created_at, position LIMIT ?',
       )
       .bind(hh, today, ROWS_MAX)
       .all<TodoTaskRow>(),

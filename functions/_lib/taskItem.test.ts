@@ -23,6 +23,7 @@ const chore = (over: Partial<ChoreTaskRow>): ChoreTaskRow => ({
   subject_kind: null,
   subject_id: null,
   icon: null,
+  effort: null,
   created_at: addLocalDays(today, -30),
   ...over,
 })
@@ -44,6 +45,7 @@ const home = (over: Partial<HomeTaskRow>): HomeTaskRow => ({
   subject_kind: null,
   subject_id: null,
   icon: null,
+  effort: null,
   ...over,
 })
 const todo = (over: Partial<TodoTaskRow>): TodoTaskRow => ({
@@ -127,6 +129,13 @@ describe('a task, read side', () => {
     expect(homeTask(home({ carnet_id: 'c1' }), today, noon)?.subject).toEqual({ kind: 'carnet', id: 'c1' })
     expect(todoTask(todo({ subject_kind: 'pet', subject_id: 'p1' }), today)?.subject).toEqual({ kind: 'pet', id: 'p1' })
     expect(todoTask(todo({ subject_kind: 'moon', subject_id: 'p1' }), today)?.subject).toBeNull()
+  })
+
+  it('the effort rides through (0149): null stays null, an odd stored value reads as null', () => {
+    expect(choreTask(chore({ effort: 2 }), today, noon)?.effort).toBe(2)
+    expect(homeTask(home({ effort: null }), today, noon)?.effort).toBeNull()
+    expect(todoTask(todo({ effort: 9 }), today)?.effort).toBeNull()
+    expect(todoTask(todo({}), today)?.effort).toBeNull()
   })
 
   it('a departure checklist instance is not a task', () => {

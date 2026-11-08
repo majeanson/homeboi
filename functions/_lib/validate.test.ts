@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { emojiIcon, hexColor, hexColorOrNull } from './validate'
+import { emojiIcon, hexColor, hexColorOrNull, taskEffort } from './validate'
 
 describe('hexColor', () => {
   it('accepts a valid 6-digit hex', () => {
@@ -40,5 +40,14 @@ describe('hexColorOrNull', () => {
     expect(hexColorOrNull('#B06A93')).toBe('#B06A93')
     expect(hexColorOrNull('red')).toBeNull()
     expect(hexColorOrNull(null)).toBeNull()
+  })
+})
+
+describe('taskEffort (0149)', () => {
+  it('keeps a whole dot from 1 to 5', () => {
+    for (const v of [1, 2, 3, 4, 5]) expect(taskEffort(v)).toBe(v)
+  })
+  it('reads anything else as null: « pas dit », never rounded into a dot', () => {
+    for (const v of [0, 6, -1, 2.5, '3', true, null, undefined, Number.NaN, Infinity]) expect(taskEffort(v)).toBeNull()
   })
 })

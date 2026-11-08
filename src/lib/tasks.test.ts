@@ -10,6 +10,7 @@ const task = (over: Partial<TaskItem>): TaskItem => ({
   title: 'A',
   color: null,
   icon: null,
+  effort: null,
   subject: null,
   kind: null,
   recurring: false,
