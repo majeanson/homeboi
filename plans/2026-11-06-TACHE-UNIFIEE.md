@@ -1,6 +1,6 @@
 # Babillard: one task concept
 
-**Status:** phases 1 and 2 built (2026-11-07). Phases 3, 3b and 4 are not. Decisions below are the owner's (2026-11-06).
+**Status:** phases 1 and 2 built (2026-11-07), phase 3 built (2026-11-08). Phases 3b and 4 are not. Decisions below are the owner's (2026-11-06).
 
 ## The idea
 
@@ -70,6 +70,7 @@ The « Tâches » board view ships in this phase, with its horizon, subject and 
 - A friendlier « une chose à moi » door to create a `thing` carnet, with its own name and look.
 - Starter packs from `SEASON_SEEDS`, grouped by subject: tap « La maison à l'automne », add several.
 - Guard: no task or subject form hand-rolls a colour or icon control.
+- Built 2026-11-08 as: 0148 (`icon` on the three task tables and `pets`, nullable `colour` on `todos`; a carnet keeps `facts.emoji`, a person keeps their face, a trip its cover), `lookOf` + `suggestIcon` in `src/lib/subjects.ts`, `LookPicker`, `look-rule.test.ts`, « Une chose à moi » (`/maison?add=chose` and the last option of « Sur quoi ? »), and `seasonPacks`. The stored sage default of `tasks.colour` / `home_projects.colour` reads as « not chosen », rather than rebuilding two tables.
 - **Stop point:** the fun is shipped.
 
 ### Phase 3b: « Trouver quoi faire »
