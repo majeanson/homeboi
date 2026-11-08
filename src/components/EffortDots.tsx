@@ -20,6 +20,12 @@ import { Segmented } from './Segmented'
 type Key = '1' | '2' | '3' | '4' | '5'
 const KEYS: readonly Key[] = ['1', '2', '3', '4', '5']
 
+/** The word for a dot, in the reader's language; null for « pas dit ». The words live here only. */
+export function useEffortName(): (n: number | null | undefined) => string | null {
+  const t = useT()
+  return (n) => (n != null ? (t.effort.levels[n - 1] ?? null) : null)
+}
+
 function Dot({ filled }: { filled: boolean }) {
   return <span className={'effort-dots__dot' + (filled ? ' is-filled' : '')} aria-hidden="true" />
 }

@@ -2628,6 +2628,12 @@ export const EN: typeof FR = {
     levels: ['Very simple', 'Easy', 'Medium', 'Demanding', 'Big effort'],
     dot: (n: number, name: string) => `${name} (${n} of 5)`,
     mark: (name: string) => `Effort: ${name}`,
+    finder: 'Find something to do',
+    atMost: 'Effort, at most',
+    when: 'Within',
+    whenOptions: { semaine: 'This week', mois: 'This month', unjour: 'Someday' },
+    upTo: (name: string) => `up to ${name.toLowerCase()}`,
+    none: 'Nothing that size here. One more dot, or further out?',
   },
   // To tick — standalone check-off lists (todos), distinct from "À faire"
   // (one-off chores). Global or pinned to a day; reusable departure templates.

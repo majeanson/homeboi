@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { addLocalDays, localDayStart } from './localDay'
-import { boardOrder, groupTasks, horizonOf, HORIZONS, mineTask, personKey, rotates, subjectKey, type TaskItem } from './tasks'
+import { boardOrder, findable, groupTasks, horizonOf, HORIZONS, mineTask, personKey, rotates, subjectKey, type TaskItem } from './tasks'
 
 const today = localDayStart(new Date('2026-11-06T17:00:00Z'))
 const task = (over: Partial<TaskItem>): TaskItem => ({
@@ -83,5 +83,44 @@ describe('the lenses', () => {
   it('only a team of two or more is a rotation', () => {
     expect(rotates(task({ team: ['a'] }))).toBe(false)
     expect(rotates(task({ team: ['a', 'b'] }))).toBe(true)
+  })
+})
+
+describe('findable — « Trouver quoi faire » (0149)', () => {
+  const small = task({ id: 's', effort: 1 })
+  const mid = task({ id: 'm', effort: 3 })
+  const big = task({ id: 'b', effort: 5 })
+  const unsaid = task({ id: 'u', effort: null })
+  const ids = (xs: TaskItem[]) => xs.map((x) => x.id)
+
+  it('an effort shows that effort and below', () => {
+    expect(ids([small, mid, big].filter((x) => findable(x, 3, null, today)))).toEqual(['s', 'm'])
+    expect(ids([small, mid, big].filter((x) => findable(x, 1, null, today)))).toEqual(['s'])
+  })
+
+  it('a task whose effort was never said shows under EVERY effort', () => {
+    for (const e of [1, 2, 3, 4, 5, null]) expect(findable(unsaid, e, null, today)).toBe(true)
+  })
+
+  it('the horizon: the week, the month that holds it, and « un jour » for the long run', () => {
+    const late = task({ id: 'late', overdueSince: addLocalDays(today, -2), day: addLocalDays(today, -2) })
+    const week = task({ id: 'week', day: addLocalDays(today, 3) })
+    const month = task({ id: 'month', day: addLocalDays(today, 20) })
+    const later = task({ id: 'later', day: addLocalDays(today, 120) })
+    const someday = task({ id: 'someday' })
+    const all = [late, week, month, later, someday]
+    expect(ids(all.filter((x) => findable(x, null, 'semaine', today)))).toEqual(['late', 'week'])
+    expect(ids(all.filter((x) => findable(x, null, 'mois', today)))).toEqual(['late', 'week', 'month'])
+    expect(ids(all.filter((x) => findable(x, null, 'unjour', today)))).toEqual(['later', 'someday'])
+    expect(ids(all.filter((x) => findable(x, null, null, today)))).toEqual(ids(all))
+  })
+
+  it('both narrow together, and an unsaid effort still passes the effort half', () => {
+    const quickSomeday = task({ id: 'q', effort: 1 })
+    const bigSomeday = task({ id: 'bg', effort: 5 })
+    const unsaidWeek = task({ id: 'uw', day: addLocalDays(today, 2) })
+    const xs = [quickSomeday, bigSomeday, unsaidWeek, unsaid]
+    expect(ids(xs.filter((x) => findable(x, 2, 'unjour', today)))).toEqual(['q', 'u'])
+    expect(ids(xs.filter((x) => findable(x, 2, 'semaine', today)))).toEqual(['uw'])
   })
 })

@@ -3019,6 +3019,13 @@ export const FR = {
     levels: ['Tout simple', 'Facile', 'Moyen', 'Exigeant', 'Gros effort'],
     dot: (n: number, name: string) => `${name} (${n} sur 5)`,
     mark: (name: string) => `Effort : ${name}`,
+    // The finder: how much I have, then how far ahead. A task with no effort shows under every one.
+    finder: 'Trouver quoi faire',
+    atMost: 'Effort, au plus',
+    when: 'D’ici',
+    whenOptions: { semaine: 'Cette semaine', mois: 'Ce mois-ci', unjour: 'Un jour' },
+    upTo: (name: string) => `jusqu’à ${name.toLowerCase()}`,
+    none: 'Rien de cette taille ici. Un point de plus, ou plus loin ?',
   },
   // À cocher — listes à cocher autonomes (todos), distinctes du « À faire »
   // (corvées ponctuelles). Globales ou rattachées à une journée; modèles de

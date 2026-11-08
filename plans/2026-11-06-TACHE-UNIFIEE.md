@@ -1,6 +1,6 @@
 # Babillard: one task concept
 
-**Status:** phases 1 and 2 built (2026-11-07), phase 3 built (2026-11-08). Phases 3b and 4 are not. Decisions below are the owner's (2026-11-06).
+**Status:** phases 1 and 2 built (2026-11-07), phases 3 and 3b built (2026-11-08). Phase 4 is not. Decisions below are the owner's (2026-11-06).
 
 ## The idea
 
@@ -81,6 +81,7 @@ The « Tâches » board view ships in this phase, with its horizon, subject and 
 - A finder inside the « Tâches » view: pick how much you have with the same five dots (showing that effort and below), then a horizon (cette semaine · ce mois-ci · un jour), and the list narrows. No total, no « 12 restantes ».
 - A task with no effort still appears, under every effort, so skipping the field never hides it.
 - Later, optional: « Surprends-moi » offers one task. The AI could guess effort at capture, confirmed by the user.
+- Built 2026-11-08 as: 0149, `taskEffort` (the one write door), `EffortDots` / `EffortField` / `EffortMark` (`components/EffortDots.tsx`, on a `Segmented` that now takes `value: null`), `findable` (`lib/tasks.ts`) and `TaskFinder` in the view, `effort-rule.test.ts`. The horizon reads « cette semaine » = owed or due within seven days, « ce mois-ci » = the same within the month (it holds the week), « un jour » = undated or further than a month. Tapping the chosen dot or horizon again clears it.
 - **Stop point.**
 
 ### Phase 4: one form, then decide on the tables

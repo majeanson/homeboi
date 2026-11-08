@@ -2254,6 +2254,18 @@ export const GUIDE: GuideEntry[] = [
         },
         route: '/home-project/new',
       },
+      {
+        label: { fr: 'Trouver quoi faire', en: 'Find something to do' },
+        detail: {
+          fr: 'Chaque tâche peut dire son effort, cinq points de « Tout simple » à « Gros effort », à un toucher dans le formulaire. Dans la vue Tâches, « Trouver quoi faire » demande combien tu as et jusqu’où tu regardes, et la liste se resserre — une tâche sans effort apparaît toujours.',
+          en: 'Each task can say its effort, five dots from “Very simple” to “Big effort”, one tap away in the form. In the Tasks view, “Find something to do” asks how much you have and how far ahead you look, and the list narrows — a task with no effort always shows.',
+        },
+        why: {
+          fr: 'Pour « j’ai dix minutes » comme pour « qu’est-ce qu’on prévoit cette année ? » — sans compte, sans total : la liste qui se resserre est la réponse.',
+          en: 'For “I have ten minutes” as much as “what should we plan this year?” — no count, no total: the narrowed list is the answer.',
+        },
+        route: '/board?view=taches',
+      },
     ],
   },
   {

@@ -83,6 +83,26 @@ export function horizonOf(t: TaskItem, today: number): Horizon {
   return 'later'
 }
 
+// « TROUVER QUOI FAIRE » (0149): how much I have, and how far ahead I look. Both optional, both
+// narrow, neither counts. THE rule of the finder, in one place:
+//   · effort: that effort AND below. A task whose effort was never said shows under EVERY
+//     effort, so skipping the field never hides a task.
+//   · horizon: « cette semaine » is what is owed or due within seven days, « ce mois-ci » the
+//     same within the month (so it holds the week), « un jour » is the long run: undated, or
+//     further than a month. A ticked one-off stays where it was until the day clears it.
+export const FIND_WHEN = ['semaine', 'mois', 'unjour'] as const
+export type FindWhen = (typeof FIND_WHEN)[number]
+const WHEN_HORIZONS: Record<FindWhen, readonly Horizon[]> = {
+  semaine: ['late', 'today', 'week'],
+  mois: ['late', 'today', 'week', 'month'],
+  unjour: ['later', 'someday'],
+}
+
+export function findable(t: TaskItem, effort: number | null, when: FindWhen | null, today: number): boolean {
+  if (effort != null && t.effort != null && t.effort > effort) return false
+  return when == null || WHEN_HORIZONS[when].includes(horizonOf(t, today))
+}
+
 export interface TaskGroup<K> {
   key: K
   tasks: TaskItem[]

@@ -7,7 +7,7 @@ import { useProfile } from '../../lib/profile'
 import { TASKS_KEY } from '../../lib/queryKeys'
 import { subjectOf, type SubjectLookup, type SubjectRef } from '../../lib/subjects'
 import { useTabParam } from '../../lib/tabParam'
-import { groupTasks, horizonOf, HORIZONS, mineTask, NO_SUBJECT, NOBODY, personKey, subjectKey, type TaskGroup, type TaskItem } from '../../lib/tasks'
+import { FIND_WHEN, findable, groupTasks, horizonOf, HORIZONS, mineTask, NO_SUBJECT, NOBODY, personKey, subjectKey, type TaskGroup, type TaskItem } from '../../lib/tasks'
 import { loadStateOf } from '../Fallback'
 import { Disclosure } from '../Disclosure'
 import { EmptyState } from '../EmptyState'
@@ -16,6 +16,7 @@ import { InlineIcon } from '../Icon'
 import { Segmented } from '../Segmented'
 import { ChoreLedger } from '../ChoreLedger'
 import { SeasonSeeds } from '../tasks/SeasonSeeds'
+import { TaskFinder } from '../tasks/TaskFinder'
 import { TaskList, TaskQuickAdd } from '../tasks/TaskList'
 import { useTaskActions } from '../tasks/useTaskActions'
 import { SecLabel } from './BoardCard'
@@ -30,6 +31,11 @@ import { type Member } from './types'
 // the realtime nudge and by each write's affectedKeys. It never joins the poll.
 const LENSES = ['horizon', 'sujet', 'qui'] as const
 type Lens = (typeof LENSES)[number]
+// « Trouver quoi faire » lives in the URL too (?effort=1..5, ?quand=semaine|mois|unjour), so a
+// narrowed list survives a scene's round trip and can be linked. `tout` = no answer, no param.
+const ANY = 'tout'
+const EFFORTS = [ANY, '1', '2', '3', '4', '5'] as const
+const WHENS = [ANY, ...FIND_WHEN] as const
 
 interface TasksFrame {
   tasks: TaskItem[]
@@ -49,6 +55,10 @@ export function TasksView({ members, todayDay }: { members: Member[]; todayDay: 
   const ro = isGuest()
   const { memberId } = useProfile()
   const [lens, setLens] = useTabParam<Lens>('par', 'horizon', LENSES)
+  const [effortParam, setEffortParam] = useTabParam<(typeof EFFORTS)[number]>('effort', ANY, EFFORTS)
+  const [whenParam, setWhenParam] = useTabParam<(typeof WHENS)[number]>('quand', ANY, WHENS)
+  const effort = effortParam === ANY ? null : Number(effortParam)
+  const when = whenParam === ANY ? null : whenParam
   const [params] = useSearchParams()
   const focus = focusRef(params.get('sujet'))
   const actions = useTaskActions(TASKS_KEY)
@@ -63,6 +73,8 @@ export function TasksView({ members, todayDay }: { members: Member[]; todayDay: 
     .filter((x) => (focusKey ? subjectKey(x) === focusKey : true))
     // The face lens narrows like it does everywhere, except where people ARE the grouping.
     .filter((x) => lens === 'qui' || mineTask(x, memberId))
+    .filter((x) => findable(x, effort, when, todayDay))
+  const finding = effort != null || when != null
 
   const nameOfSubject = (key: string, sample: TaskItem) =>
     key === NO_SUBJECT ? t.tasks.noSubject : (subjectOf(sample.subject, lookup).name ?? t.tasks.subjectKinds[sample.subject!.kind])
@@ -95,8 +107,14 @@ export function TasksView({ members, todayDay }: { members: Member[]; todayDay: 
         </p>
       )}
       {!ro && <TaskQuickAdd actions={actions} subject={focus ?? undefined} />}
+      <TaskFinder
+        effort={effort}
+        when={when}
+        onEffort={(v) => setEffortParam(v == null ? ANY : (String(v) as (typeof EFFORTS)[number]))}
+        onWhen={(v) => setWhenParam(v ?? ANY)}
+      />
       {groups.length === 0 ? (
-        <EmptyState tone="calm">{t.todos.empty}</EmptyState>
+        <EmptyState tone="calm">{finding ? t.effort.none : t.todos.empty}</EmptyState>
       ) : (
         groups.map((g) => (
           <section key={g.key} className="tasks-view__group">

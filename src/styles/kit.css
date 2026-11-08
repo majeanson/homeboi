@@ -740,9 +740,19 @@
   vertical-align: middle;
 }
 .effort-mark .effort-dots__dot {
-  width: 0.4rem;
-  height: 0.4rem;
+  width: 0.45rem;
+  height: 0.45rem;
   border-width: 1px;
+}
+.effort-mark .effort-dots__dot.is-filled {
+  border-color: var(--ink-soft);
+  background: var(--ink-soft);
+}
+/* On a row it rides Act's badge slot, which is a loud marigold pill by default: strip it, the
+   way the shared-trip mark does. Quiet ink, never an alert. */
+.act__badge:has(.effort-mark) {
+  background: none;
+  padding: 0;
 }
 /* The row a search hit landed on (lib/useItemPulse): same treatment as a deep-linked
    cercle row, whose keyframes live in the eager cnote-list.css. */
