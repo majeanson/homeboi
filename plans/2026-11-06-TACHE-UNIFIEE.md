@@ -32,6 +32,7 @@ Examples: gouttières (the house, every autumn) · sortir le bac (rotation, week
 - Rotation is a per-task checkbox, offered on any recurring task, not a chore-only type.
 - **« Trouver quoi faire »**: a way to find a task by effort and by horizon, for « I have ten minutes » or « what should we plan this year? ».
 - Out of scope: La liste, routines, habits. Departure checklists stay as they are, and may become task templates later.
+- **The tables merge** (asked 2026-11-08, after phases 1 to 3b shipped): « Merge now », right after the one form lands. `tasks` and `todos` move into one table; the old endpoints stay as aliases. Chosen over « keep three », which was offered as the low-risk default.
 - Unified and standardized throughout: one word, one scheduler, one subject link, one look, one row, one form, each held by a guard.
 
 ## What the code already gives us
@@ -89,7 +90,7 @@ The « Tâches » board view ships in this phase, with its horizon, subject and 
 - One task form replaces `ChoreForm`, `HomeProjectForm` and the todo composer. It opens as one title field, and each layer (when, who, subject, effort, look) is one tap away. Fields appear by axis, never by type.
 - Guard: only `title` is required on the write path, and no form branches on a task type.
 - Capture: the AI intents and `recurParse` create one kind of thing.
-- **Owner gate:** only then decide whether `tasks` and `todos` physically merge into `home_projects`. Phases 1 to 3 do not depend on it, but « no types » is only fully true once they do, so that is the recommended end state.
+- **Owner gate (decided 2026-11-08: merge, right after the form):** only then decide whether `tasks` and `todos` physically merge into `home_projects`. Phases 1 to 3 do not depend on it, but « no types » is only fully true once they do, so that is the recommended end state.
 - If they merge, old endpoints stay as aliases, because a queued offline write or an old tab can still call them.
 
 ## Every phase must keep
