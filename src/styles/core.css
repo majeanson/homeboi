@@ -1612,7 +1612,7 @@ html[data-embedded] .home {
    form's submit row standing apart from its fields. */
 :is(.today-feed, .habitudes__body) > :is(.subtabs-row, .mswitch, .btn),
 :is(.operator__inline-form, .picker-chips) > .mswitch,
-:is(.cf, .recipe-modal__body, .habitudes__body) > .disclosure,
+:is(.cf, .recipe-modal__body, .habitudes__body, .operator__inline-form) > .disclosure,
 .cf > :is(.cf__rels, .lc),
 .field > .cercle-fam__newrow,
 .reminders > .reminders__sub,
