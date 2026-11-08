@@ -13,7 +13,7 @@ import { live } from '../lib/query'
 import { useProfile } from '../lib/profile'
 import { useRecordUndo } from '../lib/toast'
 import { formatDayLong, formatTime, capitalize } from '../lib/format'
-import { addLocalDays, daysUntilLocal, todayLocalDay } from '../lib/localDay'
+import { addLocalDays, daysUntilLocal, inputFromLocalDay, todayLocalDay } from '../lib/localDay'
 import { weatherIcon, weatherTint, weatherTip, type Weather, type DayOutlook } from '../lib/weather'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { PairPrompt } from '../components/Fallback'
@@ -34,7 +34,9 @@ import { tripCategoryIcon, type TripCategory } from '../components/voyage/voyage
 import { TodoSection } from '../components/todos/TodoSection'
 import { FormDelete } from '../components/FormDelete'
 import { EventForm, type EventInit } from '../components/forms/EventForm'
-import { ChoreForm, type ChoreInit } from '../components/forms/ChoreForm'
+import { TaskForm } from '../components/forms/TaskForm'
+import type { Chore } from '../components/operator/types'
+import { emptyDraft, taskRead, type TaskDraft } from '../lib/taskSave'
 import { useEventPeekActions } from '../components/detail/EventPeekActions'
 import { useChoreRemovals } from '../components/detail/EntityRemovals'
 import { useDeferredRemoval } from '../lib/useDeferredRemoval'
@@ -238,7 +240,7 @@ function DayPlanScene() {
   // to its inline form pre-filled. The /api/month occurrence carries only display
   // fields; we resolve the series by its base id (recurring ids are `base#at`).
   const eventsFullQ = useQuery({ queryKey: EVENTS_KEY, queryFn: () => api<{ events: EventInit[] }>('events'), ...live })
-  const choresFullQ = useQuery({ queryKey: CHORES_KEY, queryFn: () => api<{ chores: ChoreInit[] }>('chores'), ...live })
+  const choresFullQ = useQuery({ queryKey: CHORES_KEY, queryFn: () => api<{ chores: Chore[] }>('chores'), ...live })
   const baseId = (id: string) => id.split('#')[0]
   const formMembers = boardQ.data?.members ?? []
 
@@ -275,14 +277,16 @@ function DayPlanScene() {
 
   // Inline add (no value) / edit (value) for events + chores on this day. null = closed.
   const [eventForm, setEventForm] = useState<{ value?: EventInit } | null>(null)
-  const [choreForm, setChoreForm] = useState<{ value?: ChoreInit } | null>(null)
+  // The one task form, inline: a new task on this day, or a chore's edit (in its own table).
+  const [choreForm, setChoreForm] = useState<{ value?: { table: 'chore'; id: string; draft: TaskDraft } } | null>(null)
   const openEventEdit = (occId: string) => {
     const full = eventsFullQ.data?.events.find((e) => e.id === baseId(occId))
     if (full) setEventForm({ value: full })
   }
   const openChoreEdit = (occId: string) => {
-    const full = choresFullQ.data?.chores.find((c) => c.id === baseId(occId))
-    if (full) setChoreForm({ value: full })
+    const id = baseId(occId)
+    const draft = id ? taskRead('chore').draftOf(choresFullQ.data, id) : undefined
+    if (id && draft) setChoreForm({ value: { table: 'chore', id, draft } })
   }
   const afterEventSave = () => {
     setEventForm(null)
@@ -861,11 +865,10 @@ function DayPlanScene() {
             )}
             {!ro && choreForm && (
               <>
-                <ChoreForm
+                <TaskForm
                   key={choreForm.value?.id ?? 'new-chore'}
-                  members={formMembers}
                   value={choreForm.value}
-                  initialStart={choreForm.value ? undefined : date}
+                  seed={emptyDraft({ date: inputFromLocalDay(date) })}
                   onSaved={afterChoreSave}
                   onCancel={() => setChoreForm(null)}
                 />
@@ -877,7 +880,7 @@ function DayPlanScene() {
                     onDelete={() => {
                       const c = choreForm.value!
                       setChoreForm(null)
-                      removals.removeChore({ id: c.id!, title: c.title ?? '' })
+                      removals.removeChore({ id: c.id, title: c.draft.title })
                     }}
                   />
                 )}

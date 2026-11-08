@@ -29,12 +29,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## What this is
 
 **Babillard** — a calm household command-center for a cheap always-on wall tablet:
-today's agenda, shared lists, chore rotation, "supper tonight," kid routines, a
-kitchen/recipe planner. Built **useful-at-home first, calm by design**: no streaks,
-no points, no push notifications, finite lists that empty and stay empty.
+today's agenda, shared lists, chore rotation, "supper tonight," kid routines, a kitchen/recipe
+planner. Built **useful-at-home first, calm by design**: no streaks, no points, no push
+notifications, finite lists that empty and stay empty.
 
-Single-page React app + one Cloudflare Worker (static assets + `/api/*`) + D1 +
-Workers AI + R2. UI copy is **bilingual, FR-CA (Québécois) first**.
+Single-page React app + one Cloudflare Worker (static assets + `/api/*`) + D1 + Workers AI + R2. UI copy is **bilingual, FR-CA (Québécois) first**.
 
 The product thinking — brief, PRD, architecture — lived in `bmad/`, **deleted
 2026-09-17**. It was ~10 000 lines of planning documents for an app that is built, and
@@ -98,6 +97,7 @@ Before implementing ANY change, do this first — it's faster than the rework it
 | Hub-tab / scene header | **`HubHead`** / **`SceneHead`** | `components/HubHead.tsx`, `components/SceneHead.tsx` |
 | "Everything the app does" themed map / feature discovery | **`FeatureMap`** (the ONE taxonomy: `CONCEPT_THEMES`/`FEATURE_MAP_TILES` in `lib/guideContent`) | `components/FeatureMap.tsx` (reused by the Guide jump-grid, the Board `WelcomeCard`, DevKit — extend the taxonomy, don't fork a list) |
 | Person photo/initial, mic, icon — and ANY picture (an R2 blob via `imgUrl(key)`, a flyer clipping, a logo, a web photo) | **`Avatar`/`VoiceButton`/`Icon`/`ZoomableImg`**, all on **`Img`** — a bare `<img>` has ONE shot at its bytes and then sits blank for the session (the board « Dessins » tiles came back « clear » on the phone, 2026-10-30); Img retries with backoff, re-asks once per reconnection / foregrounding, and sets `data-loaded` so a surface that knows the shape can reserve it. A **test** enforces it (`src/lib/img-rule.test.ts`): a raw `<img>` fails the build | `components/*`, `components/Img.tsx` (pass a family/group `colour` to Avatar so a photo-less member's initials disc takes the group colour) |
+| ANY task: add or edit, from a bare title up to a recurring rotating chore · which table it goes to | **`TaskForm`** (one title, every layer folded one tap away, no type picker) · **`taskTarget`** decides a new task's table, the save adapter **`lib/taskSave`** is the ONLY code that knows an endpoint (`task-form-rule.test.ts`) | `components/forms/TaskForm.tsx`, `lib/taskTarget.ts`, `lib/taskSave.ts` |
 | The LOOK of a task or a subject (an icon + a colour) · the EFFORT of a task (five dots, null = not said) | **`LookPicker`** — folded, one tap away; a task passes `inherit` (null = « comme le sujet »), a carnet/pet `fallbackIcon`. The inheritance itself is **`lookOf`** (`lib/subjects`), never per component; `look-rule.test.ts` fails a task or subject form that renders its own ColorPicker/EmojiField · **`EffortDots`** (on `Segmented`) / `EffortField` (form fold) / `EffortMark` (row); server writes go through `taskEffort` (`_lib/validate`), `effort-rule.test.ts` | `components/LookPicker.tsx`, `components/EffortDots.tsx` |
 | Pick a household face (Maisonnée + members) | **`MemberSwitcher`** (the `.mswitch` "Aujourd'hui" row) | `components/MemberSwitcher.tsx` (controlled; every "who am I today" **lens** — board « Aujourd'hui », Maison's focus lens + the Notes face — wires it to the ONE device profile `useProfile`, so the pick is remembered app-wide. Only a **value** picker (a mot's recipient, a habit's owner) holds local state) |
 | Confirm a destructive delete / undo a light one | **`useConfirm`** / the undo toast — and its message says WHAT IS LOST, never a bare « Supprimer ? » (a **test** enforces it: `src/lib/confirmCopy.test.ts`, every `…Confirm` string ≥ 6 words with a consequence). Model: « Supprimer ce groupe ? Les personnes restent dans le cercle. » | `lib/confirm.tsx`, `lib/toast.tsx` (`lib/undoStack.ts`) |

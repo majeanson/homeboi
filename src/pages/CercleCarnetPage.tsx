@@ -37,7 +37,8 @@ import { CarnetForm } from '../components/cercle/CarnetForm'
 import { CarnetDocs } from '../components/cercle/CarnetDocs'
 import { CareLogForm } from '../components/cercle/CareLogForm'
 import { HomePinForm } from '../components/cercle/HomePinForm'
-import { HomeProjectForm } from '../components/forms/HomeProjectForm'
+import { TaskForm } from '../components/forms/TaskForm'
+import { rowDraft } from '../lib/taskSave'
 import { SubjectTasks } from '../components/tasks/SubjectTasks'
 import type { TaskItem } from '../lib/tasks'
 import { Img } from '../components/Img'
@@ -47,7 +48,8 @@ type Seg = 'surveiller' | 'carnet'
 // /cercle/carnet/:id — one carnet's full scene. A 2-segment toggle (« À surveiller »
 // = what's due + the long jeu; « Le carnet » = the information: identité, ses choses,
 // historique, entretien). The hero adapts by kind. Read-only for a guest.
-const isCarnetUpkeep = (t: TaskItem) => t.source === 'home' && t.kind === 'upkeep'
+// Only a home row carries a kind (TaskItem.kind is null elsewhere), so the kind alone says it.
+const isCarnetUpkeep = (t: TaskItem) => t.kind === 'upkeep'
 
 export function CercleCarnetPage() {
   const t = useT()
@@ -85,7 +87,7 @@ export function CercleCarnetPage() {
   // An Entretien row scoped to this carnet was read-only text here (REVIEW-PASS
   // « crn »): care-log and pins both carried RowActions, so changing an upkeep row
   // meant leaving the scene for Réglages ▸ Corvées. Same two doors as its siblings
-  // now — edit opens the SHARED HomeProjectForm in a modal (not a second form), and
+  // now — edit opens the ONE task form in a modal (not a second form), and
   // delete rides the same deferred removal, since ['home-projects'] is polled live.
   const [editUpkeep, setEditUpkeep] = useState<HomeProject | null>(null)
   const logRemoval = useDeferredRemoval([...CARE_LOG_KEY, id])
@@ -529,10 +531,8 @@ export function CercleCarnetPage() {
           Réglages ▸ Corvées use, so the three can't drift. */}
       <Modal open={!!editUpkeep} onClose={() => setEditUpkeep(null)} title={c.editCare}>
         {editUpkeep && (
-          <HomeProjectForm
-            kind="upkeep"
-            value={editUpkeep}
-            carnetId={carnet.id}
+          <TaskForm
+            value={{ table: 'home', id: editUpkeep.id, draft: rowDraft('home', editUpkeep) }}
             onSaved={() => setEditUpkeep(null)}
             onCancel={() => setEditUpkeep(null)}
           />

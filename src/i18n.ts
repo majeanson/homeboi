@@ -447,7 +447,7 @@ export const FR = {
     voice: 'Parler',
     listening: 'J’écoute…',
     routed: 'Ajouté :',
-    types: { event: 'Rendez-vous', task: 'Tâche', 'list-item': 'Liste', 'pantry-low': 'Manque', meal: 'Souper', leftover: 'Restants', upkeep: 'Entretien', note: 'Note' },
+    types: { event: 'Rendez-vous', task: 'Tâche', 'list-item': 'Liste', 'pantry-low': 'Manque', meal: 'Souper', leftover: 'Restants', note: 'Note' },
     degraded: 'L’IA ne répond pas — choisis le type toi-même.',
     failed: 'La capture n’a pas fonctionné. Ton texte est gardé, réessaie.',
     // A-2 (bmad/10): offline (or a transport hiccup), the raw text is queued and
@@ -2989,9 +2989,6 @@ export const FR = {
     subjectLabel: 'Sur quoi ?',
     noSubject: 'Sans sujet',
     allSubjects: 'Tous les sujets',
-    addPlanned: 'Une tâche qui revient',
-    addUpkeep: 'Un entretien',
-    addProject: 'Un projet',
     ledger: 'Qui a fait quoi cette semaine',
     history: 'Ce qui a été fait',
     subjectEmpty: 'Rien pour l’instant.',
@@ -2999,6 +2996,32 @@ export const FR = {
     // piscine, le chalet — from « Sur quoi ? » and from the Tâches view. One flow: CarnetForm.
     newThing: 'Une chose à moi…',
     newThingTitle: 'Une chose à moi',
+    // The one task form (phase 4): one title, and each layer one tap away. No « type » anywhere.
+    form: {
+      newTitle: 'Nouvelle tâche',
+      editTitle: 'Modifier la tâche',
+      deleteLabel: 'Supprimer la tâche',
+      ideas: 'Idées',
+      when: 'Quand ?',
+      who: 'Qui ?',
+      notes: 'Notes et budget',
+      someday: 'Un jour',
+      date: 'Date',
+      from: 'À partir du',
+      // An edit that adds a layer its row cannot keep yet says so, once, calmly.
+      unheld: (what: string) => `Cette tâche ne garde pas encore ${what}. Le reste est enregistré.`,
+      axes: {
+        date: 'de date',
+        who: 'de personne',
+        recur: 'de récurrence',
+        lead: 'de rappel',
+        evening: 'd’annonce la veille',
+        fromDone: 'de « à partir de la dernière fois »',
+        notes: 'de notes',
+        budget: 'de budget',
+        kind: 'de genre',
+      },
+    },
   },
   // L’allure d’une chose (LookPicker, 0148): une icône et une couleur. Une tâche hérite de
   // son sujet tant qu’elle ne choisit pas.
@@ -3053,10 +3076,9 @@ export const FR = {
     // moment its day passed (bmad/11 tier-1 seam #3); it now waits here, calmly,
     // until it is checked. Never a count, never a colour of alarm.
     scopeOverdue: 'En retard',
-    scopeDate: 'Une date',
     // Feuille ＋ : une LISTE piochée est toujours pour une journée (mig 0116) — sous
     // « En tout temps » elle s’ajoute pour aujourd’hui, et cette ligne le dit.
-    templateDayHint: 'Une liste s’ajoute pour la journée — ici, aujourd’hui.',
+    templateDayHint: 'Une liste choisie ici s’ajoute pour la date de « Quand ? », sinon pour aujourd’hui.',
     // Réglages ▸ Maison ▸ Tâches de la maison (modèles de listes).
     templatesTitle: 'Listes de départ',
     includeList: 'Inclure une liste…',

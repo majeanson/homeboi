@@ -39,7 +39,6 @@ export const EN_OPERATOR: typeof FR_OPERATOR = {
   deleteMember: 'Remove person',
   deleteMemberConfirm: (name: string) =>
     `Remove "${name}" from the household? Their routines will be erased too; appointments and tasks stay, with no one assigned.`,
-  editChore: 'Edit task',
   ledgerTitle: 'Who did what this week?',
   ledgerEmpty: 'Nothing noted yet. This fills in on its own.',
   ledgerHelperChild: 'A helping hand',
@@ -79,34 +78,23 @@ export const EN_OPERATOR: typeof FR_OPERATOR = {
   needChild: 'Add a child first (check “Child”).',
   forWho: 'For whom:',
   tplStart: 'Template:',
-  choreCommon: 'Common:',
-  choreStart: 'Starting',
   // D-21 (bmad/10) « Sortir le bac » — opt-in per-chore evening announce (only
   // meaningful with a schedule; sits right under LeadPicker in the same form).
   announceEveningLabel: 'Announce the evening before',
   announceEveningHint: 'The board will show a calm line the evening before ("Tonight" — not a notification).',
   // Projets & Entretien — the longer-horizon home work under Corvées (#home-projects).
   home: {
-    subCorvees: 'Tasks',
-    subProjets: 'Plans',
     subEntretien: 'Maintenance',
-    addProjet: 'Add a plan',
-    addEntretien: 'Add maintenance',
     // A-4 (bmad/09) — the offered season rituals (tires, gutters, shelter).
     seedsTitle: 'Season ideas',
     seedsHint: 'The big local rituals, ready to add — one tap puts them in Maintenance like any task. The ✕ hides them for good.',
     seedDismiss: 'Hide this idea',
     packName: (kind: 'home' | 'auto' | null, s: 'winter' | 'spring' | 'summer' | 'autumn') =>
       `${kind === 'home' ? 'The house' : kind === 'auto' ? 'The car' : 'Everywhere'} ${{ winter: 'in the winter', spring: 'in the spring', summer: 'in the summer', autumn: 'in the fall' }[s]}`,
-    editProjet: 'Edit plan',
-    deleteProjet: 'Delete plan',
-    editEntretien: 'Edit maintenance',
-    deleteEntretien: 'Delete maintenance',
     budgetLabel: 'Target budget',
     budgetPlaceholder: 'e.g. 15,000',
     notesLabel: 'Notes',
     notesPlaceholder: 'Details, quotes, to delegate…',
-    dateLabel: 'Date (optional)',
     fromLastDone: 'From the last time',
     fromLastDoneHint: 'The next due date counts from the last check-off, not the fixed date.',
     snoozedUntil: (d: string) => `Postponed to ${d}`,
@@ -118,7 +106,6 @@ export const EN_OPERATOR: typeof FR_OPERATOR = {
     everyWinter: 'Every winter',
     common: 'Common:',
     done: 'Done',
-    pickKind: 'A task that comes back, maintenance or a plan?',
   },
   cardWord: 'word',
   addCard: 'card',

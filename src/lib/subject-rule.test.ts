@@ -22,7 +22,6 @@ const ALLOWED: Record<string, string> = {
   'lib/subjects.ts': 'the resolver itself',
   'lib/todos.ts': 'declares the column on the Todo row shape',
   'components/operator/types.ts': 'declares the columns on the Chore and HomeProject row shapes',
-  'components/forms/ChoreForm.tsx': 'declares the columns on ChoreInit; it reads them through subjectRefOf',
 }
 
 const rel = (f: string) => f.slice(SRC.length + 1).replace(/\\/g, '/')

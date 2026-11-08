@@ -117,9 +117,8 @@ const CastPage = lazy(() => import('./pages/CastPage').then((m) => ({ default: m
 // Operator add-forms — full-screen scenes (were tall sheet forms that stranded
 // inputs under the mobile keyboard). Edit still happens inline in Réglages.
 const EventFormPage = lazy(() => import('./pages/EventFormPage').then((m) => ({ default: m.EventFormPage })))
-const ChoreFormPage = lazy(() => import('./pages/ChoreFormPage').then((m) => ({ default: m.ChoreFormPage })))
-// Projets / Entretien (home_projects) add-form — the board ＋ « Corvées » sub-choice.
-const HomeProjectFormPage = lazy(() => import('./pages/HomeProjectFormPage').then((m) => ({ default: m.HomeProjectFormPage })))
+// THE ONE TASK FORM (phase 4 of the unified task): every task door, old and new, renders it.
+const TaskFormPage = lazy(() => import('./pages/TaskFormPage').then((m) => ({ default: m.TaskFormPage })))
 const RoutineFormPage = lazy(() => import('./pages/RoutineFormPage').then((m) => ({ default: m.RoutineFormPage })))
 // ONE « liste à compléter » (todo template) edited on its own scene — Réglages ▸
 // Maison lists them as short rows and its ✏ opens this.
@@ -241,10 +240,11 @@ export function AppRoutes() {
         {/* « Jouer » — the toddler play space (full-screen scene). */}
         <Route path="/jouer" element={<JouerPage />} />
         <Route path="/event/new" element={<EventFormPage />} />
-        <Route path="/chore/new" element={<ChoreFormPage />} />
-        <Route path="/chore/:id" element={<ChoreFormPage />} />
-        <Route path="/home-project/new" element={<HomeProjectFormPage />} />
-        <Route path="/home-project/:id" element={<HomeProjectFormPage />} />
+        <Route path="/chore/new" element={<TaskFormPage />} />
+        <Route path="/chore/:id" element={<TaskFormPage table="chore" />} />
+        <Route path="/home-project/new" element={<TaskFormPage />} />
+        <Route path="/home-project/:id" element={<TaskFormPage table="home" />} />
+        <Route path="/todo/:id" element={<TaskFormPage table="todo" />} />
         <Route path="/routine/new" element={<RoutineFormPage />} />
         {/* The opt-in sticker wall (static path — declared before /routine/:id). */}
         <Route path="/routine/stickers" element={<StickerWallPage />} />

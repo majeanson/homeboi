@@ -31,7 +31,7 @@ import {
 
 // The « Mes habitudes » form — create and edit. Owns its POST/PATCH; calls
 // onSaved() when done. Pass `value` to edit in place (with a `key` so it re-inits
-// when the target changes), mirroring ChoreForm/EventForm.
+// when the target changes), mirroring EventForm.
 //
 // Cadence is a four-way segment, NOT a widened Recur. « Selon un horaire » reuses
 // the shared RecurPicker untouched; the other three are habit-local shapes that

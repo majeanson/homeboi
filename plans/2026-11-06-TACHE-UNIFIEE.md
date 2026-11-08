@@ -1,6 +1,6 @@
 # Babillard: one task concept
 
-**Status:** phases 1 and 2 built (2026-11-07), phases 3 and 3b built (2026-11-08). Phase 4 is not. Decisions below are the owner's (2026-11-06).
+**Status:** phases 1 and 2 built (2026-11-07), phases 3 and 3b built (2026-11-08), phase 4's first half (the one form) built (2026-11-08). The table merge is next. Decisions below are the owner's (2026-11-06).
 
 ## The idea
 
@@ -92,6 +92,8 @@ The « Tâches » board view ships in this phase, with its horizon, subject and 
 - Capture: the AI intents and `recurParse` create one kind of thing.
 - **Owner gate (decided 2026-11-08: merge, right after the form):** only then decide whether `tasks` and `todos` physically merge into `home_projects`. Phases 1 to 3 do not depend on it, but « no types » is only fully true once they do, so that is the recommended end state.
 - If they merge, old endpoints stay as aliases, because a queued offline write or an old tab can still call them.
+- Built 2026-11-08, the first half: `TaskForm` (one title, then folds: Quand ?, Qui ?, Sur quoi ?, Allure, Effort, Notes et budget) renders at every old door (`/chore/*`, `/home-project/*`, the new `/todo/:id`, the ＋ « Tâches » tile, the day page, a carnet's Entretien). A NEW task's table is `taskTarget` (`src/lib/taskTarget.ts`, pure, shared with capture): the first of todos → tasks → home_projects that holds every layer filled. An edit keeps its table, and a layer that table cannot keep is said in one line. Only `src/lib/taskSave.ts` knows an endpoint. Capture's « task » and « upkeep » both land through `taskTarget`; `recurParse` reads « chaque mardi ». Guard: `task-form-rule.test.ts`. D1: `worker/taskForm.d1.test.ts`.
+- **What the merge must hold** (an edit cannot keep these today, and the form says so): a to-do cannot keep a person (`member_id` is the acting profile), a recurrence, a lead, the evening line, « dernière fois », notes or a budget; a chore cannot keep a one-off date, notes, a budget or « dernière fois »; a home row cannot keep the evening line.
 
 ## Every phase must keep
 

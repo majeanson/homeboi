@@ -21,10 +21,10 @@ test('a row wears its own icon, else its subject’s', async ({ page, app }) => 
   await expect(page.locator('[data-item="l-inh"] .act__emoji')).toHaveText('🏡')
 })
 
-test('the chore form: the look is folded, suggests from the title, and sends a pick', async ({ page, app }) => {
+test('the task form: the look is folded, suggests from the title, and sends a pick', async ({ page, app }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  await app.boot({ route: '/chore/new', wait: '.operator__chore-form' })
-  const form = page.locator('.operator__chore-form')
+  await app.boot({ route: '/chore/new', wait: '.task-form' })
+  const form = page.locator('.task-form')
   const look = form.getByRole('button', { name: /Allure/ })
   await expect(look).toHaveAttribute('aria-expanded', 'false')
   await form.getByPlaceholder(/corvée|tâche/i).first().fill('Nettoyer les gouttières')
@@ -41,22 +41,39 @@ test('the chore form: the look is folded, suggests from the title, and sends a p
     const b = await boxOf(kids.nth(i))
     expect(b.x + b.width).toBeLessThanOrEqual(390)
   }
-  const post = page.waitForRequest((r) => r.url().includes('/api/chores') && r.method() === 'POST')
+  // A title and a look, nothing else: a to-do (lib/taskTarget), wearing the pick.
+  const post = page.waitForRequest((r) => r.url().includes('/api/todos') && r.method() === 'POST')
   await form.locator('button[type="submit"]').last().click()
   const body = (await post).postDataJSON() as { icon: string | null; color: string | null }
   expect(body.icon).toBe('🍂')
   expect(body.color).toBeNull()
 })
 
-test('a to-do’s edit door holds its look, and a pick patches it', async ({ page, app }) => {
+test('a to-do opens the one form, its look already open, and saving patches it', async ({ page, app }) => {
   await app.boot({ route: '/board?view=taches', wait: '.tasks-view', api: { overrides: { tasks: frame } } })
-  await page.locator('[data-item="l-own"] .act').click()
-  const edit = page.locator('.task-edit')
+  // A to-do's peek has the same « Modifier » as every task: the one form, at /todo/:id.
+  await page.locator('[data-item="l-own"] .act__hit').click()
+  const peek = page.locator('.detail-sheet')
+  await peek.waitFor({ state: 'visible' })
+  await peek.locator('.action-menu__btn').click()
+  await page.getByRole('menuitem', { name: 'Modifier' }).click()
+  await page.waitForURL(/\/todo\/l-own/)
+  const edit = page.locator('.scene .task-form')
   // It already wears a pick of its own, so the fold opens itself: editing never hides a pick.
   await expect(edit.getByRole('button', { name: /Allure/ })).toHaveAttribute('aria-expanded', 'true')
-  const patch = page.waitForRequest((r) => r.url().includes('/api/todos') && r.method() === 'PATCH')
+  // …and its subject too: « Sur quoi ? » can change after creation (phase 2's leftover door).
+  await expect(edit.getByRole('button', { name: /Sur quoi/ })).toHaveAttribute('aria-expanded', 'true')
   await edit.getByRole('button', { name: 'Comme le sujet' }).click()
-  expect((await patch).postDataJSON()).toMatchObject({ id: 'l-own', icon: '🐶', color: null })
+  // A layer a to-do cannot keep yet: the form says so in one calm line, and saves the rest.
+  // (It is due today, so « Quand ? » holds a date and opened itself.)
+  await expect(edit.getByRole('button', { name: /^Quand/ })).toHaveAttribute('aria-expanded', 'true')
+  await edit.locator('.recur select').selectOption('weekly')
+  await expect(edit.locator('.status-msg--info')).toContainText('ne garde pas encore de récurrence')
+  const patch = page.waitForRequest((r) => r.url().includes('/api/todos') && r.method() === 'PATCH')
+  await edit.locator('button[type="submit"]').last().click()
+  const body = (await patch).postDataJSON() as Record<string, unknown>
+  expect(body).toMatchObject({ id: 'l-own', icon: '🐶', color: null, subject: { kind: 'carnet', id: 'car1' } })
+  expect(body).not.toHaveProperty('recur')
 })
 
 test('« Une chose à moi »: a thing carnet with its own name and look', async ({ page, app }) => {
@@ -73,13 +90,15 @@ test('« Une chose à moi »: a thing carnet with its own name and look', async 
 })
 
 test('« Sur quoi ? » makes a new thing in place, and saving it does not save the task', async ({ page, app }) => {
-  await app.boot({ route: '/chore/new', wait: '.operator__chore-form' })
+  await app.boot({ route: '/chore/new', wait: '.task-form' })
   const chores: string[] = []
   page.on('request', (r) => {
-    if (r.url().includes('/api/chores') && r.method() === 'POST') chores.push(r.url())
+    if (/\/api\/(chores|todos|home-projects)/.test(r.url()) && r.method() === 'POST') chores.push(r.url())
   })
-  await page.locator('.operator__chore-form').getByPlaceholder(/tâche/i).first().fill('Tondre')
-  await page.locator('.operator__chore-form select').first().selectOption({ label: 'Une chose à moi…' })
+  const form = page.locator('.task-form')
+  await form.getByPlaceholder(/tâche/i).first().fill('Tondre')
+  await form.getByRole('button', { name: /Sur quoi/ }).click()
+  await form.locator('.task-form__subject select').selectOption({ label: 'Une chose à moi…' })
   const dialog = page.getByRole('dialog', { name: 'Une chose à moi' })
   await dialog.getByLabel('Nom', { exact: true }).fill('La pelouse')
   const post = page.waitForRequest((r) => r.url().includes('/api/carnets') && r.method() === 'POST')

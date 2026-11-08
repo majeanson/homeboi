@@ -330,15 +330,6 @@
   gap: 0.6rem;
   margin: 0;
 }
-/* Anytime / Today / A date — a tidy button group with room above/below. Layout comes
-   from the shared <Cluster fill> primitive (.cluster / .cluster--fill in core.css):
-   the buttons grow to share the row but WRAP to a second line on a narrow phone
-   instead of bleeding off the right — the old `flex: 1 1 6rem` here was the overflow
-   trap (a fixed basis kept all three on one line). Don't re-add a fixed flex-basis. */
-/* The revealed native date picker for the "A date" scope. */
-.addsheet__scope-date {
-  width: 100%;
-}
 
 /* ── « Avant de partir » split (mig 0116) ──────────────────────────────────────
    The folded groups the agglomerators (Aujourd'hui / Demain) and the departure
@@ -371,20 +362,12 @@
   margin-top: 0.35rem;
 }
 
-/* ＋ sheet: the quiet "a checklist lands on today" line under the todo field —
-   shown only under the « En tout temps » scope, where a picked checklist and the
-   typed line would otherwise diverge silently (mig 0116: instances are day-pinned). */
+/* ＋ sheet: the quiet « a checklist lands on the form's day, else today » line under the
+   one task form (mig 0116: instances are day-pinned). */
 .addsheet__todo-hint {
   margin: 0;
   font-size: 0.78rem;
   color: var(--ink-soft);
-}
-
-/* A to-do being edited in place: its field, then its look fold (LookPicker), one column. */
-.task-edit {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
 }
 
 /* A starter pack's pictures beside its one button: what it adds, never how many. */

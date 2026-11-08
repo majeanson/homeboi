@@ -5,8 +5,8 @@ import { settled } from './measure'
 // inside it may bleed off the right edge. Guards two regressions:
 //   1. the whole sheet panning sideways once you scrolled down (old bug: overflow-y:auto
 //      but no overflow-x, so the cross axis computed to auto);
-//   2. a wide inner row (e.g. the todo "En tout temps / Aujourd'hui / Une date" scope
-//      buttons) running UNDER the right edge — invisible to a scrollWidth check because
+//   2. a wide inner row (e.g. the one task form's « Quand ? » with its recurrence, season
+//      chips and checkboxes) running UNDER the right edge — invisible to a scrollWidth check because
 //      `.sheet` is `overflow-x:hidden`, so the clip hides it. See .sheet in
 //      styles/sheets/capture.css and the .cluster/.rail row primitives in styles/core.css.
 //
@@ -47,20 +47,24 @@ for (const width of [360, 390]) {
     await assertClean(page, 'note attach chip row')
     await page.locator('.addsheet__lead .memo-attach__btn').click()
 
-    // State 3 — tap the "À compléter" (todo) tile to reveal the scope button row
-    // (En tout temps / Aujourd'hui / Une date) — the row that used to bleed right.
+    // State 3 — tap the « Tâches » tile: the ONE task form, one field and its folded layers.
     const todoTile = page.locator('.cat-pick[data-mode="todo"]')
     if (await todoTile.count()) {
       await todoTile.click()
-      await expect(page.locator('.addsheet__scope')).toBeVisible()
-      await assertClean(page, 'todo scope row')
+      const form = page.locator('.addsheet__todo .task-form')
+      await expect(form).toBeVisible()
+      await assertClean(page, 'task form, folded')
 
-      // State 4 — pick "Une date", which reveals the full-width native date input.
-      await page.locator('.addsheet__scope .btn').last().click()
-      await expect(page.locator('.addsheet__scope-date')).toBeVisible()
-      await assertClean(page, 'todo scope row + date picker')
+      // State 4 — open « Quand ? » and make it recur weekly: the date, the rhythm, its
+      // weekday chips, the season chips and the two checkboxes, the widest layer.
+      await form.getByRole('button', { name: /^Quand/ }).click()
+      await form.locator('.recur select').selectOption('weekly')
+      await expect(form.locator('.recur__days')).toBeVisible()
+      await assertClean(page, 'task form, « Quand ? » open and weekly')
+      await form.getByRole('button', { name: /^Qui/ }).click()
+      await assertClean(page, 'task form, « Qui ? » open')
 
-      // State 4b — open the « Modèles : » dropdown. Each template row now carries a
+      // State 4b — open the title's dropdown (checklists, then ideas). Each template row now carries a
       // `hint` line naming the items it would add (wrapping, two-line clamped) beside
       // a count badge — a text block that must wrap inside the row, never widen it.
       await page.locator('.addsheet__todo .combobox__caret').click()

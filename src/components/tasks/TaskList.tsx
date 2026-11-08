@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useLang, useT } from '../../i18n'
 import { Act } from '../board/Act'
-import { EditField } from '../EditField'
 import { EmptyState } from '../EmptyState'
 import { EntityCombobox } from '../EntityCombobox'
 import { Icon } from '../Icon'
@@ -11,9 +10,8 @@ import { isGuest } from '../../lib/device'
 import { formatDayMaybeYear } from '../../lib/format'
 import { todayLocalDay } from '../../lib/localDay'
 import { useProfile } from '../../lib/profile'
-import { lookColour, lookOf, subjectOf, suggestIcon, type SubjectLookup, type SubjectRef } from '../../lib/subjects'
-import { LookPicker } from '../LookPicker'
-import { EffortField, EffortMark } from '../EffortDots'
+import { lookOf, subjectOf, type SubjectLookup, type SubjectRef } from '../../lib/subjects'
+import { EffortMark } from '../EffortDots'
 import { isTicked, rotates, type TaskItem } from '../../lib/tasks'
 import { TODO_TITLE_MAX } from '../../lib/todos'
 import { type Member } from '../board/types'
@@ -44,12 +42,9 @@ export function TaskRow({
   const ro = isGuest()
   const detail = useEntityDetail()
   const { memberId } = useProfile()
-  const [editing, setEditing] = useState(false)
-  const [text, setText] = useState(item.title)
 
   const subject = subjectOf(item.subject, lookup)
   const look = lookOf(item, subject)
-  const inherited = lookOf({}, subject)
   const who = members.find((m) => m.id === item.who_id)
   const owedSince = item.overdueSince
   const owed = owedSince != null
@@ -81,45 +76,14 @@ export function TaskRow({
           upcoming: !item.dueToday && !owed && item.day != null,
           overdue: owed,
           onDone: checkable && !ticked ? () => actions.tick(item) : undefined,
-          onPostponeWeek: checkable && !ticked && item.source === 'home' ? () => actions.postpone(item, 'week') : undefined,
-          onPostponeCycle: checkable && item.recurring && item.source === 'home' ? () => actions.postpone(item, 'cycle') : undefined,
+          // « Reporter » where the row's table has a snooze (lib/taskSave), never by naming it.
+          onPostponeWeek: checkable && !ticked && actions.canPostpone(item) ? () => actions.postpone(item, 'week') : undefined,
+          onPostponeCycle: checkable && item.recurring && actions.canPostpone(item) ? () => actions.postpone(item, 'cycle') : undefined,
           editHref: ro ? undefined : actions.editHref(item),
           onDelete: ro ? undefined : () => actions.remove(item),
           subject: subject.ref && subject.to ? { label: subject.name ?? t.tasks.subjectKinds[subject.ref.kind], to: subject.to, icon: subject.icon ?? 'book-open-bold' } : undefined,
         },
       ),
-    )
-
-  if (editing)
-    return (
-      <div className="task-edit" data-item={item.id}>
-        <EditField
-          value={text}
-          onChange={setText}
-          onSubmit={(v) => {
-            actions.rename(item, v)
-            setEditing(false)
-          }}
-          onCancel={() => setEditing(false)}
-          onDelete={() => {
-            setEditing(false)
-            actions.remove(item)
-          }}
-          deleteLabel={`${t.common.delete} — ${item.title}`}
-          autoFocus
-          ariaLabel={t.common.edit}
-          limit={TODO_TITLE_MAX}
-        />
-        {/* A to-do's one edit door also holds its look: folded, one tap away (LookPicker). */}
-        <LookPicker
-          value={{ icon: item.icon, colour: lookColour(item.color) }}
-          onChange={(v) => actions.setLook(item, v)}
-          suggest={suggestIcon(text)}
-          inherit={{ label: item.subject ? t.look.likeSubject : t.look.byDefault, icon: inherited.emoji, colour: inherited.colour }}
-        />
-        {/* …and its effort, folded the same way (0149). */}
-        <EffortField value={item.effort} onChange={(v) => actions.setEffort(item, v)} />
-      </div>
     )
 
   return (
@@ -139,9 +103,8 @@ export function TaskRow({
         badge={item.effort != null ? <EffortMark value={item.effort} /> : undefined}
         done={ticked}
         onCheck={checkable ? () => actions.tick(item) : undefined}
-        // A to-do has no scene of its own: a tap renames it in place, with Delete beside
-        // Save, the door it has always had. Everything else opens the peek.
-        onOpen={item.source === 'todo' ? (ro ? undefined : () => { setText(item.title); setEditing(true) }) : peek}
+        // Every task opens the same peek, and its « Modifier » the one form (phase 4).
+        onOpen={peek}
         // The tint IS the "who" on screen, and colour says nothing to a screen reader.
         srWho={who && !rotates(item) ? who.display_name : undefined}
       />

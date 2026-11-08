@@ -61,7 +61,9 @@ test.describe('recurring chores on the board', () => {
     // Tasks left Réglages: the peek's « Modifier » opens /chore/:id, one editor with the
     // RecurPicker, the same form that creates one.
     await APP('/chore/c1')(page)
-    const form = page.locator('.scene .operator__chore-form')
+    // The one task form: the schedule is the « Quand ? » layer, folded until asked for.
+    const form = page.locator('.scene .task-form')
+    await form.getByRole('button', { name: /^Quand/ }).click()
     await form.locator('.recur select').selectOption('weekly')
     await expectApi(page, 'PATCH', 'chores', () =>
       form.getByRole('button', { name: 'Enregistrer' }).click(),

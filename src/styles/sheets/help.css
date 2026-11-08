@@ -348,7 +348,7 @@
    to the tile count and the sheet width on its own — 2 tiles or 9, phone or tablet,
    it stays an even grid with no stranded/stretched last tile and no manual column
    count per section. Tiles are ~min 100px; a narrow phone lands 3 across, a wider
-   sheet more. (Overrides like .cat-grid--3 can still pin an exact count.) */
+   sheet more. */
 .cat-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
@@ -404,11 +404,6 @@
 .cat-pick.sel {
   border-color: var(--marigold);
   background: var(--marigold-wash);
-}
-/* Pin an exact 3-up row where a chooser wants it (e.g. the cook-mode meal picker),
-   overriding the auto-fill default above. */
-.cat-grid--3 {
-  grid-template-columns: repeat(3, 1fr);
 }
 /* A labelled subgroup of tiles inside the sheet (the kitchen week's actions —
    shop the week / AI ideas / book ideas — sit apart from the add chooser). The

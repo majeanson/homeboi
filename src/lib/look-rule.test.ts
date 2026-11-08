@@ -54,7 +54,7 @@ describe('look rule — task and subject forms pick their look through LookPicke
 
   it('the forms the rule exists for are seen as forms', () => {
     const byPath = new Map(files.map((f) => [f.path, f.raw]))
-    for (const p of ['components/forms/ChoreForm.tsx', 'components/forms/HomeProjectForm.tsx', 'components/cercle/CarnetForm.tsx', 'components/cercle/PetForm.tsx']) {
+    for (const p of ['components/forms/TaskForm.tsx', 'components/cercle/CarnetForm.tsx', 'components/cercle/PetForm.tsx']) {
       expect(isForm(byPath.get(p) ?? ''), p).toBe(true)
     }
   })

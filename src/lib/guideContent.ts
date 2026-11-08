@@ -2249,8 +2249,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Projets & entretien', en: 'Plans & maintenance' },
         detail: {
-          fr: 'Dans la vue Tâches, deux portes pour les plus gros sujets : les Projets (un jour, sans date) et l’Entretien qui revient tout seul — « tous les 3 mois », ou « Chaque automne ». Un entretien manqué attend calmement sur « À faire » jusqu’à sa coche, et « À partir de la dernière fois » compte le prochain depuis cette coche.',
-          en: 'In the Tasks view, two doors for the bigger topics: Plans (someday, no date) and Maintenance that comes back on its own — “every 3 months”, or “Every fall”. A missed upkeep waits calmly on “To do” until you check it, and “From the last time” counts the next one from that check-off.',
+          fr: 'Un gros sujet est une tâche comme une autre, dans le même formulaire : « Quand ? » la fait revenir (« tous les 3 mois », « Chaque automne »), « Notes et budget » garde les devis. Une tâche manquée attend calmement sur « À faire » jusqu’à sa coche, et « À partir de la dernière fois » compte la prochaine depuis cette coche.',
+          en: 'A bigger topic is a task like any other, in the same form: “When?” makes it come back (“every 3 months”, “Every fall”), “Notes and budget” keeps the quotes. A missed task waits calmly on “To do” until you check it, and “From the last time” counts the next one from that check-off.',
         },
         route: '/home-project/new',
       },

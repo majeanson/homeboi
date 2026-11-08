@@ -58,7 +58,6 @@ export const FR_OPERATOR = {
   deleteMember: 'Supprimer la personne',
   deleteMemberConfirm: (name: string) =>
     `Supprimer « ${name} » de la maisonnée ? Ses routines seront aussi effacées; les rendez-vous et tâches resteront, sans personne d’assigné.`,
-  editChore: 'Modifier la tâche',
   ledgerTitle: 'Qui a fait quoi cette semaine ?',
   ledgerEmpty: 'Rien de noté pour l’instant. Ça se remplira tout seul.',
   ledgerHelperChild: 'Un coup de main',
@@ -103,19 +102,13 @@ export const FR_OPERATOR = {
   needChild: 'Ajoute d’abord un enfant (coche « Enfant »).',
   forWho: 'Pour qui :',
   tplStart: 'Modèle :',
-  choreCommon: 'Courantes :',
-  choreStart: 'À partir du',
   // D-21 (bmad/10) « Sortir le bac » — opt-in per-chore evening announce (only
   // meaningful with a schedule; sits right under LeadPicker in the same form).
   announceEveningLabel: 'Annoncer la veille au soir',
   announceEveningHint: 'Le babillard affichera une ligne calme le soir d’avant (« Ce soir » — pas une notification).',
   // Projets & Entretien — the longer-horizon home work under Corvées (#home-projects).
   home: {
-    subCorvees: 'Tâches',
-    subProjets: 'Projets',
     subEntretien: 'Entretien',
-    addProjet: 'Ajouter un projet',
-    addEntretien: 'Ajouter un entretien',
     // A-4 (bmad/09) — les rituels de saison offerts (pneus, gouttières, abris).
     seedsTitle: 'Idées de saison',
     // « comme n'importe quelle tâche » disait le mot d'une AUTRE chose : la section
@@ -126,15 +119,10 @@ export const FR_OPERATOR = {
     // A starter pack (phase 3): the seeds of one subject and one season, added in one tap.
     packName: (kind: 'home' | 'auto' | null, s: 'winter' | 'spring' | 'summer' | 'autumn') =>
       `${kind === 'home' ? 'La maison' : kind === 'auto' ? 'L’auto' : 'Partout'} ${{ winter: 'l’hiver', spring: 'au printemps', summer: 'l’été', autumn: 'à l’automne' }[s]}`,
-    editProjet: 'Modifier le projet',
-    deleteProjet: 'Supprimer le projet',
-    editEntretien: 'Modifier l’entretien',
-    deleteEntretien: 'Supprimer l’entretien',
     budgetLabel: 'Budget visé',
     budgetPlaceholder: 'ex. 15 000',
     notesLabel: 'Notes',
     notesPlaceholder: 'Détails, devis, à déléguer…',
-    dateLabel: 'Date (optionnel)',
     // « À partir de la dernière fois » (recur_from='done', mig 0119) — the cycle
     // re-anchors on the last check-off instead of the fixed date grid.
     fromLastDone: 'À partir de la dernière fois',
@@ -149,9 +137,6 @@ export const FR_OPERATOR = {
     everyWinter: 'Chaque hiver',
     common: 'Courants :',
     done: 'Fait',
-    // The ＋ « Corvées » sub-choice prompt (board AddSheet): chore vs the two
-    // home-project kinds.
-    pickKind: 'Une tâche qui revient, un entretien ou un projet ?',
   },
   cardWord: 'mot',
   addCard: 'carte',

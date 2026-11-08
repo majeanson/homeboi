@@ -27,13 +27,10 @@ export type AddSheetMode =
   // the board/calendar and surfaces its bring-list in « Avant de partir » for free.
   | 'activity'
   | 'chore'
-  // Board ＋ « Corvées » tile — NOT a direct jump to the chore form. Picking it
-  // expands an in-sheet sub-choice (Corvée · Entretien · Projets), mirroring the
-  // « Planifier un repas » day-picker: one tile, an extra step, then the right
-  // form. Corvée → /chore/new; Entretien/Projets → /home-project/new?kind=. So
-  // the longer-horizon home work (home_projects) is reachable straight from the
-  // board, not only buried in Réglages ▸ Corvées.
-  | 'chores-pick'
+  // The board ＋ « Tâches » tile: THE ONE TASK FORM, in the sheet (phase 4 of the unified
+  // task). It replaced two tiles: this one's old to-do composer, and « Corvées », whose
+  // sub-choice (Corvée · Entretien · Projets) was a type picker. A title is a task; the
+  // layers decide where it is kept. `?plus=chores-pick` still opens it (LEGACY_MODES).
   | 'todo'
   | 'routine'
   // The Routines ＋ opens a small in-sheet picker (NOT a straight jump to the
@@ -140,7 +137,7 @@ export const SECTION_MODES: Record<string, AddSheetMode[]> & { board: AddSheetMo
   // creates + manages them), so offering "add a routine" from the board too was a
   // redundant second door. Add routines from Routines; the board ＋ stays the
   // glance-surface quick-adds that have no section of their own.
-  board: ['note', 'event', 'chores-pick', 'todo', 'mot', 'habit-pick', 'voyage', 'plan-today', 'plan-tomorrow', 'departure', 'sitter-link'],
+  board: ['note', 'event', 'todo', 'mot', 'habit-pick', 'voyage', 'plan-today', 'plan-tomorrow', 'departure', 'sitter-link'],
   // `cook` isn't an "add" — it's a shortcut to cook mode for the next meal due —
   // but it rides the kitchen ＋ as the most-wanted kitchen action (see AddSheet,
   // where it's navigate-only and resolves its target from the meal plan). `reserve`
@@ -221,7 +218,7 @@ export function voiceModeFor(pathname: string, search: string): AddSheetMode | u
 // isn't signed in — showing the tile to an unsigned kiosk would lead to a dead
 // bounce. (Marking a habit done on the check-in scene needs no session.)
 // `habit-pick` rides along with `habit`: both of its doors land on the FormScene.
-export const OPERATOR_MODES = new Set<AddSheetMode>(['event', 'ride', 'activity', 'chore', 'chores-pick', 'routine', 'voyage', 'habit', 'habit-pick', 'virement', 'sitter-link'])
+export const OPERATOR_MODES = new Set<AddSheetMode>(['event', 'ride', 'activity', 'chore', 'routine', 'voyage', 'habit', 'habit-pick', 'virement', 'sitter-link'])
 
 // The operator forms are full-screen SCENE routes now, not in-sheet forms: a
 // tall multi-field form (a routine's name + member chips + template + card deck)
@@ -257,7 +254,6 @@ const ALL_MODES = {
   ride: 1,
   activity: 1,
   chore: 1,
-  'chores-pick': 1,
   todo: 1,
   routine: 1,
   'routine-pick': 1,
@@ -293,6 +289,10 @@ const ALL_MODES = {
   virement: 1,
 } as const satisfies Record<AddSheetMode, 1>
 export const ADD_MODES = Object.keys(ALL_MODES) as readonly AddSheetMode[]
+
+// Retired modes a link already out in the wild may still name (`?plus=<mode>`), and the mode
+// that does their job now. Not modes: nothing renders them, they only resolve.
+export const LEGACY_MODES: Readonly<Record<string, AddSheetMode>> = { 'chores-pick': 'todo' }
 
 export const AddSheetContext = createContext<{ open: (mode?: AddSheetMode, modes?: AddSheetMode[]) => void }>({
   open: () => {},

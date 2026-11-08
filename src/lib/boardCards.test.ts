@@ -432,7 +432,8 @@ describe('emptyTo — an empty card taps into its add', () => {
     expect(to('notes')).toBe('/board?plus=note')
     expect(to('upcoming')).toBe('/event/new')
     expect(to('voyage')).toBe('/voyage/new')
-    expect(to('seasonUpkeep')).toBe('/home-project/new')
+    // The season card shows the home rows, so its door names their kind (the form never asks).
+    expect(to('seasonUpkeep')).toBe('/home-project/new?kind=upkeep')
   })
 
   it('every emptyTo is an add door — a form route, a ?plus= tile, or a named composer', () => {
@@ -442,7 +443,8 @@ describe('emptyTo — an empty card taps into its add', () => {
     for (const id of ALL) {
       const target = to(id)
       if (!target) continue
-      const opensSomething = /[?&](plus|add|focus)=/.test(target) || target.endsWith('/new') || pageIsTheTarget.has(target)
+      // A form route may carry what its door seeds (/home-project/new?kind=upkeep).
+      const opensSomething = /[?&](plus|add|focus)=/.test(target) || /\/new(\?|$)/.test(target) || pageIsTheTarget.has(target)
       expect(opensSomething, `${id} → ${target} lands on a page with nothing open`).toBe(true)
     }
   })

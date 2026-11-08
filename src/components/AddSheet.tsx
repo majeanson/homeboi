@@ -9,7 +9,7 @@ import { useWrite } from '../lib/write'
 import { useCreateWithUndo } from '../lib/undoCreate'
 import { sectionCardFor } from '../lib/sectionCard'
 import { useAuth } from '../lib/auth'
-import { todayLocalDay, addLocalDays, localDayStart } from '../lib/localDay'
+import { todayLocalDay, addLocalDays, localDayFromInput } from '../lib/localDay'
 import { weekDates } from './kitchen/week'
 import { WINDOW_DAYS_DEFAULT } from '../lib/mealSlots'
 import { useReserveLocations } from '../lib/reservePrefs'
@@ -25,7 +25,7 @@ import { SLOT_ICON_NAME, isMealSlot } from '../lib/mealSlots'
 import { useKitchenActions, noKitchenActions, type KitchenAction, type KitchenActionFlags } from '../lib/kitchenActions'
 import { BOARD_KEY, MEMBERS_KEY, TODOS_KEY, TODO_TEMPLATES_KEY, ROUTINES_KEY, MONTH_KEY, GHOSTS_KEY, HISTORY_KEY, HABITS_KEY } from '../lib/queryKeys'
 import { type HabitsPayload } from '../lib/habits'
-import { type TodoTemplate, type TemplatesData, TODO_TITLE_MAX } from '../lib/todos'
+import { type TodoTemplate, type TemplatesData } from '../lib/todos'
 import { imgUrl } from '../lib/image'
 import { stageDeal, parseTerms, cashierPicksFrom, useTillHiddenStores, type ListItem } from '../lib/picks'
 import { useDeferredRemoval } from '../lib/useDeferredRemoval'
@@ -42,12 +42,12 @@ import { NoteQuickAdd } from './cercle/NoteQuickAdd'
 import { useProfile } from '../lib/profile'
 import { EntityCombobox } from './EntityCombobox'
 import { templateOptions } from './todos/comboOptions'
+import { TaskForm } from './forms/TaskForm'
 import { Chip } from './Chip'
 import { mealOptions } from './kitchen/comboOptions'
 import { ADD_HELP } from '../lib/addHelp'
 import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
 import { Sheet } from './Sheet'
-import { Cluster } from './Layout'
 
 // Pip's "Add" bottom-sheet — CONTEXTUAL now. HubLayout hands in the current
 // section's modes (lib/addSheet SECTION_MODES): the board keeps the quick-note
@@ -82,9 +82,6 @@ const MODE_DRESS: Record<AddSheetMode, { cat: CatKey; icon: IconName }> = {
   // the plain calendar event and the ride's key.
   activity: { cat: 'event', icon: 'users-three-bold' },
   chore: { cat: 'chore', icon: 'hand-heart-bold' },
-  // The board ＋ « Corvées » tile — same chore dressing; it opens the Corvée /
-  // Entretien / Projets sub-choice rather than jumping straight to a form.
-  'chores-pick': { cat: 'chore', icon: 'hand-heart-bold' },
   todo: { cat: 'chore', icon: 'check-bold' },
   routine: { cat: 'routine', icon: CATS.routine.icon },
   'routine-pick': { cat: 'routine', icon: CATS.routine.icon },
@@ -168,21 +165,12 @@ const NAV_TARGET: Partial<Record<AddSheetMode, string>> = {
 // as bare tiles, so a navigating tile earns a trailing chevron. "Navigates" = it's
 // in NAV_TARGET, OR it's one of the two day-planner shortcuts (they resolve their
 // /kitchen/day/<date> target at click time, not through the static table — see the
-// chooser onClick). In-sheet forms (todo/mot/pantry/reserve/meal/leftovers/cook and
-// the chores-pick sub-choice) deliberately get NO chevron.
+// chooser onClick). In-sheet forms (todo/mot/pantry/reserve/meal/leftovers/cook)
+// deliberately get NO chevron.
 const navigatesAway = (m: AddSheetMode) => !!NAV_TARGET[m] || m === 'plan-today' || m === 'plan-tomorrow'
 
-// The board ＋ « Corvées » sub-choice (rendered for mode === 'chores-pick'): a
-// chore vs the two home-project kinds. Each navigates to its full-screen form
-// scene. Labels resolve from o18n.home at render (locale-aware).
-const CHORE_KINDS: { key: 'chore' | 'upkeep' | 'plan'; icon: IconName; to: string }[] = [
-  { key: 'chore', icon: 'hand-heart-bold', to: '/chore/new' },
-  { key: 'upkeep', icon: 'gear-six-bold', to: '/home-project/new?kind=upkeep' },
-  { key: 'plan', icon: 'paint-brush-bold', to: '/home-project/new?kind=plan' },
-]
-
 // The kitchen-week action tiles (P2-10) — a declarative catalog sibling to
-// MODE_DRESS/CHORE_KINDS so adding an action is one entry, not another hand-rolled
+// MODE_DRESS so adding an action is one entry, not another hand-rolled
 // tile in the sheet render. `show`/`disabled`/`title` are pure functions of the live
 // flags (+ help mode + AI-enabled); the render loop wires run/help/close. The key
 // doubles as the run key AND the ADD_HELP help key (both already true inline).
@@ -328,37 +316,11 @@ export function AddSheet({
   const [listText, setListText] = useState('')
   const listVoice = useVoiceInput(setListText)
 
-  // — todo (board) — a quick "À compléter" item. Standing by default (`global`, day
-  // null); "Aujourd'hui" pins it to today, "Une date" to any chosen calendar day. Its
-  // own state + mic so a board draft never lands as a todo by accident.
-  const [todoText, setTodoText] = useState('')
-  const todoVoice = useVoiceInput(setTodoText)
-  const [todoScope, setTodoScope] = useState<'global' | 'today' | 'date'>('global')
-  // The chosen day for the "Une date" scope, as a native <input type="date"> string
-  // (local YYYY-MM-DD); '' until a date is picked (submit stays disabled meanwhile).
-  const [todoDate, setTodoDate] = useState('')
-  // Resolve the scope to the `day` value the API stores (local-midnight unix s, or
-  // null for a standing global). "Une date" parses the picker string at local noon
-  // then snaps to household-tz midnight (DST-safe, same as the meal/month grids); an
-  // unset/invalid date falls back to null so a half-filled form never mis-files a day.
-  const todoDaySec = (): number | null => {
-    if (todoScope === 'today') return todayLocalDay()
-    if (todoScope === 'date') {
-      const [y, m, d] = todoDate.split('-').map(Number)
-      if (!y || !m || !d) return null
-      return localDayStart(new Date(y, m - 1, d, 12))
-    }
-    return null
-  }
-  // The picker's floor: no back-dating a todo to a day already gone.
-  const todoDateMin = (() => {
-    const now = new Date()
-    const p = (n: number) => String(n).padStart(2, '0')
-    return `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}`
-  })()
+  // — todo (board) — the ONE task form (phase 4 of the unified task), in the sheet: a title,
+  // and each layer one tap away. It owns its state, its mic and its write (TaskForm).
   // Quick-add can also drop in a whole departure CHECKLIST (a template), not just a
-  // single line — the same instantiate the board/day chips use, honouring the scope
-  // toggle. Fetched only while the todo form is open.
+  // single line — the same instantiate the board/day chips use, on the form's day. Fetched
+  // only while the todo form is open.
   const { data: todoTplData } = useQuery({
     queryKey: TODO_TEMPLATES_KEY,
     queryFn: () => api<TemplatesData>('todo-templates'),
@@ -401,7 +363,6 @@ export function AddSheet({
   const autoVoiceFor: Partial<Record<AddSheetMode, VoiceInput>> = {
     note: noteVoice,
     'list-item': listVoice,
-    todo: todoVoice,
     pantry: pantryVoice,
     reserve: reserveVoice,
     leftovers: leftoverVoice,
@@ -653,57 +614,22 @@ export function AddSheet({
     }
   }
 
-  // Add an "À compléter" todo (board ＋). Standing (day null), pinned to today, or to
-  // a chosen date — see todoDaySec(). Offline-safe write; the board glance + any open
-  // todo view refetch via TODOS_KEY (prefix-matches day-scoped reads), and MONTH_KEY
-  // so a dated add shows on the calendar/day page. (Not BOARD_KEY: the board payload's
-  // `todos` slice is the loose-chore "À faire", not these.)
-  async function submitTodo(text?: string) {
-    const value = (text ?? todoText).trim()
-    if (!value || busy) return
-    // "Une date" with no date picked yet — nothing to file against.
-    if (todoScope === 'date' && todoDaySec() == null) return
-    setBusy(true)
-    setErr(false)
-    try {
-      await createWithUndo({
-        endpoint: 'todos',
-        body: { title: value, day: todoDaySec() },
-        affectedKeys: [TODOS_KEY, MONTH_KEY],
-        message: t.undo.added(value),
-        rethrow: true,
-      })
-      setTodoText('')
-      setTodoScope('global')
-      setTodoDate('')
-      close()
-    } catch (e) {
-      if (!(e instanceof ApiError)) throw e
-      setErr(true)
-    } finally {
-      setBusy(false)
-    }
-  }
-
   // Instantiate a whole checklist from the quick-add sheet — a composed list lands
   // as one sectioned batch (see functions/api/todos.ts). Honours the today/date
   // scopes; « En tout temps » does NOT exist for a checklist (the mig-0116 split:
   // an instance is always day-pinned, the server would coerce null→today anyway),
   // so the global scope explicitly falls back to today — and the hint line above
   // the picker says so rather than letting the scope toggle silently lie.
-  async function quickAddTemplate(templateId: string) {
+  async function quickAddTemplate(templateId: string, day: number | null) {
     if (busy) return
-    if (todoScope === 'date' && todoDaySec() == null) return
     setBusy(true)
     setErr(false)
     try {
       await write('todos', {
         method: 'POST',
-        body: { templateId, day: todoDaySec() ?? todayLocalDay() },
+        body: { templateId, day: day ?? todayLocalDay() },
         affectedKeys: [TODOS_KEY, MONTH_KEY],
       })
-      setTodoScope('global')
-      setTodoDate('')
       close()
     } catch (e) {
       if (!(e instanceof ApiError)) throw e
@@ -804,7 +730,6 @@ export function AddSheet({
       ride: t.auto.addRide,
       activity: o18n.addActivity,
       chore: o18n.taskPlanned,
-      'chores-pick': o18n.taskPlanned,
       todo: t.todos.title,
       'routine-pick': t.nav.routines,
       'plan-today': t.board.planToday,
@@ -1077,71 +1002,18 @@ export function AddSheet({
 
         {mode === 'todo' && (
           <div className="addsheet__todo">
-            {/* Standing (default) vs today vs a chosen date. The scope applies fully to
-                the TYPED line; a CHECKLIST picked below is always day-pinned (mig 0116 —
-                no « global avant de partir » exists), so under « En tout temps » it lands
-                on today instead — the hint under the field says so. */}
-            <Cluster fill className="addsheet__scope" role="group" aria-label={t.todos.title}>
-              <button
-                type="button"
-                className={'btn btn--sm' + (todoScope === 'global' ? ' btn--primary' : '')}
-                aria-pressed={todoScope === 'global'}
-                onClick={() => setTodoScope('global')}
-              >
-                {t.todos.scopeGlobal}
-              </button>
-              <button
-                type="button"
-                className={'btn btn--sm' + (todoScope === 'today' ? ' btn--primary' : '')}
-                aria-pressed={todoScope === 'today'}
-                onClick={() => setTodoScope('today')}
-              >
-                {t.todos.scopeToday}
-              </button>
-              <button
-                type="button"
-                className={'btn btn--sm' + (todoScope === 'date' ? ' btn--primary' : '')}
-                aria-pressed={todoScope === 'date'}
-                onClick={() => {
-                  // Seed the picker to today so the input is never blank/invalid.
-                  if (!todoDate) setTodoDate(todoDateMin)
-                  setTodoScope('date')
-                }}
-              >
-                {t.todos.scopeDate}
-              </button>
-            </Cluster>
-            {todoScope === 'date' && (
-              <input
-                className="input addsheet__scope-date"
-                type="date"
-                value={todoDate}
-                min={todoDateMin}
-                onChange={(e) => setTodoDate(e.target.value)}
-                aria-label={t.todos.scopeDate}
-              />
-            )}
-            <EntityCombobox<TodoTemplate>
-              value={todoText}
-              onChange={setTodoText}
-              options={templateOptions(todoTemplates, t)}
-              onSubmit={(v) => void submitTodo(v)}
-              onSelect={(opt) => {
-                setTodoText('')
-                void quickAddTemplate(opt.data.id)
+            {/* A title is a task; when, who, « Sur quoi ? », effort and look are one tap
+                away, and the layers decide where it is kept (lib/taskTarget). A departure
+                CHECKLIST picked in the title field lands on the form's day, else today:
+                an instance is always day-pinned (mig 0116). */}
+            <TaskForm
+              extra={{
+                options: templateOptions(todoTemplates, t),
+                onSelect: (tpl, draft) => void quickAddTemplate((tpl as TodoTemplate).id, localDayFromInput(draft.date)),
               }}
-              submitLabel={t.common.add}
-              submitLeadingIcon="plus-bold"
-              submitVariant="primary"
-              placeholder={todoVoice.listening ? t.capture.listening : t.todos.addPlaceholder}
-              ariaLabel={t.todos.title}
-              voice={todoVoice}
-              busy={busy}
-              limit={TODO_TITLE_MAX}
+              onSaved={close}
             />
-            {/* A checklist is a DEPARTURE thing: always for one day. Under the global
-                scope the pick lands on today — say it, don't let the toggle lie. */}
-            {todoScope === 'global' && <p className="addsheet__todo-hint mono">{t.todos.templateDayHint}</p>}
+            {todoTemplates.length > 0 && <p className="addsheet__todo-hint mono">{t.todos.templateDayHint}</p>}
           </div>
         )}
 
@@ -1227,40 +1099,6 @@ export function AddSheet({
                 <Chip key={d} onClick={() => planDay(d)}>
                   {formatRelativeWeekday(d, lang, t.board.today, t.board.tomorrow)}
                 </Chip>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* « Corvées » sub-choice — the extra step (like « Planifier un repas »):
-            a chore, recurring maintenance, or a home project. Each jumps to the
-            matching full-screen form scene (the chore form, or the home-project
-            form pre-set to its kind). One ＋ tile, three destinations. */}
-        {mode === 'chores-pick' && (
-          <div className="addsheet__chorepick">
-            <p className="sheet__group-label mono">{o18n.home.pickKind}</p>
-            <div className="cat-grid cat-grid--3">
-              {CHORE_KINDS.map((c) => (
-                <button
-                  key={c.key}
-                  type="button"
-                  className="cat-pick"
-                  onClick={() => {
-                    close()
-                    nav(c.to)
-                  }}
-                >
-                  <span className="ct" style={{ background: CATS.chore.wash }}>
-                    <Icon name={c.icon} size={22} color={CATS.chore.deep} />
-                  </span>
-                  <span>
-                    {c.key === 'chore'
-                      ? o18n.home.subCorvees
-                      : c.key === 'upkeep'
-                        ? o18n.home.subEntretien
-                        : o18n.home.subProjets}
-                  </span>
-                </button>
               ))}
             </div>
           </div>

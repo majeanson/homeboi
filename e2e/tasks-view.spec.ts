@@ -72,11 +72,14 @@ test('the view toggle offers it, and a peek edits in its own scene', async ({ pa
 })
 
 test('« Chacun son tour » is a checkbox on any recurring task, and posts the turn order', async ({ page, app }) => {
-  await app.boot({ route: '/home-project/new?kind=upkeep', wait: '.operator__chore-form' })
-  const form = page.locator('.operator__chore-form')
-  await form.getByRole('textbox').first().fill('Gouttières')
+  // The door names the kind (?kind=upkeep), so this one is kept with the home rows.
+  await app.boot({ route: '/home-project/new?kind=upkeep', wait: '.task-form' })
+  const form = page.locator('.task-form')
+  await form.getByRole('combobox').first().fill('Gouttières')
+  await form.getByRole('button', { name: /^Qui/ }).click()
   // Not offered until the task recurs: a one-off has no turns to take.
   await expect(form.getByRole('checkbox', { name: 'Chacun son tour' })).toHaveCount(0)
+  await form.getByRole('button', { name: /^Quand/ }).click()
   await form.locator('.recur select').selectOption('weekly')
   await form.getByRole('checkbox', { name: 'Chacun son tour' }).check()
   await form.getByRole('button', { name: 'Papa', exact: true }).click()

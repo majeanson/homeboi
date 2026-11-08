@@ -69,12 +69,16 @@ test.describe('settings forms', () => {
   })
 
   test('add a planned task', async ({ page }) => {
-    // Tasks left Réglages for the board's Tâches view, whose door opens the same scene.
+    // Tasks left Réglages for the board's Tâches view, whose one door opens the one form.
+    // A title alone would be a to-do; giving it a rhythm under « Quand ? » makes it a chore
+    // (lib/taskTarget), with no type picked anywhere.
     await APP('/board?view=taches')(page)
-    await page.getByRole('link', { name: 'Une tâche qui revient' }).click()
+    await page.getByRole('link', { name: 'Nouvelle tâche' }).click()
     await page.waitForURL(/\/chore\/new/)
-    const form = page.locator('.scene .operator__chore-form')
+    const form = page.locator('.scene .task-form')
     await form.locator('input.input').first().fill('Balayer la cuisine')
+    await form.getByRole('button', { name: /^Quand/ }).click()
+    await form.locator('.recur select').selectOption('weekly')
     await expectApi(page, 'POST', 'chores', () => form.locator('button[type="submit"]').click())
   })
 

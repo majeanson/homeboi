@@ -65,6 +65,7 @@ import { FormFooter } from '../components/FormFooter'
 import { EmojiPicker, EmojiField } from '../components/EmojiPicker'
 import { LookPicker, type LookValue } from '../components/LookPicker'
 import { EffortDots, EffortField, EffortMark } from '../components/EffortDots'
+import { TaskForm } from '../components/forms/TaskForm'
 import { FaceSelect } from '../components/FaceSelect'
 import { FaceSheet } from '../components/FaceSheet'
 import { GroupForm } from '../components/cercle/GroupForm'
@@ -1673,6 +1674,19 @@ export function DevKit() {
       file: 'components/EffortDots.tsx',
       kw: 'effort points dots tâche task trouver quoi faire finder simple gros radiogroup EffortField EffortMark',
       render: () => <EffortDemo />,
+    },
+    {
+      cat: 'Saisie',
+      name: 'TaskForm',
+      file: 'components/forms/TaskForm.tsx',
+      kw: 'tâche task formulaire form unique one titre title quand qui sur quoi effort allure notes budget récurrence rotation todo corvée entretien projet',
+      render: () => (
+        // THE ONE TASK FORM (phase 4): a title, then every layer folded one tap away. Its save
+        // routes by the layers filled (lib/taskTarget) — it writes for real, like every form here.
+        <Demo label="a new task: one field; Quand ? · Qui ? · Sur quoi ? · Allure · Effort · Notes, each one tap away">
+          <TaskForm onSaved={() => {}} />
+        </Demo>
+      ),
     },
     {
       cat: 'Saisie',

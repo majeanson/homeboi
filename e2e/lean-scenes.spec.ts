@@ -1,4 +1,5 @@
 import { test, expect } from './fixtures'
+import { boxOf } from './measure'
 import { mockApi, seedState, MMID } from './mocks'
 import { addLocalDays, localDayStart } from '../src/lib/localDay'
 
@@ -10,7 +11,7 @@ import { addLocalDays, localDayStart } from '../src/lib/localDay'
 //                       no longer camps above every result (246 → 151px).
 //   /kitchen/recipe/:id a recipe that STATES its servings shows one scaling control,
 //                       not two (243 → 209px) — one that doesn't keeps its presets.
-//   /home-project/new   the name field leads, the « Courants » presets that FILL it
+//   /home-project/new   the one task form: the name field leads, the usual tasks that FILL it
 //                       sit under it (159 → 17px, matching every other form scene).
 //   /cercle/carnet/:id  four full-width « ＋ Ajouter … » bars became the shared
 //                       SectionAdd ＋ in each section header (the day-page anatomy).
@@ -85,21 +86,24 @@ test('a recipe with NO stated servings keeps its ×½ ×1 ×2 ×3 presets', asyn
 
 // ── /home-project/new ───────────────────────────────────────────────────────────
 
-test('the project form leads with its name, not with the presets that fill it', async ({ page, app }) => {
+test('the task form leads with its name, every layer folded under it', async ({ page, app }) => {
   await app.boot({ viewport: { width: 390, height: 844 } })
   await page.goto('/home-project/new')
-  const field = page.locator('.edit-field__input').first()
+  const form = page.locator('.scene .task-form')
+  const field = form.locator('.edit-field__input').first()
   await expect(field).toBeVisible({ timeout: 15_000 })
-  const chips = page.locator('.picker-chips').first()
-  await expect(chips).toBeVisible()
+  // One field open, the rest one tap away: every layer is a closed fold under the name.
+  const folds = form.locator('.disclosure__summary')
+  expect(await folds.count()).toBeGreaterThanOrEqual(6)
+  const f = await boxOf(field)
+  for (let i = 0; i < (await folds.count()); i++) {
+    await expect(folds.nth(i)).toHaveAttribute('aria-expanded', 'false')
+    expect((await boxOf(folds.nth(i))).y).toBeGreaterThan(f.y)
+  }
 
-  const f = await field.boundingBox()
-  const c = await chips.boundingBox()
-  expect(f && c).toBeTruthy()
-  expect(f!.y).toBeLessThan(c!.y)
-
-  // They still fill it in one tap — the move must not have cost the feature.
-  await chips.getByRole('button').first().click()
+  // The usual tasks still fill it in one tap, from the field's own list (they were chips).
+  await form.locator('.combobox__caret').click()
+  await form.locator('.combobox__row').first().click()
   await expect(field).not.toHaveValue('')
 })
 

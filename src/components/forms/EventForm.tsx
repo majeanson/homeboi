@@ -384,10 +384,10 @@ export function EventForm({
           asked. Folded into a third optional section, they read like what they are.
           It opens itself the moment either carries a real answer, so EDITING a
           repeating rendez-vous (or one with a lead time) never hides it.
-          NOTE, deliberately not cargo-culted: ChoreForm, HomeProjectForm and
-          HabitForm keep their RecurPicker inline. There it costs ONE row and it is
-          the point of the form — a chore's rotation and a habit's cadence ARE its
-          recurrence. Here it was two rows of optional detail on a form whose subject
+          NOTE, deliberately not cargo-culted: HabitForm keeps its RecurPicker inline.
+          There it costs ONE row and it is the point of the form — a habit's cadence IS
+          its recurrence. (The one task form folds it under « Quand ? », with every
+          other layer: a task is a title first.) Here it was two rows of optional detail on a form whose subject
           is a single moment. */}
       <Disclosure
         label={o18n.eventWhenMore}

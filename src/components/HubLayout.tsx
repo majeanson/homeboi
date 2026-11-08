@@ -31,7 +31,7 @@ import { AddSheet } from './AddSheet'
 import { DetailProvider } from './detail/DetailProvider'
 import { ToddlerExitGate } from './ToddlerExitGate'
 import { OfflineBanner } from './OfflineBanner'
-import { AddSheetContext, FORM_ROUTES, ADD_MODES, OPERATOR_MODES, modesFor, voiceModeFor, type AddSheetMode } from '../lib/addSheet'
+import { AddSheetContext, FORM_ROUTES, ADD_MODES, LEGACY_MODES, OPERATOR_MODES, modesFor, voiceModeFor, type AddSheetMode } from '../lib/addSheet'
 import { useAuth } from '../lib/auth'
 import {
   KitchenActionsContext,
@@ -443,7 +443,8 @@ export function HubLayout() {
       { replace: true },
     )
     if (!showAdd) return
-    const mode = plus !== '1' && (ADD_MODES as readonly string[]).includes(plus) ? (plus as AddSheetMode) : undefined
+    const wanted = LEGACY_MODES[plus] ?? plus
+    const mode = wanted !== '1' && (ADD_MODES as readonly string[]).includes(wanted) ? (wanted as AddSheetMode) : undefined
     if (mode && OPERATOR_MODES.has(mode) && !(signedIn || authLoading)) {
       openAdd()
       return

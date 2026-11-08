@@ -132,19 +132,13 @@ for (const theme of ['day', 'night'] as Theme[]) {
   })
 }
 
-// The two tall operator forms — now full-screen SCENES, not in-sheet forms (tall
-// forms strand inputs under the mobile keyboard in a height-capped sheet). The
-// board ＋ chooser tiles (order: capture(0) / event(1) / « Corvées »(2) /
-// routine(…)) are mostly navigate-only; « Corvées » first expands an in-sheet
-// sub-choice (Corvée · Entretien · Projets) before the scene.
+// The two tall operator forms — full-screen SCENES, not in-sheet forms (tall forms strand
+// inputs under the mobile keyboard in a height-capped sheet). The one task form's scene is
+// the door of every « Modifier » and of the Tâches view's « Nouvelle tâche »; the board ＋
+// opens the same form in the sheet, folded to one field.
 test('scene-add-chore', async ({ page, app }) => {
-  await app.boot(at('/board'))
-  await page.locator('.add-fab').click()
-  // Target « Corvées » by label (the tile order shifted as ride/activity tiles were
-  // added), then its first sub-choice (Corvée → /chore/new scene).
-  await page.getByRole('dialog').locator('.cat-pick', { hasText: 'Tâche planifiée' }).click()
-  await page.locator('.addsheet__chorepick .cat-pick').first().click()
-  await page.locator('.scene .operator__chore-form').waitFor({ state: 'visible' })
+  await app.boot({ ...at('/chore/new'), wait: '.scene .task-form' })
+  await page.locator('.scene .task-form').waitFor({ state: 'visible' })
   await shoot(page, 'scene-add-chore-phone', false)
 })
 

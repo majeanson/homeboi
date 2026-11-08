@@ -49,7 +49,7 @@ export function SeasonUpkeepCard() {
   // row back (the resurrection class this repo has already fixed twice).
   const markDone = (p: HomeProject) =>
     removal.remove([p.id], t.undo.choreDone(p.title), async () => {
-      // The full HomeProjectForm list: the stamped last_done_at re-derives nextAt,
+      // The full home-projects key list: the stamped last_done_at re-derives nextAt,
       // which the month grid and a carnet's rows display too — BOARD alone left
       // them stale until their next poll (invalidation-drift class, 2026-09-03).
       await write('home-projects', {

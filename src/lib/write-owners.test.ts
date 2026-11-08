@@ -149,6 +149,19 @@ function ownedWrites(): Site[] {
         keysText: keys ? keys[1]! : null,
       })
     }
+    // The TABLE seam (lib/taskSave, phase 4 of the unified task): the one task form and every
+    // task row write through `write(w.endpoint, …)`, so no endpoint is spelled at the call.
+    // The endpoint and its keys are spelled ONCE, side by side, in the adapter's table entry,
+    // and that is what this reads: `endpoint: '…',` then `keys: [ … ]`.
+    for (const m of src.matchAll(/\bendpoint:\s*['"`]([^'"`]+)['"`],\s*(?:\/\/[^\n]*\n\s*|\/\*\*[^]*?\*\/\s*)*keys:\s*(\[[^\]]*\])/g)) {
+      if (!OWNED[m[1]!]) continue
+      out.push({
+        file: relative(srcDir, f).split(sep).join('/'),
+        line: src.slice(0, m.index).split('\n').length,
+        endpoint: m[1]!,
+        keysText: m[2]!,
+      })
+    }
   }
   return out
 }

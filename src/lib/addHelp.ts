@@ -44,20 +44,12 @@ export const ADD_HELP = {
       en: 'Add a task, one-off or recurring, with who handles it.',
     },
   },
-  'chores-pick': {
-    card: 'set-chores',
-    point: 0,
-    body: {
-      fr: 'Choisis : une tâche, un entretien qui revient, ou un projet de la maison.',
-      en: 'Choose: a task, recurring maintenance, or a home project.',
-    },
-  },
   todo: {
     card: 'todos',
     point: 0,
     body: {
-      fr: 'Ajoute une tâche : pour un jour ou juste pour aujourd’hui. Coche-la quand c’est fait.',
-      en: 'Add something “to complete”: anytime, or just for today. Check it off when done.',
+      fr: 'Ajoute une tâche : un titre suffit. Quand, qui, sur quoi : un toucher de plus. Coche-la quand c’est fait.',
+      en: 'Add a task: a title is enough. When, who, what it’s about: one more tap. Check it off when done.',
     },
   },
   ride: {

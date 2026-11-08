@@ -125,14 +125,10 @@ export function TasksView({ members, todayDay }: { members: Member[]; todayDay: 
       )}
       {!ro && (
         <Cluster className="tasks-view__doors">
+          {/* The one task form with every layer in reach: one door, never a « type » to pick
+              (phase 4). The field above stays the one-tap add. */}
           <Link className="btn btn--sm" to="/chore/new">
-            <InlineIcon name="repeat-bold" size={14} /> {t.tasks.addPlanned}
-          </Link>
-          <Link className="btn btn--sm" to="/home-project/new?kind=upkeep">
-            <InlineIcon name="broom-bold" size={14} /> {t.tasks.addUpkeep}
-          </Link>
-          <Link className="btn btn--sm" to="/home-project/new?kind=plan">
-            <InlineIcon name="paint-brush-bold" size={14} /> {t.tasks.addProject}
+            <InlineIcon name="plus-bold" size={14} /> {t.tasks.form.newTitle}
           </Link>
           {/* A new SUBJECT, not a task: the garden, the pool, the chalet (a `thing` carnet). */}
           <Link className="btn btn--sm" to="/maison?add=chose">

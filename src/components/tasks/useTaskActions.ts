@@ -3,10 +3,10 @@ import { useT } from '../../i18n'
 import { useWrite, writeFailed } from '../../lib/write'
 import { useCreateWithUndo } from '../../lib/undoCreate'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
-import { healingClearBody, healingDeleteBody } from '../../lib/staleDelete'
 import { mintTmpId } from '../../lib/tmpIds'
-import { BOARD_KEY, CARNETS_KEY, CHORES_KEY, HOME_PROJECTS_KEY, MONTH_KEY, TASKS_KEY, TODOS_KEY } from '../../lib/queryKeys'
-import { todayLocalDay } from '../../lib/localDay'
+import { BOARD_KEY, TASKS_KEY, TODOS_KEY } from '../../lib/queryKeys'
+import { canPostpone, clearWrites, postponeWrite, type TaskRef, emptyDraft, removeBody, taskEndpoint, taskKeys, taskScene, taskWrite, tickBody } from '../../lib/taskSave'
+import { inputFromLocalDay, todayLocalDay } from '../../lib/localDay'
 
 import { isTicked, type TaskItem } from '../../lib/tasks'
 import type { SubjectRef } from '../../lib/subjects'
@@ -24,7 +24,7 @@ import type { Todo, TodosData } from '../../lib/todos'
 // A tick sends the moment it was made (`doneAt`), so one held in the offline outbox past
 // midnight keeps its real day (`tickedAt`, _lib/ids.ts).
 
-type TaskPatch = Partial<Pick<TaskItem, 'done' | 'doneAt' | 'title' | 'icon' | 'color' | 'effort'>>
+type TaskPatch = Partial<Pick<TaskItem, 'done' | 'doneAt'>>
 interface TasksFrame {
   tasks: TaskItem[]
 }
@@ -32,14 +32,10 @@ interface BoardFrame {
   tasks?: TaskItem[]
 }
 
-const keysFor = (t: Pick<TaskItem, 'source'>): QueryKey[] =>
-  t.source === 'todo'
-    ? [TODOS_KEY, TASKS_KEY, MONTH_KEY]
-    : t.source === 'chore'
-      ? [BOARD_KEY, TASKS_KEY, CHORES_KEY, MONTH_KEY]
-      : [BOARD_KEY, TASKS_KEY, HOME_PROJECTS_KEY, MONTH_KEY, CARNETS_KEY]
-
-const endpoint = (t: Pick<TaskItem, 'source'>) => (t.source === 'todo' ? 'todos' : t.source === 'chore' ? 'chores' : 'home-projects')
+// Which table a row is in, and how that table spells a tick or a delete, is the save
+// adapter's business (lib/taskSave): this hook never asks.
+const keysFor = taskKeys
+const endpoint = taskEndpoint
 
 export function useTaskActions(scope: QueryKey = BOARD_KEY) {
   const t = useT()
@@ -60,7 +56,7 @@ export function useTaskActions(scope: QueryKey = BOARD_KEY) {
       return {
         ...d,
         todos: d.todos.map((x) =>
-          x.id === id ? { ...x, ...(done_at !== undefined ? { done_at } : {}), ...(patch.title !== undefined ? { title: patch.title } : {}) } : x,
+          x.id === id && done_at !== undefined ? { ...x, done_at } : x,
         ),
         ...(d.items ? { items: onItems(d.items) } : {}),
       }
@@ -70,14 +66,7 @@ export function useTaskActions(scope: QueryKey = BOARD_KEY) {
   function setTicked(item: TaskItem, on: boolean) {
     const doneAt = on ? Math.floor(Date.now() / 1000) : null
     const optimistic = () => patchEverywhere(item.id, { done: on ? 'ticked' : 'open', doneAt })
-    const body =
-      item.source === 'todo'
-        ? { id: item.id, done: on, ...(on ? { doneAt } : {}) }
-        : on
-          ? item.source === 'chore'
-            ? { id: item.id, complete: true, doneAt }
-            : { id: item.id, doneAt }
-          : { id: item.id, undo: true }
+    const body = tickBody(item, on, doneAt)
     void write(endpoint(item), { method: 'PATCH', body, affectedKeys: keysFor(item), optimistic }).catch(writeFailed)
   }
 
@@ -90,63 +79,28 @@ export function useTaskActions(scope: QueryKey = BOARD_KEY) {
     held.remove([item.id], t.undo.choreDone(item.title), () =>
       write(endpoint(item), {
         method: 'PATCH',
-        body: item.source === 'chore' ? { id: item.id, complete: true, doneAt } : { id: item.id, doneAt },
+        body: tickBody(item, true, doneAt),
         affectedKeys: keysFor(item),
       }),
     )
   }
 
-  // « Reporter »: home rows only, the one table with a snooze column today.
+  // « Reporter »: only a table with a snooze column (lib/taskSave, `canPostpone`).
   function postpone(item: TaskItem, mode: 'week' | 'cycle') {
-    held.remove([item.id], t.undo.postponed(item.title), () =>
-      write('home-projects', { method: 'PATCH', body: { id: item.id, snooze: mode }, affectedKeys: keysFor(item) }),
-    )
+    const w = postponeWrite(item, mode)
+    held.remove([item.id], t.undo.postponed(item.title), () => write(w.endpoint, { method: w.method, body: w.body, affectedKeys: w.affectedKeys }))
   }
 
-  function rename(item: TaskItem, title: string) {
-    const value = title.trim()
-    if (!value || value === item.title) return
-    void write(endpoint(item), {
-      method: 'PATCH',
-      body: { id: item.id, title: value },
-      affectedKeys: keysFor(item),
-      optimistic: () => patchEverywhere(item.id, { title: value }),
-    }).catch(writeFailed)
-  }
-
-  // The look (0148), each half on its own: null puts the subject's back. Optimistic on every
-  // surface that shows the row, like a rename; `lookOf` reads the patched raw values.
-  function setLook(item: TaskItem, look: { icon: string | null; colour: string | null }) {
-    void write(endpoint(item), {
-      method: 'PATCH',
-      body: { id: item.id, icon: look.icon, color: look.colour },
-      affectedKeys: keysFor(item),
-      optimistic: () => patchEverywhere(item.id, { icon: look.icon, color: look.colour }),
-    }).catch(writeFailed)
-  }
-
-  // The effort (0149): a dot from 1 to 5, or null to clear it. Optimistic like the look, so the
-  // row's dots and the finder agree at once, offline too.
-  function setEffort(item: TaskItem, effort: number | null) {
-    void write(endpoint(item), {
-      method: 'PATCH',
-      body: { id: item.id, effort },
-      affectedKeys: keysFor(item),
-      optimistic: () => patchEverywhere(item.id, { effort }),
-    }).catch(writeFailed)
-  }
-
-  function setSubject(item: TaskItem, subject: SubjectRef | null) {
-    void write(endpoint(item), { method: 'PATCH', body: { id: item.id, subject }, affectedKeys: keysFor(item) }).catch(writeFailed)
-  }
+  // Rename, the look, the effort and « Sur quoi ? » are the one form's (lib/taskSave): a row's
+  // peek opens it. This hook keeps only what a row does without opening anything.
 
   // Delete: a todo mints optimistic tmp- ids, so its DELETE carries what lets the server heal
   // a stale one (lib/staleDelete). Chores and home rows have no tmp row to heal.
-  function remove(item: TaskItem) {
+  function remove(item: TaskRef) {
     held.remove([item.id], t.todos.removed(item.title), () =>
       write(endpoint(item), {
         method: 'DELETE',
-        body: item.source === 'todo' ? healingDeleteBody(item.id, item.title) : { id: item.id },
+        body: removeBody(item),
         affectedKeys: keysFor(item),
       }),
     )
@@ -159,25 +113,12 @@ export function useTaskActions(scope: QueryKey = BOARD_KEY) {
   function clearTicked(items: readonly TaskItem[]) {
     const ticked = items.filter(isTicked)
     if (ticked.length === 0) return
-    const of = (source: TaskItem['source']) => ticked.filter((x) => x.source === source)
-    const todos = of('todo')
-    const chores = of('chore')
-    const homes = of('home')
     held.remove(
       ticked.map((x) => x.id),
       t.todos.clearedN(ticked.length),
       async () => {
-        await Promise.all([
-          todos.length > 0
-            ? write('todos', { method: 'PATCH', body: healingClearBody(todos.map((x) => ({ id: x.id, text: x.title }))), affectedKeys: [TODOS_KEY, TASKS_KEY, MONTH_KEY] })
-            : null,
-          chores.length > 0
-            ? write('chores', { method: 'PATCH', body: { clearChecked: true, ids: chores.map((x) => x.id) }, affectedKeys: [BOARD_KEY, TASKS_KEY, CHORES_KEY, MONTH_KEY] })
-            : null,
-          homes.length > 0
-            ? write('home-projects', { method: 'PATCH', body: { clearChecked: true, ids: homes.map((x) => x.id) }, affectedKeys: [BOARD_KEY, TASKS_KEY, HOME_PROJECTS_KEY, MONTH_KEY] })
-            : null,
-        ])
+        // One write per table that holds a ticked row; the adapter spells each (lib/taskSave).
+        await Promise.all(clearWrites(ticked).map((w) => write(w.endpoint, { method: w.method, body: w.body, affectedKeys: w.affectedKeys })))
         // The hold is scoped to one key, and these rows come from two polls. Wait for the
         // second, or the un-hide could paint a ticked row back out of its older frame.
         await qc.refetchQueries({ queryKey: TODOS_KEY, type: 'active' })
@@ -217,10 +158,12 @@ export function useTaskActions(scope: QueryKey = BOARD_KEY) {
       team: [],
       onBoard: day === today,
     }
+    // Through the save adapter like every create: a title and a day are a to-do (taskTarget).
+    const w = taskWrite(emptyDraft({ title: value, date: inputFromLocalDay(day), subject: subject ?? null }))
     await createWithUndo({
-      endpoint: 'todos',
-      body: { title: value, day, ...(subject ? { subject } : {}) },
-      affectedKeys: [TODOS_KEY, TASKS_KEY, MONTH_KEY],
+      endpoint: w.endpoint,
+      body: w.body,
+      affectedKeys: w.affectedKeys,
       optimistic: (client) => {
         client.setQueryData<TodosData>(TODOS_KEY, (d) => ({ todos: [...(d?.todos ?? []), tmpRow], items: [...(d?.items ?? []), item] }))
         client.setQueriesData<TasksFrame>({ queryKey: TASKS_KEY }, (d) => (d ? { ...d, tasks: [...d.tasks, item] } : d))
@@ -230,9 +173,8 @@ export function useTaskActions(scope: QueryKey = BOARD_KEY) {
     })
   }
 
-  // A chore or a home row opens its scene; a to-do renames in place.
-  const editHref = (item: TaskItem): string | undefined =>
-    item.source === 'todo' ? undefined : item.source === 'chore' ? `/chore/${item.id}` : `/home-project/${item.id}`
+  // Every task opens the one form, in its own scene (lib/taskSave knows which).
+  const editHref = (item: TaskItem): string => taskScene(item)
 
-  return { tick, postpone, rename, setLook, setEffort, setSubject, remove, clearTicked, add, editHref, visible: held.visible }
+  return { canPostpone, tick, postpone, remove, clearTicked, add, editHref, visible: held.visible }
 }

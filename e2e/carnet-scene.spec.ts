@@ -298,7 +298,7 @@ test('an attached PDF opens the read sheet; a photo stays an image', async ({ pa
 // A carnet-scoped upkeep row was read-only text while care-log and pins both carried
 // RowActions, so changing "filtre de la fournaise, tous les 3 mois" meant leaving the
 // carnet for Réglages ▸ Corvées. Same two doors as its siblings now, and edit opens
-// the SHARED HomeProjectForm rather than a fourth copy of an upkeep form.
+// the ONE task form rather than a fourth copy of an upkeep form.
 
 const UPKEEP = {
   id: 'hp9',
@@ -342,9 +342,8 @@ test('an Entretien row can be edited without leaving the carnet', async ({ page 
   await expect(upkeepRow(page)).toBeVisible()
 
   await upkeepRow(page).getByRole('button', { name: 'Modifier' }).click()
-  // The shared HomeProjectForm, seeded — not a blank fourth upkeep form. Its title
-  // field is an EditField whose ariaLabel is the add label (« Ajouter un entretien »).
-  const title = page.getByRole('textbox', { name: 'Ajouter un entretien' })
+  // The one task form, seeded — not a blank fourth upkeep form.
+  const title = page.locator('.task-form').getByRole('combobox').first()
   await expect(title).toHaveValue('Filtre de la fournaise')
 })
 

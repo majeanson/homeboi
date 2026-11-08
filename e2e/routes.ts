@@ -59,6 +59,8 @@ export const ROUTES = [
   '/event/new',
   '/chore/new',
   '/home-project/new',
+  // The one task form editing a to-do (phase 4): td2 is a fixture to-do on the Tâches frame.
+  '/todo/td2',
   '/habitude/new',
   '/habitude/hb1/edit',
   '/virement/new',

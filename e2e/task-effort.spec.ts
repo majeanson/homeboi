@@ -22,10 +22,10 @@ const frame = {
 }
 const shown = (page: import('@playwright/test').Page, id: string) => page.locator(`.tasks-view [data-item="${id}"]`)
 
-test('the chore form: effort is one tap away, a dot sends, the same dot clears', async ({ page, app }) => {
+test('the task form: effort is one tap away, a dot sends, the same dot clears', async ({ page, app }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  await app.boot({ route: '/chore/new', wait: '.operator__chore-form' })
-  const form = page.locator('.operator__chore-form')
+  await app.boot({ route: '/chore/new', wait: '.task-form' })
+  const form = page.locator('.task-form')
   const fold = form.getByRole('button', { name: /^Effort/ })
   await expect(fold).toHaveAttribute('aria-expanded', 'false')
   await form.getByPlaceholder(/tâche/i).first().fill('Laver les fenêtres')
@@ -49,7 +49,8 @@ test('the chore form: effort is one tap away, a dot sends, the same dot clears',
   await dots.nth(3).click()
   await expect(dots.nth(3)).toHaveAttribute('aria-checked', 'false')
   await dots.nth(1).click()
-  const post = page.waitForRequest((r) => r.url().includes('/api/chores') && r.method() === 'POST')
+  // A title and an effort: a to-do (effort never routes, lib/taskTarget).
+  const post = page.waitForRequest((r) => r.url().includes('/api/todos') && r.method() === 'POST')
   await form.locator('button[type="submit"]').last().click()
   expect((await post).postDataJSON()).toMatchObject({ title: 'Laver les fenêtres', effort: 2 })
 })
@@ -130,15 +131,15 @@ test('a linked finder opens on its answer and says it while folded', async ({ pa
   await expect(shown(page, 'e-big')).toHaveCount(0)
 })
 
-test('a to-do’s edit door holds its effort, and a dot patches it', async ({ page, app }) => {
+test('a to-do’s one form holds its effort, and saving patches it', async ({ page, app }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  await app.boot({ route: '/board?view=taches', wait: '.tasks-view', api: { overrides: { tasks: frame } } })
-  await shown(page, 'e-quick').locator('.act').click()
-  const edit = page.locator('.task-edit')
+  await app.boot({ route: '/todo/e-quick', wait: '.task-form', api: { overrides: { tasks: frame } } })
+  const edit = page.locator('.scene .task-form')
   // It already has an effort, so its fold opens itself: editing never hides a pick.
   await expect(edit.getByRole('button', { name: /^Effort/ })).toHaveAttribute('aria-expanded', 'true')
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/effort-todo-edit-390.png`, fullPage: true })
-  const patch = page.waitForRequest((r) => r.url().includes('/api/todos') && r.method() === 'PATCH')
   await edit.getByRole('radio', { name: /Tout simple/ }).click()
-  expect((await patch).postDataJSON()).toEqual({ id: 'e-quick', effort: null })
+  const patch = page.waitForRequest((r) => r.url().includes('/api/todos') && r.method() === 'PATCH')
+  await edit.locator('button[type="submit"]').last().click()
+  expect((await patch).postDataJSON()).toMatchObject({ id: 'e-quick', title: 'Appeler la garderie', effort: null })
 })

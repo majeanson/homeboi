@@ -3,7 +3,7 @@ import { useT } from '../i18n'
 
 // Calm "Bientôt" reminder lead: how far AHEAD the board starts highlighting a dated
 // item (event / scheduled chore). Emphasis only — never a push notification, never
-// hides anything (NFR-CALM-1). null = no reminder. Shared by EventForm + ChoreForm;
+// hides anything (NFR-CALM-1). null = no reminder. Shared by EventForm + TaskForm;
 // mirrors RecurPicker's labelled-row style. Values are seconds, clamped server-side
 // to the À venir window (≤ 7 days) in functions/api/events.ts + chores.ts.
 const LEAD_OPTIONS: { key: 'none' | 'h1' | 'h3' | 'h6' | 'd1' | 'd2' | 'd3' | 'w1'; seconds: number | null }[] = [
