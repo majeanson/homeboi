@@ -116,6 +116,10 @@ export function TasksView({ members, todayDay }: { members: Member[]; todayDay: 
           <Link className="btn btn--sm" to="/home-project/new?kind=plan">
             <InlineIcon name="paint-brush-bold" size={14} /> {t.tasks.addProject}
           </Link>
+          {/* A new SUBJECT, not a task: the garden, the pool, the chalet (a `thing` carnet). */}
+          <Link className="btn btn--sm" to="/maison?add=chose">
+            <InlineIcon name="plus-bold" size={14} /> {t.tasks.newThingTitle}
+          </Link>
         </Cluster>
       )}
       {!ro && <SeasonSeeds tasks={q.data?.tasks ?? []} />}

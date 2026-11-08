@@ -2995,6 +2995,10 @@ export const FR = {
     ledger: 'Qui a fait quoi cette semaine',
     history: 'Ce qui a été fait',
     subjectEmpty: 'Rien pour l’instant.',
+    // « Une chose à moi » (phase 3): a `thing` carnet with its own name and look — a jardin, a
+    // piscine, le chalet — from « Sur quoi ? » and from the Tâches view. One flow: CarnetForm.
+    newThing: 'Une chose à moi…',
+    newThingTitle: 'Une chose à moi',
   },
   // L’allure d’une chose (LookPicker, 0148): une icône et une couleur. Une tâche hérite de
   // son sujet tant qu’elle ne choisit pas.

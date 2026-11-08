@@ -199,7 +199,9 @@ function MaisonParent() {
   // The ＋ "Nouveau carnet" tile opens the CarnetForm here too (page-level, works from
   // any subtab), so the Carnets tab no longer needs its own add button — same single-
   // entry pattern as the business modal.
-  const [addingCarnet, setAddingCarnet] = useState(false)
+  // 'thing' = « Une chose à moi » (?add=chose): the same CarnetForm, opened on a thing with its
+  // look unfolded, because a garden or a pool is named by its look as much as by its name.
+  const [addingCarnet, setAddingCarnet] = useState<false | 'carnet' | 'thing'>(false)
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null)
   // « Partager une famille » — the materialized family to hand to another account
   // (label + snapshot), or null when the share sheet is closed. See lib/cercleShare.
@@ -267,7 +269,8 @@ function MaisonParent() {
     else if (params.get('add') === 'business') {
       setAddingBusiness(true)
       setBusinessImport(params.get('import'))
-    } else if (params.get('add') === 'carnet') setAddingCarnet(true)
+    } else if (params.get('add') === 'carnet') setAddingCarnet('carnet')
+    else if (params.get('add') === 'chose') setAddingCarnet('thing')
     else return
     const next = new URLSearchParams(params)
     next.delete('connect')
@@ -877,8 +880,14 @@ function MaisonParent() {
 
       {/* Add a carnet (the house / the car / a thing) — opened from the ＋ chooser
           (?add=carnet), reachable from any subtab, like the business modal. */}
-      <Modal open={addingCarnet} onClose={() => setAddingCarnet(false)} title={t.carnets.add}>
-        <CarnetForm defaultKind="home" onSaved={() => setAddingCarnet(false)} onCancel={() => setAddingCarnet(false)} />
+      <Modal open={!!addingCarnet} onClose={() => setAddingCarnet(false)} title={addingCarnet === 'thing' ? t.tasks.newThingTitle : t.carnets.add}>
+        <CarnetForm
+          key={addingCarnet || 'closed'}
+          defaultKind={addingCarnet === 'thing' ? 'thing' : 'home'}
+          lookOpen={addingCarnet === 'thing'}
+          onSaved={() => setAddingCarnet(false)}
+          onCancel={() => setAddingCarnet(false)}
+        />
       </Modal>
 
       {sectionSwitch}

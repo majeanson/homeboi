@@ -110,6 +110,8 @@ at all (❌).
 | Tâche · postpone | — | — | ✅ Reporter ×2 (peek, home rows) | — | — | deferred | ✅ |
 | Tâche · parcourir (vue « Tâches », `?view=taches`) | ✅ `Segmented` par horizon, sujet, personne (`?par=`) · un champ pour ajouter, classé « Un jour » | — | same rows, same peek | ✅ the view's field | — | — | ✅ |
 | Tâche · sur un sujet (carnet, personne, animal) | ✅ `SubjectTasks` : same rows, ＋ `SectionAdd` files it here | — | same peek · « Sur quoi ? » door in the peek | — | — | same tiers | ✅ |
+| Tâche · **allure** (icône + couleur, 0148) | — | — | via « Modifier » (the scene's form) | ✅ every task form: `LookPicker`, folded; a to-do's inline edit holds it under its field | — | none: a pick is re-pickable, « Comme le sujet » puts the inheritance back | ✅ |
+| Sujet · **« Une chose à moi »** (a `thing` carnet with its name and look) | — | — | — | ✅ « Sur quoi ? » last option (in place, files the task under it) · the Tâches view's doors · `/maison?add=chose` | — | carnet tier (confirm on delete) | ✅ |
 | Tâche sans scène (to-do) · rename / delete | ✅ tap the row → inline edit (🗑 lives inside) | — | ➖ expands in place | ✅ `SectionAdd` on the card (today, or « Un jour ») + ＋ `todo` | — | deferred | ✅ |
 | Liste à compléter (modèle) · rename / add-item / reorder / include | — | — | — | — | ✅ maison▸routines▸todoTemplates: a row per list (name + count), ✏ → the `/liste-modele/:id` scene (the only editor) | — | ✅ |
 | Projets & Entretien | — | — | one row, the Tâche rows above | ＋ `chores-pick` | — | — | ✅ |

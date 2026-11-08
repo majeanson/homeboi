@@ -58,3 +58,33 @@ test('a to-do’s edit door holds its look, and a pick patches it', async ({ pag
   await edit.getByRole('button', { name: 'Comme le sujet' }).click()
   expect((await patch).postDataJSON()).toMatchObject({ id: 'l-own', icon: '🐶', color: null })
 })
+
+test('« Une chose à moi »: a thing carnet with its own name and look', async ({ page, app }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await app.boot({ route: '/maison?add=chose', wait: '.hub__body' })
+  const dialog = page.getByRole('dialog', { name: 'Une chose à moi' })
+  await expect(dialog.getByRole('button', { name: /Allure/ })).toHaveAttribute('aria-expanded', 'true')
+  await dialog.getByLabel('Nom', { exact: true }).fill('Le jardin')
+  await dialog.getByRole('button', { name: 'Prendre 🌱' }).click()
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/thing-390.png`, fullPage: true })
+  const post = page.waitForRequest((r) => r.url().includes('/api/carnets') && r.method() === 'POST')
+  await dialog.locator('button[type="submit"]').click()
+  expect((await post).postDataJSON()).toMatchObject({ kind: 'thing', name: 'Le jardin', facts: { emoji: '🌱' } })
+})
+
+test('« Sur quoi ? » makes a new thing in place, and saving it does not save the task', async ({ page, app }) => {
+  await app.boot({ route: '/chore/new', wait: '.operator__chore-form' })
+  const chores: string[] = []
+  page.on('request', (r) => {
+    if (r.url().includes('/api/chores') && r.method() === 'POST') chores.push(r.url())
+  })
+  await page.locator('.operator__chore-form').getByPlaceholder(/tâche/i).first().fill('Tondre')
+  await page.locator('.operator__chore-form select').first().selectOption({ label: 'Une chose à moi…' })
+  const dialog = page.getByRole('dialog', { name: 'Une chose à moi' })
+  await dialog.getByLabel('Nom', { exact: true }).fill('La pelouse')
+  const post = page.waitForRequest((r) => r.url().includes('/api/carnets') && r.method() === 'POST')
+  await dialog.locator('button[type="submit"]').click()
+  await post
+  await expect(dialog).toHaveCount(0)
+  expect(chores).toEqual([])
+})

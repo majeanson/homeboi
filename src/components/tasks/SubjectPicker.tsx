@@ -1,9 +1,17 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { MEMBERS_KEY, TASKS_KEY } from '../../lib/queryKeys'
 import { lookOf, subjectOf, type SubjectKind, type SubjectLookup, type SubjectRef } from '../../lib/subjects'
 import { Field } from '../Field'
+import { Modal } from '../Modal'
+import { CarnetForm } from '../cercle/CarnetForm'
+import { isGuest } from '../../lib/device'
+
+// The last option: a subject that does not exist yet. « Une chose à moi » makes a `thing` carnet
+// with the one carnet form, then files the task under it, without leaving the task form.
+const NEW_THING = '__new-thing'
 
 // « Sur quoi ? » in a form: one select, grouped by kind, because a task has exactly one subject
 // or none. The rows come from the same cold read the Tâches view uses. A household member with
@@ -31,6 +39,7 @@ export function useInheritedLook(ref: SubjectRef | null): { label: string; icon:
 export function SubjectPicker({ value, onChange, exclude }: { value: SubjectRef | null; onChange: (v: SubjectRef | null) => void; exclude?: string | undefined }) {
   const t = useT()
   const s = useSubjectLookup()
+  const [making, setMaking] = useState(false)
   const groups: { kind: SubjectKind; rows: { id: string; label: string }[] }[] = [
     { kind: 'carnet', rows: (s.carnets ?? []).map((x) => ({ id: x.id, label: x.name })) },
     {
@@ -51,6 +60,10 @@ export function SubjectPicker({ value, onChange, exclude }: { value: SubjectRef 
         value={value ? `${value.kind}:${value.id}` : ''}
         onChange={(e) => {
           const raw = e.target.value
+          if (raw === NEW_THING) {
+            setMaking(true)
+            return
+          }
           const at = raw.indexOf(':')
           onChange(at > 0 ? { kind: raw.slice(0, at) as SubjectKind, id: raw.slice(at + 1) } : null)
         }}
@@ -67,7 +80,23 @@ export function SubjectPicker({ value, onChange, exclude }: { value: SubjectRef 
               ))}
             </optgroup>
           ))}
+        {!isGuest() && <option value={NEW_THING}>{t.tasks.newThing}</option>}
       </select>
+      {/* The modal portals out, but React still bubbles its submit to the task form around this
+          picker: stopped here, so saving the thing never saves the task with it. */}
+      <Modal open={making} onClose={() => setMaking(false)} title={t.tasks.newThingTitle}>
+        <div onSubmit={(e) => e.stopPropagation()}>
+          <CarnetForm
+            defaultKind="thing"
+            lookOpen
+            onSaved={(id) => {
+              setMaking(false)
+              if (id) onChange({ kind: 'carnet', id })
+            }}
+            onCancel={() => setMaking(false)}
+          />
+        </div>
+      </Modal>
     </Field>
   )
 }

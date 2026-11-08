@@ -1481,8 +1481,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Une chose, un carnet', en: 'A thing, a carnet' },
         detail: {
-          fr: 'Ajoute la maison ou l’auto, puis ses choses à l’intérieur (le chauffe-eau, les pneus). Touche-en une pour l’ouvrir : « À surveiller » (ce qui s’en vient) et « Le carnet » (l’info, l’historique, ses choses).',
-          en: 'Add the house or the car, then its things inside (the water heater, the tires). Tap one to open it: “To watch” (what’s coming) and “The carnet” (the info, the history, its things).',
+          fr: 'Ajoute la maison, l’auto ou « une chose à moi » (le jardin, la piscine) avec son nom et son allure, que ses tâches portent ensuite, puis ses choses à l’intérieur (le chauffe-eau, les pneus). Touche-en une pour l’ouvrir : « À surveiller » (ce qui s’en vient) et « Le carnet » (l’info, l’historique, ses choses).',
+          en: 'Add the house, the car or “something of mine” (the garden, the pool) with its name and its look, which its tasks then wear, then its things inside (the water heater, the tires). Tap one to open it: “To watch” (what’s coming) and “The carnet” (the info, the history, its things).',
         },
         route: '/maison?add=carnet',
       },

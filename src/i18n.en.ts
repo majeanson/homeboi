@@ -2610,6 +2610,8 @@ export const EN: typeof FR = {
     ledger: 'Who did what this week',
     history: 'What was done',
     subjectEmpty: 'Nothing yet.',
+    newThing: 'Something of mine…',
+    newThingTitle: 'Something of mine',
   },
   look: {
     label: 'Look',
