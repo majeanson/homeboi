@@ -65,7 +65,9 @@ const DOORS: Door[] = [
     proof: (p) => expect(p.locator('.detail-sheet')).toBeVisible(),
   },
   {
-    name: 'board · a todo name → inline edit (a field takes focus)',
+    // Since the one task form (phase 4), a to-do opens its peek like every other task; « Modifier »
+    // there opens /todo/:id. The inline rename is gone.
+    name: 'board · a todo name → its peek',
     route: '/board',
     ready: '.board-grid .wg-slot',
     act: async (p) => {
@@ -73,7 +75,7 @@ const DOORS: Door[] = [
       await todos.scrollIntoViewIfNeeded()
       await todos.locator('.act', { hasText: 'Clés + téléphone + portefeuille' }).locator('.act__hit').click()
     },
-    proof: (p) => expect(p.locator('input:focus, textarea:focus')).toHaveCount(1),
+    proof: (p) => expect(p.locator('.detail-sheet')).toBeVisible(),
   },
   {
     name: 'cuisine · the week grid meal → its recipe',
