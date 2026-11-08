@@ -24,7 +24,7 @@ import type { Todo, TodosData } from '../../lib/todos'
 // A tick sends the moment it was made (`doneAt`), so one held in the offline outbox past
 // midnight keeps its real day (`tickedAt`, _lib/ids.ts).
 
-type TaskPatch = Partial<Pick<TaskItem, 'done' | 'doneAt' | 'title' | 'icon' | 'color'>>
+type TaskPatch = Partial<Pick<TaskItem, 'done' | 'doneAt' | 'title' | 'icon' | 'color' | 'effort'>>
 interface TasksFrame {
   tasks: TaskItem[]
 }
@@ -122,6 +122,17 @@ export function useTaskActions(scope: QueryKey = BOARD_KEY) {
       body: { id: item.id, icon: look.icon, color: look.colour },
       affectedKeys: keysFor(item),
       optimistic: () => patchEverywhere(item.id, { icon: look.icon, color: look.colour }),
+    }).catch(writeFailed)
+  }
+
+  // The effort (0149): a dot from 1 to 5, or null to clear it. Optimistic like the look, so the
+  // row's dots and the finder agree at once, offline too.
+  function setEffort(item: TaskItem, effort: number | null) {
+    void write(endpoint(item), {
+      method: 'PATCH',
+      body: { id: item.id, effort },
+      affectedKeys: keysFor(item),
+      optimistic: () => patchEverywhere(item.id, { effort }),
     }).catch(writeFailed)
   }
 
@@ -223,5 +234,5 @@ export function useTaskActions(scope: QueryKey = BOARD_KEY) {
   const editHref = (item: TaskItem): string | undefined =>
     item.source === 'todo' ? undefined : item.source === 'chore' ? `/chore/${item.id}` : `/home-project/${item.id}`
 
-  return { tick, postpone, rename, setLook, setSubject, remove, clearTicked, add, editHref, visible: held.visible }
+  return { tick, postpone, rename, setLook, setEffort, setSubject, remove, clearTicked, add, editHref, visible: held.visible }
 }

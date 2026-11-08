@@ -4,6 +4,7 @@ import { useWrite } from '../../lib/write'
 import { useLang, useT } from '../../i18n'
 import { useOperatorT } from '../../i18n.operator'
 import { LookPicker, type LookValue } from '../LookPicker'
+import { EffortField } from '../EffortDots'
 import { Chip } from '../Chip'
 import { EditField } from '../EditField'
 import { RecurPicker, type RecurValue } from '../RecurPicker'
@@ -56,6 +57,8 @@ export function HomeProjectForm({
   // The look (0148): null in either half = « like its subject ». A stored colour that is the
   // column default was never a pick (lookColour), so the form opens on « like its subject ».
   const [look, setLook] = useState<LookValue>({ icon: value?.icon ?? null, colour: lookColour(value?.color) })
+  // The effort (0149): five dots, null = not said.
+  const [effort, setEffort] = useState<number | null>(value?.effort ?? null)
   // Optional date — the target date (a one-off plan) AND the recurrence anchor.
   // Empty = undated → the item rests in Réglages and never surfaces on the board.
   const [date, setDate] = useState(anchorSecToDate(value?.at))
@@ -88,6 +91,7 @@ export function HomeProjectForm({
       budgetCents: parseMoney(budget),
       color: look.colour,
       icon: look.icon,
+      effort,
       at: anchor,
       recur,
       recurFrom: recur && fromDone ? 'done' : 'anchor',
@@ -108,6 +112,7 @@ export function HomeProjectForm({
         setNotes('')
         setBudget('')
         setLook({ icon: null, colour: null })
+        setEffort(null)
         setDate('')
         setRecur(null)
         setFromDone(false)
@@ -209,6 +214,7 @@ export function HomeProjectForm({
       {members.length > 0 && <RotationField faces={members.map(toFace)} value={rotation} onChange={setRotation} recurring={!!recur} />}
       {carnetId === undefined && <SubjectPicker value={subject} onChange={setSubject} exclude={value?.id} />}
       <LookPicker value={look} onChange={setLook} suggest={suggestIcon(title)} inherit={inherit} />
+      <EffortField value={effort} onChange={setEffort} />
       {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
       <FormFooter
         saveLabel={value ? t.common.save : addLabel}

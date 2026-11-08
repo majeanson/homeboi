@@ -53,6 +53,7 @@ export interface HomeProject {
   subject_id?: string | null
   rotation_json?: string | null // « chacun son tour » (0147), an ordered id array
   icon?: string | null // the look (0148): an emoji over the subject's, null = « comme le sujet »
+  effort?: number | null // 0149: five dots, null = not said
 }
 
 interface RoutineCard {

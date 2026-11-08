@@ -13,6 +13,7 @@ import { todayLocalDay } from '../../lib/localDay'
 import { useProfile } from '../../lib/profile'
 import { lookColour, lookOf, subjectOf, suggestIcon, type SubjectLookup, type SubjectRef } from '../../lib/subjects'
 import { LookPicker } from '../LookPicker'
+import { EffortField, EffortMark } from '../EffortDots'
 import { isTicked, rotates, type TaskItem } from '../../lib/tasks'
 import { TODO_TITLE_MAX } from '../../lib/todos'
 import { type Member } from '../board/types'
@@ -116,6 +117,8 @@ export function TaskRow({
           suggest={suggestIcon(text)}
           inherit={{ label: item.subject ? t.look.likeSubject : t.look.byDefault, icon: inherited.emoji, colour: inherited.colour }}
         />
+        {/* …and its effort, folded the same way (0149). */}
+        <EffortField value={item.effort} onChange={(v) => actions.setEffort(item, v)} />
       </div>
     )
 
@@ -131,6 +134,9 @@ export function TaskRow({
         who={rotates(item) ? who?.display_name : undefined}
         mine={!!memberId && item.who_id === memberId}
         soon={item.soon}
+        // The effort, small and read-only, only when it was said (EffortMark renders nothing
+        // otherwise, so the badge slot stays empty rather than holding a blank span).
+        badge={item.effort != null ? <EffortMark value={item.effort} /> : undefined}
         done={ticked}
         onCheck={checkable ? () => actions.tick(item) : undefined}
         // A to-do has no scene of its own: a tap renames it in place, with Delete beside

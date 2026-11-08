@@ -697,6 +697,53 @@
     display: inline;
   }
 }
+/* EFFORT (components/EffortDots.tsx, 0149): five dots on the Segmented radiogroup. Not a
+   track of pills: a rating, so every dot up to the pick is filled (`.is-filled` on the dot,
+   decided in the component), and the picked option wears no pill of its own. Never wraps:
+   five 44px targets fit a 320px row. The read-only mark is the same dots, small, on a row. */
+.segmented.effort-dots {
+  flex-wrap: nowrap;
+  gap: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+.effort-dots .segmented__opt,
+.effort-dots .segmented__opt.is-on {
+  flex: none;
+  width: 2.75rem;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+}
+.effort-dots__dot {
+  display: block;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  border: 2px solid var(--ink-faint);
+  background: transparent;
+}
+.effort-dots__dot.is-filled {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+.effort-dots--sm .segmented__opt,
+.effort-dots--sm .segmented__opt.is-on {
+  width: 2.4rem;
+  min-height: 2.4rem;
+}
+.effort-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  vertical-align: middle;
+}
+.effort-mark .effort-dots__dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-width: 1px;
+}
 /* The row a search hit landed on (lib/useItemPulse): same treatment as a deep-linked
    cercle row, whose keyframes live in the eager cnote-list.css. */
 .is-item-target {

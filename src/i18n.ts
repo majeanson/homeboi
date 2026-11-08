@@ -3012,6 +3012,14 @@ export const FR = {
     suggestNote: (e: string) => `${e} suggérée`,
     take: (e: string) => `Prendre ${e}`,
   },
+  // L’effort d’une tâche (EffortDots, 0149) : cinq points, optionnels. Il note une tâche, jamais
+  // une personne, et ne se compte jamais. « Trouver quoi faire » s’en sert dans la vue Tâches.
+  effort: {
+    label: 'Effort',
+    levels: ['Tout simple', 'Facile', 'Moyen', 'Exigeant', 'Gros effort'],
+    dot: (n: number, name: string) => `${name} (${n} sur 5)`,
+    mark: (name: string) => `Effort : ${name}`,
+  },
   // À cocher — listes à cocher autonomes (todos), distinctes du « À faire »
   // (corvées ponctuelles). Globales ou rattachées à une journée; modèles de
   // départ réutilisables. Voir src/lib/todos.ts + TodoSection.tsx.

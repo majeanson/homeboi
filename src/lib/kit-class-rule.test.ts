@@ -41,6 +41,9 @@ const OWNED = new Map<string, { owner: string; hint: string }>([
   ['act__sharedmark', { owner: 'components/board/Act.tsx', hint: '<SharedMark label />' }],
   ['operator__seg', { owner: 'components/operator/SettingsRow.tsx', hint: '<SettingsRow label hint? as? />' }],
   ['operator__seg-label', { owner: 'components/operator/SettingsRow.tsx', hint: '<SettingsRow label>' }],
+  ['effort-dots', { owner: 'components/EffortDots.tsx', hint: '<EffortDots value onChange ariaLabel? /> (or <EffortField> in a form)' }],
+  ['effort-dots__dot', { owner: 'components/EffortDots.tsx', hint: '<EffortDots> / <EffortMark value />' }],
+  ['effort-mark', { owner: 'components/EffortDots.tsx', hint: '<EffortMark value />' }],
 ])
 
 // (token, file) → why this file may spell it. An entry says what makes hosting the

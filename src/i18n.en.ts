@@ -2623,6 +2623,12 @@ export const EN: typeof FR = {
     suggestNote: (e: string) => `${e} suggested`,
     take: (e: string) => `Use ${e}`,
   },
+  effort: {
+    label: 'Effort',
+    levels: ['Very simple', 'Easy', 'Medium', 'Demanding', 'Big effort'],
+    dot: (n: number, name: string) => `${name} (${n} of 5)`,
+    mark: (name: string) => `Effort: ${name}`,
+  },
   // To tick — standalone check-off lists (todos), distinct from "À faire"
   // (one-off chores). Global or pinned to a day; reusable departure templates.
   todos: {

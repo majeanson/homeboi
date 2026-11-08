@@ -64,6 +64,7 @@ import { MemberPicker } from '../components/MemberPicker'
 import { FormFooter } from '../components/FormFooter'
 import { EmojiPicker, EmojiField } from '../components/EmojiPicker'
 import { LookPicker, type LookValue } from '../components/LookPicker'
+import { EffortDots, EffortField, EffortMark } from '../components/EffortDots'
 import { FaceSelect } from '../components/FaceSelect'
 import { FaceSheet } from '../components/FaceSheet'
 import { GroupForm } from '../components/cercle/GroupForm'
@@ -677,6 +678,26 @@ function SegmentedDemo() {
       </Demo>
       <Demo label="collapse: on a phone only the selected option keeps its word">
         <Segmented collapse ariaLabel="Thème" value={v} onChange={setV} options={opts.map((o) => ({ ...o, ariaLabel: o.label }))} />
+      </Demo>
+    </>
+  )
+}
+
+// The effort of a task (0149): the picker IS a Segmented; tap the same dot again to clear.
+function EffortDemo() {
+  const [v, setV] = useState<number | null>(3)
+  return (
+    <>
+      <Demo label="EffortDots — tap to set, tap the same dot to clear (Delete too); arrows move">
+        <EffortDots value={v} onChange={setV} />
+      </Demo>
+      <Demo label="EffortField — the form's fold: one tap away, says the level while closed">
+        <EffortField value={v} onChange={setV} />
+      </Demo>
+      <Demo label="EffortMark — read-only on a row, nothing at all when not said">
+        <span>
+          Gouttières <EffortMark value={v} />
+        </span>
       </Demo>
     </>
   )
@@ -1645,6 +1666,13 @@ export function DevKit() {
           </Demo>
         </>
       ),
+    },
+    {
+      cat: 'Saisie',
+      name: 'EffortDots',
+      file: 'components/EffortDots.tsx',
+      kw: 'effort points dots tâche task trouver quoi faire finder simple gros radiogroup EffortField EffortMark',
+      render: () => <EffortDemo />,
     },
     {
       cat: 'Saisie',

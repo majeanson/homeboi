@@ -35,7 +35,8 @@ export function Segmented<K extends string>({
   armed = false,
 }: {
   options: ReadonlyArray<SegmentedOption<K>>
-  value: K
+  /** null = nothing picked yet (EffortDots: « pas dit »). No option is checked. */
+  value: K | null
   onChange: (key: K) => void
   ariaLabel: string
   size?: 'sm'
@@ -50,7 +51,8 @@ export function Segmented<K extends string>({
     const idx = options.findIndex((o) => o.key === value)
     let next = idx
     if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = (idx + 1) % options.length
-    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = (idx - 1 + options.length) % options.length
+    // From nothing picked (idx -1), back goes to the last option, not the next-to-last.
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = idx < 0 ? options.length - 1 : (idx - 1 + options.length) % options.length
     else if (e.key === 'Home') next = 0
     else if (e.key === 'End') next = options.length - 1
     else return

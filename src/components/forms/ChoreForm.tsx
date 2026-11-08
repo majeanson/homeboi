@@ -4,6 +4,7 @@ import { useWrite } from '../../lib/write'
 import { useLang, useT } from '../../i18n'
 import { useOperatorT } from '../../i18n.operator'
 import { LookPicker, type LookValue } from '../LookPicker'
+import { EffortField } from '../EffortDots'
 import { Chip } from '../Chip'
 import { EditField } from '../EditField'
 import { RecurPicker, type RecurValue } from '../RecurPicker'
@@ -40,6 +41,7 @@ export interface ChoreInit {
   subject_kind?: string | null
   subject_id?: string | null
   icon?: string | null
+  effort?: number | null
 }
 
 
@@ -66,6 +68,8 @@ export function ChoreForm({
   // The look (0148): null in either half = « like its subject ». A stored colour that is the
   // column default was never a pick (lookColour), so the form opens on « like its subject ».
   const [look, setLook] = useState<LookValue>({ icon: value?.icon ?? null, colour: lookColour(value?.color) })
+  // The effort (0149): five dots, null = not said.
+  const [effort, setEffort] = useState<number | null>(value?.effort ?? null)
   // Optional schedule — "tous les jeudis". null = a standing chore (no schedule).
   const [recur, setRecur] = useState<RecurValue | null>(recurOf(value?.recur_json))
   // The recurrence anchor (which date "every 2 weeks" counts from). Defaults to
@@ -95,6 +99,7 @@ export function ChoreForm({
       subject,
       color: look.colour,
       icon: look.icon,
+      effort,
       recur,
       start: recur ? dateToAnchorSec(start) : null,
       leadSeconds: recur ? lead : null, // a standing (no-schedule) chore has no occurrence to remind about
@@ -113,6 +118,7 @@ export function ChoreForm({
         setRotation([])
         setSubject(null)
         setLook({ icon: null, colour: null })
+        setEffort(null)
         setRecur(null)
         setStart(todayAnchorDate())
         setLead(null)
@@ -158,6 +164,7 @@ export function ChoreForm({
       <RotationField faces={members.map(toFace)} value={rotation} onChange={setRotation} recurring={!!recur} />
       <SubjectPicker value={subject} onChange={setSubject} />
       <LookPicker value={look} onChange={setLook} suggest={suggestIcon(title)} inherit={inherit} />
+      <EffortField value={effort} onChange={setEffort} />
       <RecurPicker value={recur} onChange={setRecur} />
       {recur && (
         <>
