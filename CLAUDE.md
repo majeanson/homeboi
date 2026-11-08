@@ -311,8 +311,7 @@ request into the `EventContext` a Pages Function expects, and reproducing the ol
   integer**, name it `status_code` (as `idempotency_keys.status_code` does) so it
   never reads as workflow state.
 - **Colour** — one spelling: **`colour`** (matches members/businesses/pets/groups).
-  Never add a new `color` column. (Existing `color` outliers: `tasks`,
-  `home_projects`, `schedule_blocks`, `carnets`, + JSON keys.)
+  Never add a new `color` column. (Existing `color` outliers: `schedule_blocks`, `carnets`, + JSON keys.)
 - **Ordering** — **`position`** (integer). Not `sort_order`, not `sort`.
 - **Media attachment** — the **`media_kind` + `media_key` (+ `scene_key` for editable
   drawings)** trio (as on notes/family_notes/postbox/drawings), a single column per
@@ -546,6 +545,7 @@ all follow it, and each section owns one colour (`SECTION_TINT`).
 | **Day-part theming**         | The board palette gently drifts dawn→day→dusk→night (`data-daypart` over `data-theme`); opt-out toggle, never overrides manual Night. `lib/timeofday.ts` + `lib/daypartDrift.ts`. |
 | **Recipe collections**       | Browse recipes grouped by an existing **tag** (no new table); parent = an **"Aa vs Collections" view toggle** in the recipe book (`RecipesTab`): Aa = flat alphabetical, Collections = grouped-by-tag sections (no sub-tabs) + toddler hear-first picker (`ToddlerCollections`).                    |
 | **Chore ledger**             | Read-only "who did what this week" glance (the board's Tâches view) over `task_participants` — names + faces, **never counts/ranks** (calm).                         |
+| **One task table (0150)**    | Every task is a row of `home_projects` (« the spine »); `tasks` is gone, `todos` holds only departure checklists. `kind` is the row's FACE in the pre-merge payloads (`chore` · `todo` · `plan` · `upkeep`): read a face with `FACE.*` / `todoRowsSql` (`_lib/taskItem.ts`), never a bare scan (`task-merge-rule.test.ts`). The form writes `/api/tasks`; the three old endpoints are aliases. |
 | **Voice clip / step photo**  | Optional R2 media: a parent's recorded narration per routine card, and a photo per recipe step (parallel arrays; degrade to TTS/text when R2 unset).            |
 | **Fridge memos**             | A fridge note (`notes`, board `Notes.tsx`) can carry an R2 attachment — `media_kind`: an **audio memo** (#38), a **drawn note** (#14 — `DrawPad` over `signature_pad`), or a **shared photo** (#13 — `'image'`, from the share-target). Audio/drawing are created in the ＋ "Note rapide" sheet (`MemoControls`); a photo arrives via `/share`. General-audience, tinted by the active face; clearing frees the R2 blob. Migration 0043 (`media_kind`/`media_key`); upload via `note-media`. R2 unset → the controls hide, text notes still work. |
 | **Favorites (hearts)**       | Per-member ❤ on a recipe (#21, `recipe_loves`, migration 0044; `HeartButton`/`useLoves`); a planned meal carries its linked recipe's hearts. **Calm: shows WHICH faces loved it, never a count/rank** (chore-ledger rule). The add/remove toggle only shows when a face is picked — as **Maisonnée** hearts are read-only. Biases `suggest-meal` (loved recipes lead "favs"). |
@@ -674,7 +674,7 @@ scroller. Réglages ▸ Régler ▸ Système's (then) nine subs were simply uncl
   `keyboard-fit`, `write-rule`, `write-owners`, `swallow-rule`, `intl-rule`, `nested-interactive`,
   `discovery`, `demoHousehold`, `realtime`, `layer-order`, `chip-rule`, `img-rule`, `glossary`,
   `undoTier`, `tour-rule`, `docCounts`, `devkitParity`, `link-button-rule`, `autofocus`,
-  `usageRule`, `csrfExempt`, `schemaRefs`, `deadCopy`, `keyShape`, `load-error-rule`, `dnd-mirror`, `hscroll-rule`, `kit-class-rule`, `avatar-rule`, `empty-rule`, `status-rule`, `search-rule`, `icon-button-rule`, `btn-order`, `field-rule`, `segmented-rule`, `overlay-naming`, `prop-naming`, `tabparam-rule`, `dead-class`, `dup-rule`, `structure-rule`, `routeSweep`, `routesTable`, `d1Coverage`, `e2e-rule`, `conventions`, `taskSchedule-rule`, `look-rule`, `effort-rule` — are the best thing in this codebase, and a green one
+  `usageRule`, `csrfExempt`, `schemaRefs`, `deadCopy`, `keyShape`, `load-error-rule`, `dnd-mirror`, `hscroll-rule`, `kit-class-rule`, `avatar-rule`, `empty-rule`, `status-rule`, `search-rule`, `icon-button-rule`, `btn-order`, `field-rule`, `segmented-rule`, `overlay-naming`, `prop-naming`, `tabparam-rule`, `dead-class`, `dup-rule`, `structure-rule`, `routeSweep`, `routesTable`, `d1Coverage`, `e2e-rule`, `conventions`, `taskSchedule-rule`, `look-rule`, `effort-rule`, `task-merge-rule` — are the best thing in this codebase, and a green one
   proves nothing on its own: `nested-interactive` once reported green over the very
   defect it was written for (STATE.md §5 has the story). Plant the violation (or stash
   the fix), watch the guard fail, restore. **And check that the plant actually landed**
