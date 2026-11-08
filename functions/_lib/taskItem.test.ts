@@ -22,6 +22,7 @@ const chore = (over: Partial<ChoreTaskRow>): ChoreTaskRow => ({
   lead_seconds: null,
   subject_kind: null,
   subject_id: null,
+  icon: null,
   created_at: addLocalDays(today, -30),
   ...over,
 })
@@ -42,6 +43,7 @@ const home = (over: Partial<HomeTaskRow>): HomeTaskRow => ({
   carnet_id: null,
   subject_kind: null,
   subject_id: null,
+  icon: null,
   ...over,
 })
 const todo = (over: Partial<TodoTaskRow>): TodoTaskRow => ({

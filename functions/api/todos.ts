@@ -5,6 +5,7 @@ import { profileMemberId } from '../_lib/profile'
 import { deleteHealing, healClear } from '../_lib/staleDelete'
 import { subjectBinds, validSubject } from '../_lib/subject'
 import { present, todoTask } from '../_lib/taskItem'
+import { emojiIcon, hexColorOrNull } from '../_lib/validate'
 
 // À cocher — standalone check-off lists (todos), separate from the loose-chore
 // "À faire" board section (`tasks` table + the board payload's `todos` field). A
@@ -51,9 +52,11 @@ interface TodoRow {
   created_at: number
   subject_kind: string | null // soft ref (0146): what this task is about, no FK
   subject_id: string | null
+  icon: string | null // 0148: the look's override; null = « comme le sujet »
+  color: string | null // todos.colour (0148), nullable, read as `color` like the two other task tables
 }
 
-const COLS = 'id, title, day, member_id, done_at, position, section, source_template_id, created_at, subject_kind, subject_id'
+const COLS = 'id, title, day, member_id, done_at, position, section, source_template_id, created_at, subject_kind, subject_id, icon, colour AS color'
 
 // Reserved, non-template `source_template_id` for a FREE-TYPED « Avant de partir »
 // item (typed into the departure card, not instantiated from a saved checklist). The
@@ -124,7 +127,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {
-  const body = await readJson<{ title?: string; day?: number | null; templateId?: string; departure?: boolean; section?: string; subject?: unknown }>(
+  const body = await readJson<{ title?: string; day?: number | null; templateId?: string; departure?: boolean; section?: string; subject?: unknown; icon?: unknown; color?: unknown }>(
     ctx.request,
   )
   const day = typeof body?.day === 'number' && Number.isFinite(body.day) ? body.day : null
@@ -200,15 +203,15 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const [subjectKind, subjectId] = subjectBinds(await validSubject(ctx.env.DB, actor.householdId, body?.subject))
   await ctx.env.DB.batch([
     ctx.env.DB.prepare(
-      'INSERT INTO todos (id, household_id, title, day, member_id, position, done_at, section, source_template_id, subject_kind, subject_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 0, NULL, NULL, NULL, ?, ?, ?, ?)',
-    ).bind(id, actor.householdId, title.slice(0, TITLE_MAX), day, mid, subjectKind, subjectId, ts, ts),
+      'INSERT INTO todos (id, household_id, title, day, member_id, position, done_at, section, source_template_id, subject_kind, subject_id, icon, colour, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 0, NULL, NULL, NULL, ?, ?, ?, ?, ?, ?)',
+    ).bind(id, actor.householdId, title.slice(0, TITLE_MAX), day, mid, subjectKind, subjectId, emojiIcon(body?.icon), hexColorOrNull(body?.color), ts, ts),
     sweepStale(ctx.env.DB, actor.householdId, today),
   ])
   return ok({ ok: true, id })
 })
 
 export const onRequestPatch = authed(async (ctx, actor) => {
-  const body = await readJson<{ id?: string; done?: boolean; doneAt?: unknown; title?: string; subject?: unknown; clearChecked?: boolean; ids?: unknown; items?: unknown; asOf?: unknown }>(
+  const body = await readJson<{ id?: string; done?: boolean; doneAt?: unknown; title?: string; subject?: unknown; icon?: unknown; color?: unknown; clearChecked?: boolean; ids?: unknown; items?: unknown; asOf?: unknown }>(
     ctx.request,
   )
 
@@ -287,6 +290,22 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     const [subjectKind, subjectId] = subjectBinds(await validSubject(ctx.env.DB, actor.householdId, body.subject))
     await ctx.env.DB.prepare('UPDATE todos SET subject_kind = ?, subject_id = ?, updated_at = ? WHERE id = ? AND household_id = ?')
       .bind(subjectKind, subjectId, ts, id, actor.householdId)
+      .run()
+  }
+  // The look (0148). Each half on its own: null puts the subject's back.
+  if (body?.icon !== undefined || body?.color !== undefined) {
+    const sets: string[] = []
+    const binds: unknown[] = []
+    if (body.icon !== undefined) {
+      sets.push('icon = ?')
+      binds.push(emojiIcon(body.icon))
+    }
+    if (body.color !== undefined) {
+      sets.push('colour = ?')
+      binds.push(hexColorOrNull(body.color))
+    }
+    await ctx.env.DB.prepare(`UPDATE todos SET ${sets.join(', ')}, updated_at = ? WHERE id = ? AND household_id = ?`)
+      .bind(...binds, ts, id, actor.householdId)
       .run()
   }
   return ok({ ok: true })

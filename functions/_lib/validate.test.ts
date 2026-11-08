@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { hexColor } from './validate'
+import { emojiIcon, hexColor, hexColorOrNull } from './validate'
 
 describe('hexColor', () => {
   it('accepts a valid 6-digit hex', () => {
@@ -21,5 +21,24 @@ describe('hexColor', () => {
     expect(hexColor(undefined, '#111111')).toBe('#111111')
     expect(hexColor(null, '#111111')).toBe('#111111')
     expect(hexColor(123, '#111111')).toBe('#111111')
+  })
+})
+
+describe('emojiIcon (0148)', () => {
+  it('keeps one emoji, a family emoji and a flag', () => {
+    expect(emojiIcon(' 🍂 ')).toBe('🍂')
+    expect(emojiIcon('👨‍👩‍👧‍👦')).toBe('👨‍👩‍👧‍👦')
+    expect(emojiIcon('🇨🇦')).toBe('🇨🇦')
+  })
+  it('reads empty, text, markup and a long run as null: « comme le sujet »', () => {
+    for (const v of ['', '   ', 'Gouttières', 'a🍂', '<b>', '🍂'.repeat(17), null, undefined, 3]) expect(emojiIcon(v)).toBeNull()
+  })
+})
+
+describe('hexColorOrNull', () => {
+  it('a hex stays, anything else is null', () => {
+    expect(hexColorOrNull('#B06A93')).toBe('#B06A93')
+    expect(hexColorOrNull('red')).toBeNull()
+    expect(hexColorOrNull(null)).toBeNull()
   })
 })

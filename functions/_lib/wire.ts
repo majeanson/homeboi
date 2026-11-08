@@ -216,7 +216,10 @@ export interface TaskItem {
   source: 'chore' | 'todo' | 'home'
   id: string
   title: string
+  /** The raw stored colour; the client resolves the look (lookOf). */
   color: string | null
+  /** The raw stored icon (0148): an emoji, or null = « comme le sujet ». */
+  icon: string | null
   subject: { kind: 'carnet' | 'person' | 'pet' | 'project' | 'trip'; id: string } | null
   kind: 'plan' | 'upkeep' | null
   recurring: boolean
@@ -574,6 +577,7 @@ export interface ChoresWire {
     announce_evening: number | null
     subject_kind: string | null
     subject_id: string | null
+    icon: string | null
   }[]
 }
 
@@ -641,6 +645,7 @@ export interface CerclePet {
   breed: string | null
   photoKey: string | null
   colour: string | null
+  icon: string | null
   birthday: string | null
   microchip: string | null
   feeding: string | null
@@ -913,6 +918,8 @@ export interface TodosWire {
     created_at: number
     subject_kind: string | null
     subject_id: string | null
+    icon: string | null
+    color: string | null
   }[]
   /** The loose rows as tasks; departure instances are absent by construction. */
   items: TaskItem[]
@@ -923,8 +930,8 @@ export interface TasksWire {
   subjects: {
     carnets: { id: string; name: string; kind: string; color: string | null; facts: { emoji: string } | null }[]
     contacts: { id: string; name: string; colour: string | null; member_id: string | null }[]
-    pets: { id: string; name: string; colour: string | null }[]
-    projects: { id: string; title: string; color: string | null }[]
+    pets: { id: string; name: string; colour: string | null; icon: string | null }[]
+    projects: { id: string; title: string; color: string | null; icon: string | null }[]
     trips: { id: string; title: string; colour: string | null }[]
   }
   /** Only with `?subject=`: what was done, when and by whom. Never a total. */
@@ -1025,6 +1032,7 @@ export interface HomeProjectsWire {
     rotation_json: string
     current_idx: number
     last_done_by: string | null
+    icon: string | null
     nextAt: number | null
     dueToday: boolean
     overdueSince: number | null

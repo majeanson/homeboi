@@ -29,7 +29,7 @@
 | --- | --- |
 | **What it is** | A calm household command-center for a cheap always-on wall tablet. Single-page React app + one Cloudflare Worker (static assets + `/api/*`) + D1 + Workers AI + R2. FR-CA first. |
 | **Code** | ~157k lines across 955 `.ts`/`.tsx` files (`src/`, `functions/`, `worker/`) |
-| **Schema** | 145 forward-only migrations (0147 = les couches d'une tâche) |
+| **Schema** | 146 forward-only migrations (0148 = l'allure d'une tâche) |
 | **Tests** | 3 038 unit tests in 264 files (2026-11-05, night) · 156 real-runtime cases in 24 files (`npm run test:d1`, the Worker in workerd against a real D1) · 195 Playwright spec files |
 | **Deploy** | Push to `main` → CI (typecheck · test · build · bundle budget · **test:d1** · knip) gates `db:migrate:prod` + `wrangler deploy`. E2E is decoupled (`workflow_run`), runs after a green CI, never blocks the ship. |
 | **Second interface** | `/api/mcp` — read-only over the household — of the 12 tools, most proxy a GET handler that already exists, so the caps, the recurrence expansion and the time zone are decided once and inherited. (This row lives HERE, not in §3: docCounts derives that number from the registry, and the claim died the first time §3 rotated.) |

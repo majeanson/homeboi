@@ -3,7 +3,7 @@ import { authed } from '../_lib/route'
 import { newId, nowSec, localDayStart, tickedAt } from '../_lib/ids'
 import { clearStatements } from '../_lib/taskItem'
 import { nextTurnIdx, parseRotation, prevTurnIdx, rotationJson, turnOf } from '../_lib/rotation'
-import { hexColor } from '../_lib/validate'
+import { emojiIcon, hexColor } from '../_lib/validate'
 import { normalizeRecur } from '../_lib/recur'
 import { upkeepStatus, nextCycleDay } from '../_lib/upkeep'
 import { validSubject, type SubjectRef } from '../_lib/subject'
@@ -97,11 +97,12 @@ interface ProjectRow {
   rotation_json: string // « chacun son tour » (0147), the one path in _lib/rotation
   current_idx: number
   last_done_by: string | null
+  icon: string | null // 0148: an emoji over the subject's, null = « comme le sujet »
 }
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const { results } = await ctx.env.DB.prepare(
-    'SELECT id, kind, title, notes, budget_cents, colour AS color, at, recur_json, recur_from, lead_seconds, last_done_at, snoozed_until, carnet_id, subject_kind, subject_id, rotation_json, current_idx, last_done_by FROM home_projects WHERE household_id = ? ORDER BY created_at',
+    'SELECT id, kind, title, notes, budget_cents, colour AS color, at, recur_json, recur_from, lead_seconds, last_done_at, snoozed_until, carnet_id, subject_kind, subject_id, rotation_json, current_idx, last_done_by, icon FROM home_projects WHERE household_id = ? ORDER BY created_at',
   )
     .bind(actor.householdId)
     .all<ProjectRow>()
@@ -127,6 +128,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
     carnetId?: string | null
     subject?: unknown
     rotation?: unknown
+    icon?: unknown
   }>(ctx.request)
   const title = body?.title?.trim()
   if (!title) return badRequest('Titre requis.')
@@ -139,7 +141,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
       ? subjectCols(await validSubject(ctx.env.DB, actor.householdId, body.subject, id))
       : { carnetId: await validCarnetId(ctx.env.DB, actor.householdId, body?.carnetId), subjectKind: null, subjectId: null }
   await ctx.env.DB.prepare(
-    'INSERT INTO home_projects (id, household_id, kind, title, notes, budget_cents, colour, at, recur_json, recur_from, lead_seconds, carnet_id, subject_kind, subject_id, rotation_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO home_projects (id, household_id, kind, title, notes, budget_cents, colour, icon, at, recur_json, recur_from, lead_seconds, carnet_id, subject_kind, subject_id, rotation_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
   )
     .bind(
       id,
@@ -149,6 +151,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
       notesOf(body?.notes),
       budgetCents(body?.budgetCents),
       hexColor(body?.color, '#88a36f'),
+      emojiIcon(body?.icon),
       at,
       recurJson(body?.recur),
       recurFromOf(body?.recurFrom),
@@ -190,6 +193,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     carnetId?: string | null
     subject?: unknown
     rotation?: unknown
+    icon?: unknown
     snooze?: unknown
     doneAt?: unknown
     undo?: boolean
@@ -242,7 +246,8 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     body.leadSeconds !== undefined ||
     body.carnetId !== undefined ||
     body.subject !== undefined ||
-    body.rotation !== undefined
+    body.rotation !== undefined ||
+    body.icon !== undefined
   if (editsContent) {
     const sets: string[] = []
     const binds: unknown[] = []
@@ -261,6 +266,10 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     if (body.color !== undefined) {
       sets.push('colour = ?')
       binds.push(hexColor(body.color, '#88a36f'))
+    }
+    if (body.icon !== undefined) {
+      sets.push('icon = ?')
+      binds.push(emojiIcon(body.icon))
     }
     if (body.at !== undefined) {
       sets.push('at = ?')

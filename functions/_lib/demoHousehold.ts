@@ -73,6 +73,8 @@ export const DEMO_SANDBOX_IDLE_TTL = 2 * 3600
 // The subject ref on a task (0146) adds no line here: it is two columns on tables already
 // listed, and it carries no FK, so it can neither block a DELETE nor leave a row behind
 // whatever order the tables go in. worker/taskSubject.d1.test.ts sweeps one to prove it.
+// The look of a task (0148: `icon` on three task tables and `pets`, `colour` on `todos`) is
+// the same case: plain columns, no ref at all. worker/taskLook.d1.test.ts sweeps one.
 
 // Self-referencing FKs that must be nulled before the bulk DELETE — SQLite checks
 // FKs per row, so a parent row deleted before its child row in the SAME statement

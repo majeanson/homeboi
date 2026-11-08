@@ -3,6 +3,7 @@ import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { deleteR2Blob, uploadR2Media } from '../_lib/r2'
 import { birthdayOrNull } from '../_lib/birthdayRule'
+import { emojiIcon } from '../_lib/validate'
 
 // « Le cercle » → Pets: the household's animals, returned as PEOPLE in the circle (a
 // 'pet' PersonKind merged into the SPA's people set, like contacts + members). A pet
@@ -31,6 +32,7 @@ interface PetRow {
   breed: string | null
   photo_key: string | null
   colour: string | null
+  icon: string | null // 0148: the pet's own glyph, inherited by its tasks
   birthday: string | null
   microchip: string | null
   feeding: string | null
@@ -65,7 +67,7 @@ function cleanWeights(v: unknown): string {
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const rows = await ctx.env.DB.prepare(
-    `SELECT id, name, species, breed, media_key AS photo_key, colour, birthday, microchip, feeding, sitter_notes, vet_business_id, weights, notes
+    `SELECT id, name, species, breed, media_key AS photo_key, colour, icon, birthday, microchip, feeding, sitter_notes, vet_business_id, weights, notes
        FROM pets WHERE household_id = ? AND deleted_at IS NULL ORDER BY name COLLATE NOCASE`,
   )
     .bind(actor.householdId)
@@ -78,6 +80,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
       breed: p.breed,
       photoKey: p.photo_key,
       colour: p.colour,
+      icon: p.icon,
       birthday: p.birthday,
       microchip: p.microchip,
       feeding: p.feeding,
@@ -117,8 +120,8 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const ts = nowSec()
   await ctx.env.DB.prepare(
     `INSERT INTO pets
-       (id, household_id, name, species, breed, media_key, colour, birthday, microchip, feeding, sitter_notes, vet_business_id, weights, notes, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (id, household_id, name, species, breed, media_key, colour, icon, birthday, microchip, feeding, sitter_notes, vet_business_id, weights, notes, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   )
     .bind(
       id,
@@ -128,6 +131,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
       str(body?.breed),
       str(body?.photoKey),
       str(body?.colour),
+      emojiIcon(body?.icon),
       birthdayOrNull(body?.birthday),
       str(body?.microchip),
       str(body?.feeding)?.slice(0, TEXT_CAP) ?? null,
@@ -170,6 +174,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   setIf('breed' in body, 'breed', str(body.breed))
   setIf('photoKey' in body, 'media_key', str(body.photoKey))
   setIf('colour' in body, 'colour', str(body.colour))
+  setIf('icon' in body, 'icon', emojiIcon(body.icon))
   setIf('birthday' in body, 'birthday', birthdayOrNull(body.birthday))
   setIf('microchip' in body, 'microchip', str(body.microchip))
   setIf('feeding' in body, 'feeding', str(body.feeding)?.slice(0, TEXT_CAP) ?? null)

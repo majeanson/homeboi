@@ -84,6 +84,7 @@ interface PetRow {
   breed: string | null
   photo_key: string | null
   colour: string | null
+  icon: string | null
   birthday: string | null
   microchip: string | null
   feeding: string | null
@@ -164,7 +165,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // them into the same people set. Only the fields the directory + people graph need;
   // the rich care fields (feeding/microchip/weights/sitter/vet) ride the same rows.
   const pets = await ctx.env.DB.prepare(
-    `SELECT id, name, species, breed, media_key AS photo_key, colour, birthday, microchip, feeding, sitter_notes, vet_business_id, weights, notes
+    `SELECT id, name, species, breed, media_key AS photo_key, colour, icon, birthday, microchip, feeding, sitter_notes, vet_business_id, weights, notes
        FROM pets WHERE household_id = ? AND deleted_at IS NULL ORDER BY name COLLATE NOCASE`,
   )
     .bind(actor.householdId)
@@ -226,6 +227,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
       breed: p.breed,
       photoKey: p.photo_key,
       colour: p.colour,
+      icon: p.icon,
       birthday: p.birthday,
       microchip: p.microchip,
       feeding: p.feeding,

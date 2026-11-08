@@ -10,7 +10,10 @@ export interface TaskItem {
   source: 'chore' | 'todo' | 'home'
   id: string
   title: string
+  /** The raw stored colour. A row never paints it directly: `lookOf` (lib/subjects) decides. */
   color: string | null
+  /** The raw stored icon (0148), an emoji, or null = « comme le sujet ». */
+  icon: string | null
   subject: SubjectRef | null
   kind: 'plan' | 'upkeep' | null
   recurring: boolean

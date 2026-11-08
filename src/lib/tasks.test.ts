@@ -9,6 +9,7 @@ const task = (over: Partial<TaskItem>): TaskItem => ({
   id: 'a',
   title: 'A',
   color: null,
+  icon: null,
   subject: null,
   kind: null,
   recurring: false,

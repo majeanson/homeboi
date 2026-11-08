@@ -15,6 +15,7 @@ const BASE = {
   id: 'demo',
   title: 'Appeler la garderie',
   color: null,
+  icon: null,
   subject: null,
   kind: null,
   recurring: false,

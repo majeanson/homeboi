@@ -70,6 +70,7 @@ const mealBrief = (m: Pick<BoardMealBrief, 'id' | 'title' | 'cook_member_id'> & 
 export const boardTask = (t: Pick<TaskItem, 'source' | 'id' | 'title'> & Partial<TaskItem>): TaskItem => ({
   key: `${t.source}:${t.id}`,
   color: null,
+  icon: null,
   subject: null,
   kind: null,
   recurring: false,
@@ -450,8 +451,8 @@ const GHOST_MANAGE = {
 
 const CHORES = {
   chores: [
-    { id: 'c1', title: 'Sortir les poubelles', rotation_json: JSON.stringify(['m1', 'm2']), current_idx: 0, last_done_at: null, last_done_by: null, color: '#88A36F', recur_json: null, recur_start: null, lead_seconds: null, announce_evening: null, subject_kind: null, subject_id: null },
-    { id: 'c2', title: 'Vaisselle', rotation_json: JSON.stringify(['m2', 'm1']), current_idx: 1, last_done_at: BASE - DAY, last_done_by: null, color: '#7BB0C9', recur_json: null, recur_start: null, lead_seconds: null, announce_evening: null, subject_kind: null, subject_id: null },
+    { id: 'c1', title: 'Sortir les poubelles', rotation_json: JSON.stringify(['m1', 'm2']), current_idx: 0, last_done_at: null, last_done_by: null, color: '#88A36F', recur_json: null, recur_start: null, lead_seconds: null, announce_evening: null, subject_kind: null, subject_id: null, icon: null },
+    { id: 'c2', title: 'Vaisselle', rotation_json: JSON.stringify(['m2', 'm1']), current_idx: 1, last_done_at: BASE - DAY, last_done_by: null, color: '#7BB0C9', recur_json: null, recur_start: null, lead_seconds: null, announce_evening: null, subject_kind: null, subject_id: null, icon: null },
   ],
 }
 
@@ -559,10 +560,10 @@ const TODOS = {
     somedayTask({ source: 'todo', id: 'td2', title: 'Boîte à lunch des enfants', who_id: 'm1' }),
   ],
   todos: [
-    { id: 'td1', title: 'Clés + téléphone + portefeuille', day: TODAY_DAY, member_id: null, done_at: null, position: 0, section: null, source_template_id: null, created_at: BASE, subject_kind: null, subject_id: null },
-    { id: 'td2', title: 'Boîte à lunch des enfants', day: null, member_id: 'm1', done_at: null, position: 1, section: null, source_template_id: null, created_at: BASE, subject_kind: null, subject_id: null },
-    { id: 'td3', title: 'Vérifier les portes', day: TODAY_DAY, member_id: null, done_at: null, position: 0, section: 'Avant de partir', source_template_id: 'tpl1', created_at: BASE, subject_kind: null, subject_id: null },
-    { id: 'td4', title: 'Bouteille d’eau', day: TODAY_DAY, member_id: null, done_at: null, position: 1, section: 'Avant de partir', source_template_id: 'tpl1', created_at: BASE, subject_kind: null, subject_id: null },
+    { id: 'td1', title: 'Clés + téléphone + portefeuille', day: TODAY_DAY, member_id: null, done_at: null, position: 0, section: null, source_template_id: null, created_at: BASE, subject_kind: null, subject_id: null, icon: null, color: null },
+    { id: 'td2', title: 'Boîte à lunch des enfants', day: null, member_id: 'm1', done_at: null, position: 1, section: null, source_template_id: null, created_at: BASE, subject_kind: null, subject_id: null, icon: null, color: null },
+    { id: 'td3', title: 'Vérifier les portes', day: TODAY_DAY, member_id: null, done_at: null, position: 0, section: 'Avant de partir', source_template_id: 'tpl1', created_at: BASE, subject_kind: null, subject_id: null, icon: null, color: null },
+    { id: 'td4', title: 'Bouteille d’eau', day: TODAY_DAY, member_id: null, done_at: null, position: 1, section: 'Avant de partir', source_template_id: 'tpl1', created_at: BASE, subject_kind: null, subject_id: null, icon: null, color: null },
   ],
 }
 
@@ -1009,8 +1010,8 @@ export const ROUTES: Partial<Wire> = {
     subjects: {
       carnets: [{ id: 'car1', name: 'La maison', kind: 'home', color: '#5891AC', facts: null }],
       contacts: [],
-      pets: [{ id: 'pet1', name: 'Rex', colour: '#F2A03D' }],
-      projects: [{ id: 'hp9', title: 'Le jardin', color: '#88A36F' }],
+      pets: [{ id: 'pet1', name: 'Rex', colour: '#F2A03D', icon: null }],
+      projects: [{ id: 'hp9', title: 'Le jardin', color: '#88A36F', icon: null }],
       trips: [],
     },
     history: [],

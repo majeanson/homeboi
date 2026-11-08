@@ -183,7 +183,7 @@ describe('boardModel', () => {
     // The merged card (2026-11-06): the day is clear when no task is open on it. A someday
     // one-off (`data.todos`) lives in the Tâches view now, and a ticked row is done.
     const task = (over: Partial<TaskItem>): TaskItem => ({
-      key: 'todo:t', source: 'todo', id: 't', title: 'T', color: null, subject: null, kind: null, recurring: false,
+      key: 'todo:t', source: 'todo', id: 't', title: 'T', color: null, icon: null, subject: null, kind: null, recurring: false,
       recurJson: null, day: null, dueToday: true, overdueSince: null, snoozedUntil: null, soon: false, done: 'open',
       doneAt: null, who_id: null, team: [], onBoard: true, ...over,
     })

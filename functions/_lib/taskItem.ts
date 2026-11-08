@@ -46,6 +46,7 @@ interface Scheduled {
   id: string
   title: string
   color: string | null
+  icon: string | null
   ref: ReturnType<typeof subjectFromRow>
   schedule: UpkeepRowLike
   lead: number | null | undefined
@@ -68,6 +69,7 @@ function fromSchedule(s: Scheduled, today: number, now: number): TaskItem | null
     id: s.id,
     title: s.title,
     color: s.color,
+    icon: s.icon,
     subject: s.ref,
     kind: s.kind,
     recurring,
@@ -87,9 +89,9 @@ function fromSchedule(s: Scheduled, today: number, now: number): TaskItem | null
 
 // The columns each reader must SELECT for its table. Named here so a query cannot forget one.
 export const CHORE_TASK_COLS =
-  'id, title, colour AS color, rotation_json, current_idx, last_done_at, cleared_at, recur_json, recur_start, lead_seconds, subject_kind, subject_id, created_at'
+  'id, title, colour AS color, rotation_json, current_idx, last_done_at, cleared_at, recur_json, recur_start, lead_seconds, subject_kind, subject_id, icon, created_at'
 export const HOME_TASK_COLS =
-  'id, kind, title, colour AS color, at, recur_json, recur_from, lead_seconds, last_done_at, snoozed_until, cleared_at, rotation_json, current_idx, carnet_id, subject_kind, subject_id'
+  'id, kind, title, colour AS color, at, recur_json, recur_from, lead_seconds, last_done_at, snoozed_until, cleared_at, rotation_json, current_idx, carnet_id, subject_kind, subject_id, icon'
 
 export interface ChoreTaskRow {
   id: string
@@ -104,6 +106,7 @@ export interface ChoreTaskRow {
   lead_seconds: number | null
   subject_kind: string | null
   subject_id: string | null
+  icon: string | null
   created_at: number
 }
 
@@ -115,6 +118,7 @@ export function choreTask(c: ChoreTaskRow, today: number, now: number): TaskItem
       id: c.id,
       title: c.title,
       color: c.color,
+      icon: c.icon,
       ref: subjectFromRow(c),
       // A one-off chore has no date unless one was chosen. choreSchedule's created_at
       // fallback is a RECURRENCE anchor: used here, every undated chore would be overdue.
@@ -142,6 +146,7 @@ export interface HomeTaskRow extends UpkeepRowLike {
   carnet_id: string | null
   subject_kind: string | null
   subject_id: string | null
+  icon: string | null
 }
 
 export function homeTask(h: HomeTaskRow, today: number, now: number): TaskItem | null {
@@ -151,6 +156,7 @@ export function homeTask(h: HomeTaskRow, today: number, now: number): TaskItem |
       id: h.id,
       title: h.title,
       color: h.color,
+      icon: h.icon,
       ref: subjectFromRow(h),
       schedule: h,
       lead: h.lead_seconds,
@@ -174,6 +180,8 @@ export interface TodoTaskRow {
   source_template_id: string | null
   subject_kind?: string | null
   subject_id?: string | null
+  icon?: string | null
+  color?: string | null
 }
 
 // A departure instance answers null: it is not a task (see the header).
@@ -187,7 +195,8 @@ export function todoTask(td: TodoTaskRow, today: number): TaskItem | null {
     source: 'todo' as const,
     id: td.id,
     title: td.title,
-    color: null,
+    color: td.color ?? null,
+    icon: td.icon ?? null,
     subject: subjectFromRow(td),
     kind: null,
     recurring: false,

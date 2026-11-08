@@ -68,7 +68,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     // Loose rows only, and only what has not cleared. A departure instance is not a task.
     db
       .prepare(
-        'SELECT id, title, day, member_id, done_at, section, source_template_id, subject_kind, subject_id FROM todos WHERE household_id = ? AND source_template_id IS NULL AND section IS NULL AND (done_at IS NULL OR done_at >= ?) ORDER BY created_at, position LIMIT ?',
+        'SELECT id, title, day, member_id, done_at, section, source_template_id, subject_kind, subject_id, icon, colour AS color FROM todos WHERE household_id = ? AND source_template_id IS NULL AND section IS NULL AND (done_at IS NULL OR done_at >= ?) ORDER BY created_at, position LIMIT ?',
       )
       .bind(hh, today, ROWS_MAX)
       .all<TodoTaskRow>(),
@@ -84,7 +84,10 @@ export const onRequestGet = authed(async (ctx, actor) => {
           .prepare('SELECT id, first_name, last_name, nickname, member_id FROM contacts WHERE household_id = ? ORDER BY first_name LIMIT ?')
           .bind(hh, ROWS_MAX)
           .all<{ id: string; first_name: string; last_name: string; nickname: string | null; member_id: string | null }>(),
-    db.prepare('SELECT id, name, colour FROM pets WHERE household_id = ? AND deleted_at IS NULL ORDER BY name LIMIT ?').bind(hh, ROWS_MAX).all<{ id: string; name: string; colour: string | null }>(),
+    db
+      .prepare('SELECT id, name, colour, icon FROM pets WHERE household_id = ? AND deleted_at IS NULL ORDER BY name LIMIT ?')
+      .bind(hh, ROWS_MAX)
+      .all<{ id: string; name: string; colour: string | null; icon: string | null }>(),
     db.prepare('SELECT id, title, colour FROM trips WHERE household_id = ? AND deleted_at IS NULL ORDER BY start_at DESC LIMIT ?').bind(hh, ROWS_MAX).all<{ id: string; title: string; colour: string | null }>(),
   ])
 
@@ -113,7 +116,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
       carnets: carnets.results.map((c) => ({ id: c.id, name: c.name, kind: c.kind, color: c.color, facts: emojiOf(c.facts_json) })),
       contacts: contacts.results.map((c) => ({ id: c.id, name: c.nickname || [c.first_name, c.last_name].filter(Boolean).join(' '), colour: null, member_id: c.member_id })),
       pets: pets.results,
-      projects: homes.results.filter((h) => h.kind === 'plan').map((h) => ({ id: h.id, title: h.title, color: h.color })),
+      projects: homes.results.filter((h) => h.kind === 'plan').map((h) => ({ id: h.id, title: h.title, color: h.color, icon: h.icon })),
       trips: trips.results,
     },
     history: ref ? await historyOf(db, hh, ref, today) : [],

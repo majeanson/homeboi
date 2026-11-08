@@ -178,6 +178,7 @@ export function useTaskActions(scope: QueryKey = BOARD_KEY) {
       id: tmpId,
       title: value,
       color: null,
+      icon: null,
       subject: subject ?? null,
       kind: null,
       recurring: false,
