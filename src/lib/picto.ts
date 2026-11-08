@@ -92,24 +92,6 @@ const MAP: [string, string[]][] = [
   ['🏊', ['piscine', 'natation', 'swim', 'baignade']],
   ['🩺', ['docteur', 'médecin', 'medecin', 'doctor', 'clinique']],
   ['🦷', ['dentiste', 'dentist']],
-  // ── house upkeep (a task's suggested icon, lib/subjects suggestIcon) ─────────
-  // Above the activity block on purpose: « Nettoyer les gouttières » is about the gutters,
-  // not about cleaning, and 🧹 below would swallow it. Keys are the specific nouns; the
-  // ambiguous ones are spelled so they cannot misfire (« piles », never « pile » as in
-  // « à 8 h pile »; « tires », never « tire » as in tire d'érable).
-  ['🍂', ['gouttière', 'gouttiere', 'gutter', 'feuilles', 'leaves', 'râteau', 'rateau']],
-  ['🗑️', ['poubelle', 'ordure', 'vidange', 'recyclage', 'compost', 'bac', 'trash', 'garbage', 'recycling']],
-  ['❄️', ['déneiger', 'deneiger', 'pelleter', 'shovel']],
-  ['🌿', ['gazon', 'pelouse', 'tondre', 'lawn', 'mow']],
-  ['🔥', ['fournaise', 'furnace', 'foyer', 'fireplace', 'cheminée', 'cheminee']],
-  ['🛞', ['pneu', 'tires']],
-  ['🔋', ['piles', 'batterie', 'battery', 'batteries']],
-  ['🚰', ['robinet', 'boyau', 'faucet', 'hose']],
-  ['🪟', ['fenêtre', 'fenetre', 'window', 'calfeutrage', 'calfeutrer']],
-  ['🍽️', ['vaisselle', 'lave-vaisselle', 'dishes', 'dishwasher']],
-  ['🐶', ['chien', 'dog']],
-  ['🐱', ['chat', 'litière', 'litiere', 'cat']],
-  ['💉', ['vaccin', 'vaccine', 'vétérinaire', 'veterinaire', 'vet']],
   ['🛝', ['parc', 'park', 'jeux', 'playground']],
   ['🎂', ['anniversaire', 'birthday', 'fête', 'fete', 'party']],
   ['⚽', ['soccer', 'football', 'foot']],
@@ -169,6 +151,38 @@ function keyRe(k: string): RegExp {
     WORD_RE.set(k, re)
   }
   return re
+}
+
+// TASK WORDS — read ONLY by taskPictoFor (a task's suggested icon, lib/subjects suggestIcon), never
+// by pictoFor. pictoFor also pictures every grocery line and sorts « Par allée » (lib/aisle),
+// so house-upkeep nouns there re-pictured the list: « Savon à vaisselle » went 🧼 → 🍽️ and
+// changed aisle, « Feuilles de laurier » turned 🍂 (caught in review, 2026-11-08). Same matcher,
+// same file: one vocabulary, with a task-only layer consulted first.
+// The specific nouns win over the shared map: « Nettoyer les gouttières » is about the gutters,
+// not about cleaning. Ambiguous keys are spelled so they cannot misfire (« piles », never
+// « pile » as in « à 8 h pile »; « tires », never « tire » as in tire d'érable).
+const TASK_MAP: [string, string[]][] = [
+  ['🍂', ['gouttière', 'gouttiere', 'gutter', 'feuilles', 'leaves', 'râteau', 'rateau']],
+  ['🗑️', ['poubelle', 'ordure', 'vidange', 'recyclage', 'compost', 'bac', 'trash', 'garbage', 'recycling']],
+  ['❄️', ['déneiger', 'deneiger', 'pelleter', 'shovel']],
+  ['🌿', ['gazon', 'pelouse', 'tondre', 'lawn', 'mow']],
+  ['🔥', ['fournaise', 'furnace', 'foyer', 'fireplace', 'cheminée', 'cheminee']],
+  ['🛞', ['pneu', 'tires']],
+  ['🔋', ['piles', 'batterie', 'battery', 'batteries']],
+  ['🚰', ['robinet', 'boyau', 'faucet', 'hose']],
+  ['🪟', ['fenêtre', 'fenetre', 'window', 'calfeutrage', 'calfeutrer']],
+  ['🍽️', ['vaisselle', 'lave-vaisselle', 'dishes', 'dishwasher']],
+  ['🐶', ['chien', 'dog']],
+  ['🐱', ['chat', 'litière', 'litiere', 'cat']],
+  ['💉', ['vaccin', 'vaccine', 'vétérinaire', 'veterinaire', 'vet']],
+]
+
+export function taskPictoFor(label: string, fallback = '•'): string {
+  const s = label.toLowerCase()
+  for (const [emoji, keys] of TASK_MAP) {
+    if (keys.some((k) => keyRe(k).test(s))) return emoji
+  }
+  return pictoFor(label, fallback)
 }
 
 export function pictoFor(label: string, fallback = '•'): string {

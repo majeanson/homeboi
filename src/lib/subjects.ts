@@ -1,6 +1,6 @@
 import { type IconName } from './pipIcons'
 import { carnetEmoji, type Carnet } from './carnets'
-import { pictoFor } from './picto'
+import { taskPictoFor } from './picto'
 import { THING_DEFAULTS } from './things'
 
 // THE ONE ANSWER to « sur quoi, cette tâche ? » (plans/2026-11-06-TACHE-UNIFIEE.md). Name,
@@ -151,5 +151,5 @@ export function lookOf(task: { icon?: string | null | undefined; color?: string 
  * by itself: a form offers it as one tap, and a task without a pick keeps inheriting. */
 export function suggestIcon(title: string): string | null {
   const t = title.trim()
-  return t ? pictoFor(t, '') || null : null
+  return t ? taskPictoFor(t, '') || null : null
 }
