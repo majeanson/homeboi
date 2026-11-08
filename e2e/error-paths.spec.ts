@@ -43,7 +43,8 @@ async function failWrites(page: Page, apiPath: string, methods: string[]) {
 
 test('AddSheet: a rejected quick todo add keeps the sheet open, the text, and says so', async ({ page, app }) => {
   await app.boot({ viewport: { width: 420, height: 860 }, route: '/board', wait: '.board-wall' })
-  const fail = await failWrites(page, 'todos', ['POST'])
+  // Since 0150 the ＋ sheet's task form writes /api/tasks (lib/taskSave), not /api/todos.
+  const fail = await failWrites(page, 'tasks', ['POST'])
 
   await page.locator('.add-fab').click()
   const sheet = page.locator('.sheet.show')

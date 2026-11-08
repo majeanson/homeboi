@@ -65,7 +65,8 @@ test.describe('recurring chores on the board', () => {
     const form = page.locator('.scene .task-form')
     await form.getByRole('button', { name: /^Quand/ }).click()
     await form.locator('.recur select').selectOption('weekly')
-    await expectApi(page, 'PATCH', 'chores', () =>
+    // Since 0150 the form writes ONE endpoint, /api/tasks (lib/taskSave); the server picks the face.
+    await expectApi(page, 'PATCH', 'tasks', () =>
       form.getByRole('button', { name: 'Enregistrer' }).click(),
     )
   })
