@@ -13,6 +13,53 @@ import { resolveMemberByName } from '../_lib/members'
 import { householdMealLayout } from '../_lib/mealSlots'
 import { normalizeItem } from '../_lib/normalize'
 import { lineSameItem } from '../_lib/listMatch'
+import { taskTarget, type TaskTable } from '../../src/lib/taskTarget'
+import type { Recur } from '../_lib/recur'
+
+// What a captured task says, read off the words: a recurrence (the model's, else the regex), a
+// person, and a day (a season word's anchor, a stated day, or today for a recurrence, which
+// needs one to count from). A one-off with no stated day has none: « un jour ».
+function captureTask(raw: string, p: Intent['payload'], who: string | null, ts: number): { day: number | null; recur: Recur | null; rotation: string[] } {
+  const phrase = parseRecurPhrase(raw)
+  const recur = normalizeRecur(p.recur) ?? phrase?.recur ?? null
+  const stated = p.when ? localDayStart(new Date(parseWhen(p.when, Date.now()).startAt * 1000)) : null
+  const day = recur ? (seasonAnchorFor(p.season) ?? phrase?.seasonAnchor ?? stated ?? localDayStart(new Date(ts * 1000))) : stated
+  // A named person (« Léa sort les vidanges ») is who does it; no name, anyone.
+  return { day, recur, rotation: who ? [who] : [] }
+}
+
+interface CapturedTask {
+  id: string
+  hh: string
+  title: string
+  addedBy: string | null
+  ts: number
+  day: number | null
+  recur: Recur | null
+  rotation: string[]
+}
+// Each table's own INSERT, looked up by `taskTarget`'s answer: the columns are the ones the
+// three endpoints write, nothing more. A to-do's member_id is the acting profile, like POST
+// /api/todos; the kind of a home row is never asked (a recurrence is upkeep, else a project).
+const TASK_TABLE: Record<TaskTable, string> = { todo: 'todos', chore: 'tasks', home: 'home_projects' }
+const TASK_INSERT: Record<TaskTable, (env: Env, t: CapturedTask) => Promise<unknown>> = {
+  todo: (env, t) =>
+    env.DB.prepare(
+      'INSERT INTO todos (id, household_id, title, day, member_id, position, done_at, section, source_template_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 0, NULL, NULL, NULL, ?, ?)',
+    )
+      .bind(t.id, t.hh, t.title, t.day, t.addedBy, t.ts, t.ts)
+      .run(),
+  chore: (env, t) =>
+    env.DB.prepare('INSERT INTO tasks (id, household_id, title, rotation_json, recur_json, recur_start, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)')
+      .bind(t.id, t.hh, t.title, JSON.stringify(t.rotation), t.recur ? JSON.stringify(t.recur) : null, t.recur ? t.day : null, t.ts)
+      .run(),
+  home: (env, t) =>
+    env.DB.prepare(
+      'INSERT INTO home_projects (id, household_id, kind, title, at, recur_json, rotation_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    )
+      .bind(t.id, t.hh, t.recur ? 'upkeep' : 'plan', t.title, t.day, t.recur ? JSON.stringify(t.recur) : null, JSON.stringify(t.rotation), t.ts, t.ts)
+      .run(),
+}
 
 // THE SPINE. One free-text (or already-transcribed voice) capture in; the
 // intent-router classifies it; we route it to the right table. Every capture
@@ -64,7 +111,8 @@ export const onRequestPost = authed(async (ctx, actor) => {
 
   const routed = await routeIntent(ctx.env, actor, intent, text, ts, profileMemberId(ctx.request))
 
-  return withAiError(ok({ type: intent.type, degraded: intent.degraded ?? false, routed }), report)
+  // « upkeep » is a task like any other now (one kind of thing): the client knows one word.
+  return withAiError(ok({ type: intent.type === 'upkeep' ? 'task' : intent.type, degraded: intent.degraded ?? false, routed }), report)
 })
 
 // One row a routing inserted, named so the client can ask us to undo it on a
@@ -73,7 +121,7 @@ type Cleanup = { table: string; id: string }
 
 // Only these tables can be cleaned up, and only within the actor's household — so
 // a round-tripped ref grants no reach the actor doesn't already have.
-const CLEANUP_TABLES = new Set(['events', 'tasks', 'list_items', 'pantry_low', 'meals', 'meal_leftovers', 'home_projects', 'notes'])
+const CLEANUP_TABLES = new Set(['events', 'tasks', 'todos', 'list_items', 'pantry_low', 'meals', 'meal_leftovers', 'home_projects', 'notes'])
 
 async function applyCleanup(env: Env, hh: string, undo: Cleanup[]): Promise<void> {
   const dels = (Array.isArray(undo) ? undo : [])
@@ -154,18 +202,20 @@ async function routeIntent(
         .run()
       return { kind: 'event', label: withWho(title), cleanup: [{ table: 'events', id }] }
     }
-    case 'task': {
+    // ONE KIND OF THING (phase 4 of the unified task). A chore and an « entretien » are the same
+    // task with different layers, so both intents land through the same rule as a typed task
+    // (`taskTarget`, src/lib/taskTarget.ts): « sortir les poubelles chaque mardi » said or typed
+    // ends up in the same table, with the same recurrence. The AI's recur hint is re-validated
+    // (normalizeRecur); the raw words are the regex backstop (parseRecurPhrase), for both
+    // intents and for the manual « Tâche » re-route, where no AI ran.
+    case 'task':
+    case 'upkeep': {
       const title = p.title || raw
+      const t = captureTask(raw, p, forMember?.id ?? null, ts)
       const id = newId()
-      // A named person ("Léa sort les vidanges") becomes a one-person rotation, so
-      // the chore shows as their turn; no name → the open, unassigned rotation.
-      const rotation = forMember ? JSON.stringify([forMember.id]) : '[]'
-      await env.DB.prepare(
-        'INSERT INTO tasks (id, household_id, title, rotation_json, created_at) VALUES (?, ?, ?, ?, ?)',
-      )
-        .bind(id, hh, title, rotation, ts)
-        .run()
-      return { kind: 'task', label: withWho(title), cleanup: [{ table: 'tasks', id }] }
+      const where = taskTarget({ title, date: t.day, recur: t.recur, rotation: t.rotation })
+      await TASK_INSERT[where](env, { id, hh, title, addedBy, ts, ...t })
+      return { kind: 'task', label: withWho(title), cleanup: [{ table: TASK_TABLE[where], id }] }
     }
     case 'list-item': {
       const itemText = p.item || p.text || raw
@@ -231,28 +281,6 @@ async function routeIntent(
         .bind(id, hh, title, ts)
         .run()
       return { kind: 'leftover', label: title, cleanup: [{ table: 'meal_leftovers', id }] }
-    }
-    case 'upkeep': {
-      // A RECURRING entretien ("nettoyer les gouttières chaque automne") → a normal
-      // home_projects upkeep row, so it rides the whole existing machinery (board,
-      // season card, month/year, overdue carry-forward). The model's recur hint is
-      // re-validated (normalizeRecur); the raw words are the regex fallback
-      // (parseRecurPhrase — also THE path for the manual « Entretien » re-route,
-      // where no AI ran). Anchor priority: a season word → its season anchor; a
-      // stated date → that day; else today (recurrence needs an anchor).
-      const title = p.title || raw
-      const phrase = parseRecurPhrase(raw)
-      const recur = normalizeRecur(p.recur) ?? phrase?.recur ?? null
-      const seasonAnchor = seasonAnchorFor(p.season) ?? phrase?.seasonAnchor ?? null
-      const at =
-        seasonAnchor ?? (p.when ? localDayStart(new Date(parseWhen(p.when, Date.now()).startAt * 1000)) : localDayStart(new Date(ts * 1000)))
-      const id = newId()
-      await env.DB.prepare(
-        'INSERT INTO home_projects (id, household_id, kind, title, at, recur_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-      )
-        .bind(id, hh, 'upkeep', title, at, recur ? JSON.stringify(recur) : null, ts, ts)
-        .run()
-      return { kind: 'upkeep', label: title, cleanup: [{ table: 'home_projects', id }] }
     }
     case 'note':
     default: {

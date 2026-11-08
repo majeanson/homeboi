@@ -80,3 +80,22 @@ describe('seasonAnchorFor (the AI season-word echo)', () => {
     expect(seasonAnchorFor(null)).toBeNull()
   })
 })
+
+// Phase 4 of the unified task: a dictated weekly task carries its day like a typed one.
+describe('parseRecurPhrase — weekdays', () => {
+  it('« chaque mardi » → weekly on Tuesday', () => {
+    expect(parseRecurPhrase('sortir les poubelles chaque mardi')?.recur).toEqual({ freq: 'weekly', interval: 1, weekdays: [2] })
+  })
+  it('« tous les mardis et vendredis » → both days, in week order', () => {
+    expect(parseRecurPhrase('arroser tous les vendredis et mardis')?.recur).toEqual({ freq: 'weekly', interval: 1, weekdays: [2, 5] })
+  })
+  it('"every Thursday, Sunday" (EN, any case)', () => {
+    expect(parseRecurPhrase('Take out the bins every Thursday, Sunday')?.recur).toEqual({ freq: 'weekly', interval: 1, weekdays: [0, 4] })
+  })
+  it('a bare weekday is a date, not a recurrence', () => {
+    expect(parseRecurPhrase('appeler le plombier mardi')).toBeNull()
+  })
+  it('« chaque semaine » keeps its old answer (no weekday)', () => {
+    expect(parseRecurPhrase('arroser chaque semaine')?.recur).toEqual({ freq: 'weekly', interval: 1 })
+  })
+})

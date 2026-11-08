@@ -58,6 +58,13 @@ export function seasonAnchorFor(word: string | null | undefined, nowMs: number =
   return localDayStart(new Date(Date.UTC(y, SEASON_START[s], 1, 12)))
 }
 
+// Weekday words, accent-folded, FR then EN, to the 0=Sun … 6=Sat of Recur.weekdays.
+const WEEKDAY_NUM: Record<string, number> = {
+  dimanche: 0, lundi: 1, mardi: 2, mercredi: 3, jeudi: 4, vendredi: 5, samedi: 6,
+  sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6,
+}
+const WEEKDAY = `(?:${Object.keys(WEEKDAY_NUM).join('|')})`
+
 const clampN = (n: number): number => Math.min(52, Math.max(1, Math.round(n)))
 
 // Parse a recurrence phrase out of free text. Returns null when no cadence is
@@ -98,6 +105,16 @@ export function parseRecurPhrase(text: string, nowMs: number = Date.now()): Pars
     if (/^(semaine|week)/.test(unit)) return { recur: { freq: 'weekly', interval } }
     if (/^(mois|month)/.test(unit)) return { recur: { freq: 'monthly', interval } }
     return { recur: { freq: 'yearly', interval } }
+  }
+
+  // « chaque mardi », « tous les mardis et jeudis », "every Tuesday" → weekly on those days
+  // (phase 4 of the unified task: a spoken « sortir les poubelles chaque mardi » must carry its
+  // day the way the typed one does in RecurPicker). Days only after an « every » word, so a
+  // bare « mardi » stays a DATE, whenparse's job.
+  const weekly = f.match(new RegExp(`(?:chaque|tous les|toutes les|every|each)\\s+(${WEEKDAY}s?(?:\\s*(?:,|et|and)\\s*${WEEKDAY}s?)*)\\b`))
+  if (weekly) {
+    const days = [...(weekly[1] ?? '').matchAll(new RegExp(WEEKDAY, 'g'))].map((m) => WEEKDAY_NUM[m[0]] ?? -1).filter((n) => n >= 0)
+    return { recur: { freq: 'weekly', interval: 1, weekdays: [...new Set(days)].sort((a, b) => a - b) } }
   }
 
   // Bare units: « chaque annee », « tous les mois », "every week", "yearly"…

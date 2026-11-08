@@ -12,7 +12,7 @@ import { Disclosure } from './Disclosure'
 import { StatusMessage } from './StatusMessage'
 
 // « Classer » — the capture spine. Type or speak one line; Workers AI routes it to an
-// event / task / list item / pantry-low / meal / leftover / upkeep / note. It lived inside the
+// event / task / list item / pantry-low / meal / leftover / note. It lived inside the
 // board's ＋ sheet, wedged directly above the audio-memo buttons — which is what made
 // the ＋ sheet unreadable: the field's mic (speech → text → AI files it) and « Mémo
 // vocal » (record a clip → a fridge note) wore the same glyph and meant opposite things.
@@ -27,17 +27,16 @@ import { StatusMessage } from './StatusMessage'
 // cleanup, compensating undo) so BOTH surfaces can't drift — AskDialog renders it; the ＋
 // sheet no longer has a capture tile at all.
 
-export type CaptureType = 'event' | 'meal' | 'task' | 'list-item' | 'pantry-low' | 'leftover' | 'upkeep' | 'note'
+// One « Tâche » (phase 4 of the unified task): a chore and an entretien are the same thing with
+// different layers, so the server routes both through `taskTarget` and there is one tile.
+export type CaptureType = 'event' | 'meal' | 'task' | 'list-item' | 'pantry-low' | 'leftover' | 'note'
 
-// The 8 AI-router types as re-file tiles.
+// The 7 re-file tiles (the AI's « upkeep » files as a task).
 const TYPE_DRESS: { type: CaptureType; cat: CatKey; icon: IconName }[] = [
   { type: 'event', cat: 'event', icon: 'calendar-blank-bold' },
   { type: 'meal', cat: 'meal', icon: 'bowl-food-bold' },
   { type: 'leftover', cat: 'meal', icon: 'arrow-counter-clockwise-bold' },
   { type: 'task', cat: 'chore', icon: 'hand-heart-bold' },
-  // « Entretien » (home_projects upkeep) — the recurring-maintenance capture
-  // ("gouttières chaque automne"); wears the season card's broom.
-  { type: 'upkeep', cat: 'chore', icon: 'broom-bold' },
   { type: 'list-item', cat: 'list', icon: 'sparkle-bold' },
   { type: 'pantry-low', cat: 'pantry', icon: 'carrot-bold' },
   { type: 'note', cat: 'routine', icon: CATS.routine.icon },
@@ -55,6 +54,7 @@ type Cleanup = { table: string; id: string }
 const CAPTURE_UNDO_EP: Record<string, string> = {
   events: 'events',
   tasks: 'chores',
+  todos: 'todos',
   list_items: 'list',
   pantry_low: 'pantry',
   meals: 'meals',

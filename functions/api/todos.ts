@@ -25,7 +25,7 @@ import { emojiIcon, hexColorOrNull, taskEffort } from '../_lib/validate'
 //   GET    /api/todos?date=<sec> -> that day's todos
 //   POST   /api/todos            -> add one { title, day? } OR instantiate a
 //                                   template { templateId, day? } (day-pinned)
-//   PATCH  /api/todos            -> toggle/edit { id, done? , title? } OR bulk
+//   PATCH  /api/todos            -> toggle/edit { id, done?, title?, day?, … } OR bulk
 //                                   clear { clearChecked: true, ids? }
 //   DELETE /api/todos            -> remove one { id }
 
@@ -212,7 +212,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
 })
 
 export const onRequestPatch = authed(async (ctx, actor) => {
-  const body = await readJson<{ id?: string; done?: boolean; doneAt?: unknown; title?: string; subject?: unknown; icon?: unknown; color?: unknown; effort?: unknown; clearChecked?: boolean; ids?: unknown; items?: unknown; asOf?: unknown }>(
+  const body = await readJson<{ id?: string; done?: boolean; doneAt?: unknown; title?: string; day?: unknown; subject?: unknown; icon?: unknown; color?: unknown; effort?: unknown; clearChecked?: boolean; ids?: unknown; items?: unknown; asOf?: unknown }>(
     ctx.request,
   )
 
@@ -307,6 +307,14 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     }
     await ctx.env.DB.prepare(`UPDATE todos SET ${sets.join(', ')}, updated_at = ? WHERE id = ? AND household_id = ?`)
       .bind(...binds, ts, id, actor.householdId)
+      .run()
+  }
+  // The day (phase 4, the one task form): a household-local midnight, or null for « un jour ».
+  // Only a LOOSE to-do moves: a departure instance's day is what sweeps it, so it keeps its own.
+  if (body?.day !== undefined) {
+    const day = typeof body.day === 'number' && Number.isFinite(body.day) ? Math.floor(body.day) : null
+    await ctx.env.DB.prepare('UPDATE todos SET day = ?, updated_at = ? WHERE id = ? AND household_id = ? AND source_template_id IS NULL')
+      .bind(day, ts, id, actor.householdId)
       .run()
   }
   // The effort (0149): null, or anything that is not a dot from 1 to 5, clears it.
