@@ -92,6 +92,24 @@ const MAP: [string, string[]][] = [
   ['🏊', ['piscine', 'natation', 'swim', 'baignade']],
   ['🩺', ['docteur', 'médecin', 'medecin', 'doctor', 'clinique']],
   ['🦷', ['dentiste', 'dentist']],
+  // ── house upkeep (a task's suggested icon, lib/subjects suggestIcon) ─────────
+  // Above the activity block on purpose: « Nettoyer les gouttières » is about the gutters,
+  // not about cleaning, and 🧹 below would swallow it. Keys are the specific nouns; the
+  // ambiguous ones are spelled so they cannot misfire (« piles », never « pile » as in
+  // « à 8 h pile »; « tires », never « tire » as in tire d'érable).
+  ['🍂', ['gouttière', 'gouttiere', 'gutter', 'feuilles', 'leaves', 'râteau', 'rateau']],
+  ['🗑️', ['poubelle', 'ordure', 'vidange', 'recyclage', 'compost', 'bac', 'trash', 'garbage', 'recycling']],
+  ['❄️', ['déneiger', 'deneiger', 'pelleter', 'shovel']],
+  ['🌿', ['gazon', 'pelouse', 'tondre', 'lawn', 'mow']],
+  ['🔥', ['fournaise', 'furnace', 'foyer', 'fireplace', 'cheminée', 'cheminee']],
+  ['🛞', ['pneu', 'tires']],
+  ['🔋', ['piles', 'batterie', 'battery', 'batteries']],
+  ['🚰', ['robinet', 'boyau', 'faucet', 'hose']],
+  ['🪟', ['fenêtre', 'fenetre', 'window', 'calfeutrage', 'calfeutrer']],
+  ['🍽️', ['vaisselle', 'lave-vaisselle', 'dishes', 'dishwasher']],
+  ['🐶', ['chien', 'dog']],
+  ['🐱', ['chat', 'litière', 'litiere', 'cat']],
+  ['💉', ['vaccin', 'vaccine', 'vétérinaire', 'veterinaire', 'vet']],
   ['🛝', ['parc', 'park', 'jeux', 'playground']],
   ['🎂', ['anniversaire', 'birthday', 'fête', 'fete', 'party']],
   ['⚽', ['soccer', 'football', 'foot']],

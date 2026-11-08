@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { subjectOf, subjectRefOf, type SubjectLookup } from './subjects'
+import { lookColour, lookOf, subjectOf, subjectRefOf, suggestIcon, type SubjectLookup } from './subjects'
 
 const lookup: SubjectLookup = {
   members: [{ id: 'm1', display_name: 'Léa', colour: '#111111' }],
@@ -53,5 +53,51 @@ describe('subjectOf', () => {
 
   it('a deleted subject reads as its kind, with no name', () => {
     expect(subjectOf({ kind: 'carnet', id: 'gone' }, lookup)).toMatchObject({ name: null, emoji: null })
+  })
+})
+
+// THE LOOK (0148): task override, then subject, then the default, and nowhere else.
+describe('lookOf', () => {
+  const pets = { pets: [{ id: 'a1', name: 'Rex', colour: '#333333', icon: '🐕' }] }
+  const maison = subjectOf({ kind: 'carnet', id: 'c1' }, lookup)
+
+  it('no pick and no subject: the category default, in both halves', () => {
+    expect(lookOf({ icon: null, color: null }, subjectOf(null))).toEqual({ emoji: null, icon: null, colour: null })
+  })
+
+  it('no pick: the subject shows through, its emoji and its colour', () => {
+    expect(lookOf({ icon: null, color: null }, maison)).toEqual({ emoji: maison.emoji, icon: null, colour: '#222222' })
+    expect(lookOf({}, subjectOf({ kind: 'pet', id: 'a1' }, pets))).toEqual({ emoji: '🐕', icon: null, colour: '#333333' })
+  })
+
+  it('a subject with no glyph of its own lends its kind icon', () => {
+    expect(lookOf({}, subjectOf({ kind: 'person', id: 'm1' }, lookup))).toMatchObject({ emoji: null, icon: 'user-bold', colour: '#111111' })
+  })
+
+  it('the task own pick wins, each half on its own', () => {
+    expect(lookOf({ icon: '🍂', color: null }, maison)).toEqual({ emoji: '🍂', icon: null, colour: '#222222' })
+    expect(lookOf({ icon: null, color: '#B06A93' }, maison)).toEqual({ emoji: maison.emoji, icon: null, colour: '#B06A93' })
+  })
+
+  // The column default was written by every form unasked: it is not a choice, in any case.
+  it('the stored task default reads as « not chosen », so the subject colour shows', () => {
+    expect(lookColour('#88A36F')).toBeNull()
+    expect(lookColour('#88a36f')).toBeNull()
+    expect(lookColour('#B06A93')).toBe('#B06A93')
+    expect(lookOf({ color: '#88A36F' }, maison).colour).toBe('#222222')
+  })
+})
+
+describe('suggestIcon', () => {
+  it('suggests a picture for the words, or nothing', () => {
+    expect(suggestIcon('Nettoyer les gouttières')).toBe('🍂')
+    expect(suggestIcon('Sortir le bac')).toBe('🗑️')
+    expect(suggestIcon('Vaccin du chien')).toBe('🐶')
+    expect(suggestIcon('Zzyzx')).toBeNull()
+    expect(suggestIcon('   ')).toBeNull()
+  })
+  it('the ambiguous words do not misfire', () => {
+    expect(suggestIcon('Souper à 6 h pile')).not.toBe('🔋')
+    expect(suggestIcon('Tire d’érable')).not.toBe('🛞')
   })
 })

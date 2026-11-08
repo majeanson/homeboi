@@ -1,5 +1,7 @@
 import { type IconName } from './pipIcons'
 import { carnetEmoji, type Carnet } from './carnets'
+import { pictoFor } from './picto'
+import { THING_DEFAULTS } from './things'
 
 // THE ONE ANSWER to « sur quoi, cette tâche ? » (plans/2026-11-06-TACHE-UNIFIEE.md). Name,
 // link, icon, colour for any subject kind. A row and a page ask this and nothing else, so a
@@ -37,8 +39,8 @@ export interface SubjectLookup {
   members?: readonly (Named & { display_name: string; colour?: string | null | undefined })[] | undefined
   carnets?: readonly (Named & { name: string; kind: string; color?: string | null | undefined; facts?: Carnet['facts'] | undefined })[] | undefined
   contacts?: readonly (Named & { name: string; colour?: string | null | undefined; member_id?: string | null | undefined })[] | undefined
-  pets?: readonly (Named & { name: string; colour?: string | null | undefined })[] | undefined
-  projects?: readonly (Named & { title: string; color?: string | null | undefined })[] | undefined
+  pets?: readonly (Named & { name: string; colour?: string | null | undefined; icon?: string | null | undefined })[] | undefined
+  projects?: readonly (Named & { title: string; color?: string | null | undefined; icon?: string | null | undefined })[] | undefined
   trips?: readonly (Named & { title: string; colour?: string | null | undefined })[] | undefined
 }
 
@@ -48,7 +50,7 @@ export interface Subject {
   /** Where the subject lives, or null for no subject. */
   to: string | null
   icon: IconName | null
-  /** A carnet's own glyph, shown over `icon` when it has one. */
+  /** The subject's own glyph (a carnet's emoji, a pet's or a project's icon), shown over `icon`. */
   emoji: string | null
   colour: string | null
 }
@@ -101,15 +103,53 @@ export function subjectOf(ref: SubjectRef | null | undefined, lookup: SubjectLoo
     }
     case 'pet': {
       const p = byId(lookup.pets)
-      return p ? { ...base, name: p.name, colour: p.colour ?? null } : base
+      return p ? { ...base, name: p.name, emoji: p.icon || null, colour: p.colour ?? null } : base
     }
     case 'project': {
       const p = byId(lookup.projects)
-      return p ? { ...base, name: p.title, colour: p.color ?? null } : base
+      return p ? { ...base, name: p.title, emoji: p.icon || null, colour: lookColour(p.color) } : base
     }
     case 'trip': {
       const t = byId(lookup.trips)
       return t ? { ...base, name: t.title, colour: t.colour ?? null } : base
     }
   }
+}
+
+// ── THE LOOK OF A TASK (0148) ────────────────────────────────────────────────────
+// A task wears its own pick, else its subject's, else the task default. Resolved HERE and
+// nowhere else: a row, a peek and a form preview all ask `lookOf`, so a carnet's emoji cannot
+// lead one list and lose in the next. The server sends the raw columns (TaskItem.icon/color).
+//
+// THE DEFAULT COLOUR IS NOT A CHOICE. `tasks.colour` and `home_projects.colour` are NOT NULL
+// with the sage default since 0001/0074, and every form used to write it unasked. Rebuilding
+// two tables to make the column nullable was not worth the risk, so the default value itself
+// reads as « not chosen ». It is also the task category's own tint (CATS.chore), so a task that
+// lands on it by hand looks exactly the same either way: only a subject's colour shows through.
+export const TASK_DEFAULT_COLOUR = THING_DEFAULTS.chore.colour.toLowerCase()
+
+/** A stored colour as a pick: null when it is the task default, i.e. never chosen. */
+export function lookColour(stored: string | null | undefined): string | null {
+  return stored && stored.toLowerCase() !== TASK_DEFAULT_COLOUR ? stored : null
+}
+
+export interface Look {
+  /** An emoji to draw, the task's or its subject's. */
+  emoji: string | null
+  /** Else a Phosphor glyph: the subject kind's. Null = the row's category default. */
+  icon: IconName | null
+  /** Null = the category default tint. */
+  colour: string | null
+}
+
+export function lookOf(task: { icon?: string | null | undefined; color?: string | null | undefined }, subject: Subject): Look {
+  const emoji = task.icon?.trim() || subject.emoji || null
+  return { emoji, icon: emoji ? null : subject.icon, colour: lookColour(task.color) ?? subject.colour ?? null }
+}
+
+/** What typing a title SUGGESTS for an icon: a picture for the words, or nothing. Never written
+ * by itself: a form offers it as one tap, and a task without a pick keeps inheriting. */
+export function suggestIcon(title: string): string | null {
+  const t = title.trim()
+  return t ? pictoFor(t, '') || null : null
 }

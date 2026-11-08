@@ -11,7 +11,7 @@ import { isGuest } from '../../lib/device'
 import { formatDayMaybeYear } from '../../lib/format'
 import { todayLocalDay } from '../../lib/localDay'
 import { useProfile } from '../../lib/profile'
-import { subjectOf, type SubjectLookup, type SubjectRef } from '../../lib/subjects'
+import { lookOf, subjectOf, type SubjectLookup, type SubjectRef } from '../../lib/subjects'
 import { isTicked, rotates, type TaskItem } from '../../lib/tasks'
 import { TODO_TITLE_MAX } from '../../lib/todos'
 import { type Member } from '../board/types'
@@ -20,8 +20,8 @@ import { type useTaskActions } from './useTaskActions'
 type Actions = ReturnType<typeof useTaskActions>
 
 // ONE ROW FOR A TASK, on the board, in the Tâches view and on a subject's page: the shared Act,
-// with one-tap done. The subject's icon leads and the title tint says who (the compact-rows
-// rule: no spine, no avatar, no furniture). A rotation is the one thing that keeps a line
+// with one-tap done. The look leads (the task's own icon, else its subject's: `lookOf`) and
+// the title tint says who (the compact-rows rule: no spine, no avatar, no furniture). A rotation is the one thing that keeps a line
 // under the title, because whose turn it is cannot be read from a colour alone.
 export function TaskRow({
   item,
@@ -46,6 +46,7 @@ export function TaskRow({
   const [text, setText] = useState(item.title)
 
   const subject = subjectOf(item.subject, lookup)
+  const look = lookOf(item, subject)
   const who = members.find((m) => m.id === item.who_id)
   const owedSince = item.overdueSince
   const owed = owedSince != null
@@ -65,7 +66,7 @@ export function TaskRow({
         {
           id: item.id,
           title: item.title,
-          color: item.color,
+          color: look.colour,
           at: item.overdueSince ?? item.day ?? todayLocalDay(),
           who: who?.display_name ?? null,
           who_id: item.who_id,
@@ -113,9 +114,9 @@ export function TaskRow({
         cat="chore"
         title={item.title}
         when={when}
-        emoji={subject.emoji ?? undefined}
-        icon={subject.emoji ? undefined : (subject.icon ?? undefined)}
-        color={who?.colour ?? item.color ?? undefined}
+        emoji={look.emoji ?? undefined}
+        icon={look.icon ?? undefined}
+        color={who?.colour ?? look.colour ?? undefined}
         who={rotates(item) ? who?.display_name : undefined}
         mine={!!memberId && item.who_id === memberId}
         soon={item.soon}
