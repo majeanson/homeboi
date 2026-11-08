@@ -302,14 +302,16 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     return ok({ ok: true })
   }
 
-  const turn = await ctx.env.DB.prepare('SELECT rotation_json, current_idx FROM home_projects WHERE id = ? AND household_id = ?')
+  const turn = await ctx.env.DB.prepare('SELECT rotation_json, current_idx, last_done_at FROM home_projects WHERE id = ? AND household_id = ?')
     .bind(body.id, actor.householdId)
-    .first<{ rotation_json: string; current_idx: number }>()
+    .first<{ rotation_json: string; current_idx: number; last_done_at: number | null }>()
   if (!turn) return notFound('Introuvable.')
   const rotation = parseRotation(turn.rotation_json)
 
   // Untick a one-off: the row's own check is its undo (mirrors a chore), and the turn goes back.
   if (body.undo) {
+    // Nothing to take back: a replayed or doubled untick must not walk the turn backwards.
+    if (turn.last_done_at == null) return ok({ ok: true })
     await ctx.env.DB.prepare(
       'UPDATE home_projects SET last_done_at = NULL, last_done_by = NULL, cleared_at = NULL, current_idx = ?, updated_at = ? WHERE id = ? AND household_id = ?',
     )

@@ -108,7 +108,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
            AND (day IS NULL
                 OR day = ?
                 OR (day < ? AND day IS NOT NULL AND source_template_id IS NULL AND done_at IS NULL))
-           AND NOT (day IS NULL AND done_at < ? AND source_template_id IS NULL AND section IS NULL)
+           AND NOT (day IS NULL AND done_at IS NOT NULL AND done_at < ? AND source_template_id IS NULL AND section IS NULL)
          ORDER BY created_at, position`,
     )
       .bind(actor.householdId, today, today, today)
@@ -116,7 +116,9 @@ export const onRequestGet = authed(async (ctx, actor) => {
     // The AND NOT is the merged board section: a standing to-do ticked on an earlier day has
     // CLEARED, on read, with no cron and no row rewrite (_lib/taskItem.ts). It stays in the
     // table as history. A legacy sectioned row keeps its old behaviour: it waits for
-    // « Vider les cochés », see splitTodos.
+    // « Vider les cochés », see splitTodos. `done_at IS NOT NULL` is load-bearing: without it
+    // an OPEN row reads NULL < ? = NULL, NOT NULL = NULL, and every open standing to-do
+    // vanished from the board (caught in review, 2026-11-08; tasks.d1 holds it).
   }
   return okWire('todos', { todos: rows.results, items: rows.results.map((r) => todoTask(r, today)).filter(present) })
 })

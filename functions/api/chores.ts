@@ -192,6 +192,8 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   // Untick a one-off: the row's own check is its undo, so a tick has to be takeable back.
   // It puts back exactly what the tick moved: the stamp, the turn, and the log line.
   if (body.undo) {
+    // Nothing to take back: a replayed or doubled untick must not walk the turn backwards.
+    if (chore.last_done_at == null) return ok({ ok: true })
     const back = prevTurnIdx(parseRotation(chore.rotation_json), chore.current_idx)
     await ctx.env.DB.batch([
       ctx.env.DB.prepare('DELETE FROM task_participants WHERE task_id = ? AND contributed_at = ?').bind(body.id, chore.last_done_at),

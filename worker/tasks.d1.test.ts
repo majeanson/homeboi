@@ -15,6 +15,27 @@ const addTodo = (s: Session, body: Record<string, unknown>) => okJson<{ id: stri
 const titles = (xs: { title: string }[]) => xs.map((x) => x.title).sort()
 
 describe('the task writes', () => {
+  it('an open standing to-do reads back, ticked today stays, ticked earlier has cleared', async () => {
+    // Review catch, 2026-11-08: the end-of-day clause read NULL for an open row and hid it.
+    // Planted red by dropping « done_at IS NOT NULL » from GET /api/todos.
+    const s = await household('tasks-open-undated', undefined, { empty: true })
+    await addTodo(s, { title: 'Ouvert' })
+    const ticked = await addTodo(s, { title: 'Coché' })
+    await s.fetch('/api/todos', { method: 'PATCH', body: { id: ticked.id, done: true } })
+    const old = await addTodo(s, { title: 'Hier' })
+    await s.fetch('/api/todos', { method: 'PATCH', body: { id: old.id, done: true, doneAt: today() - 600 } })
+    const got = await todos(s)
+    expect(titles(got.todos)).toEqual(['Coché', 'Ouvert'])
+    expect(titles(got.items)).toEqual(['Coché', 'Ouvert'])
+  })
+
+  it('an untick with nothing ticked leaves the turn where it is', async () => {
+    const s = await household('tasks-untick-noop', undefined, { empty: true })
+    const chore = await okJson<{ id: string }>(s.fetch('/api/chores', { method: 'POST', body: { title: 'Bac', rotation: ['a', 'b'] } }))
+    await s.fetch('/api/chores', { method: 'PATCH', body: { id: chore.id, undo: true } })
+    expect(await env.DB.prepare('SELECT current_idx FROM tasks WHERE id = ?').bind(chore.id).first()).toEqual({ current_idx: 0 })
+  })
+
   it('a tick keeps its real moment, however late it reaches the server', async () => {
     const s = await household('tasks-offline', undefined, { empty: true })
     const last = today() - 600 // 23:50 last night, held in the outbox past midnight
