@@ -36,6 +36,13 @@ test('a project subject links here, narrowed to it', async ({ page, app }) => {
 
 test('adding is one title field, and it files as someday', async ({ page, app }) => {
   await app.boot(OPEN)
+  // The mocks are static: the refetch after the POST answers without the new row and takes it
+  // back off the view, so the assertion raced it (CI red on e8525e62). Hold that refetch: the
+  // optimistic row is what this case pins.
+  await page.route('**/api/tasks', async (route) => {
+    await new Promise((r) => setTimeout(r, 3000))
+    await route.fallback()
+  })
   const add = page.locator('.tasks-view').getByPlaceholder('Ajouter une tâche…')
   await add.fill('Trier les photos')
   const post = page.waitForRequest((r) => r.url().includes('/api/todos') && r.method() === 'POST')
