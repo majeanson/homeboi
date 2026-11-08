@@ -332,8 +332,14 @@ test('the pet form folds every secondary field — including the tail that hung 
 
   await fold.click()
   await expect(page.locator('.pet-form__weight-add')).toBeVisible()
-  await expect(page.getByText('Couleur', { exact: true })).toBeVisible()
   await expect(page.locator('input[type=file]')).toHaveCount(1)
+  // The colour moved out of the health fold into the pet's look (LookPicker, 0148): identity,
+  // not health, and still folded so the form opens on the name.
+  await expect(page.getByText('Couleur', { exact: true })).toHaveCount(0)
+  const look = page.getByRole('button', { name: /Allure/ })
+  await expect(look).toHaveAttribute('aria-expanded', 'false')
+  await look.click()
+  await expect(page.getByText('Couleur', { exact: true })).toBeVisible()
 })
 
 // ── Le mois : un jour se dé-tape ────────────────────────────────────────────────

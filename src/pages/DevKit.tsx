@@ -63,6 +63,7 @@ import { MemberSwitcher } from '../components/MemberSwitcher'
 import { MemberPicker } from '../components/MemberPicker'
 import { FormFooter } from '../components/FormFooter'
 import { EmojiPicker, EmojiField } from '../components/EmojiPicker'
+import { LookPicker, type LookValue } from '../components/LookPicker'
 import { FaceSelect } from '../components/FaceSelect'
 import { FaceSheet } from '../components/FaceSheet'
 import { GroupForm } from '../components/cercle/GroupForm'
@@ -1017,6 +1018,8 @@ export function DevKit() {
   const [face, setFace] = useState<string | null>(null)
   const [picks, setPicks] = useState<string[]>([])
   const [emoji, setEmoji] = useState('⭐')
+  const [look, setLook] = useState<LookValue>({ icon: null, colour: null })
+  const [subjectLook, setSubjectLook] = useState<LookValue>({ icon: '🏡', colour: PALETTE[3] ?? null })
   const [tags, setTags] = useState(['rapide', 'végé'])
   const [modalOpen, setModalOpen] = useState(false)
   const confirmDialog = useConfirm()
@@ -1621,6 +1624,24 @@ export function DevKit() {
           </Demo>
           <Demo label="EmojiPicker inline — search + broad shared set, scrollable">
             <EmojiPicker value={emoji} onSelect={setEmoji} ariaLabel="Choisir un emoji" />
+          </Demo>
+        </>
+      ),
+    },
+    {
+      cat: 'Saisie',
+      name: 'LookPicker',
+      file: 'components/LookPicker.tsx',
+      kw: 'allure look icône icon couleur colour tâche sujet carnet animal hériter inherit suggestion',
+      render: () => (
+        // THE look control of every task and subject form (0148). A task inherits (« Comme le
+        // sujet » leads the colour row); a subject is the source, with its kind's glyph.
+        <>
+          <Demo label="a task: inherits its subject until it picks, and suggests from the title">
+            <LookPicker value={look} onChange={setLook} suggest="🍂" inherit={{ label: 'Comme le sujet', icon: '🏠', colour: PALETTE[3] ?? null }} defaultOpen />
+          </Demo>
+          <Demo label="a subject (a carnet, a pet): a real colour, the kind glyph when no icon">
+            <LookPicker value={subjectLook} onChange={setSubjectLook} fallbackIcon="📦" />
           </Demo>
         </>
       ),

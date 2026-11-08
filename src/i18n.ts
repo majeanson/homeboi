@@ -2995,7 +2995,18 @@ export const FR = {
     ledger: 'Qui a fait quoi cette semaine',
     history: 'Ce qui a été fait',
     subjectEmpty: 'Rien pour l’instant.',
-
+  },
+  // L’allure d’une chose (LookPicker, 0148): une icône et une couleur. Une tâche hérite de
+  // son sujet tant qu’elle ne choisit pas.
+  look: {
+    label: 'Allure',
+    icon: 'Icône',
+    colour: 'Couleur',
+    likeSubject: 'Comme le sujet',
+    byDefault: 'Par défaut',
+    custom: 'à mon goût',
+    suggestNote: (e: string) => `${e} suggérée`,
+    take: (e: string) => `Prendre ${e}`,
   },
   // À cocher — listes à cocher autonomes (todos), distinctes du « À faire »
   // (corvées ponctuelles). Globales ou rattachées à une journée; modèles de

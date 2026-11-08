@@ -379,3 +379,10 @@
   font-size: 0.78rem;
   color: var(--ink-soft);
 }
+
+/* A to-do being edited in place: its field, then its look fold (LookPicker), one column. */
+.task-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}

@@ -7,7 +7,8 @@ import { resizeImage, imgUrl } from '../../lib/image'
 import { live } from '../../lib/query'
 import { useConfirm } from '../../lib/confirm'
 import { useWrite, writeFailed } from '../../lib/write'
-import { CERCLE_KEY, BUSINESSES_KEY } from '../../lib/queryKeys'
+import { CERCLE_KEY, BUSINESSES_KEY, TASKS_KEY } from '../../lib/queryKeys'
+import { suggestIcon } from '../../lib/subjects'
 import { type Business } from '../../lib/businesses'
 import {
   type Pet,
@@ -23,7 +24,7 @@ import {
 } from '../../lib/cercle'
 import { BirthdayPicker } from './BirthdayPicker'
 import { EntityCombobox, type ComboOption } from '../EntityCombobox'
-import { ColorPicker } from '../ColorPicker'
+import { LookPicker } from '../LookPicker'
 import { StatusMessage } from '../StatusMessage'
 import { FormFooter } from '../FormFooter'
 import { Disclosure } from '../Disclosure'
@@ -34,6 +35,8 @@ import { THING_DEFAULTS } from '../../lib/things'
 import { Img } from '../Img'
 
 const PET_COLOUR = THING_DEFAULTS.pet.colour // the pet amber — one source in lib/things
+// A pet with no icon of its own: the paw its tasks show until one is picked.
+const PET_GLYPH = '🐾'
 
 // « Le cercle » → Pets: add / edit one animal — a ContactForm cousin (no relationships
 // or vCard) with the care fields a household needs at a glance: species/breed,
@@ -59,6 +62,8 @@ export function PetForm({ value, onSaved, onCancel }: { value?: Pet | null; onSa
   const [vetBusinessId, setVetBusinessId] = useState<string | null>(value?.vetBusinessId ?? null)
   const [weights, setWeights] = useState<PetWeight[]>(value?.weights ?? [])
   const [colour, setColour] = useState(value?.colour ?? PET_COLOUR)
+  // The pet's own glyph (0148), lent to the tasks filed under it. null = the kind's paw.
+  const [icon, setIcon] = useState<string | null>(value?.icon ?? null)
   const [photoKey, setPhotoKey] = useState<string | null>(value?.photoKey ?? null)
   const [uploading, setUploading] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -176,6 +181,7 @@ export function PetForm({ value, onSaved, onCancel }: { value?: Pet | null; onSa
       vetBusinessId,
       weights,
       colour,
+      icon,
       photoKey,
       notes: notes.trim() || null,
     }
@@ -185,7 +191,7 @@ export function PetForm({ value, onSaved, onCancel }: { value?: Pet | null; onSa
       const res = await write<{ id?: string }>('pets', {
         method: value ? 'PATCH' : 'POST',
         body: value ? { id: value.id, ...body } : body,
-        affectedKeys: [CERCLE_KEY],
+        affectedKeys: [CERCLE_KEY, TASKS_KEY],
       })
       // Wire owner links once we know the pet id. A brand-new pet created OFFLINE has
       // no id yet (queued) — owners then wait for the next edit; the rest still saves.
@@ -272,6 +278,20 @@ export function PetForm({ value, onSaved, onCancel }: { value?: Pet | null; onSa
       )}
       <p className="pet-form__owner-hint mono">{p.ownerHint}</p>
 
+      {/* The look: one fold, the control every task and subject form shares (LookPicker). A
+          pet is a SOURCE: its tasks wear this unless they pick their own. Out of « Détails /
+          santé » because it is identity, not health; folded, so the form still opens on the
+          name. */}
+      <LookPicker
+        value={{ icon, colour }}
+        onChange={(v) => {
+          setIcon(v.icon)
+          if (v.colour) setColour(v.colour)
+        }}
+        fallbackIcon={PET_GLYPH}
+        suggest={suggestIcon(species)}
+      />
+
       {/* EVERYTHING secondary — microchip, feeding, sitter notes, the dated weight log,
           the vet, the colour, the notes and the photo — behind one « Détails / santé »
           disclosure, so the identity fields (name/species/breed/birthday/owner) lead and
@@ -347,9 +367,6 @@ export function PetForm({ value, onSaved, onCancel }: { value?: Pet | null; onSa
             </button>
           </p>
         )}
-
-        <label className="field__label">{p.colour}</label>
-        <ColorPicker value={colour} onChange={setColour} label={p.colour} />
 
         <textarea className="input" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder={p.notes} aria-label={p.notes} rows={2} />
 

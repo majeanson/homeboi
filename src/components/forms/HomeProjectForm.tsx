@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useWrite } from '../../lib/write'
 import { useLang, useT } from '../../i18n'
 import { useOperatorT } from '../../i18n.operator'
-import { ColorPicker } from '../ColorPicker'
+import { LookPicker, type LookValue } from '../LookPicker'
 import { Chip } from '../Chip'
 import { EditField } from '../EditField'
 import { RecurPicker, type RecurValue } from '../RecurPicker'
@@ -16,10 +16,9 @@ import { nextSeasonAnchorDate, everySeasonAnchorDate, type Season } from '../../
 import { parseMoney } from '../../lib/money'
 import { HOME_PROJECTS_KEY, MONTH_KEY, BOARD_KEY, CARNETS_KEY } from '../../lib/queryKeys'
 import type { HomeProject } from '../operator/types'
-import { colourFor } from '../../lib/things'
 import { rotationOf } from '../../lib/tasks'
-import { subjectRefOf, type SubjectRef } from '../../lib/subjects'
-import { SubjectPicker } from '../tasks/SubjectPicker'
+import { lookColour, subjectRefOf, suggestIcon, type SubjectRef } from '../../lib/subjects'
+import { SubjectPicker, useInheritedLook } from '../tasks/SubjectPicker'
 import { RotationField } from '../tasks/RotationField'
 import { toFace, type FormMember } from '../FormScene'
 
@@ -54,7 +53,9 @@ export function HomeProjectForm({
   const [title, setTitle] = useState(value?.title ?? '')
   const [notes, setNotes] = useState(value?.notes ?? '')
   const [budget, setBudget] = useState(value?.budget_cents != null ? String(value.budget_cents / 100) : '')
-  const [color, setColor] = useState(colourFor('project', value?.color))
+  // The look (0148): null in either half = « like its subject ». A stored colour that is the
+  // column default was never a pick (lookColour), so the form opens on « like its subject ».
+  const [look, setLook] = useState<LookValue>({ icon: value?.icon ?? null, colour: lookColour(value?.color) })
   // Optional date — the target date (a one-off plan) AND the recurrence anchor.
   // Empty = undated → the item rests in Réglages and never surfaces on the board.
   const [date, setDate] = useState(anchorSecToDate(value?.at))
@@ -69,6 +70,8 @@ export function HomeProjectForm({
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(false)
   const write = useWrite()
+  // A carnet's own section files the row there, so that carnet is what it inherits from.
+  const inherit = useInheritedLook(carnetId !== undefined ? (carnetId ? { kind: 'carnet', id: carnetId } : null) : subject)
 
   async function submit(e?: React.FormEvent) {
     e?.preventDefault()
@@ -83,7 +86,8 @@ export function HomeProjectForm({
       title: title.trim(),
       notes: notes.trim() || null,
       budgetCents: parseMoney(budget),
-      color,
+      color: look.colour,
+      icon: look.icon,
       at: anchor,
       recur,
       recurFrom: recur && fromDone ? 'done' : 'anchor',
@@ -103,7 +107,7 @@ export function HomeProjectForm({
         setTitle('')
         setNotes('')
         setBudget('')
-        setColor('#88A36F')
+        setLook({ icon: null, colour: null })
         setDate('')
         setRecur(null)
         setFromDone(false)
@@ -164,7 +168,6 @@ export function HomeProjectForm({
         placeholder={o18n.home.notesPlaceholder}
         aria-label={o18n.home.notesLabel}
       />
-      <ColorPicker value={color} onChange={setColor} label={o18n.colorLabel} />
       <Field inline className="mono" label={o18n.home.dateLabel}>
         <input className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
       </Field>
@@ -205,6 +208,7 @@ export function HomeProjectForm({
       {(date || recur) && <LeadPicker value={lead} onChange={setLead} />}
       {members.length > 0 && <RotationField faces={members.map(toFace)} value={rotation} onChange={setRotation} recurring={!!recur} />}
       {carnetId === undefined && <SubjectPicker value={subject} onChange={setSubject} exclude={value?.id} />}
+      <LookPicker value={look} onChange={setLook} suggest={suggestIcon(title)} inherit={inherit} />
       {err && <StatusMessage tone="error">{t.common.saveFailed}</StatusMessage>}
       <FormFooter
         saveLabel={value ? t.common.save : addLabel}

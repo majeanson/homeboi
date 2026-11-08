@@ -4,8 +4,10 @@ import { useT } from '../../i18n'
 import { useConfirm } from '../../lib/confirm'
 import { useWrite } from '../../lib/write'
 import { useCars } from '../../lib/carPrefs'
-import { CARNETS_KEY, BOARD_KEY } from '../../lib/queryKeys'
+import { CARNETS_KEY, BOARD_KEY, TASKS_KEY } from '../../lib/queryKeys'
+import { createdId } from '../../lib/undoCreate'
 import { anchorSecToDate, dateToAnchorSec } from '../../lib/recurLabel'
+import { suggestIcon } from '../../lib/subjects'
 import {
   type Carnet,
   type CarnetKind,
@@ -14,12 +16,11 @@ import {
   CARNET_COLOUR,
   KIND_EMOJI,
 } from '../../lib/carnets'
-import { ColorPicker } from '../ColorPicker'
 import { StatusMessage } from '../StatusMessage'
 import { PhotoField } from '../PhotoField'
 import { FormFooter } from '../FormFooter'
 import { Disclosure } from '../Disclosure'
-import { EmojiField } from '../EmojiPicker'
+import { LookPicker } from '../LookPicker'
 
 // Add / edit ONE carnet's identity (a house, a car, a water heater, a room). A child
 // carries `parentId`; the kind seeds its default emoji. POST when new, PATCH when
@@ -29,13 +30,16 @@ export function CarnetForm({
   value,
   parentId,
   defaultKind = 'thing',
+  lookOpen,
   onSaved,
   onCancel,
 }: {
   value?: Carnet | null
   parentId?: string | null
   defaultKind?: CarnetKind
-  onSaved: () => void
+  /** Open the look fold from the start: the « une chose à moi » door, where the look IS the point. */
+  lookOpen?: boolean | undefined
+  onSaved: (id?: string) => void
   onCancel?: () => void
 }) {
   const t = useT()
@@ -84,12 +88,15 @@ export function CarnetForm({
     setBusy(true)
     setErr(false)
     try {
-      await write('carnets', {
+      const res = await write<{ id?: string }>('carnets', {
         method: value ? 'PATCH' : 'POST',
         body: value ? { id: value.id, ...body } : body,
-        affectedKeys: [CARNETS_KEY, BOARD_KEY],
+        // TASKS_KEY: a new carnet is a subject a task can be filed under right away.
+        affectedKeys: [CARNETS_KEY, BOARD_KEY, TASKS_KEY],
       })
-      onSaved()
+      // The new id, when the server gave one (a queued create has none yet): the subject
+      // picker files the task under it at once.
+      onSaved(value?.id ?? createdId(res))
     } catch {
       setErr(true)
     } finally {
@@ -144,13 +151,20 @@ export function CarnetForm({
         </Field>
       )}
 
-      {/* Tap the glyph to open the searchable EmojiPicker on a roomy sheet (EmojiField);
-          empty selection → the kind's default disc glyph (KIND_EMOJI) shown as fallback. */}
-      <Field as="div" inline label={c.emoji}>
-        <EmojiField value={emoji} onSelect={setEmoji} ariaLabel={c.emoji} fallback={KIND_EMOJI[kind]} />
-      </Field>
-
-      <ColorPicker value={colour} onChange={setColour} label={c.colour} />
+      {/* The look, the one control every task and subject form shares (LookPicker, 0148). A
+          carnet is a SOURCE: its tasks inherit this look, so it has no « like » of its own and
+          a cleared icon goes back to the kind's glyph (KIND_EMOJI). The emoji stays where it has
+          always lived, facts.emoji: one place for one fact. */}
+      <LookPicker
+        value={{ icon: emoji.trim() || null, colour }}
+        onChange={(v) => {
+          setEmoji(v.icon ?? '')
+          if (v.colour) setColour(v.colour)
+        }}
+        fallbackIcon={KIND_EMOJI[kind]}
+        suggest={suggestIcon(name)}
+        defaultOpen={lookOpen}
+      />
 
       {/* Secondary spec fields — installed date, lifespan, model, warranty — collapsed
           behind a « Fiche technique » disclosure so the identity (name/kind/emoji/

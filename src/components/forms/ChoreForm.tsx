@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useWrite } from '../../lib/write'
 import { useLang, useT } from '../../i18n'
 import { useOperatorT } from '../../i18n.operator'
-import { ColorPicker } from '../ColorPicker'
+import { LookPicker, type LookValue } from '../LookPicker'
 import { Chip } from '../Chip'
 import { EditField } from '../EditField'
 import { RecurPicker, type RecurValue } from '../RecurPicker'
@@ -15,10 +15,9 @@ import { toFace } from '../FormScene'
 import { anchorSecToDate, dateToAnchorSec, recurOf, todayAnchorDate } from '../../lib/recurLabel'
 import { choreTemplates } from '../../lib/routineTemplates'
 import { MONTH_KEY, CHORES_KEY, BOARD_KEY } from '../../lib/queryKeys'
-import { colourFor } from '../../lib/things'
 import { rotationOf } from '../../lib/tasks'
-import { subjectRefOf, type SubjectRef } from '../../lib/subjects'
-import { SubjectPicker } from '../tasks/SubjectPicker'
+import { lookColour, subjectRefOf, suggestIcon, type SubjectRef } from '../../lib/subjects'
+import { SubjectPicker, useInheritedLook } from '../tasks/SubjectPicker'
 
 // The complete chore (corvée) form — title (with common presets), a round-robin
 // rotation of members, a colour, and an optional schedule. Shared by Settings ▸
@@ -40,6 +39,7 @@ export interface ChoreInit {
   announce_evening?: number | null
   subject_kind?: string | null
   subject_id?: string | null
+  icon?: string | null
 }
 
 
@@ -63,7 +63,9 @@ export function ChoreForm({
   const [title, setTitle] = useState(value?.title ?? '')
   const [rotation, setRotation] = useState<string[]>(rotationOf(value?.rotation_json))
   const [subject, setSubject] = useState<SubjectRef | null>(subjectRefOf(value))
-  const [color, setColor] = useState(colourFor('chore', value?.color))
+  // The look (0148): null in either half = « like its subject ». A stored colour that is the
+  // column default was never a pick (lookColour), so the form opens on « like its subject ».
+  const [look, setLook] = useState<LookValue>({ icon: value?.icon ?? null, colour: lookColour(value?.color) })
   // Optional schedule — "tous les jeudis". null = a standing chore (no schedule).
   const [recur, setRecur] = useState<RecurValue | null>(recurOf(value?.recur_json))
   // The recurrence anchor (which date "every 2 weeks" counts from). Defaults to
@@ -80,6 +82,7 @@ export function ChoreForm({
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState(false)
   const write = useWrite()
+  const inherit = useInheritedLook(subject)
 
   async function submit(e?: React.FormEvent) {
     e?.preventDefault()
@@ -90,7 +93,8 @@ export function ChoreForm({
       title: title.trim(),
       rotation,
       subject,
-      color,
+      color: look.colour,
+      icon: look.icon,
       recur,
       start: recur ? dateToAnchorSec(start) : null,
       leadSeconds: recur ? lead : null, // a standing (no-schedule) chore has no occurrence to remind about
@@ -108,7 +112,7 @@ export function ChoreForm({
         setTitle('')
         setRotation([])
         setSubject(null)
-        setColor('#88A36F')
+        setLook({ icon: null, colour: null })
         setRecur(null)
         setStart(todayAnchorDate())
         setLead(null)
@@ -153,7 +157,7 @@ export function ChoreForm({
       {/* « Qui ? »: one face, or, once it recurs, a rotation behind one checkbox. */}
       <RotationField faces={members.map(toFace)} value={rotation} onChange={setRotation} recurring={!!recur} />
       <SubjectPicker value={subject} onChange={setSubject} />
-      <ColorPicker value={color} onChange={setColor} label={o18n.colorLabel} />
+      <LookPicker value={look} onChange={setLook} suggest={suggestIcon(title)} inherit={inherit} />
       <RecurPicker value={recur} onChange={setRecur} />
       {recur && (
         <>

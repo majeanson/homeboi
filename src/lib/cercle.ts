@@ -88,6 +88,7 @@ export interface Pet {
   breed: string | null
   photoKey: string | null
   colour: string | null
+  icon?: string | null // the look (0148), lent to the tasks filed under this pet
   birthday: string | null // 'YYYY-MM-DD' ('0000-MM-DD' = year unknown)
   microchip: string | null
   feeding: string | null

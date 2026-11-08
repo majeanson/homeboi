@@ -2610,7 +2610,16 @@ export const EN: typeof FR = {
     ledger: 'Who did what this week',
     history: 'What was done',
     subjectEmpty: 'Nothing yet.',
-
+  },
+  look: {
+    label: 'Look',
+    icon: 'Icon',
+    colour: 'Colour',
+    likeSubject: 'Like its subject',
+    byDefault: 'Default',
+    custom: 'my own',
+    suggestNote: (e: string) => `${e} suggested`,
+    take: (e: string) => `Use ${e}`,
   },
   // To tick — standalone check-off lists (todos), distinct from "À faire"
   // (one-off chores). Global or pinned to a day; reusable departure templates.

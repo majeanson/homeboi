@@ -11,7 +11,8 @@ import { isGuest } from '../../lib/device'
 import { formatDayMaybeYear } from '../../lib/format'
 import { todayLocalDay } from '../../lib/localDay'
 import { useProfile } from '../../lib/profile'
-import { lookOf, subjectOf, type SubjectLookup, type SubjectRef } from '../../lib/subjects'
+import { lookColour, lookOf, subjectOf, suggestIcon, type SubjectLookup, type SubjectRef } from '../../lib/subjects'
+import { LookPicker } from '../LookPicker'
 import { isTicked, rotates, type TaskItem } from '../../lib/tasks'
 import { TODO_TITLE_MAX } from '../../lib/todos'
 import { type Member } from '../board/types'
@@ -47,6 +48,7 @@ export function TaskRow({
 
   const subject = subjectOf(item.subject, lookup)
   const look = lookOf(item, subject)
+  const inherited = lookOf({}, subject)
   const who = members.find((m) => m.id === item.who_id)
   const owedSince = item.overdueSince
   const owed = owedSince != null
@@ -89,23 +91,32 @@ export function TaskRow({
 
   if (editing)
     return (
-      <EditField
-        value={text}
-        onChange={setText}
-        onSubmit={(v) => {
-          actions.rename(item, v)
-          setEditing(false)
-        }}
-        onCancel={() => setEditing(false)}
-        onDelete={() => {
-          setEditing(false)
-          actions.remove(item)
-        }}
-        deleteLabel={`${t.common.delete} — ${item.title}`}
-        autoFocus
-        ariaLabel={t.common.edit}
-        limit={TODO_TITLE_MAX}
-      />
+      <div className="task-edit" data-item={item.id}>
+        <EditField
+          value={text}
+          onChange={setText}
+          onSubmit={(v) => {
+            actions.rename(item, v)
+            setEditing(false)
+          }}
+          onCancel={() => setEditing(false)}
+          onDelete={() => {
+            setEditing(false)
+            actions.remove(item)
+          }}
+          deleteLabel={`${t.common.delete} — ${item.title}`}
+          autoFocus
+          ariaLabel={t.common.edit}
+          limit={TODO_TITLE_MAX}
+        />
+        {/* A to-do's one edit door also holds its look: folded, one tap away (LookPicker). */}
+        <LookPicker
+          value={{ icon: item.icon, colour: lookColour(item.color) }}
+          onChange={(v) => actions.setLook(item, v)}
+          suggest={suggestIcon(text)}
+          inherit={{ label: item.subject ? t.look.likeSubject : t.look.byDefault, icon: inherited.emoji, colour: inherited.colour }}
+        />
+      </div>
     )
 
   return (

@@ -772,6 +772,38 @@
     var(--shadow-sm);
   opacity: 0.75;
 }
+/* « Comme le sujet » (LookPicker, 0148): a labelled pill before the dots, painted with the
+   colour it stands for, because an empty circle says nothing about what it means. */
+.colorpick__none {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 2px 10px 2px 4px;
+  border-radius: 999px;
+  border: 1.5px dashed var(--ink-soft);
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.colorpick__none.is-sel {
+  border-style: solid;
+  outline: 2.5px solid var(--ink);
+}
+.colorpick__none-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--sage);
+  flex: none;
+}
+.look-picker .disclosure__body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
 
 /* ---- Full-bleed hub pages -------------------------------------------------- */
 /* `.today-feed` is the shared hub-page column (today.css), deliberately capped to a
