@@ -108,6 +108,11 @@ describe('account', () => {
     // Its own caller address, so what this case measures is LIMIT_KEY (per email) alone —
     // on the shared harness address, every earlier login in the file eats LIMIT_IP first.
     const ip = { 'CF-Connecting-IP': '10.2.0.9' }
+    // Miniflare aligns rate-limit windows to the wall clock: nine requests that straddle a
+    // minute boundary land in two windows and the seventh is never refused (CI red at
+    // 13:48:00.15 on 2026-11-08). Start clear of the boundary.
+    const into = Date.now() % 60_000
+    if (into > 50_000) await new Promise((r) => setTimeout(r, 60_000 - into + 250))
     const statuses: number[] = []
     for (let i = 0; i < 8; i++) {
       statuses.push((await anon('/api/auth/login', { method: 'POST', body: { email: a.email, password: `guess ${i} guess` }, headers: ip })).status)
