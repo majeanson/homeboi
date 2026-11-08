@@ -25,6 +25,10 @@ export default defineConfig(async () => {
         // is the local simulation or absent.
         remoteBindings: false,
         miniflare: {
+          // A second, empty database for the task-merge drill (worker/taskMerge.d1.test.ts):
+          // it is migrated only up to the migration before the merge, seeded in the OLD shape,
+          // then handed the merge migration itself. The Worker never sees it.
+          d1Databases: ['DRILL_DB'],
           bindings: {
             // Applied by functions/test/apply-migrations.ts before the tests run.
             TEST_MIGRATIONS: migrations,

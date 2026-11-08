@@ -108,3 +108,32 @@ describe('upgradeTakeout (a pre-0142 copy)', () => {
     expect(upgradeTakeout(t)).toBe(t)
   })
 })
+
+describe('upgradeTakeout (a pre-0150 copy: chores in `tasks`, loose to-dos in `todos`)', () => {
+  const chore = { id: 'choreAAAAAAA', household_id: 'hhAAAAAAAAAA', title: 'Bac', rotation_json: '["m1"]', current_idx: 0, last_done_at: 5, last_done_by: 'm1', created_at: 3, colour: '#88A36F', recur_json: '{"freq":"weekly"}', recur_start: 7, lead_seconds: null, is_sample: 0, announce_evening: 1, subject_kind: null, subject_id: null, cleared_at: null, icon: null, effort: 2 }
+  const loose = { id: 'todoAAAAAAAA', household_id: 'hhAAAAAAAAAA', title: 'Appeler', day: 9, member_id: 'm2', position: 4, done_at: null, created_at: 3, updated_at: 6, section: null, is_sample: 0, source_template_id: null, subject_kind: null, subject_id: null, icon: null, colour: null, effort: null }
+  const departure = { ...loose, id: 'depAAAAAAAAA', section: 'Partir', source_template_id: 'tplAAAAAAAAA' }
+  const up = upgradeTakeout({ ...base, tables: { tasks: [chore], todos: [loose, departure], home_projects: [{ id: 'homeAAAAAAAA', kind: 'plan' }] } })
+
+  it('moves the chores and the loose to-dos onto the spine, ids kept; the departure rows stay', () => {
+    expect(up.tables.tasks).toBeUndefined()
+    expect(up.tables.todos).toEqual([departure])
+    expect(up.tables.home_projects!.map((r) => [r.id, r.kind])).toEqual([
+      ['homeAAAAAAAA', 'plan'],
+      ['choreAAAAAAA', 'chore'],
+      ['todoAAAAAAAA', 'todo'],
+    ])
+  })
+  it('maps each column the way 0150 does: a chore’s start to `at`, a to-do’s day and tick to `at` and `last_done_at`', () => {
+    const [, c, t] = up.tables.home_projects!
+    expect(c).toMatchObject({ at: 7, recur_json: '{"freq":"weekly"}', rotation_json: '["m1"]', last_done_by: 'm1', announce_evening: 1, effort: 2, updated_at: 3, colour: '#88A36F' })
+    expect(t).toMatchObject({ at: 9, last_done_at: null, member_id: 'm2', position: 4, colour: null, updated_at: 6 })
+    // No `undefined` reaches a bind: D1 refuses one.
+    for (const r of up.tables.home_projects!.slice(1)) for (const v of Object.values(r)) expect(v).not.toBeUndefined()
+  })
+  it('is idempotent, and leaves a post-merge copy alone', () => {
+    expect(upgradeTakeout(up)).toEqual(up)
+    const post = { ...base, tables: { todos: [departure], home_projects: [{ id: 'x', kind: 'chore' }] } }
+    expect(upgradeTakeout(post)).toBe(post)
+  })
+})

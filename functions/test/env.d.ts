@@ -7,6 +7,8 @@ declare global {
   namespace Cloudflare {
     interface Env extends Omit<import('../_lib/env').Env, never> {
       TEST_MIGRATIONS: import('cloudflare:test').D1Migration[]
+      /** The task-merge drill's own database (vitest.d1.config.ts): never the Worker's. */
+      DRILL_DB: D1Database
       ASSETS: Fetcher
       REALTIME_HUB?: DurableObjectNamespace
     }
