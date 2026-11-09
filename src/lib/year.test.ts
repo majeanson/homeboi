@@ -100,7 +100,7 @@ describe('day + range lookups', () => {
       {
         birthdays: [{ id: 'b1', name: 'Léa', day: sec(2026, 9, 4), age: 4, memberId: 'm3' }],
         events: [{ id: 'e1', title: 'Anniversaire de mariage', day: sec(2026, 8, 15) }],
-        upkeep: [{ id: 'u1', kind: 'upkeep', title: 'Pneus d’hiver', color: null, day: sec(2026, 10, 15) }],
+        tasks: [{ id: 'u1', kind: 'upkeep', title: 'Pneus d’hiver', color: null, day: sec(2026, 10, 15), done: false }],
         life: [{ carnetId: 'c1', name: 'Chauffe-eau', color: null, day: sec(2027, 3, 2) }],
       },
       { lang: 'fr', holidays: true, from, to },
@@ -113,7 +113,7 @@ describe('day + range lookups', () => {
     expect(pts.filter((p) => p.kind === 'birthday')).toHaveLength(1)
     expect(pts.find((p) => p.kind === 'life')?.label).toBe('Chauffe-eau')
     // Holidays off → only the household's own points remain.
-    const noFetes = yearPoints({ birthdays: [], events: [], upkeep: [], life: [] }, { lang: 'fr', holidays: false, from, to })
+    const noFetes = yearPoints({ birthdays: [], events: [], tasks: [], life: [] }, { lang: 'fr', holidays: false, from, to })
     expect(noFetes).toEqual([])
   })
 

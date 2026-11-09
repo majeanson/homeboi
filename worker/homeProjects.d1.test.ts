@@ -134,8 +134,8 @@ describe('l’entretien', () => {
     const s = await household('upkeep-month', undefined, { empty: true })
     await add(s, { title: 'Filtre', kind: 'upkeep', at: day(3), recur: { freq: 'monthly' } })
     await add(s, { title: 'Un jour' })
-    const month = await okJson<{ homeProjects: { title: string }[] }>(s.fetch(`/api/month?from=${today()}&to=${day(10)}`))
-    expect(month.homeProjects.map((p) => p.title)).toEqual(['Filtre'])
+    const month = await okJson<{ tasks: { title: string }[] }>(s.fetch(`/api/month?from=${today()}&to=${day(10)}`))
+    expect(month.tasks.map((p) => p.title)).toEqual(['Filtre'])
   })
 
   it('stays out of the database once deleted, whatever linked to it', async () => {

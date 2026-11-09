@@ -29,10 +29,9 @@ function fieldsLinesForReads(): string[] {
   const data = {
     events: one({ id: 'e', title: 'E', at: day, all_day: 1, member_id: null, day }),
     meals: one({ id: 'm', slot: 'supper', title: 'M', cook_member_id: null, day }),
-    chores: one({ id: 'c', title: 'C', color: null, who: null, day }),
+    tasks: one({ id: 'c', taskId: 'c', source: 'chore', title: 'C', color: null, icon: null, kind: null, who_id: null, day, done: false, recurring: false, soon: false }),
     dayNotes: one({ id: 'n', text: 'N', member_id: null, day }),
-    todos: one({ id: 't', title: 'T', member_id: null, day, section: null }),
-    homeProjects: one({ id: 'h', kind: 'upkeep', title: 'H', color: null, day }),
+    todos: one({ id: 't', title: 'T', member_id: null, day, section: 'Avant de partir' }),
     habits: one({ id: 'hb', habit_id: 'hb', title: 'HB', icon: '', colour: null, kind: 'do', member_id: null, day, done: true }),
     transfers: one({ id: 'tr', planId: 'p', title: 'TR', colour: null, day }),
   } as unknown as MonthData
@@ -49,9 +48,9 @@ describe('the day panel and the day markers read the same bucket', () => {
   it('linesFor emits a line for every kind the bucket can hold', () => {
     const day = 1_760_000_000
     const fields = fieldsLinesForReads()
-    // Eight kinds seeded, eight lists filled — if a future payload key stops bucketing,
-    // this is where it shows.
-    expect(fields.sort()).toEqual(['chores', 'events', 'habits', 'home', 'meals', 'notes', 'todos', 'transfers'])
+    // Seven kinds seeded, seven lists filled — if a future payload key stops bucketing,
+    // this is where it shows. (Every task is one list since 2026-11-08: `tasks`.)
+    expect(fields.sort()).toEqual(['events', 'habits', 'meals', 'notes', 'tasks', 'todos', 'transfers'])
     expect(day).toBeGreaterThan(0)
   })
 
@@ -80,7 +79,6 @@ describe('the day panel and the day markers read the same bucket', () => {
       // todos by pending, habits by done) and counts the filtered local instead.
       const aliases = [`sel.${f}.length`, `sel${f[0]!.toUpperCase()}${f.slice(1)}.length`]
       if (f === 'habits') aliases.push('selHabitsDone.length')
-      if (f === 'home') aliases.push('sel.home.length')
       return !aliases.some((a) => expr!.includes(a))
     })
     expect(

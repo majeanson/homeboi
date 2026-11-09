@@ -5,6 +5,7 @@ import { isMealSlot, type MealSlot } from '../../lib/mealSlots'
 import { type MealPrefs } from '../../lib/mealPrefs'
 import { type Lang } from '../../i18n'
 import { colorOf, type Dict, type Member } from './types'
+import type { TaskCell } from '../../lib/tasks'
 
 // EVERY DATED THING ON A DAY, in one shape — lifted out of MonthView on 2026-09-15
 // so « La semaine » could be the fourth face of it rather than a fourth opinion.
@@ -26,11 +27,9 @@ const DAY = 86400
 
 export interface MEvent { id: string; title: string; at: number; all_day: number; member_id: string | null; passengers?: string | null; contact_name?: string | null; contact_address?: string | null; business_name?: string | null; business_id?: string | null; business_colour?: string | null; business_address?: string | null; end_at?: number | null; car_id?: string | null; day: number; birthday?: boolean; age?: number | null; work?: boolean; end?: number; color?: string | null; holds_car?: number }
 export interface MMeal { id: string; slot: string; title: string; cook_member_id: string | null; day: number; position?: number; recipe_id?: string | null }
-export interface MChore { id: string; title: string; color: string | null; who: string | null; day: number }
 export interface MNote { id: string; text: string; member_id: string | null; day: number }
+/** An open departure checklist instance (« Avant de partir »): not a task, its own marker. */
 export interface MTodo { id: string; title: string; member_id: string | null; day: number; section: string | null }
-/** "Projets & Entretien" (home_projects) dated occurrence — chore-like on the calendar. */
-export interface MHome { id: string; kind: string; title: string; color: string | null; day: number }
 /** « Voyage » — a multi-day trip; drawn as a BAND across its days, not a per-day dot.
  *  `shared` = a « Voyage partagé » the household joined: same band, different tap. */
 export interface MTrip { id: string; title: string; colour: string; start_at: number; end_at: number; shared?: boolean }
@@ -46,10 +45,11 @@ export interface MTransfer { id: string; planId: string; title: string; colour: 
 export interface MonthData {
   events: MEvent[]
   meals: MMeal[]
-  chores: MChore[]
+  /** Every dated task, every occurrence (lib/tasks TaskCell). Absent on a frame cached
+   *  before 2026-11-08, hence optional. */
+  tasks?: TaskCell[]
   dayNotes: MNote[]
   todos: MTodo[]
-  homeProjects?: MHome[]
   trips?: MTrip[]
   tripPlans?: MTripPlan[]
   habits?: MHabit[]
@@ -59,10 +59,9 @@ export interface MonthData {
 export interface DayBucket {
   events: MEvent[]
   meals: MMeal[]
-  chores: MChore[]
+  tasks: TaskCell[]
   notes: MNote[]
   todos: MTodo[]
-  home: MHome[]
   habits: MHabit[]
   transfers: MTransfer[]
 }
@@ -80,7 +79,7 @@ export interface Dot {
   color: string
   kind: DotKind
   slot?: MealSlot | undefined // meals → which slot icon to draw
-  done?: boolean // habits: the day's intention was met (a filled ring, else hollow)
+  done?: boolean // habits: the day's intention was met (a filled ring, else hollow); a task: a ticked one-off (hollow, struck)
 }
 /** The same marker, plus what it SAYS once there is room for words. `time` is the
  *  clock face for a timed event and nothing for anything all-day. */
@@ -102,16 +101,15 @@ export function bucketByDay(data: MonthData | undefined, face: string | null): M
   const at = (d: number) => {
     let b = m.get(d)
     if (!b) {
-      b = { events: [], meals: [], chores: [], notes: [], todos: [], home: [], habits: [], transfers: [] }
+      b = { events: [], meals: [], tasks: [], notes: [], todos: [], habits: [], transfers: [] }
       m.set(d, b)
     }
     return b
   }
   for (const e of data?.events ?? []) at(e.day).events.push(e)
   for (const x of data?.meals ?? []) at(x.day).meals.push(x)
-  for (const c of data?.chores ?? []) at(c.day).chores.push(c)
+  for (const c of data?.tasks ?? []) at(c.day).tasks.push(c)
   for (const td of data?.todos ?? []) at(td.day).todos.push(td)
-  for (const h of data?.homeProjects ?? []) at(h.day).home.push(h)
   for (const h of data?.habits ?? []) if (h.member_id === null || h.member_id === face) at(h.day).habits.push(h)
   for (const tr of data?.transfers ?? []) at(tr.day).transfers.push(tr)
   for (const n of data?.dayNotes ?? []) at(n.day).notes.push(n)
@@ -139,7 +137,7 @@ export function tripSpansByDay(trips: MTrip[] | undefined, from: number, to: num
 
 /**
  * EVERY dated thing on a day, in the order every surface lists them: events first
- * (by member colour), then meals, chores, home projects, todos, habits, transfers,
+ * (by member colour), then meals, tasks, departure checklists, habits, transfers,
  * notes.
  *
  * THE one walk. A compact density simply ignores `time`/`label` and draws the shape;
@@ -182,11 +180,12 @@ export function linesFor(
         slot: isMealSlot(m.slot) ? m.slot : undefined,
         label: m.title,
       })
-  for (const c of b.chores) out.push({ color: c.color ?? CATS.chore.color, kind: 'chore', label: c.title })
-  // Projets & Entretien read as chore-shaped dots; the row's own colour sets them apart.
-  for (const h of b.home) out.push({ color: h.color ?? CATS.chore.color, kind: 'chore', label: h.title })
-  // À compléter todos → a check icon tinted with the member colour, so they read
-  // apart from the filled chore/event dots.
+  // Every task, one marker: the task's colour, else whose turn it is, else the tasks' own. A
+  // ticked one-off keeps its cell, hollow and struck (`done`).
+  for (const c of b.tasks)
+    out.push({ color: c.color ?? colorOf(members, c.who_id) ?? CATS.chore.color, kind: 'chore', label: c.title, ...(c.done ? { done: true } : {}) })
+  // A departure checklist → a check icon tinted with the member colour, so it reads apart
+  // from the task diamonds.
   for (const td of b.todos)
     out.push({ color: colorOf(members, td.member_id) ?? CATS.chore.color, kind: 'todo', label: td.title })
   // « Mes habitudes » — a ring, hollow until the day's intention was met. Its own

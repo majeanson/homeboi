@@ -2,7 +2,7 @@ import { okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { localDayStart } from '../_lib/ids'
 import { parseRecur, expandRange } from '../_lib/recur'
-import { monthTaskCells, monthTaskReads } from '../_lib/taskViews'
+import { cellsOf, datedTaskRows, departureRows } from '../_lib/taskViews'
 import { planOccurrences, type PlanRow as TransferPlanRow } from '../_lib/transfers'
 import { fetchBirthdayPeople, birthdayOccurrences } from '../_lib/birthdays'
 import { workOccurrencesInRange, parseScheduleBlockRow, type ScheduleBlock, type ScheduleBlockRow } from '../_lib/carResolve'
@@ -11,7 +11,7 @@ import { householdMealLayout, mealOrderSql } from '../_lib/mealSlots'
 // Everything dated in the household, for a calendar-month window. /api/board is
 // the 7-day glance; the month view zooms out, so it needs its own read across an
 // arbitrary [from, to) day range. Same item families the board surfaces — events
-// (one-off + recurring), meals, recurring chores, day-notes — expanded and
+// (one-off + recurring), meals, every dated task, day-notes — expanded and
 // bucketed onto a LOCAL day key the client groups by (matching lib/monthgrid +
 // the meal week — local midnight, DST-aware, so an evening event lands on the day
 // the household is living, not the next UTC day). Fridge notes are deliberately
@@ -30,7 +30,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // Bad/missing window → empty calendar rather than a 400; the view just shows
   // empty cells, mirroring how the board tolerates a thin frame.
   if (!Number.isFinite(from) || !Number.isFinite(to) || from <= 0 || to <= from) {
-    return okWire('month', { events: [], meals: [], chores: [], dayNotes: [], todos: [], homeProjects: [], trips: [], tripPlans: [], habits: [] })
+    return okWire('month', { events: [], meals: [], tasks: [], dayNotes: [], todos: [], trips: [], tripPlans: [], habits: [] })
   }
   to = Math.min(to, from + MAX_DAYS * DAY)
 
@@ -38,10 +38,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // meals query can sort by it, exactly like /api/meals and the board.
   const MEAL_ORDER = mealOrderSql((await householdMealLayout(ctx.env, hh)).order)
 
-  const [members, oneOff, recurring, mealsRes, dayNotesRes, taskReads, birthdayPeople, scheduleRes, carDayRes, tripsRes, tripPlansRes, sharedTripsRes, sharedPlansRes, habitsRes, habitDaysRes] = await Promise.all([
-    ctx.env.DB.prepare('SELECT id, display_name FROM members WHERE household_id = ?')
-      .bind(hh)
-      .all<{ id: string; display_name: string }>(),
+  const [oneOff, recurring, mealsRes, dayNotesRes, taskRows, departures, birthdayPeople, scheduleRes, carDayRes, tripsRes, tripPlansRes, sharedTripsRes, sharedPlansRes, habitsRes, habitDaysRes] = await Promise.all([
     // The « Avec » joins (name/colour like before, plus the ADDRESS — a business's
     // plain string, a contact's JSON — so a rendez-vous peek can offer « Itinéraire »
     // straight to Google Maps; same subselect pattern as contact_name).
@@ -68,7 +65,9 @@ export const onRequestGet = authed(async (ctx, actor) => {
     )
       .bind(hh, from - DAY, to + DAY)
       .all<{ id: string; text: string; member_id: string | null; date: number }>(),
-    monthTaskReads(ctx.env.DB, hh, from, to),
+    // Every dated task, and the departure checklists (not tasks: the « À cocher » marker).
+    datedTaskRows(ctx.env.DB, hh),
+    departureRows(ctx.env.DB, hh, from, to),
     // Automatic birthdays — derived from members + contacts, never stored as events.
     fetchBirthdayPeople(ctx.env.DB, hh),
     // « L'auto » work-schedule blocks (#28) — derived onto each matching day across
@@ -252,9 +251,10 @@ export const onRequestGet = authed(async (ctx, actor) => {
     if (inRange(day)) dayNotes.push({ id: n.id, text: n.text, member_id: n.member_id, day })
   }
 
-  // Every task cell (chores, home rows, dated to-dos), from one row shape (_lib/taskViews).
-  const nameOf = (id: string | null) => (id && members.results.find((m) => m.id === id)?.display_name) || null
-  const { chores, homeProjects, todos } = monthTaskCells(taskReads, from, to, { dayOf, inRange, nameOf })
+  // Every dated task, every occurrence, one rule (_lib/taskViews `cellsOf`): a one-off
+  // keeps its cell once done, struck. Departure checklists keep their own marker.
+  const tasks = cellsOf(taskRows, from, to, dayOf)
+  const todos = departures.filter((d) => inRange(d.day))
 
   // Trips ride through as-is (the client clamps the band to the visible window).
   // `shared?: true` re-targets the client's tap to /voyage/partage/:id (« Voyage
@@ -358,5 +358,5 @@ export const onRequestGet = authed(async (ctx, actor) => {
     }
   }
 
-  return okWire('month', { events, meals, chores, dayNotes, todos, homeProjects, trips, tripPlans, habits, transfers })
+  return okWire('month', { events, meals, tasks, dayNotes, todos, trips, tripPlans, habits, transfers })
 })

@@ -30,8 +30,30 @@ export interface TaskItem {
   doneAt: number | null
   who_id: string | null
   team: string[]
+  /** « Annoncer la veille »: the board names it the evening before its day. Absent on a
+   *  frame cached before 2026-11-08, which reads as off. */
+  announceEvening?: boolean
   /** Due, owed or ticked today: what the bento board shows. */
   onBoard: boolean
+}
+
+/** One occurrence of a task on a calendar day (/api/month `tasks`, _lib/taskViews `cellsOf`).
+ *  `id` names the occurrence, `taskId` the task. `done`: a ticked one-off keeps its cell,
+ *  struck through. Every dated task, every occurrence: the calendar's one rule. */
+export interface TaskCell {
+  id: string
+  taskId: string
+  source: TaskItem['source']
+  title: string
+  color: string | null
+  icon: string | null
+  kind: TaskItem['kind']
+  who_id: string | null
+  day: number
+  done: boolean
+  recurring: boolean
+  /** Inside its calm « Bientôt » lead window right now. */
+  soon: boolean
 }
 
 

@@ -2,6 +2,7 @@ import type { Env } from './env'
 import { newId } from './ids'
 import { CHILD_TABLES, HOUSEHOLD_TABLES, SELF_REFS, collectMediaKeys, scopeColumn } from './demoHousehold'
 import { deleteR2Blob } from './r2'
+import { parseRecur } from './recur'
 import { nowSec } from './ids'
 import { TAKEOUT_EXCLUDE, type Takeout } from './takeout'
 
@@ -192,7 +193,22 @@ export function upgradeTakeout(t: Takeout): Takeout {
 // points at its chore. A row the dump already holds on the spine is never duplicated. Pure;
 // unit-tested, and worker/taskMerge.d1.test.ts restores a real pre-merge copy end to end.
 const v = (x: unknown): unknown => (x === undefined ? null : x)
+//
+// 0152 is brought forward too: a recurring chore with no start gets its `created_at` as `at`
+// (what every reader read the NULL as before), whether it comes from `tasks` (a pre-0150 copy)
+// or already sits on the spine (a copy taken between 0150 and 0152). Same test as the
+// migration: `parseRecur` accepts the recurrence.
+const recurs = (r: Record<string, unknown>): boolean => parseRecur(typeof r.recur_json === 'string' ? r.recur_json : null) != null
+const startOf = (r: Record<string, unknown>, at: unknown): unknown => (at == null && recurs(r) ? r.created_at : v(at))
 export function upgradeTasks(t: Takeout): Takeout {
+  return upgradeChoreStarts(mergeTasks(t))
+}
+function upgradeChoreStarts(t: Takeout): Takeout {
+  const spine = t.tables.home_projects
+  if (!spine || !spine.some((r) => r.kind === 'chore' && r.at == null && recurs(r))) return t
+  return { ...t, tables: { ...t.tables, home_projects: spine.map((r) => (r.kind === 'chore' ? { ...r, at: startOf(r, r.at) } : r)) } }
+}
+function mergeTasks(t: Takeout): Takeout {
   const chores = t.tables.tasks
   const todos = t.tables.todos ?? []
   const loose = todos.filter((r) => r.source_template_id == null && r.section == null)
@@ -208,7 +224,7 @@ export function upgradeTasks(t: Takeout): Takeout {
       kind: 'chore',
       title: r.title,
       colour: v(r.colour ?? r.color ?? '#88a36f'),
-      at: v(r.recur_start),
+      at: startOf(r, r.recur_start),
       recur_json: v(r.recur_json),
       recur_from: 'anchor',
       lead_seconds: v(r.lead_seconds),

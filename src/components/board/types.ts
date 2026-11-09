@@ -46,19 +46,7 @@ interface ListRow {
   text: string
   source: string
 }
-interface Helper {
-  name: string | null
-  role: string
-}
-interface ChoreRow {
-  id: string
-  title: string
-  rotation_json: string
-  current_idx: number
-  last_done_at: number | null
-  color?: string
-  helpers?: Helper[]
-}
+
 export interface MealRow {
   id: string
   title: string
@@ -162,25 +150,13 @@ export interface BoardData {
   tomorrowMeals: DayMealRow[]
   tomorrowNote: DayNote | null
   list: ListRow[]
-  chores: ChoreRow[]
-  choresToday: ChoreInstance[]
-  choresUpcoming: ChoreInstance[]
-  // One-off to-dos: non-recurring, not-yet-done tasks (captured "corvées" or
-  // standing chores with no schedule). Surfaced on Aujourd'hui; checking one
-  // marks it done so it drops off. Shares the ChoreInstance shape.
-  todos: ChoreInstance[]
-  // The chores + home rows as tasks (the merged card). To-dos ride /api/todos `items`.
+    // Every task due, owed or ticked today: the « Tâches » card (lib/tasks). One list for every
+  // task, whatever table it came from; the per-face fields it replaced (choresToday,
+  // homeOverdue, todos…) left the payload with the « align every view » step (2026-11-08).
   tasks?: TaskItem[] | undefined
-  // "Projets & Entretien" (home_projects) — DATED home work surfaced like chores:
-  // an occurrence today is checkable on Aujourd'hui (homeToday), the next one this
-  // week shows on À venir (homeUpcoming). Undated plans stay quiet (Réglages only).
-  // Shares the ChoreInstance shape; no rotation (who/who_id null).
-  homeToday?: ChoreInstance[]
-  homeUpcoming?: ChoreInstance[]
-  // Missed entretien due dates (recurring cycles or dated one-offs) carried
-  // forward until checked — derived server-side (_lib/upkeep), rendered on
-  // « À faire ». `at` = the missed date; overdueSince repeats it explicitly.
-  homeOverdue?: (ChoreInstance & { overdueSince: number })[]
+  // « À venir »: every open task whose next date falls in the six days after today.
+  // Absent on a frame cached before that step, hence optional.
+  tasksAhead?: TaskItem[] | undefined
   notes: NoteRow[]
   // Undated leftovers to finish — the "Restants à finir" reminder card.
   leftovers: LeftoverRow[]

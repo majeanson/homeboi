@@ -89,11 +89,12 @@ describe('l’année', () => {
     await okJson(s.fetch('/api/home-projects', { method: 'POST', body: { title: 'Ramonage', kind: 'upkeep', at: day(60) } }))
     await okJson(s.fetch('/api/trips', { method: 'POST', body: { title: 'Gaspésie', startAt: day(80), endAt: day(85) } }))
 
-    const y = await okJson<{ events: { title: string }[]; upkeep: { title: string }[]; trips: { title: string }[] }>(s.fetch(`/api/year?from=${today()}&to=${day(365)}`))
+    const y = await okJson<{ events: { title: string }[]; tasks: { title: string }[]; trips: { title: string }[] }>(s.fetch(`/api/year?from=${today()}&to=${day(365)}`))
     expect(y.events.map((e) => e.title), 'a practice would repaint every cell').toEqual(['Anniversaire de mariage'])
-    expect(y.upkeep.map((u) => u.title)).toEqual(['Ramonage'])
+    // Every dated task is on the year (2026-11-08): here, the one entretien.
+    expect(y.tasks.map((u) => u.title)).toEqual(['Ramonage'])
     expect(y.trips.map((t) => t.title)).toEqual(['Gaspésie'])
-    expect(await okJson(s.fetch('/api/year')), 'a missing window is an empty horizon').toEqual({ birthdays: [], events: [], upkeep: [], life: [], trips: [] })
+    expect(await okJson(s.fetch('/api/year')), 'a missing window is an empty horizon').toEqual({ birthdays: [], events: [], tasks: [], life: [], trips: [] })
   })
 })
 

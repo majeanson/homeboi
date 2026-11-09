@@ -3,7 +3,8 @@ import { useWrite, wrote } from '../../lib/write'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
 import { useRecordUndo } from '../../lib/toast'
 
-import { BOARD_KEY, CHORES_KEY, HOME_PROJECTS_KEY, MONTH_KEY, CARNETS_KEY } from '../../lib/queryKeys'
+import { BOARD_KEY, MONTH_KEY } from '../../lib/queryKeys'
+import { removeBody, taskEndpoint, taskKeys, taskScene, type TaskRef } from '../../lib/taskSave'
 import { useQueryClient } from '@tanstack/react-query'
 import { MEALS_KEY, MEAL_HISTORY_KEY, type MealRow } from '../kitchen/types'
 import { restoreMeals } from '../kitchen/mealMutations'
@@ -18,49 +19,35 @@ import { restoreMeals } from '../kitchen/mealMutations'
 // same rows on the board had all three. One hook, three surfaces (board · Mois · the
 // day page), so a row can never behave differently depending on which face named it.
 //
-// Tiers, unchanged from the board (ACTIONS.md): corvée / entretien → DEFERRED behind the
-// undo toast through useDeferredRemoval, scoped to the resource key so the row hides on
-// every surface at once and a poll cannot resurrect it mid-undo; a planned meal →
+// Tiers, unchanged from the board (ACTIONS.md): a task → DEFERRED behind the undo toast
+// through useDeferredRemoval, scoped to the calendar's key so every occurrence of it hides
+// at once and a poll cannot resurrect it mid-undo; a planned meal →
 // compensating undo (the DELETE lands, « Annuler » re-plans it). A rendez-vous keeps
 // its own door in EventPeekActions (confirm — a series delete is the heavy tier).
 
-export interface Removable {
-  id: string
-  title: string
-}
+// A task named on a calendar day: its row (`taskId`), whichever occurrence was tapped.
+type CalendarTask = Pick<TaskRef, 'source' | 'title'> & { taskId: string }
 
 export function useChoreRemovals() {
   const t = useT()
   const write = useWrite()
-  // Two scopes, deliberately: a corvée and a projet/entretien are different resources
-  // (CHORES_KEY vs HOME_PROJECTS_KEY), and the scope is what decides which surfaces
-  // hide the row together while the undo is open.
-  const chores = useDeferredRemoval(CHORES_KEY)
-  const home = useDeferredRemoval(HOME_PROJECTS_KEY)
+  // ONE scope for every task (2026-11-08): a calendar cell is a task whatever its face, and
+  // the save adapter (lib/taskSave) spells each face's DELETE.
+  const tasks = useDeferredRemoval(MONTH_KEY)
+  const ref = (c: CalendarTask): TaskRef => ({ source: c.source, id: c.taskId, title: c.title })
   return {
-    visibleChores: chores.visible,
-    visibleHome: home.visible,
-    isPendingChore: chores.isPending,
-    isPendingHome: home.isPending,
-    removeChore: (c: Removable) =>
-      chores.remove([c.id], t.undo.cleared(c.title), () =>
-        write('chores', {
+    /** The cells whose task is not being removed right now: every occurrence hides at once. */
+    visibleTasks: <T extends { taskId: string }>(rows: readonly T[]): T[] => rows.filter((r) => !tasks.isPending(r.taskId)),
+    removeTask: (c: CalendarTask) =>
+      tasks.remove([c.taskId], t.undo.cleared(c.title), () =>
+        write(taskEndpoint(c), {
           method: 'DELETE',
-          body: { id: c.id },
-          affectedKeys: [BOARD_KEY, CHORES_KEY, MONTH_KEY],
+          body: removeBody(ref(c)),
+          affectedKeys: [BOARD_KEY, MONTH_KEY, ...taskKeys(c)],
         }),
       ),
-    removeHome: (c: Removable) =>
-      home.remove([c.id], t.undo.cleared(c.title), () =>
-        write('home-projects', {
-          method: 'DELETE',
-          body: { id: c.id },
-          affectedKeys: [BOARD_KEY, HOME_PROJECTS_KEY, MONTH_KEY, CARNETS_KEY],
-        }),
-      ),
-    // A task's edit scene. Reachable from a calendar occurrence too, whose id is `base#at`.
-    choreEditHref: (id: string) => `/chore/${id.split('#')[0]}`,
-    homeEditHref: (id: string) => `/home-project/${id.split('#')[0]}`,
+    /** The one task form, in its scene: reachable from any occurrence. */
+    taskEditHref: (c: CalendarTask) => taskScene(ref(c)),
   }
 }
 

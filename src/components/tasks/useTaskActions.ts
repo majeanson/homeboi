@@ -127,8 +127,8 @@ export function useTaskActions(scope: QueryKey = BOARD_KEY) {
   }
 
   // One title field: the whole of adding a task. `day` null = un jour. The row appears at once
-  // through the todos cache, and a follow-up tick on the tmp row is rewritten when the
-  // create replays (E-41).
+  // on the board (its one `tasks` list, when it is due today) and in the Tâches view, and a
+  // follow-up tick on the tmp row is rewritten when the create replays (E-41).
   async function add(text: string, day: number | null, subject?: SubjectRef | null) {
     const value = text.trim()
     if (!value) return
@@ -156,6 +156,7 @@ export function useTaskActions(scope: QueryKey = BOARD_KEY) {
       doneAt: null,
       who_id: null,
       team: [],
+      announceEvening: false,
       onBoard: day === today,
     }
     // Through the save adapter like every create: a title and a day are a to-do (taskTarget).
@@ -166,6 +167,7 @@ export function useTaskActions(scope: QueryKey = BOARD_KEY) {
       affectedKeys: w.affectedKeys,
       optimistic: (client) => {
         client.setQueryData<TodosData>(TODOS_KEY, (d) => ({ todos: [...(d?.todos ?? []), tmpRow], items: [...(d?.items ?? []), item] }))
+        if (item.onBoard) client.setQueriesData<BoardFrame>({ queryKey: BOARD_KEY }, (d) => (d?.tasks ? { ...d, tasks: [...d.tasks, item] } : d))
         client.setQueriesData<TasksFrame>({ queryKey: TASKS_KEY }, (d) => (d ? { ...d, tasks: [...d.tasks, item] } : d))
       },
       tmpId,

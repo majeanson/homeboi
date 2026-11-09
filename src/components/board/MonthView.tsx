@@ -104,7 +104,7 @@ function lensCount(b: DayBucket | undefined, k: LensKey, meals: MealPrefs, pendi
     case 'meal':
       return b.meals.filter((m) => meals.isVisible(m.slot)).length
     case 'chore':
-      return b.chores.length + b.home.length
+      return b.tasks.length
     case 'todo':
       return b.todos.filter((td) => !pendingTodo.has(td.id)).length
     case 'note':
@@ -151,8 +151,7 @@ export function MonthView({
   // « Retirer du plan » on a meal — the SAME doors the board offers (2026-09-16).
   const removals = useChoreRemovals()
   const removeMeal = useRemoveMealFromPlan()
-  // — chore `who` is a NAME on the month payload; recover its id for the face. —
-  const choreWhoId = (who: string | null) => (who ? members.find((m) => m.display_name === who)?.id ?? null : null)
+
   // ── Where you are in the calendar lives in the URL (`?date=<local-midnight secs>`) ──
   // It used to be two useStates, so a reload — or a hop to the day page and back, or an
   // event added from the ⋯ below — snapped you to today and lost the month you were
@@ -355,9 +354,8 @@ export function MonthView({
     (sel
       ? sel.events.length +
         selMeals.length +
-        sel.chores.length +
+        sel.tasks.length +
         selTodos.length +
-        sel.home.length +
         sel.notes.length +
         sel.transfers.length
       : 0) +
@@ -415,8 +413,7 @@ export function MonthView({
     const meals = show('meal') ? (b?.meals ?? []).filter((m) => mealPrefs.isVisible(m.slot)) : []
     const events = show('event') ? b?.events ?? [] : []
     // Rows whose removal is still settling (the undo toast) drop out here too.
-    const chores = show('chore') ? removals.visibleChores(b?.chores ?? []) : []
-    const home = show('chore') ? removals.visibleHome(b?.home ?? []) : []
+    const tasks = show('chore') ? removals.visibleTasks(b?.tasks ?? []) : []
     const todos = show('todo') ? (b?.todos ?? []).filter((td) => !pendingTodo.has(td.id)) : []
     // Habits are a RECORD of the day, not one of the legend's six kinds (they are not
     // cell markers either) — so only the day face lists them.
@@ -491,43 +488,32 @@ export function MonthView({
             />
           ),
         )}
-        {chores.map((c) => (
-          <Act
-            key={c.id}
-            cat="chore"
-            title={c.title}
-            who={c.who ?? undefined}
-            color={c.color ?? undefined}
-            onOpen={() =>
-              detail.open(
-                buildChore({ id: c.id, title: c.title, color: c.color, at: c.day, who: c.who, who_id: choreWhoId(c.who) }, detailCtx, {
-                  editHref: ro ? undefined : removals.choreEditHref(c.id),
-                  onDelete: ro ? undefined : () => removals.removeChore(c),
-                }),
-              )
-            }
-          />
-        ))}
-        {/* Projets & Entretien landing on this day — the same chore-style peek, with
-            the two doors the board's own row wears: « Modifier » (→ Réglages, the only
-            editor) and « Supprimer » (deferred). */}
-        {home.map((h) => (
-          <Act
-            key={h.id}
-            cat="chore"
-            title={h.title}
-            color={h.color ?? undefined}
-            onOpen={() =>
-              detail.open(
-                buildChore({ id: h.id, title: h.title, color: h.color, at: h.day, who: null, who_id: null }, detailCtx, {
-                  editHref: ro ? undefined : removals.homeEditHref(h.id),
-                  onDelete: ro ? undefined : () => removals.removeHome(h),
-                }),
-              )
-            }
-          />
-        ))}
-        {/* À compléter todos pinned to this day — check them off right here (the
+                {/* Every task on this day, one rule (the calendar's: every dated task, every
+            occurrence). A ticked one-off stays, struck through. The peek carries the two
+            doors the board's own row wears: « Modifier » (the one task form) and
+            « Supprimer » (deferred). */}
+        {tasks.map((c) => {
+          const who = nameOf(members, c.who_id)
+          return (
+            <Act
+              key={c.id}
+              cat="chore"
+              title={c.title}
+              who={who ?? undefined}
+              color={c.color ?? colorOf(members, c.who_id) ?? undefined}
+              past={c.done}
+              onOpen={() =>
+                detail.open(
+                  buildChore({ id: c.taskId, title: c.title, color: c.color, at: c.day, who, who_id: c.who_id, recurring: c.recurring }, detailCtx, {
+                    editHref: ro ? undefined : removals.taskEditHref(c),
+                    onDelete: ro ? undefined : () => removals.removeTask(c),
+                  }),
+                )
+              }
+            />
+          )
+        })}
+        {/* Departure checklists pinned to this day — check them off right here (the
             check is its own tap target); tap the rest of the row to open the day
             page. The source list, if any, rides as the sub-line. */}
         {todos.map((td) => (

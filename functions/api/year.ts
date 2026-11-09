@@ -2,13 +2,13 @@ import { okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { localDayStart } from '../_lib/ids'
 import { parseRecur, expandRange } from '../_lib/recur'
-import { yearTaskCells } from '../_lib/taskViews'
+import { cellsOf, datedTaskRows } from '../_lib/taskViews'
 import { fetchBirthdayPeople, birthdayOccurrences } from '../_lib/birthdays'
 import { fetchCarnetLifeItems, replacementAt } from '../_lib/carnetLife'
 
 // « L'année » (A-1, bmad/09) — the year's FIXED POINTS for the board's third
-// glance: derived birthdays, yearly-recurring events, upkeep/project cadences
-// (home_projects occurrences), trips, and each cared-for thing's projected
+// glance: derived birthdays, yearly-recurring events, every dated task's
+// occurrences (the calendar's own rule, _lib/taskViews), trips, and each cared-for thing's projected
 // replacement day (« le long jeu »). Deliberately NOT the month read:
 // /api/month carries everything dated (meals, chores, work hours) and caps at
 // 45 days; the year view is a HORIZON, so it reads only what lives on the
@@ -28,11 +28,11 @@ export const onRequestGet = authed(async (ctx, actor) => {
   let to = Math.floor(Number(url.searchParams.get('to')))
   // Bad/missing window → an empty horizon rather than a 400 (the month read's rule).
   if (!Number.isFinite(from) || !Number.isFinite(to) || from <= 0 || to <= from) {
-    return okWire('year', { birthdays: [], events: [], upkeep: [], life: [], trips: [] })
+    return okWire('year', { birthdays: [], events: [], tasks: [], life: [], trips: [] })
   }
   to = Math.min(to, from + MAX_DAYS * DAY)
 
-  const [birthdayPeople, recurring, upkeep, lifeItems, tripsRes, sharedTripsRes] = await Promise.all([
+  const [birthdayPeople, recurring, taskRows, lifeItems, tripsRes, sharedTripsRes] = await Promise.all([
     // Automatic birthdays — derived from members + contacts, never event rows.
     fetchBirthdayPeople(ctx.env.DB, hh),
     ctx.env.DB.prepare(
@@ -40,8 +40,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
     )
       .bind(hh)
       .all<{ id: string; title: string; start_at: number; recur_json: string }>(),
-    // Upkeep/project cadences: every occurrence in the window (_lib/taskViews).
-    yearTaskCells(ctx.env.DB, hh, from, to, dayOf),
+    // Every dated task: every occurrence in the window, the calendar's rule (_lib/taskViews).
+    datedTaskRows(ctx.env.DB, hh),
     // « Le long jeu » — things with an install date + service life (carnetLife).
     fetchCarnetLifeItems(ctx.env.DB, hh),
     // Trips overlapping the window — household + shared, the /api/month pair.
@@ -89,5 +89,9 @@ export const onRequestGet = authed(async (ctx, actor) => {
     trips.push({ id: tr.id, title: tr.title, colour: tr.colour, start_at: tr.start_at, end_at: tr.end_at, shared: true })
   }
 
-  return okWire('year', { birthdays, events, upkeep, life, trips })
+  // The same cells as the month, without whose turn: a horizon names the thing, not the person.
+  // `kind` stays: an entretien tints its point (lib/year). A done one-off is struck.
+  const tasks = cellsOf(taskRows, from, to, dayOf).map((c) => ({ id: c.id, kind: c.kind, title: c.title, color: c.color, day: c.day, done: c.done }))
+
+  return okWire('year', { birthdays, events, tasks, life, trips })
 })

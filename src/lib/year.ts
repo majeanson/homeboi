@@ -455,7 +455,7 @@ export function groupByYear<T>(rows: readonly T[], at: (x: T) => number): [numbe
 // trips); the fêtes derive HERE (client-side, zero household data, honouring
 // the per-device opt-out). One sorted list the year view's grid and month
 // sections both read.
-export type YearPointKind = 'fete' | 'birthday' | 'event' | 'upkeep' | 'life' | 'ecole'
+export type YearPointKind = 'fete' | 'birthday' | 'event' | 'task' | 'life' | 'ecole'
 export interface YearPoint {
   day: number // local-midnight unix sec
   kind: YearPointKind
@@ -463,11 +463,13 @@ export interface YearPoint {
   emoji?: string
   color?: string | null
   age?: number | null // birthdays: the age they turn that day (null = year unknown)
+  done?: boolean // a task: a ticked one-off keeps its point, struck
 }
 export interface YearData {
   birthdays: { id: string; name: string; day: number; age: number | null; memberId: string | null }[]
   events: { id: string; title: string; day: number }[]
-  upkeep: { id: string; kind: string; title: string; color: string | null; day: number }[]
+  // Every dated task, every occurrence (the calendar's one rule, _lib/taskViews `cellsOf`).
+  tasks: { id: string; kind: 'plan' | 'upkeep' | null; title: string; color: string | null; day: number; done: boolean }[]
   life: { carnetId: string; name: string; color: string | null; day: number }[]
   trips: { id: string; title: string; colour: string; start_at: number; end_at: number; shared?: true }[]
 }
@@ -487,7 +489,7 @@ const SCHOOL_LABEL = {
 // A missing bucket means "no points of that kind" — the horizon degrades, the
 // board stays up.
 export function yearPoints(
-  data: Partial<Pick<YearData, 'birthdays' | 'events' | 'upkeep' | 'life'>>,
+  data: Partial<Pick<YearData, 'birthdays' | 'events' | 'tasks' | 'life'>>,
   opts: { lang: 'fr' | 'en'; holidays: boolean; from: number; to: number; schoolYear?: SchoolYear | null },
 ): YearPoint[] {
   const pts: YearPoint[] = []
@@ -512,7 +514,7 @@ export function yearPoints(
   }
   for (const b of data.birthdays ?? []) pts.push({ day: b.day, kind: 'birthday', label: b.name, emoji: '🎂', age: b.age })
   for (const e of data.events ?? []) pts.push({ day: e.day, kind: 'event', label: e.title })
-  for (const u of data.upkeep ?? []) pts.push({ day: u.day, kind: 'upkeep', label: u.title, color: u.color })
+  for (const u of data.tasks ?? []) pts.push({ day: u.day, kind: 'task', label: u.title, color: u.color, ...(u.done ? { done: true } : {}) })
   for (const l of data.life ?? []) pts.push({ day: l.day, kind: 'life', label: l.name, color: l.color })
   return pts.sort((a, b) => a.day - b.day)
 }

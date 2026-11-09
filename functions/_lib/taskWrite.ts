@@ -16,6 +16,11 @@ export const recurJson = (recur: unknown): string | null => {
   return r ? JSON.stringify(r) : null
 }
 
+// A recurrence always carries its start (0152): every reader reads a NULL `at` as « no date »,
+// so a series written without one counts from the moment it is written, which is what a
+// NULL used to mean for a chore (« from created_at »). A one-off keeps its own day or none.
+export const startSec = (recurring: boolean, v: unknown, writtenAt: number): number | null => dateSec(v) ?? (recurring ? writtenAt : null)
+
 // A date: unix-seconds > 0, else null. A chore's start, a home row's anchor, a to-do's day.
 export const dateSec = (v: unknown): number | null => {
   const n = Number(v)
@@ -125,7 +130,7 @@ export function faceColumns(face: Face, b: TaskBody, ref: SubjectRef | null): Re
       ...subject,
       // A chore keeps a date only as its recurrence's start, and a lead or the evening line
       // only on a schedule.
-      at: recurring ? dateSec(b.at) : null,
+      at: recurring ? startSec(true, b.at, Math.floor(Date.now() / 1000)) : null,
       colour: hexColor(b.color, DEFAULT_COLOUR),
       recur_json: recurJson(b.recur),
       recur_from: 'anchor',

@@ -108,7 +108,6 @@ export const FR_OPERATOR = {
   announceEveningHint: 'Le babillard affichera une ligne calme le soir d’avant (« Ce soir » — pas une notification).',
   // Projets & Entretien — the longer-horizon home work under Corvées (#home-projects).
   home: {
-    subEntretien: 'Entretien',
     // A-4 (bmad/09) — les rituels de saison offerts (pneus, gouttières, abris).
     seedsTitle: 'Idées de saison',
     // « comme n'importe quelle tâche » disait le mot d'une AUTRE chose : la section

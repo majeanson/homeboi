@@ -85,7 +85,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
       projects: all.projects.map((h) => ({ id: h.id, title: h.title, color: h.color, icon: h.icon })),
       trips: trips.results,
     },
-    history: ref ? await subjectHistory(db, hh, ref, today, HISTORY_MAX) : [],
+    history: ref ? await subjectHistory(db, hh, ref, HISTORY_MAX) : [],
   })
 })
 

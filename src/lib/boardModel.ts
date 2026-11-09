@@ -7,7 +7,7 @@ import { isMealSlot, type MealSlot } from './mealSlots'
 import type { MealPrefs } from './mealPrefs'
 import { boardOrder, isTicked, mineTask, type TaskItem } from './tasks'
 import type { Lang } from '../i18n'
-import type { BoardData, EventRow, ChoreInstance, MealRow, DayMealRow, WorkRow } from '../components/board/types'
+import type { BoardData, EventRow, MealRow, DayMealRow, WorkRow } from '../components/board/types'
 
 // « Un seul modèle du babillard » (C-12, bmad/10) — the ONE pure view-model behind
 // every board lens (parent Grille/Mois, toddler, Simple). Before this each lens
@@ -74,7 +74,7 @@ export interface BoardModelInput {
   // D-17: the household's school-year bounds (lib/year useSchoolYear()), null =
   // never configured. Passed through, not re-fetched — same rule as mealPrefs.
   schoolYear?: SchoolYear | null
-  // Chores/todos/home rows whose "done" write is DEFERRED behind the undo toast —
+  // Tasks whose "done" write is DEFERRED behind the undo toast —
   // filtered out at once so a live poll can't resurrect them mid-undo.
   pendingDone?: ReadonlySet<string>
   // Leftovers marked "Fini", held the same way.
@@ -83,27 +83,19 @@ export interface BoardModelInput {
   // one /api/board read) — the model asks "is there one?", never the payload.
   hasWeather: boolean
   hasTomorrowWx: boolean
-  // Open rows of the todos table — today's + tomorrow's, each its own poll (lib/todos),
-  // outside the /api/board payload. `openTodosCount` is what keeps the day from reading as
-  // clear: due, owed, and departure checklists. Someday rows do not, but the kid
-  // view still lists them, so they keep its all-clear down through `openSomedayCount`.
+  // Open departure checklist rows (the todos poll, lib/todos), outside the /api/board
+  // payload: today's keep the day from reading as clear, tomorrow's earn « Demain ». A loose
+  // to-do is a task now and rides the payload's `tasks` like every other.
   openTodosCount: number
-  openSomedayCount?: number
   tomorrowTodoCount: number
-  // All three task tables, as the board card reads them: payload + to-do items.
-  tasks?: readonly TaskItem[]
 }
 
 export interface BoardModel {
+  // The « Tâches » card: due, owed or ticked today, the face lens applied, owed first. The
+  // toddler and simple boards read the SAME list: one predicate, every lens.
   tasks: TaskItem[]
   today: {
     events: ModelEvent[]
-    chores: ChoreInstance[]
-    todos: ChoreInstance[]
-    home: ChoreInstance[]
-    // Entretien carry-forward: missed due dates (server homeOverdue, _lib/upkeep)
-    // rendered on « À faire » until checked. Family-wide like `home`.
-    homeOverdue: ChoreInstance[]
     work: WorkRow[]
   }
   tomorrow: {
@@ -111,8 +103,8 @@ export interface BoardModel {
   }
   upcoming: {
     events: EventRow[]
-    chores: ChoreInstance[]
-    home: ChoreInstance[]
+    // Every open task whose next date falls this week (server `tasksAhead`), face-lensed.
+    tasks: TaskItem[]
   }
   leftovers: BoardData['leftovers']
   meals: {
@@ -171,7 +163,7 @@ const holidayRow = (h: Holiday, at: number, lang: Lang): EventRow => ({
 // reads it as « Ce soir », never « Fête ». `dayNow` (not the occurrence day) is the
 // row's own `start_at` — the line lives on TODAY's list, since it's tonight that it
 // announces tomorrow's chore.
-const choreAnnounceRow = (c: ChoreInstance, dayNow: number): EventRow => ({
+const choreAnnounceRow = (c: Pick<TaskItem, 'id' | 'title'>, dayNow: number): EventRow => ({
   id: `announce-${c.id}-${dayNow}`,
   title: c.title,
   start_at: dayNow,
@@ -183,7 +175,6 @@ const choreAnnounceRow = (c: ChoreInstance, dayNow: number): EventRow => ({
 export function buildBoardModel(input: BoardModelInput): BoardModel {
   const { data, nowMs, lang, profileId, fetesOn, binAnnounceOn, mealPrefs, hasWeather, hasTomorrowWx, openTodosCount, tomorrowTodoCount } =
     input
-  const openSomedayCount = input.openSomedayCount ?? 0
   const schoolYear = input.schoolYear ?? null
   const pendingDone = input.pendingDone ?? new Set<string>()
   const pendingLeftover = input.pendingLeftover ?? new Set<string>()
@@ -208,16 +199,17 @@ export function buildBoardModel(input: BoardModelInput): BoardModel {
     const ids = eventMembers(e)
     return ids.length === 0 || (!!profileId && ids.includes(profileId))
   }
-  const mineChore = (c: ChoreInstance) =>
-    !focusing || c.who_id === profileId || c.who_id === null || (!!profileId && !!c.team?.includes(profileId))
   const mineWork = (w: WorkRow) => !focusing || w.member_id === profileId || w.member_id === null
 
-  // The merged « Tâches » card: all three tables, the same face lens, held rows out, and
-  // what is owed reading first. A rotation stays visible to the whole team on anyone's turn.
-  const boardTasks = boardOrder((input.tasks ?? []).filter((t) => mineTask(t, profileId)).filter((t) => !pendingDone.has(t.id)))
+  // The « Tâches » card: every task due, owed or ticked today, the face lens, held rows out,
+  // and what is owed reading first. A rotation stays visible to the whole team on anyone's
+  // turn. One list for every lens (parent, toddler, simple).
+  const boardTasks = boardOrder((data?.tasks ?? []).filter((t) => mineTask(t, profileId)).filter((t) => !pendingDone.has(t.id)))
+  // « À venir »: the same lens over the server's one rule (open, next date this week).
+  const aheadTasks = (data?.tasksAhead ?? []).filter((t) => mineTask(t, profileId)).filter((t) => !pendingDone.has(t.id))
 
-  // D-21: a flagged recurring chore's "evening before" announce — DERIVED off
-  // choresUpcoming's next occurrence, never a stored row (the fête pattern above).
+  // D-21: a flagged task's "evening before" announce — DERIVED off its next occurrence
+  // in `tasksAhead`, never a stored row (the fête pattern above).
   // Window = the EVENING of the day before that occurrence, from 17:00 local
   // through midnight — via `localMinuteOfDay` (Intl/tz-based, like every other
   // day/time boundary here), NOT lib/timeofday's `timeOfDay` (that one reads the
@@ -234,8 +226,8 @@ export function buildBoardModel(input: BoardModelInput): BoardModel {
   const isEvening = localMinuteOfDay(new Date(nowMs)) >= EVENING_START_MIN
   const choreAnnounces: EventRow[] =
     binAnnounceOn && isEvening
-      ? (data?.choresUpcoming ?? [])
-          .filter((c) => c.announce_evening && localDayStart(new Date(c.at * 1000)) === tomorrowDay)
+      ? (data?.tasksAhead ?? [])
+          .filter((c) => c.announceEvening && c.day != null && localDayStart(new Date(c.day * 1000)) === tomorrowDay)
           .map((c) => choreAnnounceRow(c, dayNow))
       : []
 
@@ -263,16 +255,6 @@ export function buildBoardModel(input: BoardModelInput): BoardModel {
     ...(data?.upcoming ?? []).filter(mineEvent),
   ].sort((a, b) => a.start_at - b.start_at)
 
-  const todayChores = (data?.choresToday ?? []).filter(mineChore).filter((c) => !pendingDone.has(c.id))
-  const todayTodos = (data?.todos ?? []).filter(mineChore).filter((c) => !pendingDone.has(c.id))
-  // "Projets & Entretien" — family-wide (no rotation), so NOT personal-focus
-  // filtered, unlike chores/todos above.
-  const todayHome = (data?.homeToday ?? []).filter((c) => !pendingDone.has(c.id))
-  // Missed entretien due dates carried forward (calm: they just wait, no nagging).
-  // Same family-wide + pendingDone rules as todayHome.
-  const overdueHome = (data?.homeOverdue ?? []).filter((c) => !pendingDone.has(c.id))
-  const upcomingChores = (data?.choresUpcoming ?? []).filter(mineChore)
-  const upcomingHome = data?.homeUpcoming ?? []
   const leftovers = (data?.leftovers ?? []).filter((l) => !pendingLeftover.has(l.id))
   const filWork = (data?.work ?? []).filter(mineWork)
 
@@ -321,10 +303,7 @@ export function buildBoardModel(input: BoardModelInput): BoardModel {
   const dayClear =
     !!data &&
     todayEvents.length === 0 &&
-    todayChores.length === 0 &&
-    todayHome.length === 0 &&
-    overdueHome.length === 0 && // an owed task must keep the card up
-    boardTasks.every(isTicked) && // a ticked row is not a reason the day isn't clear
+    boardTasks.every(isTicked) && // a due or owed task keeps the card up; a ticked one does not
     otherToday.length === 0 &&
     tonightAll.length === 0 &&
     leftovers.length === 0 &&
@@ -340,10 +319,8 @@ export function buildBoardModel(input: BoardModelInput): BoardModel {
     otherToday.length === 0 &&
     leftovers.length === 0 &&
     todayEvents.length === 0 &&
-    todayChores.length === 0 &&
-    todayTodos.length === 0 &&
+    boardTasks.every(isTicked) &&
     openTodosCount === 0 &&
-    openSomedayCount === 0 &&
     !data?.tomorrowNote &&
     tomorrowEvents.length === 0 &&
     (data?.tomorrowMeals?.length ?? 0) === 0
@@ -364,9 +341,9 @@ export function buildBoardModel(input: BoardModelInput): BoardModel {
 
   return {
     tasks: boardTasks,
-    today: { events: todayEvents, chores: todayChores, todos: todayTodos, home: todayHome, homeOverdue: overdueHome, work: filWork },
+    today: { events: todayEvents, work: filWork },
     tomorrow: { events: tomorrowEvents },
-    upcoming: { events: upcomingEvents, chores: upcomingChores, home: upcomingHome },
+    upcoming: { events: upcomingEvents, tasks: aheadTasks },
     leftovers,
     meals: { hero, tonight, tonightAll, tomorrowSupper, otherToday, otherTomorrow },
     nextUp,

@@ -89,7 +89,7 @@ export async function gatherAskSnapshot(env: Env, householdId: string, today: nu
     env.DB.prepare('SELECT text FROM list_items WHERE household_id = ? AND checked_at IS NULL ORDER BY created_at LIMIT 60')
       .bind(hh)
       .all<{ text: string }>(),
-    askTaskTitles(env.DB, hh),
+    askTaskTitles(env.DB, hh, today, Math.floor(Date.now() / 1000)),
     env.DB.prepare(
       // Not a scheduled one (0142): « Sa fête » must not be spoiled by asking the house.
       // media_kind rides along: a drawing or a voice memo has no text, and without its

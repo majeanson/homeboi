@@ -12,7 +12,7 @@ import {
 } from './mealSlots'
 import { localDayStart, addLocalDays } from './localDay'
 import type { MealPrefs } from './mealPrefs'
-import type { BoardData, EventRow, ChoreInstance, WorkRow, DayMealRow } from '../components/board/types'
+import type { BoardData, EventRow, WorkRow, DayMealRow } from '../components/board/types'
 
 // buildBoardModel is the ONE pure view-model behind every board lens (C-12,
 // bmad/10) — these tests exercise it directly, no React/DOM. A fixed `nowMs` far
@@ -55,14 +55,10 @@ function mkData(overrides: Partial<BoardData> = {}): BoardData {
     tomorrowMeals: [],
     tomorrowNote: null,
     list: [],
-    chores: [],
-    choresToday: [],
-    choresUpcoming: [],
-    todos: [],
+    tasks: [],
+    tasksAhead: [],
     notes: [],
     leftovers: [],
-    homeToday: [],
-    homeUpcoming: [],
     work: [],
     ...overrides,
   }
@@ -94,14 +90,12 @@ const ev = (overrides: Partial<EventRow> = {}): EventRow => ({
   ...overrides,
 })
 
-const chore = (overrides: Partial<ChoreInstance> = {}): ChoreInstance => ({
-  id: 'c1',
-  title: 'Corvée',
-  color: null,
-  at: Math.floor(NOW / 1000),
-  who: null,
-  who_id: null,
-  ...overrides,
+// A task as the board payload carries it (one list for every task, 2026-11-08): due today
+// unless said otherwise.
+const task = (over: Partial<TaskItem> = {}): TaskItem => ({
+  key: `t:${over.id ?? 't'}`, source: 'todo', id: 't', title: 'Tâche', color: null, icon: null, effort: null, subject: null, kind: null, recurring: false,
+  recurJson: null, day: null, dueToday: true, overdueSince: null, snoozedUntil: null, soon: false, done: 'open',
+  doneAt: null, who_id: null, team: [], announceEvening: false, onBoard: true, ...over,
 })
 
 const work = (overrides: Partial<WorkRow> = {}): WorkRow => ({
@@ -168,10 +162,9 @@ describe('boardModel', () => {
     // Each category independently flips dayClear false — the "condition loop".
     const dayClearCases: [string, Partial<BoardData>][] = [
       ['an event', { today: [ev()] }],
-      ['a chore', { choresToday: [chore()] }],
-      ['home upkeep', { homeToday: [chore({ id: 'h1' })] }],
-      // An owed entretien must keep the « À faire » card up (the carry-forward).
-      ['overdue upkeep', { homeOverdue: [{ ...chore({ id: 'ho1' }), overdueSince: 1 }] }],
+      ['a task due today', { tasks: [task({ id: 'c1' })] }],
+      // An owed task must keep the « Tâches » card up (the carry-forward), whatever it is.
+      ['an owed task', { tasks: [task({ id: 'ho1', dueToday: false, overdueSince: 1 })] }],
       ['a non-supper meal', { todayMeals: [meal()] }],
       ['a supper', { tonightMeals: [meal({ slot: 'supper' })] }],
       ['a leftover', { leftovers: [{ id: 'l1', title: 'Restants' }] }],
@@ -180,22 +173,21 @@ describe('boardModel', () => {
       const model = buildBoardModel(baseInput({ data: mkData(dataOverride) }))
       expect(model.dayClear).toBe(false)
     })
-    // The merged card (2026-11-06): the day is clear when no task is open on it. A someday
-    // one-off (`data.todos`) lives in the Tâches view now, and a ticked row is done.
-    const task = (over: Partial<TaskItem>): TaskItem => ({
-      key: 'todo:t', source: 'todo', id: 't', title: 'T', color: null, icon: null, effort: null, subject: null, kind: null, recurring: false,
-      recurJson: null, day: null, dueToday: true, overdueSince: null, snoozedUntil: null, soon: false, done: 'open',
-      doneAt: null, who_id: null, team: [], onBoard: true, ...over,
-    })
-    it('flips false on an open task, stays clear on a ticked one and on someday', () => {
-      expect(buildBoardModel(baseInput({ data: mkData(), tasks: [task({})] })).dayClear).toBe(false)
-      expect(buildBoardModel(baseInput({ data: mkData(), tasks: [task({ done: 'ticked' })] })).dayClear).toBe(true)
-      expect(buildBoardModel(baseInput({ data: mkData({ todos: [chore({ id: 't1' })] }) })).dayClear).toBe(true)
+    // The day is clear when no task is open on it: a ticked row is done, and a task coming
+    // later this week (`tasksAhead`) is « À venir », not today.
+    it('flips false on an open task, stays clear on a ticked one and on one ahead', () => {
+      expect(buildBoardModel(baseInput({ data: mkData({ tasks: [task({})] }) })).dayClear).toBe(false)
+      expect(buildBoardModel(baseInput({ data: mkData({ tasks: [task({ done: 'ticked' })] }) })).dayClear).toBe(true)
+      expect(buildBoardModel(baseInput({ data: mkData({ tasksAhead: [task({ id: 't1', dueToday: false, onBoard: false })] }) })).dayClear).toBe(true)
     })
     it('the card keeps a ticked row, narrows to a face, and drops a held one', () => {
       const rows = [task({ id: 'a', key: 'a', who_id: 'm1' }), task({ id: 'b', key: 'b', who_id: 'm2' }), task({ id: 'c', key: 'c' })]
-      expect(buildBoardModel(baseInput({ data: mkData(), tasks: rows, profileId: 'm1' })).tasks.map((x) => x.id)).toEqual(['a', 'c'])
-      expect(buildBoardModel(baseInput({ data: mkData(), tasks: rows, pendingDone: new Set(['a']) })).tasks.map((x) => x.id)).toEqual(['b', 'c'])
+      expect(buildBoardModel(baseInput({ data: mkData({ tasks: rows }), profileId: 'm1' })).tasks.map((x) => x.id)).toEqual(['a', 'c'])
+      expect(buildBoardModel(baseInput({ data: mkData({ tasks: rows }), pendingDone: new Set(['a']) })).tasks.map((x) => x.id)).toEqual(['b', 'c'])
+    })
+    it('the kid all-clear reads the SAME list: an open task keeps it down, a ticked one does not', () => {
+      expect(buildBoardModel(baseInput({ data: mkData({ tasks: [task({})] }) })).kidAllClear).toBe(false)
+      expect(buildBoardModel(baseInput({ data: mkData({ tasks: [task({ done: 'ticked' })] }) })).kidAllClear).toBe(true)
     })
     it('flips false on a work window today', () => {
       const model = buildBoardModel(baseInput({ data: mkData({ work: [work()] }) }))
@@ -312,10 +304,10 @@ describe('boardModel', () => {
 
   describe('face lens (personal focus), incl. team rotation', () => {
     it('Maisonnée (no pick) sees everything', () => {
-      const data = mkData({ today: [ev({ member_id: 'alice' })], choresToday: [chore({ who_id: 'bob' })] })
+      const data = mkData({ today: [ev({ member_id: 'alice' })], tasks: [task({ who_id: 'bob' })] })
       const model = buildBoardModel(baseInput({ data, profileId: null }))
       expect(model.today.events).toHaveLength(1)
-      expect(model.today.chores).toHaveLength(1)
+      expect(model.tasks).toHaveLength(1)
     })
     it('a picked face drops another member\'s personal event, keeps shared (null owner)', () => {
       const data = mkData({
@@ -324,37 +316,37 @@ describe('boardModel', () => {
       const model = buildBoardModel(baseInput({ data, profileId: 'alice' }))
       expect(model.today.events.map((e) => e.id).sort()).toEqual(['mine', 'shared'])
     })
-    it('a shared chore stays visible+doable for any teammate even off their turn', () => {
+    it('a shared task stays visible+doable for any teammate even off their turn', () => {
       const data = mkData({
-        choresToday: [chore({ id: 'shared', who_id: 'bob', team: ['alice', 'bob'] })],
+        tasks: [task({ id: 'shared', who_id: 'bob', team: ['alice', 'bob'] })],
       })
       const mine = buildBoardModel(baseInput({ data, profileId: 'alice' }))
-      expect(mine.today.chores.map((c) => c.id)).toEqual(['shared'])
+      expect(mine.tasks.map((c) => c.id)).toEqual(['shared'])
     })
-    it('a chore with no team and not my turn drops out of my personal focus', () => {
-      const data = mkData({ choresToday: [chore({ id: 'not-mine', who_id: 'bob' })] })
+    it('a task with no team and not my turn drops out of my personal focus', () => {
+      const data = mkData({ tasks: [task({ id: 'not-mine', who_id: 'bob' })] })
       const mine = buildBoardModel(baseInput({ data, profileId: 'alice' }))
-      expect(mine.today.chores).toEqual([])
+      expect(mine.tasks).toEqual([])
     })
-    it('an unassigned (Maisonnée) chore always shows, even focused', () => {
-      const data = mkData({ choresToday: [chore({ id: 'shared', who_id: null })] })
+    it('an unassigned (Maisonnée) task always shows, even focused', () => {
+      const data = mkData({ tasks: [task({ id: 'shared', who_id: null })] })
       const mine = buildBoardModel(baseInput({ data, profileId: 'alice' }))
-      expect(mine.today.chores.map((c) => c.id)).toEqual(['shared'])
+      expect(mine.tasks.map((c) => c.id)).toEqual(['shared'])
     })
     it('applies the same face lens to L\'auto work windows', () => {
       const data = mkData({ work: [work({ id: 'mine', member_id: 'alice' }), work({ id: 'theirs', member_id: 'bob' })] })
       const model = buildBoardModel(baseInput({ data, profileId: 'alice' }))
       expect(model.today.work.map((w) => w.id)).toEqual(['mine'])
     })
-    it('"Projets & Entretien" is family-wide — never face-filtered', () => {
-      const data = mkData({ homeToday: [chore({ id: 'h1', who_id: 'bob' })] })
+    it('one lens for every task: an owed entretien with nobody named survives a focus', () => {
+      const data = mkData({ tasks: [task({ id: 'ho1', kind: 'upkeep', source: 'home', dueToday: false, overdueSince: 1 })] })
       const model = buildBoardModel(baseInput({ data, profileId: 'alice' }))
-      expect(model.today.home.map((c) => c.id)).toEqual(['h1'])
+      expect(model.tasks.map((c) => c.id)).toEqual(['ho1'])
     })
-    it('overdue entretien is family-wide too — the carry-forward survives a focus', () => {
-      const data = mkData({ homeOverdue: [{ ...chore({ id: 'ho1', who_id: 'bob' }), overdueSince: 1 }] })
+    it('« À venir » takes the same lens', () => {
+      const data = mkData({ tasksAhead: [task({ id: 'mine', who_id: 'alice', onBoard: false }), task({ id: 'theirs', who_id: 'bob', onBoard: false })] })
       const model = buildBoardModel(baseInput({ data, profileId: 'alice' }))
-      expect(model.today.homeOverdue.map((c) => c.id)).toEqual(['ho1'])
+      expect(model.upcoming.tasks.map((c) => c.id)).toEqual(['mine'])
     })
   })
 
@@ -436,18 +428,14 @@ describe('boardModel', () => {
   })
 
   describe('pending-undo removal', () => {
-    it('filters a chore/todo/home row held behind the undo toast', () => {
+    it('filters a task held behind the undo toast, on the card and on « À venir »', () => {
       const data = mkData({
-        choresToday: [chore({ id: 'ch1' })],
-        todos: [chore({ id: 'td1' })],
-        homeToday: [chore({ id: 'ho1' })],
-        homeOverdue: [{ ...chore({ id: 'hov1' }), overdueSince: 1 }],
+        tasks: [task({ id: 'ch1' }), task({ id: 'hov1', dueToday: false, overdueSince: 1 })],
+        tasksAhead: [task({ id: 'up1', onBoard: false })],
       })
-      const model = buildBoardModel(baseInput({ data, pendingDone: new Set(['ch1', 'td1', 'ho1', 'hov1']) }))
-      expect(model.today.chores).toEqual([])
-      expect(model.today.todos).toEqual([])
-      expect(model.today.home).toEqual([])
-      expect(model.today.homeOverdue).toEqual([])
+      const model = buildBoardModel(baseInput({ data, pendingDone: new Set(['ch1', 'hov1', 'up1']) }))
+      expect(model.tasks).toEqual([])
+      expect(model.upcoming.tasks).toEqual([])
     })
     it('filters a leftover held behind its own undo toast', () => {
       const data = mkData({ leftovers: [{ id: 'lf1', title: 'Restants' }] })
@@ -455,9 +443,9 @@ describe('boardModel', () => {
       expect(model.leftovers).toEqual([])
     })
     it('a pending set that does not match a row changes nothing', () => {
-      const data = mkData({ choresToday: [chore({ id: 'ch1' })] })
+      const data = mkData({ tasks: [task({ id: 'ch1' })] })
       const model = buildBoardModel(baseInput({ data, pendingDone: new Set(['other']) }))
-      expect(model.today.chores.map((c) => c.id)).toEqual(['ch1'])
+      expect(model.tasks.map((c) => c.id)).toEqual(['ch1'])
     })
   })
 
@@ -538,16 +526,16 @@ describe('boardModel', () => {
 
   describe('D-21 « Sortir le bac » — evening-before chore announce', () => {
     // The announce is DERIVED (never a stored row, the fête pattern): a chore
-    // flagged `announce_evening` whose next occurrence (choresUpcoming's `at`)
+    // flagged `announceEvening` whose next occurrence (its `day` in tasksAhead)
     // lands exactly on tomorrow's local midnight, surfaced only during the
     // EVENING (17:00 local onward) of the day before. `tomorrowOf` computes that
     // target the SAME way the model does (localDayStart/addLocalDays), so every
     // case below stays correct regardless of the runner's own timezone.
     const tomorrowOf = (nowMs: number) => addLocalDays(localDayStart(new Date(nowMs)), 1)
-    const bac = (overrides: Partial<ChoreInstance> = {}) =>
-      chore({ id: 'bac1', title: 'Sortir le bac bleu', announce_evening: true, ...overrides })
-    const hasAnnounce = (nowMs: number, choresUpcoming: ChoreInstance[], overrides: Partial<BoardModelInput> = {}) =>
-      buildBoardModel(baseInput({ nowMs, data: mkData({ choresUpcoming }), ...overrides })).today.events.some(
+    const bac = ({ at, ...overrides }: Partial<TaskItem> & { at?: number } = {}) =>
+      task({ id: 'bac1', title: 'Sortir le bac bleu', announceEvening: true, recurring: true, dueToday: false, onBoard: false, day: at ?? null, ...overrides })
+    const hasAnnounce = (nowMs: number, tasksAhead: TaskItem[], overrides: Partial<BoardModelInput> = {}) =>
+      buildBoardModel(baseInput({ nowMs, data: mkData({ tasksAhead }), ...overrides })).today.events.some(
         (e) => e.announce?.tag === 'chore',
       )
 
@@ -564,7 +552,7 @@ describe('boardModel', () => {
 
     it('carries a GENERIC `announce` tag (not `holiday`), all-day, nobody\'s', () => {
       const at = tomorrowOf(EVENING_1700)
-      const model = buildBoardModel(baseInput({ nowMs: EVENING_1700, data: mkData({ choresUpcoming: [bac({ at })] }) }))
+      const model = buildBoardModel(baseInput({ nowMs: EVENING_1700, data: mkData({ tasksAhead: [bac({ at })] }) }))
       const row = model.today.events.find((e) => e.announce?.tag === 'chore')
       expect(row).toMatchObject({ title: 'Sortir le bac bleu', all_day: 1, member_id: null })
       expect(row?.holiday).toBeUndefined()
@@ -577,7 +565,7 @@ describe('boardModel', () => {
 
     it('is silent for an UNFLAGGED chore due tomorrow, even in the evening', () => {
       const at = tomorrowOf(EVENING_1700)
-      expect(hasAnnounce(EVENING_1700, [bac({ at, announce_evening: false })])).toBe(false)
+      expect(hasAnnounce(EVENING_1700, [bac({ at, announceEvening: false })])).toBe(false)
     })
 
     it('is silent when this device opted out (binAnnounceOn: false)', () => {

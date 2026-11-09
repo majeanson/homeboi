@@ -8,14 +8,16 @@ import { TASKS_VIEW_HREF } from './settingsNav'
 // Before this, a hit on a drawing, a habit, an idea, a mot or a todo opened the page and
 // left you to find the thing yourself, while ACTIONS.md said otherwise.
 export type SearchHit =
-  | { kind: 'recipe' | 'person' | 'pet' | 'carnet' | 'routine' | 'trip' | 'listItem' | 'business' | 'note' | 'drawing' | 'habit' | 'mot' | 'idea' | 'todo'; id: string }
+  | { kind: 'recipe' | 'person' | 'pet' | 'carnet' | 'routine' | 'trip' | 'listItem' | 'business' | 'note' | 'drawing' | 'habit' | 'mot' | 'idea'; id: string }
+  // A task: on the board's « Tâches » card when it is there today, else in the Tâches view.
+  | { kind: 'task'; id: string; onBoard: boolean }
   | { kind: 'project'; carnetId: string | null }
   | { kind: 'carnetEntry'; carnetId: string }
   | { kind: 'meal'; date: number }
   | { kind: 'event'; at: number }
   | { kind: 'group'; id: string; family: boolean }
   | { kind: 'pantry' }
-  | { kind: 'chore' }
+
   | { kind: 'car' }
 
 export function landingFor(hit: SearchHit): string {
@@ -43,8 +45,9 @@ export function landingFor(hit: SearchHit): string {
     case 'habit':
       return `/board/habitudes?item=${hit.id}`
     case 'mot':
-    case 'todo':
       return `/board?item=${hit.id}`
+    case 'task':
+      return hit.onBoard ? `/board?item=${hit.id}` : TASKS_VIEW_HREF
     case 'idea':
       return `/kitchen/idees?tab=kid&item=${hit.id}`
     case 'project':
@@ -57,8 +60,7 @@ export function landingFor(hit: SearchHit): string {
       return `/kitchen/day/${localDayStart(new Date(hit.at * 1000))}`
     case 'group':
       return hit.family ? `/cercle/family/${hit.id}` : '/maison?section=social'
-    case 'chore':
-      return TASKS_VIEW_HREF
+
     case 'pantry':
       return '/kitchen?tab=pantry'
     case 'car':

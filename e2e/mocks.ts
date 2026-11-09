@@ -85,6 +85,7 @@ export const boardTask = (t: Pick<TaskItem, 'source' | 'id' | 'title'> & Partial
   doneAt: null,
   who_id: null,
   team: [],
+  announceEvening: false,
   onBoard: true,
   ...t,
 })
@@ -169,59 +170,24 @@ export const BOARD = {
     listRow('l3', 'Pommes', 'ghost'),
     listRow('l4', 'Couches'),
   ],
-  chores: [
-    {
-      id: 'c1',
-      title: 'Sortir les poubelles',
-      rotation_json: JSON.stringify(['m1', 'm2']),
-      current_idx: 0,
-      last_done_at: null,
-      color: '#88A36F',
-      recur_json: null,
-      recur_start: null,
-      lead_seconds: null,
-      announce_evening: null,
-      created_at: BASE - 30 * DAY,
-      helpers: [{ name: 'Léa', role: 'child' }],
-    },
-    {
-      id: 'c2',
-      title: 'Vaisselle',
-      rotation_json: JSON.stringify(['m2', 'm1']),
-      current_idx: 1,
-      last_done_at: BASE - DAY,
-      color: '#7BB0C9',
-      recur_json: null,
-      recur_start: null,
-      lead_seconds: null,
-      announce_evening: null,
-      created_at: BASE - 30 * DAY,
-      helpers: [],
-    },
-  ],
   // Two notes, so the strip's « Tout effacer » (shown only past one note) is
   // exercised alongside the per-note tap-to-clear.
   notes: [
     fridgeNote({ id: 'n1', text: 'Bonne chance à ton examen !', member_id: 'm1', created_at: BASE }),
     fridgeNote({ id: 'n2', text: 'Rendez-vous dentiste jeudi', member_id: 'm2', created_at: BASE }),
   ],
-  // A recurring chore due today (Léa's turn) + one coming up later this week.
-  choresToday: [{ id: 'c1', title: 'Sortir les poubelles', color: '#88A36F', at: BASE, soon: false, who: 'Léa', who_id: 'm3', team: ['m3'], announce_evening: false }],
-  choresUpcoming: [{ id: 'c2', title: 'Vaisselle', color: '#7BB0C9', at: BASE + 3 * DAY, soon: false, who: 'Papa', who_id: 'm2', team: ['m2'], announce_evening: false }],
-  // The carnets' upkeep rows ride the same read; none is due on the fixture's day.
-  homeToday: [],
-  homeUpcoming: [],
-  homeOverdue: [],
-  // One-off to-dos (ChoreInstance shape) — the Aujourd'hui "À faire" card + the
-  // alternate board views (Now/Next, Lanes) iterate these, so absent → crash.
-  todos: [
-    { id: 't1', title: 'Appeler le garagiste', color: null, at: BASE, soon: false, who: 'Maman', who_id: 'm1', team: [], announce_evening: false },
-    { id: 't2', title: 'Sortir le recyclage', color: '#88A36F', at: BASE, soon: false, who: null, who_id: null, team: [], announce_evening: false },
+  // Every task due, owed or ticked today, in ONE list (_lib/taskViews `boardTasks`): a
+  // recurring chore due today (Léa's turn) and the loose to-do pinned to today (the same
+  // row TODOS lists, as the payload carries it since 2026-11-08).
+  tasks: [
+    boardTask({ source: 'chore', id: 'c1', title: 'Sortir les poubelles', color: '#88A36F', recurring: true, who_id: 'm3', team: ['m3'] }),
+    boardTask({ source: 'todo', id: 'td1', title: 'Clés + téléphone + portefeuille' }),
   ],
-  // The chores + home rows as tasks: the merged board section. Same fixture as the instance
-  // arrays above, the shape the server stamps through _lib/taskItem.ts.
-  tasks: [boardTask({ source: 'chore', id: 'c1', title: 'Sortir les poubelles', color: '#88A36F', recurring: true, who_id: 'm3', team: ['m3'] })],
-  // Undated leftovers to finish — the "Restants à finir" reminder card.
+  // « À venir »: a recurring task coming later this week (Papa's turn).
+  tasksAhead: [
+    boardTask({ source: 'chore', id: 'c2', title: 'Vaisselle', color: '#7BB0C9', recurring: true, day: BASE + 3 * DAY, dueToday: false, onBoard: false, who_id: 'm2', team: ['m2'] }),
+  ],
+    // Undated leftovers to finish — the "Restants à finir" reminder card.
   leftovers: [{ id: 'lo1', title: 'Pâté chinois', recipe_id: null, source_meal_id: null }],
 }
 
@@ -475,7 +441,7 @@ const yearDay = (n: number): number => addLocalDays(localDayStart(new Date()), n
 const YEAR = {
   birthdays: [{ id: 'yb1', name: 'Léa', day: yearDay(12), age: 5, memberId: 'm3' }],
   events: [{ id: 'ye1', title: 'Rendez-vous chez le dentiste', day: yearDay(40) }],
-  upkeep: [{ id: 'yu1', kind: 'upkeep', title: 'Pneus d’hiver', color: null, day: yearDay(120) }],
+  tasks: [{ id: 'yu1', kind: 'upkeep' as const, title: 'Pneus d’hiver', color: null, day: yearDay(120), done: false }],
   life: [{ carnetId: 'yc1', name: 'Chauffe-eau', color: null, day: yearDay(220) }],
   trips: [{ id: 'yt1', title: 'Gaspésie', colour: '#2a8f85', start_at: yearDay(20), end_at: yearDay(27) }],
 }
@@ -860,10 +826,9 @@ export const ROUTES: Partial<Wire> = {
   month: {
     events: [],
     meals: [],
-    chores: [],
+    tasks: [],
     dayNotes: [],
     todos: [],
-    homeProjects: [],
     trips: [],
     tripPlans: [],
     habits: [

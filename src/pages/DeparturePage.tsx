@@ -5,7 +5,8 @@ import { api } from '../lib/api'
 import { live } from '../lib/query'
 import { type Weather, type DayOutlook, weatherIcon, weatherTint, weatherTip } from '../lib/weather'
 import { useBoardData } from '../lib/queryHooks'
-import { nameOf } from '../components/board/types'
+import { colorOf, nameOf } from '../components/board/types'
+import type { TaskCell } from '../lib/tasks'
 import { AvatarStack } from '../components/AvatarStack'
 import { eventMembers, memberFaces } from '../lib/eventPeople'
 import { todayLocalDay, addLocalDays } from '../lib/localDay'
@@ -33,7 +34,7 @@ import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 
 interface DepMonth {
   events: { id: string; title: string; at: number; all_day: number; member_id: string | null; passengers?: string | null; contact_name?: string | null; business_name?: string | null; birthday?: boolean; bring_template_id?: string | null; day: number }[]
-  chores: { id: string; title: string; color: string | null; who: string | null; day: number }[]
+  tasks?: TaskCell[]
   dayNotes: { id: string; text: string; member_id: string | null; day: number }[]
 }
 
@@ -65,7 +66,8 @@ export function DeparturePage() {
   const events = data?.events ?? []
   // The day's recurring rotation chores (whose turn it is) + today's one-off « À
   // faire » (those are a today glance, so only on the today screen).
-  const chores = [...(data?.chores ?? []), ...(isToday ? (board?.todos ?? []) : [])]
+  // The day's tasks: the calendar's one rule (every dated task, every occurrence), open ones.
+  const chores = (data?.tasks ?? []).filter((c) => !c.done)
   const dayNote = data?.dayNotes?.[0] ?? null
 
   const timeLabel = (at: number, all_day: number) =>
@@ -173,7 +175,7 @@ export function DeparturePage() {
           <section className="departure__chores">
             <h2 className="departure__h mono">{t.departure.chores}</h2>
             {chores.map((c) => (
-              <Act key={c.id} cat="chore" title={c.title} who={c.who || undefined} color={c.color || undefined} />
+              <Act key={c.id} cat="chore" title={c.title} who={nameOf(members, c.who_id) ?? undefined} color={c.color ?? colorOf(members, c.who_id) ?? undefined} />
             ))}
           </section>
         )}

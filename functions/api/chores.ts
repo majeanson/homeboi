@@ -2,7 +2,7 @@ import { badRequest, notFound, ok, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec, tickedAt } from '../_lib/ids'
 import { clearStatements, deleteTaskStatements, FACE } from '../_lib/taskItem'
-import { announceEvening, dateSec, DEFAULT_COLOUR, leadSeconds, recurJson } from '../_lib/taskWrite'
+import { announceEvening, dateSec, DEFAULT_COLOUR, leadSeconds, recurJson, startSec } from '../_lib/taskWrite'
 import { emojiIcon, hexColor, taskEffort } from '../_lib/validate'
 import { subjectBinds, validSubject } from '../_lib/subject'
 import { nextTurnIdx, parseRotation, prevTurnIdx, rotationJson, turnOf } from '../_lib/rotation'
@@ -60,7 +60,8 @@ export const onRequestPost = authed(async (ctx, actor) => {
       emojiIcon(body?.icon),
       taskEffort(body?.effort),
       recurJson(body?.recur),
-      dateSec(body?.start),
+      // A series carries its start (0152); one sent without counts from now.
+      startSec(recurJson(body?.recur) != null, body?.start, ts),
       leadSeconds(body?.leadSeconds),
       announceEvening(body?.announceEvening),
       subjectKind,
@@ -154,9 +155,13 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     if (body.recur !== undefined) {
       sets.push('recur_json = ?')
       binds.push(recurJson(body.recur))
-      if (body.start !== undefined) {
+      if (body.start !== undefined && dateSec(body.start) != null) {
         sets.push('at = ?') // the start, in the spine's at (0150)
         binds.push(dateSec(body.start))
+      } else if (recurJson(body.recur) != null) {
+        // A series carries its start (0152): one that had none counts from its creation,
+        // the very date « no start » read as before.
+        sets.push('at = COALESCE(at, created_at)')
       }
     }
     if (body.leadSeconds !== undefined) {

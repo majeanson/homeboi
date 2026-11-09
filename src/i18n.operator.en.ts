@@ -84,7 +84,6 @@ export const EN_OPERATOR: typeof FR_OPERATOR = {
   announceEveningHint: 'The board will show a calm line the evening before ("Tonight" — not a notification).',
   // Projets & Entretien — the longer-horizon home work under Corvées (#home-projects).
   home: {
-    subEntretien: 'Maintenance',
     // A-4 (bmad/09) — the offered season rituals (tires, gutters, shelter).
     seedsTitle: 'Season ideas',
     seedsHint: 'The big local rituals, ready to add — one tap puts them in Maintenance like any task. The ✕ hides them for good.',

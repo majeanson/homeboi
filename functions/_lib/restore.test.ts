@@ -136,4 +136,15 @@ describe('upgradeTakeout (a pre-0150 copy: chores in `tasks`, loose to-dos in `t
     const post = { ...base, tables: { todos: [departure], home_projects: [{ id: 'x', kind: 'chore' }] } }
     expect(upgradeTakeout(post)).toBe(post)
   })
+  it('writes 0152’s start: a recurring chore with none gets its created_at, from `tasks` or already on the spine', () => {
+    const noStart = upgradeTakeout({ ...base, tables: { tasks: [{ ...chore, recur_start: null }] } })
+    expect(noStart.tables.home_projects![0]).toMatchObject({ at: 3 })
+    const between = { ...base, tables: { home_projects: [
+      { id: 'a', kind: 'chore', at: null, recur_json: '{"freq":"daily"}', created_at: 11 },
+      { id: 'b', kind: 'chore', at: null, recur_json: '{"freq":"hourly"}', created_at: 12 },
+      { id: 'c', kind: 'upkeep', at: null, recur_json: '{"freq":"daily"}', created_at: 13 },
+    ] } }
+    // Only the real recurrence on a chore: a malformed one is a one-off, an undated home row stays undated.
+    expect(upgradeTakeout(between).tables.home_projects!.map((r) => r.at)).toEqual([11, null, null])
+  })
 })

@@ -100,7 +100,7 @@ function warmCalendars() {
   if (ric) ric(go, { timeout: 4000 })
   else window.setTimeout(go, 1500)
 }
-import { nameOf, colorOf, type ChoreInstance, type EventRow, type MealRow, type WorkRow } from '../components/board/types'
+import { nameOf, colorOf, type EventRow, type MealRow, type WorkRow } from '../components/board/types'
 import { eventMembers, memberFaces } from '../lib/eventPeople'
 import { SimpleBoard } from '../components/board/SimpleBoard'
 import { ToddlerBoard } from '../components/board/ToddlerBoard'
@@ -153,7 +153,7 @@ import { BOARD_KEY, TODOS_KEY, TASKS_KEY, WEATHER_KEY, ROUTINES_KEY } from '../l
 import { useMots, waitingMots } from '../lib/mots'
 import { pickMyNext, pickMyRoutine } from '../lib/pourToi'
 import { tintInk } from '../lib/colors'
-import { useChoreRemovals, useRemoveMealFromPlan } from '../components/detail/EntityRemovals'
+import { useRemoveMealFromPlan } from '../components/detail/EntityRemovals'
 import { TodoSection } from '../components/todos/TodoSection'
 import { TaskList, TaskQuickAdd } from '../components/tasks/TaskList'
 import { useTaskActions } from '../components/tasks/useTaskActions'
@@ -395,19 +395,14 @@ export function Board() {
   // clearly on top. Keeps its own last-good-frame + shuffle (lib ApodFrame).
   const { wonder, shuffle: shuffleWonder, pick: pickWonder } = useWonder()
 
-  // The to-dos' own light poll (migration 0046), separate from the board payload. The
-  // merged « Tâches » card reads its `items`, the same TaskItem shape the payload carries for
-  // the other two tables. `openTodos` backs the toddler tiles and the simple board. The
-  // departure checklists it also holds keep the day from reading as clear, so the
-  // all-clear hero can't contradict a pending list; `splitTodos` is THE discriminator.
+    // The to-dos' own light poll (migration 0046), separate from the board payload. Since
+  // every task rides the payload's one `tasks` list (a loose to-do included), this poll is
+  // the departure checklists: they keep the day from reading as clear, so the all-clear
+  // hero can't contradict a pending list. `splitTodos` is THE discriminator; `openTodos`
+  // backs the toddler board's « Avant de partir ».
   const { data: todosData } = useQuery({ queryKey: TODOS_KEY, queryFn: () => api<TodosData>('todos'), ...live })
   const openTodos = (todosData?.todos ?? []).filter((td) => td.done_at == null)
-  const todoSplit = splitTodos(openTodos)
-  const openChecklists = todoSplit.checklists.reduce((n, g) => n + g.todos.length, 0)
-  // Nothing on the bento is someday: those live in the Tâches view.
-  const allBoardTasks: TaskItem[] = [...(data?.tasks ?? []), ...(todosData?.items ?? []).filter((i) => i.onBoard)]
-  const openSomeday = todoSplit.loose.filter((td) => td.day == null).length
-  const openDueLoose = todoSplit.loose.length - openSomeday
+  const openChecklists = splitTodos(openTodos).checklists.reduce((n, g) => n + g.todos.length, 0)
 
   // Tomorrow's per-day À compléter todos — surfaced inside the Demain card so a
   // checklist pinned to tomorrow is visible there too. The À compléter card itself
@@ -420,7 +415,9 @@ export function Board() {
     queryFn: () => api<TodosData>(todosPath(tomorrowTodoDay)),
     ...live,
   })
-  const tomorrowTodoCount = (tomorrowTodosData?.todos ?? []).length
+  // Tomorrow's departure checklists only: a to-do dated tomorrow is a task, on « À venir ».
+  const tomorrowChecklists = splitTodos(tomorrowTodosData?.todos ?? []).checklists.flatMap((g) => g.todos)
+  const tomorrowTodoCount = tomorrowChecklists.length
 
   // (The kiosk's idle drift back to Maisonnée lives in HubLayout — shell-level,
   // so wandering to Réglages or the kitchen doesn't pin a picked face forever.)
@@ -498,10 +495,8 @@ export function Board() {
     pendingLeftover,
     hasWeather: !!weather,
     hasTomorrowWx: !!tomorrowWx,
-    openTodosCount: openChecklists + openDueLoose,
-    openSomedayCount: openSomeday,
+    openTodosCount: openChecklists,
     tomorrowTodoCount,
-    tasks: allBoardTasks,
   })
   // The day's hero slot as the MODEL resolved it (off the board payload, not off the
   // household setting directly) — so « Ce soir »'s icon, label, colour and its meals
@@ -512,17 +507,13 @@ export function Board() {
   // below reads them the same way it always did — the derivations themselves
   // now live in ONE place (lib/boardModel), not re-implemented per lens.
   const todayEvents = model.today.events
-  // Removing a corvée / a projet maison rides the ONE held-delete mechanism, scoped to
-  // its resource key so the row also disappears from Réglages, the month panel and the
-  // day page while the undo is open. The doors themselves live in ONE hook
-  // (components/detail/EntityRemovals) that the month panel and the day page share.
-  const removals = useChoreRemovals()
+
   const tomorrowEvents = model.tomorrow.events
   const upcomingEvents = model.upcoming.events
   // Rows whose removal is still settling drop out here (and on every other surface in
   // the scope) until a fresh frame proves the DELETE landed.
-  const upcomingChores = removals.visibleChores(model.upcoming.chores)
-  const upcomingHome = removals.visibleHome(model.upcoming.home)
+  // Every task coming this week, one list; a row whose delete is held drops out with it.
+  const upcomingTasks = taskActions.visible(model.upcoming.tasks)
   const leftovers = model.leftovers
   const otherMeals = model.meals.otherToday
   const otherTomorrowMeals = model.meals.otherTomorrow
@@ -819,49 +810,31 @@ export function Board() {
   }
   // What's coming later this week, on « À venir »: a look ahead, so these rows carry their
   // day and no check. What is due now lives on the merged « Tâches » card.
-  const choreAct = (c: ChoreInstance) => (
-    <Act
-      key={c.id}
-      cat="chore"
-      title={c.title}
-      when={withRel(formatDayMaybeYear(c.at, lang), c.at)}
-      who={c.who ?? undefined}
-      color={c.color ?? undefined}
-      mine={!!profileId && c.who_id === profileId}
-      soon={c.soon}
-      onOpen={() =>
-        detail.open(
-          buildChore(c, detailCtx, {
-            upcoming: true,
-            editHref: ro ? undefined : removals.choreEditHref(c.id),
-            onDelete: ro ? undefined : () => removals.removeChore(c),
-          }),
-        )
-      }
-    />
-  )
-  const homeAct = (c: ChoreInstance) => {
-    // A carnet-scoped row wears its thing's emoji so « Le chauffe-eau · filtre » reads
-    // at a glance.
-    const carnet = c.carnet_id ? carnetById.get(c.carnet_id) : undefined
+    const upcomingAct = (c: TaskItem) => {
+    const at = c.day ?? todayLocalDay()
+    // A carnet-scoped task wears its thing's emoji so « Le chauffe-eau · filtre » reads at a glance.
+    const carnet = c.subject?.kind === 'carnet' ? carnetById.get(c.subject.id) : undefined
+    const who = memberName(c.who_id)
     return (
-    <Act
-      key={c.id}
-      cat="chore"
-      title={carnet ? `${carnetEmoji(carnet)} ${c.title}` : c.title}
-      when={withRel(formatDayMaybeYear(c.at, lang), c.at)}
-      color={c.color ?? undefined}
-      soon={c.soon}
-      onOpen={() =>
-        detail.open(
-          buildChore(c, detailCtx, {
-            upcoming: true,
-            editHref: ro ? undefined : removals.homeEditHref(c.id),
-            onDelete: ro ? undefined : () => removals.removeHome(c),
-          }),
-        )
-      }
-    />
+      <Act
+        key={c.key}
+        cat="chore"
+        title={carnet ? `${carnetEmoji(carnet)} ${c.title}` : c.title}
+        when={withRel(formatDayMaybeYear(at, lang), at)}
+        who={who ?? undefined}
+        color={c.color ?? undefined}
+        mine={!!profileId && c.who_id === profileId}
+        soon={c.soon}
+        onOpen={() =>
+          detail.open(
+            buildChore({ id: c.id, title: c.title, color: c.color, at, who, who_id: c.who_id, team: c.team, soon: c.soon, recurring: c.recurring }, detailCtx, {
+              upcoming: true,
+              editHref: ro ? undefined : taskActions.editHref(c),
+              onDelete: ro ? undefined : () => taskActions.remove(c),
+            }),
+          )
+        }
+      />
     )
   }
 
@@ -1272,7 +1245,7 @@ export function Board() {
     ...(showTomorrowSupper && data.tomorrowMeal ? [{ label: data.tomorrowMeal.title }] : []),
     ...otherTomorrowMeals.map((m) => ({ label: m.title })),
     ...tomorrowEvents.map((e) => ({ lead: e.all_day ? undefined : formatTime(e.start_at, lang), label: e.title })),
-    ...(tomorrowTodosData?.todos ?? []).map((td) => ({ label: td.title })),
+    ...tomorrowChecklists.map((td) => ({ label: td.title })),
     ...(model.tomorrowSchoolKind
       ? [{ label: model.tomorrowSchoolKind === 'school' ? t.board.tomorrowSchool : t.board.tomorrowConge }]
       : []),
@@ -1404,6 +1377,8 @@ export function Board() {
         members={data.members}
         bento={false}
         hideWhenEmpty
+        // A to-do dated tomorrow is a task, listed once on « À venir »: here, the lists.
+        show="checklists"
         foldSections
         foldAll
       />
@@ -1476,7 +1451,7 @@ export function Board() {
     </Section>
   )
   // « À venir » — upcoming events/chores (null when none).
-  nodes.upcoming = (upcomingEvents.length > 0 || upcomingChores.length > 0 || upcomingHome.length > 0) ? (
+  nodes.upcoming = (upcomingEvents.length > 0 || upcomingTasks.length > 0) ? (
     <Section
       label={t.board.upcoming}
       icon="calendar-blank-bold"
@@ -1487,10 +1462,9 @@ export function Board() {
       // these are days out and the day is the thing you're scanning for.
       compactItems={[
         ...upcomingEvents.map((e) => ({ lead: weekdayShort(e.start_at, lang), label: e.title })),
-        ...upcomingChores.map((c) => ({ lead: weekdayShort(c.at, lang), label: c.title })),
-        ...upcomingHome.map((c) => ({ lead: weekdayShort(c.at, lang), label: c.title })),
+        ...upcomingTasks.map((c) => ({ lead: weekdayShort(c.day ?? todayDay, lang), label: c.title })),
       ]}
-      compactHint={String(upcomingEvents.length + upcomingChores.length + upcomingHome.length)}
+      compactHint={String(upcomingEvents.length + upcomingTasks.length)}
     >
   {upcomingEvents.map((e) =>
     e.holiday ? (
@@ -1517,10 +1491,8 @@ export function Board() {
     />
     ),
   )}
-  {/* Recurring chores coming up later this week, with their day. */}
-  {upcomingChores.map(choreAct)}
-  {/* Projets & Entretien coming up this week, with their day. */}
-  {upcomingHome.map(homeAct)}
+  {/* Every task coming up later this week, with its day. */}
+  {upcomingTasks.map(upcomingAct)}
     </Section>
   ) : null
   // « Prochain voyage » — the next upcoming trip; hides itself when none.

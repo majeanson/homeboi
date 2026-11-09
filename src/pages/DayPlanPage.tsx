@@ -27,7 +27,7 @@ import { SecLabel } from '../components/board/BoardCard'
 import { SectionAdd, useSectionAdd } from '../components/SectionAdd'
 import { CATS } from '../lib/cats'
 import { eventMembers, memberFaces } from '../lib/eventPeople'
-import { type Member } from '../components/board/types'
+import { colorOf, type Member } from '../components/board/types'
 import { Fil } from '../components/board/Fil'
 import { EditField } from '../components/EditField'
 import { tripCategoryIcon, type TripCategory } from '../components/voyage/voyage'
@@ -35,8 +35,8 @@ import { TodoSection } from '../components/todos/TodoSection'
 import { FormDelete } from '../components/FormDelete'
 import { EventForm, type EventInit } from '../components/forms/EventForm'
 import { TaskForm } from '../components/forms/TaskForm'
-import type { Chore } from '../components/operator/types'
-import { emptyDraft, taskRead, type TaskDraft } from '../lib/taskSave'
+import { emptyDraft } from '../lib/taskSave'
+import type { TaskCell } from '../lib/tasks'
 import { useEventPeekActions } from '../components/detail/EventPeekActions'
 import { useChoreRemovals } from '../components/detail/EntityRemovals'
 import { useDeferredRemoval } from '../lib/useDeferredRemoval'
@@ -65,20 +65,19 @@ import {
   MEAL_HISTORY_KEY,
   DAY_NOTES_KEY,
 } from '../components/kitchen/types'
-import { MONTH_KEY, BOARD_KEY, EVENTS_KEY, CHORES_KEY, WEATHER_KEY, CAR_KEY } from '../lib/queryKeys'
+import { MONTH_KEY, BOARD_KEY, EVENTS_KEY, WEATHER_KEY, CAR_KEY } from '../lib/queryKeys'
 
 // Intl lowercases the French weekday ("lundi 14 juin"); the scene title wants it
 // capitalized.
 
 // The slice of /api/month this page needs: the day's events (one-off + expanded
-// recurring) and recurring-chore occurrences. Meals/notes come from their own
+// recurring) and every task occurrence. Meals/notes come from their own
 // caches via DayEditor, so they're ignored here.
 interface DayItemsData {
   events: { id: string; title: string; at: number; all_day: number; end_at?: number | null; car_id?: string | null; member_id: string | null; passengers?: string | null; contact_name?: string | null; business_name?: string | null; business_colour?: string | null; birthday?: boolean; age?: number | null; work?: boolean; end?: number; color?: string | null; notes?: string | null }[]
-  chores: { id: string; title: string; color: string | null; who: string | null }[]
-  // "Projets & Entretien" (home_projects) landing on this day — read-only here
-  // (managed in Réglages ▸ Corvées). null homeProjects = older payload → [].
-  homeProjects?: { id: string; kind: string; title: string; color: string | null }[]
+  // Every task on this day, the calendar's one rule (lib/tasks TaskCell). Absent on a
+  // frame cached before 2026-11-08 → [].
+  tasks?: TaskCell[]
   // « Voyage » bands overlapping this day — surfaces a "Voyage — Jour N" header that
   // taps into the trip's itinerary for this exact day. null trips = older payload → [].
   // `shared` = a « Voyage partagé » (promoted/joined): same header, tap deep-links to
@@ -222,11 +221,10 @@ function DayPlanScene() {
     ...live,
   })
   const dayEvents = dayItemsQ.data?.events ?? []
-  // The delete doors, shared with the board and the month panel (EntityRemovals):
-  // a corvée / entretien whose removal is settling hides here too.
+  // The delete doors, shared with the board and the month panel (EntityRemovals): a task
+  // whose removal is settling hides here too.
   const removals = useChoreRemovals()
-  const dayChores = removals.visibleChores(dayItemsQ.data?.chores ?? [])
-  const dayHome = removals.visibleHome(dayItemsQ.data?.homeProjects ?? [])
+  const dayTasks = removals.visibleTasks(dayItemsQ.data?.tasks ?? [])
   // A rendez-vous edited inline can be deleted from the same place: the ONE event
   // delete (confirm → DELETE) lives in EventPeekActions; its modals render below.
   const eventActions = useEventPeekActions()
@@ -240,7 +238,7 @@ function DayPlanScene() {
   // to its inline form pre-filled. The /api/month occurrence carries only display
   // fields; we resolve the series by its base id (recurring ids are `base#at`).
   const eventsFullQ = useQuery({ queryKey: EVENTS_KEY, queryFn: () => api<{ events: EventInit[] }>('events'), ...live })
-  const choresFullQ = useQuery({ queryKey: CHORES_KEY, queryFn: () => api<{ chores: Chore[] }>('chores'), ...live })
+
   const baseId = (id: string) => id.split('#')[0]
   const formMembers = boardQ.data?.members ?? []
 
@@ -266,10 +264,6 @@ function DayPlanScene() {
   const isSoonAt = (at: number, lead: number | null | undefined) => lead != null && nowSec >= at - lead && nowSec < at
   const eventSoon = (occId: string, at: number) =>
     isSoonAt(at, eventsFullQ.data?.events.find((e) => e.id === baseId(occId))?.lead_seconds)
-  const choreSoon = (occId: string) => {
-    const at = Number(occId.split('#')[1]) // recurring chore occurrence id is `base#at`
-    return Number.isFinite(at) && isSoonAt(at, choresFullQ.data?.chores.find((c) => c.id === baseId(occId))?.lead_seconds)
-  }
 
   // « À compléter »'s template picker waits behind that section's header ＋ (the shared
   // SectionAdd), like every other composer on this page — see the TodoSection call.
@@ -277,17 +271,14 @@ function DayPlanScene() {
 
   // Inline add (no value) / edit (value) for events + chores on this day. null = closed.
   const [eventForm, setEventForm] = useState<{ value?: EventInit } | null>(null)
-  // The one task form, inline: a new task on this day, or a chore's edit (in its own table).
-  const [choreForm, setChoreForm] = useState<{ value?: { table: 'chore'; id: string; draft: TaskDraft } } | null>(null)
+  // The one task form, inline: a new task on this day. An existing task opens its peek, whose
+  // « Modifier » is the same form in its own scene, whatever table the task is in.
+  const [choreForm, setChoreForm] = useState(false)
   const openEventEdit = (occId: string) => {
     const full = eventsFullQ.data?.events.find((e) => e.id === baseId(occId))
     if (full) setEventForm({ value: full })
   }
-  const openChoreEdit = (occId: string) => {
-    const id = baseId(occId)
-    const draft = id ? taskRead('chore').draftOf(choresFullQ.data, id) : undefined
-    if (id && draft) setChoreForm({ value: { table: 'chore', id, draft } })
-  }
+
   const afterEventSave = () => {
     setEventForm(null)
     qc.invalidateQueries({ queryKey: BOARD_KEY })
@@ -296,9 +287,8 @@ function DayPlanScene() {
     qc.invalidateQueries({ queryKey: CAR_KEY }) // the rendez-vous may take the car
   }
   const afterChoreSave = () => {
-    setChoreForm(null)
+    setChoreForm(false)
     qc.invalidateQueries({ queryKey: BOARD_KEY })
-    qc.invalidateQueries({ queryKey: CHORES_KEY })
     qc.invalidateQueries({ queryKey: MONTH_KEY })
   }
 
@@ -833,96 +823,68 @@ function DayPlanScene() {
             {eventActions.node}
           </section>
 
-          {/* Corvées — whose turn it is on this day. */}
+                    {/* Tâches — every task on this day, one rule (the calendar's): every dated task,
+              every occurrence, whose turn riding along; a ticked one-off stays, struck. A
+              row opens the same peek as the board and the month panel: « Modifier » (the
+              one task form, in its scene) and « Supprimer » (deferred). The ＋ writes a new
+              task on this day. */}
           <section className="day-plan__sec" style={{ '--sec-tint': CATS.chore.color } as React.CSSProperties}>
             <SecLabel
               label={t.board.chores}
               icon={CATS.chore.icon}
-              count={dayChores.length}
+              count={dayTasks.length}
               action={
                 <SectionAdd
-                  open={!!choreForm}
-                  onToggle={() => setChoreForm(choreForm ? null : {})}
+                  open={choreForm}
+                  onToggle={() => setChoreForm(!choreForm)}
                   label={o18n.addChore}
                   readOnly={ro}
                 />
               }
             />
-            {dayChores.length === 0 && !choreForm ? (
+            {dayTasks.length === 0 && !choreForm ? (
               <EmptyState tone="calm">{t.monthView.empty}</EmptyState>
             ) : (
-              dayChores.map((c) => (
-                <Act
-                  key={c.id}
-                  cat="chore"
-                  title={c.title}
-                  who={c.who || undefined}
-                  color={c.color || undefined}
-                  soon={choreSoon(c.id)}
-                  onActivate={ro ? undefined : () => openChoreEdit(c.id)}
-                />
-              ))
+              dayTasks.map((c) => {
+                const who = memberName(c.who_id) || null
+                return (
+                  <Act
+                    key={c.id}
+                    cat="chore"
+                    title={c.title}
+                    who={who ?? undefined}
+                    color={c.color ?? colorOf(formMembers, c.who_id) ?? undefined}
+                    soon={c.soon}
+                    past={c.done}
+                    onOpen={() =>
+                      detail.open(
+                        buildChore({ id: c.taskId, title: c.title, color: c.color, at: date, who, who_id: c.who_id, recurring: c.recurring }, detailCtx, {
+                          editHref: ro ? undefined : removals.taskEditHref(c),
+                          onDelete: ro ? undefined : () => removals.removeTask(c),
+                        }),
+                      )
+                    }
+                  />
+                )
+              })
             )}
             {!ro && choreForm && (
-              <>
-                <TaskForm
-                  key={choreForm.value?.id ?? 'new-chore'}
-                  value={choreForm.value}
-                  seed={emptyDraft({ date: inputFromLocalDay(date) })}
-                  onSaved={afterChoreSave}
-                  onCancel={() => setChoreForm(null)}
-                />
-                {/* Same door as the rendez-vous form: an existing corvée being edited
-                    can be removed here — deferred behind the undo toast, like the board. */}
-                {choreForm.value?.id && (
-                  <FormDelete
-                    label={t.detail.deleteChoreLabel}
-                    onDelete={() => {
-                      const c = choreForm.value!
-                      setChoreForm(null)
-                      removals.removeChore({ id: c.id, title: c.draft.title })
-                    }}
-                  />
-                )}
-              </>
+              <TaskForm
+                key="new-chore"
+                seed={emptyDraft({ date: inputFromLocalDay(date) })}
+                onSaved={afterChoreSave}
+                onCancel={() => setChoreForm(false)}
+              />
             )}
           </section>
 
-          {/* Projets & Entretien landing on this day — managed in Réglages ▸ Corvées, and
-              since 2026-09-16 each row opens the same peek the board and the month panel
-              use: « Modifier » (→ Réglages, the only editor) + « Supprimer » (deferred).
-              Shown only when there's something, to keep the day page calm. No ＋: this is
-              a mirror, not a home. */}
-          {dayHome.length > 0 && (
-            <section className="day-plan__sec" style={{ '--sec-tint': CATS.chore.color } as React.CSSProperties}>
-              <SecLabel label={o18n.home.subEntretien} icon="gear-six-bold" count={dayHome.length} />
-              {dayHome.map((h) => (
-                <Act
-                  key={h.id}
-                  cat="chore"
-                  title={h.title}
-                  color={h.color || undefined}
-                  onOpen={() =>
-                    detail.open(
-                      buildChore({ id: h.id, title: h.title, color: h.color, at: date, who: null, who_id: null }, detailCtx, {
-                        editHref: ro ? undefined : removals.homeEditHref(h.id),
-                        onDelete: ro ? undefined : () => removals.removeHome(h),
-                      }),
-                    )
-                  }
-                />
-              ))}
-            </section>
-          )}
-
-          {/* À compléter for THIS day — per-day check-off todos (migration 0046), with
-              inline edit, check-in-place and one-tap departure templates. Its picker
-              waits behind the same header ＋ as the two sections above (it used to sit
-              open under the list), and it carries the same glyph + tint, so the shared
-              component reads as one of this page's sections rather than a guest. */}
+                    {/* This day's departure checklists (migration 0116), with check-in-place and
+              one-tap templates. A loose to-do on this day is a task now, listed once in
+              « Tâches » above. Its picker waits behind the header ＋ like every section here. */}
           <TodoSection
             day={date}
-            title={t.todos.dayTitle}
+            title={t.departure.title}
+            show="checklists"
             members={formMembers}
             bento={false}
             icon="check-square-bold"

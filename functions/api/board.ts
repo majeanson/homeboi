@@ -2,7 +2,7 @@ import { okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { localDayStart, addLocalDays } from '../_lib/ids'
 import { parseRecur, expandRange } from '../_lib/recur'
-import { boardTaskFields, boardTaskRows } from '../_lib/taskViews'
+import { boardTaskRows, boardTasks } from '../_lib/taskViews'
 import { isSoon as isSoonAt } from '../_lib/reminder'
 import { fetchBirthdayPeople, birthdayOccurrences } from '../_lib/birthdays'
 import { workOccurrencesInRange, parseScheduleBlockRow, type ScheduleBlock, type ScheduleBlockRow } from '../_lib/carResolve'
@@ -318,43 +318,10 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const tomorrowMerged = sortEvents([...oneOff(tomorrowEvents.results), ...recurIn(tomorrow, dayAfter), ...bdayIn(tomorrow, dayAfter)])
   const upcomingMerged = sortEvents([...oneOff(upcoming.results), ...recurIn(dayAfter, weekEnd), ...bdayIn(dayAfter, weekEnd)]).slice(0, 8)
 
-  // Recent helpers per chore (shared-task attribution). Today's contributions
-  // only, so "aidé par" reflects who pitched in on the current run, not history.
-  // JOIN (not IN-subquery) so the planner walks the household's few tasks via
-  // home_projects_household_idx, then task_participants_task_idx(task_id, contributed_at)
-  // per task — this read rides the 10 s kiosk poll, it must stay index-only.
-  const helps = await ctx.env.DB.prepare(
-    `SELECT tp.task_id, tp.role, m.display_name AS name
-       FROM task_participants tp
-       JOIN home_projects t ON t.id = tp.task_id AND t.household_id = ?
-       LEFT JOIN members m ON m.id = tp.member_id
-      WHERE tp.contributed_at >= ?
-      ORDER BY tp.contributed_at DESC`,
-  )
-    .bind(hh, today)
-    .all<{ task_id: string; role: string; name: string | null }>()
-
-  // Distinct helpers per chore: collapse repeat taps so "aidé par" shows each
-  // person once (named people by name; anonymous taps as a single role emoji),
-  // not one entry per tap. No counts — that would read as a score (NFR-CALM-1).
-  const helpersByTask = new Map<string, { name: string | null; role: string }[]>()
-  const seenByTask = new Map<string, Set<string>>()
-  for (const h of helps.results) {
-    const list = helpersByTask.get(h.task_id) ?? []
-    const seen = seenByTask.get(h.task_id) ?? new Set<string>()
-    const key = h.name ?? `role:${h.role}`
-    if (!seen.has(key) && list.length < 5) {
-      seen.add(key)
-      list.push({ name: h.name, role: h.role })
-    }
-    helpersByTask.set(h.task_id, list)
-    seenByTask.set(h.task_id, seen)
-  }
-  // Every task section of the board, from one row shape (_lib/taskViews: the one file that
-  // still knows the faces, and why).
-  const memberName = (id: string | null) =>
-    (id && members.results.find((m) => m.id === id)?.display_name) || null
-  const taskFields = boardTaskFields(taskRows, { today, tomorrow, weekEnd, now, memberName, helpers: (id) => helpersByTask.get(id) ?? [] })
+  // Every task on the board, from one row shape and one rule per question (_lib/taskViews):
+  // the card (due, owed or ticked today) and « À venir » (open, next date this week). The
+  // « aidé par » list the chore payload used to carry left with it: no surface read it.
+  const { tasks, tasksAhead } = boardTasks(taskRows, today, now)
 
   // Today's meals, in the household's slot order (Réglages ▸ Repas; déjeuner →
   // dîner → collation → souper → dessert out of the box) so the board reads
@@ -406,14 +373,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
     tomorrowMeals,
     tomorrowNote: tomorrowNoteRes.results[0] ?? null,
     list: openList.results,
-    chores: taskFields.chores,
-    choresToday: taskFields.choresToday,
-    choresUpcoming: taskFields.choresUpcoming,
-    homeToday: taskFields.homeToday,
-    homeUpcoming: taskFields.homeUpcoming,
-    homeOverdue: taskFields.homeOverdue,
-    todos: taskFields.todos,
-    tasks: taskFields.tasks,
+    tasks,
+    tasksAhead,
     notes: notes.results,
     leftovers: leftoversRes.results,
   })

@@ -57,8 +57,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
     )
       .bind(hh)
       .all<{ id: string; title: string; start_at: number; all_day: number; member_id: string | null; recur_json: string }>(),
-    // Projects: upcoming (dated in range) AND advanced this week (_lib/taskViews).
-    weekTasks(ctx.env.DB, hh, today, weekEnd, weekStart),
+    // Every task: open with its next date this week, and done in the week behind (_lib/taskViews).
+    weekTasks(ctx.env.DB, hh, today, Math.floor(Date.now() / 1000), weekEnd, weekStart),
     // Week behind — chores done (the append-only attribution log; faces, no count).
     ctx.env.DB.prepare(
       `SELECT tp.task_id, tp.role, tp.contributed_at, tp.member_id,
@@ -178,7 +178,10 @@ export const onRequestGet = authed(async (ctx, actor) => {
     routinesDone.push({ name: r.name, who: nameOf(r.member_id), face: faceOf(r.member_id) })
   }
 
-  const projectsDone = projects.done
+  // Done in the week: every task once. A tick the contribution log already names (with its
+  // faces, above) is not repeated here.
+  const logged = new Set(ledgerRows.results.map((r) => r.task_id))
+  const projectsDone = projects.done.filter((p) => !logged.has(p.id)).map((p) => ({ title: p.title, color: p.color }))
 
   return okWire('this-week', {
     today,

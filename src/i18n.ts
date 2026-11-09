@@ -924,7 +924,7 @@ export const FR = {
       birthday: 'Anniversaires',
       trip: 'Voyages',
       event: 'Rendez-vous annuels',
-      upkeep: 'Entretien',
+      task: 'Tâches',
       life: 'Le long jeu',
       // D-17 « La rentrée » — the school-year bounds (rentrée, dernier jour, relâches).
       ecole: 'Année scolaire',
@@ -3055,8 +3055,6 @@ export const FR = {
   // départ réutilisables. Voir src/lib/todos.ts + TodoSection.tsx.
   todos: {
     title: 'Tâches',
-    // The day page's own list, beside « Les tâches » that come back: same word, two lists.
-    dayTitle: 'Pour cette journée',
     // A task's one field. On the board the main button means « today », this one keeps it
     // for later, in the Tâches view: a someday task does not sit on the glance.
     addSomeday: 'Un jour',
@@ -3160,7 +3158,6 @@ export const FR = {
     // The day page's inline forms carry the delete door too (2026-09-16): the label
     // names what goes, the confirm (deleteEventConfirm) says what it costs.
     deleteEventLabel: 'Supprimer le rendez-vous',
-    deleteChoreLabel: 'Supprimer la tâche',
     // « Reporter » (entretien) — postpone without checking: quiet, then it returns.
     postponeWeek: 'Reporter d’une semaine',
     postponeCycle: 'Au prochain cycle',

@@ -16,6 +16,7 @@ import { isGuest } from '../../lib/device'
 import { useMots, waitingMots, type Mot } from '../../lib/mots'
 import { useHabits, dueToday, habitReading, habitStatusOn, habitToday, todaysDefi, faceTriedDefi, useToggleDefiMark } from '../../lib/habits'
 import type { BoardModel } from '../../lib/boardModel'
+import { isTicked } from '../../lib/tasks'
 import { splitTodos, type Todo } from '../../lib/todos'
 import { colorOf, nameOf, type BoardData, type EventRow, type MealRow } from './types'
 import { BoardCanvas } from './BoardCanvas'
@@ -74,8 +75,8 @@ export function ToddlerBoard({
   const tip = weatherTip(weather)
 
   const todayEvents = model.today.events
-  const todayChores = model.today.chores
-  const todayTodos = model.today.todos
+  // The SAME list as the parent card (lib/boardModel): due, owed or ticked today, lensed.
+  const todayTasks = model.tasks
   const tomorrowEvents = model.tomorrow.events
   const otherMeals = model.meals.otherToday
   const otherTomorrowMeals = model.meals.otherTomorrow
@@ -219,7 +220,7 @@ export function ToddlerBoard({
   // THE one loose/checklist discriminator (lib/todos) — the same split the parent
   // « À faire » card and the departure card bucket with, so the two lenses can never
   // disagree about which row is a leaving-checklist item.
-  const { loose: looseTodos, checklists: todoChecklists } = splitTodos(openTodos)
+  const { checklists: todoChecklists } = splitTodos(openTodos)
   const departureTodos = todoChecklists.flatMap((g) => g.todos)
 
   const kidSection = (label: string, tiles: Tile[]) =>
@@ -308,34 +309,24 @@ export function ToddlerBoard({
             })),
           )}
           {kidSection(t.board.today, eventTiles(todayEvents))}
-          {/* « Tâches » — read aloud too. Mirrors the parent board's ONE card: what is due,
-              whose turn rides in the sub, and the one-offs, in a single section, so a
-              pre-reader sees everything left to do in one place. */}
-          {kidSection(t.board.todos, [
-            ...todayChores.map((c) => ({
-              key: c.id,
-              icon: pictoFor(c.title, '🧹'),
-              label: c.title,
-              sub: c.who ?? undefined,
-              narration: c.who ? `${c.title}. ${c.who}` : c.title,
-              color: c.color ?? undefined,
-            })),
-            ...todayTodos.map((c) => ({
-              key: c.id,
-              icon: pictoFor(c.title, '✅'),
-              label: c.title,
-              sub: c.who ?? undefined,
-              narration: c.title,
-              color: c.color ?? undefined,
-            })),
-            ...looseTodos.map((td) => ({
-              key: td.id,
-              icon: pictoFor(td.title, '✅'),
-              label: td.title,
-              narration: td.title,
-              color: memberColor(td.member_id) ?? undefined,
-            })),
-          ])}
+          {/* « Tâches » — read aloud too. The parent board's ONE card, the same predicate
+              (lib/boardModel `tasks`): what is due, owed or ticked today, whose turn riding
+              in the sub. A ticked one wears the done look, as on the card. */}
+          {kidSection(
+            t.board.todos,
+            todayTasks.map((c) => {
+              const who = nameOf(data?.members ?? [], c.who_id)
+              return {
+                key: c.key,
+                icon: c.icon ?? pictoFor(c.title, '✅'),
+                label: c.title,
+                sub: who ?? undefined,
+                narration: who ? `${c.title}. ${who}` : c.title,
+                color: c.color ?? memberColor(c.who_id) ?? undefined,
+                done: isTicked(c),
+              }
+            }),
+          )}
           {/* « Avant de partir » — the morning's leaving checklist, as its OWN
               section rather than folded into « Tâches ».
               WHY IT MATTERS HERE: on a locked kiosk (?kid=1) the parent departure

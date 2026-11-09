@@ -5,12 +5,16 @@ import { addLocalDays, localDayStart } from '../functions/_lib/ids'
 import { gatherAskSnapshot } from '../functions/_lib/askSnapshot'
 import type { Env } from '../functions/_lib/env'
 import { recapTaskTitles } from '../functions/_lib/taskViews'
+import type { BoardWire, MonthWire, TasksWire, YearWire } from '../functions/_lib/wire'
 
-// EVERY READER OF A TASK, BEFORE AND AFTER (plans/2026-11-06-TACHE-UNIFIEE.md, « retire the
-// faces »). The readers were rewritten onto one row shape (`_lib/taskItem.ts`) with nothing
-// visible allowed to change, so what each one ANSWERS is pinned here, whole, and the snapshot
-// was written by the code BEFORE the rewrite (commit that adds this file). A diff in the
-// snapshot is a change a household would see.
+// EVERY READER OF A TASK, PINNED (plans/2026-11-06-TACHE-UNIFIEE.md). What each reader ANSWERS
+// is pinned here, whole: a diff in the snapshot is a change a household would see.
+//
+// HISTORY. The snapshot was first written by the code before the « one row shape » rewrite
+// (11b8ab05) and held still through it. On 2026-11-08 the owner chose ONE RULE PER QUESTION
+// (« align every view »), which changes what several readers answer ON PURPOSE. Those changes
+// are written below as explicit assertions FIRST (`the decided rules`), then the snapshot was
+// regenerated; every hunk that moved is explained by one of them (the commit lists them).
 //
 // HOW IT STAYS STILL. The clock is pinned (fake `Date`, which the Worker in this isolate reads
 // too), every row is written with fixed ids and times derived from that clock, and the few ids
@@ -80,7 +84,9 @@ async function build(tag: string, instant: string): Promise<Fixture> {
   await insertRows('home_projects', [
     // ── chores (the old `tasks`): `at` is the recurrence's chosen start, NULL = created_at
     { ...chore, id: id('C1aaaaaaa'), title: 'Sortir les poubelles', rotation_json: JSON.stringify([m1, m2]), current_idx: 1, last_done_at: D(-1) + 3600, last_done_by: m1, colour: '#88A36F', recur_json: WEEKLY, at: UTC_TODAY - 6 * 86400, lead_seconds: 3600, announce_evening: 1 },
-    { ...chore, id: id('C2aaaaaaa'), title: 'Vaisselle', recur_json: DAILY, created_at: now - 10 * 86400 },
+    // A recurring chore made with no start: 0152 wrote its created_at as `at` (the date it
+    // was always read from), so the fixture holds it the way production does now.
+    { ...chore, id: id('C2aaaaaaa'), title: 'Vaisselle', recur_json: DAILY, created_at: now - 10 * 86400, at: now - 10 * 86400 },
     { ...chore, id: id('C3aaaaaaa'), title: 'Litière', recur_json: WEEKLY, at: UTC_TODAY - 9 * 86400, subject_kind: 'pet', subject_id: pet, icon: '🐱', effort: 2 },
     { ...chore, id: id('C4aaaaaaa'), title: 'Ranger le garage' },
     { ...chore, id: id('C5aaaaaaa'), title: 'Rendre les livres', at: D(1), rotation_json: JSON.stringify([m3]) },
@@ -211,11 +217,63 @@ for (const [tag, instant] of Object.entries(INSTANTS)) {
       expect(await read('/api/this-week')).toMatchSnapshot()
     })
 
-    it('the weekly recap’s « done this week » (it needs a model, so its read is compared with the old query, frozen)', async () => {
-      const since = addLocalDays(f().today, -7)
-      const old = await env.DB.prepare("SELECT title FROM home_projects WHERE household_id = ? AND kind = 'chore' AND last_done_at >= ? LIMIT 20").bind(f().s.householdId, since).all<{ title: string }>()
-      expect(old.results.length, 'canary: chores were done this week').toBeGreaterThan(2)
-      expect(await recapTaskTitles(env.DB, f().s.householdId, since)).toEqual(old.results.map((r) => r.title))
+    it('the weekly recap’s « done this week » (it needs a model, so its read is pinned directly)', async () => {
+      expect(await recapTaskTitles(env.DB, f().s.householdId, addLocalDays(f().today, -7))).toMatchSnapshot()
+    })
+
+    // ── The decided rules (2026-11-08, « align every view »), written before the snapshot moved.
+    describe('the decided rules', () => {
+      const t = () => f().today
+      const tid = (x: string) => `${tag.slice(0, 3)}${x}`
+      const month = () => read(`/api/month?from=${addLocalDays(t(), -40)}&to=${addLocalDays(t(), 40)}`) as Promise<MonthWire>
+
+      it('every dated task gets a calendar cell: a dated one-off chore now has one', async () => {
+        const m = await month()
+        expect(m.tasks.some((c) => c.taskId === tid('C5aaaaaaa')), 'Rendre les livres').toBe(true)
+      })
+      it('a ticked one-off keeps its cell, struck: a ticked dated to-do now has one, `done`', async () => {
+        const m = await month()
+        expect(m.tasks.find((c) => c.taskId === tid('T7aaaaaaa'))?.done, 'Daté coché').toBe(true)
+        expect(m.tasks.find((c) => c.taskId === tid('H7aaaaaaa'))?.done, 'a ticked plan, as before').toBe(true)
+        expect(m.tasks.find((c) => c.taskId === tid('T3aaaaaaa'))?.done, 'an open one is not struck').toBe(false)
+      })
+      it('the departure checklists keep their own marker; a loose to-do is a task cell, never both', async () => {
+        const m = await month()
+        expect(m.todos.every((x) => x.section != null)).toBe(true)
+        expect(m.todos.some((x) => x.id === tid('T3aaaaaaa'))).toBe(false)
+      })
+      it('the year shows every dated task: a chore and a to-do', async () => {
+        const y = (await read(`/api/year?from=${addLocalDays(t(), -30)}&to=${addLocalDays(t(), 400)}`)) as YearWire
+        expect(y.tasks.some((c) => c.id.startsWith(tid('C1aaaaaaa'))), 'Sortir les poubelles').toBe(true)
+        expect(y.tasks.some((c) => c.id === tid('TAaaaaaaa')), 'Dans cinq jours').toBe(true)
+      })
+      it('the board: one list for the card (the to-dos due today included) and one for « À venir »', async () => {
+        const b = (await read('/api/board')) as BoardWire
+        expect(b.tasks.some((x) => x.id === tid('T2aaaaaaa')), 'a to-do due today rides the board').toBe(true)
+        expect(b.tasks.find((x) => x.id === tid('T4aaaaaaa'))?.overdueSince, 'an owed to-do is carried forward').not.toBeNull()
+        expect(b.tasks.find((x) => x.id === tid('C3aaaaaaa'))?.overdueSince, 'an owed chore is carried forward').not.toBeNull()
+        expect(b.tasksAhead.some((x) => x.id === tid('TAaaaaaaa')), 'a to-do in five days is « À venir »').toBe(true)
+        expect(b.tasksAhead.every((x) => x.done === 'open' && !x.dueToday)).toBe(true)
+      })
+      it('the recap hears every task done this week: a to-do and a project, not only chores', async () => {
+        const titles = await recapTaskTitles(env.DB, f().s.householdId, addLocalDays(t(), -7))
+        expect(titles).toContain('Coché aujourd’hui')
+        expect(titles).toContain('Plan sans date coché')
+        expect(titles).toContain('Sortir les poubelles')
+      })
+      it('the assistant hears every open task: a to-do and a project, never a ticked one-off', async () => {
+        vi.setSystemTime(new Date(instant))
+        const snap = (await gatherAskSnapshot(env as unknown as Env, f().s.householdId, t())) as unknown as { chores: { title: string }[] }
+        const titles = snap.chores.map((c) => c.title)
+        expect(titles).toContain('Appeler la garderie')
+        expect(titles).toContain('Rénover la cuisine')
+        expect(titles).not.toContain('Arroser')
+      })
+      it('« Sur quoi ? » offers the projects, and only them: kind plan', async () => {
+        const all = (await read('/api/tasks')) as TasksWire
+        expect(all.subjects.projects.map((p) => p.title)).toContain('Rénover la cuisine')
+        expect(all.subjects.projects.map((p) => p.title)).not.toContain('Appeler la garderie')
+      })
     })
 
     it('what the house assistant is told', async () => {

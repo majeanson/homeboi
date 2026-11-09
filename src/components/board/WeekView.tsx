@@ -151,7 +151,7 @@ export function WeekView({
                       <span key={i} className="weekv__line">
                         <DayMark dot={l} />
                         {l.time && <span className="weekv__time mono">{l.time}</span>}
-                        <span className="weekv__label">{l.label}</span>
+                        <span className={'weekv__label' + (l.done ? ' is-done' : '')}>{l.label}</span>
                       </span>
                     ))
                   )}

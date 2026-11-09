@@ -1,6 +1,7 @@
 import { parseRecur } from './recur'
 import { choreSchedule, upkeepStatus, type UpkeepRowLike } from './upkeep'
 import { isSoon } from './reminder'
+import { addLocalDays } from './ids'
 import { parseRotation, turnOf } from './rotation'
 import { subjectFromRow } from './subject'
 import { taskEffort } from './validate'
@@ -64,9 +65,15 @@ interface Scheduled {
   clearedAt: number | null | undefined
   rotation: string[]
   idx: number
+  /** Who a task with no rotation belongs to: a to-do's author (0150), else nobody. */
+  owner: string | null | undefined
   kind: TaskItem['kind']
+  announceEvening: boolean
 }
 
+// ONE builder for every task. Each answer below is read off the row's AXES (a date? a
+// recurrence? a tick? a rotation?), never off its face: the face only says which alias a
+// row's gestures go to (`source`), and whether a home row is an entretien (`kind`).
 function fromSchedule(s: Scheduled, today: number, now: number): TaskItem | null {
   const recurring = parseRecur(s.schedule.recur_json) != null
   const doneAt = s.schedule.last_done_at
@@ -85,7 +92,8 @@ function fromSchedule(s: Scheduled, today: number, now: number): TaskItem | null
     subject: s.ref,
     kind: s.kind,
     recurring,
-    recurJson: s.schedule.recur_json,
+    // A recurrence `parseRecur` refuses is no recurrence: the task is a one-off, and says so.
+    recurJson: recurring ? s.schedule.recur_json : null,
     day,
     dueToday: st.dueToday,
     overdueSince: st.overdueSince,
@@ -93,11 +101,21 @@ function fromSchedule(s: Scheduled, today: number, now: number): TaskItem | null
     soon: day != null ? isSoon(now, day, s.lead) : false,
     done,
     doneAt,
-    who_id: turnOf(s.rotation, s.idx),
+    who_id: turnOf(s.rotation, s.idx) ?? s.owner ?? null,
     team: s.rotation,
+    announceEvening: s.announceEvening,
   }
   return { ...item, onBoard: onBoardNow(item) }
 }
+
+/** « À venir »: open, and its next date falls in the six days after today. One rule for every
+ *  task: the board's À venir and its « annoncer la veille » line both read it. */
+export const aheadThisWeek = (i: Pick<TaskItem, 'done' | 'day'>, today: number): boolean =>
+  i.done === 'open' && i.day != null && i.day >= addLocalDays(today, 1) && i.day < addLocalDays(today, 7)
+
+/** What a reader shows of a stored `kind`: an entretien, a plan, or neither. A chore and a
+ *  to-do read the same: nothing a household sees tells them apart. */
+export const kindOf = (kind: string | null | undefined): TaskItem['kind'] => (kind === 'upkeep' ? 'upkeep' : kind === 'plan' ? 'plan' : null)
 
 /** Each face as a WHERE term on the spine (`home_projects`, the one table every task lives in since 0150). */
 export const FACE = {
@@ -128,6 +146,7 @@ export interface ChoreTaskRow {
   icon: string | null
   effort: number | null
   created_at: number
+  announce_evening?: number | null
 }
 
 export function choreTask(c: ChoreTaskRow, today: number, now: number): TaskItem | null {
@@ -148,7 +167,9 @@ export function choreTask(c: ChoreTaskRow, today: number, now: number): TaskItem
       clearedAt: c.cleared_at,
       rotation: parseRotation(c.rotation_json),
       idx: c.current_idx,
+      owner: null,
       kind: null,
+      announceEvening: c.announce_evening === 1,
     },
     today,
     now,
@@ -186,7 +207,9 @@ export function homeTask(h: HomeTaskRow, today: number, now: number): TaskItem |
       clearedAt: h.cleared_at,
       rotation: parseRotation(h.rotation_json),
       idx: h.current_idx,
-      kind: h.kind === 'upkeep' ? 'upkeep' : 'plan',
+      owner: null,
+      kind: kindOf(h.kind),
+      announceEvening: false,
     },
     today,
     now,
@@ -208,35 +231,77 @@ export interface TodoTaskRow {
   effort?: number | null
 }
 
-// A departure instance answers null: it is not a task (see the header).
+// A departure instance answers null: it is not a task (see the header). A loose to-do is a
+// one-off on its day, through the one builder; its author reads as « who » (no rotation).
 export function todoTask(td: TodoTaskRow, today: number): TaskItem | null {
   if (!isLooseTodo(td)) return null
-  const done = oneOffDone(td.done_at, null, today)
-  if (done === null) return null
-  const open = done === 'open'
-  const item = {
-    key: `todo:${td.id}`,
-    source: 'todo' as const,
-    id: td.id,
-    title: td.title,
-    color: td.color ?? null,
-    icon: td.icon ?? null,
-    effort: taskEffort(td.effort),
-    subject: subjectFromRow(td),
-    kind: null,
-    recurring: false,
-    recurJson: null,
-    day: td.day,
-    dueToday: open && td.day === today,
-    overdueSince: open && td.day != null && td.day < today ? td.day : null,
-    snoozedUntil: null,
-    soon: false,
-    done,
-    doneAt: td.done_at,
-    who_id: td.member_id,
-    team: [],
-  }
-  return { ...item, onBoard: onBoardNow(item) }
+  return fromSchedule(
+    {
+      source: 'todo',
+      id: td.id,
+      title: td.title,
+      color: td.color ?? null,
+      icon: td.icon ?? null,
+      effort: taskEffort(td.effort),
+      ref: subjectFromRow(td),
+      schedule: { at: td.day, recur_json: null, last_done_at: td.done_at },
+      lead: null,
+      clearedAt: null,
+      rotation: [],
+      idx: 0,
+      owner: td.member_id,
+      kind: null,
+      announceEvening: false,
+    },
+    today,
+    // No lead, so `now` decides nothing for a to-do.
+    today,
+  )
+}
+
+/** A spine row as it is stored (0150): every column a task's answers are read from. */
+export interface SpineTaskRow extends UpkeepRowLike {
+  id: string
+  kind: string | null
+  title: string
+  color: string | null
+  lead_seconds: number | null
+  announce_evening: number | null
+  cleared_at: number | null
+  rotation_json: string
+  current_idx: number
+  member_id: string | null
+  carnet_id: string | null
+  subject_kind: string | null
+  subject_id: string | null
+  icon: string | null
+  effort: number | null
+}
+
+/** ANY spine row as a task, or null once a one-off has cleared: THE builder every reader uses
+ *  (_lib/taskViews). Of the face it keeps only `source`, the alias a row's gestures go to. */
+export function spineTask(r: SpineTaskRow, today: number, now: number): TaskItem | null {
+  return fromSchedule(
+    {
+      source: faceOfKind(r.kind),
+      id: r.id,
+      title: r.title,
+      color: r.color,
+      icon: r.icon,
+      effort: taskEffort(r.effort),
+      ref: subjectFromRow(r),
+      schedule: r,
+      lead: r.lead_seconds,
+      clearedAt: r.cleared_at,
+      rotation: parseRotation(r.rotation_json),
+      idx: r.current_idx,
+      owner: r.member_id,
+      kind: kindOf(r.kind),
+      announceEvening: r.announce_evening === 1,
+    },
+    today,
+    now,
+  )
 }
 
 export const present = (x: TaskItem | null): x is TaskItem => x != null

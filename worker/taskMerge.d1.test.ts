@@ -51,7 +51,9 @@ const HOME_TASK_COLS =
 const OLD_CHORE_COLS =
   'id, title, colour AS color, rotation_json, current_idx, last_done_at, cleared_at, recur_json, recur_start, lead_seconds, subject_kind, subject_id, icon, effort, created_at'
 const OLD = {
-  tasksChores: `SELECT ${OLD_CHORE_COLS} FROM tasks WHERE household_id = ? ORDER BY created_at LIMIT 500`,
+  // + announce_evening: TaskItem carries it since 2026-11-08 (`announceEvening`), the one
+  // column the old /api/tasks did not need.
+  tasksChores: `SELECT ${OLD_CHORE_COLS}, announce_evening FROM tasks WHERE household_id = ? ORDER BY created_at LIMIT 500`,
   tasksHomes: `SELECT ${HOME_TASK_COLS} FROM home_projects WHERE household_id = ? ORDER BY created_at LIMIT 500`,
   tasksTodos:
     'SELECT id, title, day, member_id, done_at, section, source_template_id, subject_kind, subject_id, icon, colour AS color, effort FROM todos WHERE household_id = ? AND source_template_id IS NULL AND section IS NULL AND (done_at IS NULL OR done_at >= ?) ORDER BY created_at, position LIMIT 500',
@@ -121,6 +123,8 @@ const NEW = {
        FROM task_participants tp JOIN home_projects t ON t.id = tp.task_id AND t.household_id = ?
       WHERE tp.contributed_at >= ? ORDER BY tp.contributed_at DESC, tp.id`,
 }
+// A recurring chore with no start reads its created_at as its start, now WRITTEN by 0152.
+const started = (c: Row, created = c.created_at) => (c.recur_start == null && typeof c.recur_json === 'string' && /"freq":"(daily|weekly|monthly|yearly)"/.test(c.recur_json) ? { ...c, recur_start: created } : c)
 const MONTH_FROM = D(-40)
 const MONTH_TO = D(40)
 
@@ -311,8 +315,11 @@ beforeAll(async () => {
   built = { s: s1, before: await before(s1.householdId), subjects, history }
   sample = { s: s2, before: await before(s2.householdId), subjects: [], history: new Map(), map }
 
-  // THE MIGRATION, as wrangler would apply it.
+  // THE MIGRATION, as wrangler would apply it — then every later one, as production reaches
+  // them now (0152 writes the start a recurring chore read as « from created_at »; its own
+  // drill is worker/taskStart.d1.test.ts).
   await applyD1Migrations(DRILL, MERGE)
+  await applyD1Migrations(DRILL, MIGRATIONS.filter((m) => m.name > '0150_'))
   await copyBack(s1.householdId)
   await copyBack(s2.householdId)
 
@@ -354,28 +361,22 @@ describe('the merge, run on pre-merge households', () => {
         expect(byKey(got.tasks)).toEqual(byKey(d().before.tasks))
       })
 
-      it('the board: its tasks, and its chore rows, are identical', async () => {
+      it('the board: every task it held is still there, identical; the one list now holds the to-dos too', async () => {
+        // Since 2026-11-08 (« align every view ») the board's one `tasks` list carries every
+        // task due, owed or ticked today, the loose to-dos included (they rode /api/todos
+        // before). The merge is judged on the rows it moved: each old board task, whole.
         const got = await okJson<BoardWire>(d().s.fetch('/api/board'))
-        expect(byKey(got.tasks)).toEqual(byKey(d().before.boardTasks))
-        const shape = (c: Row) => ({
-          id: c.id,
-          title: c.title,
-          rotation_json: c.rotation_json,
-          current_idx: c.current_idx,
-          last_done_at: c.last_done_at,
-          color: c.color,
-          recur_json: c.recur_json,
-          recur_start: c.recur_start,
-          lead_seconds: c.lead_seconds,
-          announce_evening: c.announce_evening,
-          created_at: c.created_at,
-        })
-        expect(byId(got.chores.map((c) => shape(c as unknown as Row)) as { id: string }[])).toEqual(byId(d().before.boardChores.map((c) => shape(c as unknown as Row)) as { id: string }[]))
+        const now = new Map(got.tasks.map((x) => [x.key, x]))
+        for (const old of d().before.boardTasks) expect(now.get(old.key), old.key).toEqual(old)
+        const todosOnBoard = (await okJson<TodosWire>(d().s.fetch('/api/todos'))).items.filter((i) => i.onBoard)
+        for (const td of todosOnBoard) expect(now.get(td.key), td.key).toEqual(td)
       })
 
       it('the three alias GETs answer what they answered', async () => {
         const chores = await okJson<{ chores: Row[] }>(d().s.fetch('/api/chores'))
-        expect(byId(chores.chores as { id: string }[])).toEqual(byId(d().before.choresGet as { id: string }[]))
+        // 0152 wrote a recurring chore's start where it had none (its created_at, read so before).
+        const created = new Map((await all<{ id: string; created_at: number }>(env.DB, 'SELECT id, created_at FROM home_projects WHERE household_id = ?', hh())).map((r) => [r.id, r.created_at]))
+        expect(byId(chores.chores as { id: string }[])).toEqual(byId((d().before.choresGet as Row[]).map((c) => started(c, created.get(c.id as string))) as { id: string }[]))
         const homes = await okJson<{ projects: Row[] }>(d().s.fetch('/api/home-projects'))
         expect(byId(homes.projects as { id: string }[])).toEqual(byId(d().before.homeGet as unknown as { id: string }[]))
         const glance = await okJson<TodosWire>(d().s.fetch('/api/todos'))
@@ -388,13 +389,14 @@ describe('the merge, run on pre-merge households', () => {
       })
 
       it('the calendar reads the same rows (month, then the endpoint answers)', async () => {
-        expect(byId(await all<{ id: string }>(env.DB, NEW.monthChores, hh()))).toEqual(byId(d().before.monthChores as { id: string }[]))
+        // A recurring chore with no start reads its created_at as its start, now WRITTEN by 0152.
+        expect(byId(await all<{ id: string }>(env.DB, NEW.monthChores, hh()))).toEqual(byId((d().before.monthChores as Row[]).map((c) => started(c)) as { id: string }[]))
         expect(byId(await all<{ id: string }>(env.DB, NEW.monthHomes, hh()))).toEqual(byId(d().before.monthHomes as { id: string }[]))
-        const month = await okJson<{ todos: { id: string; title: string; member_id: string | null; day: number; section: string | null }[] }>(
-          d().s.fetch(`/api/month?from=${MONTH_FROM}&to=${MONTH_TO}`),
-        )
-        // The to-do cells are the rows themselves: compare them whole.
-        expect(byId(month.todos)).toEqual(byId(d().before.monthTodos as { id: string; title: string; member_id: string | null; day: number; section: string | null }[]))
+        const month = await okJson<{ todos: { id: string }[]; tasks: { taskId: string; done: boolean }[] }>(d().s.fetch(`/api/month?from=${MONTH_FROM}&to=${MONTH_TO}`))
+        // Every open dated to-do the old calendar named is still there: a departure row as a
+        // « À cocher » marker, a loose one as a task cell (2026-11-08, one cell per task).
+        const named = new Set([...month.todos.map((x) => x.id), ...month.tasks.filter((c) => !c.done).map((c) => c.taskId)])
+        for (const old of d().before.monthTodos as { id: string }[]) expect(named.has(old.id), old.id).toBe(true)
       })
 
       it('the ledger’s history is identical, and so are the recap’s and the house’s titles', async () => {
@@ -406,10 +408,15 @@ describe('the merge, run on pre-merge households', () => {
     })
   }
 
-  it('a subject’s history is identical: the old three queries on the old rows, then the endpoint', async () => {
+  it('a subject’s history keeps every line: the old three queries on the old rows, then the endpoint', async () => {
+    // Since 2026-11-08 the history is ONE rule (every completion), so it may name MORE than
+    // the old three queries did (a to-do ticked today, a carnet held in subject_kind); every
+    // old line is still there, with its title, its moment and its person.
+    const line = (l: { title: string; at: number; who_id: string | null }) => `${l.title}|${l.at}|${l.who_id}`
     for (const ref of built.subjects) {
       const got = await okJson<TasksWire>(built.s.fetch(`/api/tasks?subject=${ref.kind}:${ref.id}`))
-      expect(got.history, `${ref.kind} history`).toEqual(built.history.get(`${ref.kind}:${ref.id}`))
+      const have = new Set(got.history.map(line))
+      for (const old of built.history.get(`${ref.kind}:${ref.id}`) ?? []) expect(have.has(line(old)), `${ref.kind} ${line(old)}`).toBe(true)
     }
     // …and it is not vacuous: the subjects have lines from all three old tables between them.
     const lines = [...built.history.values()].flat()

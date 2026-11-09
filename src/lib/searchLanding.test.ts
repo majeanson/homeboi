@@ -15,11 +15,11 @@ describe('search landing — one table', () => {
     expect(landingFor({ kind: 'drawing', id: 'd' })).toBe('/drawings?item=d')
     expect(landingFor({ kind: 'habit', id: 'h' })).toBe('/board/habitudes?item=h')
     expect(landingFor({ kind: 'mot', id: 'm' })).toBe('/board?item=m')
-    expect(landingFor({ kind: 'todo', id: 't' })).toBe('/board?item=t')
+    expect(landingFor({ kind: 'task', id: 't', onBoard: true })).toBe('/board?item=t')
     expect(landingFor({ kind: 'idea', id: 'i' })).toBe('/kitchen/idees?tab=kid&item=i')
   })
-  it('a chore lands on the Tâches view', () => {
-    expect(landingFor({ kind: 'chore' })).toBe('/board?view=taches')
+  it('a task not on today’s board lands on the Tâches view', () => {
+    expect(landingFor({ kind: 'task', id: 't', onBoard: false })).toBe('/board?view=taches')
   })
   it('a project without a carnet falls back to the Tâches view', () => {
     expect(landingFor({ kind: 'project', carnetId: 'c' })).toBe('/cercle/carnet/c')

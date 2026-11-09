@@ -142,44 +142,6 @@ export interface BoardListItem {
   checked_at: number | null
   non_urgent: number | null
 }
-export interface BoardChore {
-  id: string
-  title: string
-  rotation_json: string
-  current_idx: number
-  last_done_at: number | null
-  color: string | null
-  recur_json: string | null
-  recur_start: number | null
-  lead_seconds: number | null
-  announce_evening: number | null
-  created_at: number
-  helpers: { name: string | null; role: string }[]
-}
-interface BoardInstance {
-  id: string
-  title: string
-  color: string | null
-  at: number
-  /** Inside its calm « Bientôt » lead window right now. */
-  soon: boolean
-  who: string | null
-  who_id: string | null
-  /** Every member of the rotation, not just whose turn: a shared chore shows to anyone on it. */
-  team: string[]
-}
-/** A chore or a todo. `announce_evening`: src/lib/boardModel.ts builds the night-before line from it. */
-export interface BoardChoreInstance extends BoardInstance {
-  announce_evening: boolean
-}
-export interface BoardHomeInstance extends BoardInstance {
-  carnet_id: string | null
-  /** « Reporter » offers « au prochain cycle » only when true. */
-  recurring: boolean
-}
-export interface BoardHomeOverdue extends BoardHomeInstance {
-  overdueSince: number
-}
 export interface BoardNote {
   id: string
   text: string
@@ -236,8 +198,27 @@ export interface TaskItem {
   doneAt: number | null
   who_id: string | null
   team: string[]
+  /** « Annoncer la veille »: the board names it the evening before its day. */
+  announceEvening: boolean
   /** Due, owed or ticked today: what the bento board shows. */
   onBoard: boolean
+}
+/** One occurrence of a task on a calendar day (_lib/taskViews `cellsOf`). */
+export interface TaskCellWire {
+  id: string
+  taskId: string
+  source: TaskItem['source']
+  title: string
+  color: string | null
+  icon: string | null
+  kind: 'plan' | 'upkeep' | null
+  who_id: string | null
+  day: number
+  /** A one-off that was ticked: it keeps its cell, struck. */
+  done: boolean
+  recurring: boolean
+  /** Inside its calm « Bientôt » lead window right now. */
+  soon: boolean
 }
 export interface BoardWire {
   syncedAt: number
@@ -256,15 +237,10 @@ export interface BoardWire {
   tomorrowMeals: BoardMeal[]
   tomorrowNote: BoardDayNote | null
   list: BoardListItem[]
-  chores: BoardChore[]
-  choresToday: BoardChoreInstance[]
-  choresUpcoming: BoardChoreInstance[]
-  homeToday: BoardHomeInstance[]
-  homeUpcoming: BoardHomeInstance[]
-  homeOverdue: BoardHomeOverdue[]
-  todos: BoardChoreInstance[]
-  /** Chores + home_projects as tasks. The third table rides /api/todos `items`, its own poll. */
+  /** Every task due, owed or ticked today (the « Tâches » card). */
   tasks: TaskItem[]
+  /** Every open task whose next date falls in the six days after today (« À venir »). */
+  tasksAhead: TaskItem[]
   notes: BoardNote[]
   leftovers: { id: string; title: string; recipe_id: string | null; source_meal_id: string | null }[]
 }
@@ -517,10 +493,11 @@ export interface MonthWire {
     holds_car?: number
   }[]
   meals: { id: string; slot: string; title: string; cook_member_id: string | null; day: number; is_leftover?: number }[]
-  chores: { id: string; title: string; color: string | null; who: string | null; day: number }[]
+  /** Every dated task, every occurrence in the window. */
+  tasks: TaskCellWire[]
   dayNotes: { id: string; text: string; member_id: string | null; day: number }[]
+  /** The open departure checklist instances (not tasks). */
   todos: { id: string; title: string; member_id: string | null; day: number; section: string | null }[]
-  homeProjects: { id: string; kind: string; title: string; color: string | null; day: number }[]
   trips: { id: string; title: string; colour: string; start_at: number; end_at: number; shared?: true }[]
   tripPlans: {
     id: string
@@ -551,7 +528,7 @@ export interface MonthWire {
 export interface YearWire {
   birthdays: { id: string; name: string; day: number; age: number | null; memberId: string | null }[]
   events: { id: string; title: string; day: number }[]
-  upkeep: { id: string; kind: string; title: string; color: string | null; day: number }[]
+  tasks: { id: string; kind: 'plan' | 'upkeep' | null; title: string; color: string | null; day: number; done: boolean }[]
   life: { carnetId: string; name: string; color: string | null; day: number }[]
   trips: { id: string; title: string; colour: string | null; start_at: number; end_at: number; shared?: true }[]
 }

@@ -16,7 +16,7 @@ import { type Lang } from '../../i18n'
 // « L'année » (A-1, bmad/09) — the board's third glance beside Grille and Mois:
 // a HORIZON, not a planner. Twelve mini-months paint only the year's fixed
 // points — the derived fêtes (client-side, per-device opt-out), birthdays,
-// yearly-recurring events, upkeep cadences, trip bands, and each thing's
+// yearly-recurring events, every dated task, trip bands, and each thing's
 // long-jeu replacement day — as calm colour dots; underneath, the same points
 // read as month sections (this month open, the rest folded — the diary's
 // pattern). Its own cold read (/api/year, D-18 — fetched when the view opens,
@@ -25,13 +25,13 @@ const KIND_COLOR: Record<YearPointKind | 'trip', string> = {
   fete: '#c9a227', // gold — the fêtes' celebratory tint
   birthday: '#B06A93', // pink — matches the cake rows elsewhere
   event: '#5891AC', // blue — a plain (yearly) rendez-vous
-  upkeep: '#88a36f', // sage — the chore/upkeep family colour
+  task: '#88a36f', // sage — the tasks' family colour
   life: '#6b7a8f', // slate — the long-jeu horizon
   trip: '#2a8f85', // teal — the voyage family colour
   ecole: '#D9842A', // marigold — D-17, matches the board's tomorrow-school accent
 }
 
-const LEGEND: (YearPointKind | 'trip')[] = ['fete', 'birthday', 'trip', 'event', 'upkeep', 'life', 'ecole']
+const LEGEND: (YearPointKind | 'trip')[] = ['fete', 'birthday', 'trip', 'event', 'task', 'life', 'ecole']
 
 // Page-local query key: the year read lives only here (queryKeys.ts is for
 // cross-page keys). Keyed on the window start so the year rolls at month turn.
@@ -99,9 +99,10 @@ export function YearView({
       color: p.color ?? KIND_COLOR[p.kind],
       emoji: p.emoji,
       label: p.label + (p.kind === 'birthday' && p.age != null ? ` · ${t.memo.ageN(p.age)}` : ''),
+      done: !!p.done,
     }))
     for (const tr of trips) {
-      out.push({ key: `trip-${tr.id}`, day: tr.start_at, color: tr.colour || KIND_COLOR.trip, emoji: '🧳', label: tr.title })
+      out.push({ key: `trip-${tr.id}`, day: tr.start_at, color: tr.colour || KIND_COLOR.trip, emoji: '🧳', label: tr.title, done: false })
     }
     return out.sort((a, b) => a.day - b.day)
   }, [points, trips, t])
@@ -173,7 +174,7 @@ export function YearView({
                 {monthRows.map((r) => (
                   <li key={r.key} className="yearv__row">
                     <span className="yearv__dot" style={{ background: r.color }} aria-hidden="true" />
-                    <span className="yearv__label">
+                    <span className={'yearv__label' + (r.done ? ' is-done' : '')}>
                       {r.emoji ? `${r.emoji} ` : ''}
                       {r.label}
                     </span>

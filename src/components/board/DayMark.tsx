@@ -55,11 +55,13 @@ export function DayMark({ dot, size = 12, className = '' }: { dot: Dot; size?: n
       </span>
     )
   }
+  // A ticked one-off task keeps its cell, drawn hollow (month.css `.is-done`).
+  const hollow = dot.kind === 'chore' && !!dot.done
   return (
     <span
-      className={`monthv__dot monthv__dot--${dot.kind}` + className}
-      // A ring (note) is drawn from `color`; filled shapes from `background`.
-      style={dot.kind === 'note' ? { color: dot.color } : { background: dot.color }}
+      className={`monthv__dot monthv__dot--${dot.kind}` + (hollow ? ' is-done' : '') + className}
+      // A ring (a note, a ticked task) is drawn from `color`; filled shapes from `background`.
+      style={dot.kind === 'note' || hollow ? { color: dot.color } : { background: dot.color }}
     />
   )
 }

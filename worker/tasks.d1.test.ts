@@ -128,7 +128,8 @@ describe('the task read', () => {
     await s.fetch('/api/chores', { method: 'POST', body: { title: 'Sans date' } })
     await s.fetch('/api/home-projects', { method: 'POST', body: { title: 'Dû hier', kind: 'upkeep', at: addLocalDays(today(), -1) } })
     expect(titles((await todos(s)).items.filter((i) => i.onBoard))).toEqual(['En retard', 'Pour aujourd’hui'])
-    expect(titles((await board(s)).tasks)).toEqual(['Dû hier'])
+    // One list on the board since 2026-11-08: the to-dos due or owed today ride it too.
+    expect(titles((await board(s)).tasks)).toEqual(['Dû hier', 'En retard', 'Pour aujourd’hui'])
     expect(titles((await tasks(s)).tasks.filter((i) => !i.onBoard))).toEqual(['Sans date', 'Un jour'])
   })
 

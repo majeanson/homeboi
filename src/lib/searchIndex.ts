@@ -4,7 +4,7 @@ import type { Carnet, CareLog, HomePin } from './carnets'
 import type { GalleryDrawing } from './drawingGallery'
 import type { FamilyNote } from './familyNotes'
 import type { Routine, HomeProject } from '../components/operator/types'
-import type { Todo } from './todos'
+import type { TaskItem } from './tasks'
 import type { Habit } from './habits'
 import type { Mot } from './mots'
 import type { MealRow, MealIdea } from '../components/kitchen/types'
@@ -75,8 +75,8 @@ export const SEARCH_INDEX = {
     primary: (r) => r.name,
     secondary: (r) => (r.cards ?? []).map((c) => c.label).join(' '),
   }),
-  todo: entry<Todo>({ primary: (td) => td.title }),
-  chore: entry<{ title: string }>({ primary: (c) => c.title }),
+  // Every task, one entry, whatever table it lives in (lib/tasks TaskItem, /api/tasks).
+  task: entry<TaskItem>({ primary: (t) => t.title }),
   pantry: entry<PantryRow>({ primary: (x) => x.item }),
   car: entry<CarLite>({ primary: (c) => c.name }),
   carnet: entry<Carnet>({
