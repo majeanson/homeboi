@@ -8,7 +8,9 @@ import { BOARD, boardTask } from './mocks'
 
 const once = boardTask({ source: 'home', id: 'h-once', title: 'Changer le filtre', subject: { kind: 'carnet', id: 'car1' } })
 const weekly = boardTask({ source: 'chore', id: 'c-week', title: 'Sortir le bac', recurring: true, who_id: 'm1', team: ['m1', 'm2'] })
-const OPEN = { route: '/board', wait: '.board-grid .wg-slot', api: { overrides: { board: { ...BOARD, tasks: [once, weekly] } } } }
+// The board's one `tasks` list carries the to-dos too (2026-11-08): the fixture's due one rides along.
+const todo = BOARD.tasks.find((t) => t.source === 'todo')!
+const OPEN = { route: '/board', wait: '.board-grid .wg-slot', api: { overrides: { board: { ...BOARD, tasks: [once, weekly, todo] } } } }
 
 const card = (page: import('@playwright/test').Page) => page.locator('.wg-slot[data-card="todos"]')
 

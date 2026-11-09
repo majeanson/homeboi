@@ -21,7 +21,8 @@ import type { TaskItem, TasksWire } from './wire'
 //
 //   question                 the rule (every task)                                 where
 //   a calendar / year cell   every occurrence of a dated task in the window; a     `cellsOf`
-//                            one-off keeps its cell once done (`done`, struck)
+//                            one-off keeps its cell once done (`done`, struck);
+//                            the year leaves a DAILY task out (`onYearScale`)
 //   whose turn on a cell     the rotation projected per occurrence; else the       `cellsOf`
 //                            task's owner (a to-do's author)
 //   the board card           due, owed or ticked today (TaskItem.onBoard)         `boardTasks`
@@ -189,6 +190,12 @@ export async function departureRows(db: D1Database, hh: string, from: number, to
       .all<{ id: string; title: string; member_id: string | null; day: number; section: string | null }>()
   ).results
 }
+
+/** The year's density rule, the one it already applies to events: a horizon shows what falls
+ *  on the year's scale, and a DAILY task would repaint every one of its 365 cells (seen at
+ *  390px, 2026-11-08), drowning the fixed points the view exists for. A weekly one keeps its
+ *  cells, as a weekly entretien always did. Every other dated task is on the year. */
+export const onYearScale = (r: Pick<TaskRow, 'recur_json'>): boolean => parseRecur(r.recur_json)?.freq !== 'daily'
 
 /** THE calendar rule: every occurrence of every dated task in [from, to). `includeDone`: a
  *  cell is a record of the day, so a completed one-off keeps it (struck). Whose turn rides

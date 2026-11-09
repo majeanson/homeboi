@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { mockApi, seedState, BASE, BOARD, MMID } from './mocks'
+import { mockApi, seedState, BASE, BOARD, MMID, boardTask } from './mocks'
 
 // Board customization + lens coverage — the §6 e2e gaps from AUJOURDHUI.md that the
 // static screenshot frames never exercise: the « Disposition du babillard » toggle UI
@@ -287,17 +287,18 @@ const DAY = 86400
 const EVENING = MMID + 19 * 3600 // 19:00 local — well inside the 'evening' window
 const FLAGGED_TITLE = 'Sortir le bac bleu'
 
-// choresUpcoming ChoreInstance whose next occurrence lands exactly on tomorrow's
-// local midnight — the model's own match condition.
-const flaggedChore = { id: 'bac1', title: FLAGGED_TITLE, color: '#88A36F', at: MMID + DAY, who: null, who_id: null, announce_evening: true }
+// A task in « À venir » (the payload's `tasksAhead`, one list for every task since
+// 2026-11-08) whose next occurrence lands exactly on tomorrow's local midnight — the
+// model's own match condition.
+const flaggedChore = boardTask({ source: 'chore', id: 'bac1', title: FLAGGED_TITLE, color: '#88A36F', recurring: true, day: MMID + DAY, dueToday: false, onBoard: false, announceEvening: true })
 
-async function boardWithChoresUpcoming(page: Page, choresUpcoming: unknown[]) {
+async function boardWithTasksAhead(page: Page, tasksAhead: unknown[]) {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.clock.setFixedTime(new Date(EVENING * 1000))
   await mockApi(page)
   // Registered AFTER mockApi so this wins over the default BOARD fixture.
   await page.route('**/api/board**', (route) =>
-    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ...BOARD, choresUpcoming }) }),
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ...BOARD, tasksAhead }) }),
   )
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
   await page.goto('/board')
@@ -314,14 +315,14 @@ test.describe('« Sortir le bac » evening-before announce (D-21)', () => {
   const announceRow = (page: Page) => page.locator('div.act', { hasText: FLAGGED_TITLE })
 
   test('a flagged chore due tomorrow announces itself tonight as « Ce soir »', async ({ page }) => {
-    await boardWithChoresUpcoming(page, [flaggedChore])
+    await boardWithTasksAhead(page, [flaggedChore])
     const row = announceRow(page)
     await expect(row).toBeVisible()
     await expect(row.locator('.when')).toHaveText('Ce soir')
   })
 
   test('an UNFLAGGED chore due tomorrow stays silent tonight', async ({ page }) => {
-    await boardWithChoresUpcoming(page, [{ ...flaggedChore, announce_evening: false }])
+    await boardWithTasksAhead(page, [{ ...flaggedChore, announceEvening: false }])
     await expect(announceRow(page)).toHaveCount(0)
   })
 
@@ -330,7 +331,7 @@ test.describe('« Sortir le bac » evening-before announce (D-21)', () => {
     await page.clock.setFixedTime(new Date(EVENING * 1000))
     await mockApi(page)
     await page.route('**/api/board**', (route) =>
-      route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ...BOARD, choresUpcoming: [flaggedChore] }) }),
+      route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ...BOARD, tasksAhead: [flaggedChore] }) }),
     )
     // Per-device opt-out (lib/choreAnnounce), same persisted-before-load pattern
     // as the theme/audience seeds below.
@@ -344,7 +345,7 @@ test.describe('« Sortir le bac » evening-before announce (D-21)', () => {
   test('a flagged chore due further out (not tomorrow) stays silent tonight', async ({ page }) => {
     // e.g. the OTHER week of a biweekly rotation — its next occurrence isn't
     // tomorrow, so it must not announce even though the flag is on.
-    await boardWithChoresUpcoming(page, [{ ...flaggedChore, at: MMID + 8 * DAY }])
+    await boardWithTasksAhead(page, [{ ...flaggedChore, day: MMID + 8 * DAY }])
     await expect(announceRow(page)).toHaveCount(0)
   })
 })

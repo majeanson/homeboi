@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { boardTask, mockApi, seedState, ROUTES } from './mocks'
+import { BOARD, boardTask, mockApi, seedState, ROUTES } from './mocks'
 import { boxOf } from './measure'
 
 // « En attente depuis… » — a loose to-do left on a day that has passed.
@@ -18,9 +18,11 @@ const DAY = 86_400
 const base = ROUTES.todos as { todos: Record<string, unknown>[]; items: ReturnType<typeof boardTask>[] }
 const today = () => base.items[0]?.day ?? 0
 
-async function board(page: Page, todos: unknown) {
+// Since 2026-11-08 the board reads EVERY task from its own payload (one `tasks` list), a
+// loose to-do included; /api/todos keeps the departure checklists.
+async function board(page: Page, todos: unknown, tasks = BOARD.tasks) {
   await page.emulateMedia({ reducedMotion: 'reduce' })
-  await mockApi(page, { overrides: { todos } })
+  await mockApi(page, { overrides: { todos, board: { ...BOARD, tasks } } })
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
   await page.goto('/board')
   await page.locator('.hub').waitFor({ state: 'visible', timeout: 15_000 })
@@ -37,7 +39,7 @@ test('a loose to-do left on a past day leads the card with its calm owed-since l
     dueToday: false,
     overdueSince: today() - 3 * DAY,
   })
-  await board(page, { ...base, items: [...base.items, late] })
+  await board(page, { ...base, items: [...base.items, late] }, [...BOARD.tasks, late])
 
   const row = card(page).locator('.act', { hasText: 'Rapporter les livres' })
   await expect(row).toBeVisible()

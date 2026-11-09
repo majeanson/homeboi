@@ -42,10 +42,9 @@ const DAY_MONTH = {
     // Rendez-vous bucket where they can be counted and tapped directly.
     events: [{ id: 'de1', title: 'Dentiste — Léa', at: TODAY + 9 * 3600, all_day: 0, member_id: 'm3', day: TODAY, notes: NOTE }],
     meals: [],
-    chores: [{ id: 'dc1', title: 'Vider le lave-vaisselle', color: '#88A36F', who: 'Papa', day: TODAY }],
+    tasks: [{ id: 'dc1', taskId: 'dc1', source: 'chore', title: 'Vider le lave-vaisselle', color: '#88A36F', icon: null, kind: null, who_id: 'm2', day: TODAY, done: false, recurring: false, soon: false }],
     dayNotes: [],
     todos: [],
-    homeProjects: [],
     trips: [],
     tripPlans: [],
     habits: [],
@@ -102,9 +101,9 @@ test('the day leads with its schedule: Rendez-vous and Les tâches come first', 
   // The default « Journée » face is the agenda alone — the meal planner is the
   // « Repas » face, one sub-tab over (no « Les repas » section stacked below).
   const headings = (await page.locator('.day-plan__sections .sec-label b').allInnerTexts()).map((s) => s.trim())
-  // Projets & Entretien is absent (nothing lands on this day) — it only shows when
-  // there is something, and it is a mirror of Réglages ▸ Corvées, not a home.
-  expect(headings).toEqual(['Rendez-vous', 'Les tâches', 'Pour cette journée'])
+  // Every task on the day is ONE section (« Les tâches », 2026-11-08); the departure
+  // checklists keep theirs, a loose to-do is a task.
+  expect(headings).toEqual(['Rendez-vous', 'Les tâches', 'Avant de partir'])
   await expect(page.locator('.day-mng__sec')).toHaveCount(0)
   // Flipping to « Repas » shows the planner (the slot sections), not the agenda.
   await page.getByRole('tab', { name: 'Repas' }).click()
@@ -134,7 +133,7 @@ test('every section carries its ＋ in the header — no add bar under the list'
   await expect(chores.locator('.operator__inline-form')).toBeVisible()
 })
 
-test('« Pour cette journée » keeps its picker behind the same header ＋', async ({ page }) => {
+test('« Avant de partir » keeps its picker behind the same header ＋', async ({ page }) => {
   await openDay(page)
   const todos = page.locator('.todo-sec')
   // The add field is NOT open by default any more — the section leads with its rows.

@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { boardTask, mockApi, seedState, BASE } from './mocks'
+import { boardTask, mockApi, seedState, BASE, BOARD } from './mocks'
 import { boxOf } from './measure'
 
 // The board's compact lens (lib/widgetGrid.isCompact + components/board/CardLens): a
@@ -426,14 +426,9 @@ test.describe('board compact lens — bespoke band cards', () => {
 // information." The cap was a CONSTANT that had to survive the worst case (every row
 // wrapping onto two lines), and the worst case is rare. It is measured now (`fitRows`,
 // lib/widgetGrid), so a tile of short things names as many as physically fit.
-// The card reads tasks, and a someday row is not on it: these are due today.
+// The card reads the board's one `tasks` list (2026-11-08): these are due today.
 const dueTodos = (prefix: string, titles: string[]) => ({
-  todos: {
-    todos: titles.map((title, i) => ({
-      id: `${prefix}${i}`, title, day: null, member_id: null, done_at: null, position: i, section: null, source_template_id: null,
-    })),
-    items: titles.map((title, i) => boardTask({ source: 'todo', id: `${prefix}${i}`, title })),
-  },
+  board: { ...BOARD, tasks: titles.map((title, i) => boardTask({ source: 'todo', id: `${prefix}${i}`, title })) },
 })
 const SHORT_TODOS = dueTodos('s', ['Lait', 'Pain', 'Œufs', 'Beurre', 'Café', 'Miel'])
 const LONG_TODOS = dueTodos('l', [

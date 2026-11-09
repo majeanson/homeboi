@@ -2,7 +2,7 @@ import { okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { localDayStart } from '../_lib/ids'
 import { parseRecur, expandRange } from '../_lib/recur'
-import { cellsOf, datedTaskRows } from '../_lib/taskViews'
+import { cellsOf, datedTaskRows, onYearScale } from '../_lib/taskViews'
 import { fetchBirthdayPeople, birthdayOccurrences } from '../_lib/birthdays'
 import { fetchCarnetLifeItems, replacementAt } from '../_lib/carnetLife'
 
@@ -91,7 +91,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
 
   // The same cells as the month, without whose turn: a horizon names the thing, not the person.
   // `kind` stays: an entretien tints its point (lib/year). A done one-off is struck.
-  const tasks = cellsOf(taskRows, from, to, dayOf).map((c) => ({ id: c.id, kind: c.kind, title: c.title, color: c.color, day: c.day, done: c.done }))
+  const tasks = cellsOf(taskRows.filter(onYearScale), from, to, dayOf).map((c) => ({ id: c.id, kind: c.kind, title: c.title, color: c.color, day: c.day, done: c.done }))
 
   return okWire('year', { birthdays, events, tasks, life, trips })
 })

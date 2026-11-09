@@ -1,4 +1,5 @@
 import { test, expect } from './fixtures'
+import { somedayTask } from './mocks'
 
 // ?item=<id> lands ON the row (solidify 4.2): the container scrolls it into view, marks
 // it for a moment, and strips the param so a reload does not replay it. Before this,
@@ -30,10 +31,12 @@ test('a search result carries the row id through to the page', async ({ page, ap
   await expect(page.locator('[data-item="hb1"]')).toHaveClass(/is-item-target/)
 })
 
-test('a chore is findable, and lands on its section', async ({ page, app }) => {
+test('a task is findable, and lands on the Tâches view when it is not on today’s board', async ({ page, app }) => {
+  // Search reads every task from /api/tasks (one list, 2026-11-08), whatever its table.
+  const subjects = { carnets: [], contacts: [], pets: [], projects: [], trips: [] }
   await app.boot({
     route: '/search?q=Vaisselle',
-    api: { overrides: { chores: { chores: [{ id: 'ch1', title: 'Vaisselle', rotation_json: '[]', current_idx: 0 }] } } },
+    api: { overrides: { tasks: { tasks: [somedayTask({ source: 'chore', id: 'ch1', title: 'Vaisselle' })], subjects, history: [] } } },
     wait: '.search__row',
   })
   await page.locator('.search__row', { hasText: 'Vaisselle' }).click()

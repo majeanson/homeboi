@@ -3,30 +3,18 @@ import { test, expect } from './fixtures'
 import { BOARD, boardTask } from './mocks'
 
 // « Entretiens saisonniers » — the overdue carry-forward. A missed upkeep due date
-// (server `homeOverdue`, functions/_lib/upkeep) rides the « À faire » card as a
+// (TaskItem.overdueSince, functions/_lib/upkeep) rides the « À faire » card as a
 // checkable Act row wearing the calm « En attente depuis … » sub-line: no badge,
 // no count, and it must survive until checked. Checking defers the PATCH behind
 // the undo toast (Board.markHomeDone); a read-only guest gets no check at all
 // (Act drops onCheck via isGuest()).
 
 const DAY = 86400
-const OVERDUE = {
-  id: 'hov1',
-  title: 'Nettoyer les gouttières',
-  color: '#C98A5A',
-  at: BOARD.syncedAt - 12 * DAY,
-  soon: false,
-  who: null,
-  who_id: null,
-  team: [],
-  carnet_id: null,
-  recurring: true,
-  overdueSince: BOARD.syncedAt - 12 * DAY,
-}
+const OWED_SINCE = BOARD.syncedAt - 12 * DAY
 
-// The merged card reads `tasks`: the same row, as _lib/taskItem.ts stamps it.
-const TASK = boardTask({ source: 'home', id: OVERDUE.id, title: OVERDUE.title, kind: 'upkeep', recurring: true, dueToday: false, overdueSince: OVERDUE.overdueSince, day: OVERDUE.overdueSince + 90 * 86400 })
-const OPEN = { route: '/board', wait: '.board-grid .wg-slot', api: { overrides: { board: { ...BOARD, homeOverdue: [OVERDUE], tasks: [TASK] } } } }
+// The board's one `tasks` list (2026-11-08): the owed entretien as _lib/taskItem stamps it.
+const TASK = boardTask({ source: 'home', id: 'hov1', title: 'Nettoyer les gouttières', color: '#C98A5A', kind: 'upkeep', recurring: true, dueToday: false, overdueSince: OWED_SINCE, day: OWED_SINCE + 90 * 86400 })
+const OPEN = { route: '/board', wait: '.board-grid .wg-slot', api: { overrides: { board: { ...BOARD, tasks: [TASK] } } } }
 
 const row = (page: Page) =>
   page.locator('.wg-slot[data-card="todos"] .act').filter({ hasText: 'Nettoyer les gouttières' })

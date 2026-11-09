@@ -21,10 +21,9 @@ const monthWindow = (days: number[]) => ({
     { id: 'e2', title: 'Souper chez Mamie', at: days[2], all_day: 1, member_id: null, day: days[2] },
   ],
   meals: [{ id: 'm1', slot: 'supper', title: 'Spaghetti maison', cook_member_id: 'm1', day: days[0] }],
-  chores: [],
+  tasks: [],
   dayNotes: [],
   todos: [],
-  homeProjects: [],
   trips: [],
   tripPlans: [],
   // A daily habit on EVERY day of the window. It must not appear on any row: a habit is

@@ -37,10 +37,14 @@ async function seed(page: Page, opts: { guest?: boolean } = {}) {
       json({
         events: [{ id: 'ev1', title: 'Dentiste', at: MMID + 14 * 3600, all_day: 0, member_id: null, day: MMID }],
         meals: [{ id: 'ml1', slot: 'souper', title: 'Pâté chinois', cook_member_id: null, day: MMID }],
-        chores: [{ id: 'ch1', title: 'Sortir le recyclage', color: '#5891AC', who: null, day: MMID }],
+        // Every task on the calendar is one list (TaskCell, 2026-11-08); `source` is the alias a
+        // row's delete goes to.
+        tasks: [
+          { id: 'ch1', taskId: 'ch1', source: 'chore', title: 'Sortir le recyclage', color: '#5891AC', icon: null, kind: null, who_id: null, day: MMID, done: false, recurring: false, soon: false },
+          { id: 'hp1', taskId: 'hp1', source: 'home', title: 'Changer le filtre', color: '#88A36F', icon: null, kind: 'upkeep', who_id: null, day: MMID, done: false, recurring: false, soon: false },
+        ],
         dayNotes: [],
         todos: [],
-        homeProjects: [{ id: 'hp1', kind: 'upkeep', title: 'Changer le filtre', color: '#88A36F', day: MMID }],
         trips: [],
         tripPlans: [],
         habits: [],
@@ -158,15 +162,16 @@ test.describe('the day page can delete what it edits', () => {
     expect(req.postDataJSON()).toMatchObject({ id: 'ev1' })
   })
 
-  test('a task edited inline shows « Supprimer la tâche » → the row hides, the write waits behind the toast', async ({ page }) => {
+  test('a task row opens the same peek as the calendar: « Supprimer » hides it, the write waits behind the toast', async ({ page }) => {
     await seed(page)
     await page.goto(`/kitchen/day/${MMID}`)
     await page.locator('.scene').waitFor({ state: 'visible', timeout: 15_000 })
     const row = page.locator('.act', { hasText: 'Sortir le recyclage' })
     await row.first().click()
-    const del = page.getByRole('button', { name: 'Supprimer la tâche' })
-    await expect(del).toBeVisible()
-    await del.click()
+    const sheet = page.locator('.detail-sheet')
+    await sheet.waitFor({ state: 'visible' })
+    await sheet.locator('.action-menu__btn').click()
+    await page.getByRole('menuitem', { name: 'Supprimer' }).click()
     await expect(row).toHaveCount(0)
     await expect(page.getByRole('button', { name: 'Annuler' })).toBeVisible()
     await page.clock.install()

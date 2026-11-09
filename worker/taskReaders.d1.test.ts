@@ -246,6 +246,7 @@ for (const [tag, instant] of Object.entries(INSTANTS)) {
         const y = (await read(`/api/year?from=${addLocalDays(t(), -30)}&to=${addLocalDays(t(), 400)}`)) as YearWire
         expect(y.tasks.some((c) => c.id.startsWith(tid('C1aaaaaaa'))), 'Sortir les poubelles').toBe(true)
         expect(y.tasks.some((c) => c.id === tid('TAaaaaaaa')), 'Dans cinq jours').toBe(true)
+        expect(y.tasks.some((c) => c.id.startsWith(tid('C2aaaaaaa'))), 'a daily task would repaint every cell: off the year').toBe(false)
       })
       it('the board: one list for the card (the to-dos due today included) and one for « À venir »', async () => {
         const b = (await read('/api/board')) as BoardWire

@@ -50,10 +50,9 @@ async function seedMonthOnCell(page: Page) {
       body: JSON.stringify({
         events: [{ id: 'ev1', title: EVENT_TITLE, at: day + 14 * 3600, all_day: 0, member_id: null, day }],
         meals: [{ id: 'ml1', slot: 'souper', title: MEAL_TITLE, cook_member_id: null, day }],
-        chores: [],
+        tasks: [],
         dayNotes: [],
         todos: [],
-        homeProjects: [],
         trips: [],
         tripPlans: [],
         habits: [],
