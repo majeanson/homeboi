@@ -126,11 +126,14 @@ export function subjectOf(ref: SubjectRef | null | undefined, lookup: SubjectLoo
 // two tables to make the column nullable was not worth the risk, so the default value itself
 // reads as « not chosen ». It is also the task category's own tint (CATS.chore), so a task that
 // lands on it by hand looks exactly the same either way: only a subject's colour shows through.
-export const TASK_DEFAULT_COLOUR = THING_DEFAULTS.chore.colour.toLowerCase()
+// Read at CALL time, never at module load: in the production bundle this chunk can evaluate
+// before the one holding THING_DEFAULTS (a chunk cycle), and a load-time read crashed the
+// board on render (« reading 'chore' », the SW harness on bd7a13db, 2026-11-09).
+const taskDefaultColour = (): string => THING_DEFAULTS.chore.colour.toLowerCase()
 
 /** A stored colour as a pick: null when it is the task default, i.e. never chosen. */
 export function lookColour(stored: string | null | undefined): string | null {
-  return stored && stored.toLowerCase() !== TASK_DEFAULT_COLOUR ? stored : null
+  return stored && stored.toLowerCase() !== taskDefaultColour() ? stored : null
 }
 
 export interface Look {
