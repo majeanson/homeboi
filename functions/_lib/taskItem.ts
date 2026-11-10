@@ -1,5 +1,5 @@
 import { parseRecur } from './recur'
-import { choreSchedule, upkeepStatus, type UpkeepRowLike } from './upkeep'
+import { upkeepStatus, type UpkeepRowLike } from './upkeep'
 import { isSoon } from './reminder'
 import { addLocalDays } from './ids'
 import { parseRotation, turnOf } from './rotation'
@@ -10,15 +10,15 @@ import type { TaskItem } from './wire'
 // A TASK, READ SIDE — one shape over every task row (plans/2026-11-06-TACHE-UNIFIEE.md). Since
 // migration 0150 every task lives in ONE table, `home_projects` (« the spine »); this is what a
 // row looks like to a reader, so the board, the Tâches view and a subject's page cannot each
-// decide what « done » means.
+// decide what « done » means. A READER does not come here: it reads one row shape through
+// _lib/taskViews.ts, which hands it to `spineTask`, the one builder.
 //
-// THE FACES. A spine row's `kind` says which payload it wears: 'chore' (the old `tasks`),
-// 'todo' (the old loose `todos`), 'plan' / 'upkeep' (the old home rows). It is a reader's need,
-// never a form's question: the board, the calendar, the day page and the three alias endpoints
-// still speak those three shapes. A READER does not come here: it reads one row shape through
-// _lib/taskViews.ts, which turns a row into its face's old shape (the builders below) and holds
-// the table of what still differs by face (`task-faces-rule.test.ts`). The alias endpoints and
-// the form's write path name a face with these, never with a string of their own.
+// TWO FACES, AND NEITHER IS A TYPE (0153). `kind` says what a home row IS ('plan', 'upkeep'),
+// a behaviour some surfaces still ask about (the season card, a project's notes and budget,
+// « Sur quoi ? », « Reporter »). Every other task has no kind: what used to be a chore and
+// what used to be a loose to-do are one thing now, with one tick, one « Vider » and one day
+// encoding (_lib/taskGestures, _lib/taskDay), and no reader or writer may tell them apart
+// (`task-faces-rule.test.ts`).
 //
 // DONE MEANS ONE THING PER CASE, and the case is the schedule, never the table:
 //   · a ONE-OFF is checked on a day. It stays ticked until that day ends, then it has cleared
@@ -30,13 +30,8 @@ import type { TaskItem } from './wire'
 // it reached the server (`tickedAt`, _lib/ids), so an offline tick replayed after midnight
 // keeps its own day and has simply already cleared.
 //
-// DEPARTURE CHECKLIST INSTANCES ARE NOT TASKS. They share the `todos` table and nothing else:
-// they are swept by day, they fold under their list, and the departure card owns them.
-// `isLooseTodo` is the server's half of `splitTodos` (src/lib/todos.ts), and it is the same
-// test: a row with a template or a section is a checklist row.
-
-export const isLooseTodo = (r: { source_template_id: string | null; section: string | null }): boolean =>
-  r.source_template_id == null && r.section == null
+// DEPARTURE CHECKLIST INSTANCES ARE NOT TASKS. They live in `todos` and nothing else: they are
+// swept by day, they fold under their list, and the departure card owns them.
 
 const clearedByDay = (doneAt: number, today: number): boolean => doneAt < today
 
@@ -52,214 +47,27 @@ function oneOffDone(doneAt: number | null, clearedAt: number | null | undefined,
 const onBoardNow = (i: Pick<TaskItem, 'done' | 'dueToday' | 'overdueSince'>): boolean =>
   i.done === 'ticked' || i.dueToday || i.overdueSince != null
 
-interface Scheduled {
-  source: TaskItem['source']
-  id: string
-  title: string
-  color: string | null
-  icon: string | null
-  effort: number | null
-  ref: ReturnType<typeof subjectFromRow>
-  schedule: UpkeepRowLike
-  lead: number | null | undefined
-  clearedAt: number | null | undefined
-  rotation: string[]
-  idx: number
-  /** Who a task with no rotation belongs to: a to-do's author (0150), else nobody. */
-  owner: string | null | undefined
-  kind: TaskItem['kind']
-  announceEvening: boolean
-}
+/** What a reader shows of a stored `kind`: an entretien, a plan, or neither. Anything else
+ *  (a value no writer makes since 0153's CHECK) reads as a plain task. */
+export const kindOf = (kind: string | null | undefined): TaskItem['kind'] => (kind === 'upkeep' ? 'upkeep' : kind === 'plan' ? 'plan' : null)
 
-// ONE builder for every task. Each answer below is read off the row's AXES (a date? a
-// recurrence? a tick? a rotation?), never off its face: the face only says which alias a
-// row's gestures go to (`source`), and whether a home row is an entretien (`kind`).
-function fromSchedule(s: Scheduled, today: number, now: number): TaskItem | null {
-  const recurring = parseRecur(s.schedule.recur_json) != null
-  const doneAt = s.schedule.last_done_at
-  const done = recurring ? 'open' : oneOffDone(doneAt, s.clearedAt, today)
-  if (done === null) return null
-  const st = upkeepStatus(s.schedule, today)
-  const day = st.nextAt
-  const item = {
-    key: `${s.source}:${s.id}`,
-    source: s.source,
-    id: s.id,
-    title: s.title,
-    color: s.color,
-    icon: s.icon,
-    effort: s.effort,
-    subject: s.ref,
-    kind: s.kind,
-    recurring,
-    // A recurrence `parseRecur` refuses is no recurrence: the task is a one-off, and says so.
-    recurJson: recurring ? s.schedule.recur_json : null,
-    day,
-    dueToday: st.dueToday,
-    overdueSince: st.overdueSince,
-    snoozedUntil: st.snoozedUntil,
-    soon: day != null ? isSoon(now, day, s.lead) : false,
-    done,
-    doneAt,
-    who_id: turnOf(s.rotation, s.idx) ?? s.owner ?? null,
-    team: s.rotation,
-    announceEvening: s.announceEvening,
-  }
-  return { ...item, onBoard: onBoardNow(item) }
-}
+/** The two things a spine row can be to its doors, each as a WHERE term: a TASK (kind NULL,
+ *  0153) or a HOME row (a project or an entretien). */
+export const FACE = {
+  task: 'kind IS NULL',
+  home: "kind IN ('plan', 'upkeep')",
+} as const
+export type Face = keyof typeof FACE
+/** The face a stored `kind` wears: a home row, or a task. */
+export const faceOfKind = (kind: string | null | undefined): Face => (kindOf(kind) == null ? 'task' : 'home')
 
 /** « À venir »: open, and its next date falls in the six days after today. One rule for every
  *  task: the board's À venir and its « annoncer la veille » line both read it. */
 export const aheadThisWeek = (i: Pick<TaskItem, 'done' | 'day'>, today: number): boolean =>
   i.done === 'open' && i.day != null && i.day >= addLocalDays(today, 1) && i.day < addLocalDays(today, 7)
 
-/** What a reader shows of a stored `kind`: an entretien, a plan, or neither. A chore and a
- *  to-do read the same: nothing a household sees tells them apart. */
-export const kindOf = (kind: string | null | undefined): TaskItem['kind'] => (kind === 'upkeep' ? 'upkeep' : kind === 'plan' ? 'plan' : null)
-
-/** Each face as a WHERE term on the spine (`home_projects`, the one table every task lives in since 0150). */
-export const FACE = {
-  chore: "kind = 'chore'",
-  todo: "kind = 'todo'",
-  home: "kind IN ('plan', 'upkeep')",
-} as const
-export type Face = keyof typeof FACE
-/** The face a stored `kind` wears. */
-export const faceOfKind = (kind: string | null | undefined): Face => (kind === 'chore' ? 'chore' : kind === 'todo' ? 'todo' : 'home')
-
-// The old row shapes each face's builder reads (_lib/taskViews makes them from one row). A
-// chore's start lives in the spine's `at` (0150), read as `recur_start`: NULL still means
-// « from created_at » (choreSchedule).
-export interface ChoreTaskRow {
-  id: string
-  title: string
-  color: string | null
-  rotation_json: string
-  current_idx: number
-  last_done_at: number | null
-  cleared_at: number | null
-  recur_json: string | null
-  recur_start: number | null
-  lead_seconds: number | null
-  subject_kind: string | null
-  subject_id: string | null
-  icon: string | null
-  effort: number | null
-  created_at: number
-  announce_evening?: number | null
-}
-
-export function choreTask(c: ChoreTaskRow, today: number, now: number): TaskItem | null {
-  const recurring = parseRecur(c.recur_json) != null
-  return fromSchedule(
-    {
-      source: 'chore',
-      id: c.id,
-      title: c.title,
-      color: c.color,
-      icon: c.icon,
-      effort: taskEffort(c.effort),
-      ref: subjectFromRow(c),
-      // A one-off chore has no date unless one was chosen. choreSchedule's created_at
-      // fallback is a RECURRENCE anchor: used here, every undated chore would be overdue.
-      schedule: recurring ? choreSchedule(c) : { at: c.recur_start, recur_json: null, last_done_at: c.last_done_at },
-      lead: c.lead_seconds,
-      clearedAt: c.cleared_at,
-      rotation: parseRotation(c.rotation_json),
-      idx: c.current_idx,
-      owner: null,
-      kind: null,
-      announceEvening: c.announce_evening === 1,
-    },
-    today,
-    now,
-  )
-}
-
-export interface HomeTaskRow extends UpkeepRowLike {
-  id: string
-  kind: string
-  title: string
-  color: string | null
-  lead_seconds: number | null
-  cleared_at: number | null
-  rotation_json: string
-  current_idx: number
-  carnet_id: string | null
-  subject_kind: string | null
-  subject_id: string | null
-  icon: string | null
-  effort: number | null
-}
-
-export function homeTask(h: HomeTaskRow, today: number, now: number): TaskItem | null {
-  return fromSchedule(
-    {
-      source: 'home',
-      id: h.id,
-      title: h.title,
-      color: h.color,
-      icon: h.icon,
-      effort: taskEffort(h.effort),
-      ref: subjectFromRow(h),
-      schedule: h,
-      lead: h.lead_seconds,
-      clearedAt: h.cleared_at,
-      rotation: parseRotation(h.rotation_json),
-      idx: h.current_idx,
-      owner: null,
-      kind: kindOf(h.kind),
-      announceEvening: false,
-    },
-    today,
-    now,
-  )
-}
-
-export interface TodoTaskRow {
-  id: string
-  title: string
-  day: number | null
-  member_id: string | null
-  done_at: number | null
-  section: string | null
-  source_template_id: string | null
-  subject_kind?: string | null
-  subject_id?: string | null
-  icon?: string | null
-  color?: string | null
-  effort?: number | null
-}
-
-// A departure instance answers null: it is not a task (see the header). A loose to-do is a
-// one-off on its day, through the one builder; its author reads as « who » (no rotation).
-export function todoTask(td: TodoTaskRow, today: number): TaskItem | null {
-  if (!isLooseTodo(td)) return null
-  return fromSchedule(
-    {
-      source: 'todo',
-      id: td.id,
-      title: td.title,
-      color: td.color ?? null,
-      icon: td.icon ?? null,
-      effort: taskEffort(td.effort),
-      ref: subjectFromRow(td),
-      schedule: { at: td.day, recur_json: null, last_done_at: td.done_at },
-      lead: null,
-      clearedAt: null,
-      rotation: [],
-      idx: 0,
-      owner: td.member_id,
-      kind: null,
-      announceEvening: false,
-    },
-    today,
-    // No lead, so `now` decides nothing for a to-do.
-    today,
-  )
-}
-
-/** A spine row as it is stored (0150): every column a task's answers are read from. */
+/** A spine row as it is stored (0150): every column a task's answers are read from. Its `at`
+ *  is the task's day, decoded (_lib/taskDay: the readers hand rows over through it). */
 export interface SpineTaskRow extends UpkeepRowLike {
   id: string
   kind: string | null
@@ -279,44 +87,58 @@ export interface SpineTaskRow extends UpkeepRowLike {
 }
 
 /** ANY spine row as a task, or null once a one-off has cleared: THE builder every reader uses
- *  (_lib/taskViews). Of the face it keeps only `source`, the alias a row's gestures go to. */
+ *  (_lib/taskViews). Each answer is read off the row's AXES (a date? a recurrence? a tick? a
+ *  rotation?), never off what it used to be. */
 export function spineTask(r: SpineTaskRow, today: number, now: number): TaskItem | null {
-  return fromSchedule(
-    {
-      source: faceOfKind(r.kind),
-      id: r.id,
-      title: r.title,
-      color: r.color,
-      icon: r.icon,
-      effort: taskEffort(r.effort),
-      ref: subjectFromRow(r),
-      schedule: r,
-      lead: r.lead_seconds,
-      clearedAt: r.cleared_at,
-      rotation: parseRotation(r.rotation_json),
-      idx: r.current_idx,
-      owner: r.member_id,
-      kind: kindOf(r.kind),
-      announceEvening: r.announce_evening === 1,
-    },
-    today,
-    now,
-  )
+  const source = faceOfKind(r.kind)
+  const recurring = parseRecur(r.recur_json) != null
+  const doneAt = r.last_done_at
+  const done = recurring ? 'open' : oneOffDone(doneAt, r.cleared_at, today)
+  if (done === null) return null
+  const st = upkeepStatus(r, today)
+  const day = st.nextAt
+  const rotation = parseRotation(r.rotation_json)
+  const item = {
+    key: `${source}:${r.id}`,
+    source,
+    id: r.id,
+    title: r.title,
+    color: r.color,
+    icon: r.icon,
+    effort: taskEffort(r.effort),
+    subject: subjectFromRow(r),
+    kind: kindOf(r.kind),
+    recurring,
+    // A recurrence `parseRecur` refuses is no recurrence: the task is a one-off, and says so.
+    recurJson: recurring ? r.recur_json : null,
+    day,
+    dueToday: st.dueToday,
+    overdueSince: st.overdueSince,
+    snoozedUntil: st.snoozedUntil,
+    soon: day != null ? isSoon(now, day, r.lead_seconds) : false,
+    done,
+    doneAt,
+    // Whose turn, else the task's author (who wrote it), else nobody.
+    who_id: turnOf(rotation, r.current_idx) ?? r.member_id ?? null,
+    team: rotation,
+    announceEvening: r.announce_evening === 1,
+  }
+  return { ...item, onBoard: onBoardNow(item) }
 }
 
 export const present = (x: TaskItem | null): x is TaskItem => x != null
 
-// EVERY TO-DO ROW, in the old `todos` shape: the loose ones from the spine's 'todo' face, the
-// departure checklist instances from `todos`, which keeps them (they are not tasks). `todos` is
-// read WHOLE, not only its departure rows: a loose row an old Worker wrote there during the
-// minute between the migration and the deploy stays visible and editable through the alias,
-// until a later migration moves it. `?1` is the household; the caller numbers its own binds
-// from `?2`. `section` and `source_template_id` are NULL on the spine's side by construction.
+// EVERY CHECK-OFF ROW, in the old `todos` shape: the plain tasks from the spine, the departure
+// checklist instances from `todos`, which keeps them (they are not tasks). `todos` is read
+// WHOLE, not only its departure rows: a loose row an old Worker wrote there during a deploy
+// window stays visible and editable through the alias. `?1` is the household; the caller
+// numbers its own binds from `?2`. `section` and `source_template_id` are NULL on the spine's
+// side by construction.
 export const todoRowsSql = (select: string, rest: string): string =>
   `WITH todo_rows AS (
      SELECT id, household_id, title, at AS day, member_id, last_done_at AS done_at, position, NULL AS section, NULL AS source_template_id,
             created_at, updated_at, subject_kind, subject_id, icon, colour, effort
-       FROM home_projects WHERE household_id = ?1 AND kind = 'todo'
+       FROM home_projects WHERE household_id = ?1 AND ${FACE.task}
      UNION ALL
      SELECT id, household_id, title, day, member_id, done_at, position, section, source_template_id,
             created_at, updated_at, subject_kind, subject_id, icon, colour, effort
@@ -327,27 +149,9 @@ export const todoRowsSql = (select: string, rest: string): string =>
 // Deleting a task: its « qui a aidé » lines first. `task_participants.task_id` is a soft ref
 // since 0150 (no FK to block or cascade), so nothing else would remove them; they are scoped
 // through the task's own household guard, so a wrong household cannot wipe another's log.
-// Any face: an id names one row, and every door that deletes a task (the aliases, /api/tasks,
-// a capture's « Corriger ») may be handed any face's id since 0150.
 export function deleteTaskStatements(db: D1Database, householdId: string, id: string): D1PreparedStatement[] {
   return [
     db.prepare('DELETE FROM task_participants WHERE task_id IN (SELECT id FROM home_projects WHERE id = ? AND household_id = ?)').bind(id, householdId),
     db.prepare('DELETE FROM home_projects WHERE id = ? AND household_id = ?').bind(id, householdId),
   ]
-}
-
-// « Vider les cochés » on the faces whose rows are history (a chore, a home row): it stamps, it
-// does not delete. A to-do's clear deletes, as it always has (/api/todos). D1 caps bound
-// variables, so the ids go in slices (the todos clear does the same).
-export function clearStatements(db: D1Database, face: 'chore' | 'home', householdId: string, ids: readonly string[], ts: number): D1PreparedStatement[] {
-  const out: D1PreparedStatement[] = []
-  for (let i = 0; i < ids.length; i += 50) {
-    const slice = ids.slice(i, i + 50)
-    out.push(
-      db
-        .prepare(`UPDATE home_projects SET cleared_at = ? WHERE household_id = ? AND ${FACE[face]} AND id IN (${slice.map(() => '?').join(',')})`)
-        .bind(ts, householdId, ...slice),
-    )
-  }
-  return out
 }

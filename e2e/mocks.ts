@@ -92,6 +92,25 @@ export const boardTask = (t: Pick<TaskItem, 'source' | 'id' | 'title'> & Partial
 // A someday task: in the Tâches view, never on the bento board.
 export const somedayTask = (t: Pick<TaskItem, 'source' | 'id' | 'title'> & Partial<TaskItem>): TaskItem =>
   boardTask({ day: null, dueToday: false, onBoard: false, ...t })
+// The same task as /api/chores serves it since 0153 (every task, with its schedule): the
+// edit scene reads it there (lib/taskSave `taskRead`). Its day is the start a fixture gave it.
+export const choreRowOf = (t: TaskItem) => ({
+  id: t.id,
+  title: t.title,
+  rotation_json: JSON.stringify(t.team),
+  current_idx: 0,
+  last_done_at: t.doneAt,
+  last_done_by: null,
+  color: t.color,
+  recur_json: t.recurJson,
+  recur_start: t.day,
+  lead_seconds: null,
+  announce_evening: t.announceEvening ? 1 : null,
+  subject_kind: t.subject?.kind ?? null,
+  subject_id: t.subject?.id ?? null,
+  icon: t.icon,
+  effort: t.effort,
+})
 
 const boardMeal = (m: Pick<BoardMealBrief, 'id' | 'title' | 'cook_member_id'> & { slot: string; position: number; recipe_id?: string | null }) => ({ is_leftover: 0, recipe_id: null, ...m })
 const mealRow = (m: Omit<MealRow, 'suggested_by' | 'recipe_id' | 'is_leftover'> & Partial<MealRow>): MealRow => ({ suggested_by: null, recipe_id: null, is_leftover: 0, ...m })
@@ -180,12 +199,12 @@ export const BOARD = {
   // recurring chore due today (Léa's turn) and the loose to-do pinned to today (the same
   // row TODOS lists, as the payload carries it since 2026-11-08).
   tasks: [
-    boardTask({ source: 'chore', id: 'c1', title: 'Sortir les poubelles', color: '#88A36F', recurring: true, who_id: 'm3', team: ['m3'] }),
-    boardTask({ source: 'todo', id: 'td1', title: 'Clés + téléphone + portefeuille' }),
+    boardTask({ source: 'task', id: 'c1', title: 'Sortir les poubelles', color: '#88A36F', recurring: true, who_id: 'm3', team: ['m3'] }),
+    boardTask({ source: 'task', id: 'td1', title: 'Clés + téléphone + portefeuille' }),
   ],
   // « À venir »: a recurring task coming later this week (Papa's turn).
   tasksAhead: [
-    boardTask({ source: 'chore', id: 'c2', title: 'Vaisselle', color: '#7BB0C9', recurring: true, day: BASE + 3 * DAY, dueToday: false, onBoard: false, who_id: 'm2', team: ['m2'] }),
+    boardTask({ source: 'task', id: 'c2', title: 'Vaisselle', color: '#7BB0C9', recurring: true, day: BASE + 3 * DAY, dueToday: false, onBoard: false, who_id: 'm2', team: ['m2'] }),
   ],
     // Undated leftovers to finish — the "Restants à finir" reminder card.
   leftovers: [{ id: 'lo1', title: 'Pâté chinois', recipe_id: null, source_meal_id: null }],
@@ -420,6 +439,10 @@ const CHORES = {
   chores: [
     { id: 'c1', title: 'Sortir les poubelles', rotation_json: JSON.stringify(['m1', 'm2']), current_idx: 0, last_done_at: null, last_done_by: null, color: '#88A36F', recur_json: null, recur_start: null, lead_seconds: null, announce_evening: null, subject_kind: null, subject_id: null, icon: null, effort: null },
     { id: 'c2', title: 'Vaisselle', rotation_json: JSON.stringify(['m2', 'm1']), current_idx: 1, last_done_at: BASE - DAY, last_done_by: null, color: '#7BB0C9', recur_json: null, recur_start: null, lead_seconds: null, announce_evening: null, subject_kind: null, subject_id: null, icon: null, effort: null },
+    // Since 0153 this alias serves every task, the edit scene's read (lib/taskSave): the two
+    // tasks TODOS lists too, in this shape.
+    { id: 'td1', title: 'Clés + téléphone + portefeuille', rotation_json: '[]', current_idx: 0, last_done_at: null, last_done_by: null, color: null, recur_json: null, recur_start: localDayStart(new Date()), lead_seconds: null, announce_evening: null, subject_kind: null, subject_id: null, icon: null, effort: null },
+    { id: 'td2', title: 'Boîte à lunch des enfants', rotation_json: '[]', current_idx: 0, last_done_at: null, last_done_by: null, color: null, recur_json: null, recur_start: null, lead_seconds: null, announce_evening: null, subject_kind: null, subject_id: null, icon: null, effort: null },
   ],
 }
 
@@ -513,19 +536,14 @@ export const CAR = {
   ],
 }
 
-// The todos list, served at /api/todos (board glance = global + today). Two LOOSE items
-// (`items`: the « Tâches » card) plus an instantiated « Avant de partir » checklist pinned
-// to TODAY (source_template_id set, mig 0116 — the departure card + scene render these; the
-// « Tâches » card must NOT, and they have no `items` row). Same
+// The todos list, served at /api/todos (board glance = global + today). Two tasks (the
+// « Tâches » card reads them from the board's `tasks` list) plus an instantiated « Avant de
+// partir » checklist pinned to TODAY (source_template_id set, mig 0116 — the departure card +
+// scene render these; the « Tâches » card must NOT). Same
 // day helper as every other mock anchor (yearDay) so the fixture and the app agree
 // on what "today" means whatever timezone the runner sits in.
 const TODAY_DAY = localDayStart(new Date())
 const TODOS = {
-  // One loose row pinned to today (on the bento card), one someday (in the Tâches view only).
-  items: [
-    boardTask({ source: 'todo', id: 'td1', title: 'Clés + téléphone + portefeuille' }),
-    somedayTask({ source: 'todo', id: 'td2', title: 'Boîte à lunch des enfants', who_id: 'm1' }),
-  ],
   todos: [
     { id: 'td1', title: 'Clés + téléphone + portefeuille', day: TODAY_DAY, member_id: null, done_at: null, position: 0, section: null, source_template_id: null, created_at: BASE, subject_kind: null, subject_id: null, icon: null, color: null, effort: null },
     { id: 'td2', title: 'Boîte à lunch des enfants', day: null, member_id: 'm1', done_at: null, position: 1, section: null, source_template_id: null, created_at: BASE, subject_kind: null, subject_id: null, icon: null, color: null, effort: null },
@@ -967,11 +985,11 @@ export const ROUTES: Partial<Wire> = {
   'home-projects': { projects: [] },
   tasks: {
     tasks: [
-      boardTask({ source: 'chore', id: 'c1', title: 'Sortir les poubelles', color: '#88A36F', recurring: true, who_id: 'm3', team: ['m3', 'm4'], recurJson: JSON.stringify({ freq: 'weekly', interval: 1, weekdays: [] }) }),
+      boardTask({ source: 'task', id: 'c1', title: 'Sortir les poubelles', color: '#88A36F', recurring: true, who_id: 'm3', team: ['m3', 'm4'], recurJson: JSON.stringify({ freq: 'weekly', interval: 1, weekdays: [] }) }),
       boardTask({ source: 'home', id: 'hp1', title: 'Nettoyer les gouttières', kind: 'upkeep', recurring: true, subject: { kind: 'carnet', id: 'car1' }, dueToday: false, overdueSince: BASE - 10 * DAY, day: BASE + 90 * DAY }),
-      boardTask({ source: 'todo', id: 'td1', title: 'Clés + téléphone + portefeuille' }),
-      somedayTask({ source: 'todo', id: 'td2', title: 'Boîte à lunch des enfants', who_id: 'm1' }),
-      somedayTask({ source: 'chore', id: 'c9', title: 'Réparer la clôture', subject: { kind: 'project', id: 'hp9' } }),
+      boardTask({ source: 'task', id: 'td1', title: 'Clés + téléphone + portefeuille' }),
+      somedayTask({ source: 'task', id: 'td2', title: 'Boîte à lunch des enfants', who_id: 'm1' }),
+      somedayTask({ source: 'task', id: 'c9', title: 'Réparer la clôture', subject: { kind: 'project', id: 'hp9' } }),
     ],
     subjects: {
       carnets: [{ id: 'car1', name: 'La maison', kind: 'home', color: '#5891AC', facts: null }],

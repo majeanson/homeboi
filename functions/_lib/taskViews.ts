@@ -4,6 +4,7 @@ import { parseRotation, turnOf } from './rotation'
 import { isSoon } from './reminder'
 import { addLocalDays, localDayStart } from './ids'
 import { aheadThisWeek, faceOfKind, kindOf, present, spineTask, todoRowsSql } from './taskItem'
+import { withTaskDay } from './taskDay'
 import type { SubjectRef } from './subject'
 import type { TaskItem, TasksWire } from './wire'
 
@@ -38,15 +39,15 @@ import type { TaskItem, TasksWire } from './wire'
 //   « Sur quoi ? » projects  kind = 'plan' (see `allTasks` for why)                `allTasks`
 //
 // WHAT `kind` STILL DOES. 'upkeep' and 'plan' are behaviours (the season card, a project's
-// notes and budget, « Sur quoi ? »). 'chore' and 'todo' are read in exactly one place:
-// `source`, the alias a row's gestures go to (a chore's tick logs « qui a aidé » and moves
-// the turn, a to-do's « Vider » deletes, lib/taskSave). Nothing a household SEES differs
-// between the two any more; shrinking `kind` to `plan | upkeep | null` waits on one tick
-// semantics for both (STATE.md §3).
+// notes and budget, « Sur quoi ? », « Reporter »). Every other task has no kind (0153): what
+// used to be a chore and what used to be a to-do tick, clear and store their day the same way
+// (_lib/taskGestures, _lib/taskDay), and nothing here can tell them apart.
 //
-// The stored `at` is the start of a schedule for every task: a recurrence with no start
-// reads as undated. Migration 0152 gave every recurring chore without one its `created_at`
-// (what `choreSchedule` read it as since 0032), so no reader needs that fallback any more.
+// THE DAY. The stored `at` is a task's day (a one-off's) or the start of its schedule, a
+// household-local midnight; a recurrence with no start reads as undated (0152). Every row
+// is handed over through `withTaskDay` (_lib/taskDay), the one decoder, which reads the two
+// older encodings (a UTC midnight, an instant) as the day they always displayed until the
+// nightly backfill has rewritten them.
 
 /** Every column a reader of a task needs, in its stored name but for `colour AS color`. */
 export const TASK_COLS =
@@ -83,7 +84,7 @@ export interface TaskRow {
 export const taskOf = (r: TaskRow, today: number, now: number): TaskItem | null => spineTask(r, today, now)
 
 const rowsOf = async (db: D1Database, where: string, ...binds: unknown[]): Promise<TaskRow[]> =>
-  (await db.prepare(`SELECT ${TASK_COLS} FROM home_projects WHERE ${where}`).bind(...binds).all<TaskRow>()).results
+  (await db.prepare(`SELECT ${TASK_COLS} FROM home_projects WHERE ${where}`).bind(...binds).all<TaskRow>()).results.map(withTaskDay)
 
 // ── /api/board ─────────────────────────────────────────────────────────────────────────────
 

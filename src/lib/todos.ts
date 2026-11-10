@@ -3,7 +3,6 @@
 // todos.test.ts); the React surface lives in src/components/todos/TodoSection.tsx.
 // Query keys live in lib/queryKeys.ts (TODOS_KEY / TODO_TEMPLATES_KEY).
 import { TODOS_KEY } from './queryKeys'
-import type { TaskItem } from './tasks'
 
 // One todo. `day` null = global (a standing item); a number = local-midnight unix
 // second it's pinned to. `member_id` is the optional face (attribution only).
@@ -42,9 +41,6 @@ export interface TodoTemplate {
 
 export interface TodosData {
   todos: Todo[]
-  // The loose rows as tasks, built by the server (functions/_lib/taskItem.ts). Optional
-  // because a frame persisted before this field can still be restored at boot.
-  items?: TaskItem[]
 }
 export interface TemplatesData {
   templates: TodoTemplate[]

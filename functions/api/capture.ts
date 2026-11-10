@@ -13,9 +13,8 @@ import { resolveMemberByName } from '../_lib/members'
 import { householdMealLayout } from '../_lib/mealSlots'
 import { normalizeItem } from '../_lib/normalize'
 import { lineSameItem } from '../_lib/listMatch'
-import { taskTarget, type TaskFace } from '../../src/lib/taskTarget'
 import { deleteTaskStatements } from '../_lib/taskItem'
-import { faceColumns } from '../_lib/taskWrite'
+import { insertTask } from '../_lib/taskWrite'
 import type { Recur } from '../_lib/recur'
 
 // What a captured task says, read off the words: a recurrence (the model's, else the regex), a
@@ -30,37 +29,6 @@ function captureTask(raw: string, p: Intent['payload'], who: string | null, ts: 
   return { day, recur, rotation: who ? [who] : [] }
 }
 
-interface CapturedTask {
-  id: string
-  hh: string
-  title: string
-  addedBy: string | null
-  ts: number
-  day: number | null
-  recur: Recur | null
-  rotation: string[]
-}
-// One INSERT on the spine (0150), in the face `taskTarget` answers, with the columns that
-// face's door writes (_lib/taskWrite). A captured day is a local midnight whatever the face:
-// a chore keeps it only as a recurrence's start. A to-do's member_id is the acting profile,
-// like POST /api/todos; the kind of a home row is never asked (a recurrence is upkeep, else a
-// project).
-function insertTask(env: Env, face: TaskFace, t: CapturedTask): Promise<unknown> {
-  const cols: Record<string, unknown> = {
-    id: t.id,
-    household_id: t.hh,
-    kind: face === 'home' ? (t.recur ? 'upkeep' : 'plan') : face,
-    title: t.title,
-    ...faceColumns(face, { day: t.day, at: t.day, recur: t.recur, rotation: t.rotation }, null),
-    member_id: face === 'todo' ? t.addedBy : null,
-    created_at: t.ts,
-    updated_at: t.ts,
-  }
-  const names = Object.keys(cols)
-  return env.DB.prepare(`INSERT INTO home_projects (${names.join(', ')}) VALUES (${names.map(() => '?').join(', ')})`)
-    .bind(...names.map((n) => cols[n]))
-    .run()
-}
 
 // THE SPINE. One free-text (or already-transcribed voice) capture in; the
 // intent-router classifies it; we route it to the right table. Every capture
@@ -220,9 +188,9 @@ async function routeIntent(
     case 'upkeep': {
       const title = p.title || raw
       const t = captureTask(raw, p, forMember?.id ?? null, ts)
-      const id = newId()
-      const face = taskTarget({ title, date: t.day, recur: t.recur, rotation: t.rotation })
-      await insertTask(env, face, { id, hh, title, addedBy, ts, ...t })
+      // Through the one door every new task takes (_lib/taskWrite): the same rule, the same
+      // columns, the day through the one encoder, the acting profile as its author.
+      const { id } = await insertTask(env.DB, hh, { day: t.day, recur: t.recur, rotation: t.rotation }, addedBy, { at: ts, title, ref: null })
       return { kind: 'task', label: withWho(title), cleanup: [{ table: 'home_projects', id }] }
     }
     case 'list-item': {

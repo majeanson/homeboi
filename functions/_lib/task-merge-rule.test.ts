@@ -8,18 +8,20 @@ import { blankComments, sourceFiles } from '../../src/lib/buildGuardScan'
 // test that does not seed that exact table stays green:
 //
 //   · `tasks` IS GONE. No SQL names it (schemaRefs.test.ts fails it too, as an unknown table;
-//     this one says why). A chore is a row of `home_projects` of kind 'chore'.
+//     this one says why). A chore is a row of `home_projects`, a task with no kind (0153).
 //   · `todos` HOLDS DEPARTURE CHECKLISTS, not tasks. Only the departure path writes it, and a
 //     reader of to-dos goes through `todoRowsSql` (_lib/taskItem), which unions the loose rows
 //     on the spine with the instances there. Every file that names it is listed below with why.
 //   · A READ OF THE SPINE NAMES ITS FACE. `home_projects` holds every face now; a SELECT that
-//     scans it without `kind` (or FACE.*) hands chores and to-dos to a reader that expected
+//     scans it without `kind` (or FACE.*) hands every task to a reader that expected
 //     projects (the Réglages list, the season card, the calendar's home cells). Reading by id is
 //     fine: an id names one row. A deliberate any-face read is listed below with why.
 //
 // Planted red three times (2026-11-08), each plant checked with `git diff` before the run:
 // `AND ${FACE.home}` removed from year.ts; a `SELECT title FROM tasks` in recap.ts; an
-// `INSERT INTO todos` in capture.ts.
+// `INSERT INTO todos` in capture.ts. Since 0153 a gesture is the same for every task, so three
+// files read the spine whole on purpose (listed below); planted red (2026-11-10) by taking
+// `taskGestures.ts` off that list.
 
 const ROOT = join(__dirname, '..', '..')
 const files = [...sourceFiles(join(ROOT, 'functions')), ...sourceFiles(join(ROOT, 'worker'))]
@@ -45,6 +47,9 @@ const ANY_FACE: Record<string, string> = {
   'functions/_lib/members.ts': 'a deleted member is detached from every task, whatever face it wears',
   'functions/_lib/sampleData.ts': '« Vider les exemples » clears the log lines of every sample task',
   'functions/_lib/taskViews.ts': 'its one row helper reads every face; each caller names its face (task-faces-rule.test.ts holds that)',
+  'functions/_lib/taskGestures.ts': 'a gesture is the same for every task (0153): « Vider » reads and stamps any ticked row by name',
+  'functions/_lib/taskDay.ts': 'the backfill rewrites every task’s day to its local midnight, whatever it is',
+  'functions/_lib/staleDelete.ts': 'a stale id heals onto any task of the same name (one delete for every task, 0153)',
 }
 
 describe('one table of tasks', () => {

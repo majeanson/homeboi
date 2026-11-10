@@ -36,7 +36,7 @@ test('a task is findable, and lands on the TÃ¢ches view when it is not on todayâ
   const subjects = { carnets: [], contacts: [], pets: [], projects: [], trips: [] }
   await app.boot({
     route: '/search?q=Vaisselle',
-    api: { overrides: { tasks: { tasks: [somedayTask({ source: 'chore', id: 'ch1', title: 'Vaisselle' })], subjects, history: [] } } },
+    api: { overrides: { tasks: { tasks: [somedayTask({ source: 'task', id: 'ch1', title: 'Vaisselle' })], subjects, history: [] } } },
     wait: '.search__row',
   })
   await page.locator('.search__row', { hasText: 'Vaisselle' }).click()

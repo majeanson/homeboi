@@ -6,7 +6,7 @@ import { ROUTES, boardTask } from './mocks'
 
 const home = { id: 'k1', parentId: null, kind: 'home', name: 'Notre maison', mediaKey: null, color: '#88a36f', facts: null, installedAt: null, lifespanMonths: null, linkId: null, notes: null, sort: 0 }
 const carnets = { carnets: [home], soon: [] }
-const onCarnet = boardTask({ source: 'todo', id: 'c-t', title: 'Vérifier le toit', subject: { kind: 'carnet', id: 'k1' } })
+const onCarnet = boardTask({ source: 'task', id: 'c-t', title: 'Vérifier le toit', subject: { kind: 'carnet', id: 'k1' } })
 const upkeep = boardTask({ source: 'home', id: 'c-u', title: 'Filtre', kind: 'upkeep', subject: { kind: 'carnet', id: 'k1' } })
 const frame = {
   ...(ROUTES.tasks as object),

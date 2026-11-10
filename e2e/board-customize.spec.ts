@@ -290,7 +290,7 @@ const FLAGGED_TITLE = 'Sortir le bac bleu'
 // A task in « À venir » (the payload's `tasksAhead`, one list for every task since
 // 2026-11-08) whose next occurrence lands exactly on tomorrow's local midnight — the
 // model's own match condition.
-const flaggedChore = boardTask({ source: 'chore', id: 'bac1', title: FLAGGED_TITLE, color: '#88A36F', recurring: true, day: MMID + DAY, dueToday: false, onBoard: false, announceEvening: true })
+const flaggedChore = boardTask({ source: 'task', id: 'bac1', title: FLAGGED_TITLE, color: '#88A36F', recurring: true, day: MMID + DAY, dueToday: false, onBoard: false, announceEvening: true })
 
 async function boardWithTasksAhead(page: Page, tasksAhead: unknown[]) {
   await page.emulateMedia({ reducedMotion: 'reduce' })

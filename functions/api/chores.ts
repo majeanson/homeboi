@@ -1,33 +1,35 @@
 import { badRequest, notFound, ok, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
-import { newId, nowSec, tickedAt } from '../_lib/ids'
-import { clearStatements, deleteTaskStatements, FACE } from '../_lib/taskItem'
-import { announceEvening, dateSec, DEFAULT_COLOUR, leadSeconds, recurJson, startSec } from '../_lib/taskWrite'
+import { nowSec, tickedAt } from '../_lib/ids'
+import { profileMemberId } from '../_lib/profile'
+import { FACE } from '../_lib/taskItem'
+import { announceEvening, DEFAULT_COLOUR, insertTask, leadSeconds, recurJson, taskStart } from '../_lib/taskWrite'
+import { taskDay, taskDayOf } from '../_lib/taskDay'
+import { clearTasks, tickTask, untickTask } from '../_lib/taskGestures'
+import { deleteHealing } from '../_lib/staleDelete'
 import { emojiIcon, hexColor, taskEffort } from '../_lib/validate'
 import { subjectBinds, validSubject } from '../_lib/subject'
-import { nextTurnIdx, parseRotation, prevTurnIdx, rotationJson, turnOf } from '../_lib/rotation'
+import { rotationJson } from '../_lib/rotation'
 import type { Wire } from '../_lib/wire'
 
 const isString = (v: unknown): v is string => typeof v === 'string'
 
-// AN ALIAS since 0150: chores live on the spine (`home_projects`, kind 'chore'), and this
-// endpoint keeps the request and response shapes it always had, because a queued offline write
-// from yesterday's bundle or a tab left open can still call it. The one form writes through
-// /api/tasks; a row's tick, untick, delete and « Vider » still come here (lib/taskSave).
+// AN ALIAS, kept because a queued offline write from an older bundle or a tab left open can
+// still call it, in the request and response shapes it always had. Since 0153 there are no
+// chores: every task (kind NULL) is served here in the old chore shape, and every gesture is
+// the one every task has (_lib/taskGestures): a tick records who did it and moves the turn of
+// « chacun son tour », an untick puts back what it moved, « Vider » stamps `cleared_at`. The
+// one form and every row of today's client write through /api/tasks.
 //
-// Chores with a round-robin rotation and an optional recurrence ("tous les
-// jeudis", see _lib/recur). The ONLY "credit" that exists is last_done_by +
-// whose-turn — no points, no streak (NFR-CALM-1). Marking done advances the
-// rotation and stamps who/when. The board expands recurring chores onto
-// Aujourd'hui / À venir. The start a household chose lives in the spine's `at` and is read back
-// as `recur_start`; NULL is still « from created_at » (0032, choreSchedule).
+// No points, no streak (NFR-CALM-1): who did it and whose turn, nothing else. The day a task
+// counts from is read back as `recur_start`, a household-local midnight (_lib/taskDay).
 export const onRequestGet = authed(async (ctx, actor) => {
   const { results } = await ctx.env.DB.prepare(
-    `SELECT id, title, rotation_json, current_idx, last_done_at, last_done_by, colour AS color, recur_json, at AS recur_start, lead_seconds, announce_evening, subject_kind, subject_id, icon, effort FROM home_projects WHERE household_id = ? AND ${FACE.chore} ORDER BY created_at`,
+    `SELECT id, title, rotation_json, current_idx, last_done_at, last_done_by, colour AS color, recur_json, at AS recur_start, lead_seconds, announce_evening, subject_kind, subject_id, icon, effort FROM home_projects WHERE household_id = ? AND ${FACE.task} ORDER BY created_at`,
   )
     .bind(actor.householdId)
     .all<Wire['chores']['chores'][number]>()
-  return okWire('chores', { chores: results })
+  return okWire('chores', { chores: results.map((c) => ({ ...c, recur_start: taskDay(c.recur_start) })) })
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {
@@ -45,42 +47,33 @@ export const onRequestPost = authed(async (ctx, actor) => {
   }>(ctx.request)
   const title = body?.title?.trim()
   if (!title) return badRequest('Titre requis.')
-  const id = newId()
-  const ts = nowSec()
-  const [subjectKind, subjectId] = subjectBinds(await validSubject(ctx.env.DB, actor.householdId, body?.subject))
-  await ctx.env.DB.prepare(
-    "INSERT INTO home_projects (id, household_id, kind, title, rotation_json, current_idx, colour, icon, effort, recur_json, at, lead_seconds, announce_evening, subject_kind, subject_id, created_at, updated_at) VALUES (?, ?, 'chore', ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-  )
-    .bind(
-      id,
-      actor.householdId,
+  // The old chore form's body, as the one form spells it: the same rule picks what it is.
+  const { id } = await insertTask(
+    ctx.env.DB,
+    actor.householdId,
+    {
       title,
-      rotationJson(body?.rotation),
-      hexColor(body?.color, DEFAULT_COLOUR),
-      emojiIcon(body?.icon),
-      taskEffort(body?.effort),
-      recurJson(body?.recur),
-      // A series carries its start (0152); one sent without counts from now.
-      startSec(recurJson(body?.recur) != null, body?.start, ts),
-      leadSeconds(body?.leadSeconds),
-      announceEvening(body?.announceEvening),
-      subjectKind,
-      subjectId,
-      ts,
-      ts,
-    )
-    .run()
+      rotation: body?.rotation,
+      color: body?.color,
+      recur: body?.recur,
+      at: taskDayOf(body?.start),
+      leadSeconds: body?.leadSeconds,
+      announceEvening: body?.announceEvening,
+      subject: body?.subject,
+      icon: body?.icon,
+      effort: taskEffort(body?.effort),
+    },
+    profileMemberId(ctx.request),
+    { title },
+  )
   return ok({ id, title })
 })
 
-// Mark done / record help. Two shapes, both append a contribution to
-// task_participants (the shared-task "who pitched in" log):
-//   - complete (default): a parent finishing — stamps last_done + advances the
-//     rotation, AND logs the contribution.
-//   - complete:false: a helper (typically a toddler in kid view) pitching in —
-//     logs the contribution only, does NOT advance the rotation or "finish" it.
-// `role` ('parent'|'child') comes from the caller's audience; `memberId`
-// defaults to whoever's turn it is. Both kiosk and operator can call this.
+// Three shapes: « Vider » (`clearChecked`), an edit (any content field), else a tick:
+//   - complete (default): stamps the tick, logs who did it, moves the turn;
+//   - complete:false: a helper (a toddler in kid view) pitching in: logged, nothing finished;
+//   - undo: the tick taken back.
+// `memberId` names who did it; else the face the device acts as; else whose turn it was.
 export const onRequestPatch = authed(async (ctx, actor) => {
   const body = await readJson<{
     id?: string
@@ -101,20 +94,19 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     undo?: boolean
     clearChecked?: boolean
     ids?: unknown
+    items?: unknown
+    asOf?: unknown
   }>(ctx.request)
-  // « Vider les cochés »: these rows are history, so the bulk gesture stamps them out of the
-  // day and deletes nothing (_lib/taskItem).
+  const db = ctx.env.DB
+  const hh = actor.householdId
   if (body?.clearChecked) {
     const ids = Array.isArray(body.ids) ? body.ids.filter(isString) : []
-    if (ids.length > 0) await ctx.env.DB.batch(clearStatements(ctx.env.DB, 'chore', actor.householdId, ids, nowSec()))
+    if (ids.length > 0 && (await clearTasks(db, hh, ids, body.items, body.asOf)).length === 0) return notFound('Aucune tâche à effacer.')
     return ok({ ok: true })
   }
   if (!body?.id) return badRequest('id requis.')
 
-  // Editing the chore — a distinct shape from marking done: any of title /
-  // rotation / color / recur present means "edit this chore in place". One write
-  // covers everything the form changed. `start` rides along to anchor a recur. A parent-mode
-  // kiosk may edit too (only member admin + device pairing stay operator-only).
+  // Editing in place, a distinct shape from a tick: only the fields sent change.
   const editsContent =
     body.title !== undefined ||
     body.rotation !== undefined ||
@@ -133,8 +125,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       binds.push(body.title.trim())
     }
     if (body.rotation !== undefined) {
-      // The turn is read modulo its length (_lib/rotation), so a shorter rotation
-      // can't index out of range — no need to reset current_idx here.
+      // The turn is read modulo its length (_lib/rotation): no reset needed.
       sets.push('rotation_json = ?')
       binds.push(rotationJson(body.rotation))
     }
@@ -143,25 +134,23 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       binds.push(hexColor(body.color, DEFAULT_COLOUR))
     }
     if (body.icon !== undefined) {
-      // null (or anything that is not an emoji) puts the subject's icon back (0148).
       sets.push('icon = ?')
       binds.push(emojiIcon(body.icon))
     }
     if (body.effort !== undefined) {
-      // null (or anything that is not a dot from 1 to 5) clears it (0149).
       sets.push('effort = ?')
       binds.push(taskEffort(body.effort))
     }
     if (body.recur !== undefined) {
       sets.push('recur_json = ?')
       binds.push(recurJson(body.recur))
-      if (body.start !== undefined && dateSec(body.start) != null) {
-        sets.push('at = ?') // the start, in the spine's at (0150)
-        binds.push(dateSec(body.start))
+      if (body.start !== undefined && taskDayOf(body.start) != null) {
+        sets.push('at = ?')
+        binds.push(taskDayOf(body.start))
       } else if (recurJson(body.recur) != null) {
-        // A series carries its start (0152): one that had none counts from its creation,
-        // the very date « no start » read as before.
-        sets.push('at = COALESCE(at, created_at)')
+        // A series carries its start (0152): one that had none counts from today.
+        sets.push('at = COALESCE(at, ?)')
+        binds.push(taskStart(true, null))
       }
     }
     if (body.leadSeconds !== undefined) {
@@ -174,71 +163,29 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     }
     if (body.subject !== undefined) {
       sets.push('subject_kind = ?', 'subject_id = ?')
-      binds.push(...subjectBinds(await validSubject(ctx.env.DB, actor.householdId, body.subject)))
+      binds.push(...subjectBinds(await validSubject(db, hh, body.subject)))
     }
     if (!sets.length) return ok({ ok: true })
     sets.push('updated_at = ?')
-    binds.push(nowSec(), body.id, actor.householdId)
-    const res = await ctx.env.DB.prepare(`UPDATE home_projects SET ${sets.join(', ')} WHERE id = ? AND household_id = ? AND ${FACE.chore}`)
-      .bind(...binds)
-      .run()
-    if (!res.meta.changes) return notFound('Corvée introuvable.')
+    binds.push(nowSec(), body.id, hh)
+    const res = await db.prepare(`UPDATE home_projects SET ${sets.join(', ')} WHERE id = ? AND household_id = ?`).bind(...binds).run()
+    if (!res.meta.changes) return notFound('Tâche introuvable.')
     return ok({ ok: true })
   }
 
-  const chore = await ctx.env.DB.prepare(
-    `SELECT rotation_json, current_idx, last_done_at FROM home_projects WHERE id = ? AND household_id = ? AND ${FACE.chore}`,
-  )
-    .bind(body.id, actor.householdId)
-    .first<{ rotation_json: string; current_idx: number; last_done_at: number | null }>()
-  if (!chore) return notFound('Corvée introuvable.')
-
-  // Untick a one-off: the row's own check is its undo, so a tick has to be takeable back.
-  // It puts back exactly what the tick moved: the stamp, the turn, and the log line.
-  if (body.undo) {
-    // Nothing to take back: a replayed or doubled untick must not walk the turn backwards.
-    if (chore.last_done_at == null) return ok({ ok: true })
-    const back = prevTurnIdx(parseRotation(chore.rotation_json), chore.current_idx)
-    await ctx.env.DB.batch([
-      ctx.env.DB.prepare('DELETE FROM task_participants WHERE task_id = ? AND contributed_at = ?').bind(body.id, chore.last_done_at),
-      ctx.env.DB.prepare(
-        `UPDATE home_projects SET last_done_at = NULL, last_done_by = NULL, cleared_at = NULL, current_idx = ? WHERE id = ? AND household_id = ? AND ${FACE.chore}`,
-      ).bind(back, body.id, actor.householdId),
-    ])
-    return ok({ ok: true })
-  }
-
-  const rotation = parseRotation(chore.rotation_json)
-  const turnMember = turnOf(rotation, chore.current_idx)
-  const nextIdx = nextTurnIdx(rotation, chore.current_idx)
-
-  const complete = body.complete !== false // default: a parent completing
-  const role = body.role === 'child' ? 'child' : 'parent'
-  const memberId = body.memberId ?? turnMember
-  const ts = tickedAt(body.doneAt, nowSec())
-
-  const writes = [
-    ctx.env.DB.prepare(
-      'INSERT INTO task_participants (id, task_id, member_id, role, contributed_at) VALUES (?, ?, ?, ?, ?)',
-    ).bind(newId(), body.id, memberId, role, ts),
-  ]
-  if (complete) {
-    writes.push(
-      ctx.env.DB.prepare(
-        `UPDATE home_projects SET last_done_at = ?, last_done_by = ?, current_idx = ? WHERE id = ? AND household_id = ? AND ${FACE.chore}`,
-      ).bind(ts, turnMember, nextIdx, body.id, actor.householdId),
-    )
-  }
-  await ctx.env.DB.batch(writes)
-  return ok({ ok: true, complete, nextIdx })
+  if (body.undo) return (await untickTask(db, hh, body.id)) ? ok({ ok: true }) : notFound('Tâche introuvable.')
+  const who = body.memberId || profileMemberId(ctx.request)
+  const r = await tickTask(db, hh, body.id, { who, at: tickedAt(body.doneAt, nowSec()), complete: body.complete !== false, role: body.role })
+  if (!r) return notFound('Tâche introuvable.')
+  return ok({ ok: true, ...r })
 })
 
+// Any task, with its « qui a aidé » lines; a stale id heals or answers 404 (_lib/staleDelete).
+// A capture's « Corriger » in a bundle from before 0150 sends a captured task here.
 export const onRequestDelete = authed(async (ctx, actor) => {
-  const body = await readJson<{ id?: string }>(ctx.request)
+  const body = await readJson<{ id?: string; text?: unknown; asOf?: unknown }>(ctx.request)
   if (!body?.id) return badRequest('id requis.')
-  // The « qui a aidé » lines go first, in the same transaction (_lib/taskItem). Any face, on
-  // purpose: a capture's « Corriger » in a bundle from before 0150 sends a captured task here
-  // (CaptureForm's CAPTURE_UNDO_EP maps `tasks` to this endpoint), whatever face it now wears.
-  await ctx.env.DB.batch(deleteTaskStatements(ctx.env.DB, actor.householdId, body.id))
+  const r = await deleteHealing(ctx.env.DB, { table: 'tasks', textColumn: 'title', householdId: actor.householdId, id: body.id, text: body.text, asOf: body.asOf })
+  if (r.outcome === 'missing') return notFound('Tâche introuvable.')
   return ok({ ok: true })
 })

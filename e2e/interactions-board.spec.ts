@@ -41,14 +41,14 @@ test.describe('profile', () => {
 })
 
 test.describe('recurring chores on the board', () => {
-  test('a chore due today shows in Aujourd\'hui and checks off (PATCH complete)', async ({ page }) => {
+  test('a chore due today shows in Aujourd\'hui and checks off (PATCH /api/tasks, done)', async ({ page }) => {
     await APP('/board')(page)
     await settle(page, '.hub')
     const chore = page.locator('.act', { hasText: 'Sortir les poubelles' })
     await expect(chore).toBeVisible()
     await expect(chore).toContainText('Léa') // whose turn
     // The row is split now (body peeks the detail, the check disc ticks) — click the check.
-    await expectApi(page, 'PATCH', 'chores', () => chore.locator('.act__checkbtn').click())
+    await expectApi(page, 'PATCH', 'tasks', () => chore.locator('.act__checkbtn').click())
   })
 
   test('an upcoming chore shows under À venir with its day', async ({ page }) => {

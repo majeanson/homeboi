@@ -29,7 +29,7 @@ function fieldsLinesForReads(): string[] {
   const data = {
     events: one({ id: 'e', title: 'E', at: day, all_day: 1, member_id: null, day }),
     meals: one({ id: 'm', slot: 'supper', title: 'M', cook_member_id: null, day }),
-    tasks: one({ id: 'c', taskId: 'c', source: 'chore', title: 'C', color: null, icon: null, kind: null, who_id: null, day, done: false, recurring: false, soon: false }),
+    tasks: one({ id: 'c', taskId: 'c', source: 'task', title: 'C', color: null, icon: null, kind: null, who_id: null, day, done: false, recurring: false, soon: false }),
     dayNotes: one({ id: 'n', text: 'N', member_id: null, day }),
     todos: one({ id: 't', title: 'T', member_id: null, day, section: 'Avant de partir' }),
     habits: one({ id: 'hb', habit_id: 'hb', title: 'HB', icon: '', colour: null, kind: 'do', member_id: null, day, done: true }),

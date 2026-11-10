@@ -1,20 +1,24 @@
 import { badRequest, notFound, ok, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec, localDayStart, tickedAt } from '../_lib/ids'
-import { clearStatements, deleteTaskStatements, FACE } from '../_lib/taskItem'
-import { nextTurnIdx, parseRotation, prevTurnIdx, rotationJson, turnOf } from '../_lib/rotation'
-import { budgetCents, dateSec, DEFAULT_COLOUR, homeKind, leadSeconds, notesOf, recurFromOf, recurJson, subjectCols } from '../_lib/taskWrite'
+import { FACE } from '../_lib/taskItem'
+import { rotationJson } from '../_lib/rotation'
+import { budgetCents, DEFAULT_COLOUR, homeKind, leadSeconds, notesOf, recurFromOf, recurJson, subjectCols } from '../_lib/taskWrite'
+import { taskDayOf, withTaskDay } from '../_lib/taskDay'
+import { clearTasks, snoozeTask, tickTask, untickTask } from '../_lib/taskGestures'
+import { deleteHealing } from '../_lib/staleDelete'
+import { profileMemberId } from '../_lib/profile'
 import { emojiIcon, hexColor, taskEffort } from '../_lib/validate'
-import { upkeepStatus, nextCycleDay } from '../_lib/upkeep'
+import { upkeepStatus } from '../_lib/upkeep'
 import { validSubject } from '../_lib/subject'
-import { addLocalDays } from '../_lib/ids'
 
 // "Projets & Entretien" — the longer-horizon home work (see migration 0074). Since 0150 the
-// table is the SPINE every task lives in, and this endpoint reads and writes only its HOME face
-// (`kind` 'plan' | 'upkeep'), with the shapes it always had: a queued offline write or an old
-// tab can still call it, and the Réglages lists, the carnets and the season card read it. A
-// chore or a to-do on the same table never shows up here (FACE.home). The one form writes
-// through /api/tasks; a row's tick, snooze, delete and « Vider » still come here.
+// table is the SPINE every task lives in. This endpoint SERVES its home rows (`kind` 'plan' |
+// 'upkeep'), with the shape it always had: the Réglages lists, the carnets, the season card and
+// search read it. Its WRITES are an alias (a queued offline write or an old tab can still call
+// it): since 0153 a tick, an untick, « Reporter », « Vider » and a delete are the one gesture
+// every task has (_lib/taskGestures), and an edit names its row by id. The one form writes
+// through /api/tasks.
 //
 // `kind` ('plan'|'upkeep') discriminates the two faces; the frontend filters by kind. A row may
 // carry BOTH a budget AND a recurrence (a water-heater replacement is both maintenance and a
@@ -65,7 +69,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // client group « cette saison » without re-implementing recurrence; overdueSince /
   // dueToday are the calm carry-forward the board and season card render.
   const today = localDayStart(new Date(nowSec() * 1000))
-  const projects = results.map((p) => ({ ...p, ...upkeepStatus(p, today) }))
+  const projects = results.map(withTaskDay).map((p) => ({ ...p, ...upkeepStatus(p, today) }))
   return okWire('home-projects', { projects })
 })
 
@@ -90,7 +94,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   if (!title) return badRequest('Titre requis.')
   const id = newId()
   const ts = nowSec()
-  const at = dateSec(body?.at)
+  const at = taskDayOf(body?.at)
   // `subject` wins when both are sent; `carnetId` remains the older spelling of one kind of it.
   const cols =
     body?.subject !== undefined
@@ -157,40 +161,24 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     undo?: boolean
     clearChecked?: boolean
     ids?: unknown
+    items?: unknown
+    asOf?: unknown
   }>(ctx.request)
-  // « Vider les cochés »: these rows are history, so the bulk gesture stamps them out of the
-  // day and deletes nothing (_lib/taskItem).
+  const db = ctx.env.DB
+  const hh = actor.householdId
+  // « Vider les cochés »: history, never a delete; a named clear that names nothing is a 404.
   if (body?.clearChecked) {
     const ids = Array.isArray(body.ids) ? body.ids.filter((x): x is string => typeof x === 'string') : []
-    if (ids.length > 0) await ctx.env.DB.batch(clearStatements(ctx.env.DB, 'home', actor.householdId, ids, nowSec()))
+    if (ids.length > 0 && (await clearTasks(db, hh, ids, body.items, body.asOf)).length === 0) return notFound('Aucune tâche à effacer.')
     return ok({ ok: true })
   }
   if (!body?.id) return badRequest('id requis.')
 
   if (body.snooze !== undefined) {
-    let until: number | null = null
-    if (body.snooze !== null) {
-      if (body.snooze !== 'week' && body.snooze !== 'cycle') return badRequest('snooze invalide.')
-      const today = localDayStart(new Date(nowSec() * 1000))
-      if (body.snooze === 'cycle') {
-        const row = await ctx.env.DB.prepare(
-          `SELECT at, recur_json, recur_from, last_done_at FROM home_projects WHERE id = ? AND household_id = ? AND ${FACE.home}`,
-        )
-          .bind(body.id, actor.householdId)
-          .first<{ at: number | null; recur_json: string | null; recur_from: string | null; last_done_at: number | null }>()
-        if (!row) return notFound('Introuvable.')
-        until = nextCycleDay(row, today) ?? addLocalDays(today, 7)
-      } else {
-        until = addLocalDays(today, 7)
-      }
-    }
-    const res = await ctx.env.DB.prepare(
-      `UPDATE home_projects SET snoozed_until = ?, updated_at = ? WHERE id = ? AND household_id = ? AND ${FACE.home}`,
-    )
-      .bind(until, nowSec(), body.id, actor.householdId)
-      .run()
-    if (!res.meta.changes) return notFound('Introuvable.')
-    return ok({ ok: true, snoozedUntil: until })
+    const r = await snoozeTask(db, hh, body.id, body.snooze)
+    if (r === 'bad') return badRequest('snooze invalide.')
+    if (r === 'missing') return notFound('Introuvable.')
+    return ok({ ok: true, snoozedUntil: r.until })
   }
 
   const editsContent =
@@ -237,7 +225,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     }
     if (body.at !== undefined) {
       sets.push('at = ?')
-      binds.push(dateSec(body.at))
+      binds.push(taskDayOf(body.at))
     }
     if (body.recur !== undefined) {
       sets.push('recur_json = ?')
@@ -268,49 +256,27 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     sets.push('updated_at = ?')
     binds.push(nowSec())
     binds.push(body.id, actor.householdId)
-    const res = await ctx.env.DB.prepare(`UPDATE home_projects SET ${sets.join(', ')} WHERE id = ? AND household_id = ? AND ${FACE.home}`)
-      .bind(...binds)
-      .run()
+    const res = await db.prepare(`UPDATE home_projects SET ${sets.join(', ')} WHERE id = ? AND household_id = ?`).bind(...binds).run()
     if (!res.meta.changes) return notFound('Introuvable.')
     return ok({ ok: true })
   }
 
-  const turn = await ctx.env.DB.prepare(`SELECT rotation_json, current_idx, last_done_at FROM home_projects WHERE id = ? AND household_id = ? AND ${FACE.home}`)
-    .bind(body.id, actor.householdId)
-    .first<{ rotation_json: string; current_idx: number; last_done_at: number | null }>()
-  if (!turn) return notFound('Introuvable.')
-  const rotation = parseRotation(turn.rotation_json)
+  // Untick: the row's own check is its undo, and it puts back what the tick moved.
+  if (body.undo) return (await untickTask(db, hh, body.id)) ? ok({ ok: true }) : notFound('Introuvable.')
 
-  // Untick a one-off: the row's own check is its undo (mirrors a chore), and the turn goes back.
-  if (body.undo) {
-    // Nothing to take back: a replayed or doubled untick must not walk the turn backwards.
-    if (turn.last_done_at == null) return ok({ ok: true })
-    await ctx.env.DB.prepare(
-      `UPDATE home_projects SET last_done_at = NULL, last_done_by = NULL, cleared_at = NULL, current_idx = ?, updated_at = ? WHERE id = ? AND household_id = ? AND ${FACE.home}`,
-    )
-      .bind(prevTurnIdx(rotation, turn.current_idx), nowSec(), body.id, actor.householdId)
-      .run()
-    return ok({ ok: true })
-  }
-
-  // Complete: stamp this cycle done, at the moment it really happened. A recurring upkeep's
-  // next occurrence then shows; a one-off stays ticked for the day (mirrors a chore's
-  // last_done_at). Also clears any « reporté » — done beats postponed.
-  const now = nowSec()
-  const res = await ctx.env.DB.prepare(
-    `UPDATE home_projects SET last_done_at = ?, last_done_by = ?, current_idx = ?, snoozed_until = NULL, updated_at = ? WHERE id = ? AND household_id = ? AND ${FACE.home}`,
-  )
-    .bind(tickedAt(body.doneAt, now), turnOf(rotation, turn.current_idx), nextTurnIdx(rotation, turn.current_idx), now, body.id, actor.householdId)
-    .run()
-  if (!res.meta.changes) return notFound('Introuvable.')
+  // Complete: the one tick (_lib/taskGestures), at the moment it really happened. A series'
+  // next occurrence then shows; a one-off stays ticked for the day. Done beats postponed.
+  const r = await tickTask(db, hh, body.id, { who: profileMemberId(ctx.request), at: tickedAt(body.doneAt, nowSec()) })
+  if (!r) return notFound('Introuvable.')
   return ok({ ok: true, done: true })
 })
 
 export const onRequestDelete = authed(async (ctx, actor) => {
-  const body = await readJson<{ id?: string }>(ctx.request)
+  const body = await readJson<{ id?: string; text?: unknown; asOf?: unknown }>(ctx.request)
   if (!body?.id) return badRequest('id requis.')
-  // Any face, with its « qui a aidé » lines: a capture's compensating undo sends every captured
-  // task here (CaptureForm maps `home_projects` to this endpoint), whatever face it wears.
-  await ctx.env.DB.batch(deleteTaskStatements(ctx.env.DB, actor.householdId, body.id))
+  // Any task, with its « qui a aidé » lines: a capture's compensating undo sends every captured
+  // task here (CaptureForm maps `home_projects` to this endpoint). A stale id heals or 404s.
+  const r = await deleteHealing(ctx.env.DB, { table: 'tasks', textColumn: 'title', householdId: actor.householdId, id: body.id, text: body.text, asOf: body.asOf })
+  if (r.outcome === 'missing') return notFound('Introuvable.')
   return ok({ ok: true })
 })

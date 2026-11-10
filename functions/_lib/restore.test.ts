@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { CONTENT_TABLES, HOUSEHOLD_KEEP, RESET_KEEP, RESET_TABLES, chunk, fitRow, freshIdMap, idsIn, rewriteIds, upgradeTakeout, validateTakeout } from './restore'
 import { TAKEOUT_EXCLUDE } from './takeout'
+import { addLocalDays, localDayStart } from './ids'
 import { HOUSEHOLD_TABLES } from './demoHousehold'
 
 // The pure half of the restore (STATE.md §4-L L8); the round trip against a real D1
@@ -110,41 +111,50 @@ describe('upgradeTakeout (a pre-0142 copy)', () => {
 })
 
 describe('upgradeTakeout (a pre-0150 copy: chores in `tasks`, loose to-dos in `todos`)', () => {
-  const chore = { id: 'choreAAAAAAA', household_id: 'hhAAAAAAAAAA', title: 'Bac', rotation_json: '["m1"]', current_idx: 0, last_done_at: 5, last_done_by: 'm1', created_at: 3, colour: '#88A36F', recur_json: '{"freq":"weekly"}', recur_start: 7, lead_seconds: null, is_sample: 0, announce_evening: 1, subject_kind: null, subject_id: null, cleared_at: null, icon: null, effort: 2 }
-  const loose = { id: 'todoAAAAAAAA', household_id: 'hhAAAAAAAAAA', title: 'Appeler', day: 9, member_id: 'm2', position: 4, done_at: null, created_at: 3, updated_at: 6, section: null, is_sample: 0, source_template_id: null, subject_kind: null, subject_id: null, icon: null, colour: null, effort: null }
+  // Real instants, in America/Toronto (no request: the default zone): the old chore form wrote
+  // a UTC midnight (the 14th, which every reader showed as the 13th), a to-do a local midnight.
+  const UTC14 = Date.UTC(2026, 2, 14) / 1000
+  const LOCAL20 = localDayStart(new Date(Date.UTC(2026, 2, 20, 12)))
+  const MADE = Date.UTC(2026, 1, 1, 15, 37) / 1000
+  const chore = { id: 'choreAAAAAAA', household_id: 'hhAAAAAAAAAA', title: 'Bac', rotation_json: '["m1"]', current_idx: 0, last_done_at: 5, last_done_by: 'm1', created_at: MADE, colour: '#88A36F', recur_json: '{"freq":"weekly"}', recur_start: UTC14, lead_seconds: null, is_sample: 0, announce_evening: 1, subject_kind: null, subject_id: null, cleared_at: null, icon: null, effort: 2 }
+  const loose = { id: 'todoAAAAAAAA', household_id: 'hhAAAAAAAAAA', title: 'Appeler', day: LOCAL20, member_id: 'm2', position: 4, done_at: null, created_at: MADE, updated_at: 6, section: null, is_sample: 0, source_template_id: null, subject_kind: null, subject_id: null, icon: null, colour: null, effort: null }
   const departure = { ...loose, id: 'depAAAAAAAAA', section: 'Partir', source_template_id: 'tplAAAAAAAAA' }
-  const up = upgradeTakeout({ ...base, tables: { tasks: [chore], todos: [loose, departure], home_projects: [{ id: 'homeAAAAAAAA', kind: 'plan' }] } })
+  const up = upgradeTakeout({ ...base, tables: { tasks: [chore], todos: [loose, departure], home_projects: [{ id: 'homeAAAAAAAA', kind: 'plan', at: null }] } })
 
-  it('moves the chores and the loose to-dos onto the spine, ids kept; the departure rows stay', () => {
+  it('moves the chores and the loose to-dos onto the spine, ids kept, with no kind (0153); the departure rows stay', () => {
     expect(up.tables.tasks).toBeUndefined()
     expect(up.tables.todos).toEqual([departure])
     expect(up.tables.home_projects!.map((r) => [r.id, r.kind])).toEqual([
       ['homeAAAAAAAA', 'plan'],
-      ['choreAAAAAAA', 'chore'],
-      ['todoAAAAAAAA', 'todo'],
+      ['choreAAAAAAA', null],
+      ['todoAAAAAAAA', null],
     ])
   })
-  it('maps each column the way 0150 does: a chore’s start to `at`, a to-do’s day and tick to `at` and `last_done_at`', () => {
+  it('maps each column the way 0150 does, and every day through the one encoder (0153)', () => {
     const [, c, t] = up.tables.home_projects!
-    expect(c).toMatchObject({ at: 7, recur_json: '{"freq":"weekly"}', rotation_json: '["m1"]', last_done_by: 'm1', announce_evening: 1, effort: 2, updated_at: 3, colour: '#88A36F' })
-    expect(t).toMatchObject({ at: 9, last_done_at: null, member_id: 'm2', position: 4, colour: null, updated_at: 6 })
+    // The chore's start: the local day every reader showed it on (the 13th in Toronto), at midnight.
+    expect(c).toMatchObject({ at: localDayStart(new Date(UTC14 * 1000)), recur_json: '{"freq":"weekly"}', rotation_json: '["m1"]', last_done_by: 'm1', announce_evening: 1, effort: 2, updated_at: MADE, colour: '#88A36F' })
+    expect(c!.at).toBe(addLocalDays(localDayStart(new Date(Date.UTC(2026, 2, 14, 12))), -1))
+    expect(t).toMatchObject({ at: LOCAL20, last_done_at: null, member_id: 'm2', position: 4, colour: null, updated_at: 6 })
     // No `undefined` reaches a bind: D1 refuses one.
     for (const r of up.tables.home_projects!.slice(1)) for (const v of Object.values(r)) expect(v).not.toBeUndefined()
   })
-  it('is idempotent, and leaves a post-merge copy alone', () => {
+  it('is idempotent, brings a copy from between 0150 and 0153 forward, and leaves a post-0153 copy alone', () => {
     expect(upgradeTakeout(up)).toEqual(up)
-    const post = { ...base, tables: { todos: [departure], home_projects: [{ id: 'x', kind: 'chore' }] } }
+    const between = upgradeTakeout({ ...base, tables: { todos: [departure], home_projects: [{ id: 'x', kind: 'chore', at: UTC14 }] } })
+    expect(between.tables.home_projects).toEqual([{ id: 'x', kind: null, at: localDayStart(new Date(UTC14 * 1000)) }])
+    const post = { ...base, tables: { todos: [departure], home_projects: [{ id: 'x', kind: null, at: LOCAL20 }] } }
     expect(upgradeTakeout(post)).toBe(post)
   })
-  it('writes 0152’s start: a recurring chore with none gets its created_at, from `tasks` or already on the spine', () => {
+  it('writes 0152’s start: a recurring chore with none gets its created_at’s day, from `tasks` or already on the spine', () => {
     const noStart = upgradeTakeout({ ...base, tables: { tasks: [{ ...chore, recur_start: null }] } })
-    expect(noStart.tables.home_projects![0]).toMatchObject({ at: 3 })
+    expect(noStart.tables.home_projects![0]).toMatchObject({ at: localDayStart(new Date(MADE * 1000)) })
     const between = { ...base, tables: { home_projects: [
-      { id: 'a', kind: 'chore', at: null, recur_json: '{"freq":"daily"}', created_at: 11 },
-      { id: 'b', kind: 'chore', at: null, recur_json: '{"freq":"hourly"}', created_at: 12 },
-      { id: 'c', kind: 'upkeep', at: null, recur_json: '{"freq":"daily"}', created_at: 13 },
+      { id: 'a', kind: 'chore', at: null, recur_json: '{"freq":"daily"}', created_at: MADE },
+      { id: 'b', kind: 'chore', at: null, recur_json: '{"freq":"hourly"}', created_at: MADE + 1 },
+      { id: 'c', kind: 'upkeep', at: null, recur_json: '{"freq":"daily"}', created_at: MADE + 2 },
     ] } }
     // Only the real recurrence on a chore: a malformed one is a one-off, an undated home row stays undated.
-    expect(upgradeTakeout(between).tables.home_projects!.map((r) => r.at)).toEqual([11, null, null])
+    expect(upgradeTakeout(between).tables.home_projects!.map((r) => r.at)).toEqual([localDayStart(new Date(MADE * 1000)), null, null])
   })
 })

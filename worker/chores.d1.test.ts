@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { env } from 'cloudflare:workers'
 import { household, okJson, type Session } from '../functions/test/d1'
+import { localDayStart } from '../functions/_lib/ids'
 
 // LES CORVÉES against a real D1: a rotation, a turn that advances only when the thing is
 // finished, a helper who pitches in without finishing it, and the ledger that shows who
@@ -36,7 +37,7 @@ describe('une corvée', () => {
     const s = await household('chores-crud', undefined, { empty: true })
     const a = await member(s, 'Léa')
     const id = await add(s, { title: '  Bac bleu  ', rotation: [a], color: '#123456', recur: { freq: 'weekly', weekdays: [4] }, start: 1700000000, leadSeconds: 30 * 86400, announceEvening: true })
-    expect(await one(s, id)).toMatchObject({ title: 'Bac bleu', color: '#123456', current_idx: 0, recur_start: 1700000000, lead_seconds: 7 * 86400, announce_evening: 1 })
+    expect(await one(s, id)).toMatchObject({ title: 'Bac bleu', color: '#123456', current_idx: 0, recur_start: localDayStart(new Date(1700000000 * 1000)), lead_seconds: 7 * 86400, announce_evening: 1 })
     expect(JSON.parse((await one(s, id))!.rotation_json)).toEqual([a])
 
     await patch(s, { id, title: 'Bac vert', color: 'pas-une-couleur', announceEvening: false, recur: null })

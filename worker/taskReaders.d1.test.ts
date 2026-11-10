@@ -78,8 +78,11 @@ async function build(tag: string, instant: string): Promise<Fixture> {
   ])
   const id = (x: string) => `${tag.slice(0, 3)}${x}`
   const base = { household_id: hh, created_at: now - 30 * 86400, updated_at: now - 30 * 86400 }
-  const chore = { ...base, kind: 'chore', recur_from: 'anchor' }
-  const todo = { household_id: hh, kind: 'todo', colour: null, created_at: now - 5 * 86400, updated_at: now - 5 * 86400 }
+  // A former chore and a former to-do are tasks with no kind since 0153; each keeps the `at`
+  // encoding it was written with (a UTC midnight, an instant, a local midnight), which the
+  // readers decode until the nightly backfill rewrites it (_lib/taskDay).
+  const chore = { ...base, kind: null, recur_from: 'anchor' }
+  const todo = { household_id: hh, kind: null, colour: null, created_at: now - 5 * 86400, updated_at: now - 5 * 86400 }
   const home = { household_id: hh, created_at: now - 60 * 86400, updated_at: now - 60 * 86400 }
   await insertRows('home_projects', [
     // ── chores (the old `tasks`): `at` is the recurrence's chosen start, NULL = created_at
@@ -179,12 +182,11 @@ for (const [tag, instant] of Object.entries(INSTANTS)) {
       return scrub(f(), await okJson(f().s.fetch(path)))
     }
 
-    it('the canary: the fixture holds every face, open and ticked', async () => {
+    it('the canary: the fixture holds every kind of row, open and ticked (a task has no kind since 0153)', async () => {
       const kinds = await env.DB.prepare('SELECT kind, COUNT(*) AS n FROM home_projects WHERE household_id = ? GROUP BY kind ORDER BY kind').bind(f().s.householdId).all()
       expect(kinds.results).toEqual([
-        { kind: 'chore', n: 13 },
+        { kind: null, n: 23 },
         { kind: 'plan', n: 6 },
-        { kind: 'todo', n: 10 },
         { kind: 'upkeep', n: 6 },
       ])
     })

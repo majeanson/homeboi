@@ -4,8 +4,8 @@ import { boardOrder, findable, groupTasks, horizonOf, HORIZONS, mineTask, person
 
 const today = localDayStart(new Date('2026-11-06T17:00:00Z'))
 const task = (over: Partial<TaskItem>): TaskItem => ({
-  key: 'todo:a',
-  source: 'todo',
+  key: 'task:a',
+  source: 'task',
   id: 'a',
   title: 'A',
   color: null,

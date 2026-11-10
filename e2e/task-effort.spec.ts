@@ -1,6 +1,6 @@
 import { test, expect } from './fixtures'
 import { boxOf } from './measure'
-import { ROUTES, boardTask, somedayTask } from './mocks'
+import { ROUTES, boardTask, choreRowOf, somedayTask } from './mocks'
 import { addLocalDays, todayLocalDay } from '../src/lib/localDay'
 
 // L'EFFORT D'UNE TÂCHE et « TROUVER QUOI FAIRE » (plans/2026-11-06-TACHE-UNIFIEE.md, phase 3b):
@@ -11,10 +11,10 @@ import { addLocalDays, todayLocalDay } from '../src/lib/localDay'
 const SHOTS = process.env.EFFORT_SHOTS
 const today = todayLocalDay()
 
-const quick = somedayTask({ source: 'todo', id: 'e-quick', title: 'Appeler la garderie', effort: 1 })
+const quick = somedayTask({ source: 'task', id: 'e-quick', title: 'Appeler la garderie', effort: 1 })
 const big = somedayTask({ source: 'home', id: 'e-big', title: 'Refaire la clôture', kind: 'plan', effort: 5 })
-const unsaid = somedayTask({ source: 'todo', id: 'e-unsaid', title: 'Trier les photos' })
-const soon = boardTask({ source: 'chore', id: 'e-soon', title: 'Nettoyer les gouttières', effort: 3, day: addLocalDays(today, 3), dueToday: false, onBoard: false })
+const unsaid = somedayTask({ source: 'task', id: 'e-unsaid', title: 'Trier les photos' })
+const soon = boardTask({ source: 'task', id: 'e-soon', title: 'Nettoyer les gouttières', effort: 3, day: addLocalDays(today, 3), dueToday: false, onBoard: false })
 const frame = {
   ...(ROUTES.tasks as object),
   tasks: [quick, big, unsaid, soon],
@@ -133,7 +133,7 @@ test('a linked finder opens on its answer and says it while folded', async ({ pa
 
 test('a to-do’s one form holds its effort, and saving patches it', async ({ page, app }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  await app.boot({ route: '/todo/e-quick', wait: '.task-form', api: { overrides: { tasks: frame } } })
+  await app.boot({ route: '/todo/e-quick', wait: '.task-form', api: { overrides: { tasks: frame, chores: { chores: [choreRowOf(quick)] } } } })
   const edit = page.locator('.scene .task-form')
   // It already has an effort, so its fold opens itself: editing never hides a pick.
   await expect(edit.getByRole('button', { name: /^Effort/ })).toHaveAttribute('aria-expanded', 'true')

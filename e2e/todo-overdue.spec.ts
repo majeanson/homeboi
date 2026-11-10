@@ -15,8 +15,8 @@ import { boxOf } from './measure'
 // owed task wears. Calm: a quiet date, no count, no red.
 
 const DAY = 86_400
-const base = ROUTES.todos as { todos: Record<string, unknown>[]; items: ReturnType<typeof boardTask>[] }
-const today = () => base.items[0]?.day ?? 0
+const base = ROUTES.todos as { todos: Record<string, unknown>[] }
+const today = () => (base.todos[0]?.day as number | undefined) ?? 0
 
 // Since 2026-11-08 the board reads EVERY task from its own payload (one `tasks` list), a
 // loose to-do included; /api/todos keeps the departure checklists.
@@ -32,14 +32,14 @@ const card = (page: Page) => page.locator('.wg-slot[data-card="todos"]')
 
 test('a loose to-do left on a past day leads the card with its calm owed-since line', async ({ page }) => {
   const late = boardTask({
-    source: 'todo',
+    source: 'task',
     id: 'td-late',
     title: 'Rapporter les livres à la bibliothèque',
     day: today() - 3 * DAY,
     dueToday: false,
     overdueSince: today() - 3 * DAY,
   })
-  await board(page, { ...base, items: [...base.items, late] }, [...BOARD.tasks, late])
+  await board(page, base, [...BOARD.tasks, late])
 
   const row = card(page).locator('.act', { hasText: 'Rapporter les livres' })
   await expect(row).toBeVisible()
@@ -55,7 +55,7 @@ test('a loose to-do left on a past day leads the card with its calm owed-since l
 
 test('a stale checklist instance is never presented as owed', async ({ page }) => {
   // A past-day « Avant de partir » instance is finished business: the server sweeps these,
-  // and it has no `items` row at all (_lib/taskItem), so the card cannot show it.
+  // and it is no task at all (_lib/taskItem), so the card cannot show it.
   await board(page, {
     ...base,
     todos: [

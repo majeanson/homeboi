@@ -17,6 +17,7 @@ function deps(over: Partial<NightlyDeps> = {}): NightlyDeps {
     strangerSpend: async () => ({ ai: 0, bytes: 0 }),
     strangerRemarks: async () => [],
     doorCounts: async () => ({ demos: 0, demosFull: 0, kept: 0, signups: 0, newHouseholds: 0, newConfirmed: 0, active: 0, stuckEmpty: 0 }),
+    taskDays: async () => 0,
     ...over,
   }
 }
@@ -87,7 +88,7 @@ describe('runNightly', () => {
 })
 
 describe('alertFor', () => {
-  const quiet: NightlyReport = { at: NOW, households: 1, backed: 1, failed: [], noBucket: false, sandboxesSwept: 0, sandboxesAlive: 0, sandboxesStale: 0, strangerAi: 0, strangerBytes: 0, remarks: [], door: null }
+  const quiet: NightlyReport = { at: NOW, households: 1, backed: 1, failed: [], noBucket: false, sandboxesSwept: 0, sandboxesAlive: 0, sandboxesStale: 0, strangerAi: 0, strangerBytes: 0, remarks: [], door: null, taskDaysFixed: 0 }
   it('a quiet weekday sends nothing', () => {
     expect(alertFor(quiet, 3)).toBeNull()
   })

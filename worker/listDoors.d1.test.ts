@@ -127,7 +127,7 @@ describe('a swiped line dies even when the client aimed at a stale id', () => {
 describe('a deleted todo dies even when the client aimed at a stale id', () => {
   const nowSec = () => Math.floor(Date.now() / 1000)
   const titles = async (s: Session) =>
-    (await env.DB.prepare("SELECT title FROM home_projects WHERE household_id = ? AND kind = 'todo' ORDER BY created_at").bind(s.householdId).all<{ title: string }>()).results.map(
+    (await env.DB.prepare("SELECT title FROM home_projects WHERE household_id = ? AND kind IS NULL ORDER BY created_at").bind(s.householdId).all<{ title: string }>()).results.map(
       (r) => r.title,
     )
 
@@ -215,7 +215,7 @@ describe('« Vider les cochés » survives a stale snapshot', () => {
     const mkTodo = async (title: string) =>
       ((await (await s.fetch('/api/todos', { method: 'POST', body: { title } })).json()) as { id: string }).id
     const titles = async () =>
-      (await env.DB.prepare("SELECT title FROM home_projects WHERE household_id = ? AND kind = 'todo' ORDER BY created_at").bind(s.householdId).all<{ title: string }>()).results.map((r) => r.title)
+      (await env.DB.prepare("SELECT title FROM home_projects WHERE household_id = ? AND kind IS NULL AND cleared_at IS NULL ORDER BY created_at").bind(s.householdId).all<{ title: string }>()).results.map((r) => r.title)
     const done = await mkTodo('Appeler le dentiste')
     await s.fetch('/api/todos', { method: 'PATCH', body: { id: done, done: true } })
     await mkTodo('Payer le loyer') // not done: must survive
@@ -225,6 +225,8 @@ describe('« Vider les cochés » survives a stale snapshot', () => {
     })
     expect(heal.status).toBe(200)
     expect(await titles()).toEqual(['Payer le loyer'])
+    // Cleared, not deleted: every task stays as history (0153, the owner's decision 2).
+    expect((await env.DB.prepare('SELECT COUNT(*) AS n FROM home_projects WHERE id = ? AND cleared_at IS NOT NULL').bind(done).first<{ n: number }>())?.n).toBe(1)
     const gone = await s.fetch('/api/todos', { method: 'PATCH', body: { clearChecked: true, ids: ['tmp-2'] } })
     expect(gone.status).toBe(404)
     expect(await titles()).toEqual(['Payer le loyer'])

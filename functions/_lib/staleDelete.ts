@@ -1,5 +1,5 @@
 import { normalizeItem } from './normalize'
-import { FACE, todoRowsSql } from './taskItem'
+import { deleteTaskStatements, todoRowsSql } from './taskItem'
 
 // THE delete for a resource whose client paints OPTIMISTIC rows (`tmp-…` ids): the
 // list and the todos. Everything else here deletes by an id the server minted, and a
@@ -31,7 +31,8 @@ type StaleDelete =
 export async function deleteHealing(
   db: D1Database,
   spec: {
-    table: 'list_items' | 'todos'
+    /** `tasks`: any task on the spine. `todos`: a task OR a departure checklist instance. */
+    table: 'list_items' | 'todos' | 'tasks'
     textColumn: 'text' | 'title'
     householdId: string
     id: string
@@ -40,16 +41,16 @@ export async function deleteHealing(
   },
 ): Promise<StaleDelete> {
   const { table, textColumn, householdId, id } = spec
-  // A to-do lives in one of two tables since 0150: a loose one on the spine (kind 'todo'), a
-  // departure instance in `todos`. Ids never collide across them (the migration kept them
-  // apart by its primary key), so deleting an id from both deletes exactly one row.
+  // A task is one row of the spine whatever it used to be (0153), deleted with its « qui a
+  // aidé » lines; through the to-do alias the id may also name a departure instance in `todos`.
+  // Ids never collide across the two tables (0150 kept them apart by its primary key), so
+  // deleting an id from both deletes exactly one row.
   const removeById = async (rowId: string): Promise<number> => {
-    if (table !== 'todos') return (await db.prepare(`DELETE FROM ${table} WHERE id = ? AND household_id = ?`).bind(rowId, householdId).run()).meta.changes
-    const [spine, rest] = await db.batch([
-      db.prepare(`DELETE FROM home_projects WHERE id = ? AND household_id = ? AND ${FACE.todo}`).bind(rowId, householdId),
-      db.prepare('DELETE FROM todos WHERE id = ? AND household_id = ?').bind(rowId, householdId),
-    ])
-    return (spine?.meta.changes ?? 0) + (rest?.meta.changes ?? 0)
+    if (table === 'list_items') return (await db.prepare(`DELETE FROM ${table} WHERE id = ? AND household_id = ?`).bind(rowId, householdId).run()).meta.changes
+    const stmts = deleteTaskStatements(db, householdId, rowId)
+    if (table === 'todos') stmts.push(db.prepare('DELETE FROM todos WHERE id = ? AND household_id = ?').bind(rowId, householdId))
+    // The first statement clears the log: count the rows themselves.
+    return (await db.batch(stmts)).slice(1).reduce((n, d) => n + (d.meta.changes ?? 0), 0)
   }
   if ((await removeById(id)) > 0) return { outcome: 'deleted', id }
 
@@ -60,7 +61,9 @@ export async function deleteHealing(
     const stmt =
       table === 'todos'
         ? db.prepare(todoRowsSql(`id, ${textColumn} AS text`, 'WHERE created_at <= ?2 ORDER BY done_at IS NOT NULL, created_at')).bind(householdId, asOf)
-        : db.prepare(`SELECT id, ${textColumn} AS text FROM ${table} WHERE household_id = ? AND created_at <= ? ORDER BY checked_at IS NOT NULL, created_at`).bind(householdId, asOf)
+        : table === 'tasks'
+          ? db.prepare('SELECT id, title AS text FROM home_projects WHERE household_id = ? AND created_at <= ? ORDER BY last_done_at IS NOT NULL, created_at').bind(householdId, asOf)
+          : db.prepare(`SELECT id, ${textColumn} AS text FROM ${table} WHERE household_id = ? AND created_at <= ? ORDER BY checked_at IS NOT NULL, created_at`).bind(householdId, asOf)
     const { results } = await stmt.all<{ id: string; text: string }>()
     const hit = results.find((r) => normalizeItem(r.text) === key)
     if (hit) {

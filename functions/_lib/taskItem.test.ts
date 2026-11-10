@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { addLocalDays, localDayStart } from './ids'
-import { choreTask, homeTask, isLooseTodo, todoTask, type ChoreTaskRow, type HomeTaskRow, type TodoTaskRow } from './taskItem'
+import { choreTask, homeTask, isLooseTodo, todoTask, type ChoreTaskRow, type HomeTaskRow, type TodoTaskRow } from '../test/legacyTaskReaders'
 
 // « Done means three things today » was the plan's first risk. It means one thing per case
 // now, and these are the cases, one per row, against the real scheduler.

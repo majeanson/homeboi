@@ -245,8 +245,6 @@ export function TodoSection({
             ? {
                 ...d,
                 todos: d.todos.map((x) => (x.id === todo.id ? { ...x, done_at: next } : x)),
-                // The same row as a task, or the board card would disagree until a refetch.
-                ...(d.items ? { items: d.items.map((x) => (x.id === todo.id ? { ...x, done: next != null ? ('ticked' as const) : ('open' as const), doneAt: next } : x)) } : {}),
               }
             : d,
         ),
@@ -272,7 +270,6 @@ export function TodoSection({
             ? {
                 ...d,
                 todos: d.todos.map((x) => (x.id === todo.id ? { ...x, title: value } : x)),
-                ...(d.items ? { items: d.items.map((x) => (x.id === todo.id ? { ...x, title: value } : x)) } : {}),
               }
             : d,
         ),

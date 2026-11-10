@@ -1,13 +1,13 @@
 import { test, expect } from './fixtures'
 import { boxOf } from './measure'
-import { ROUTES, boardTask } from './mocks'
+import { ROUTES, boardTask, choreRowOf } from './mocks'
 
 // L'ALLURE D'UNE TÂCHE (plans/2026-11-06-TACHE-UNIFIEE.md, phase 3): a task wears its own icon,
 // else its subject's, and the look is one tap away in every form, never an open control.
 
 const SHOTS = process.env.LOOK_SHOTS
 
-const own = boardTask({ source: 'todo', id: 'l-own', title: 'Promener Rex', icon: '🐶', subject: { kind: 'carnet', id: 'car1' } })
+const own = boardTask({ source: 'task', id: 'l-own', title: 'Promener Rex', icon: '🐶', subject: { kind: 'carnet', id: 'car1' } })
 const inherits = boardTask({ source: 'home', id: 'l-inh', title: 'Vérifier le toit', kind: 'upkeep', subject: { kind: 'carnet', id: 'car1' } })
 const frame = {
   ...(ROUTES.tasks as object),
@@ -50,7 +50,7 @@ test('the task form: the look is folded, suggests from the title, and sends a pi
 })
 
 test('a to-do opens the one form, its look already open, and saving patches it', async ({ page, app }) => {
-  await app.boot({ route: '/board?view=taches', wait: '.tasks-view', api: { overrides: { tasks: frame } } })
+  await app.boot({ route: '/board?view=taches', wait: '.tasks-view', api: { overrides: { tasks: frame, chores: { chores: [choreRowOf(own)] } } } })
   // A to-do's peek has the same « Modifier » as every task: the one form, at /todo/:id.
   await page.locator('[data-item="l-own"] .act__hit').click()
   const peek = page.locator('.detail-sheet')

@@ -288,7 +288,7 @@ describe('the docs quote the real counts', () => {
 // file `wc -l` calls 600 measures 601 to this test. Trim to **`wc -l` ≤ MAX − 1**.
 // Deliberately not "fixed" by dropping the empty element: this number is a budget, and a
 // budget that quietly forgives one line is how the next one gets forgiven too.
-const STATE_MAX_LINES = 335 // today 334 by wc -l, 335 here (2026-11-05: §3 rotated to ONE entry — the solidification plan's wave 0.1 — the three October entries are in git; the plan itself lives in plans/2026-11-05-SOLIDIFY.md, not here)
+const STATE_MAX_LINES = 333 // today 332 by wc -l, 333 here (2026-11-10: the 0153 entry landed in §3 and the phase-2 task entry of 2026-11-06 left for git, as the file asks)
 const STATE_FIRST_OPEN_BOX_BY = 300 // today none — §4 says « No open box. »
 
 // CLAUDE.md is the LAW, read by every session before it writes code — and it grows the

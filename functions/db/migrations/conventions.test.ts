@@ -35,6 +35,8 @@ const CARRIED: Record<string, readonly string[]> = {
   // The spine rebuild (0150) carries home_projects.recur_json from 0074 (and tasks' from 0019):
   // NULL means « no recurrence », and every reader on both sides tests it that way.
   '0150_tasks_one_table.sql': ['recur_json'],
+  // The kind shrink (0153) rebuilds the same spine, carrying the same column the same way.
+  '0153_task_kind_shrink.sql': ['recur_json'],
 }
 
 describe('migrations after 0145 follow the conventions', () => {

@@ -241,10 +241,10 @@ export function AppRoutes() {
         <Route path="/jouer" element={<JouerPage />} />
         <Route path="/event/new" element={<EventFormPage />} />
         <Route path="/chore/new" element={<TaskFormPage />} />
-        <Route path="/chore/:id" element={<TaskFormPage table="chore" />} />
+        <Route path="/chore/:id" element={<TaskFormPage table="task" />} />
         <Route path="/home-project/new" element={<TaskFormPage />} />
         <Route path="/home-project/:id" element={<TaskFormPage table="home" />} />
-        <Route path="/todo/:id" element={<TaskFormPage table="todo" />} />
+        <Route path="/todo/:id" element={<TaskFormPage table="task" />} />
         <Route path="/routine/new" element={<RoutineFormPage />} />
         {/* The opt-in sticker wall (static path — declared before /routine/:id). */}
         <Route path="/routine/stickers" element={<StickerWallPage />} />

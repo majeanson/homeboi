@@ -170,12 +170,13 @@ export interface BoardDayNote {
   text: string
   member_id: string | null
 }
-// A task, read side, over the three tables (_lib/taskItem.ts). `done` has one meaning per
-// case: 'ticked' is a one-off checked today and not yet cleared; everything else, including
-// a recurring task checked this morning, reads 'open' with `doneAt` saying when it last was.
+// A task, read side (_lib/taskItem.ts). `done` has one meaning per case: 'ticked' is a one-off
+// checked today and not yet cleared; everything else, including a recurring task checked this
+// morning, reads 'open' with `doneAt` saying when it last was.
 export interface TaskItem {
   key: string
-  source: 'chore' | 'todo' | 'home'
+  /** A task, or a home row (a project or an entretien: `kind`), 0153. Never what it used to be. */
+  source: 'task' | 'home'
   id: string
   title: string
   /** The raw stored colour; the client resolves the look (lookOf). */
@@ -902,8 +903,6 @@ export interface TodosWire {
     color: string | null
     effort: number | null
   }[]
-  /** The loose rows as tasks; departure instances are absent by construction. */
-  items: TaskItem[]
 }
 
 export interface TasksWire {

@@ -10,8 +10,8 @@ import type { TaskItem } from '../../lib/tasks'
 // The /dev/kit specimens of the task family. Its own module, lazy, because the DevKit chunk has
 // an online-only cap and these pull the whole row with them.
 const BASE = {
-  key: 'todo:demo',
-  source: 'todo',
+  key: 'task:demo',
+  source: 'task',
   id: 'demo',
   title: 'Appeler la garderie',
   color: null,
@@ -58,8 +58,8 @@ export function TaskListSpecimen() {
   const actions = useTaskActions()
   const items: TaskItem[] = [
     { ...BASE, key: 'home:d1', source: 'home', id: 'd1', title: 'Nettoyer les gouttières', subject: { kind: 'carnet', id: 'c1' } },
-    { ...BASE, key: 'chore:d2', source: 'chore', id: 'd2', title: 'Sortir le bac', recurring: true, who_id: 'm1', team: ['m1', 'm2'] },
-    { ...BASE, key: 'todo:d3', id: 'd3', title: 'Remplir le formulaire', done: 'ticked', doneAt: 1 },
+    { ...BASE, key: 'task:d2', id: 'd2', title: 'Sortir le bac', recurring: true, who_id: 'm1', team: ['m1', 'm2'] },
+    { ...BASE, key: 'task:d3', id: 'd3', title: 'Remplir le formulaire', done: 'ticked', doneAt: 1 },
   ]
   return <TaskList items={items} members={MEMBERS} lookup={{ members: MEMBERS, carnets: [{ id: 'c1', name: 'La maison', kind: 'home' }] }} actions={actions} />
 }

@@ -4,6 +4,7 @@ import { CHILD_TABLES, HOUSEHOLD_TABLES, SELF_REFS, collectMediaKeys, scopeColum
 import { deleteR2Blob } from './r2'
 import { parseRecur } from './recur'
 import { nowSec } from './ids'
+import { taskDay } from './taskDay'
 import { TAKEOUT_EXCLUDE, type Takeout } from './takeout'
 
 // Takeout IMPORT — the one restore door (STATE.md §4-L, item L8).
@@ -201,7 +202,19 @@ const v = (x: unknown): unknown => (x === undefined ? null : x)
 const recurs = (r: Record<string, unknown>): boolean => parseRecur(typeof r.recur_json === 'string' ? r.recur_json : null) != null
 const startOf = (r: Record<string, unknown>, at: unknown): unknown => (at == null && recurs(r) ? r.created_at : v(at))
 export function upgradeTasks(t: Takeout): Takeout {
-  return upgradeChoreStarts(mergeTasks(t))
+  return shrinkKinds(upgradeChoreStarts(mergeTasks(t)))
+}
+// 0153 is brought forward last: a task has no kind but 'plan' or 'upkeep' (the CHECK would
+// refuse a 'chore' or a 'todo'), and its day goes through the one encoder (_lib/taskDay), the
+// local midnight of the day every reader already showed. A copy taken after 0153 passes
+// through unchanged: its kinds are already NULL and its days already midnights.
+function shrinkKinds(t: Takeout): Takeout {
+  const spine = t.tables.home_projects
+  if (!spine) return t
+  const kindOf = (k: unknown) => (k === 'plan' || k === 'upkeep' ? k : null)
+  const dayOf = (at: unknown) => (typeof at === 'number' ? taskDay(at) : v(at))
+  if (spine.every((r) => r.kind === kindOf(r.kind) && r.at === dayOf(r.at))) return t
+  return { ...t, tables: { ...t.tables, home_projects: spine.map((r) => ({ ...r, kind: kindOf(r.kind), at: dayOf(r.at) })) } }
 }
 function upgradeChoreStarts(t: Takeout): Takeout {
   const spine = t.tables.home_projects

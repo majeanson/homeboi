@@ -1,10 +1,10 @@
 import type { QueryKey } from '@tanstack/react-query'
 import type { RecurValue } from '../components/RecurPicker'
 import type { Chore, HomeProject } from '../components/operator/types'
-import { inputFromLocalDay, localDayFromInput } from './localDay'
+import { inputFromLocalDay, localDayFromInput, todayLocalDay } from './localDay'
 import { parseMoney } from './money'
 import { BOARD_KEY, CARNETS_KEY, CHORES_KEY, HOME_PROJECTS_KEY, MONTH_KEY, TASKS_KEY, TODOS_KEY } from './queryKeys'
-import { anchorSecToDate, dateToAnchorSec, recurOf, todayAnchorDate } from './recurLabel'
+import { recurOf } from './recurLabel'
 import { healingClearBody, healingDeleteBody } from './staleDelete'
 import { lookColour, subjectRefOf, type SubjectRef } from './subjects'
 import { faceAfter, taskTarget, unheldAxes, type TaskAxis, type TaskFace } from './taskTarget'
@@ -15,14 +15,17 @@ import { rotationOf, type TaskItem } from './tasks'
 // goes to, and how a row's gestures are spelled, are decided here and nowhere else:
 // `task-form-rule.test.ts` fails a form or a row that branches on a task's face.
 //
-// SINCE 0150 every task lives in one table. The FORM writes ONE endpoint, /api/tasks, in one
-// spelling of every layer, and the server picks the face (lib/taskTarget: `taskTarget` for a new
-// task, `faceAfter` for an edit, which may move it up). A ROW's gestures (tick, untick, delete,
-// « Vider », « Reporter ») still go to its face's endpoint: chores, todos, home-projects are
-// aliases that keep the semantics they always had (a chore's tick logs « qui a aidé », a
-// to-do's delete heals a stale tmp- id), and a queued offline write from an older bundle calls
-// them anyway. Each face is ONE entry of `FACES`, so the adapter never compares a face's name:
-// it looks the face up.
+// ONE DOOR. Since 0153 every write goes to /api/tasks: the form's create and edit, and every
+// row's tick, untick, delete, « Vider » and « Reporter », the same for every task
+// (functions/_lib/taskGestures.ts). The aliases (chores, todos, home-projects) stay on the
+// server for a queued offline write from an older bundle; nothing here calls them.
+//
+// TWO FACES, neither a type: a TASK, or a HOME row (a project or an entretien). They differ in
+// where the edit scene reads its row and in one gesture, « Reporter », which only a home row
+// has. Each face is ONE entry of `FACES`, so the adapter never compares a face's name.
+//
+// THE DAY is a household-local midnight, written and read through one pair
+// (`localDayFromInput` / `inputFromLocalDay`), the same the server stores (functions/_lib/taskDay).
 
 /** A task being written: every layer the form shows. Only `title` is required. */
 export interface TaskDraft {
@@ -78,53 +81,28 @@ export const draftTarget = (d: TaskDraft): TaskFace => taskTarget(axes(d))
 export const draftUnheld = (face: TaskFace, d: TaskDraft): TaskAxis[] => unheldAxes(faceAfter(face, axes(d)), axes(d))
 
 interface Face<Row> {
-  endpoint: string
-  /** Every surface that shows a row of this face, so a gesture refreshes them all. */
-  keys: QueryKey[]
   /** The edit scene's path. */
   scene: (id: string) => string
   /** The cache the edit scene reads its row from, and how to find it there. */
   read: { key: QueryKey; path: string; find: (frame: unknown, id: string) => Row | undefined }
   toDraft: (row: Row) => TaskDraft
-  tick: (item: TaskItem, on: boolean, doneAt: number | null) => Record<string, unknown>
-  remove: (item: TaskRef) => Record<string, unknown>
-  /** « Vider les cochés » over this face's ticked rows. */
-  clear: (items: readonly TaskItem[]) => Record<string, unknown>
   /** « Reporter »: only the face with a snooze. */
   snoozes: boolean
 }
 
 const recurring = (d: TaskDraft) => d.recur != null
-// A recurrence needs a day to count from; the form defaults it to today.
-const anchorOf = (d: TaskDraft): number | null => dateToAnchorSec(d.date || (recurring(d) ? todayAnchorDate() : ''))
+// The task's day: a household-local midnight. A recurrence needs one to count from: today.
+const dayOf = (d: TaskDraft): number | null => localDayFromInput(d.date) ?? (recurring(d) ? todayLocalDay() : null)
 
-const TODO: Face<TaskItem> = {
-  endpoint: 'todos',
-  keys: [TODOS_KEY, TASKS_KEY, MONTH_KEY],
+// A task, read from the alias that serves every task with its whole schedule (its start, its
+// lead), which the Tâches frame does not carry.
+const TASK: Face<Chore> = {
   scene: (id) => `/todo/${id}`,
-  read: {
-    key: TASKS_KEY,
-    path: 'tasks',
-    find: (frame, id) => (frame as { tasks?: TaskItem[] } | undefined)?.tasks?.find((x) => x.key === `todo:${id}`),
-  },
-  toDraft: (t) => emptyDraft({ title: t.title, date: inputFromLocalDay(t.day), subject: t.subject, icon: t.icon, colour: t.color, effort: t.effort }),
-  tick: (item, on, doneAt) => ({ id: item.id, done: on, ...(on ? { doneAt } : {}) }),
-  // A to-do mints optimistic tmp- ids, so its DELETE carries what lets the server heal one.
-  remove: (item) => healingDeleteBody(item.id, item.title),
-  // A to-do goes for good, and a stale id heals (lib/staleDelete).
-  clear: (items) => healingClearBody(items.map((x) => ({ id: x.id, text: x.title }))),
-  snoozes: false,
-}
-
-const CHORE: Face<Chore> = {
-  endpoint: 'chores',
-  keys: [BOARD_KEY, TASKS_KEY, CHORES_KEY, MONTH_KEY],
-  scene: (id) => `/chore/${id}`,
   read: { key: CHORES_KEY, path: 'chores', find: (frame, id) => (frame as { chores?: Chore[] } | undefined)?.chores?.find((c) => c.id === id) },
   toDraft: (c) =>
     emptyDraft({
       title: c.title,
-      date: anchorSecToDate(c.recur_start),
+      date: inputFromLocalDay(c.recur_start ?? null),
       recur: recurOf(c.recur_json),
       lead: c.lead_seconds ?? null,
       announceEvening: !!c.announce_evening,
@@ -135,16 +113,10 @@ const CHORE: Face<Chore> = {
       colour: lookColour(c.color),
       effort: c.effort ?? null,
     }),
-  tick: (item, on, doneAt) => (on ? { id: item.id, complete: true, doneAt } : { id: item.id, undo: true }),
-  remove: (item) => ({ id: item.id }),
-  // A chore or a home row is history: the clear stamps cleared_at and deletes nothing.
-  clear: (items) => ({ clearChecked: true, ids: items.map((x) => x.id) }),
   snoozes: false,
 }
 
 const HOME: Face<HomeProject> = {
-  endpoint: 'home-projects',
-  keys: [BOARD_KEY, TASKS_KEY, HOME_PROJECTS_KEY, MONTH_KEY, CARNETS_KEY],
   scene: (id) => `/home-project/${id}`,
   read: {
     key: HOME_PROJECTS_KEY,
@@ -154,7 +126,7 @@ const HOME: Face<HomeProject> = {
   toDraft: (p) =>
     emptyDraft({
       title: p.title,
-      date: anchorSecToDate(p.at),
+      date: inputFromLocalDay(p.at ?? null),
       recur: recurOf(p.recur_json),
       recurFrom: p.recur_from === 'done' ? 'done' : 'anchor',
       lead: p.lead_seconds ?? null,
@@ -167,15 +139,13 @@ const HOME: Face<HomeProject> = {
       budget: p.budget_cents != null ? String(p.budget_cents / 100) : '',
       kind: p.kind,
     }),
-  tick: (item, on, doneAt) => (on ? { id: item.id, doneAt } : { id: item.id, undo: true }),
-  remove: (item) => ({ id: item.id }),
-  // A chore or a home row is history: the clear stamps cleared_at and deletes nothing.
-  clear: (items) => ({ clearChecked: true, ids: items.map((x) => x.id) }),
   snoozes: true,
 }
 
-const FACES: { todo: Face<TaskItem>; chore: Face<Chore>; home: Face<HomeProject> } = { todo: TODO, chore: CHORE, home: HOME }
-const faceOf = (f: TaskFace): Face<never> => FACES[f] as unknown as Face<never>
+const FACES: { task: Face<Chore>; home: Face<HomeProject> } = { task: TASK, home: HOME }
+// A frame persisted before 0153 (the offline cache restores it at boot) can still name a face
+// that no longer exists: anything that is not a home row is a task.
+const faceOf = (f: TaskFace): Face<never> => (FACES[f] ?? FACES.task) as unknown as Face<never>
 
 type TaskMethod = 'POST' | 'PATCH'
 export interface TaskWrite {
@@ -185,20 +155,17 @@ export interface TaskWrite {
   affectedKeys: QueryKey[]
 }
 
-// Every face's surfaces: a save may land in, or move a row to, any of them.
+// Every surface that shows a task: a write may land in, or move a row to, any of them.
 const ALL_KEYS: QueryKey[] = [BOARD_KEY, TASKS_KEY, CHORES_KEY, TODOS_KEY, HOME_PROJECTS_KEY, MONTH_KEY, CARNETS_KEY]
 
-/** The form's layers in the one spelling /api/tasks reads. The date goes twice, as each face
- *  stores it (a to-do's household-local midnight, the scheduled faces' UTC anchor), because the
- *  face is the server's answer. */
+/** The form's layers in the one spelling /api/tasks reads. */
 const layers = (d: TaskDraft) => ({
   title: d.title.trim(),
   subject: d.subject,
   icon: d.icon,
   color: d.colour,
   effort: d.effort,
-  day: localDayFromInput(d.date),
-  at: anchorOf(d),
+  at: dayOf(d),
   recur: d.recur,
   recurFrom: d.recurFrom,
   leadSeconds: d.lead,
@@ -230,31 +197,28 @@ export function taskRead(face: TaskFace) {
   } }
 }
 
-// What a ROW of the merged list writes, for useTaskActions: the same lookup, so a tick, a
-// delete or a rename never asks which face it is either.
+// What a ROW of the merged list writes, for useTaskActions: one door, one spelling, whatever
+// the row is.
 /** A row named by its face, id and title: enough to delete it, from a row or from its form. */
 export type TaskRef = Pick<TaskItem, 'source' | 'id' | 'title'>
 
-export const taskEndpoint = (item: Pick<TaskItem, 'source'>): string => faceOf(item.source).endpoint
-export const taskKeys = (item: Pick<TaskItem, 'source'>): QueryKey[] => faceOf(item.source).keys
+export const taskEndpoint = (_item?: unknown): string => 'tasks'
+export const taskKeys = (_item?: unknown): QueryKey[] => ALL_KEYS
 export const taskScene = (item: Pick<TaskItem, 'source' | 'id'>): string => faceOf(item.source).scene(item.id)
-export const tickBody = (item: TaskItem, on: boolean, doneAt: number | null) => faceOf(item.source).tick(item, on, doneAt)
-export const removeBody = (item: TaskRef) => faceOf(item.source).remove(item)
+/** A tick, or its untick, at the moment it was made (an offline one keeps its real day). */
+export const tickBody = (item: Pick<TaskItem, 'id'>, on: boolean, doneAt: number | null) => ({ id: item.id, done: on, ...(on ? { doneAt } : {}) })
+/** A delete says what it was and when, so the server heals a stale tmp- id or answers 404. */
+export const removeBody = (item: TaskRef) => healingDeleteBody(item.id, item.title)
 export const canPostpone = (item: Pick<TaskItem, 'source'>): boolean => faceOf(item.source).snoozes
 /** « Reporter » a row whose face has a snooze: a week, or to its next occurrence. */
 export function postponeWrite(item: TaskItem, mode: 'week' | 'cycle'): TaskWrite {
-  const t = faceOf(item.source)
   const method: TaskMethod = 'PATCH'
-  return { endpoint: t.endpoint, method, body: { id: item.id, snooze: mode }, affectedKeys: t.keys }
+  return { endpoint: 'tasks', method, body: { id: item.id, snooze: mode }, affectedKeys: ALL_KEYS }
 }
 
-/** « Vider les cochés » across faces: one write per face that has a ticked row. */
+/** « Vider les cochés »: ONE write for every ticked task, history kept, a stale id healed. */
 export function clearWrites(items: readonly TaskItem[]): TaskWrite[] {
-  const by = new Map<TaskFace, TaskItem[]>()
-  for (const x of items) by.set(x.source, [...(by.get(x.source) ?? []), x])
-  return [...by].map(([face, rows]) => {
-    const t = faceOf(face)
-    const method: TaskMethod = 'PATCH'
-    return { endpoint: t.endpoint, method, body: t.clear(rows), affectedKeys: t.keys }
-  })
+  if (items.length === 0) return []
+  const method: TaskMethod = 'PATCH'
+  return [{ endpoint: 'tasks', method, body: healingClearBody(items.map((x) => ({ id: x.id, text: x.title }))), affectedKeys: ALL_KEYS }]
 }

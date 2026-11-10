@@ -42,7 +42,7 @@ const DAY_MONTH = {
     // Rendez-vous bucket where they can be counted and tapped directly.
     events: [{ id: 'de1', title: 'Dentiste — Léa', at: TODAY + 9 * 3600, all_day: 0, member_id: 'm3', day: TODAY, notes: NOTE }],
     meals: [],
-    tasks: [{ id: 'dc1', taskId: 'dc1', source: 'chore', title: 'Vider le lave-vaisselle', color: '#88A36F', icon: null, kind: null, who_id: 'm2', day: TODAY, done: false, recurring: false, soon: false }],
+    tasks: [{ id: 'dc1', taskId: 'dc1', source: 'task', title: 'Vider le lave-vaisselle', color: '#88A36F', icon: null, kind: null, who_id: 'm2', day: TODAY, done: false, recurring: false, soon: false }],
     dayNotes: [],
     todos: [],
     trips: [],

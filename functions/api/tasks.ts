@@ -1,12 +1,14 @@
 import { badRequest, notFound, ok, okWire, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
-import { localDayStart, newId, nowSec } from '../_lib/ids'
+import { localDayStart, nowSec, tickedAt } from '../_lib/ids'
 import { profileMemberId } from '../_lib/profile'
 import { parseSubject, validSubject } from '../_lib/subject'
-import { deleteTaskStatements, faceOfKind, type Face } from '../_lib/taskItem'
+import { faceOfKind } from '../_lib/taskItem'
 import { allTasks, subjectHistory } from '../_lib/taskViews'
-import { bodyAxes, faceColumns, homeKind, type TaskBody } from '../_lib/taskWrite'
-import { faceAfter, taskTarget } from '../../src/lib/taskTarget'
+import { bodyAxes, faceColumns, insertTask, kindFor, type TaskBody } from '../_lib/taskWrite'
+import { clearTasks, snoozeTask, tickTask, untickTask } from '../_lib/taskGestures'
+import { deleteHealing } from '../_lib/staleDelete'
+import { faceAfter } from '../../src/lib/taskTarget'
 
 // /api/tasks — the household's tasks as ONE list, and the one form's door.
 //
@@ -23,12 +25,14 @@ import { faceAfter, taskTarget } from '../../src/lib/taskTarget'
 // that are already there: a chore's contribution log, a project's last completion, and the
 // to-dos whose day has passed, which is exactly what the end-of-day clear leaves behind.
 //
-// POST / PATCH / DELETE (0150): the one task form writes here, in ONE spelling of every layer
+// POST / PATCH / DELETE: the one task form writes here, in ONE spelling of every layer
 // (lib/taskSave.ts), and never names a face. The server picks it with the shared rule
-// (src/lib/taskTarget.ts): `taskTarget` for a new task, `faceAfter` for an edit, which keeps
-// the row's face while it shows every layer and moves it up otherwise, on the same id. A row's
-// tick, untick, « Reporter » and « Vider » still go to its face's alias (chores, todos,
-// home-projects), which keep the semantics they always had.
+// (src/lib/taskTarget.ts): `taskTarget` for a new task (a task, or a home row), `faceAfter` for
+// an edit, which keeps the row's face while it shows every layer and moves it up otherwise, on
+// the same id. Since 0153 a ROW's gestures come here too, for every task: tick and untick
+// (`done`), « Vider les cochés » (`clearChecked`), « Reporter » (`snooze`) and the delete, one
+// function each (_lib/taskGestures.ts). The three aliases (chores, todos, home-projects) call
+// the same functions with the request shapes an older bundle still sends.
 const HISTORY_MAX = 30
 // A backstop, not a page size: a household holds a few dozen tasks, and the read is cold.
 const ROWS_MAX = 500
@@ -89,67 +93,82 @@ export const onRequestGet = authed(async (ctx, actor) => {
   })
 })
 
-// The `kind` a face is stored as. A home row's kind comes from a door, else from its schedule
-// (a recurrence is upkeep, a one-off is a project), the rule the form always had.
-const kindFor = (face: Face, b: TaskBody, axes: ReturnType<typeof bodyAxes>): string =>
-  face === 'home' ? homeKind(b.kind ?? (axes.recur ? 'upkeep' : 'plan')) : face
-
 export const onRequestPost = authed(async (ctx, actor) => {
   const body = (await readJson<TaskBody>(ctx.request)) ?? {}
   const title = typeof body.title === 'string' ? body.title.trim().slice(0, TITLE_MAX) : ''
   if (!title) return badRequest('Titre requis.')
-  const id = newId()
-  const ts = nowSec()
-  const axes = bodyAxes(body)
-  const face = taskTarget(axes)
-  const ref = await validSubject(ctx.env.DB, actor.householdId, body.subject, id)
-  const cols: Record<string, unknown> = {
-    id,
-    household_id: actor.householdId,
-    kind: kindFor(face, body, axes),
-    title,
-    ...faceColumns(face, body, ref),
-    // A to-do's author is the acting profile, as POST /api/todos has always stamped it.
-    member_id: face === 'todo' ? profileMemberId(ctx.request) : null,
-    created_at: ts,
-    updated_at: ts,
-  }
-  const names = Object.keys(cols)
-  await ctx.env.DB.prepare(`INSERT INTO home_projects (${names.join(', ')}) VALUES (${names.map(() => '?').join(', ')})`)
-    .bind(...names.map((n) => cols[n]))
-    .run()
+  const { id, face } = await insertTask(ctx.env.DB, actor.householdId, body, profileMemberId(ctx.request), { title })
   return ok({ id, title, face })
 })
 
+type PatchBody = TaskBody & {
+  id?: unknown
+  done?: unknown
+  doneAt?: unknown
+  memberId?: unknown
+  clearChecked?: unknown
+  ids?: unknown
+  items?: unknown
+  asOf?: unknown
+  snooze?: unknown
+}
+
 export const onRequestPatch = authed(async (ctx, actor) => {
-  const body = (await readJson<TaskBody & { id?: unknown }>(ctx.request)) ?? {}
+  const body = (await readJson<PatchBody>(ctx.request)) ?? {}
+  const db = ctx.env.DB
+  const hh = actor.householdId
+  // « Vider les cochés »: history, never a delete. A named clear that names nothing is a 404.
+  if (body.clearChecked) {
+    const ids = Array.isArray(body.ids) ? body.ids.filter((x): x is string => typeof x === 'string') : null
+    const cleared = await clearTasks(db, hh, ids, body.items, body.asOf)
+    if (ids && cleared.length === 0) return notFound('Aucune tâche à effacer.')
+    return ok({ ok: true })
+  }
   const id = typeof body.id === 'string' ? body.id.trim() : ''
   if (!id) return badRequest('id requis.')
-  const row = await ctx.env.DB.prepare('SELECT kind FROM home_projects WHERE id = ? AND household_id = ?')
-    .bind(id, actor.householdId)
-    .first<{ kind: string }>()
+  // « Reporter »
+  if (body.snooze !== undefined) {
+    const r = await snoozeTask(db, hh, id, body.snooze)
+    if (r === 'bad') return badRequest('snooze invalide.')
+    if (r === 'missing') return notFound('Tâche introuvable.')
+    return ok({ ok: true, snoozedUntil: r.until })
+  }
+  // The tick, and its untick: the same for every task.
+  if (typeof body.done === 'boolean') {
+    if (!body.done) return (await untickTask(db, hh, id)) ? ok({ ok: true }) : notFound('Tâche introuvable.')
+    const who = (typeof body.memberId === 'string' && body.memberId) || profileMemberId(ctx.request)
+    const r = await tickTask(db, hh, id, { who, at: tickedAt(body.doneAt, nowSec()) })
+    return r ? ok({ ok: true, ...r }) : notFound('Tâche introuvable.')
+  }
+  // An edit from the one form: every layer, one spelling.
+  const row = await db.prepare('SELECT kind FROM home_projects WHERE id = ? AND household_id = ?').bind(id, hh).first<{ kind: string | null }>()
   if (!row) return notFound('Tâche introuvable.')
   const axes = bodyAxes(body)
   const current = faceOfKind(row.kind)
   const face = faceAfter(current, axes)
-  const ref = await validSubject(ctx.env.DB, actor.householdId, body.subject, id)
+  const ref = await validSubject(db, hh, body.subject, id)
   const sets: Record<string, unknown> = { ...faceColumns(face, body, ref), updated_at: nowSec() }
   const title = typeof body.title === 'string' ? body.title.trim().slice(0, TITLE_MAX) : ''
   if (title) sets.title = title
   // A home row keeps its kind (a project stays a project); a row that moves up takes its new one.
-  if (face !== current) sets.kind = kindFor(face, body, axes)
+  if (face !== current) sets.kind = kindFor(face, body, axes.recur != null)
   const names = Object.keys(sets)
-  await ctx.env.DB.prepare(`UPDATE home_projects SET ${names.map((n) => `${n} = ?`).join(', ')} WHERE id = ? AND household_id = ?`)
-    .bind(...names.map((n) => sets[n]), id, actor.householdId)
+  await db
+    .prepare(`UPDATE home_projects SET ${names.map((n) => `${n} = ?`).join(', ')} WHERE id = ? AND household_id = ?`)
+    .bind(...names.map((n) => sets[n]), id, hh)
     .run()
   return ok({ ok: true, face })
 })
 
-// The one form's « Annuler » on a create, and a delete from the form: any face, with its log.
+// A delete, from a row, the form, or the form's « Annuler » on a create: any task, with its
+// « qui a aidé » lines. A row may carry an optimistic tmp- id, so the body says what it was and
+// when (`text`, `asOf`): a stale id heals onto the same task, or the answer is a 404, never a
+// vacuous « ok » (_lib/staleDelete).
 export const onRequestDelete = authed(async (ctx, actor) => {
-  const body = await readJson<{ id?: unknown }>(ctx.request)
+  const body = await readJson<{ id?: unknown; text?: unknown; asOf?: unknown }>(ctx.request)
   const id = typeof body?.id === 'string' ? body.id.trim() : ''
   if (!id) return badRequest('id requis.')
-  await ctx.env.DB.batch(deleteTaskStatements(ctx.env.DB, actor.householdId, id))
-  return ok({ ok: true })
+  const r = await deleteHealing(ctx.env.DB, { table: 'tasks', textColumn: 'title', householdId: actor.householdId, id, text: body?.text, asOf: body?.asOf })
+  if (r.outcome === 'missing') return notFound('Tâche introuvable.')
+  return ok(r.outcome === 'healed' ? { ok: true, healed: r.id } : { ok: true })
 })

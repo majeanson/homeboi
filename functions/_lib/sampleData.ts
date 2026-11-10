@@ -470,9 +470,9 @@ export async function seedSampleData(env: Env, householdId: string, ts = nowSec(
       // lives in the Tâches view, so an all-undated seed would leave the demo's card empty.
     ).map(([title, rotation, idx, colour, start]) =>
       P(
-        // A chore is a task on the spine (0150): its start is `at`.
+        // A task on the spine (0150), with no kind (0153): its start is `at`, a local midnight.
         `INSERT INTO home_projects (id, household_id, kind, title, rotation_json, current_idx, colour, recur_json, at, created_at, updated_at, is_sample)
-         VALUES (?, ?, 'chore', ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       ).bind(newId(), h, title, JSON.stringify(rotation), idx, colour, JSON.stringify({ freq: 'weekly', interval: 1, weekdays: [] }), start, ts, ts, S),
     ),
 
@@ -529,9 +529,9 @@ export async function seedSampleData(env: Env, householdId: string, ts = nowSec(
       ] as [string, string | null, number | null, number][]
     ).map(([title, mid, day, pos]) =>
       P(
-        // A loose to-do is a task on the spine (0150): its day is `at`, its author `member_id`.
+        // A task on the spine (0150), with no kind (0153): its day is `at`, its author `member_id`.
         `INSERT INTO home_projects (id, household_id, kind, title, at, member_id, position, colour, created_at, updated_at, is_sample)
-         VALUES (?, ?, 'todo', ?, ?, ?, ?, NULL, ?, ?, ?)`,
+         VALUES (?, ?, NULL, ?, ?, ?, ?, NULL, ?, ?, ?)`,
       ).bind(newId(), h, title, day, mid, pos, ts, ts, S),
     ),
 

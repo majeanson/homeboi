@@ -58,7 +58,6 @@ export function useTaskActions(scope: QueryKey = BOARD_KEY) {
         todos: d.todos.map((x) =>
           x.id === id && done_at !== undefined ? { ...x, done_at } : x,
         ),
-        ...(d.items ? { items: onItems(d.items) } : {}),
       }
     })
   }
@@ -94,8 +93,8 @@ export function useTaskActions(scope: QueryKey = BOARD_KEY) {
   // Rename, the look, the effort and « Sur quoi ? » are the one form's (lib/taskSave): a row's
   // peek opens it. This hook keeps only what a row does without opening anything.
 
-  // Delete: a todo mints optimistic tmp- ids, so its DELETE carries what lets the server heal
-  // a stale one (lib/staleDelete). Chores and home rows have no tmp row to heal.
+  // Delete: a task added from its title field mints an optimistic tmp- id, so every DELETE
+  // carries what lets the server heal a stale one, or answer 404 (lib/staleDelete).
   function remove(item: TaskRef) {
     held.remove([item.id], t.todos.removed(item.title), () =>
       write(endpoint(item), {
@@ -106,10 +105,10 @@ export function useTaskActions(scope: QueryKey = BOARD_KEY) {
     )
   }
 
-  // « Vider les cochés »: one gesture, one toast, over up to three tables. A todo goes for
-  // good, its old behaviour. A chore or a home row is history, so it only leaves the day
-  // (cleared_at, migration 0147). The commit returns the writes and lets them reject: a
-  // rejection means the rows did not clear, and the hook shows them again.
+  // « Vider les cochés »: one gesture, one toast, one write. Every task is history: it only
+  // leaves the day (cleared_at), the owner's decision of 2026-11-10. The commit returns the
+  // write and lets it reject: a rejection means the rows did not clear, and the hook shows
+  // them again.
   function clearTicked(items: readonly TaskItem[]) {
     const ticked = items.filter(isTicked)
     if (ticked.length === 0) return
@@ -117,11 +116,8 @@ export function useTaskActions(scope: QueryKey = BOARD_KEY) {
       ticked.map((x) => x.id),
       t.todos.clearedN(ticked.length),
       async () => {
-        // One write per table that holds a ticked row; the adapter spells each (lib/taskSave).
+        // The adapter spells it (lib/taskSave): the ids, and what heals a stale one.
         await Promise.all(clearWrites(ticked).map((w) => write(w.endpoint, { method: w.method, body: w.body, affectedKeys: w.affectedKeys })))
-        // The hold is scoped to one key, and these rows come from two polls. Wait for the
-        // second, or the un-hide could paint a ticked row back out of its older frame.
-        await qc.refetchQueries({ queryKey: TODOS_KEY, type: 'active' })
       },
     )
   }
@@ -136,8 +132,8 @@ export function useTaskActions(scope: QueryKey = BOARD_KEY) {
     const today = todayLocalDay()
     const tmpRow: Todo = { id: tmpId, title: value, day, member_id: null, done_at: null, position: 0, section: null, source_template_id: null }
     const item: TaskItem = {
-      key: `todo:${tmpId}`,
-      source: 'todo',
+      key: `task:${tmpId}`,
+      source: 'task',
       id: tmpId,
       title: value,
       color: null,
@@ -159,14 +155,14 @@ export function useTaskActions(scope: QueryKey = BOARD_KEY) {
       announceEvening: false,
       onBoard: day === today,
     }
-    // Through the save adapter like every create: a title and a day are a to-do (taskTarget).
+    // Through the save adapter like every create: a title and a day are a task (taskTarget).
     const w = taskWrite(emptyDraft({ title: value, date: inputFromLocalDay(day), subject: subject ?? null }))
     await createWithUndo({
       endpoint: w.endpoint,
       body: w.body,
       affectedKeys: w.affectedKeys,
       optimistic: (client) => {
-        client.setQueryData<TodosData>(TODOS_KEY, (d) => ({ todos: [...(d?.todos ?? []), tmpRow], items: [...(d?.items ?? []), item] }))
+        client.setQueryData<TodosData>(TODOS_KEY, (d) => ({ todos: [...(d?.todos ?? []), tmpRow] }))
         if (item.onBoard) client.setQueriesData<BoardFrame>({ queryKey: BOARD_KEY }, (d) => (d?.tasks ? { ...d, tasks: [...d.tasks, item] } : d))
         client.setQueriesData<TasksFrame>({ queryKey: TASKS_KEY }, (d) => (d ? { ...d, tasks: [...d.tasks, item] } : d))
       },

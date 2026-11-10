@@ -1,49 +1,44 @@
-// WHICH FACE A TASK WEARS — the one rule (plans/2026-11-06-TACHE-UNIFIEE.md, phase 4).
+// IS A TASK A HOME ROW? — the one rule (plans/2026-11-06-TACHE-UNIFIEE.md, phase 4, then 0153).
 //
 // A task is a title plus optional layers. The household never picks a « type »: it fills the
-// layers it wants. Since migration 0150 every task lives in ONE table (`home_projects`, the
-// spine), so this no longer picks a table. It picks the FACE the row wears in the payloads that
-// predate the merge (`kind`: 'todo', 'chore', or a home row), because the board, the calendar,
-// the day page and the three alias endpoints still read those three shapes, and each shape
-// renders only some layers. It is pure and imports nothing, because the server runs it too:
-// /api/tasks (the one form's door) and the capture spine (functions/api/capture.ts), so a typed
-// « sortir les poubelles chaque mardi » and a spoken one wear the same face.
+// layers it wants. Every task lives in ONE table (`home_projects`, the spine, 0150), and since
+// 0153 a row is one of two things: a TASK (no kind) or a HOME row (`kind` 'plan' or 'upkeep', a
+// behaviour some surfaces still ask about: the season card, a project's notes and budget,
+// « Sur quoi ? », « Reporter »). What used to be a chore and what used to be a to-do are one
+// thing, and nothing here tells them apart. It is pure and imports nothing, because the server
+// runs it too: /api/tasks (the one form's door) and the capture spine
+// (functions/api/capture.ts), so a typed « sortir les poubelles chaque mardi » and a spoken
+// one are the same thing.
 //
-// WHAT EACH FACE SHOWS, read off the readers that still speak it (functions/api/{todos,chores,
-// home-projects,board,month}.ts). Every face shows the title, the subject, the icon, the colour
-// and the effort, so those never decide. The rest:
+// WHAT A TASK HOLDS without becoming a home row is exactly what it held before 0153, so the
+// same layers land in the same place as yesterday: either a dated ONE-OFF (a day, nothing else
+// of a schedule), or a SERIES with its people (who, recurrence, lead, the evening line). A home
+// row holds everything but the evening line. So a bare title is a task, a date alone is a task
+// on that day, a recurrence or a person is a task, and notes, a budget, « à partir de la
+// dernière fois », a door's kind, or a one-off date WITH a person or a lead, are a home row.
 //
-//   axis        todo    chore                      home
-//   date        day     only as a recurrence's     at
-//                       start: a dated one-off
-//                       chore has no cell on the
-//                       month view
-//   who         ✗       rotation_json              rotation_json
-//   recur       ✗       recur_json                 recur_json
-//   lead        ✗       lead_seconds (recurring)   lead_seconds
-//   evening     ✗       announce_evening           ✗ (the board announces chores only)
-//   fromDone    ✗       ✗                          recur_from = 'done'
-//   notes       ✗       ✗                          notes
-//   budget      ✗       ✗                          budget_cents
-//   kind        ✗       ✗                          kind (plan | upkeep), only ever from a door
-//                                                  (?kind=, a carnet's Entretien), never a picker
+//   axis        task (a dated one-off,   home
+//                or a series)
+//   date        ✓ (one-off)              at
+//   who         ✓ (series or undated)    rotation_json
+//   recur       ✓                        recur_json
+//   lead        ✓ (series)               lead_seconds
+//   evening     ✓ (series)               ✗ (the board announces tasks only)
+//   fromDone    ✗                        recur_from = 'done'
+//   notes       ✗                        notes
+//   budget      ✗                        budget_cents
+//   kind        ✗                        kind (plan | upkeep), only ever from a door
+//                                        (?kind=, a carnet's Entretien), never a picker
 //
-// THE RULE for a new task: the first of todo → chore → home that shows every layer filled. So
-// a bare title is a to-do, a date alone is a to-do on that day, a recurrence or a person is a
-// chore, and notes, a budget, « à partir de la dernière fois », a door's kind, or a one-off
-// date WITH a person or a lead, are a home row.
-//
-// AN EDIT MOVES UP, never down (`faceAfter`): a to-do that gains a person becomes a chore, a
-// chore that gains notes becomes a home row, on the same row and id. Before the merge an edit
-// kept its table and said, in one line, which layers that table could not keep; with one table
-// that line is gone, but for ONE combination: « annoncer la veille » with a home-only layer. No
-// face shows both, the row becomes a home row (the face that shows the most), and the form
-// says plainly that the evening line is not kept (`unheldAxes`). Moving down would hide a
-// layer the row still holds, so it never happens: a chore that loses its rotation stays one.
+// AN EDIT MOVES UP, never down (`faceAfter`): a task that gains notes becomes a home row, on
+// the same row and id. The one combination no face shows is « annoncer la veille » with a
+// home-only layer: the row becomes a home row (the face that shows the most), and the form says
+// plainly that the evening line is not kept (`unheldAxes`). Moving down would hide a layer the
+// row still holds, so it never happens.
 //
 // Snooze (« Reporter ») is not a layer of the form: it is a gesture on a row, home rows only.
 
-export type TaskFace = 'todo' | 'chore' | 'home'
+export type TaskFace = 'task' | 'home'
 export type TaskAxis = 'date' | 'who' | 'recur' | 'lead' | 'evening' | 'fromDone' | 'notes' | 'budget' | 'kind'
 
 /** The layers that decide the face. Everything is optional except the title. */
@@ -62,12 +57,11 @@ export interface TaskAxes {
   kind?: 'plan' | 'upkeep' | null | undefined
 }
 
-const SHOWS: Record<TaskFace, ReadonlySet<TaskAxis>> = {
-  todo: new Set<TaskAxis>(['date']),
-  chore: new Set<TaskAxis>(['who', 'recur', 'lead', 'evening']),
-  home: new Set<TaskAxis>(['date', 'who', 'recur', 'lead', 'fromDone', 'notes', 'budget', 'kind']),
-}
-const ORDER: readonly TaskFace[] = ['todo', 'chore', 'home']
+// The two shapes a task holds (a dated one-off; a series with its people), and a home row's.
+const ONE_OFF = new Set<TaskAxis>(['date'])
+const SERIES = new Set<TaskAxis>(['who', 'recur', 'lead', 'evening'])
+const HOME = new Set<TaskAxis>(['date', 'who', 'recur', 'lead', 'fromDone', 'notes', 'budget', 'kind'])
+const ORDER: readonly TaskFace[] = ['task', 'home']
 
 /** The layers a draft fills. A sub-layer of the schedule only counts where it means something. */
 export function axesOf(d: TaskAxes): TaskAxis[] {
@@ -87,18 +81,25 @@ export function axesOf(d: TaskAxes): TaskAxis[] {
   return out
 }
 
+const within = (axes: readonly TaskAxis[], shape: ReadonlySet<TaskAxis>) => axes.filter((a) => !shape.has(a))
+
 /** What `face` does not show of this draft: empty when it shows it all. */
 export function unheldAxes(face: TaskFace, d: TaskAxes): TaskAxis[] {
-  return axesOf(d).filter((a) => !SHOWS[face].has(a))
+  const axes = axesOf(d)
+  if (face === 'home') return within(axes, HOME)
+  // A task holds either shape: what neither holds is what it does not show.
+  const a = within(axes, ONE_OFF)
+  const b = within(axes, SERIES)
+  return a.length <= b.length ? a : b
 }
 
-/** THE rule: the face a NEW task with these layers wears. */
+/** THE rule: a NEW task with these layers is a task, or a home row. */
 export function taskTarget(d: TaskAxes): TaskFace {
   return ORDER.find((face) => unheldAxes(face, d).length === 0) ?? 'home'
 }
 
-/** The face an EDIT leaves the row in: its own while it shows every layer, else the first face
- *  above it that does (home when none does). Never a face below `current`. */
+/** The face an EDIT leaves the row in: its own while it shows every layer, else home. Never
+ *  down: a home row stays one. */
 export function faceAfter(current: TaskFace, d: TaskAxes): TaskFace {
   const from = ORDER.indexOf(current)
   return ORDER.slice(from).find((face) => unheldAxes(face, d).length === 0) ?? 'home'

@@ -4,9 +4,9 @@ import { useLang, useT } from '../../i18n'
 import { useOperatorT } from '../../i18n.operator'
 import { api } from '../../lib/api'
 import { formatDayMaybeYear } from '../../lib/format'
-import { localDayFromInput } from '../../lib/localDay'
+import { inputFromLocalDay, localDayFromInput, todayLocalDay } from '../../lib/localDay'
 import { MEMBERS_KEY } from '../../lib/queryKeys'
-import { recurLabel, todayAnchorDate } from '../../lib/recurLabel'
+import { recurLabel } from '../../lib/recurLabel'
 import { choreTemplates, homeProjectTemplates } from '../../lib/routineTemplates'
 import { everySeasonAnchorDate, nextSeasonAnchorDate, type Season } from '../../lib/season'
 import { subjectOf, suggestIcon } from '../../lib/subjects'
@@ -143,7 +143,7 @@ export function TaskForm({
         <Field inline className="mono" label={recurring ? f.from : f.date}>
           <input className="input" type="date" value={draft.date} onChange={(e) => set({ date: e.target.value })} />
         </Field>
-        <RecurPicker value={draft.recur} onChange={(recur) => set({ recur, date: recur && !draft.date ? todayAnchorDate() : draft.date })} />
+        <RecurPicker value={draft.recur} onChange={(recur) => set({ recur, date: recur && !draft.date ? inputFromLocalDay(todayLocalDay()) : draft.date })} />
         {recurring && (
           <>
             {/* One tap fills the start and the rhythm: sugar over the same RecurPicker value. */}

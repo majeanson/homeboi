@@ -5,6 +5,7 @@ import { mailEnabled, sendMail, type Mail } from './mail'
 import { localDayOfWeek } from './ids'
 import { STRANGER_POOL_PER_DAY, strangerSpend } from './usage'
 import { doorCounts, recentStrangerRemarks, type DoorCounts, type StrangerRemark } from './strangers'
+import { normalizeTaskDays } from './taskDay'
 
 // The nightly cron, as one function with a REPORT (STATE.md §4-L, item L7).
 //
@@ -48,6 +49,9 @@ export interface NightlyReport {
   // otherwise reaches nobody — and the door's COUNTS, which ride in every mail.
   remarks: StrangerRemark[]
   door: DoorCounts | null
+  // Tasks whose stored day was rewritten to its household-local midnight (_lib/taskDay.ts,
+  // 0153). Non-zero on the first night after the deploy, zero after: the backfill is idempotent.
+  taskDaysFixed: number
 }
 
 // Every side effect behind a seam, so the unit test can hand in fakes and the
@@ -61,6 +65,7 @@ export interface NightlyDeps {
   strangerSpend: () => Promise<{ ai: number; bytes: number }>
   strangerRemarks: () => Promise<StrangerRemark[]>
   doorCounts: () => Promise<DoorCounts>
+  taskDays: () => Promise<number>
 }
 
 export function realDeps(env: Env, now: number): NightlyDeps {
@@ -97,6 +102,7 @@ export function realDeps(env: Env, now: number): NightlyDeps {
     strangerSpend: () => strangerSpend(env, now),
     strangerRemarks: () => recentStrangerRemarks(env, now),
     doorCounts: () => doorCounts(env, now),
+    taskDays: () => normalizeTaskDays(env.DB),
   }
 }
 
@@ -114,6 +120,7 @@ export async function runNightly(env: Env, now: number, deps: NightlyDeps = real
     strangerBytes: 0,
     remarks: [],
     door: null,
+    taskDaysFixed: 0,
   }
   // Remarks BEFORE the sweep: a visitor's remark lives in their sandbox, and the sweep
   // below deletes the sandbox with everything in it. This mail is its only copy.
@@ -153,6 +160,13 @@ export async function runNightly(env: Env, now: number, deps: NightlyDeps = real
     report.door = await deps.doorCounts()
   } catch (err) {
     report.failed.push({ id: 'door', error: String((err as Error)?.message ?? err) })
+  }
+  // AFTER the backups: the first night's copy still holds every day as it was stored, the
+  // insurance should the rewrite ever need undoing.
+  try {
+    report.taskDaysFixed = await deps.taskDays()
+  } catch (err) {
+    report.failed.push({ id: 'task-days', error: String((err as Error)?.message ?? err) })
   }
   return report
 }

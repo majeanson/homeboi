@@ -93,7 +93,7 @@ const ev = (overrides: Partial<EventRow> = {}): EventRow => ({
 // A task as the board payload carries it (one list for every task, 2026-11-08): due today
 // unless said otherwise.
 const task = (over: Partial<TaskItem> = {}): TaskItem => ({
-  key: `t:${over.id ?? 't'}`, source: 'todo', id: 't', title: 'Tâche', color: null, icon: null, effort: null, subject: null, kind: null, recurring: false,
+  key: `t:${over.id ?? 't'}`, source: 'task', id: 't', title: 'Tâche', color: null, icon: null, effort: null, subject: null, kind: null, recurring: false,
   recurJson: null, day: null, dueToday: true, overdueSince: null, snoozedUntil: null, soon: false, done: 'open',
   doneAt: null, who_id: null, team: [], announceEvening: false, onBoard: true, ...over,
 })

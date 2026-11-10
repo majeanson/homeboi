@@ -3,8 +3,10 @@ import { applyD1Migrations } from 'cloudflare:test'
 import { env } from 'cloudflare:workers'
 import { household, okJson, type Session } from '../functions/test/d1'
 import { addLocalDays, localDayStart } from '../functions/_lib/ids'
-import { choreTask, homeTask, present, todoTask, type ChoreTaskRow, type HomeTaskRow, type TodoTaskRow } from '../functions/_lib/taskItem'
+import { present } from '../functions/_lib/taskItem'
+import { choreTask, homeTask, todoTask, type ChoreTaskRow, type HomeTaskRow, type TodoTaskRow } from '../functions/test/legacyTaskReaders'
 import { upkeepStatus } from '../functions/_lib/upkeep'
+import { taskDay, withTaskDay } from '../functions/_lib/taskDay'
 import { freshIdMap, idsIn } from '../functions/_lib/restore'
 import type { Takeout } from '../functions/_lib/takeout'
 import type { BoardWire, TaskItem, TasksWire, TodosWire } from '../functions/_lib/wire'
@@ -117,7 +119,7 @@ async function oldHistory(hh: string, ref: { kind: string; id: string }) {
 // The NEW month and ledger reads (the handler's SQL, copied: their derivations are unchanged
 // code, so equal rows mean equal cells). The others are compared through the real endpoints.
 const NEW = {
-  monthChores: "SELECT id, title, colour AS color, rotation_json, current_idx, last_done_at, recur_json, at AS recur_start, created_at FROM home_projects WHERE household_id = ? AND kind = 'chore'",
+  monthChores: "SELECT id, title, colour AS color, rotation_json, current_idx, last_done_at, recur_json, at AS recur_start, created_at FROM home_projects WHERE household_id = ? AND kind IS NULL",
   monthHomes: "SELECT id, kind, title, colour AS color, at, recur_json, recur_from, last_done_at FROM home_projects WHERE household_id = ? AND kind IN ('plan', 'upkeep') AND at IS NOT NULL",
   ledger: `SELECT tp.task_id, tp.role, tp.contributed_at, tp.member_id AS member_id, t.title AS chore_title, t.colour AS chore_color
        FROM task_participants tp JOIN home_projects t ON t.id = tp.task_id AND t.household_id = ?
@@ -129,7 +131,19 @@ const MONTH_FROM = D(-40)
 const MONTH_TO = D(40)
 
 const all = async <T = Row>(db: D1Database, sql: string, ...binds: unknown[]) => (await db.prepare(sql).bind(...binds).all<T>()).results
-const byKey = (xs: TaskItem[]) => [...xs].sort((a, b) => a.key.localeCompare(b.key))
+// 0153, read by the code that runs today: a task's day is decoded to the local midnight of the
+// day it always showed (_lib/taskDay), so an occurrence's time of day (a UTC midnight's 20:00, a
+// created_at's 14:37) is gone and the « Bientôt » window counts from midnight. The drill judges
+// the merge on everything else; `settle` puts both sides on the one encoding. The one owed date
+// it moves is NAMED, not hidden (`owedEarly`): a series ticked on its day BEFORE its anchor
+// hour read as owed (the 01:00 tick fell before a 20:00 occurrence); its occurrence is at
+// midnight now, so the tick covers it (worker/taskKindShrink.d1.test.ts pins the same case).
+const owedEarly = (i: TaskItem) => i.recurring && i.overdueSince != null && i.doneAt != null && taskDay(i.doneAt) === taskDay(i.overdueSince)
+const settle = (i: TaskItem) => {
+  const early = owedEarly(i)
+  return { ...i, day: taskDay(i.day), overdueSince: early ? null : taskDay(i.overdueSince), onBoard: early ? i.dueToday || i.done === 'ticked' : i.onBoard, soon: false }
+}
+const byKey = (xs: TaskItem[]) => [...xs].map(settle).sort((a, b) => a.key.localeCompare(b.key))
 const byId = <T extends { id: string }>(xs: T[]) => [...xs].sort((a, b) => a.id.localeCompare(b.id))
 
 async function insertRows(db: D1Database, table: string, rows: Row[]) {
@@ -333,7 +347,7 @@ describe('the merge, run on pre-merge households', () => {
     expect(sample.before.counts.loose).toBe(8)
     expect(sample.before.counts.lines).toBe(2)
     // A NULL-predicate slip once hid every open to-do: the before must hold open ones to lose.
-    expect(built.before.tasks.filter((x) => x.source === 'todo' && x.done === 'open').length).toBeGreaterThanOrEqual(5)
+    expect(built.before.tasks.filter((x) => x.id.startsWith('drillT') && x.done === 'open').length).toBeGreaterThanOrEqual(5)
   })
 
   for (const which of ['variety', 'sample'] as const) {
@@ -344,8 +358,8 @@ describe('the merge, run on pre-merge households', () => {
       it('row counts are conserved per face, every id is where it was, and the old table is gone', async () => {
         const b = d().before
         const ids = async (kind: string) => (await all<{ id: string }>(DRILL, `SELECT id FROM home_projects WHERE household_id = ? AND kind ${kind} ORDER BY id`, hh())).map((r) => r.id)
-        expect(await ids("= 'chore'")).toEqual(b.ids.chores)
-        expect(await ids("= 'todo'")).toEqual(b.ids.loose)
+        // Since 0153 a chore and a loose to-do are one thing: a task, with no kind.
+        expect(await ids('IS NULL')).toEqual([...b.ids.chores, ...b.ids.loose].sort())
         expect(await ids("IN ('plan', 'upkeep')")).toEqual(b.ids.homes)
         expect((await all(DRILL, 'SELECT id FROM todos WHERE household_id = ?', hh())).length, 'only the departure rows stay in todos').toBe(b.counts.departures)
         expect((await all(DRILL, 'SELECT tp.id FROM task_participants tp JOIN home_projects t ON t.id = tp.task_id WHERE t.household_id = ?', hh())).length).toBe(b.counts.lines)
@@ -366,31 +380,51 @@ describe('the merge, run on pre-merge households', () => {
         // task due, owed or ticked today, the loose to-dos included (they rode /api/todos
         // before). The merge is judged on the rows it moved: each old board task, whole.
         const got = await okJson<BoardWire>(d().s.fetch('/api/board'))
-        const now = new Map(got.tasks.map((x) => [x.key, x]))
-        for (const old of d().before.boardTasks) expect(now.get(old.key), old.key).toEqual(old)
-        const todosOnBoard = (await okJson<TodosWire>(d().s.fetch('/api/todos'))).items.filter((i) => i.onBoard)
-        for (const td of todosOnBoard) expect(now.get(td.key), td.key).toEqual(td)
+        const now = new Map(got.tasks.map((x) => [x.key, settle(x)]))
+        for (const old of d().before.boardTasks) {
+          // Off the board only by the one owed date 0153 moves, and only then.
+          if (!settle(old).onBoard) {
+            expect(owedEarly(old), old.key).toBe(true)
+            expect(now.has(old.key), old.key).toBe(false)
+            continue
+          }
+          expect(now.get(old.key), old.key).toEqual(settle(old))
+        }
+        // Not vacuous: the variety holds that case, by name (drillC1, ticked at 01:00 yesterday).
+        if (d() === built) expect(d().before.boardTasks.filter(owedEarly).map((x) => x.id)).toEqual(['drillC1aaaaa'])
+        const onBoard = (await okJson<TasksWire>(d().s.fetch('/api/tasks'))).tasks.filter((i) => i.onBoard)
+        for (const td of onBoard) expect(now.get(td.key), td.key).toEqual(settle(td))
       })
 
       it('the three alias GETs answer what they answered', async () => {
+        // Since 0153 /api/chores and /api/todos serve EVERY task (nothing tells a chore from a to-do):
+        // each old answer is judged on the rows it held, with each day decoded (_lib/taskDay).
+        const only = <T extends { id: string }>(xs: T[], was: { id: string }[]) => byId(xs.filter((x) => was.some((w) => w.id === x.id)))
         const chores = await okJson<{ chores: Row[] }>(d().s.fetch('/api/chores'))
         // 0152 wrote a recurring chore's start where it had none (its created_at, read so before).
         const created = new Map((await all<{ id: string; created_at: number }>(env.DB, 'SELECT id, created_at FROM home_projects WHERE household_id = ?', hh())).map((r) => [r.id, r.created_at]))
-        expect(byId(chores.chores as { id: string }[])).toEqual(byId((d().before.choresGet as Row[]).map((c) => started(c, created.get(c.id as string))) as { id: string }[]))
+        const choresBefore = (d().before.choresGet as Row[]).map((c) => started(c, created.get(c.id as string))).map((c) => ({ ...c, recur_start: taskDay(c.recur_start as number | null) })) as unknown as { id: string }[]
+        expect(only(chores.chores as { id: string }[], choresBefore)).toEqual(byId(choresBefore))
         const homes = await okJson<{ projects: Row[] }>(d().s.fetch('/api/home-projects'))
-        expect(byId(homes.projects as { id: string }[])).toEqual(byId(d().before.homeGet as unknown as { id: string }[]))
+        const homesBefore = (d().before.homeGet as unknown as (Row & { at: number | null; recur_json: string | null; last_done_at: number | null })[]).map((p) => {
+          const { nextAt: _n, dueToday: _d, overdueSince: _o, snoozedUntil: _s, ...row } = p as Row
+          const r = withTaskDay(row as typeof p)
+          return { ...r, ...upkeepStatus(r, today) }
+        })
+        expect(byId(homes.projects as { id: string }[])).toEqual(byId(homesBefore as unknown as { id: string }[]))
         const glance = await okJson<TodosWire>(d().s.fetch('/api/todos'))
-        expect(byId(glance.todos)).toEqual(byId(d().before.todosGlance as TodosWire['todos']))
+        expect(only(glance.todos, d().before.todosGlance as { id: string }[])).toEqual(byId(d().before.todosGlance as TodosWire['todos']))
         const days = [D(-3), today, D(1)]
         for (const [i, day] of days.entries()) {
           const got = await okJson<TodosWire>(d().s.fetch(`/api/todos?date=${day}`))
-          expect(byId(got.todos), `todos?date=${day}`).toEqual(byId(d().before.todosDays[i] as TodosWire['todos']))
+          expect(only(got.todos, d().before.todosDays[i] as { id: string }[]), `todos?date=${day}`).toEqual(byId(d().before.todosDays[i] as TodosWire['todos']))
         }
       })
 
       it('the calendar reads the same rows (month, then the endpoint answers)', async () => {
         // A recurring chore with no start reads its created_at as its start, now WRITTEN by 0152.
-        expect(byId(await all<{ id: string }>(env.DB, NEW.monthChores, hh()))).toEqual(byId((d().before.monthChores as Row[]).map((c) => started(c)) as { id: string }[]))
+        const monthBefore = (d().before.monthChores as Row[]).map((c) => started(c)) as { id: string }[]
+        expect(byId((await all<{ id: string }>(env.DB, NEW.monthChores, hh())).filter((r) => monthBefore.some((c) => c.id === r.id)))).toEqual(byId(monthBefore))
         expect(byId(await all<{ id: string }>(env.DB, NEW.monthHomes, hh()))).toEqual(byId(d().before.monthHomes as { id: string }[]))
         const month = await okJson<{ todos: { id: string }[]; tasks: { taskId: string; done: boolean }[] }>(d().s.fetch(`/api/month?from=${MONTH_FROM}&to=${MONTH_TO}`))
         // Every open dated to-do the old calendar named is still there: a departure row as a
@@ -402,8 +436,11 @@ describe('the merge, run on pre-merge households', () => {
       it('the ledger’s history is identical, and so are the recap’s and the house’s titles', async () => {
         expect(await all(env.DB, NEW.ledger, hh(), D(-366))).toEqual(d().before.ledger)
         expect((await d().s.fetch('/api/chores-ledger')).status).toBe(200)
-        expect(await all(env.DB, "SELECT title FROM home_projects WHERE household_id = ? AND kind = 'chore' AND last_done_at >= ? LIMIT 20", hh(), D(-7))).toEqual(d().before.recap)
-        expect(await all(env.DB, "SELECT title FROM home_projects WHERE household_id = ? AND kind = 'chore' ORDER BY created_at LIMIT 30", hh())).toEqual(d().before.ask)
+        // The chores among the tasks (0153 left them no kind): the drill knows their ids.
+        const chores = new Set(d().before.ids.chores)
+        const titles = (rows: { id: string; title: string }[], n: number) => rows.filter((r) => chores.has(r.id)).slice(0, n).map((r) => ({ title: r.title }))
+        expect(titles(await all(env.DB, 'SELECT id, title FROM home_projects WHERE household_id = ? AND kind IS NULL AND last_done_at >= ?', hh(), D(-7)), 20)).toEqual(d().before.recap)
+        expect(titles(await all(env.DB, 'SELECT id, title FROM home_projects WHERE household_id = ? AND kind IS NULL ORDER BY created_at', hh()), 30)).toEqual(d().before.ask)
       })
     })
   }
@@ -424,21 +461,22 @@ describe('the merge, run on pre-merge households', () => {
   })
 
   it('NULL is never a lie: the open to-dos with NULL day, NULL member, NULL look read open, the cleared ones stay gone', async () => {
-    const items = (await okJson<TodosWire>(built.s.fetch('/api/todos'))).items
-    const open = items.filter((i) => i.done === 'open').map((i) => i.id).sort()
-    expect(open).toEqual(['drillT1aaaaa', 'drillT2aaaaa', 'drillT4aaaaa', 'drillT9aaaaa'])
-    expect(items.map((i) => i.id)).not.toContain('drillT6aaaaa')
     const tasks = (await okJson<TasksWire>(built.s.fetch('/api/tasks'))).tasks
+    const items = tasks.filter((i) => i.id.startsWith('drillT'))
+    const open = items.filter((i) => i.done === 'open').map((i) => i.id).sort()
+    // Every open task is listed (/api/tasks), the one dated tomorrow (drillT3) included.
+    expect(open).toEqual(['drillT1aaaaa', 'drillT2aaaaa', 'drillT3aaaaa', 'drillT4aaaaa', 'drillT9aaaaa'])
+    expect(items.map((i) => i.id)).not.toContain('drillT6aaaaa')
     const by = (id: string) => tasks.find((t) => t.id === id)
-    expect(by('drillT1aaaaa')).toMatchObject({ source: 'todo', done: 'open', day: null, color: null, icon: null, effort: null, subject: null, who_id: null })
-    expect(by('drillC2aaaaa')).toMatchObject({ source: 'chore', recurring: true, done: 'open' })
-    expect(by('drillC4aaaaa')).toMatchObject({ source: 'chore', day: null, overdueSince: null, done: 'open' })
+    expect(by('drillT1aaaaa')).toMatchObject({ source: 'task', done: 'open', day: null, color: null, icon: null, effort: null, subject: null, who_id: null })
+    expect(by('drillC2aaaaa')).toMatchObject({ source: 'task', recurring: true, done: 'open' })
+    expect(by('drillC4aaaaa')).toMatchObject({ source: 'task', day: null, overdueSince: null, done: 'open' })
     expect(by('drillC7aaaaa'), 'cleared today stays cleared').toBeUndefined()
     expect(by('drillC9aaaaa'), 'a malformed recurrence still reads one-off').toMatchObject({ recurring: false, day: null })
     expect(by('drillC3aaaaa')?.overdueSince, 'an overdue chore is still owed').not.toBeNull()
   })
 
-  it('the migrated rows keep working through the aliases: a tick logs, an untick takes it back, a to-do clears', async () => {
+  it('the migrated rows keep working through the aliases: a tick logs, an untick takes it back, a to-do clears and stays as history', async () => {
     const s = built.s
     await okJson(s.fetch('/api/chores', { method: 'PATCH', body: { id: 'drillC4aaaaa' } }))
     const line = await env.DB.prepare('SELECT COUNT(*) AS n FROM task_participants WHERE task_id = ?').bind('drillC4aaaaa').first<{ n: number }>()
@@ -446,7 +484,8 @@ describe('the merge, run on pre-merge households', () => {
     await okJson(s.fetch('/api/chores', { method: 'PATCH', body: { id: 'drillC4aaaaa', undo: true } }))
     expect((await env.DB.prepare('SELECT COUNT(*) AS n FROM task_participants WHERE task_id = ?').bind('drillC4aaaaa').first<{ n: number }>())?.n).toBe(0)
     await okJson(s.fetch('/api/todos', { method: 'PATCH', body: { clearChecked: true, ids: ['drillT5aaaaa'] } }))
-    expect(await env.DB.prepare('SELECT id FROM home_projects WHERE id = ?').bind('drillT5aaaaa').first()).toBeNull()
+    // « Vider » keeps every task as history since 0153: stamped, never deleted.
+    expect(await env.DB.prepare('SELECT cleared_at IS NOT NULL AS cleared FROM home_projects WHERE id = ?').bind('drillT5aaaaa').first()).toEqual({ cleared: 1 })
     // A departure row still ticks in its own table.
     await okJson(s.fetch('/api/todos', { method: 'PATCH', body: { id: 'drillD1aaaaa', done: true } }))
     expect((await env.DB.prepare('SELECT done_at FROM todos WHERE id = ?').bind('drillD1aaaaa').first<{ done_at: number | null }>())?.done_at).not.toBeNull()
@@ -466,12 +505,12 @@ describe('the safety net: a copy taken BEFORE the merge restores AFTER it', () =
     const unmap = (x: unknown): unknown =>
       JSON.parse(JSON.stringify(x).replace(/[A-Za-z0-9]{8,32}/g, (tok) => (tok === sample.s.householdId ? (PREMERGE as { householdId: string }).householdId : (back.get(tok) ?? tok))))
     expect(byKey(got)).toEqual(byKey(unmap(sample.before.tasks) as TaskItem[]))
-    // Faces: the chores came back as chores, the loose to-dos as to-dos, the checklists stayed put.
-    const kinds = await all<{ kind: string; n: number }>(env.DB, 'SELECT kind, COUNT(*) AS n FROM home_projects WHERE household_id = ? GROUP BY kind ORDER BY kind', restored.householdId)
+    // The chores and the loose to-dos came back as tasks (no kind, 0153), the home rows as
+    // themselves, and the checklists stayed put.
+    const kinds = await all<{ kind: string | null; n: number }>(env.DB, 'SELECT kind, COUNT(*) AS n FROM home_projects WHERE household_id = ? GROUP BY kind ORDER BY kind', restored.householdId)
     expect(kinds).toEqual([
-      { kind: 'chore', n: 8 },
+      { kind: null, n: 16 },
       { kind: 'plan', n: 1 },
-      { kind: 'todo', n: 8 },
       { kind: 'upkeep', n: 3 },
     ])
     expect((await all(env.DB, 'SELECT id FROM todos WHERE household_id = ?', restored.householdId)).length).toBe(4)

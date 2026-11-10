@@ -428,7 +428,7 @@ test.describe('board compact lens — bespoke band cards', () => {
 // lib/widgetGrid), so a tile of short things names as many as physically fit.
 // The card reads the board's one `tasks` list (2026-11-08): these are due today.
 const dueTodos = (prefix: string, titles: string[]) => ({
-  board: { ...BOARD, tasks: titles.map((title, i) => boardTask({ source: 'todo', id: `${prefix}${i}`, title })) },
+  board: { ...BOARD, tasks: titles.map((title, i) => boardTask({ source: 'task', id: `${prefix}${i}`, title })) },
 })
 const SHORT_TODOS = dueTodos('s', ['Lait', 'Pain', 'Œufs', 'Beurre', 'Café', 'Miel'])
 const LONG_TODOS = dueTodos('l', [

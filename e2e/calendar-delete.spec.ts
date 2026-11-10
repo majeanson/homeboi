@@ -37,10 +37,10 @@ async function seed(page: Page, opts: { guest?: boolean } = {}) {
       json({
         events: [{ id: 'ev1', title: 'Dentiste', at: MMID + 14 * 3600, all_day: 0, member_id: null, day: MMID }],
         meals: [{ id: 'ml1', slot: 'souper', title: 'Pâté chinois', cook_member_id: null, day: MMID }],
-        // Every task on the calendar is one list (TaskCell, 2026-11-08); `source` is the alias a
-        // row's delete goes to.
+        // Every task on the calendar is one list (TaskCell, 2026-11-08); every delete goes to
+        // /api/tasks (0153).
         tasks: [
-          { id: 'ch1', taskId: 'ch1', source: 'chore', title: 'Sortir le recyclage', color: '#5891AC', icon: null, kind: null, who_id: null, day: MMID, done: false, recurring: false, soon: false },
+          { id: 'ch1', taskId: 'ch1', source: 'task', title: 'Sortir le recyclage', color: '#5891AC', icon: null, kind: null, who_id: null, day: MMID, done: false, recurring: false, soon: false },
           { id: 'hp1', taskId: 'hp1', source: 'home', title: 'Changer le filtre', color: '#88A36F', icon: null, kind: 'upkeep', who_id: null, day: MMID, done: false, recurring: false, soon: false },
         ],
         dayNotes: [],
@@ -99,7 +99,7 @@ test.describe('Mois — the day panel’s peeks can delete', () => {
     await expect(row).toHaveCount(0)
     await expect(page.getByRole('button', { name: 'Annuler' })).toBeVisible()
     await page.clock.install()
-    const [req] = await Promise.all([waitDelete(page, 'chores'), page.clock.runFor(16_000)])
+    const [req] = await Promise.all([waitDelete(page, 'tasks'), page.clock.runFor(16_000)])
     expect(req.postDataJSON()).toMatchObject({ id: 'ch1' })
   })
 
@@ -115,7 +115,7 @@ test.describe('Mois — the day panel’s peeks can delete', () => {
     await page.getByRole('menuitem', { name: 'Supprimer' }).click()
     await expect(row).toHaveCount(0)
     await page.clock.install()
-    const [req] = await Promise.all([waitDelete(page, 'home-projects'), page.clock.runFor(16_000)])
+    const [req] = await Promise.all([waitDelete(page, 'tasks'), page.clock.runFor(16_000)])
     expect(req.postDataJSON()).toMatchObject({ id: 'hp1' })
   })
 
@@ -175,7 +175,7 @@ test.describe('the day page can delete what it edits', () => {
     await expect(row).toHaveCount(0)
     await expect(page.getByRole('button', { name: 'Annuler' })).toBeVisible()
     await page.clock.install()
-    const [req] = await Promise.all([waitDelete(page, 'chores'), page.clock.runFor(16_000)])
+    const [req] = await Promise.all([waitDelete(page, 'tasks'), page.clock.runFor(16_000)])
     expect(req.postDataJSON()).toMatchObject({ id: 'ch1' })
   })
 

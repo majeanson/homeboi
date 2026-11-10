@@ -16,8 +16,8 @@ import type { TaskFace } from '../lib/taskTarget'
 //   /chore/new           a new task. `?start=<sec>` (a local midnight, from the calendar) seeds its day.
 //   /home-project/new    a new task. `?kind=plan|upkeep` and `?carnet=<id>` (a carnet's
 //                        Entretien section) seed it: the door names the kind, the household never does.
-//   /chore/:id, /home-project/:id, /todo/:id
-//                        an edit of a row wearing that face; every peek's « Modifier » opens one.
+//   /todo/:id, /chore/:id (the same task), /home-project/:id
+//                        an edit of a task or of a home row; every peek's « Modifier » opens one.
 // Which cache holds the row is the save adapter's answer (`taskRead`), never this page's.
 export function TaskFormPage({ table }: { table?: TaskFace | undefined }) {
   const t = useT()
@@ -25,7 +25,7 @@ export function TaskFormPage({ table }: { table?: TaskFace | undefined }) {
   const { id } = useParams()
   const [params] = useSearchParams()
   const editing = id && table ? { table, id } : null
-  const read = taskRead(table ?? 'todo')
+  const read = taskRead(table ?? 'task')
   const q = useQuery({ queryKey: read.key, queryFn: () => api<unknown>(read.path), enabled: !!editing })
   const draft = editing ? read.draftOf(q.data, editing.id) : undefined
   const wait = editing && !draft ? loadStateOf(q) : null

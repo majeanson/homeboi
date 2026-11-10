@@ -4,8 +4,10 @@ import { env } from 'cloudflare:workers'
 import { household, okJson, type Session } from '../functions/test/d1'
 import { addLocalDays, localDayStart } from '../functions/_lib/ids'
 import { parseRecur } from '../functions/_lib/recur'
-import { choreTask, homeTask, spineTask, todoTask, type SpineTaskRow } from '../functions/_lib/taskItem'
+import { spineTask, type SpineTaskRow } from '../functions/_lib/taskItem'
+import { choreTask, homeTask, todoTask } from '../functions/test/legacyTaskReaders'
 import { TASK_COLS, type TaskRow } from '../functions/_lib/taskViews'
+import { taskDay } from '../functions/_lib/taskDay'
 import type { TaskItem, TasksWire } from '../functions/_lib/wire'
 
 // THE 0152 DRILL. Production rows are on the line, so the migration is RUN, not trusted on
@@ -125,8 +127,10 @@ beforeAll(async () => {
     { ...base, kind: 'upkeep', id: 'stH2aaaaaaaa', title: 'Pneus', recur_json: WEEKLY, at: UTC_TODAY - 30 * 86400, snoozed_until: D(3) },
     { ...base, kind: 'plan', id: 'stH3aaaaaaaa', title: 'Cuisine', notes: 'trois devis', budget_cents: 1_500_000 },
   ])
-  // The real sample seed, as a seeded household holds it.
-  await insertRows(DRILL, 'home_projects', await all(env.DB, 'SELECT * FROM home_projects WHERE household_id = ?', seeded.householdId))
+  // The real sample seed, as a seeded household holds it, in the shape of its era: before 0153
+  // a task had a face, a series or a rotation was a chore, anything else a loose to-do.
+  const era = (r: Row): Row => (r.kind != null ? r : { ...r, kind: r.recur_json != null || r.rotation_json !== '[]' ? 'chore' : 'todo' })
+  await insertRows(DRILL, 'home_projects', (await all(env.DB, 'SELECT * FROM home_projects WHERE household_id = ?', seeded.householdId)).map(era))
 
   for (const s of [variety, seeded]) {
     beforeRows.set(s.householdId, await rowsOf(s.householdId))
@@ -179,10 +183,15 @@ describe('0152 — every recurring task carries its start', () => {
 
   it('the real Worker reads the migrated rows the same: copied back, /api/tasks answers each task as before', async () => {
     const hh = variety.householdId
-    await insertRows(env.DB, 'home_projects', await all(DRILL, 'SELECT * FROM home_projects WHERE household_id = ?', hh))
+    // Into today's schema as 0153 brings them (a task has no kind), and read by today's Worker,
+    // which decodes every day to the local midnight it showed (_lib/taskDay): the drill compares
+    // days as days.
+    const shrunk = (r: Row): Row => ({ ...r, kind: r.kind === 'plan' || r.kind === 'upkeep' ? r.kind : null })
+    await insertRows(env.DB, 'home_projects', (await all(DRILL, 'SELECT * FROM home_projects WHERE household_id = ?', hh)).map(shrunk))
     const got = (await okJson<TasksWire>(variety.fetch('/api/tasks'))).tasks
-    const was = new Map(beforeRows.get(hh)!.map((r) => [r.id, identity(before(r))]))
-    for (const t of got) expect(identity(t), t.id).toEqual(was.get(t.id))
+    const asDays = (i: ReturnType<typeof identity>) => i && { ...i, day: taskDay(i.day), overdueSince: taskDay(i.overdueSince) }
+    const was = new Map(beforeRows.get(hh)!.map((r) => [r.id, asDays(identity(before(r)))]))
+    for (const t of got) expect(asDays(identity(t)), t.id).toEqual(was.get(t.id))
     // Not vacuous: the four recurring chores with no start are among them, and still recurring.
     expect(got.filter((t) => ['stC1aaaaaaaa', 'stC2aaaaaaaa', 'stC3aaaaaaaa', 'stC4aaaaaaaa'].includes(t.id) && t.recurring)).toHaveLength(4)
   })

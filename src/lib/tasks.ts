@@ -7,7 +7,8 @@ import type { SubjectRef } from './subjects'
 // because a second opinion is how the three old lists came to disagree.
 export interface TaskItem {
   key: string
-  source: 'chore' | 'todo' | 'home'
+  /** A task, or a home row (a project or an entretien), 0153. Never what it used to be. */
+  source: 'task' | 'home'
   id: string
   title: string
   /** The raw stored colour. A row never paints it directly: `lookOf` (lib/subjects) decides. */

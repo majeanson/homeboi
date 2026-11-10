@@ -47,7 +47,7 @@ test('adding is one title field, and it files as someday', async ({ page, app })
   await add.fill('Trier les photos')
   const post = page.waitForRequest((r) => r.url().includes('/api/tasks') && r.method() === 'POST')
   await add.press('Enter')
-  expect(((await post).postDataJSON() as { day: number | null }).day).toBeNull()
+  expect(((await post).postDataJSON() as { at: number | null }).at).toBeNull()
   await expect(page.locator('.tasks-view')).toContainText('Trier les photos')
 })
 
@@ -67,7 +67,7 @@ test('the view toggle offers it, and a peek edits in its own scene', async ({ pa
   await app.boot({ route: '/board', wait: '.board-grid .wg-slot' })
   await page.getByRole('radio', { name: 'Tâches' }).click()
   await expect(page).toHaveURL(/view=taches/)
-  await page.locator('.tasks-view [data-task="chore"]').first().locator('.act__hit').click()
+  await page.locator('.tasks-view [data-item="c1"]').first().locator('.act__hit').click()
   await expect(page.locator('.detail-sheet').getByRole('link', { name: /Modifier/ }).or(page.locator('.detail-sheet'))).toBeVisible()
 })
 
