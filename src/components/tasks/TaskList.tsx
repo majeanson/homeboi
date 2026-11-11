@@ -163,12 +163,16 @@ export function TaskQuickAdd({
   subject,
   autoFocus,
   onAdded,
+  compact = false,
 }: {
   actions: Actions
   today?: number | undefined
   subject?: SubjectRef | undefined
   autoFocus?: boolean | undefined
   onAdded?: (() => void) | undefined
+  /** The ＋ sits INSIDE the field (no « Ajouter » line under it on a phone): the Tâches view,
+   *  where the field sits under the list and every line of height goes to the tasks. */
+  compact?: boolean | undefined
 }) {
   const t = useT()
   const [text, setText] = useState('')
@@ -183,8 +187,7 @@ export function TaskQuickAdd({
       options={[]}
       onSelect={() => {}}
       onSubmit={(v) => add(v, today ?? null)}
-      submitLabel={t.common.add}
-      submitLeadingIcon="plus-bold"
+      {...(compact ? { submitIcon: 'plus-bold' as const, submitAriaLabel: t.common.add } : { submitLabel: t.common.add, submitLeadingIcon: 'plus-bold' as const })}
       autoFocus={autoFocus}
       {...(today != null ? { secondaryLabel: t.todos.addSomeday, onSecondary: (v: string) => add(v, null) } : {})}
       placeholder={t.todos.addPlaceholder}

@@ -1652,8 +1652,11 @@ export function Board() {
           shouldn't crowd the compact Mois calendar.
           In GRILLE the notes card lives in the band zone with its peers (so it can be
           reordered, resized and dragged into the masonry). Mois / L'année have no band —
-          only this one card — so it renders plainly here, exactly as it always did. */}
-      {data && view !== 'bento' && isCardVisible(boardCards, 'notes') && (
+          only this one card — so it renders plainly here, exactly as it always did.
+          NOT in « Tâches » (the owner, 2026-11-10): that view is a working list, and on a
+          phone the notes and the « Boîte aux lettres » door took ~300px above its first task;
+          they stay one tap away on every other view. */}
+      {data && view !== 'bento' && view !== 'taches' && isCardVisible(boardCards, 'notes') && (
         <Notes notes={data.notes ?? []} members={data.members} variant="notes" />
       )}
 

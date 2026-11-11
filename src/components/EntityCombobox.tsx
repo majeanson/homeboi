@@ -98,6 +98,8 @@ export interface EntityComboboxProps<T> {
   submitLabel?: string
   /** Icon for the icon-only submit. Pass null to hide the submit entirely (Enter only). */
   submitIcon?: IconName | null
+  /** The icon-only submit's accessible name (default « Enregistrer »): an ADD field says « Ajouter ». */
+  submitAriaLabel?: string
   submitLeadingIcon?: IconName
   submitVariant?: 'sm' | 'primary'
   /** A SECOND commit button beside the primary submit — same free text, a different
@@ -151,6 +153,7 @@ export function EntityCombobox<T>({
   onSubmit,
   submitLabel,
   submitIcon = 'check-bold',
+  submitAriaLabel,
   submitLeadingIcon,
   submitVariant = 'sm',
   secondaryLabel,
@@ -423,7 +426,7 @@ export function EntityCombobox<T>({
             className="edit-field__icon-btn edit-field__submit"
             disabled={submitDisabled}
             onClick={commit}
-            aria-label={submitLabel ?? t.common.save}
+            aria-label={submitAriaLabel ?? t.common.save}
           >
             <Icon name={submitIcon} size={17} />
           </button>

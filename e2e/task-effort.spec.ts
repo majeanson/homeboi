@@ -149,19 +149,26 @@ test('a to-do’s one form holds its effort, and saving patches it', async ({ pa
 // The view's one row of buttons (2026-11-10): the quick add, then the row, then the tasks.
 // « Qui a fait quoi » answers a question about people, so only the « Personne » lens has it;
 // « Une chose à moi » adds a subject, so only the « Sujet » lens has it.
-test('the action row: one row under the quick add, the ledger only by person, a subject door only by subject', async ({ page, app }) => {
+test('the tasks first, then the quick add and one row of buttons; the ledger only by person, a subject door only by subject', async ({ page, app }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await app.boot({ route: '/board?view=taches', wait: '.tasks-view', api: { overrides: { tasks: frame } } })
   const row = page.locator('.tasks-view__actions')
   const ledger = page.getByText('Qui a fait quoi cette semaine ?')
   const thing = row.getByRole('link', { name: /Une chose à moi/ })
   const lens = page.getByRole('radiogroup', { name: 'Regarder par' })
-  // The row sits right under the quick add, before any task.
+  // The tasks lead (the owner, 2026-11-10); the quick add and the row wait under the last one.
+  // The fridge notes and the postbox door stay on the other views; this one is the list.
+  await expect(page.getByRole('button', { name: /Boîte aux lettres/ })).toHaveCount(0)
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/first-screen-390.png` })
   const field = await boxOf(page.locator('.tasks-view').getByRole('combobox').first())
   const r = await boxOf(row)
-  const firstTask = await boxOf(shown(page, 'e-quick'))
+  const tasks = page.locator('.tasks-view [data-item]')
+  const lastTask = await boxOf(tasks.nth((await tasks.count()) - 1))
+  expect(field.y).toBeGreaterThan(lastTask.y)
   expect(r.y).toBeGreaterThan(field.y)
-  expect(r.y).toBeLessThan(firstTask.y)
+  // The ＋ sits inside the field: no « Ajouter » line between the field and the row.
+  await expect(page.locator('.tasks-view__add').getByRole('button', { name: 'Ajouter', exact: true })).toBeVisible()
+  expect(r.y - (field.y + field.height)).toBeLessThan(16)
   await expect(row.getByRole('link', { name: /Tâche détaillée/ })).toHaveAttribute('href', '/chore/new')
   await expect(row.getByRole('button', { name: /Trouver quoi faire/ })).toHaveAttribute('aria-expanded', 'false')
   // Nothing in the row leaves a 390px phone.

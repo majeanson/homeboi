@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useT } from '../../i18n'
 import { useOperatorT } from '../../i18n.operator'
@@ -71,7 +71,13 @@ export function TasksView({ members, todayDay }: { members: Member[]; todayDay: 
   // One panel open at a time under the action row. A linked finder (?effort= / ?quand=)
   // opens on its answer.
   const [panel, setPanel] = useState<'find' | 'seeds' | null>(effort != null || when != null ? 'find' : null)
-  const togglePanel = (p: 'find' | 'seeds') => setPanel((cur) => (cur === p ? null : p))
+  // The row sits under the list, so a panel it opens can land below the fold: bring the add
+  // block into view on the TAP (never on load, where a linked finder would jump past the tasks).
+  const addRef = useRef<HTMLDivElement>(null)
+  const togglePanel = (p: 'find' | 'seeds') => {
+    setPanel((cur) => (cur === p ? null : p))
+    requestAnimationFrame(() => addRef.current?.scrollIntoView({ block: 'nearest' }))
+  }
   const wait = loadStateOf(q, { shape: 'row', count: 6 })
   if (wait) return wait
 
@@ -115,26 +121,24 @@ export function TasksView({ members, todayDay }: { members: Member[]; todayDay: 
           </Link>
         </p>
       )}
-      {/* La liste's shape: the quick add first (a title and Enter is a whole task), then ONE
-          row of buttons, then the list. The row is the recipe book's « Filtrer » shape: a pill
-          that opens a panel under the row, lit while it narrows. Nothing else stands between
-          the field and the tasks. */}
-      {!ro && <TaskQuickAdd actions={actions} subject={focus ?? undefined} />}
+      {groups.length === 0 ? (
+        <EmptyState tone="calm">{finding ? t.effort.none : t.todos.empty}</EmptyState>
+      ) : (
+        groups.map((g) => (
+          <section key={g.key} className="tasks-view__group">
+            <SecLabel label={g.label} />
+            <TaskList items={g.tasks} members={members} lookup={lookup} actions={actions} dated />
+          </section>
+        ))
+      )}
+      {/* The tasks FIRST (the owner, 2026-11-10): on a phone the first screen is the list, and the
+          way to add one or narrow them waits under it. Then the quick add (a title and Enter is a
+          whole task, its ＋ inside the field so it costs one line), then ONE row of buttons; the
+          row is the recipe book's « Filtrer » shape: a pill that opens a panel under the row, lit
+          while it narrows. */}
+      <div className="tasks-view__add" ref={addRef}>
+      {!ro && <TaskQuickAdd actions={actions} subject={focus ?? undefined} compact />}
       <Cluster className="tasks-view__actions">
-        <Chip
-          icon="magnifying-glass-bold"
-          expanded={panel === 'find'}
-          onClick={() => togglePanel('find')}
-          {...(finding ? { className: 'is-on' } : {})}
-        >
-          {t.effort.finder}
-          {finderNote && <span className="tasks-view__note"> · {finderNote}</span>}
-        </Chip>
-        {!ro && seeds.length > 0 && (
-          <Chip icon="tree-bold" expanded={panel === 'seeds'} onClick={() => togglePanel('seeds')}>
-            {o18n.home.seedsTitle}
-          </Chip>
-        )}
         {/* The one task form with every layer in reach: one door, never a « type » to pick
             (phase 4). The field above stays the one-tap add. */}
         {!ro && (
@@ -149,6 +153,22 @@ export function TasksView({ members, todayDay }: { members: Member[]; todayDay: 
             {t.tasks.newThingTitle}
           </Chip>
         )}
+        {/* Then the two that narrow or suggest, each opening its panel under the row. The adds
+            lead, beside the field they extend. */}
+        <Chip
+          icon="magnifying-glass-bold"
+          expanded={panel === 'find'}
+          onClick={() => togglePanel('find')}
+          {...(finding ? { className: 'is-on' } : {})}
+        >
+          {t.effort.finder}
+          {finderNote && <span className="tasks-view__note"> · {finderNote}</span>}
+        </Chip>
+        {!ro && seeds.length > 0 && (
+          <Chip icon="tree-bold" expanded={panel === 'seeds'} onClick={() => togglePanel('seeds')}>
+            {o18n.home.seedsTitle}
+          </Chip>
+        )}
       </Cluster>
       {panel === 'find' && (
         <TaskFinder
@@ -159,16 +179,7 @@ export function TasksView({ members, todayDay }: { members: Member[]; todayDay: 
         />
       )}
       {!ro && panel === 'seeds' && <SeasonSeeds seeds={seeds} />}
-      {groups.length === 0 ? (
-        <EmptyState tone="calm">{finding ? t.effort.none : t.todos.empty}</EmptyState>
-      ) : (
-        groups.map((g) => (
-          <section key={g.key} className="tasks-view__group">
-            <SecLabel label={g.label} />
-            <TaskList items={g.tasks} members={members} lookup={lookup} actions={actions} dated />
-          </section>
-        ))
-      )}
+      </div>
       {/* « Qui a fait quoi » answers a question about PEOPLE, so it lives in the lens that
           groups by person, under that lens's own list, and nowhere else on the board. */}
       {!ro && lens === 'qui' && <ChoreLedger />}
