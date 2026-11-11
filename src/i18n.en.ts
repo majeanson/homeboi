@@ -2604,11 +2604,11 @@ export const EN: typeof FR = {
     subjectLabel: 'About what?',
     noSubject: 'No subject',
     allSubjects: 'All subjects',
-    ledger: 'Who did what this week',
     history: 'What was done',
     subjectEmpty: 'Nothing yet.',
     newThing: 'Something of mine…',
     newThingTitle: 'Something of mine',
+    addDetailed: 'Detailed task',
     form: {
       newTitle: 'New task',
       editTitle: 'Edit task',

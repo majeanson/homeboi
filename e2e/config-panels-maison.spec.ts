@@ -177,10 +177,10 @@ test('renaming a member patches it by id, keeping colour and child flag', async 
 })
 
 test('a season seed posts a dated upkeep with its cadence and lead time', async ({ page }) => {
-  // The seeds moved to the Tâches view with the rest of the browsing, behind a fold.
+  // The seeds moved to the Tâches view with the rest of the browsing, behind a button in its action row.
   await page.goto('/board?view=taches')
+  await page.locator('.tasks-view__actions').getByRole('button', { name: 'Idées de saison' }).click()
   const card = page.locator('.season-seeds')
-  await card.getByRole('button', { name: 'Idées de saison' }).click()
   const [req] = await Promise.all([
     page.waitForRequest(isApi('POST', 'home-projects'), { timeout: 20_000 }),
     card.getByRole('button', { name: /Poser les pneus/ }).click(),

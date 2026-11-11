@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useT } from '../../i18n'
+import { useOperatorT } from '../../i18n.operator'
 import { api } from '../../lib/api'
 import { isGuest } from '../../lib/device'
 import { useProfile } from '../../lib/profile'
@@ -9,14 +11,14 @@ import { subjectOf, type SubjectLookup, type SubjectRef } from '../../lib/subjec
 import { useTabParam } from '../../lib/tabParam'
 import { FIND_WHEN, findable, groupTasks, horizonOf, HORIZONS, mineTask, NO_SUBJECT, NOBODY, personKey, subjectKey, type TaskGroup, type TaskItem } from '../../lib/tasks'
 import { loadStateOf } from '../Fallback'
-import { Disclosure } from '../Disclosure'
 import { EmptyState } from '../EmptyState'
 import { Cluster } from '../Layout'
 import { InlineIcon } from '../Icon'
+import { Chip } from '../Chip'
 import { Segmented } from '../Segmented'
 import { ChoreLedger } from '../ChoreLedger'
-import { SeasonSeeds } from '../tasks/SeasonSeeds'
-import { TaskFinder } from '../tasks/TaskFinder'
+import { SeasonSeeds, useSeasonSeeds } from '../tasks/SeasonSeeds'
+import { TaskFinder, useFinderNote } from '../tasks/TaskFinder'
 import { TaskList, TaskQuickAdd } from '../tasks/TaskList'
 import { useTaskActions } from '../tasks/useTaskActions'
 import { SecLabel } from './BoardCard'
@@ -63,6 +65,13 @@ export function TasksView({ members, todayDay }: { members: Member[]; todayDay: 
   const focus = focusRef(params.get('sujet'))
   const actions = useTaskActions(TASKS_KEY)
   const q = useQuery({ queryKey: TASKS_KEY, queryFn: () => api<TasksFrame>('tasks') })
+  const o18n = useOperatorT()
+  const seeds = useSeasonSeeds(q.data?.tasks ?? [])
+  const finderNote = useFinderNote(effort, when)
+  // One panel open at a time under the action row. A linked finder (?effort= / ?quand=)
+  // opens on its answer.
+  const [panel, setPanel] = useState<'find' | 'seeds' | null>(effort != null || when != null ? 'find' : null)
+  const togglePanel = (p: 'find' | 'seeds') => setPanel((cur) => (cur === p ? null : p))
   const wait = loadStateOf(q, { shape: 'row', count: 6 })
   if (wait) return wait
 
@@ -106,13 +115,50 @@ export function TasksView({ members, todayDay }: { members: Member[]; todayDay: 
           </Link>
         </p>
       )}
+      {/* La liste's shape: the quick add first (a title and Enter is a whole task), then ONE
+          row of buttons, then the list. The row is the recipe book's « Filtrer » shape: a pill
+          that opens a panel under the row, lit while it narrows. Nothing else stands between
+          the field and the tasks. */}
       {!ro && <TaskQuickAdd actions={actions} subject={focus ?? undefined} />}
-      <TaskFinder
-        effort={effort}
-        when={when}
-        onEffort={(v) => setEffortParam(v == null ? ANY : (String(v) as (typeof EFFORTS)[number]))}
-        onWhen={(v) => setWhenParam(v ?? ANY)}
-      />
+      <Cluster className="tasks-view__actions">
+        <Chip
+          icon="magnifying-glass-bold"
+          expanded={panel === 'find'}
+          onClick={() => togglePanel('find')}
+          {...(finding ? { className: 'is-on' } : {})}
+        >
+          {t.effort.finder}
+          {finderNote && <span className="tasks-view__note"> · {finderNote}</span>}
+        </Chip>
+        {!ro && seeds.length > 0 && (
+          <Chip icon="tree-bold" expanded={panel === 'seeds'} onClick={() => togglePanel('seeds')}>
+            {o18n.home.seedsTitle}
+          </Chip>
+        )}
+        {/* The one task form with every layer in reach: one door, never a « type » to pick
+            (phase 4). The field above stays the one-tap add. */}
+        {!ro && (
+          <Chip icon="plus-bold" to="/chore/new">
+            {t.tasks.addDetailed}
+          </Chip>
+        )}
+        {/* A new SUBJECT, not a task (the garden, the pool, the chalet: a `thing` carnet). It
+            belongs to the lens that groups by subject, so it shows there only. */}
+        {!ro && lens === 'sujet' && (
+          <Chip icon="plus-bold" to="/maison?add=chose">
+            {t.tasks.newThingTitle}
+          </Chip>
+        )}
+      </Cluster>
+      {panel === 'find' && (
+        <TaskFinder
+          effort={effort}
+          when={when}
+          onEffort={(v) => setEffortParam(v == null ? ANY : (String(v) as (typeof EFFORTS)[number]))}
+          onWhen={(v) => setWhenParam(v ?? ANY)}
+        />
+      )}
+      {!ro && panel === 'seeds' && <SeasonSeeds seeds={seeds} />}
       {groups.length === 0 ? (
         <EmptyState tone="calm">{finding ? t.effort.none : t.todos.empty}</EmptyState>
       ) : (
@@ -123,25 +169,9 @@ export function TasksView({ members, todayDay }: { members: Member[]; todayDay: 
           </section>
         ))
       )}
-      {!ro && (
-        <Cluster className="tasks-view__doors">
-          {/* The one task form with every layer in reach: one door, never a « type » to pick
-              (phase 4). The field above stays the one-tap add. */}
-          <Link className="btn btn--sm" to="/chore/new">
-            <InlineIcon name="plus-bold" size={14} /> {t.tasks.form.newTitle}
-          </Link>
-          {/* A new SUBJECT, not a task: the garden, the pool, the chalet (a `thing` carnet). */}
-          <Link className="btn btn--sm" to="/maison?add=chose">
-            <InlineIcon name="plus-bold" size={14} /> {t.tasks.newThingTitle}
-          </Link>
-        </Cluster>
-      )}
-      {!ro && <SeasonSeeds tasks={q.data?.tasks ?? []} />}
-      {!ro && (
-        <Disclosure label={t.tasks.ledger} className="tasks-view__ledger">
-          <ChoreLedger />
-        </Disclosure>
-      )}
+      {/* « Qui a fait quoi » answers a question about PEOPLE, so it lives in the lens that
+          groups by person, under that lens's own list, and nowhere else on the board. */}
+      {!ro && lens === 'qui' && <ChoreLedger />}
     </div>
   )
 }

@@ -2205,8 +2205,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Le journal des tâches', en: 'The task ledger' },
         detail: {
-          fr: 'Dans la vue Tâches, un coup d’œil « qui a fait quoi cette semaine » : les noms et les visages, le jour où c’est arrivé. C’est tout — aucun nombre, aucun classement, aucun « meilleur ».',
-          en: 'In the Tasks view, a “who did what this week” glance: the names and faces, the day it happened. That’s all — no counts, no ranking, no “top helper”.',
+          fr: 'Dans la vue Tâches, « Par personne », un coup d’œil « qui a fait quoi cette semaine » : les noms et les visages, le jour où c’est arrivé. C’est tout — aucun nombre, aucun classement, aucun « meilleur ».',
+          en: 'In the Tasks view, “By person”, a “who did what this week” glance: the names and faces, the day it happened. That’s all — no counts, no ranking, no “top helper”.',
         },
         why: {
           fr: 'Pour voir que la maison a roulé sans en faire un concours — fidèle au calme, jamais un tableau de pointage.',

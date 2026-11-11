@@ -68,7 +68,7 @@ test('a row shows its effort small, and only when it was said', async ({ page, a
     await page.screenshot({ path: `${SHOTS}/effort-rows-390.png` })
     await page.setViewportSize({ width: 1440, height: 900 })
     await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'night'))
-    await page.locator('.task-finder').getByRole('button', { name: /Trouver quoi faire/ }).click()
+    await page.locator('.tasks-view__actions').getByRole('button', { name: /Trouver quoi faire/ }).click()
     await page.locator('.task-finder').getByRole('radio', { name: /Moyen/ }).click()
     await expect(page.locator('.task-finder').getByRole('radio', { name: /Moyen/ })).toHaveAttribute('aria-checked', 'true')
     await page.screenshot({ path: `${SHOTS}/effort-rows-desktop-dark.png` })
@@ -78,10 +78,12 @@ test('a row shows its effort small, and only when it was said', async ({ page, a
 test('« Trouver quoi faire »: this effort and below, the unsaid always, a horizon, in the URL, no count', async ({ page, app }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await app.boot({ route: '/board?view=taches', wait: '.tasks-view', api: { overrides: { tasks: frame } } })
-  const finder = page.locator('.task-finder')
-  const open = finder.getByRole('button', { name: /Trouver quoi faire/ })
+  const open = page.locator('.tasks-view__actions').getByRole('button', { name: /Trouver quoi faire/ })
   await expect(open).toHaveAttribute('aria-expanded', 'false')
+  // The panel is not in the page until its button opens it.
+  await expect(page.locator('.task-finder')).toHaveCount(0)
   await open.click()
+  const finder = page.locator('.task-finder')
   const dots = finder.getByRole('radiogroup', { name: 'Effort, au plus' }).getByRole('radio')
   await dots.nth(1).click()
   await expect(page).toHaveURL(/effort=2/)
@@ -121,7 +123,7 @@ test('« Trouver quoi faire »: this effort and below, the unsaid always, a hori
 
 test('a linked finder opens on its answer and says it while folded', async ({ page, app }) => {
   await app.boot({ route: '/board?view=taches&effort=1&quand=unjour', wait: '.tasks-view', api: { overrides: { tasks: frame } } })
-  const open = page.locator('.task-finder').getByRole('button', { name: /Trouver quoi faire/ })
+  const open = page.locator('.tasks-view__actions').getByRole('button', { name: /Trouver quoi faire/ })
   await expect(open).toHaveAttribute('aria-expanded', 'true')
   await expect(page.locator('.task-finder').getByRole('radio', { name: /Tout simple/ })).toHaveAttribute('aria-checked', 'true')
   await open.click()
@@ -142,4 +144,50 @@ test('a to-do’s one form holds its effort, and saving patches it', async ({ pa
   const patch = page.waitForRequest((r) => r.url().includes('/api/tasks') && r.method() === 'PATCH')
   await edit.locator('button[type="submit"]').last().click()
   expect((await patch).postDataJSON()).toMatchObject({ id: 'e-quick', title: 'Appeler la garderie', effort: null })
+})
+
+// The view's one row of buttons (2026-11-10): the quick add, then the row, then the tasks.
+// « Qui a fait quoi » answers a question about people, so only the « Personne » lens has it;
+// « Une chose à moi » adds a subject, so only the « Sujet » lens has it.
+test('the action row: one row under the quick add, the ledger only by person, a subject door only by subject', async ({ page, app }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await app.boot({ route: '/board?view=taches', wait: '.tasks-view', api: { overrides: { tasks: frame } } })
+  const row = page.locator('.tasks-view__actions')
+  const ledger = page.getByText('Qui a fait quoi cette semaine ?')
+  const thing = row.getByRole('link', { name: /Une chose à moi/ })
+  const lens = page.getByRole('radiogroup', { name: 'Regarder par' })
+  // The row sits right under the quick add, before any task.
+  const field = await boxOf(page.locator('.tasks-view').getByRole('combobox').first())
+  const r = await boxOf(row)
+  const firstTask = await boxOf(shown(page, 'e-quick'))
+  expect(r.y).toBeGreaterThan(field.y)
+  expect(r.y).toBeLessThan(firstTask.y)
+  await expect(row.getByRole('link', { name: /Tâche détaillée/ })).toHaveAttribute('href', '/chore/new')
+  await expect(row.getByRole('button', { name: /Trouver quoi faire/ })).toHaveAttribute('aria-expanded', 'false')
+  // Nothing in the row leaves a 390px phone.
+  const kids = row.locator('a, button')
+  for (let i = 0; i < (await kids.count()); i++) {
+    const b = await boxOf(kids.nth(i))
+    expect(b.x + b.width).toBeLessThanOrEqual(390)
+  }
+  await expect(ledger).toHaveCount(0)
+  await expect(thing).toHaveCount(0)
+  await lens.getByRole('radio', { name: 'Personne' }).click()
+  await expect(ledger).toBeVisible()
+  await expect(thing).toHaveCount(0)
+  await lens.getByRole('radio', { name: 'Sujet' }).click()
+  await expect(ledger).toHaveCount(0)
+  await expect(thing).toBeVisible()
+  // One panel at a time: opening the seeds closes the finder.
+  await row.getByRole('button', { name: /Trouver quoi faire/ }).click()
+  await expect(page.locator('.task-finder')).toBeVisible()
+  await row.getByRole('button', { name: 'Idées de saison' }).click()
+  await expect(page.locator('.season-seeds')).toBeVisible()
+  await expect(page.locator('.task-finder')).toHaveCount(0)
+  if (SHOTS) {
+    await page.screenshot({ path: `${SHOTS}/actions-390.png`, fullPage: true })
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'night'))
+    await page.screenshot({ path: `${SHOTS}/actions-desktop-dark.png`, fullPage: true })
+  }
 })

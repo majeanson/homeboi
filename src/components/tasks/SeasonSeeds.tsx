@@ -6,7 +6,6 @@ import { BOARD_KEY, HOME_PROJECTS_KEY, MONTH_KEY, TASKS_KEY } from '../../lib/qu
 import { recurLabel } from '../../lib/recurLabel'
 import { useCreateManyWithUndo } from '../../lib/undoCreate'
 import { SEASON_SEEDS, hideSeed, nextAnchorSec, seasonPacks, useHiddenSeeds, type SeasonPack, type SeasonSeed } from '../../lib/year'
-import { Disclosure } from '../Disclosure'
 import { IconButton } from '../IconButton'
 import { InlineIcon } from '../Icon'
 import { Cluster } from '../Layout'
@@ -24,14 +23,21 @@ const KEYS = [HOME_PROJECTS_KEY, BOARD_KEY, MONTH_KEY, TASKS_KEY]
 // takes them all back. A pack is derived from SEASON_SEEDS (`seasonPacks`), never a second
 // list. A pack shows its pictures, never a number of tasks (calm). What a pack leaves
 // behind, a lone seed or one already covered, is offered on its own as before.
-export function SeasonSeeds({ tasks }: { tasks: readonly TaskItem[] }) {
+// What is still on offer: not dismissed on this device, not already covered by a task. The
+// Tâches view asks this to decide whether its « Idées de saison » button shows at all.
+export function useSeasonSeeds(tasks: readonly TaskItem[]): SeasonSeed[] {
+  const hidden = useHiddenSeeds()
+  return SEASON_SEEDS.filter((seed) => !hidden.includes(seed.id) && !tasks.some((x) => seed.match.some((k) => fold(x.title).includes(k))))
+}
+
+// The PANEL, opened by its button in the Tâches view's action row (the recipe book's
+// « Filtrer » shape). It renders the seeds it is handed, so the button and the panel agree.
+export function SeasonSeeds({ seeds, id }: { seeds: readonly SeasonSeed[]; id?: string }) {
   const t = useT()
   const o18n = useOperatorT()
   const { lang } = useLang()
   const createMany = useCreateManyWithUndo()
-  const hidden = useHiddenSeeds()
   const { data: carnetsData } = useCarnets({ live: false })
-  const seeds = SEASON_SEEDS.filter((seed) => !hidden.includes(seed.id) && !tasks.some((x) => seed.match.some((k) => fold(x.title).includes(k))))
   if (seeds.length === 0) return null
   const packs = seasonPacks(seeds)
   const inPack = new Set(packs.flatMap((p) => p.seeds.map((s) => s.id)))
@@ -54,7 +60,7 @@ export function SeasonSeeds({ tasks }: { tasks: readonly TaskItem[] }) {
   const packName = (p: SeasonPack) => o18n.home.packName(p.carnetKind, p.season)
 
   return (
-    <Disclosure label={o18n.home.seedsTitle} className="season-seeds">
+    <div className="season-seeds tasks-view__panel" id={id}>
       <p className="operator__hint mono">{o18n.home.seedsHint}</p>
       {packs.map((p) => (
         <Cluster key={p.id} className="season-seeds__pack">
@@ -76,6 +82,6 @@ export function SeasonSeeds({ tasks }: { tasks: readonly TaskItem[] }) {
           <IconButton icon="x-bold" label={o18n.home.seedDismiss} size="sm" onClick={() => hideSeed(seed.id)} />
         </Cluster>
       ))}
-    </Disclosure>
+    </div>
   )
 }

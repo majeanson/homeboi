@@ -656,6 +656,13 @@
   color: color-mix(in srgb, var(--accent) 50%, var(--ink));
   background: var(--surface);
 }
+/* The EXPANDER shape (Chip `expanded`): lit like a chosen chip while its panel is open, so
+   the pill says which panel sits under its row (the recipe book's « Filtrer » cue). */
+.chip[aria-expanded='true'] {
+  border-color: var(--accent);
+  color: color-mix(in srgb, var(--accent) 50%, var(--ink));
+  background: var(--surface);
+}
 .kitchen__staples-actions {
   display: flex;
   gap: 0.5rem;

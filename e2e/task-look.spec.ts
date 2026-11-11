@@ -126,7 +126,7 @@ test('a starter pack adds a season of one subject in one tap, and one « Annuler
     }
     return route.fallback()
   })
-  await page.locator('.season-seeds').getByRole('button', { name: 'Idées de saison' }).click()
+  await page.locator('.tasks-view__actions').getByRole('button', { name: 'Idées de saison' }).click()
   const pack = page.locator('.season-seeds__pack').filter({ hasText: 'La maison' }).first()
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/packs.png`, fullPage: true })
   await expect(pack).not.toContainText(/[0-9]/)

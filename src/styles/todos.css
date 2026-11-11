@@ -14,6 +14,30 @@
 .tasks-view__focus {
   margin: 0;
 }
+/* The one row of buttons under the quick add (« Trouver quoi faire », « Idées de saison »,
+   « Tâche détaillée »), and the panel one of them opens under it: the recipe book's
+   « Filtrer » panel, same frame. */
+.tasks-view__actions {
+  margin-top: -0.35rem;
+}
+/* The text face, not the chip's mono: the recipe book's « Filtrer » pill reads this way,
+   and at 390px the mono labels took one line EACH (four lines of buttons above the tasks). */
+.tasks-view__actions .chip {
+  font-family: inherit;
+}
+.tasks-view__note {
+  color: var(--ink-soft);
+}
+.tasks-view__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: -0.35rem 0 0;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
 .tasks-view__group {
   display: flex;
   flex-direction: column;
