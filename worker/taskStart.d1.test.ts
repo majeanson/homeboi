@@ -35,7 +35,11 @@ const START = MIGRATIONS.filter((m) => m.name.startsWith('0152_'))
 const now = Math.floor(Date.now() / 1000)
 const today = localDayStart(new Date(now * 1000))
 const D = (n: number) => addLocalDays(today, n)
-const UTC_TODAY = Math.floor(Date.UTC(new Date(now * 1000).getUTCFullYear(), new Date(now * 1000).getUTCMonth(), new Date(now * 1000).getUTCDate()) / 1000)
+// What the old form wrote for « today »: UTC midnight of the household's LOCAL date (dateToAnchorSec
+// of the date the picker showed). Not the UTC date: in a Toronto evening that is already tomorrow,
+// and the drill's fixtures shifted a day after 19:00 (red on CI at 01:29 UTC, 2026-11-11).
+// Toronto's local midnight falls on the same UTC calendar date, so its UTC parts are the local date.
+const UTC_TODAY = Math.floor(Date.UTC(new Date(today * 1000).getUTCFullYear(), new Date(today * 1000).getUTCMonth(), new Date(today * 1000).getUTCDate()) / 1000)
 const WEEKLY = JSON.stringify({ freq: 'weekly', interval: 1, weekdays: [] })
 
 type Row = Record<string, unknown>
