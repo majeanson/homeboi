@@ -49,8 +49,13 @@ export function TaskRow({
   const owedSince = item.overdueSince
   const owed = owedSince != null
   const ticked = isTicked(item)
+  // « En attente depuis … » is a DETAIL on the board's card (the owner, 2026-11-10): the owed row
+  // already leads the card, and its peek says since when (adapters `buildChore`, `overdue`). A
+  // list spanning days (`dated`) still says it on the row, where the date is the point.
   const when = owed
-    ? t.board.lateSince(formatDayMaybeYear(owedSince, lang))
+    ? dated
+      ? t.board.lateSince(formatDayMaybeYear(owedSince, lang))
+      : undefined
     : dated && item.day != null && !item.dueToday
       ? formatDayMaybeYear(item.day, lang)
       : undefined

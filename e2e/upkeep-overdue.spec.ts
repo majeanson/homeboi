@@ -19,13 +19,15 @@ const OPEN = { route: '/board', wait: '.board-grid .wg-slot', api: { overrides: 
 const row = (page: Page) =>
   page.locator('.wg-slot[data-card="todos"] .act').filter({ hasText: 'Nettoyer les gouttières' })
 
-test('an overdue entretien waits on « Tâches » with its calm owed-since line', async ({ page, app }) => {
+test('an overdue entretien waits on « Tâches », and its peek says since when', async ({ page, app }) => {
   await app.boot(OPEN)
   const r = row(page)
   await r.scrollIntoViewIfNeeded()
   await expect(r).toBeVisible()
-  // The sub-line is a muted date, never a count or « X jours de retard ».
-  await expect(r.locator('.when')).toContainText('En attente depuis')
+  // The row stays quiet; the peek carries the muted date, never a count or « X jours de retard ».
+  await expect(r.locator('.when')).toHaveCount(0)
+  await r.locator('.act__hit').click()
+  await expect(page.locator('.detail-sheet__when')).toContainText('En attente depuis')
 })
 
 test('checking it hides the row behind the undo toast, and undo brings it back', async ({ page, app }) => {

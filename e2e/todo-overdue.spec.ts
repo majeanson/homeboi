@@ -30,7 +30,7 @@ async function board(page: Page, todos: unknown, tasks = BOARD.tasks) {
 
 const card = (page: Page) => page.locator('.wg-slot[data-card="todos"]')
 
-test('a loose to-do left on a past day leads the card with its calm owed-since line', async ({ page }) => {
+test('a loose to-do left on a past day leads the card, and its peek says since when', async ({ page }) => {
   const late = boardTask({
     source: 'task',
     id: 'td-late',
@@ -43,14 +43,18 @@ test('a loose to-do left on a past day leads the card with its calm owed-since l
 
   const row = card(page).locator('.act', { hasText: 'Rapporter les livres' })
   await expect(row).toBeVisible()
-  await expect(row.locator('.when')).toContainText('En attente depuis')
+  // The row stays quiet (the owner, 2026-11-10): « En attente depuis » is a detail of the peek.
+  await expect(row.locator('.when')).toHaveCount(0)
 
   // It leads the card: owed rows are painted above the day's.
   const today_ = card(page).locator('.act', { hasText: 'Clés + téléphone' })
   expect((await boxOf(row)).y).toBeLessThan((await boxOf(today_)).y)
 
-  // Calm: a date and nothing more: no « 3 jours de retard ».
-  await expect(row.locator('.when')).not.toContainText(/jours?/)
+  // Tap it: the peek says since when. Calm: a date and nothing more, no « 3 jours de retard ».
+  await row.locator('.act__hit').click()
+  const when = page.locator('.detail-sheet__when')
+  await expect(when).toContainText('En attente depuis')
+  await expect(when).not.toContainText(/jours?/)
 })
 
 test('a stale checklist instance is never presented as owed', async ({ page }) => {
