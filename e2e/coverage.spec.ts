@@ -134,7 +134,7 @@ for (const theme of ['day', 'night'] as Theme[]) {
 
 // The two tall operator forms — full-screen SCENES, not in-sheet forms (tall forms strand
 // inputs under the mobile keyboard in a height-capped sheet). The one task form's scene is
-// the door of every « Modifier » and of the Tâches view's « Nouvelle tâche »; the board ＋
+// the door of every « Modifier » and of the Tâches view's « Tâche détaillée »; the board ＋
 // opens the same form in the sheet, folded to one field.
 test('scene-add-chore', async ({ page, app }) => {
   await app.boot({ ...at('/chore/new'), wait: '.scene .task-form' })
