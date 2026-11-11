@@ -14,7 +14,7 @@ const today = todayLocalDay()
 const quick = somedayTask({ source: 'task', id: 'e-quick', title: 'Appeler la garderie', effort: 1 })
 const big = somedayTask({ source: 'home', id: 'e-big', title: 'Refaire la clôture', kind: 'plan', effort: 5 })
 const unsaid = somedayTask({ source: 'task', id: 'e-unsaid', title: 'Trier les photos' })
-const soon = boardTask({ source: 'task', id: 'e-soon', title: 'Nettoyer les gouttières', effort: 3, day: addLocalDays(today, 3), dueToday: false, onBoard: false })
+const soon = boardTask({ source: 'task', id: 'e-soon', title: 'Nettoyer les gouttières', effort: 3, icon: '🍂', who_id: 'm3', team: ['m1', 'm3'], day: addLocalDays(today, 3), dueToday: false, onBoard: false })
 const frame = {
   ...(ROUTES.tasks as object),
   tasks: [quick, big, unsaid, soon],
@@ -68,7 +68,14 @@ test('a row is its title and its tick; the peek says the day and the effort', as
   await row.locator('.act__hit').click()
   const sheet = page.locator('.sheet.detail-sheet.show')
   await expect(sheet.locator('.detail-sheet__when')).not.toBeEmpty()
-  await expect(sheet).toContainText('Effort : Moyen')
+  // The effort as its dots, the team as faces (no photo here, so each keeps its name).
+  await expect(sheet.locator('.detail-sheet__facts').getByRole('img', { name: 'Effort : Moyen' })).toBeVisible()
+  await expect(sheet.locator('.detail-sheet__face')).toHaveCount(2)
+  await expect(sheet.locator('.detail-sheet__facename')).toHaveText(['Maman', 'Léa'])
+  // The peek wears the row's own picture and tint (lookOf), not a generic chore glyph.
+  await expect(sheet.locator('.detail-sheet__emoji')).toHaveText('🍂')
+  const spine = await sheet.locator('.detail-sheet__spine').evaluate((el) => getComputedStyle(el).backgroundColor)
+  expect(spine).toBe('rgb(136, 163, 111)') // Léa's #88A36F: the row's tint is whose it is
   // A stale --vvh (iOS leaves one behind) no longer caps the peek to a sliver.
   await page.evaluate(() => document.documentElement.style.setProperty('--vvh', '120px'))
   expect((await boxOf(sheet)).height).toBeGreaterThan(160)

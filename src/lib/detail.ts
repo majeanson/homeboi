@@ -41,6 +41,20 @@ export type DetailBlock =
   // Tappable chips that ADD/REMOVE membership inline (e.g. a person's named groups in
   // Le cercle). Each option carries its current on/off; onToggle persists the change.
   | { kind: 'togglechips'; label?: string; options: { id: string; label: string; on: boolean }[]; onToggle: (id: string, on: boolean) => void }
+  // A few short labelled facts on one soft card (a task's team, its effort): label on the
+  // left, the value on the right, one line each. A value is EITHER faces, the effort's
+  // dots (1–5, drawn by EffortMark), or a short text.
+  | { kind: 'facts'; rows: DetailFact[] }
+
+// One `facts` row. `faces`: a face per person, and a name beside it only when the person
+// has no photo (an initial alone says too little — the owner, 2026-11-11: « faces, no
+// need for names, if there are faces »); every name stays the face's accessible name.
+export interface DetailFact {
+  label: string
+  text?: string | undefined
+  faces?: DetailWho[] | undefined
+  effort?: number | undefined
+}
 
 // One line of a `list` block that is a DOOR, not just text. The day peek's meals
 // wear the same small 📖 / 🍲 pair MealRows already gives a planned meal row, so a

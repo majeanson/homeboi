@@ -10,7 +10,6 @@ import { isGuest } from '../../lib/device'
 import { todayLocalDay } from '../../lib/localDay'
 import { useProfile } from '../../lib/profile'
 import { lookOf, subjectOf, type SubjectLookup, type SubjectRef } from '../../lib/subjects'
-import { useEffortName } from '../EffortDots'
 import { isTicked, type TaskItem } from '../../lib/tasks'
 import { TODO_TITLE_MAX } from '../../lib/todos'
 import { type Member } from '../board/types'
@@ -20,8 +19,8 @@ type Actions = ReturnType<typeof useTaskActions>
 
 // ONE ROW FOR A TASK, on the board, in the Tâches view and on a subject's page: the shared Act,
 // with one-tap done. The look leads (the task's own icon, else its subject's: `lookOf`) and
-// the title tint says who (the compact-rows rule: no spine, no avatar, no furniture). A rotation is the one thing that keeps a line
-// under the title, because whose turn it is cannot be read from a colour alone.
+// the title tint says who (the compact-rows rule: no spine, no avatar, no furniture). Nothing
+// else rides the row: whose turn, the day and the effort are in the peek (2026-11-11).
 export function TaskRow({
   item,
   members,
@@ -38,13 +37,13 @@ export function TaskRow({
   const ro = isGuest()
   const detail = useEntityDetail()
   const { memberId } = useProfile()
-  const effortName = useEffortName()
 
   const subject = subjectOf(item.subject, lookup)
   const look = lookOf(item, subject)
   const who = members.find((m) => m.id === item.who_id)
   const owed = item.overdueSince != null
   const ticked = isTicked(item)
+  const tint = who?.colour ?? look.colour ?? null
   // The row is the title, its look and its tick — nothing else (the owner, 2026-11-11: « too
   // many infos in the pill »). The day, « En attente depuis », whose turn and the effort are
   // all in the peek a tap away (adapters `buildChore`); the group heading already says when
@@ -59,7 +58,8 @@ export function TaskRow({
         {
           id: item.id,
           title: item.title,
-          color: look.colour,
+          // The row's own tint and picture, so the peek is the same task at a glance.
+          color: tint,
           at: item.overdueSince ?? item.day ?? todayLocalDay(),
           who: who?.display_name ?? null,
           who_id: item.who_id,
@@ -70,7 +70,8 @@ export function TaskRow({
         {
           upcoming: !item.dueToday && !owed && item.day != null,
           overdue: owed,
-          effort: effortName(item.effort),
+          effort: item.effort,
+          look: { emoji: look.emoji, icon: look.icon },
           onDone: checkable && !ticked ? () => actions.tick(item) : undefined,
           // « Reporter » where the row's table has a snooze (lib/taskSave), never by naming it.
           onPostponeWeek: checkable && !ticked && actions.canPostpone(item) ? () => actions.postpone(item, 'week') : undefined,
@@ -89,7 +90,7 @@ export function TaskRow({
         title={item.title}
         emoji={look.emoji ?? undefined}
         icon={look.icon ?? undefined}
-        color={who?.colour ?? look.colour ?? undefined}
+        color={tint ?? undefined}
         mine={!!memberId && item.who_id === memberId}
         soon={item.soon}
         done={ticked}

@@ -504,7 +504,7 @@ export function MonthView({
               past={c.done}
               onOpen={() =>
                 detail.open(
-                  buildChore({ id: c.taskId, title: c.title, color: c.color, at: c.day, who, who_id: c.who_id, recurring: c.recurring }, detailCtx, {
+                  buildChore({ id: c.taskId, title: c.title, color: c.color ?? colorOf(members, c.who_id) ?? null, at: c.day, who, who_id: c.who_id, recurring: c.recurring }, detailCtx, {
                     editHref: ro ? undefined : removals.taskEditHref(c),
                     onDelete: ro ? undefined : () => removals.removeTask(c),
                   }),

@@ -8,8 +8,9 @@ import { Sheet } from '../Sheet'
 import { ActionMenu } from '../ActionMenu'
 import { Avatar } from '../Avatar'
 import { AvatarStack } from '../AvatarStack'
+import { EffortMark } from '../EffortDots'
 import { ZoomableImg } from '../ZoomableImg'
-import type { DetailAction, DetailBlock, DetailModel } from '../../lib/detail'
+import type { DetailAction, DetailBlock, DetailFact, DetailModel } from '../../lib/detail'
 
 // The generalized "entity detail" peek: one calm bottom sheet that renders any
 // DetailModel (lib/detail) — a quick picture, a date, the relevant text, the face
@@ -220,7 +221,38 @@ function Block({ block, onAction }: { block: DetailBlock; onAction: (a: DetailAc
       return <audio className="detail-sheet__audio" controls src={block.src} />
     case 'togglechips':
       return <ToggleChips block={block} />
+    case 'facts':
+      return <Facts rows={block.rows} />
   }
+}
+
+// A task's few facts on one soft card: « Équipe » as faces, « Effort » as its dots.
+function Facts({ rows }: { rows: DetailFact[] }) {
+  return (
+    <dl className="detail-sheet__facts">
+      {rows.map((r) => (
+        <div key={r.label} className="detail-sheet__fact">
+          <dt className="detail-sheet__factlabel mono">{r.label}</dt>
+          <dd className="detail-sheet__factvalue">
+            {r.faces && (
+              <span className="detail-sheet__faces">
+                {r.faces.map((w, i) => (
+                  <span key={i} className="detail-sheet__face" title={w.name ?? undefined}>
+                    {/* The face carries the name for a screen reader; the visible name
+                        only when there is no photo to recognise. */}
+                    <Avatar kind={w.avatarKind} photo={w.avatarRef} colour={w.colour} name={w.name} size={30} />
+                    {!(w.avatarKind === 'photo' && w.avatarRef) && <span className="detail-sheet__facename">{w.name}</span>}
+                  </span>
+                ))}
+              </span>
+            )}
+            {r.effort != null && <EffortMark value={r.effort} />}
+            {r.text}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  )
 }
 
 // Tappable membership chips (a person's named groups): toggles optimistically and

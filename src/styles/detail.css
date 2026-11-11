@@ -192,12 +192,70 @@
   width: 100%;
 }
 
+/* A task's few facts (EntityDetailSheet `Facts`): one soft card, a row per fact, the
+   label quiet on the left, the value on the right — the team's faces, the effort's dots.
+   Full width under the head, so it lines up with the action buttons below it. */
+.detail-sheet__facts {
+  margin: 0;
+  padding: 4px 14px;
+  border-radius: var(--radius-md);
+  background: var(--paper-deep);
+  border: 1px solid var(--line);
+}
+.detail-sheet__fact {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+}
+.detail-sheet__fact + .detail-sheet__fact {
+  border-top: 1px solid var(--line);
+}
+.detail-sheet__factlabel {
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.detail-sheet__factvalue {
+  margin: 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  color: var(--ink);
+}
+.detail-sheet__faces {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+.detail-sheet__face {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.detail-sheet__facename {
+  font-size: 0.9rem;
+}
+/* The effort's dots, a size up from a row's: the peek is read closer, and it is the value. */
+.detail-sheet__factvalue .effort-mark {
+  gap: 4px;
+}
+.detail-sheet__factvalue .effort-mark .effort-dots__dot {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-width: 1.5px;
+}
+
 /* Footer actions — wrap to fit a phone, each grows to share the row. */
 .detail-sheet__actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 2px;
+  margin-top: 18px;
 }
 .detail-sheet__actions .btn {
   flex: 1 1 auto;

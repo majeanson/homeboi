@@ -20,9 +20,9 @@ import { type NextRdv } from '../../lib/nextRdv'
 import { SLOT_ICON_NAME, isMealSlot } from '../../lib/mealSlots'
 import type { Lang } from '../../i18n'
 import type { IconName } from '../Icon'
-import { nameOf, colorOf, type Dict, type Member, type EventRow, type ChoreInstance } from '../board/types'
+import { colorOf, type Dict, type Member, type EventRow, type ChoreInstance } from '../board/types'
 import { eventMembers } from '../../lib/eventPeople'
-import type { DetailAction, DetailBlock, DetailModel, DetailWho } from '../../lib/detail'
+import type { DetailAction, DetailBlock, DetailFact, DetailModel, DetailWho } from '../../lib/detail'
 import { formatMoneyExact } from '../../lib/money'
 import type { Transfer as TransferModel, TransferPlan as TransferPlanModel } from '../../lib/transfers'
 import type { Member as CercleMember } from '../../lib/cercle'
@@ -350,15 +350,22 @@ export function buildChore(
     onDelete?: (() => void) | undefined
     // « Sur quoi ? »: the door to what this task is about, resolved by subjectOf().
     subject?: { label: string; to: string; icon: IconName } | undefined
-    // The effort's WORD (useEffortName, null = never said): the row no longer shows the
-    // dots (the owner, 2026-11-11), so the peek says it.
-    effort?: string | null | undefined
+    // The effort (1–5, null = never said): the row no longer shows its dots (the owner,
+    // 2026-11-11), so the peek does.
+    effort?: number | null | undefined
+    // The row's own look (lookOf: the task's icon or emoji, else its subject's), so the peek
+    // wears the same picture as the row it opened from; c.color is the row's tint.
+    look?: { emoji?: string | null | undefined; icon?: IconName | null | undefined } | undefined
   },
 ): DetailModel {
   const { t, lang, members } = ctx
-  const team = (c.team ?? []).map((id) => nameOf(members, id)).filter((n): n is string => !!n)
-  const blocks: DetailBlock[] = team.length > 1 ? [{ kind: 'chips', label: t.detail.team, chips: team }] : []
-  if (opts?.effort) blocks.push({ kind: 'text', text: t.effort.mark(opts.effort) })
+  // The few facts, one soft card: the team as FACES (more than one person: a single one is
+  // already the head's « Tour de »), the effort as its dots.
+  const team = (c.team ?? []).map((id) => whoOf(members, id)).filter((w): w is DetailWho => !!w)
+  const facts: DetailFact[] = []
+  if (team.length > 1) facts.push({ label: t.detail.team, faces: team })
+  if (opts?.effort != null) facts.push({ label: t.effort.label, effort: opts.effort })
+  const blocks: DetailBlock[] = facts.length ? [{ kind: 'facts', rows: facts }] : []
   const actions: DetailAction[] = opts?.onDone
     ? [{ key: 'done', label: t.detail.markDone, icon: 'check-bold' as IconName, primary: true, run: opts.onDone }]
     : []
@@ -381,7 +388,8 @@ export function buildChore(
   return {
     kind: opts?.todo ? 'todo' : 'chore',
     title: c.title,
-    icon: opts?.todo ? 'check-bold' : CATS.chore.icon,
+    emoji: opts?.look?.emoji ?? undefined,
+    icon: opts?.look?.icon ?? (opts?.todo ? 'check-bold' : CATS.chore.icon),
     accent: c.color ?? CATS.chore.color,
     // Overdue entretien: the calm « owed since » line (c.at carries the missed date).
     when: opts?.overdue ? t.board.lateSince(formatDayMaybeYear(c.at, lang)) : opts?.upcoming ? formatDayMaybeYear(c.at, lang) : undefined,
