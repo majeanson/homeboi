@@ -237,7 +237,9 @@ test('one line for the board controls, one for the lenses and their ＋ to the a
   await oneLine('.board-controls')
   const date = page.locator('.board-controls__date')
   await expect(date).not.toContainText(/\b(lun|mar|mer|jeu|ven|sam|dim)\./)
-  // Short, and whole: never « 11 n… », even beside the wider « Qui ? » (no face picked).
+  // Short, and whole: never « 11 n… », even beside the wider « Qui ? » (no face picked) and
+  // at the widest hour (two digits: a 9 h morning run passed while 10 h clipped, 2026-11-11).
+  await page.locator('.board-controls__clock').evaluate((el) => (el.textContent = '22 h 58'))
   expect(await date.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
   await expect(page.getByRole('radiogroup', { name: 'Regarder par' }).getByRole('radio', { name: 'Sujet' })).toBeVisible()
   await expect(page.locator('.tasks-view__lens .segmented__label')).toHaveCount(0)

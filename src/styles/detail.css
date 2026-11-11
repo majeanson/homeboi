@@ -196,7 +196,8 @@
    label quiet on the left, the value on the right — the team's faces, the effort's dots.
    Full width under the head, so it lines up with the action buttons below it. */
 .detail-sheet__facts {
-  margin: 0;
+  /* Its own room under the head: a bare `margin: 0` here had erased the body's sibling gap. */
+  margin: 18px 0 0;
   padding: 4px 14px;
   border-radius: var(--radius-md);
   background: var(--paper-deep);

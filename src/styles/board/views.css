@@ -31,7 +31,7 @@
   /* kit.css loads last: out-rank its 36px glyph so the date keeps its room. */
   .board-controls .segmented--icons .segmented__opt,
   .board-controls .segmented--icons .segmented__opt.is-on {
-    width: 30px;
+    width: 28px;
   }
   .board-controls__clock,
   .board-controls .profile-chip,
