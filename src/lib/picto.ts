@@ -162,8 +162,12 @@ function keyRe(k: string): RegExp {
 // not about cleaning. Ambiguous keys are spelled so they cannot misfire (« piles », never
 // « pile » as in « à 8 h pile »; « tires », never « tire » as in tire d'érable).
 const TASK_MAP: [string, string[]][] = [
-  ['🍂', ['gouttière', 'gouttiere', 'gutter', 'feuilles', 'leaves', 'râteau', 'rateau']],
-  ['🗑️', ['poubelle', 'ordure', 'vidange', 'recyclage', 'compost', 'bac', 'trash', 'garbage', 'recycling']],
+  // Before 🗑️: « vidange d'huile » is the car, « vidanges » alone is the garbage (Québec).
+  ['🛢️', ["vidange d'huile", 'vidange d’huile', "changement d'huile", 'changement d’huile', 'oil change']],
+  ['🚗', ['voiture', 'auto', 'char', 'car wash', 'lave-auto']],
+  ['🍂', ['gouttière', 'gouttiere', 'gutter', 'feuilles', 'leaves', 'râteau', 'rateau', 'compost', 'composte', 'bac brun']],
+  ['♻️', ['recyclage', 'récupération', 'recuperation', 'bac bleu', 'consigne', 'canettes', 'recycling']],
+  ['🗑️', ['poubelle', 'ordure', 'vidange', 'bac', 'trash', 'garbage']],
   ['❄️', ['déneiger', 'deneiger', 'pelleter', 'shovel']],
   ['🌿', ['gazon', 'pelouse', 'tondre', 'lawn', 'mow']],
   ['🔥', ['fournaise', 'furnace', 'foyer', 'fireplace', 'cheminée', 'cheminee']],
@@ -175,6 +179,35 @@ const TASK_MAP: [string, string[]][] = [
   ['🐶', ['chien', 'dog']],
   ['🐱', ['chat', 'litière', 'litiere', 'cat']],
   ['💉', ['vaccin', 'vaccine', 'vétérinaire', 'veterinaire', 'vet']],
+  // Housework and the house (2026-11-10). Specific rooms and objects before the generic verbs.
+  ['🚽', ['toilette', 'salle de bain', 'salle de bains', 'bathroom']],
+  ['🛁', ['bain', 'baignoire', 'douche', 'bathtub', 'shower']],
+  ['🛏️', ['draps', 'literie', 'faire les lits', 'sheets']],
+  ['🧺', ['lavage', 'lessive', 'linge', 'sécheuse', 'secheuse', 'laveuse', 'laundry']],
+  ['🧊', ['congélateur', 'congelateur', 'frigo', 'réfrigérateur', 'refrigerateur', 'dégivrer', 'degivrer', 'freezer', 'fridge']],
+  ['🍳', ['four', 'cuisinière', 'cuisiniere', 'oven', 'stove']],
+  ['🪣', ['plancher', 'planchers', 'vadrouille', 'moppe', 'mop', 'floor']],
+  ['🪴', ['plante', 'plantes', 'arroser', 'houseplant']],
+  ['🌱', ['jardin', 'potager', 'désherber', 'desherber', 'semis', 'garden', 'weed']],
+  ['🪵', ['bois de chauffage', 'bûches', 'buches', 'clôture', 'cloture', 'terrasse', 'patio', 'fence', 'deck', 'firewood']],
+  ['🏊', ['piscine', 'spa', 'pool']],
+  ['🌬️', ['thermopompe', 'climatiseur', 'air climatisé', 'air climatise', 'échangeur', 'echangeur', 'heat pump']],
+  ['🌀', ['filtre', 'filtres', 'ventilateur', 'hotte', 'filter']],
+  ['🧯', ['détecteur', 'detecteur', 'fumée', 'fumee', 'extincteur', 'smoke']],
+  ['💡', ['ampoule', 'ampoules', 'lumière', 'lumiere', 'bulb']],
+  ['🖌️', ['peinture', 'peindre', 'repeindre', 'paint']],
+  ['🔧', ['réparer', 'reparer', 'réparation', 'reparation', 'plombier', 'plomberie', 'fix', 'repair']],
+  ['📬', ['courrier', 'boîte aux lettres', 'boite aux lettres', 'mail']],
+  ['🧾', ['facture', 'factures', 'impôts', 'impots', 'taxes', 'payer', 'bill', 'bills']],
+  ['📞', ['appeler', 'téléphoner', 'telephoner', 'call']],
+  ['💅', ['ongles', 'manucure', 'nails']],
+  ['✂️', ['coupe de cheveux', 'cheveux', 'haircut']],
+  ['📷', ['photos', 'photo']],
+  ['🎄', ['sapin', 'noël', 'noel', 'christmas']],
+  ['🎃', ['halloween', 'citrouille', 'pumpkin']],
+  // LAST: the generic verbs, so any object named in the title wins (« nettoyer le filtre de la
+  // thermopompe » is the heat pump, not the broom).
+  ['🧹', ['ménage', 'menage', 'balayer', 'aspirateur', 'épousseter', 'epousseter', 'nettoyer', 'vacuum', 'sweep', 'dust', 'clean']],
 ]
 
 export function taskPictoFor(label: string, fallback = '•'): string {
