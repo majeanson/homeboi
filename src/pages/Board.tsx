@@ -1562,11 +1562,15 @@ export function Board() {
       {/* Board controls: today's date + who's at this phone + which of the five
           views, all on ONE row under the avatar. On a phone the date drops its weekday
           and the views are glyphs only, so the row never takes a second line (the
-          owner, 2026-11-11: every line of height goes to the content). */}
+          owner, 2026-11-11: every line of height goes to the content). The views keep
+          their full size; the date is the one that gives way, hidden whole when the
+          row is too narrow for it (views.css). */}
       <div className="board-controls">
         <BoardClock />
-        <span className="board-controls__date mono ellipsis">
-          {(surface === 'mobile' ? formatDayShort : formatDay)(Math.floor(Date.now() / 1000), lang)}
+        <span className="board-controls__date mono">
+          <span className="board-controls__date-text">
+            {(surface === 'mobile' ? formatDayShort : formatDay)(Math.floor(Date.now() / 1000), lang)}
+          </span>
         </span>
         {surface === 'mobile' && (
           <button

@@ -229,7 +229,7 @@ test('one line for the board controls, one for the lenses and their ＋ to the a
     const ys = new Set<number>()
     for (let i = 0; i < (await kids.count()); i++) {
       const b = await boxOf(kids.nth(i))
-      expect(b.x + b.width).toBeLessThanOrEqual(390)
+      expect(b.x + b.width).toBeLessThanOrEqual(page.viewportSize()!.width)
       ys.add(Math.round(b.y + b.height / 2))
     }
     expect(Math.max(...ys) - Math.min(...ys)).toBeLessThan(6)
@@ -237,10 +237,32 @@ test('one line for the board controls, one for the lenses and their ＋ to the a
   await oneLine('.board-controls')
   const date = page.locator('.board-controls__date')
   await expect(date).not.toContainText(/\b(lun|mar|mer|jeu|ven|sam|dim)\./)
-  // Short, and whole: never « 11 n… », even beside the wider « Qui ? » (no face picked) and
-  // at the widest hour (two digits: a 9 h morning run passed while 10 h clipped, 2026-11-11).
+  // The views are the priority (the owner, 2026-11-11): full 36px glyphs at every phone
+  // width, and the date takes what is left — shown WHOLE or hidden whole, never « 11 n… ».
+  // At the widest hour (two digits: a 9 h morning run passed while 10 h clipped).
   await page.locator('.board-controls__clock').evaluate((el) => (el.textContent = '22 h 58'))
-  expect(await date.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+  const shown: boolean[] = []
+  // 480 is still the phone row (≤560px); at 390 beside « Qui ? » and a two-digit hour the
+  // date does NOT fit (21px left of the 60 it needs) — hidden, which is the rule working.
+  for (const width of [480, 390, 360, 320]) {
+    await page.setViewportSize({ width, height: 844 })
+    await oneLine('.board-controls')
+    for (const w of await page.locator('.board-controls .segmented__opt').evaluateAll((els) => els.map((e) => e.getBoundingClientRect().width)))
+      expect(w, `a view glyph at ${width}px`).toBeGreaterThanOrEqual(36)
+    const fit = await date.evaluate((slot) => {
+      const s = slot.getBoundingClientRect()
+      const t = slot.firstElementChild!.getBoundingClientRect()
+      const inside = t.left >= s.left - 0.5 && t.right <= s.right + 0.5 && t.top >= s.top - 0.5 && t.bottom <= s.bottom + 0.5
+      const gone = t.top >= s.bottom - 0.5
+      return inside ? 'whole' : gone ? 'hidden' : 'clipped'
+    })
+    expect(fit, `the date at ${width}px`).not.toBe('clipped')
+    shown.push(fit === 'whole')
+  }
+  // The rule must have something to decide: shown where it fits, hidden where it cannot.
+  expect(shown[0]).toBe(true)
+  expect(shown[3]).toBe(false)
+  await page.setViewportSize({ width: 390, height: 844 })
   await expect(page.getByRole('radiogroup', { name: 'Regarder par' }).getByRole('radio', { name: 'Sujet' })).toBeVisible()
   await expect(page.locator('.tasks-view__lens .segmented__label')).toHaveCount(0)
   await oneLine('.tasks-view__lens')
