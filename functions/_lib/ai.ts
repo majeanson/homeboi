@@ -693,6 +693,19 @@ function dataUrl(bytes: Uint8Array): string {
 // spread approaches 2000, which was the cap — and a cut transcript is a recipe missing
 // its last steps, not « still a transcript ». Only what is used is charged.
 const TRANSCRIPT_TOKENS = 4000
+// A photo with NO TEXT on it (the finished dish, shot beside the recipe page) used to
+// come back as a recipe: the prompt left the reader no way to say « nothing here » —
+// it forbids any remark about what is missing — so Mistral wrote one. Prod, 2026-11-11:
+// a cookbook page + a photo of the bowl → page 2 transcribed as « Ramen au porc
+// braisé », 12 ingredients and 7 steps that exist nowhere, and the structuring kept
+// them over the real page. Through the REST API the old prompt invented on 3 of 5
+// resizes of that bowl (« Phở Ga » once); with this answer allowed, 10 of 10 replied
+// it, on both stronger readers, and the real page still read whole. The reader's own
+// phrasing of the same fact counts too: a text-free page is an ANSWER, not a miss.
+export const NO_TEXT = { fr: 'AUCUN TEXTE', en: 'NO TEXT' } as const
+const NO_TEXT_REPLY =
+  /^(?:aucun texte|no text|(?:l['’]image|cette image|la photo|the image|this image|the photo) (?:ne contient (?:pas de|aucun) texte|contains no\b|has no\b|does not contain any\b)[^\n]*)\.?$/i
+export const isNoTextReply = (text: string): boolean => NO_TEXT_REPLY.test(text.trim())
 // The ONE transcription prompt — exported so a reader evaluated outside the Worker
 // (scripts/recipe-photos.mjs read-claude) is measured on exactly what production sends.
 export function transcriptionPrompt(lang: Lang): string {
@@ -702,12 +715,14 @@ export function transcriptionPrompt(lang: Lang): string {
 - If the page is set in COLUMNS, transcribe each column separately, top to bottom, one column at a time. Never join text from two different columns onto one line. A step that continues at the top of the next column without a number is the SAME step: finish its line, never number it.
 - Ignore text cut off by the edge of the photo (half words, the margin of another page) — never complete it.
 - Copy every number, fraction and unit exactly. Do not translate, rephrase, summarize, correct spelling, or convert units.
+- Transcribe only what is WRITTEN in the image. If it contains no text (a photo of a dish, of food, of a room), reply exactly ${NO_TEXT.en} — never describe the image and never write a recipe that is not printed in it.
 - Output ONLY the transcription: no JSON, no markdown, no quotation marks around lines, no comments, nothing about what is missing or unreadable.`
     : `Transcris TOUT le texte de cette image exactement comme il est imprimé, en texte brut.
 - Un élément par ligne, dans l'ordre de lecture : un titre, un ingrédient ou une étape numérotée tient sur UNE ligne, même s'il est imprimé sur plusieurs. Garde les titres et les puces tels qu'ils apparaissent.
 - Si la page est en COLONNES, transcris chaque colonne séparément, de haut en bas, une colonne à la fois. Ne joins jamais le texte de deux colonnes différentes sur une même ligne. Une étape qui continue en haut de la colonne suivante sans numéro est la MÊME étape : termine sa ligne, ne la numérote jamais.
 - Ignore le texte coupé par le bord de la photo (des demi-mots, la marge d'une autre page) — ne le complète jamais.
 - Recopie chaque nombre, fraction et unité exactement. Ne traduis pas, ne reformule pas, ne résume pas, ne corrige pas l'orthographe, ne convertis pas les unités.
+- Transcris seulement ce qui est ÉCRIT dans l'image. Si elle ne contient aucun texte (la photo d'un plat, d'un aliment, d'une pièce), réponds exactement ${NO_TEXT.fr} — ne décris jamais l'image et n'écris jamais une recette qui n'y est pas imprimée.
 - Réponds UNIQUEMENT avec la transcription : pas de JSON, pas de markdown, pas de guillemets autour des lignes, aucun commentaire, rien sur ce qui manque ou serait illisible.`
 }
 // A model that was TRIED and did not answer — and why, in one word the cook can read.
@@ -758,6 +773,12 @@ export async function transcribeImage(
   for (const model of [VISION_PRIMARY_ID, VISION_SECOND_ID]) {
     try {
       const res = (await runModel(env, model, partsInput(model, prompt, bytes, TRANSCRIPT_TOKENS))) as VisionReply
+      // A page with nothing written on it is settled HERE: handing it to the next
+      // reader only buys another chance to invent one (Llama last of all).
+      if (isNoTextReply(visionText(res))) {
+        if (report) report.visionModel = model
+        return ''
+      }
       const text = clean(visionText(res))
       if (text && !BLIND_REPLY.test(text)) {
         if (report) report.visionModel = model
@@ -781,6 +802,7 @@ export async function transcribeImage(
     })) as { response?: unknown }
     // Fences a model adds out of habit go; a leaked remark (« La recette n'indique
     // pas… ») is dropped line by line, the same net the structuring model gets.
+    if (typeof res.response === 'string' && isNoTextReply(res.response)) return ''
     const text = clean(res.response)
     if (!text) {
       tried(VISION_MODEL, 'empty')

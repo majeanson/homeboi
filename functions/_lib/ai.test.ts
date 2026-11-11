@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { type AiAttempt, answerQuestion, attemptReason, classifyCapture, decodeStrayEscapes, suggestMeals, resolveLang, extractSizes, salvageTruncatedJson, segmentRunOn, selectionLines, selectRecipeLines, toSelection, transcribeImage, VISION_MODEL_ID, VISION_PRIMARY_ID, VISION_SECOND_ID } from './ai'
+import { type AiAttempt, answerQuestion, attemptReason, classifyCapture, decodeStrayEscapes, suggestMeals, resolveLang, extractSizes, salvageTruncatedJson, segmentRunOn, selectionLines, selectRecipeLines, toSelection, transcribeImage, transcriptionPrompt, isNoTextReply, NO_TEXT, VISION_MODEL_ID, VISION_PRIMARY_ID, VISION_SECOND_ID } from './ai'
 import type { Env } from './env'
 
 // A fake Workers AI binding that returns a canned `response`, so we can test the
@@ -289,6 +289,28 @@ describe('transcribeImage — primary vision model, Llama fallback', () => {
     const report = { error: null as string | null, visionModel: null as string | null }
     expect(await transcribeImage({ DB: {}, AI: { run } } as unknown as Env, bytes, 'fr', report)).toBe('Crêpes')
     expect(report.visionModel).toBe(VISION_MODEL_ID)
+  })
+  // The photo of the finished dish beside the recipe page (prod, 2026-11-11): the reader
+  // came back with a whole invented ramen recipe for it. A text-free page is now an
+  // ANSWER — it ends the read with no text, and the next readers are never asked.
+  it('a reader that answers « no text » ends the read empty — no fallback, no invented page', async () => {
+    for (const reply of [NO_TEXT.fr, `${NO_TEXT.en}.`, "L'image ne contient pas de texte imprimé.", 'L’image ne contient aucun texte imprimé.', 'This image contains no printed text.']) {
+      const run = vi.fn(async () => ({ choices: [{ message: { content: reply } }] }))
+      const report = { error: null as string | null, visionModel: null as string | null, attempts: [] as AiAttempt[] }
+      expect(await transcribeImage({ DB: {}, AI: { run } } as unknown as Env, bytes, 'fr', report), reply).toBe('')
+      expect(run).toHaveBeenCalledTimes(1)
+      expect(report.attempts).toEqual([])
+      expect(report.visionModel).toBe(VISION_PRIMARY_ID)
+    }
+  })
+  it('the prompt offers the « no text » answer, in each language', () => {
+    expect(transcriptionPrompt('fr')).toContain(`réponds exactement ${NO_TEXT.fr}`)
+    expect(transcriptionPrompt('en')).toContain(`reply exactly ${NO_TEXT.en}`)
+  })
+  it('a page that merely MENTIONS « aucun texte » is still a transcript', () => {
+    expect(isNoTextReply('Aucun texte\nBiscuits')).toBe(false)
+    expect(isNoTextReply('Crêpes sans texte de présentation')).toBe(false)
+    expect(isNoTextReply('Note : aucun texte ne remplace la pratique.')).toBe(false)
   })
   // A fallback reader is SAID, never silent (Marc, 2026-10-30): every model tried before
   // the one that answered, with the reason — the day's budget first among them.
