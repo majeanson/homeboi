@@ -7,12 +7,11 @@ import { Icon } from '../Icon'
 import { useEntityDetail } from '../detail/DetailProvider'
 import { buildChore } from '../detail/adapters'
 import { isGuest } from '../../lib/device'
-import { formatDayMaybeYear } from '../../lib/format'
 import { todayLocalDay } from '../../lib/localDay'
 import { useProfile } from '../../lib/profile'
 import { lookOf, subjectOf, type SubjectLookup, type SubjectRef } from '../../lib/subjects'
-import { EffortMark } from '../EffortDots'
-import { isTicked, rotates, type TaskItem } from '../../lib/tasks'
+import { useEffortName } from '../EffortDots'
+import { isTicked, type TaskItem } from '../../lib/tasks'
 import { TODO_TITLE_MAX } from '../../lib/todos'
 import { type Member } from '../board/types'
 import { type useTaskActions } from './useTaskActions'
@@ -28,40 +27,31 @@ export function TaskRow({
   members,
   lookup,
   actions,
-  dated = false,
 }: {
   item: TaskItem
   members: readonly Member[]
   lookup: SubjectLookup
   actions: Actions
-  /** Say the date on the row: a list spanning days needs it, the board's today does not. */
-  dated?: boolean | undefined
 }) {
   const t = useT()
   const { lang } = useLang()
   const ro = isGuest()
   const detail = useEntityDetail()
   const { memberId } = useProfile()
+  const effortName = useEffortName()
 
   const subject = subjectOf(item.subject, lookup)
   const look = lookOf(item, subject)
   const who = members.find((m) => m.id === item.who_id)
-  const owedSince = item.overdueSince
-  const owed = owedSince != null
+  const owed = item.overdueSince != null
   const ticked = isTicked(item)
-  // « En attente depuis … » is a DETAIL on the board's card (the owner, 2026-11-10): the owed row
-  // already leads the card, and its peek says since when (adapters `buildChore`, `overdue`). A
-  // list spanning days (`dated`) still says it on the row, where the date is the point.
-  const when = owed
-    ? dated
-      ? t.board.lateSince(formatDayMaybeYear(owedSince, lang))
-      : undefined
-    : dated && item.day != null && !item.dueToday
-      ? formatDayMaybeYear(item.day, lang)
-      : undefined
-  // A recurring task can only be checked when it is due: checking one early would advance the
-  // rotation for a turn that has not come. A one-off can be done whenever it gets done.
-  const checkable = !ro && (!item.recurring || item.dueToday || owed)
+  // The row is the title, its look and its tick — nothing else (the owner, 2026-11-11: « too
+  // many infos in the pill »). The day, « En attente depuis », whose turn and the effort are
+  // all in the peek a tap away (adapters `buildChore`); the group heading already says when
+  // (« En attente », « Cette semaine »…), and the title's tint says who.
+  // Every task can be ticked, any day (same date): done early is done. A recurring one moves
+  // to its next turn and its next cycle counts from today (the server's tick, unchanged).
+  const checkable = !ro
 
   const peek = () =>
     detail.open(
@@ -80,6 +70,7 @@ export function TaskRow({
         {
           upcoming: !item.dueToday && !owed && item.day != null,
           overdue: owed,
+          effort: effortName(item.effort),
           onDone: checkable && !ticked ? () => actions.tick(item) : undefined,
           // « Reporter » where the row's table has a snooze (lib/taskSave), never by naming it.
           onPostponeWeek: checkable && !ticked && actions.canPostpone(item) ? () => actions.postpone(item, 'week') : undefined,
@@ -96,22 +87,17 @@ export function TaskRow({
       <Act
         cat="chore"
         title={item.title}
-        when={when}
         emoji={look.emoji ?? undefined}
         icon={look.icon ?? undefined}
         color={who?.colour ?? look.colour ?? undefined}
-        who={rotates(item) ? who?.display_name : undefined}
         mine={!!memberId && item.who_id === memberId}
         soon={item.soon}
-        // The effort, small and read-only, only when it was said (EffortMark renders nothing
-        // otherwise, so the badge slot stays empty rather than holding a blank span).
-        badge={item.effort != null ? <EffortMark value={item.effort} /> : undefined}
         done={ticked}
         onCheck={checkable ? () => actions.tick(item) : undefined}
         // Every task opens the same peek, and its « Modifier » the one form (phase 4).
         onOpen={peek}
         // The tint IS the "who" on screen, and colour says nothing to a screen reader.
-        srWho={who && !rotates(item) ? who.display_name : undefined}
+        srWho={who?.display_name}
       />
     </div>
   )
@@ -123,14 +109,12 @@ export function TaskList({
   members,
   lookup,
   actions,
-  dated,
   emptyText,
 }: {
   items: readonly TaskItem[]
   members: readonly Member[]
   lookup: SubjectLookup
   actions: Actions
-  dated?: boolean | undefined
   emptyText?: string | null | undefined
 }) {
   const t = useT()
@@ -141,7 +125,7 @@ export function TaskList({
     <>
       <div className="task-rows">
         {items.map((item) => (
-          <TaskRow key={item.key} item={item} members={members} lookup={lookup} actions={actions} dated={dated} />
+          <TaskRow key={item.key} item={item} members={members} lookup={lookup} actions={actions} />
         ))}
       </div>
       {!ro && ticked.length > 0 && (

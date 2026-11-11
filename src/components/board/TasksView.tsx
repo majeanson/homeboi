@@ -14,6 +14,7 @@ import { loadStateOf } from '../Fallback'
 import { EmptyState } from '../EmptyState'
 import { Cluster } from '../Layout'
 import { InlineIcon } from '../Icon'
+import { IconButton } from '../IconButton'
 import { Chip } from '../Chip'
 import { Segmented } from '../Segmented'
 import { ChoreLedger } from '../ChoreLedger'
@@ -78,6 +79,13 @@ export function TasksView({ members, todayDay }: { members: Member[]; todayDay: 
     setPanel((cur) => (cur === p ? null : p))
     requestAnimationFrame(() => addRef.current?.scrollIntoView({ block: 'nearest' }))
   }
+  // The lens row's ＋: down to the add field, ready to type (the tap asked to type, so the
+  // field takes focus — the autofocus rule's « a ＋ » case).
+  const goAdd = () => {
+    const field = addRef.current?.querySelector<HTMLInputElement>('input')
+    addRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    field?.focus({ preventScroll: true })
+  }
   const wait = loadStateOf(q, { shape: 'row', count: 6 })
   if (wait) return wait
 
@@ -104,16 +112,22 @@ export function TasksView({ members, todayDay }: { members: Member[]; todayDay: 
 
   return (
     <div className="tasks-view">
-      <Segmented<Lens>
-        ariaLabel={t.tasks.lensLabel}
-        value={lens}
-        onChange={setLens}
-        options={[
-          { key: 'horizon', label: t.tasks.lens.horizon, icon: 'calendar-blank-bold' },
-          { key: 'sujet', label: t.tasks.lens.sujet, icon: 'book-open-bold' },
-          { key: 'qui', label: t.tasks.lens.qui, icon: 'users-three-bold' },
-        ]}
-      />
+      {/* ONE line (the owner, 2026-11-11): the three lenses as glyphs (each word stays its
+          accessible name and hover title), and a small ＋ that goes to the add field under
+          the list, so a long list never hides the way to add. */}
+      <Cluster className="tasks-view__lens">
+        <Segmented<Lens>
+          ariaLabel={t.tasks.lensLabel}
+          value={lens}
+          onChange={setLens}
+          options={[
+            { key: 'horizon', ariaLabel: t.tasks.lens.horizon, icon: 'calendar-blank-bold' },
+            { key: 'sujet', ariaLabel: t.tasks.lens.sujet, icon: 'book-open-bold' },
+            { key: 'qui', ariaLabel: t.tasks.lens.qui, icon: 'users-three-bold' },
+          ]}
+        />
+        {!ro && <IconButton icon="plus-bold" label={t.todos.addPlaceholder} variant="solid" size="sm" className="tasks-view__goadd" onClick={goAdd} />}
+      </Cluster>
       {focus && (
         <p className="tasks-view__focus mono">
           <Link to="/board?view=taches&par=sujet">
@@ -127,7 +141,7 @@ export function TasksView({ members, todayDay }: { members: Member[]; todayDay: 
         groups.map((g) => (
           <section key={g.key} className="tasks-view__group">
             <SecLabel label={g.label} />
-            <TaskList items={g.tasks} members={members} lookup={lookup} actions={actions} dated />
+            <TaskList items={g.tasks} members={members} lookup={lookup} actions={actions} />
           </section>
         ))
       )}

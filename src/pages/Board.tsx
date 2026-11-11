@@ -46,7 +46,7 @@ import { useWrite } from '../lib/write'
 import { newestFetchMs } from '../lib/online'
 import { live } from '../lib/query'
 import { weatherIcon, weatherTint, type Weather, type DayOutlook, type HourOutlook } from '../lib/weather'
-import { formatDay, formatDayMaybeYear, formatTime, weekdayShort } from '../lib/format'
+import { formatDay, formatDayMaybeYear, formatDayShort, formatTime, weekdayShort } from '../lib/format'
 import { todayLocalDay, addLocalDays, daysUntilLocal } from '../lib/localDay'
 import { useNow, isPastSec, isNowSec } from '../lib/itemLife'
 import { SLOT_ICON_NAME, heroCardLabel, slotLabel as slotLabelFor, type MealSlot } from '../lib/mealSlots'
@@ -1559,12 +1559,15 @@ export function Board() {
         searchPick={(run) => help.pick('search', run)}
       />
 
-      {/* Board controls: today's date + who's at this phone + which of the four
-          views, all on one row under the avatar (the date rides beside the view
-          selector rather than on its own line under the greeting). */}
+      {/* Board controls: today's date + who's at this phone + which of the five
+          views, all on ONE row under the avatar. On a phone the date drops its weekday
+          and the views are glyphs only, so the row never takes a second line (the
+          owner, 2026-11-11: every line of height goes to the content). */}
       <div className="board-controls">
         <BoardClock />
-        <span className="board-controls__date mono">{formatDay(Math.floor(Date.now() / 1000), lang)}</span>
+        <span className="board-controls__date mono ellipsis">
+          {(surface === 'mobile' ? formatDayShort : formatDay)(Math.floor(Date.now() / 1000), lang)}
+        </span>
         {surface === 'mobile' && (
           <button
             type="button"

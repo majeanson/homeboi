@@ -350,11 +350,15 @@ export function buildChore(
     onDelete?: (() => void) | undefined
     // « Sur quoi ? »: the door to what this task is about, resolved by subjectOf().
     subject?: { label: string; to: string; icon: IconName } | undefined
+    // The effort's WORD (useEffortName, null = never said): the row no longer shows the
+    // dots (the owner, 2026-11-11), so the peek says it.
+    effort?: string | null | undefined
   },
 ): DetailModel {
   const { t, lang, members } = ctx
   const team = (c.team ?? []).map((id) => nameOf(members, id)).filter((n): n is string => !!n)
   const blocks: DetailBlock[] = team.length > 1 ? [{ kind: 'chips', label: t.detail.team, chips: team }] : []
+  if (opts?.effort) blocks.push({ kind: 'text', text: t.effort.mark(opts.effort) })
   const actions: DetailAction[] = opts?.onDone
     ? [{ key: 'done', label: t.detail.markDone, icon: 'check-bold' as IconName, primary: true, run: opts.onDone }]
     : []

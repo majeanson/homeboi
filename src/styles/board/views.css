@@ -10,12 +10,37 @@
   justify-content: flex-end;
   margin: -8px 0 14px;
 }
-/* Small phones: this row often wraps to two lines (clock+date, then the view
-   toggle), so its bottom margin costs more here — shrink it to keep the board
-   content above the fold. Pairs with the header tightening in today.css. */
+/* Small phones: ONE line (the owner, 2026-11-11 — it used to wrap to two: clock+date,
+   then the view toggle). The date is the short form there (Board.tsx) and the views are
+   glyphs (Segmented `collapse="icons"`); if a very narrow phone is still short, the
+   DATE gives way (ellipsis), never the controls. Pairs with today.css's header. */
 @media (max-width: 560px) {
   .board-controls {
+    flex-wrap: nowrap;
+    gap: 4px;
     margin-bottom: 8px;
+  }
+  /* kit.css loads last, hence the doubled class to out-rank its 3px. */
+  .board-controls .segmented.segmented--icons {
+    padding: 2px;
+  }
+  .board-controls__date {
+    font-size: 0.8rem;
+    margin-left: 4px;
+  }
+  /* kit.css loads last: out-rank its 36px glyph so the date keeps its room. */
+  .board-controls .segmented--icons .segmented__opt,
+  .board-controls .segmented--icons .segmented__opt.is-on {
+    width: 30px;
+  }
+  .board-controls__clock,
+  .board-controls .profile-chip,
+  .board-controls .segmented {
+    flex: none;
+  }
+  /* It carries `.ellipsis` (Board.tsx); min-width lets it shrink in the row. */
+  .board-controls__date {
+    min-width: 0;
   }
 }
 /* Today's date rides in the controls row (beside the view selector), not on its

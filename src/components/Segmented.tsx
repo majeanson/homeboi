@@ -11,7 +11,10 @@ import { InlineIcon, type IconName } from './Icon'
 //     options={[{ key: 'a', label: 'Un', icon: 'sun-bold' }, { key: 'b', icon: 'moon-stars-bold', ariaLabel: 'Deux' }]} />
 //
 // · an icon-only option MUST pass `ariaLabel` (it is also the hover title);
-// · `collapse`: on a phone only the selected option keeps its word (the board view);
+// · `collapse`: on a phone only the selected option keeps its word; `'icons'`: on a phone
+//   every option is its glyph, the selected one too (the board view, whose row shares ONE
+//   line with the clock, the date and the face — the owner, 2026-11-11). The pill's fill
+//   says which; each word stays the option's accessible name and hover title;
 // · `pick` / `armed`: the help-mode wrapper, same contract as SubTabs;
 // · it wraps rather than overflows — a segmented control never runs off the edge.
 // `MemberSwitcher` stays its own thing: a face picker, not a mode.
@@ -40,7 +43,7 @@ export function Segmented<K extends string>({
   onChange: (key: K) => void
   ariaLabel: string
   size?: 'sm'
-  collapse?: boolean
+  collapse?: boolean | 'icons'
   className?: string
   tour?: string
   pick?: ((key: K, run: () => void) => () => void) | undefined
@@ -71,6 +74,7 @@ export function Segmented<K extends string>({
         'segmented' +
         (size === 'sm' ? ' segmented--sm' : '') +
         (collapse ? ' segmented--collapse' : '') +
+        (collapse === 'icons' ? ' segmented--icons' : '') +
         (armed ? ' help-armed' : '') +
         (className ? ' ' + className : '')
       }

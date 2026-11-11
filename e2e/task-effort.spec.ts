@@ -55,14 +55,26 @@ test('the task form: effort is one tap away, a dot sends, the same dot clears', 
   expect((await post).postDataJSON()).toMatchObject({ title: 'Laver les fenêtres', effort: 2 })
 })
 
-test('a row shows its effort small, and only when it was said', async ({ page, app }) => {
+// The owner, 2026-11-11: « too many infos in the pill ». A row is its look, its title and its
+// tick; the day, the effort and whose turn are in the peek. Every task ticks, any day.
+test('a row is its title and its tick; the peek says the day and the effort', async ({ page, app }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
   await app.boot({ route: '/board?view=taches', wait: '.tasks-view', api: { overrides: { tasks: frame } } })
-  await expect(shown(page, 'e-quick').getByRole('img', { name: 'Effort : Tout simple' })).toBeVisible()
-  await expect(shown(page, 'e-big').getByRole('img', { name: 'Effort : Gros effort' })).toBeVisible()
-  await expect(shown(page, 'e-unsaid').locator('.effort-mark')).toHaveCount(0)
-  // Quiet ink, not Act's marigold badge pill.
-  const bg = await shown(page, 'e-big').locator('.act__badge').evaluate((el) => getComputedStyle(el).backgroundColor)
-  expect(bg).toMatch(/rgba\(0, 0, 0, 0\)|transparent/)
+  const row = shown(page, 'e-soon')
+  await expect(row).toBeVisible()
+  await expect(row.locator('.effort-mark, .when, .act__badge')).toHaveCount(0)
+  // Three days out, and still tickable: done early is done.
+  await expect(row.locator('.act__checkbtn')).toHaveCount(1)
+  await row.locator('.act__hit').click()
+  const sheet = page.locator('.sheet.detail-sheet.show')
+  await expect(sheet.locator('.detail-sheet__when')).not.toBeEmpty()
+  await expect(sheet).toContainText('Effort : Moyen')
+  // A stale --vvh (iOS leaves one behind) no longer caps the peek to a sliver.
+  await page.evaluate(() => document.documentElement.style.setProperty('--vvh', '120px'))
+  expect((await boxOf(sheet)).height).toBeGreaterThan(160)
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/peek-390.png` })
+  await page.keyboard.press('Escape')
+  await expect(page.locator('.sheet.detail-sheet.show')).toHaveCount(0)
   if (SHOTS) {
     await page.setViewportSize({ width: 390, height: 844 })
     await page.screenshot({ path: `${SHOTS}/effort-rows-390.png` })
@@ -197,4 +209,33 @@ test('the tasks first, then the quick add and one row of buttons; the ledger onl
     await page.evaluate(() => document.documentElement.setAttribute('data-theme', 'night'))
     await page.screenshot({ path: `${SHOTS}/actions-desktop-dark.png`, fullPage: true })
   }
+})
+
+// The owner, 2026-11-11: « maximise content and height on mobile ». The board's controls
+// (clock, short date, face, the five views as glyphs) take ONE line, and so do the three
+// lenses with their small ＋, which goes to the add field ready to type.
+test('one line for the board controls, one for the lenses and their ＋ to the add field', async ({ page, app }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await app.boot({ route: '/board?view=taches', wait: '.tasks-view', api: { overrides: { tasks: frame } } })
+  const oneLine = async (sel: string) => {
+    const kids = page.locator(`${sel} > *`)
+    const ys = new Set<number>()
+    for (let i = 0; i < (await kids.count()); i++) {
+      const b = await boxOf(kids.nth(i))
+      expect(b.x + b.width).toBeLessThanOrEqual(390)
+      ys.add(Math.round(b.y + b.height / 2))
+    }
+    expect(Math.max(...ys) - Math.min(...ys)).toBeLessThan(6)
+  }
+  await oneLine('.board-controls')
+  const date = page.locator('.board-controls__date')
+  await expect(date).not.toContainText(/\b(lun|mar|mer|jeu|ven|sam|dim)\./)
+  // Short, and whole: never « 11 n… », even beside the wider « Qui ? » (no face picked).
+  expect(await date.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+  await expect(page.getByRole('radiogroup', { name: 'Regarder par' }).getByRole('radio', { name: 'Sujet' })).toBeVisible()
+  await expect(page.locator('.tasks-view__lens .segmented__label')).toHaveCount(0)
+  await oneLine('.tasks-view__lens')
+  if (SHOTS) await page.screenshot({ path: `${SHOTS}/one-line-390.png` })
+  await page.locator('.tasks-view__goadd').click()
+  await expect(page.locator('.tasks-view__add').getByRole('combobox').first()).toBeFocused()
 })

@@ -89,6 +89,19 @@ describe('keyboard fit conventions', () => {
     expect(shown?.body).toMatch(/bottom\s*:\s*var\(--kb-fixed/)
   })
 
+  // 2026-11-11, from Marc's phone: a task's peek opened as a sliver, its facts and buttons
+  // scrolled out of sight inside it. The sheet capped itself by --vvh at ALL times, and a
+  // stale --vvh (iOS shrinks the visual viewport for a screenshot editor, the app switcher)
+  // outlives its keyboard. The scenes and the dialogs bind --vvh only under .kb-open.
+  it('the bottom sheet caps its height by --vvh only while the keyboard is up', () => {
+    const capture = readFileSync(join(stylesDir, 'sheets', 'capture.css'), 'utf8')
+    const all = rules(capture)
+    const base = all.find((r) => r.selector.trim() === '.sheet')
+    expect(base?.body).toMatch(/max-height\s*:\s*calc\(100dvh/)
+    expect(base?.body).not.toMatch(/:\s*calc\(var\(--vvh/)
+    expect(all.find((r) => r.selector.trim() === '.kb-open .sheet')?.body).toMatch(/max-height\s*:\s*calc\(var\(--vvh/)
+  })
+
   it('core.css publishes the .vv-fit / .vv-slack opt-in utilities', () => {
     const core = readFileSync(join(stylesDir, 'core.css'), 'utf8')
     const fit = rules(core).find((r) => r.selector.includes('.vv-fit'))

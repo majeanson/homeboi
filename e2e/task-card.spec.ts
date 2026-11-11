@@ -45,11 +45,17 @@ test('a one-off ticks in place, stays, and a second tap unticks it', async ({ pa
   expect(((await undo).postDataJSON() as { done: boolean }).done).toBe(false)
 })
 
-test('a recurring task moves on behind the undo toast, and whose turn it is reads on the row', async ({ page, app }) => {
+// Whose turn it is lives in the peek (the owner, 2026-11-11: the row is the title and its
+// tick); the title's tint still says who at a glance.
+test('a recurring task moves on behind the undo toast; whose turn it is reads in the peek', async ({ page, app }) => {
   await app.boot(OPEN)
   const row = card(page).locator('[data-item="c-week"]')
   await row.scrollIntoViewIfNeeded()
-  await expect(row.locator('.who')).toBeVisible()
+  await expect(row.locator('.who')).toHaveCount(0)
+  await row.locator('.act__hit').click()
+  await expect(page.locator('.sheet.detail-sheet.show .detail-sheet__who')).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(page.locator('.sheet.detail-sheet.show')).toHaveCount(0)
   await row.locator('.act__checkbtn').click()
   await expect(row).toHaveCount(0)
   await page.locator('.undo-toast__btn').first().click()

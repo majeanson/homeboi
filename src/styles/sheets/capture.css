@@ -535,8 +535,14 @@ body.is-recording .add-fab {
   z-index: var(--z-sheet);
   max-width: 40rem;
   margin: 0 auto;
+  /* The FULL dynamic viewport, not --vvh: a stale --vvh (iOS collapses the visual
+     viewport for a screenshot's markup editor, the app switcher, a keyboard dismissed
+     without a blur) capped a peek at a sliver, its facts and buttons scrolled out of
+     sight inside it (the owner, 2026-11-11: « only a part of it, all detail truncated »).
+     The scenes and .kit-modal learned this first; --vvh binds only under .kb-open,
+     below. */
   max-height: 88vh;
-  max-height: calc(var(--vvh, 100dvh) - 24px);
+  max-height: calc(100dvh - 24px);
   overflow-y: auto;
   /* A bottom sheet is a VERTICAL surface — never let it pan sideways. Without an
      explicit value the cross axis computes to `auto` (CSS: `visible` beside a
@@ -575,6 +581,10 @@ body.is-recording .add-fab {
   transition:
     transform var(--dur-slow) var(--ease-out),
     visibility 0s;
+}
+/* Keyboard up: the sheet fits the VISIBLE band (it is lifted by --kb-fixed above). */
+.kb-open .sheet {
+  max-height: calc(var(--vvh, 100dvh) - 24px);
 }
 /* E-40: the bottom sheet's viewport-height slide is significant motion — appear
    in place when the device asks for reduced motion. */

@@ -1426,6 +1426,12 @@
 .hub[data-surface='mobile'] .board-controls__clock {
   font-size: var(--text-md);
 }
+/* A phone's row is ONE line (views.css): the clock steps down to the date's size. */
+@media (max-width: 560px) {
+  .hub[data-surface='mobile'] .board-controls__clock {
+    font-size: 0.8rem;
+  }
+}
 
 /* ── « Dehors aujourd'hui » (SkySheet) ─────────────────────────────────────────
    Tap the weather/wonder hero → this bottom sheet: the day's weather told calmly

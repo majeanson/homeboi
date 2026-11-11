@@ -696,6 +696,16 @@
   .segmented--collapse .segmented__opt.is-on .segmented__label {
     display: inline;
   }
+  /* `collapse="icons"`: the selected option too — every option a 36px glyph, the pill's
+     fill says which (the board's view row, one line beside the clock and the face). */
+  .segmented--icons .segmented__opt,
+  .segmented--icons .segmented__opt.is-on {
+    width: 36px;
+    padding: 0;
+  }
+  .segmented--icons .segmented__opt.is-on .segmented__label {
+    display: none;
+  }
 }
 /* EFFORT (components/EffortDots.tsx, 0149): five dots on the Segmented radiogroup. Not a
    track of pills: a rating, so every dot up to the pick is filled (`.is-filled` on the dot,

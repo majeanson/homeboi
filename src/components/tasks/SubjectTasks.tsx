@@ -42,7 +42,7 @@ export function SubjectTasks({ subject, hide }: { subject: SubjectRef; hide?: ((
       <SecLabel label={t.board.todos} icon="check-bold" action={<SectionAdd open={add.open} onToggle={add.toggle} label={t.todos.addPlaceholder} />} />
       {wait ?? (
         <>
-          <TaskList items={rows} members={members} lookup={{ ...q.data?.subjects, members }} actions={actions} dated emptyText={t.tasks.subjectEmpty} />
+          <TaskList items={rows} members={members} lookup={{ ...q.data?.subjects, members }} actions={actions} emptyText={t.tasks.subjectEmpty} />
           {add.open && <TaskQuickAdd actions={actions} subject={subject} autoFocus={add.autoFocus} onAdded={add.close} />}
           {history.length > 0 && (
             <Disclosure label={t.tasks.history} className="subject-tasks__history">

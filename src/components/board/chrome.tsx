@@ -40,7 +40,7 @@ export function BoardViewToggle({
   return (
     <Segmented
       className="boardview"
-      collapse
+      collapse="icons"
       ariaLabel={t.boardView.label}
       tour="board-views"
       armed={armed}
