@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { env } from 'cloudflare:workers'
-import { household, okJson, type Session } from '../functions/test/d1'
+import { anon, household, okJson, type Session } from '../functions/test/d1'
 
 // « VOYAGE PARTAGÉ » against a real D1 and R2: one trip that lives in NEITHER household, so
 // the only thing authorizing a read or a write is a live membership row. Everything here
@@ -52,6 +52,9 @@ const notes = async (s: Session, id: string) => (await okJson<{ notes: Note[] }>
 const addNote = async (s: Session, tripId: string, body: Record<string, unknown>) => (await okJson<{ id: string }>(s.fetch('/api/shared-trip-notes', { method: 'POST', body: { tripId, ...body } }))).id
 const bags = async (s: Session, id: string) => (await okJson<{ items: Item[] }>(s.fetch(`/api/shared-trip-packing?tripId=${id}`))).items
 const pack = async (s: Session, tripId: string, text: string, bag_label?: string) => (await okJson<{ id: string }>(s.fetch('/api/shared-trip-packing', { method: 'POST', body: { tripId, text, bag_label } }))).id
+const claim = async (s: Session, body: Record<string, unknown>) => (await okJson<{ id: string }>(s.fetch('/api/shared-trip-claims', { method: 'POST', body }))).id
+const claims = async (s: Session, id: string) =>
+  (await okJson<{ claims: { id: string; kind: string; text: string; household_id: string | null; household_label: string | null }[] }>(s.fetch(`/api/shared-trip-claims?tripId=${id}`))).claims
 const upload = async (s: Session, path: string, type = 'image/png') => (await okJson<{ key: string; kind: string }>(s.fetch(path, { method: 'POST', raw: new Uint8Array([1, 2]), headers: { 'content-type': type } })))
 const stored = async (key: string) => (await env.PHOTOS!.head(key)) !== null
 
@@ -110,6 +113,88 @@ describe('rejoindre', () => {
     const t = await token(a, id)
     for (let i = 0; i < 5; i++) await okJson(join(await household(`st-cap-${i}`, undefined, { empty: true }), t))
     expect((await join(await household('st-cap-late', undefined, { empty: true }), t)).status).toBe(403)
+  })
+
+  it('a stranger with no account sees the whole trip read-only, under aliases — never a household id', async () => {
+    const { a, b, id } = await pair('st-peek')
+    await addNote(a, id, { text: 'Site 42, lac Taureau', category: 'hotel' })
+    await pack(b, id, 'Tente', 'Zoé')
+    await claim(a, { tripId: id, kind: 'gear', text: 'Glacière', claim: true })
+    const t = await token(a, id)
+
+    const res = await anon(`/api/shared-trip-join?j=${encodeURIComponent(t)}`)
+    expect(res.status, 'no session, no cookie: still a 200').toBe(200)
+    const raw = await res.text()
+    expect(raw).not.toContain(a.householdId)
+    expect(raw).not.toContain(b.householdId)
+    const peek = JSON.parse(raw) as {
+      members: number
+      households: { id: string; role: string }[]
+      notes: { text: string; author_household_id: string }[]
+      packing: { household_id: string; bag_label: string }[]
+      claims: { text: string; household_id: string }[]
+    }
+    expect(peek.members).toBe(2)
+    expect(peek.households.map((h) => h.id)).toEqual(['h0', 'h1'])
+    expect(peek.households[0]!.role, 'the owner leads').toBe('owner')
+    expect(peek.notes[0]).toMatchObject({ text: 'Site 42, lac Taureau', author_household_id: 'h0' })
+    expect(peek.packing[0]).toMatchObject({ household_id: 'h1', bag_label: 'Zoé' })
+    expect(peek.claims[0]).toMatchObject({ text: 'Glacière', household_id: 'h0' })
+
+    await okJson(a.fetch('/api/shared-trip-invite', { method: 'DELETE', body: { sharedTripId: id } }))
+    expect((await anon(`/api/shared-trip-join?j=${encodeURIComponent(t)}`)).status, 'a rotated link previews nothing').toBe(404)
+    expect((await anon('/api/shared-trip-join', { method: 'POST', body: { token: t } })).status, 'joining still needs an account').not.toBe(200)
+  })
+
+  it('the link lives until the trip is over, not two weeks', async () => {
+    const a = await household('st-ttl', undefined, { empty: true })
+    const far = Math.floor(Date.now() / 1000) + 200 * 86400
+    const id = await create(a, { startAt: far, endAt: far + 3 * 86400 })
+    const { expiresAt } = await okJson<{ expiresAt: number }>(a.fetch('/api/shared-trip-invite', { method: 'POST', body: { sharedTripId: id } }))
+    expect(expiresAt).toBeGreaterThan(far + 3 * 86400)
+  })
+})
+
+describe('qui apporte quoi, qui cuisine', () => {
+  it('any member adds gear; one household takes it; only it lets go; a taken row is not anyone’s to remove', async () => {
+    const { a, b, id } = await pair('st-gear')
+    const g = await claim(a, { tripId: id, kind: 'gear', text: ' Tente-cuisine ' })
+    expect(await claims(b, id)).toEqual([expect.objectContaining({ id: g, text: 'Tente-cuisine', kind: 'gear', household_id: null })])
+
+    await okJson(b.fetch('/api/shared-trip-claims', { method: 'PATCH', body: { id: g, claim: true } }))
+    expect((await claims(a, id))[0]).toMatchObject({ household_id: b.householdId, household_label: 'Maisonnée st-gear-b' })
+
+    expect((await a.fetch('/api/shared-trip-claims', { method: 'PATCH', body: { id: g, claim: true } })).status, 'cannot take someone else’s').toBe(403)
+    expect((await a.fetch('/api/shared-trip-claims', { method: 'PATCH', body: { id: g, claim: false } })).status, 'cannot drop someone else’s').toBe(403)
+    expect((await a.fetch('/api/shared-trip-claims', { method: 'DELETE', body: { id: g } })).status, 'cannot remove a taken row').toBe(403)
+
+    await okJson(a.fetch('/api/shared-trip-claims', { method: 'PATCH', body: { id: g, text: 'Abri-cuisine' } }))
+    await okJson(b.fetch('/api/shared-trip-claims', { method: 'PATCH', body: { id: g, claim: false } }))
+    expect((await claims(a, id))[0]).toMatchObject({ text: 'Abri-cuisine', household_id: null, household_label: null })
+    await okJson(a.fetch('/api/shared-trip-claims', { method: 'DELETE', body: { id: g } }))
+    expect(await claims(b, id)).toEqual([])
+  })
+
+  it('one meal per day and slot; a stranger reads nothing; leaving lets go of what you took', async () => {
+    const { a, b, id } = await pair('st-meal')
+    const day = Math.floor(Date.now() / 1000) + 30 * 86400
+    await claim(b, { tripId: id, kind: 'meal', date: day, slot: 'supper', text: 'Chili', claim: true })
+    expect((await a.fetch('/api/shared-trip-claims', { method: 'POST', body: { tripId: id, kind: 'meal', date: day, slot: 'supper' } })).status).toBe(409)
+    expect((await a.fetch('/api/shared-trip-claims', { method: 'POST', body: { tripId: id, kind: 'meal', date: day, slot: 'goûter' } })).status).toBe(400)
+
+    const c = await household('st-meal-c', undefined, { empty: true })
+    expect((await c.fetch(`/api/shared-trip-claims?tripId=${id}`)).status).toBe(403)
+
+    await okJson(b.fetch('/api/shared-trip-leave', { method: 'POST', body: { sharedTripId: id } }))
+    expect((await claims(a, id))[0]).toMatchObject({ text: 'Chili', household_id: null })
+  })
+
+  it('a dissolved trip takes its claims with it', async () => {
+    const { a, id } = await pair('st-claim-gone')
+    await claim(a, { tripId: id, kind: 'gear', text: 'Réchaud' })
+    await okJson(a.fetch('/api/shared-trip', { method: 'DELETE', body: { id } }))
+    const row = await env.DB.prepare('SELECT deleted_at FROM shared_trip_claims WHERE shared_trip_id = ?').bind(id).first<{ deleted_at: number | null }>()
+    expect(row?.deleted_at).toBeGreaterThan(0)
   })
 })
 

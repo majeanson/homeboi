@@ -354,6 +354,7 @@ export const onRequestDelete = authed(async (ctx, actor) => {
     ctx.env.DB.prepare('UPDATE shared_trips SET deleted_at = ? WHERE id = ?').bind(ts, gate.trip.id),
     ctx.env.DB.prepare('UPDATE shared_trip_notes SET deleted_at = ? WHERE shared_trip_id = ? AND deleted_at IS NULL').bind(ts, gate.trip.id),
     ctx.env.DB.prepare('UPDATE shared_trip_packing SET deleted_at = ? WHERE shared_trip_id = ? AND deleted_at IS NULL').bind(ts, gate.trip.id),
+    ctx.env.DB.prepare('UPDATE shared_trip_claims SET deleted_at = ? WHERE shared_trip_id = ? AND deleted_at IS NULL').bind(ts, gate.trip.id),
     ctx.env.DB.prepare('UPDATE shared_trip_members SET revoked_at = ? WHERE shared_trip_id = ? AND revoked_at IS NULL').bind(ts, gate.trip.id),
   ])
   nudgeSharedTrip(ctx, gate.trip.id, [['shared-trips'], ['trips'], ['board'], ['month']])

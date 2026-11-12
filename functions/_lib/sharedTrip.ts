@@ -14,6 +14,21 @@ import { broadcastInvalidate } from './realtime'
 // server-side at join (shared-trip-join counts live memberships).
 export const MAX_SHARED_HOUSEHOLDS = 6
 
+// How long a fresh invite link lives. A trip is planned MONTHS ahead (camping 2027,
+// planned in a group chat the winter before) and the link sits pinned in that chat —
+// a flat 14 days left it dead by spring (Marc, 2026-11-12). So: until the day after
+// the trip ENDS, never less than the old 14 days, never more than ~13 months (a typo'd
+// year can't mint a near-permanent capability). « Réinitialiser le lien » still kills
+// every outstanding link at once — the nonce, not the expiry, is the revocation handle.
+const INVITE_MIN_TTL = 60 * 60 * 24 * 14
+const INVITE_MAX_TTL = 60 * 60 * 24 * 400
+export function sharedTripInviteTtl(trip: { start_at: number | null; end_at: number | null }, now: number): number {
+  const last = trip.end_at ?? trip.start_at
+  if (last == null) return INVITE_MIN_TTL
+  const untilAfter = last + 60 * 60 * 24 * 2 - now // the end day itself + a day of slack
+  return Math.min(INVITE_MAX_TTL, Math.max(INVITE_MIN_TTL, untilAfter))
+}
+
 export interface SharedTripRow {
   id: string
   owner_household_id: string
@@ -123,4 +138,11 @@ export function matchBagLabelToMember(
   if (!wanted) return null
   const hit = members.find((m) => m.displayName.trim().toLocaleLowerCase() === wanted)
   return hit ? hit.id : null
+}
+
+// The public invite preview (shared-trip-join GET) names households by an opaque alias
+// (`h0`, `h1`… in roster order), never a tenant id. Stable within one payload, so a note,
+// a bag and a claim by the same household all resolve to the same face. Pure.
+export function previewAliases(householdIds: string[]): Map<string, string> {
+  return new Map(householdIds.map((id, i) => [id, `h${i}`]))
 }

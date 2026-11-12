@@ -69,7 +69,10 @@ export function VoyageItinerary({ trip, notes, faces }: { trip: Trip; notes: Tri
     canDrop: (id, zone) => dayOf(id) === dayOf(zone),
     holdMs: DND_HOLD_MS,
   })
-  const canReorder = !isGuest()
+  // The public invite preview (voyageApi.readOnly) is a LOOK, never a write: no grip,
+  // no ＋, no ✏️/🗑️ — the same itinerary a member reads, minus every door.
+  const ro = !!voyageApi.readOnly
+  const canReorder = !isGuest() && !ro
 
   // Deep-link from a calendar day / day-page itinerary row: `?jour=N` (1-based
   // day-of-trip) scrolls that day's section into view, so tapping "Musée, 14h" on
@@ -130,7 +133,7 @@ export function VoyageItinerary({ trip, notes, faces }: { trip: Trip; notes: Tri
   return (
     <div className="voyage-itin" ref={rootRef}>
       {/* Whose plan — optional member scope for new entries. Maisonnée = whole trip. */}
-      {faces.length > 0 && (
+      {!ro && faces.length > 0 && (
         <MemberSwitcher
           faces={faces}
           value={who}
@@ -155,13 +158,15 @@ export function VoyageItinerary({ trip, notes, faces }: { trip: Trip; notes: Tri
                   of empty add boxes with the itinerary hiding between them (LEAN #2,
                   at its worst anywhere in the app). One day at a time now, opened
                   focused, folded away the moment something is written. */}
-              <span className="sec-label__act">
-                <SectionAdd
-                  open={addDay === d}
-                  onToggle={() => setAddDay(addDay === d ? null : d)}
-                  label={t.voyage.addDayPlan}
-                />
-              </span>
+              {!ro && (
+                <span className="sec-label__act">
+                  <SectionAdd
+                    open={addDay === d}
+                    onToggle={() => setAddDay(addDay === d ? null : d)}
+                    label={t.voyage.addDayPlan}
+                  />
+                </span>
+              )}
             </div>
             {dayNotes.map((n, j) => {
               const zone = `${d}:${j}`
@@ -183,13 +188,13 @@ export function VoyageItinerary({ trip, notes, faces }: { trip: Trip; notes: Tri
                 <TripNoteCard
                   note={n}
                   who={memberName(n.member_id)}
-                  onSave={(text) => save(n, text)}
-                  onDelete={() => del(n)}
+                  onSave={ro ? undefined : (text) => save(n, text)}
+                  onDelete={ro ? undefined : () => del(n)}
                 />
               </DragPill>
               )
             })}
-            {addDay === d && (
+            {!ro && addDay === d && (
               <TripNoteAdd
                 tripId={trip.id}
                 category="activity"

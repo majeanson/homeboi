@@ -135,6 +135,7 @@ export const HOUSEHOLD_TABLES: readonly string[] = [
   'shared_trip_members',
   'shared_trip_notes',
   'shared_trip_packing',
+  'shared_trip_claims',
   'shared_trips',
   // kitchen
   'meal_leftovers',
@@ -214,6 +215,10 @@ export const SCOPE_COLUMN: Readonly<Record<string, string>> = {
   // Notes THIS household left on any shared trip (its own or a friend's). Rows OTHER
   // households left on a sandbox-owned trip are swept by trip id below.
   shared_trip_notes: 'author_household_id',
+  // Rows THIS household added (0154); its claims on a friend's row are released by the
+  // trip-id sweep only when the trip is its own — on a friend's trip the name stays,
+  // like an author_label on a note.
+  shared_trip_claims: 'author_household_id',
 }
 export const scopeColumn = (table: string): string => SCOPE_COLUMN[table] ?? 'household_id'
 
@@ -385,7 +390,7 @@ export async function deleteHousehold(env: Env, householdId: string): Promise<vo
     ),
     // rows OTHER households left on a sandbox-owned shared trip (their FK would
     // block deleting the shared_trips row) — swept by trip id, not household.
-    ...['shared_trip_members', 'shared_trip_notes', 'shared_trip_packing'].map((table) =>
+    ...['shared_trip_members', 'shared_trip_notes', 'shared_trip_packing', 'shared_trip_claims'].map((table) =>
       P(`DELETE FROM ${table} WHERE shared_trip_id IN (SELECT id FROM shared_trips WHERE owner_household_id = ?)`).bind(
         householdId,
       ),

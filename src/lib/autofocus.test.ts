@@ -67,6 +67,7 @@ const ALLOWED: Record<string, string> = {
   'components/todos/TemplateEditor.tsx': INLINE,
   'components/voyage/PackingList.tsx': INLINE,
   'components/voyage/SharedPackingList.tsx': INLINE,
+  'components/voyage/SharedClaims.tsx': `${INLINE}: a gear row's or a meal's ✏️`,
   'components/voyage/TripNoteCard.tsx': INLINE,
   'components/voyage/VoyageItinerary.tsx': `${INLINE}: a day's ＋`,
   'pages/DayPlanPage.tsx': `${INLINE}: the day note's ✏️, and the todo SectionAdd`,

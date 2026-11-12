@@ -24,9 +24,11 @@ export function VoyageInfos({ trip, notes, faces }: { trip: Trip; notes: TripNot
   const voyageApi = useVoyageApi()
   // `cat === null` = no bucket picked → « voir toutes les notes » (every category,
   // each card showing its own glyph). Tapping the active chip again deselects it.
-  const [cat, setCat] = useState<TripCategory | null>('flight')
+  const [cat, setCat] = useState<TripCategory | null>(voyageApi.readOnly ? null : 'flight')
   const [who, setWho] = useState<string | null>(null)
   const affectedKey = voyageApi.notesKey(trip.id)
+  // The public invite preview reads; it never writes (see VoyageApi.readOnly).
+  const ro = !!voyageApi.readOnly
   const memberName = (id: string | null) => (id ? faces.find((f) => f.id === id)?.name ?? '' : '')
 
   const infoNotes = notes.filter((n) => n.date == null)
@@ -84,7 +86,7 @@ export function VoyageInfos({ trip, notes, faces }: { trip: Trip; notes: TripNot
       </ChipGroup>
 
       {/* A bucket must be picked to add into; with none picked we just show all notes. */}
-      {cat != null ? (
+      {ro ? null : cat != null ? (
         <>
           {/* Whose info — optional member scope. Maisonnée = whole trip. */}
           {faces.length > 0 && (
@@ -121,8 +123,8 @@ export function VoyageInfos({ trip, notes, faces }: { trip: Trip; notes: TripNot
               note={n}
               who={memberName(n.member_id)}
               showCategory={cat == null}
-              onSave={(text) => save(n, text)}
-              onDelete={() => del(n)}
+              onSave={ro ? undefined : (text) => save(n, text)}
+              onDelete={ro ? undefined : () => del(n)}
             />
           ))
         )}

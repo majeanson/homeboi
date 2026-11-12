@@ -1013,6 +1013,7 @@ export const ROUTES: Partial<Wire> = {
   seed: { count: 0 },
   share: { shares: [] },
   'shared-trip': { trips: [] },
+  'shared-trip-claims': { claims: [] },
   'this-week': {
     today: MMID,
     weekStart: MMID,

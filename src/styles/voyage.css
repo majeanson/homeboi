@@ -280,3 +280,48 @@
   padding: 6px 0;
   margin-bottom: 2px;
 }
+
+/* ── « Voyage partagé » → « Qui apporte quoi » / « Qui cuisine » (0154) ─────────
+   ListRows with a claim chip + ✏️/🗑️ trailing. A gear name or a menu is a SENTENCE,
+   not a label, so it wraps instead of ellipsizing; on a 390px phone the trailing
+   actions drop under the text rather than squeezing it to a word (no hand-rolled
+   basis — the row wraps on content, see « Horizontal overflow »). */
+.shared-claims__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0.4rem 0 0.6rem;
+}
+.shared-claims__row {
+  flex-wrap: wrap;
+}
+.shared-claims__row .listrow__title {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.shared-claims__row .listrow__actions {
+  gap: 0.35rem;
+}
+.shared-claims__menu {
+  font-weight: 400;
+  color: var(--ink-soft);
+}
+
+/* ── The public invite preview (SharedVoyageJoinPage) ───────────────────────── */
+.voyage-join__door {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.voyage-join__door p {
+  margin: 0;
+}
+.voyage-join__ro {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  margin: 0 0 0.5rem;
+}

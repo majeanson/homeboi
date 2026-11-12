@@ -217,6 +217,15 @@ at all (❌).
 ¹⁰ the garde-manger + pool ✏️/🗑 moved behind the ⚙ face 2026-08-26
 (`lib/surfaceMode`, guarded by `e2e/pantry-advanced.spec.ts`).
 
+### Voyage partagé (`pages/SharedVoyagePage.tsx`, `components/voyage/SharedClaims.tsx`) — 2026-11-12
+
+| Entity · action | Row | Gesture | Peek | Add path | Réglages / link | Undo | Non-touch |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Matériel commun · add / rename / remove | ✅ always-open `EditField` at the head of Bagages (the section IS the composer) · `RowActions` ✏️ / 🗑 (🗑 only on a free row or one's own — a row another household took is theirs) | — | ➖ no peek: a one-line row | — | — | delete: deferred (`useDeferredRemoval`) | ✅ |
+| Matériel commun · **je l’apporte / je le laisse** | ✅ one `Chip` on the row (selected = « C’est moi ») | — | — | — | — | ➖ the same chip is its own undo (a toggle) | ✅ |
+| Repas · **on cuisine / on laisse** · écrire le menu | ✅ one `Chip` per day × moment (an empty slot POSTs already claimed) · `RowActions` ✏️ = the menu | — | — | — | — | ➖ toggle, like the gear chip | ✅ |
+| Voyage · **regarder sans compte** (the invite link) | ✅ `/voyage/rejoindre?j=` renders the whole trip read-only (`SharedTripTabs` + `VoyageApi.readOnly`), « Créer mon compte et rejoindre » → `/signup?next=` back here | — | — | — | — | — | ✅ |
+
 ### Réglages-only actions (no in-app door — deliberate admin altitude)
 
 Board layout mirror (board▸layout, guest-allowed — device-local) · member admin

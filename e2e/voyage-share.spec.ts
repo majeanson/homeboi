@@ -95,6 +95,7 @@ async function stubShared(
     inviteUrl?: string
     joinPreview?: unknown
     joinId?: string
+    claims?: unknown[]
   } = {},
 ) {
   const trip = opts.trip ?? SHARED_TRIP
@@ -117,6 +118,9 @@ async function stubShared(
   )
   await page.route('**/api/shared-trip-packing**', (route: Route) =>
     route.fulfill(route.request().method() === 'GET' ? json({ items: packing }) : json({ ok: true })),
+  )
+  await page.route('**/api/shared-trip-claims**', (route: Route) =>
+    route.fulfill(route.request().method() === 'GET' ? json({ claims: opts.claims ?? [] }) : json({ ok: true, id: 'c-new' })),
   )
   await page.route('**/api/shared-trip-invite**', (route: Route) =>
     route.fulfill(
@@ -202,16 +206,38 @@ test('« Partager en direct » promotes a private trip: confirm → POST {fromTr
   expect(req.postDataJSON()).toMatchObject({ fromTripId: 'trip1' })
 })
 
+// What GET /api/shared-trip-join answers since 2026-11-12: the WHOLE trip, read-only,
+// households under aliases (h0, h1) — functions/api/shared-trip-join.ts.
+const JOIN_PREVIEW = {
+  title: 'Chalet en famille',
+  destination: 'Mont-Tremblant',
+  start_at: START,
+  end_at: END,
+  colour: '#88a36f',
+  media_key: null,
+  members: 2,
+  households: [
+    { id: 'h0', label: 'Maison Tremblay', colour: '#e07a5f', role: 'owner' },
+    { id: 'h1', label: 'Famille Roy', colour: '#3d85c6', role: 'member' },
+  ],
+  notes: [
+    { id: 'pn1', shared_trip_id: 'preview', category: 'activity', label: null, text: 'Feu de camp au lac', media_kind: null, media_key: null, scene_key: null, author_household_id: 'h1', author_label: 'Famille Roy', date: START, position: 0, created_at: NOW, updated_at: null },
+  ],
+  packing: [{ id: 'pp1', shared_trip_id: 'preview', household_id: 'h1', bag_label: null, text: 'Lampe frontale', packed_at: null, position: 0, created_at: NOW }],
+  claims: [
+    { id: 'pc1', shared_trip_id: 'preview', kind: 'gear', text: 'Réchaud', date: null, slot: null, household_id: 'h0', household_label: 'Maison Tremblay', author_household_id: null, position: 0, created_at: NOW, updated_at: null },
+    { id: 'pc2', shared_trip_id: 'preview', kind: 'meal', text: 'Chili', date: START, slot: 'supper', household_id: 'h1', household_label: 'Famille Roy', author_household_id: null, position: 0, created_at: NOW, updated_at: null },
+  ],
+}
+
 test('« Rejoindre » previews the invite then joins: POST {token} → the shared scene', async ({ page }) => {
-  await stubShared(page, {
-    joinId: 'st1',
-    joinPreview: { title: 'Chalet en famille', destination: 'Mont-Tremblant', start_at: START, end_at: END, members: 2 },
-  })
+  await stubShared(page, { joinId: 'st1', joinPreview: JOIN_PREVIEW })
   await page.goto('/voyage/rejoindre?j=tok')
 
-  // The preview: trip title + the household count.
-  await expect(page.getByRole('heading', { name: 'Chalet en famille' })).toBeVisible()
+  // The preview: trip title + the household count, and the trip itself below.
+  await expect(page.locator('.scene', { hasText: 'Chalet en famille' })).toBeVisible()
   await expect(page.getByText('2 maisonnées')).toBeVisible()
+  await expect(page.getByText('Feu de camp au lac')).toBeVisible()
 
   const [req] = await Promise.all([
     page.waitForRequest((r) => r.method() === 'POST' && apiPath(r) === '/api/shared-trip-join', { timeout: 20_000 }),
@@ -219,6 +245,57 @@ test('« Rejoindre » previews the invite then joins: POST {token} → the share
     page.getByRole('button', { name: 'Rejoindre le voyage' }).click(),
   ])
   expect(req.postDataJSON()).toMatchObject({ token: 'tok' })
+})
+
+test('signed out: the invite shows the whole trip read-only, and « Créer mon compte » comes back to it', async ({ page }) => {
+  // A friend with NO Babillard opens the link from a group chat (Marc, 2026-11-12). Before,
+  // the GET was operator-only and they were bounced to /login having seen nothing.
+  await mockApi(page, { signedIn: false })
+  await stubShared(page, { joinPreview: JOIN_PREVIEW })
+  await page.goto('/voyage/rejoindre?j=tok')
+
+  await expect(page.getByText('Feu de camp au lac')).toBeVisible()
+  await expect(page.getByText('Aperçu en lecture seule')).toBeVisible()
+  // No door into the trip: no day ＋, no ✏️/🗑️, no join button for a stranger.
+  await expect(page.getByRole('button', { name: 'Rejoindre le voyage' })).toHaveCount(0)
+  await expect(page.locator('.sec-label__act')).toHaveCount(0)
+
+  // « Qui cuisine » + « Qui apporte quoi » read as names, with no claim button.
+  await page.locator('.subtabs__opt', { hasText: 'Repas' }).click()
+  await expect(page.getByText('Famille Roy cuisine')).toBeVisible()
+  await page.locator('.subtabs__opt', { hasText: 'Bagages' }).click()
+  await expect(page.getByText('Maison Tremblay l’apporte')).toBeVisible()
+  await expect(page.getByText('Lampe frontale')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Je l’apporte' })).toHaveCount(0)
+
+  const back = encodeURIComponent('/voyage/rejoindre?j=tok')
+  await expect(page.getByRole('link', { name: 'Créer mon compte et rejoindre' })).toHaveAttribute('href', `/signup?next=${back}`)
+  await expect(page.getByRole('link', { name: 'J’ai déjà un compte' })).toHaveAttribute('href', `/login?next=${back}`)
+})
+
+test('« Qui apporte quoi »: a free row is one tap to claim (PATCH {claim:true})', async ({ page }) => {
+  await stubShared(page, {
+    claims: [
+      { id: 'g1', shared_trip_id: 'st1', kind: 'gear', text: 'Tente-cuisine', date: null, slot: null, household_id: null, household_label: null, author_household_id: 'h2', position: 0, created_at: NOW, updated_at: null },
+    ],
+  })
+  await page.goto('/voyage/partage/st1?vue=bagages')
+  await expect(page.getByText('Personne encore')).toBeVisible()
+  const [req] = await Promise.all([
+    page.waitForRequest((r) => r.method() === 'PATCH' && apiPath(r) === '/api/shared-trip-claims', { timeout: 20_000 }),
+    page.getByRole('button', { name: 'Je l’apporte' }).click(),
+  ])
+  expect(req.postDataJSON()).toMatchObject({ id: 'g1', claim: true })
+})
+
+test('« Qui cuisine »: an empty supper is one tap to take (POST, already claimed)', async ({ page }) => {
+  await stubShared(page)
+  await page.goto('/voyage/partage/st1?vue=repas')
+  const [req] = await Promise.all([
+    page.waitForRequest((r) => r.method() === 'POST' && apiPath(r) === '/api/shared-trip-claims', { timeout: 20_000 }),
+    page.locator('.voyage-itin__day').first().getByRole('button', { name: 'On cuisine' }).last().click(),
+  ])
+  expect(req.postDataJSON()).toMatchObject({ tripId: 'st1', kind: 'meal', slot: 'supper', claim: true, date: START })
 })
 
 test('a member leaves from the scene foot: leave confirm → keep-copy ask → POST shared-trip-leave → /board', async ({ page }) => {

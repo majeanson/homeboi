@@ -29,6 +29,9 @@ export function VoyageDocuments({ trip, notes }: { trip: Trip; notes: TripNote[]
   const [off, setOff] = useState(false) // R2 unbound (503)
   const [warmed, setWarmed] = useState(false)
   const affectedKey = voyageApi.notesKey(trip.id)
+  // The public invite preview: the documents show (Marc chose « everything, read-only »),
+  // but nothing uploads or deletes, and « Préparer pour le voyage » waits for a member.
+  const ro = !!voyageApi.readOnly
 
   const docs = notes.filter((n) => n.category === 'document' && n.media_key)
   const docKeys = docs.map((n) => n.media_key as string)
@@ -85,6 +88,7 @@ export function VoyageDocuments({ trip, notes }: { trip: Trip; notes: TripNote[]
 
   return (
     <div className="voyage-docs">
+      {!ro && (
       <div className="voyage-docs__actions">
         <button
           type="button"
@@ -108,7 +112,8 @@ export function VoyageDocuments({ trip, notes }: { trip: Trip; notes: TripNote[]
           </button>
         )}
       </div>
-      {!online && <p className="voyage-docs__hint mono">{t.voyage.uploadOnlineOnly}</p>}
+      )}
+      {!ro && !online && <p className="voyage-docs__hint mono">{t.voyage.uploadOnlineOnly}</p>}
 
       {docs.length === 0 ? (
         <EmptyState tone="calm" guide={{ card: 'voyage' }}>
@@ -119,7 +124,7 @@ export function VoyageDocuments({ trip, notes }: { trip: Trip; notes: TripNote[]
           keys={docKeys}
           variant="list"
           labelFor={docLabel}
-          onRemove={(k) => void removeDoc(k)}
+          onRemove={ro ? undefined : (k) => void removeDoc(k)}
           className="voyage-docs__strip"
         />
       )}

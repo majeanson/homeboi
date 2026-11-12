@@ -120,6 +120,8 @@ export const TRIP_PACKING_KEY = ['trip-packing']
 export const SHARED_TRIPS_KEY = ['shared-trips']
 export const SHARED_TRIP_NOTES_KEY = ['shared-trip-notes']
 export const SHARED_TRIP_PACKING_KEY = ['shared-trip-packing']
+// « Qui apporte quoi » + « Qui cuisine » (0154) — one key for both kinds.
+export const SHARED_TRIP_CLAIMS_KEY = ['shared-trip-claims']
 // « Partager » — the sender's snapshot-share ledger (/api/share → « Mes partages »).
 // Read by the generic ShareModal (to reflect a fresh mint) AND Réglages ▸ Partage
 // (the revoke list), so the key is shared — creating/revoking a share invalidates it

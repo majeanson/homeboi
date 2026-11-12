@@ -33,9 +33,16 @@ export const onRequestPost = authed(async (ctx, actor) => {
   )
     .bind(nowSec(), gate.trip.id, actor.householdId)
     .run()
+  // Let go of what this household had taken on (« je l'apporte », « on cuisine »): a
+  // household that left can't bring the stove, and its name on the row would say it does.
+  await ctx.env.DB.prepare(
+    'UPDATE shared_trip_claims SET household_id = NULL, household_label = NULL, updated_at = ? WHERE shared_trip_id = ? AND household_id = ? AND deleted_at IS NULL',
+  )
+    .bind(nowSec(), gate.trip.id, actor.householdId)
+    .run()
   // Nudge the trip room so the other members' rosters drop this household; the leaver's own
   // household room is nudged by route.ts (keysForPath('shared-trip-leave') → trips/board/month).
-  nudgeSharedTrip(ctx, gate.trip.id, [['shared-trips']])
+  nudgeSharedTrip(ctx, gate.trip.id, [['shared-trips'], ['shared-trip-claims']])
   return ok({ ok: true, id: newTripId })
 }, 'operator')
 

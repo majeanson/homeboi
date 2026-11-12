@@ -27,7 +27,7 @@ export function CarnetDocs({
   labelFor,
 }: {
   keys: string[]
-  onRemove?: (key: string) => void
+  onRemove?: ((key: string) => void) | undefined
   className?: string
   variant?: 'grid' | 'list'
   /** Optional display name per key (e.g. a trip doc's file name) — list variant only. */

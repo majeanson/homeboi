@@ -145,6 +145,7 @@ const PATH_KEYS: Record<string, string[][]> = {
   // edits don't refresh the calendar until the next poll.
   'shared-trip-notes': [['shared-trip-notes'], ['month']],
   'shared-trip-packing': [['shared-trip-packing']],
+  'shared-trip-claims': [['shared-trip-claims']],
   'shared-trip-join': [['shared-trips']],
   'shared-trip-leave': [['shared-trips'], ['trips'], ['board'], ['month']],
   // Meal plan: the kitchen week grid + the board's "ce soir"; an empty/low-ingredient

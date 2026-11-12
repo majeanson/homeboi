@@ -1,6 +1,6 @@
 import { Field } from '../components/Field'
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { TopBar } from '../components/TopBar'
 import { StatusMessage } from '../components/StatusMessage'
@@ -22,6 +22,13 @@ export function Signup() {
   const nav = useNavigate()
   const { refresh } = useAuth()
   const { surface, chosen, setSurface } = useSurface()
+  // A same-origin ?next= (a « Voyage partagé » invite the visitor came from, 2026-11-12)
+  // brings a brand-new account straight back to what it signed up FOR — the same guard
+  // Login uses: a path, never `//host` (no open redirect off-site).
+  const [params] = useSearchParams()
+  const rawNext = params.get('next')
+  const next = rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : null
+  const loginTo = next ? `/login?next=${encodeURIComponent(next)}` : '/login'
   const [householdName, setHouseholdName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -63,7 +70,7 @@ export function Signup() {
       // the home screen, on the board, once (lib/install) — an account was just made
       // on this device, which is the moment it becomes worth installing.
       requestInstallNudge()
-      nav('/board')
+      nav(next ?? '/board')
     } catch (err) {
       setError(isStatus(err, 409) ? 'exists' : isStatus(err, 403) ? 'badInvite' : isStatus(err, 429) ? 'tooMany' : 'error')
     } finally {
@@ -139,7 +146,7 @@ export function Signup() {
               {error === 'exists' && (
                 <>
                   {' '}
-                  <Link to="/login">{t.signup.gotoLogin}</Link>
+                  <Link to={loginTo}>{t.signup.gotoLogin}</Link>
                 </>
               )}
             </StatusMessage>
@@ -150,7 +157,7 @@ export function Signup() {
           {!error && <p className="auth__hint mono">{t.signup.nextStep}</p>}
         </form>
         <p className="auth__alt mono">
-          {t.signup.haveAccount} <Link to="/login">{t.signup.gotoLogin}</Link>
+          {t.signup.haveAccount} <Link to={loginTo}>{t.signup.gotoLogin}</Link>
         </p>
         {/* The filled-in demo family lives in the sandbox (the marketing page's
             « Essayer pour vrai » owns the mint), not in a new account — so someone

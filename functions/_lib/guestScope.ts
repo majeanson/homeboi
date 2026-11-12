@@ -35,6 +35,9 @@ export function guestKindAllows(kind: GuestKind, apiPath: string): boolean {
   // phone still holding a sitter/welcome guest token must be able to open one. Read-only
   // (GET); the endpoint isn't authed() at all, so this just clears the guest allowlist gate.
   if (apiPath === 'share-public') return true
+  // Same for a « Voyage partagé » invite's PUBLIC preview (the token is the capability);
+  // its POST (join) stays operator-only in the handler.
+  if (apiPath === 'shared-trip-join') return true
   // 'postbox' (« La boîte aux lettres ») is the ONE writable kind: it reads its greeting
   // and sends in ONE of two things — a message, or its own details (the family-info
   // form) — each with its one staged media blob. NOTHING else (not board/cercle/list).

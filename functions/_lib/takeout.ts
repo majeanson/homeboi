@@ -58,6 +58,8 @@ const CUSTOM: Record<string, string> = {
     'SELECT * FROM shared_trips WHERE owner_household_id = ?1 OR id IN (SELECT shared_trip_id FROM shared_trip_members WHERE household_id = ?1)',
   shared_trip_notes:
     'SELECT * FROM shared_trip_notes WHERE shared_trip_id IN (SELECT id FROM shared_trips WHERE owner_household_id = ?1 UNION SELECT shared_trip_id FROM shared_trip_members WHERE household_id = ?1)',
+  shared_trip_claims:
+    'SELECT * FROM shared_trip_claims WHERE shared_trip_id IN (SELECT id FROM shared_trips WHERE owner_household_id = ?1 UNION SELECT shared_trip_id FROM shared_trip_members WHERE household_id = ?1)',
 }
 
 type Row = Record<string, unknown>

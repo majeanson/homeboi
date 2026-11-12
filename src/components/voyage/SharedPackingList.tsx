@@ -7,7 +7,7 @@ import { EditField } from '../EditField'
 import { EmptyState } from '../EmptyState'
 import { CheckRow } from '../CheckRow'
 import { Avatar } from '../Avatar'
-import { type SharedPackingItem, type SharedTrip } from './voyage'
+import { useVoyageApi, type SharedPackingItem, type SharedTrip } from './voyage'
 
 // « Voyage partagé » → Bagages — the shared-trip sibling of PackingList. Bags are
 // scoped by HOUSEHOLD, not member (product decision): each household edits its OWN
@@ -23,11 +23,13 @@ export function SharedPackingList({
   items,
   myHouseholdId,
 }: {
-  trip: SharedTrip
+  trip: Pick<SharedTrip, 'id' | 'members'>
   items: SharedPackingItem[]
   myHouseholdId: string
 }) {
   const t = useT()
+  // The public invite preview: nobody is « me », every bag is someone else's, read-only.
+  const ro = !!useVoyageApi().readOnly
   const write = useWrite()
   const [text, setText] = useState('')
   const packingKey = [...SHARED_TRIP_PACKING_KEY, trip.id]
@@ -40,7 +42,7 @@ export function SharedPackingList({
   const myMembership = trip.members.find((m) => m.household_id === myHouseholdId)
   // Other households with something to show (read-only), in membership order.
   const others = trip.members
-    .filter((m) => m.household_id !== myHouseholdId)
+    .filter((m) => ro || m.household_id !== myHouseholdId)
     .map((m) => ({ m, rows: open.filter((i) => i.household_id === m.household_id) }))
     .filter((g) => g.rows.length > 0)
 
@@ -82,6 +84,7 @@ export function SharedPackingList({
   return (
     <div className="voyage-packing shared-packing">
       {/* — my household: fully editable — */}
+      {!ro && (
       <section className="voyage-packing__group">
         <div className="shared-packing__head">
           <Avatar kind={null} colour={myMembership?.colour} name={myMembership?.label} size={22} />
@@ -117,6 +120,7 @@ export function SharedPackingList({
           </ul>
         )}
       </section>
+      )}
 
       {/* — other households: read-only — */}
       {others.map(({ m, rows }) => (
@@ -140,6 +144,7 @@ export function SharedPackingList({
           </ul>
         </section>
       ))}
+      {ro && others.length === 0 && <EmptyState tone="calm">{t.sharedVoyage.noBagsYet}</EmptyState>}
       <p className="voyage-docs__hint mono">{t.sharedVoyage.otherBagsHint}</p>
     </div>
   )

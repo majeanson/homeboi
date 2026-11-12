@@ -75,7 +75,7 @@ export function wipeStatements(env: Env, householdId: string, tables: readonly s
       P(`DELETE FROM ${t} WHERE ${fk} IN (SELECT id FROM ${parent} WHERE ${scopeColumn(parent)} = ?)`).bind(householdId),
     ),
     ...(set.has('shared_trips')
-      ? ['shared_trip_members', 'shared_trip_notes', 'shared_trip_packing'].map((t) =>
+      ? ['shared_trip_members', 'shared_trip_notes', 'shared_trip_packing', 'shared_trip_claims'].map((t) =>
           P(`DELETE FROM ${t} WHERE shared_trip_id IN (SELECT id FROM shared_trips WHERE owner_household_id = ?)`).bind(householdId),
         )
       : []),
@@ -362,7 +362,7 @@ export async function restoreHousehold(env: Env, householdId: string, dump: Take
     if (name === 'shared_trips') {
       rows = rows.filter((r) => r.owner_household_id === from)
       for (const r of rows) if (typeof r.id === 'string') ownedTrips.add(r.id)
-    } else if (name === 'shared_trip_members' || name === 'shared_trip_notes' || name === 'shared_trip_packing') {
+    } else if (name === 'shared_trip_members' || name === 'shared_trip_notes' || name === 'shared_trip_packing' || name === 'shared_trip_claims') {
       const tripIds = [...new Set(rows.map((r) => r.shared_trip_id).filter((v): v is string => typeof v === 'string'))]
       const alive = new Set<string>(ownedTrips)
       for (const part of chunk(tripIds.filter((id) => !alive.has(id)), 50)) {

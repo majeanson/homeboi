@@ -1,8 +1,8 @@
 import { badRequest, forbidden, ok, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
-import { issueSharedTripInvite, SHARED_TRIP_INVITE_TTL } from '../_lib/auth'
-import { requireSharedTripMember } from '../_lib/sharedTrip'
+import { issueSharedTripInvite } from '../_lib/auth'
+import { requireSharedTripMember, sharedTripInviteTtl } from '../_lib/sharedTrip'
 
 // « Voyage partagé » invite link. The link is a stateless HMAC capability
 // (issueSharedTripInvite → `{st, n, x}`, signed with SESSION_SECRET) baked with the
@@ -20,9 +20,12 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const gate = await requireSharedTripMember(ctx.env, actor, body?.sharedTripId)
   if (gate instanceof Response) return gate
   // Any member can share the link (they're all trusted operators on the trip).
-  const token = await issueSharedTripInvite(ctx.env, gate.trip.id, gate.trip.invite_nonce)
+  // The link lives until the trip is over (sharedTripInviteTtl) — it sits in a group
+  // chat for months before a camping weekend, and a 14-day link was dead by then.
+  const ttl = sharedTripInviteTtl(gate.trip, nowSec())
+  const token = await issueSharedTripInvite(ctx.env, gate.trip.id, gate.trip.invite_nonce, ttl)
   const origin = new URL(ctx.request.url).origin
-  return ok({ url: `${origin}/voyage/rejoindre?j=${token}`, expiresAt: nowSec() + SHARED_TRIP_INVITE_TTL })
+  return ok({ url: `${origin}/voyage/rejoindre?j=${token}`, expiresAt: nowSec() + ttl })
 }, 'operator')
 
 export const onRequestDelete = authed(async (ctx, actor) => {

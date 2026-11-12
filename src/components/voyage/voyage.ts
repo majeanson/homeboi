@@ -11,6 +11,7 @@ import {
   SHARED_TRIPS_KEY,
   SHARED_TRIP_NOTES_KEY,
   SHARED_TRIP_PACKING_KEY,
+  SHARED_TRIP_CLAIMS_KEY,
 } from '../../lib/queryKeys'
 import type { IconName } from '../Icon'
 
@@ -97,6 +98,10 @@ export interface VoyageApi {
   notesKey: (tripId: string) => QueryKey // default [...TRIP_NOTES_KEY, tripId]
   packingKey: (tripId: string) => QueryKey // default [...TRIP_PACKING_KEY, tripId]
   shared: boolean // false by default
+  /** The PUBLIC invite preview (SharedVoyageJoinPage): every composer, ✏️, 🗑️, grip and
+   *  claim button hides — a friend with no account LOOKS at the trip before joining it.
+   *  Not a permission (the preview has no session to write with); a presentation flag. */
+  readOnly?: boolean
 }
 
 export const VoyageApiContext = createContext<VoyageApi>({
@@ -320,4 +325,41 @@ export function tripDays(start: number | null, end: number | null, max = 120): n
   const out: number[] = []
   for (let d = start; d <= end && out.length < max; d = addLocalDays(d, 1)) out.push(d)
   return out
+}
+
+// ---- « Qui apporte quoi » + « Qui cuisine » (migration 0154) ---------------------
+//
+// A shared_trip_claims row: a thing to bring (kind 'gear') or one meal of one trip day
+// (kind 'meal', date + slot) that ONE household takes on. household_id NULL = nobody
+// yet. In the public preview household ids are aliases (`h0`…), consistent with the
+// roster's — the components never care which.
+export type MealSlot = 'breakfast' | 'lunch' | 'supper'
+export const MEAL_SLOTS: { key: MealSlot; icon: IconName }[] = [
+  { key: 'breakfast', icon: 'sun-horizon-bold' },
+  { key: 'lunch', icon: 'sun-bold' },
+  { key: 'supper', icon: 'cooking-pot-bold' },
+]
+
+export interface SharedTripClaim {
+  id: string
+  shared_trip_id: string
+  kind: 'gear' | 'meal'
+  text: string
+  date: number | null
+  slot: MealSlot | null
+  household_id: string | null
+  household_label: string | null
+  author_household_id: string | null
+  position: number
+  created_at: number
+  updated_at: number | null
+}
+
+export function useSharedTripClaims(id: string | undefined) {
+  return useQuery({
+    queryKey: [...SHARED_TRIP_CLAIMS_KEY, id],
+    queryFn: () => api<{ claims: SharedTripClaim[] }>(`shared-trip-claims?tripId=${id}`),
+    enabled: !!id,
+    ...sharedLive(id ?? ''),
+  })
 }

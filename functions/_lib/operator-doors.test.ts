@@ -90,6 +90,7 @@ const ALLOWED = new Map<string, string>([
   ['src/components/SampleBanner.tsx', 'renders only when signedIn (an operator session) in a sandbox household'],
   ['src/components/cercle/FamilyShareModal.tsx', 'opened only by Maison\'s two share doors, both hidden on needsOperator()'],
   ['src/components/voyage/SharedPackingList.tsx', 'mounted only inside SharedVoyagePage, which bounces needsOperator() at its head'],
+  ['src/components/voyage/SharedClaims.tsx', 'every write door renders only under SharedVoyagePage (bounces needsOperator() at its head); the public invite preview mounts it readOnly, where no door renders'],
   ['src/components/voyage/VoyageShareModal.tsx', 'mounted only inside SharedVoyagePage, which bounces needsOperator() at its head'],
   ['src/lib/share.ts', 'the share API; its callers are EntityShareModal (opened on `signedIn` from the recipe sheet, the routine form, the event peek) and operator/guest.tsx'],
   ['src/lib/transfers.ts', 'the transfer write hooks; every door that reaches them gates — VirementsSection `ro = needsOperator()`, PlanCard `readOnly`, the two FormScenes in TransferFormPage bounce needsOperator()'],

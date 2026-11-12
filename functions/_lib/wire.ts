@@ -1157,6 +1157,24 @@ export interface TripPackingWire {
   items: { id: string; trip_id: string; member_id: string | null; text: string; packed_at: number | null; position: number; created_at: number }[]
 }
 
+// « Qui apporte quoi » + « Qui cuisine » (0154) — shared-trip-claims GET.
+export interface SharedTripClaimsWire {
+  claims: {
+    id: string
+    shared_trip_id: string
+    kind: 'gear' | 'meal'
+    text: string
+    date: number | null
+    slot: 'breakfast' | 'lunch' | 'supper' | null
+    household_id: string | null
+    household_label: string | null
+    author_household_id: string | null
+    position: number
+    created_at: number
+    updated_at: number | null
+  }[]
+}
+
 // THE MAP e2e/mocks.ts is typed against: route path → what its GET answers.
 export type Wire = {
   'auth/me': AuthMeWire
@@ -1221,6 +1239,7 @@ export type Wire = {
   seed: SeedWire
   share: ShareWire
   'shared-trip': SharedTripWire
+  'shared-trip-claims': SharedTripClaimsWire
   'this-week': ThisWeekWire
   'trip-notes': TripNotesWire
   'trip-packing': TripPackingWire

@@ -12,23 +12,21 @@ import { useT, useLang } from '../i18n'
 import { formatDayLong, capitalize as cap } from '../lib/format'
 import { isGuest, needsOperator } from '../lib/device'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
-import { useTabParam } from '../lib/tabParam'
 import { SHARED_TRIPS_KEY, SHARED_TRIP_NOTES_KEY, SHARED_TRIP_PACKING_KEY, TRIPS_KEY, BOARD_KEY, MONTH_KEY } from '../lib/queryKeys'
 import { connectSharedTripRealtime } from '../lib/realtime'
 import { loadStateOf, PairPrompt } from '../components/Fallback'
 import { StatusMessage } from '../components/StatusMessage'
 import { SceneHead } from '../components/SceneHead'
-import { SubTabs } from '../components/SubTabs'
 import { Chip } from '../components/Chip'
 import { Icon } from '../components/Icon'
 import { EmptyState } from '../components/EmptyState'
 import { ColorPicker } from '../components/ColorPicker'
-import type { MemberFace } from '../components/MemberSwitcher'
 import { DetailProvider } from '../components/detail/DetailProvider'
 import {
   useSharedTrip,
   useSharedTripNotes,
   useSharedTripPacking,
+  useSharedTripClaims,
   sharedNoteToTripNote,
   VoyageApiContext,
   VOYAGE_ICON,
@@ -36,10 +34,7 @@ import {
   type SharedTrip,
   type Trip,
 } from '../components/voyage/voyage'
-import { VoyageInfos } from '../components/voyage/VoyageInfos'
-import { VoyageItinerary } from '../components/voyage/VoyageItinerary'
-import { VoyageDocuments } from '../components/voyage/VoyageDocuments'
-import { SharedPackingList } from '../components/voyage/SharedPackingList'
+import { SharedTripTabs } from '../components/voyage/SharedTripTabs'
 import { VoyageShareModal } from '../components/voyage/VoyageShareModal'
 
 // « Voyage partagé » — the shared-trip twin of VoyagePage: ONE trip live-edited by up to
@@ -57,8 +52,6 @@ export function SharedVoyagePage() {
     </DetailProvider>
   )
 }
-
-const VUES = ['itineraire', 'infos', 'bagages', 'documents'] as const
 
 // The shared-trip context: same shape as the household default, pointed at the
 // 'shared-trip-*' endpoints + keys. Static, so it lives at module scope.
@@ -92,11 +85,11 @@ function SharedVoyageInner() {
   const [editing, setEditing] = useState(false)
   const [sharing, setSharing] = useState(false)
   const [actErr, setActErr] = useState<string | null>(null)
-  const [vue, setVue] = useTabParam('vue', 'itineraire', VUES)
 
   const tripQ = useSharedTrip(id)
   const notesQ = useSharedTripNotes(id)
   const packingQ = useSharedTripPacking(id)
+  const claimsQ = useSharedTripClaims(id)
 
   // Open the page-scoped st: realtime socket while this trip is mounted (the returned
   // function IS the cleanup). Uses the shared singleton queryClient so invalidations
@@ -191,9 +184,6 @@ function SharedVoyageInner() {
     }
   }
 
-  // Pseudo-faces from the membership roster (id = household_id, no photo) — attribution
-  // for notes (sharedNoteToTripNote maps author_household_id → member_id).
-  const faces: MemberFace[] = trip.members.map((m) => ({ id: m.household_id, name: m.label, colour: m.colour, photoUrl: null }))
   // A Trip-shaped view for the shared children (they read id / dates / media / title only).
   const tripForChildren: Trip = {
     id: trip.id,
@@ -212,6 +202,7 @@ function SharedVoyageInner() {
   }
   const notes = (notesQ.data?.notes ?? []).map(sharedNoteToTripNote)
   const packing = packingQ.data?.items ?? []
+  const claims = claimsQ.data?.claims ?? []
 
   return (
     <VoyageApiContext.Provider value={SHARED_API}>
@@ -233,21 +224,14 @@ function SharedVoyageInner() {
           closeLabel={t.common.close}
         />
         <div className="scene__body">
-          <SubTabs
-            ariaLabel={t.voyage.sections}
-            value={vue}
-            onSelect={setVue}
-            options={[
-              { key: 'itineraire', label: t.voyage.tabItinerary, icon: 'calendar-dots-bold' },
-              { key: 'infos', label: t.voyage.tabInfos, icon: 'push-pin-bold' },
-              { key: 'bagages', label: t.voyage.tabPacking, icon: 'shopping-bag-bold' },
-              { key: 'documents', label: t.voyage.tabDocuments, icon: 'file-text-bold' },
-            ]}
+          <SharedTripTabs
+            trip={tripForChildren}
+            roster={trip.members}
+            notes={notes}
+            packing={packing}
+            claims={claims}
+            myHouseholdId={myHouseholdId}
           />
-          {vue === 'itineraire' && <VoyageItinerary trip={tripForChildren} notes={notes} faces={faces} />}
-          {vue === 'infos' && <VoyageInfos trip={tripForChildren} notes={notes} faces={faces} />}
-          {vue === 'bagages' && <SharedPackingList trip={trip} items={packing} myHouseholdId={myHouseholdId} />}
-          {vue === 'documents' && <VoyageDocuments trip={tripForChildren} notes={notes} />}
 
           {!isGuest() && (
             <>

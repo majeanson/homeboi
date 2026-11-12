@@ -28,9 +28,9 @@ export function TripNoteCard({
   who?: string
   /** Hide the category glyph when the list is already grouped by category. */
   showCategory?: boolean
-  onDelete?: () => void
+  onDelete?: (() => void) | undefined
   /** Provided → a ✏️ that inline-edits the note's text (PATCH). */
-  onSave?: (text: string) => void
+  onSave?: ((text: string) => void) | undefined
 }) {
   const t = useT()
   const [editing, setEditing] = useState(false)
