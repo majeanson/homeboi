@@ -68,7 +68,7 @@ test('the hour stepper nudges by 30 min and PATCHes mealHours', async ({ page })
 
 test('day editor lists the five slots chronologically, souper in place', async ({ page, app }) => {
   await app.boot({ route: '/kitchen', state: { calm: true } })
-  await page.locator('.kitchen__day').first().getByRole('button', { name: /Gérer/ }).click()
+  await page.locator('.kitchen__day.is-today').getByRole('button', { name: /Gérer/ }).click()
   await expect(page.locator('.scene .day-mng__sec').first()).toBeVisible({ timeout: 15_000 })
   const heads = await page.locator('.day-mng__sec-head').allInnerTexts()
   expect(heads.map((h) => h.trim())).toEqual(['Déjeuner', 'Dîner', 'Collation', 'Souper', 'Dessert'])
@@ -110,7 +110,7 @@ test('a custom order + hero is respected in Réglages, the day editor and the ki
 
   // The day editor renders the SAME order, with the dîner (the hero) in its place.
   await bootCustom(page, '/kitchen')
-  await page.locator('.kitchen__day').first().getByRole('button', { name: /Gérer/ }).click()
+  await page.locator('.kitchen__day.is-today').getByRole('button', { name: /Gérer/ }).click()
   await expect(page.locator('.scene .day-mng__sec').first()).toBeVisible({ timeout: 15_000 })
   const heads = await page.locator('.day-mng__sec-head').allInnerTexts()
   expect(heads.map((h) => h.trim())).toEqual(['Dessert', 'Souper', 'Collation', 'Dîner', 'Déjeuner'])

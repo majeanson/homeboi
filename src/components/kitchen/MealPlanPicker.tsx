@@ -14,12 +14,16 @@ export function MealPlanPicker({
   onSlot,
   week,
   onPickDay,
+  onPickUnplaced,
   band = false,
 }: {
   slot: MealSlot
   onSlot: (s: MealSlot) => void
   week: { date: number; label: string }[]
   onPickDay: (date: number) => void
+  // « À placer » (mig 0155) as the FIRST chip, before the days — the week grid's first
+  // card, the place for a meal of this week with no day yet. Omitted → days only.
+  onPickUnplaced?: (() => void) | undefined
   band?: boolean
 }) {
   const t = useT()
@@ -29,6 +33,7 @@ export function MealPlanPicker({
       <SlotPicker value={slot} onChange={onSlot} />
       <span className="meal-plan-pick__label mono">{t.recipes.planPick}</span>
       <div className="meal-plan-pick__days">
+        {onPickUnplaced && <Chip onClick={onPickUnplaced}>{t.kitchen.unplaced}</Chip>}
         {week.map((d) => (
           <Chip key={d.date} onClick={() => onPickDay(d.date)}>
             {d.label}

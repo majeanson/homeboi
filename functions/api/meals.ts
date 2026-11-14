@@ -5,7 +5,7 @@ import { profileMemberId } from '../_lib/profile'
 import { ingredientName } from '../_lib/ingredient'
 import { householdMealLayout, mealOrderSql } from '../_lib/mealSlots'
 import { swapAt } from '../../src/lib/reorder'
-import type { MealRow } from '../_lib/wire'
+import type { MealRow, UnplacedMealRow } from '../_lib/wire'
 
 // Meal plan as a ROLLING window: today through today + N days, where N is the
 // household's « Jours affichés » (`windowDays` on the mealSlots preference,
@@ -47,6 +47,10 @@ const DAY = 86400
 // is planned today; this looks back a few days so "we ate this, there's some left"
 // always has something real to offer.
 const RECENT_DAYS = 3
+
+// « À placer » holds a WEEK's worth of undated meals — a handful, not a backlog. The
+// cap is a ceiling against a runaway client, far above any real week.
+const UNPLACED_MAX = 40
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const today = localDayStart(new Date(Date.now()))
@@ -93,12 +97,22 @@ export const onRequestGet = authed(async (ctx, actor) => {
     return true
   })
 
-  return okWire('meals', { days: results, weekStart: today, windowDays, recent })
+  // « À placer » (mig 0155) — the week's meals that have no day yet. Rides THIS read
+  // (not a route of its own) so the one MEALS_KEY cache, its realtime nudge and its
+  // offline snapshot all carry it: a meal moving between the bin and a day is one
+  // write against one cache, never two caches that disagree mid-drag.
+  const { results: unplaced } = await ctx.env.DB.prepare(
+    'SELECT id, title, recipe_id, slot, is_leftover, position FROM meals_unplaced WHERE household_id = ? ORDER BY position, created_at, id',
+  )
+    .bind(actor.householdId)
+    .all<UnplacedMealRow>()
+
+  return okWire('meals', { days: results, weekStart: today, windowDays, recent, unplaced })
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {
   const body = await readJson<{
-    action?: 'move' | 'clear' | 'reschedule'
+    action?: 'move' | 'clear' | 'reschedule' | 'park' | 'unplace' | 'place'
     // move
     id?: string
     dir?: 'up' | 'down'
@@ -172,6 +186,64 @@ export const onRequestPost = authed(async (ctx, actor) => {
     await ctx.env.DB.prepare('UPDATE meals SET date = ?, slot = ?, position = ? WHERE id = ? AND household_id = ?')
       .bind(toDate, toSlot, (tail?.m ?? -1) + 1, body.id, actor.householdId)
       .run()
+    return ok({ ok: true })
+  }
+
+  // ── « À placer » (mig 0155). Three moves, all keeping the meal's ID across the
+  //    two tables — the same meal, dated or not — so the client's optimistic move is
+  //    a row hopping lists, and a replayed write finds nothing left to move (ok).
+  //    park:    add straight into the bin (a typed title, a recipe, an idea).
+  //    unplace: a planned meal leaves its day for the bin (its slot is kept, so a
+  //             dîner dragged off and back is still a dîner).
+  //    place:   a bin row lands on a day, at the tail of its slot like any add.
+  if (body?.action === 'park') {
+    const title = body.title?.trim()
+    if (!title) return badRequest('Titre requis.')
+    const count = await ctx.env.DB.prepare('SELECT COUNT(*) AS n FROM meals_unplaced WHERE household_id = ?')
+      .bind(actor.householdId)
+      .first<{ n: number }>()
+    if ((count?.n ?? 0) >= UNPLACED_MAX) return badRequest('Trop de repas à placer.')
+    const id = newId()
+    await ctx.env.DB.prepare(
+      `INSERT INTO meals_unplaced (id, household_id, title, recipe_id, slot, is_leftover, position, created_at)
+       SELECT ?, ?, ?, ?, ?, 0, COALESCE(MAX(position), -1) + 1, ? FROM meals_unplaced WHERE household_id = ?`,
+    )
+      .bind(id, actor.householdId, title.slice(0, 200), body.recipeId?.trim() || null, asSlot(body.slot), nowSec(), actor.householdId)
+      .run()
+    return ok({ ok: true, id })
+  }
+
+  if (body?.action === 'unplace') {
+    if (!body.id) return badRequest('id requis.')
+    const m = await ctx.env.DB.prepare('SELECT title, recipe_id, slot, is_leftover FROM meals WHERE id = ? AND household_id = ?')
+      .bind(body.id, actor.householdId)
+      .first<{ title: string; recipe_id: string | null; slot: string; is_leftover: number }>()
+    if (!m) return ok({ ok: true }) // gone already (or already parked) — nothing to move
+    await ctx.env.DB.batch([
+      ctx.env.DB.prepare(
+        `INSERT OR IGNORE INTO meals_unplaced (id, household_id, title, recipe_id, slot, is_leftover, position, created_at)
+         SELECT ?, ?, ?, ?, ?, ?, COALESCE(MAX(position), -1) + 1, ? FROM meals_unplaced WHERE household_id = ?`,
+      ).bind(body.id, actor.householdId, m.title, m.recipe_id, m.slot, m.is_leftover ? 1 : 0, nowSec(), actor.householdId),
+      ctx.env.DB.prepare('DELETE FROM meals WHERE id = ? AND household_id = ?').bind(body.id, actor.householdId),
+    ])
+    return ok({ ok: true })
+  }
+
+  if (body?.action === 'place') {
+    if (!body.id || typeof body.toDate !== 'number') return badRequest('id + toDate requis.')
+    const u = await ctx.env.DB.prepare('SELECT title, recipe_id, slot, is_leftover FROM meals_unplaced WHERE id = ? AND household_id = ?')
+      .bind(body.id, actor.householdId)
+      .first<{ title: string; recipe_id: string | null; slot: string | null; is_leftover: number }>()
+    if (!u) return ok({ ok: true }) // gone already (or already placed)
+    const toDate = localDayStart(new Date(body.toDate * 1000))
+    const slot = asSlot(body.slot) ?? asSlot(u.slot) ?? (await householdMealLayout(ctx.env, actor.householdId)).hero
+    await ctx.env.DB.batch([
+      ctx.env.DB.prepare(
+        `INSERT OR IGNORE INTO meals (id, household_id, date, slot, title, cook_member_id, suggested_by, recipe_id, created_at, position, is_leftover)
+         SELECT ?, ?, ?, ?, ?, NULL, NULL, ?, ?, COALESCE(MAX(position), -1) + 1, ? FROM meals WHERE household_id = ? AND date = ? AND slot = ?`,
+      ).bind(body.id, actor.householdId, toDate, slot, u.title, u.recipe_id, nowSec(), u.is_leftover ? 1 : 0, actor.householdId, toDate, slot),
+      ctx.env.DB.prepare('DELETE FROM meals_unplaced WHERE id = ? AND household_id = ?').bind(body.id, actor.householdId),
+    ])
     return ok({ ok: true })
   }
 
@@ -279,8 +351,15 @@ export const onRequestPatch = authed(async (ctx, actor) => {
 })
 
 export const onRequestDelete = authed(async (ctx, actor) => {
-  const body = await readJson<{ id?: string }>(ctx.request)
+  const body = await readJson<{ id?: string; unplaced?: boolean }>(ctx.request)
   if (!body?.id) return badRequest('id requis.')
+  // { unplaced: true }: remove a row from « À placer » (the bin), not a planned meal.
+  if (body.unplaced) {
+    await ctx.env.DB.prepare('DELETE FROM meals_unplaced WHERE id = ? AND household_id = ?')
+      .bind(body.id, actor.householdId)
+      .run()
+    return ok({ ok: true })
+  }
   await ctx.env.DB.prepare('DELETE FROM meals WHERE id = ? AND household_id = ?')
     .bind(body.id, actor.householdId)
     .run()

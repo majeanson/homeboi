@@ -76,7 +76,7 @@ test.describe('kitchen', () => {
     // (/kitchen/day/:date). Souper renders LAST (chronological order). No
     // submitLabel is passed anymore, so EntityCombobox renders an icon-only ✓
     // instead of a labeled "Mettre" pill, and Enter alone still saves.
-    await page.locator('.kitchen__day').first().getByRole('button', { name: /Gérer/ }).click()
+    await page.locator('.kitchen__day.is-today').getByRole('button', { name: /Gérer/ }).click()
     const sheet = page.locator('.scene')
     await sheet.locator('[data-dnd-zone="supper"] .day-mng__sec-head-row .sec-label__actbtn').click()
     // The supper title editor is an EntityCombobox (reuses .edit-field styling but
@@ -91,7 +91,7 @@ test.describe('kitchen', () => {
   })
 
   test('a day shows its breakfast/lunch/snack slots and sets one (POST meals)', async ({ page }) => {
-    await page.locator('.kitchen__day').first().getByRole('button', { name: /Gérer/ }).click()
+    await page.locator('.kitchen__day.is-today').getByRole('button', { name: /Gérer/ }).click()
     const sheet = page.locator('.scene')
     // The day editor exposes the chronological side slots: déjeuner / dîner /
     // collation, each with its own "＋ Ajouter" (the per-slot editing the grid

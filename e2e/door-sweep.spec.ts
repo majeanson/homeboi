@@ -82,7 +82,7 @@ const DOORS: Door[] = [
     route: '/kitchen',
     clock: true,
     ready: '.kitchen__day',
-    act: (p) => p.locator('.kitchen__day').first().locator('.kitchen__day-meal', { hasText: 'Spaghetti maison' }).click(),
+    act: (p) => p.locator('.kitchen__day.is-today').locator('.kitchen__day-meal', { hasText: 'Spaghetti maison' }).click(),
     proof: (p) => expect(p).toHaveURL(/\/kitchen\/recipe\/rc1$/),
   },
   {

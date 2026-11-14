@@ -57,6 +57,7 @@ const ALLOWED: Record<string, string> = {
   'components/kitchen/MealPool.tsx': `${INLINE}: the SectionAdd ＋ and a row's rename`,
   'components/kitchen/MealRows.tsx': INLINE,
   'components/kitchen/PantryTab.tsx': `${INLINE}: two SectionAdd ＋`,
+  'components/kitchen/UnplacedDay.tsx': `${INLINE}: the « À placer » card's ＋`,
   'components/kitchen/ReserveSection.tsx': `${INLINE}: the SectionAdd ＋ and a row's edit`,
   'components/operator/devices.tsx': `${INLINE}: rename a device`,
   'components/operator/household.tsx': INLINE,

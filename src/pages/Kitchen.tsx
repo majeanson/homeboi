@@ -39,7 +39,8 @@ import { MealIdeas } from '../components/kitchen/MealIdeas'
 import { Leftovers, usePlanLeftover } from '../components/kitchen/Leftovers'
 import { weekDates, useWeekLabeled } from '../components/kitchen/week'
 import { useRecipeForMeal } from '../components/kitchen/mealLookup'
-import { reschedule, planMeal, planMealRecipe } from '../components/kitchen/mealMutations'
+import { reschedule, planMeal, planMealRecipe, placeMeal, unplaceMeal } from '../components/kitchen/mealMutations'
+import { UnplacedDay, UNPLACED_ZONE } from '../components/kitchen/UnplacedDay'
 import { EntityCombobox, type ComboOption } from '../components/EntityCombobox'
 import { mealPickOptions, type MealPick } from '../components/kitchen/comboOptions'
 import { isGuest } from '../lib/device'
@@ -154,6 +155,9 @@ export function Kitchen() {
     () => mealPickOptions(recipes, lowItems, listItems, leftoverPool, t, { slot: mealPrefs.hero, pills, loved: lovedSet, tagSlots }),
     [recipes, lowItems, listItems, leftoverPool, t, mealPrefs.hero, pills, lovedSet, tagSlots],
   )
+  // The « À placer » card's ＋ offers recipes only: a Restant has its own consuming
+  // plan action, and parking a copy of it would leave the original behind.
+  const recipeOpts = useMemo(() => mealOpts.filter((o) => o.data.kind === 'recipe'), [mealOpts])
   const planLeftover = usePlanLeftover()
   // #12 "Haven't had in a while": recipe id → the most recent local-midnight day a
   // meal linked to it (recipe_id, migration 0024) was *served*. Built from the meals
@@ -177,6 +181,8 @@ export function Kitchen() {
   }, [meals.data])
   const unauth = isUnauthorized(meals.error) || isUnauthorized(pantry.error)
   const days = meals.data?.days ?? []
+  // « À placer » — the week's meals with no day yet (mig 0155), the grid's first card.
+  const unplaced = meals.data?.unplaced ?? []
   const weekStart = meals.data?.weekStart ?? 0
   // The household's « Jours affichés », rolling from today (see functions/api/meals.ts
   // and _lib/mealSlots). WINDOW_DAYS_DEFAULT is only the not-yet-loaded fallback.
@@ -232,8 +238,25 @@ export function Kitchen() {
   //     2026-09-10: « drag n dropping a snack no longer works »). It was never that
   //     it worked; it was that the rows started looking like it should.
   const MEAL_KEY = /^meal:(\d+):([^:]+):(.+)$/
+  // « À placer » (mig 0155) adds a third identity and a zone: a bin row drags as
+  // `unplaced:<id>` onto a day, and the bin itself is a zone (UNPLACED_ZONE) any
+  // planned meal — a whole supper headline or one side meal — can be dropped into.
+  const UNPLACED_PREFIX = `${UNPLACED_ZONE}:`
   const dayDnd = usePointerDnd({
     onDrop: (fromKey, toKey) => {
+      if (toKey === UNPLACED_ZONE) {
+        if (fromKey.startsWith(UNPLACED_PREFIX)) return
+        const one = MEAL_KEY.exec(fromKey)
+        const moving = one ? days.filter((m) => m.id === one[3]) : mealsFor(Number(fromKey), heroSlot)
+        for (const m of moving) void unplaceMeal(qc, m)
+        return
+      }
+      if (fromKey.startsWith(UNPLACED_PREFIX)) {
+        const u = unplaced.find((x) => x.id === fromKey.slice(UNPLACED_PREFIX.length))
+        const day = Number(toKey)
+        if (u && Number.isFinite(day)) void placeMeal(qc, u, day, u.slot ?? heroSlot)
+        return
+      }
       const to = Number(toKey)
       if (!Number.isFinite(to)) return
       const one = MEAL_KEY.exec(fromKey)
@@ -248,6 +271,7 @@ export function Kitchen() {
       for (const m of mealsFor(from, heroSlot)) reschedule(qc, m.id, to, heroSlot)
     },
     canDrop: (fromKey, toKey) => {
+      if (fromKey.startsWith(UNPLACED_PREFIX)) return toKey !== UNPLACED_ZONE
       const one = MEAL_KEY.exec(fromKey)
       return one ? one[1] !== toKey : fromKey !== toKey
     },
@@ -478,6 +502,15 @@ export function Kitchen() {
             )}
           </div>
           <ul className="kitchen__week">
+            {/* « À placer » — the FIRST card: this week's meals with no day yet. Drag one
+                onto a day (or a planned meal back here); tap one for a day picker. */}
+            <UnplacedDay
+              items={unplaced}
+              dnd={dayDnd}
+              options={recipeOpts}
+              week={weekLabeled}
+              ro={planRo}
+            />
             {week.map(({ date }) => {
               const dow = new Date(date * 1000).getDay()
               const isToday = date === weekStart

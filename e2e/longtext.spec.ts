@@ -182,7 +182,7 @@ for (const w of [360, 390]) {
     await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, surface: 'mobile' })
     await page.goto('/kitchen')
     await page.locator('.hub__body').waitFor({ state: 'visible', timeout: 15_000 })
-    await page.locator('.kitchen__day').first().getByRole('button', { name: /Gérer/ }).click()
+    await page.locator('.kitchen__day.is-today').getByRole('button', { name: /Gérer/ }).click()
     await page.locator('.scene .day-mng__sec').first().waitFor({ state: 'visible', timeout: 15_000 })
     await settled(page)
     await page.screenshot({ path: `e2e/screenshots/lt-day-editor${sfx}.png`, fullPage: false })

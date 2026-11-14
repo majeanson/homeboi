@@ -72,7 +72,17 @@ export type DayNotesData = { notes: DayNoteRow[] }
 // The client renders this many days from weekStart instead of a fixed 7.
 // `recent`: the last few days of planned, non-leftover meals (newest first, deduped
 // by title) — the source for the Restants "Suggestions" quick-pick chips.
-export type MealsData = { days: MealRow[]; weekStart: number; windowDays: number; recent: MealRow[] }
+// « À placer » (mig 0155): a meal of the week with no day yet. It keeps its id when it
+// hops to a day (`meals`) and back, so an optimistic move is just the row changing lists.
+export interface UnplacedMeal {
+  id: string
+  title: string
+  recipe_id: string | null
+  slot: string | null // the slot it came from; null = the hero at drop time
+  is_leftover: number
+  position: number
+}
+export type MealsData = { days: MealRow[]; weekStart: number; windowDays: number; recent: MealRow[]; unplaced?: UnplacedMeal[] }
 // One « Historique » page: up to a fortnight of past planned days (newest first,
 // meals ordered like the grid within a day) + the cursor for the next older page
 // (null = history exhausted). See functions/api/meal-history.ts.

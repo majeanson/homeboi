@@ -36,7 +36,7 @@ test('day editor lists slots chronologically (note is the headline)', async ({ p
   // Open the first day's editor straight from the grid (the manage button is
   // icon-only now, named "Gérer · <date>") → navigates to the day scene's
   // « Repas » face (the pencil is a meal door).
-  await page.locator('.kitchen__day').first().getByRole('button', { name: /Gérer/ }).click()
+  await page.locator('.kitchen__day.is-today').getByRole('button', { name: /Gérer/ }).click()
   await expect(page).toHaveURL(/\/kitchen\/day\/\d+\?vue=repas/)
   await expect(page.locator('.scene .day-mng__sec').first()).toBeVisible({ timeout: 10_000 })
 
@@ -77,7 +77,7 @@ test('a day’s meal row opens its recipe directly; an unlinked meal falls back 
   await page.goto('/kitchen')
   await expect(page.locator('.kitchen')).toBeVisible({ timeout: 15_000 })
 
-  const today = page.locator('.kitchen__day').first()
+  const today = page.locator('.kitchen__day.is-today')
   // « Spaghetti maison » is linked to recipe rc1 in the fixture — its row goes
   // straight there, no peek in between.
   await today.locator('.kitchen__day-meal', { hasText: 'Spaghetti maison' }).click()
@@ -86,7 +86,7 @@ test('a day’s meal row opens its recipe directly; an unlinked meal falls back 
   await expect(page.locator('.kitchen')).toBeVisible({ timeout: 15_000 })
 
   // « Salade César » has no recipe_id — its row opens the day's full editor instead.
-  await page.locator('.kitchen__day').first().locator('.kitchen__day-meal', { hasText: 'Salade César' }).click()
+  await page.locator('.kitchen__day.is-today').locator('.kitchen__day-meal', { hasText: 'Salade César' }).click()
   await expect(page).toHaveURL(/\/kitchen\/day\/\d+\?vue=repas/)
 })
 

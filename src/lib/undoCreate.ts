@@ -46,6 +46,9 @@ export interface CreateWithUndoOpts {
    *  cannot reach (⚡ quick add's ✓ chip, which must not go on certifying a line that
    *  is gone). */
   afterUndo?: () => void
+  /** Extra fields for the compensating DELETE body beside `id` — for a route whose
+   *  DELETE serves two tables (meals: `{ unplaced: true }` targets « À placer »). */
+  undoBody?: object
 }
 
 // MANY creates, ONE undo: a starter pack (« La maison à l'automne ») adds several rows with one
@@ -116,7 +119,7 @@ export function useCreateWithUndo() {
             if (id)
               void write(opts.undoEndpoint ?? opts.endpoint, {
                 method: 'DELETE',
-                body: { id },
+                body: { ...opts.undoBody, id },
                 affectedKeys: opts.undoAffectedKeys ?? opts.affectedKeys,
               }).catch(writeFailed)
             opts.afterUndo?.()

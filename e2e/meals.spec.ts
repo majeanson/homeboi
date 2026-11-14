@@ -22,7 +22,7 @@ function waitMeals(page: Page, method: string, pred: (body: any) => boolean) {
 // SCENE now (/kitchen/day/:date) — the week grid is a calm read-only glance. Open
 // the first day's editor and return the scene as the scope for the controls.
 async function openManage(page: Page) {
-  await page.locator('.kitchen__day').first().getByRole('button', { name: /Gérer/ }).click()
+  await page.locator('.kitchen__day.is-today').getByRole('button', { name: /Gérer/ }).click()
   const sheet = page.locator('.scene')
   await expect(sheet).toBeVisible()
   // The meal planner is a plain « Les repas » section now (no disclosure) — the

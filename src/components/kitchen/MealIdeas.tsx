@@ -8,6 +8,7 @@ import { type MealSlot } from '../../lib/mealSlots'
 import { type HelpMode } from '../../lib/helpMode'
 import { InlineIcon } from '../Icon'
 import { MealPool } from './MealPool'
+import { useParkMeal } from './UnplacedDay'
 import { recipeOptions } from './comboOptions'
 import { type MealIdea, MEAL_IDEAS_KEY, MEALS_KEY, MEAL_HISTORY_KEY } from './types'
 
@@ -74,6 +75,7 @@ export function MealIdeas({
   // Recipes as combobox options — ranked by cookability, badged "Prêt / il manque N".
   const recipeOpts = useMemo(() => recipeOptions(recipes, lowItems, listItems, t), [recipes, lowItems, listItems, t])
   const planIdea = usePlanIdea()
+  const park = useParkMeal()
 
   return (
     <MealPool<MealIdea, Recipe>
@@ -84,6 +86,8 @@ export function MealIdeas({
       options={recipeOpts}
       buildAddBody={(title, picked) => ({ title, recipeId: picked?.data.id ?? null, suggestedBy: profileId })}
       onPlan={planIdea}
+      // The idea stays in the pool; its copy waits in « À placer » for a day.
+      onPark={(idea) => void park(idea.title, idea.recipe_id ?? null)}
       renderLead={(idea) => (idea.recipe_id ? <InlineIcon name="book-open-bold" size={14} color="var(--berry-deep)" /> : null)}
       // An idea born from a recipe: its 📖 picto opens that recipe (same tight
       // icon-only link as the combobox row). Tapping the chip still plans it.

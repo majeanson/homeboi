@@ -55,6 +55,7 @@ export function MealPool<T extends { id: string; title: string }, O>({
   options,
   buildAddBody,
   onPlan,
+  onPark,
   renderLead,
   leadTo,
   leadToLabel,
@@ -73,6 +74,9 @@ export function MealPool<T extends { id: string; title: string }, O>({
   options: ComboOption<O>[]
   buildAddBody: (title: string, picked: ComboOption<O> | null) => object
   onPlan: (item: T, date: number, slot: MealSlot) => void
+  // « À placer » — offer the week grid's dateless first card as the picker's first chip.
+  // Ideas pass it (the idea stays, a copy waits for its day); Restants do not.
+  onPark?: ((item: T) => void) | undefined
   renderLead: (item: T) => ReactNode // the leading picto inside the chip (e.g. a recipe book glyph)
   // Route for that picto, when the row points at a real entity (an idea linked to a
   // recipe → its page). Same deal as the combobox's `iconTo`: the glyph leaves the
@@ -298,7 +302,20 @@ export function MealPool<T extends { id: string; title: string }, O>({
                 )}
               </div>
               {!ro && isOpen(item.id) && (
-                <MealPlanPicker slot={planSlot} onSlot={setPlanSlot} week={week} onPickDay={(date) => planOn(item, date, planSlot)} />
+                <MealPlanPicker
+                  slot={planSlot}
+                  onSlot={setPlanSlot}
+                  week={week}
+                  onPickDay={(date) => planOn(item, date, planSlot)}
+                  onPickUnplaced={
+                    onPark
+                      ? () => {
+                          close()
+                          onPark(item)
+                        }
+                      : undefined
+                  }
+                />
               )}
             </li>
             )

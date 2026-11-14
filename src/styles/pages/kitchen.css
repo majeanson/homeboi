@@ -831,3 +831,66 @@
   font-family: inherit;
   cursor: pointer;
 }
+
+/* « À placer » (mig 0155) — the week grid's FIRST card: this week's meals with no
+   day yet. The SAME day-card shell (so a meal dragged out of it is visibly the same
+   object landing on a day); what tells it apart is a dashed rail and a quiet wash —
+   a day not yet chosen, drawn as an outline rather than a date. */
+.kitchen__day--unplaced {
+  background: color-mix(in srgb, var(--card) 88%, var(--paper));
+  box-shadow: var(--shadow-sm);
+  outline: 1.5px dashed var(--line-strong);
+  outline-offset: -5px;
+}
+.kitchen__day--unplaced.is-droptarget {
+  background: color-mix(in srgb, var(--accent) 10%, var(--card));
+  outline-color: var(--accent);
+}
+.kitchen__unplaced-title {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+/* A row is the day row's look (.kitchen__day-meal) holding two kinds of button: the
+   title (tap → the day picker) and the row furniture (📖, ✕). The row itself carries
+   the press-and-hold drag. */
+.kitchen__unplaced-row {
+  align-items: center;
+}
+.kitchen__unplaced-open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  min-height: var(--touch-target);
+  padding: 0;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: grab;
+}
+.kitchen__unplaced-open > svg {
+  margin-top: 0.15rem;
+}
+/* The day rows' title keeps a 7rem floor so a tag wraps under it; here there is no
+   tag, and on a narrow wide-screen column that floor pushed the title under the ✕. */
+.kitchen__unplaced-open .kitchen__day-meal-title {
+  min-width: 0;
+}
+.kitchen__unplaced-remove {
+  flex: none;
+  color: var(--ink-faint);
+}
+.kitchen__unplaced-row.is-dragging {
+  opacity: 0.45;
+}

@@ -23,6 +23,7 @@ interface MealsRead {
   weekStart: number
   windowDays: number
   recent: Meal[]
+  unplaced: { id: string; title: string; recipe_id: string | null; slot: string | null; is_leftover: number; position: number }[]
 }
 
 const today = () => localDayStart(new Date())
@@ -253,5 +254,59 @@ describe('l’historique', () => {
     expect(dishes.map((d) => String(d.title).toLowerCase())).toEqual(['spaghetti', 'soupe'])
     expect(dishes[0], 'the most recent spelling and recipe link win').toMatchObject({ title: 'spaghetti', recipe_id: 'r-sp', last_at: day(-2) })
     expect(Object.keys(dishes[0]!).sort(), 'calm: « dernière fois », never « 12 fois »').toEqual(['last_at', 'recipe_id', 'title'])
+  })
+})
+
+// « À placer » (mig 0155): the week's meals with no day yet. A meal keeps its ID as it
+// moves between the bin and a day — the client paints each move as a row changing
+// lists, so the server must move the SAME row, not mint a copy.
+describe('« À placer » — the week without its days', () => {
+  it('park, place on a day, take it back off, and remove — one meal, one id throughout', async () => {
+    const s = await household('meals-unplaced', undefined, { empty: true })
+    const parked = await okJson<{ id: string }>(s.fetch('/api/meals', { method: 'POST', body: { action: 'park', title: ' Tacos ', recipeId: 'r-tacos' } }))
+    await okJson(s.fetch('/api/meals', { method: 'POST', body: { action: 'park', title: 'Soupe' } }))
+    expect((await s.fetch('/api/meals', { method: 'POST', body: { action: 'park', title: '  ' } })).status, 'a blank title parks nothing').toBe(400)
+
+    let read = await plan(s)
+    expect(read.unplaced.map((u) => u.title), 'in the order they were parked').toEqual(['Tacos', 'Soupe'])
+    expect(read.unplaced[0]).toMatchObject({ id: parked.id, recipe_id: 'r-tacos', slot: null, position: 0 })
+    expect(read.days).toEqual([])
+
+    // Place it: no slot asked and none remembered → the household's hero (souper).
+    await action(s, { action: 'place', id: parked.id, toDate: day(3) + 7200 })
+    read = await plan(s)
+    expect(read.unplaced.map((u) => u.title)).toEqual(['Soupe'])
+    expect(read.days, 'the same row, now dated, linked to its recipe').toEqual([
+      expect.objectContaining({ id: parked.id, title: 'Tacos', date: day(3), slot: 'supper', recipe_id: 'r-tacos' }),
+    ])
+    await action(s, { action: 'place', id: parked.id, toDate: day(4) })
+    expect((await plan(s)).days.map((m) => m.date), 'a replayed place finds nothing left to move').toEqual([day(3)])
+
+    // A side meal dragged off its day keeps its slot for the way back.
+    const lunch = await add(s, { title: 'Sandwichs', date: day(1), slot: 'lunch' })
+    await action(s, { action: 'unplace', id: lunch.id })
+    read = await plan(s)
+    expect(read.days.map((m) => m.title)).toEqual(['Tacos'])
+    expect(read.unplaced.find((u) => u.id === lunch.id)).toMatchObject({ title: 'Sandwichs', slot: 'lunch' })
+    await action(s, { action: 'place', id: lunch.id, toDate: day(2) })
+    expect(await slotOf(s, day(2), 'lunch'), 'still a dîner').toEqual(['Sandwichs'])
+
+    // Remove from the bin: the DELETE with { unplaced } targets the bin, never a meal.
+    const soupe = (await plan(s)).unplaced[0]!
+    await okJson(s.fetch('/api/meals', { method: 'DELETE', body: { id: parked.id, unplaced: true } }))
+    expect((await plan(s)).days.map((m) => m.id), 'a planned meal with that id is untouched').toContain(parked.id)
+    await okJson(s.fetch('/api/meals', { method: 'DELETE', body: { id: soupe.id, unplaced: true } }))
+    expect((await plan(s)).unplaced).toEqual([])
+  })
+
+  it('one household never sees, places or removes another one’s bin', async () => {
+    const a = await household('meals-unplaced-a', undefined, { empty: true })
+    const b = await household('meals-unplaced-b', undefined, { empty: true })
+    const { id } = await okJson<{ id: string }>(a.fetch('/api/meals', { method: 'POST', body: { action: 'park', title: 'Lasagne' } }))
+    expect((await plan(b)).unplaced).toEqual([])
+    await action(b, { action: 'place', id, toDate: day(1) })
+    await okJson(b.fetch('/api/meals', { method: 'DELETE', body: { id, unplaced: true } }))
+    expect((await plan(b)).days).toEqual([])
+    expect((await plan(a)).unplaced.map((u) => u.title)).toEqual(['Lasagne'])
   })
 })

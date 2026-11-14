@@ -35,7 +35,7 @@ async function openGrid(page: Page) {
   await mockApi(page)
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
   await page.goto('/kitchen')
-  await expect(page.locator('.kitchen__day').first()).toBeVisible({ timeout: 15_000 })
+  await expect(page.locator('.kitchen__day.is-today')).toBeVisible({ timeout: 15_000 })
 }
 
 /** Press-and-hold a row past DND_HOLD_MS, carry it onto a day zone, release. */
@@ -60,7 +60,7 @@ async function holdDrag(page: Page, from: ReturnType<Page['locator']>, toZoneDat
 test('a side meal (breakfast) drags to the next day as ONE meal, in its own slot', async ({ page }) => {
   await openGrid(page)
   const nextDay = addLocalDays(MMID, 1)
-  const crepes = page.locator('.kitchen__day').first().locator('.kitchen__day-meal', { hasText: 'Crêpes' })
+  const crepes = page.locator('.kitchen__day.is-today').locator('.kitchen__day-meal', { hasText: 'Crêpes' })
   await expect(crepes).toBeVisible()
   const [req] = await Promise.all([page.waitForRequest(isReschedule, { timeout: 20_000 }), holdDrag(page, crepes, nextDay)])
   const body = JSON.parse(req.postData() ?? '{}') as { action: string; id: string; toDate: number; slot?: string }
@@ -70,7 +70,7 @@ test('a side meal (breakfast) drags to the next day as ONE meal, in its own slot
 test('the supper headline still moves the day\'s WHOLE supper plan', async ({ page }) => {
   await openGrid(page)
   const nextDay = addLocalDays(MMID, 1)
-  const supper = page.locator('.kitchen__day').first().locator('.kitchen__day-meal', { hasText: 'Spaghetti maison' })
+  const supper = page.locator('.kitchen__day.is-today').locator('.kitchen__day-meal', { hasText: 'Spaghetti maison' })
   const seen: string[] = []
   page.on('request', (r) => {
     if (isReschedule(r)) seen.push((JSON.parse(r.postData() ?? '{}') as { id: string }).id)

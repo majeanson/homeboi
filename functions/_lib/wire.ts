@@ -276,6 +276,17 @@ export interface MealsWire {
   weekStart: number
   windowDays: number
   recent: MealRow[]
+  /** « À placer » (mig 0155): the week's meals with no day yet. Absent on the ?date= read. */
+  unplaced?: UnplacedMealRow[]
+}
+/** A meal parked in « À placer » — it keeps its id when it moves to or from `meals`. */
+export interface UnplacedMealRow {
+  id: string
+  title: string
+  recipe_id: string | null
+  slot: string | null
+  is_leftover: number
+  position: number
 }
 
 /** Two faces of one route: the paged past, and `?summary=1`'s dish list. */

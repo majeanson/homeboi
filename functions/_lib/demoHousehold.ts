@@ -140,6 +140,7 @@ export const HOUSEHOLD_TABLES: readonly string[] = [
   // kitchen
   'meal_leftovers',
   'meals',
+  'meals_unplaced',
   'meal_ideas',
   'pantry_low',
   'pantry_use_soon',
