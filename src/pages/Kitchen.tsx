@@ -19,7 +19,7 @@ import { usePointerDnd, DragGhost, DND_HOLD_MS, dropCueOf } from '../lib/dnd'
 import { PairPrompt } from '../components/Fallback'
 import { loadStateOf } from '../components/Fallback'
 import { formatDay, weekdayShort, dayNum } from '../lib/format'
-import { addLocalDays, todayLocalDay } from '../lib/localDay'
+import { addLocalDays } from '../lib/localDay'
 import { pictoFor } from '../lib/picto'
 import { ideasForDay } from '../lib/mealIdeas'
 import { useMeals, useRecipes, useDayNotes, usePantry, useLeftovers } from '../lib/queryHooks'
@@ -159,26 +159,8 @@ export function Kitchen() {
   // plan action, and parking a copy of it would leave the original behind.
   const recipeOpts = useMemo(() => mealOpts.filter((o) => o.data.kind === 'recipe'), [mealOpts])
   const planLeftover = usePlanLeftover()
-  // #12 "Haven't had in a while": recipe id → the most recent local-midnight day a
-  // meal linked to it (recipe_id, migration 0024) was *served*. Built from the meals
-  // the page already holds — the 10-day window (`days`) plus the recent-history
-  // tail (`recent`) — so it needs NO new query. The `days` window is a FORWARD
-  // countdown, so we keep only rows dated today-or-earlier: a meal merely PLANNED for
-  // a future day isn't "served" and must not sink the recipe in the Oubliées sort. A
-  // recipe absent here is treated by rankNeglected as never-served-recently → it
-  // leads "Oubliées". The server's suggest-meal prompt does the authoritative
-  // full-history version; this is the calm client affordance over the data on hand.
-  const lastServedById = useMemo(() => {
-    const m = new Map<string, number>()
-    const today = todayLocalDay()
-    const rows = [...(meals.data?.days ?? []), ...(meals.data?.recent ?? [])]
-    for (const r of rows) {
-      if (!r.recipe_id || r.date > today) continue
-      const prev = m.get(r.recipe_id)
-      if (prev == null || r.date > prev) m.set(r.recipe_id, r.date)
-    }
-    return m
-  }, [meals.data])
+  // #12 « Oubliées » reads its own full-history last-served map inside RecipesTab
+  // (/api/meal-history?lastServed=1) — this page used to derive it from a 3-day tail.
   const unauth = isUnauthorized(meals.error) || isUnauthorized(pantry.error)
   const days = meals.data?.days ?? []
   // « À placer » — the week's meals with no day yet (mig 0155), the grid's first card.
@@ -802,7 +784,6 @@ export function Kitchen() {
             lowItems={lowItems}
             soonItems={soonItems}
             listItems={listItems}
-            lastServed={lastServedById}
             // Tapping a recipe card skips the old detail peek and opens the full
             // recipe view directly — every action the peek carried (Ajouter à la
             // liste, En routine pour enfant, Partager) now lives on that view.

@@ -22,6 +22,7 @@ import { Chip } from '../Chip'
 import { EmptyState } from '../EmptyState'
 import { type HelpMode } from '../../lib/helpMode'
 import { Img } from '../Img'
+import { MEAL_LAST_SERVED_KEY, type MealLastServed } from './types'
 
 // The recipe book: search, tag chips, the configurable filter/sort PILLS, and the
 // #11 collections browse layer — all flat in one view (no second-level sub-tabs).
@@ -49,7 +50,6 @@ export function RecipesTab({
   lowItems,
   soonItems,
   listItems,
-  lastServed,
   onView,
   help,
 }: {
@@ -57,7 +57,6 @@ export function RecipesTab({
   lowItems: string[]
   soonItems: string[]
   listItems: string[]
-  lastServed?: Map<string, number>
   onView: (r: Recipe) => void
   // Kitchen's page-level help mode — makes the "Recettes" heading and the
   // "Aa / Collections" toggle explainable in place while armed (lib/helpMode).
@@ -104,6 +103,64 @@ export function RecipesTab({
   const tagOrder = useMemo(() => tagOptions(tagsData?.presets ?? [], [], t.recipes.tagPresets), [tagsData?.presets, t.recipes.tagPresets])
   const tags = useMemo(() => orderTags(allTags(recipes), tagOrder), [recipes, tagOrder])
 
+  // #12 « Oubliées »: recipe id → the local-midnight day it was last served, over the
+  // WHOLE history (/api/meal-history?lastServed=1). Read here, not on the Kitchen
+  // page: only this tab needs it. It was derived from /api/meals' 3-day `recent`
+  // until 2026-11-14, so anything older read « jamais encore ».
+  const servedQ = useQuery({
+    queryKey: MEAL_LAST_SERVED_KEY,
+    queryFn: () => api<MealLastServed>('meal-history?lastServed=1'),
+  })
+  const lastServed = useMemo(
+    () => new Map((servedQ.data?.served ?? []).map((s) => [s.recipe_id, s.last_at] as const)),
+    [servedQ.data],
+  )
+  const canNeglectFilter = lastServed.size > 0 && recipes.length > 1
+  const canCookFilter = lowItems.length > 0 && recipes.length > 0
+  const canUseSoonFilter = soonItems.length > 0 && recipes.length > 0
+
+  // A pill shows when enabled AND its data makes it meaningful (no low items → no
+  // "Quoi cuisiner?", no favourites → no "Favoris", etc.). Customs show with rules.
+  const pillShown = (p: Pill): boolean => {
+    if (p.off) return false
+    if (isBuiltinPill(p)) {
+      switch (p.k) {
+        case 'cookable':
+          return canCookFilter
+        case 'useSoon':
+          return canUseSoonFilter
+        case 'fast':
+          return canFastFilter
+        case 'neglected':
+          return canNeglectFilter
+        case 'favorites':
+          return loved.size > 0
+        case 'recent':
+          return recipes.length > 1
+      }
+    }
+    return recipes.length > 0 && p.rules.length > 0
+  }
+  const shownPills = pills.filter(pillShown)
+
+  // What is ACTUALLY on: a kept filter only counts while its pill is on screen, a kept
+  // tag only while some recipe still carries it. The raw kept state outlives both —
+  // un-heart the last favourite with « Favoris » on, rename a tag in Réglages, turn a
+  // pill off — and it used to keep FILTERING (an empty book whose cause had no chip
+  // left to untap) and kept COUNTING in the « Filtrer » badge. The kept values stay
+  // as they are, so the filter comes back with its chip (a ❤ re-added).
+  // Keyed on a string, so this memo (and shownRecipes after it) only re-runs when the
+  // ACTIVE set changes, not on every render's fresh `shownPills` array.
+  const activeKeyStr = shownPills
+    .map(pillKey)
+    .filter((k) => filters.has(k))
+    .join('\n')
+  const activePillKeys = useMemo(() => new Set(activeKeyStr ? activeKeyStr.split('\n') : []), [activeKeyStr])
+  const activeTags = useMemo(() => {
+    const have = new Set(tags.map((tg) => tg.toLowerCase()))
+    return tagFilter.filter((k) => have.has(k))
+  }, [tagFilter, tags])
+
   const shownRecipes = useMemo(() => {
     const q = recipeQuery.trim().toLowerCase()
     return recipes.filter((r) => {
@@ -112,17 +169,16 @@ export function RecipesTab({
       // AND-FILTER (a recipe must carry every selected tag); in "Collections" they
       // instead pick WHICH collection sections to show (handled in `groups`), so
       // here we don't narrow the set — every section shows its full membership.
-      if (!groupView && tagFilter.length) {
+      if (!groupView && activeTags.length) {
         const rt = new Set((r.tags ?? []).map((tg) => tg.toLowerCase()))
-        if (!tagFilter.every((k) => rt.has(k))) return false
+        if (!activeTags.every((k) => rt.has(k))) return false
       }
       // Every active FILTER pill is an AND. Sorts (cookable/useSoon/neglected/
       // recent) order the grid elsewhere and never filter here.
       for (const p of pills) {
-        if (p.off || !filters.has(pillKey(p))) continue
+        if (!activePillKeys.has(pillKey(p))) continue
         if (isBuiltinPill(p)) {
           if (p.k === 'fast') {
-            if (!canFastFilter) continue
             const tm = recipeTotalMin(r)
             if (!tm || tm > 30) return false
           } else if (p.k === 'favorites') {
@@ -134,29 +190,26 @@ export function RecipesTab({
       }
       return true
     })
-  }, [recipes, recipeQuery, tagFilter, groupView, pills, filters, canFastFilter, loved])
+  }, [recipes, recipeQuery, activeTags, groupView, pills, activePillKeys, loved])
   // Cookability: which staple each recipe is missing (out of stock + not on the
   // list), fewest first. The pill only surfaces when there's a low item to rank
   // against, so it never appears as a no-op.
   const ranked = useMemo(() => rankCookable(shownRecipes, lowItems, listItems), [shownRecipes, lowItems, listItems])
   const missingById = useMemo(() => new Map(ranked.map((r) => [r.recipe.id, r.missing])), [ranked])
-  const canCookFilter = lowItems.length > 0 && recipes.length > 0
   // "Use it up" ranking: which use-soon items each recipe would finish, most first.
   const rankedSoon = useMemo(() => rankUseSoon(shownRecipes, soonItems), [shownRecipes, soonItems])
   const usesById = useMemo(() => new Map(rankedSoon.map((r) => [r.recipe.id, r.uses])), [rankedSoon])
-  const canUseSoonFilter = soonItems.length > 0 && recipes.length > 0
   // #12 "Oubliées": longest-since-served first. Offered only once we have ANY
   // serving history to order by AND more than one recipe. daysSince null = never.
   const today = todayLocalDay()
   const rankedNeglect = useMemo(
-    () => rankNeglected(shownRecipes, lastServed ?? new Map(), today),
+    () => rankNeglected(shownRecipes, lastServed, today),
     [shownRecipes, lastServed, today],
   )
   const daysSinceById = useMemo(
     () => new Map(rankedNeglect.map((r) => [r.recipe.id, r.daysSince])),
     [rankedNeglect],
   )
-  const canNeglectFilter = (lastServed?.size ?? 0) > 0 && recipes.length > 1
   // Default order is alphabetical ("Aa"); an active sort pill overrides it.
   const alphaOrder = useMemo(
     () => [...shownRecipes].sort((a, b) => a.title.localeCompare(b.title)),
@@ -199,16 +252,16 @@ export function RecipesTab({
     // Selected tag chips pick which collection sections to show (a UNION of those
     // collections). No selection = every collection, in curated order. Untagged
     // "Autres" only joins when nothing's selected (it isn't a collection you'd pick).
-    const visibleTags = tagFilter.length ? tags.filter((tag) => tagFilter.includes(tag.toLowerCase())) : tags
+    const visibleTags = activeTags.length ? tags.filter((tag) => activeTags.includes(tag.toLowerCase())) : tags
     const byTag = visibleTags
       .map((tag) => {
         const key = tag.toLowerCase()
         return { tag, items: recipeOrder.filter((r) => (r.tags ?? []).some((tg) => tg.toLowerCase() === key)) }
       })
       .filter((g) => g.items.length > 0)
-    const untagged = tagFilter.length ? [] : recipeOrder.filter((r) => !(r.tags ?? []).length)
+    const untagged = activeTags.length ? [] : recipeOrder.filter((r) => !(r.tags ?? []).length)
     return { byTag, untagged }
-  }, [groupView, tags, recipeOrder, tagFilter])
+  }, [groupView, tags, recipeOrder, activeTags])
 
   // One recipe card — shared by the flat grid and the grouped sections. The ❤
   // favorite (#21) is a sibling overlay of the card button, never nested in it.
@@ -275,30 +328,7 @@ export function RecipesTab({
     favorites: { label: t.recipes.favorites, icon: <InlineIcon name="heart-bold" /> },
     recent: { label: t.recipes.recentlyAdded, icon: <InlineIcon name="sparkle-bold" /> },
   }
-  // A pill shows when enabled AND its data makes it meaningful (no low items → no
-  // "Quoi cuisiner?", no favourites → no "Favoris", etc.). Customs show with rules.
-  const pillShown = (p: Pill): boolean => {
-    if (p.off) return false
-    if (isBuiltinPill(p)) {
-      switch (p.k) {
-        case 'cookable':
-          return canCookFilter
-        case 'useSoon':
-          return canUseSoonFilter
-        case 'fast':
-          return canFastFilter
-        case 'neglected':
-          return canNeglectFilter
-        case 'favorites':
-          return loved.size > 0
-        case 'recent':
-          return recipes.length > 1
-      }
-    }
-    return recipes.length > 0 && p.rules.length > 0
-  }
-  const shownPills = pills.filter(pillShown)
-  const pillOn = (p: Pill): boolean => (isBuiltinPill(p) && isSortKey(p.k) ? activeSort === p.k : filters.has(pillKey(p)))
+  const pillOn = (p: Pill): boolean => (isBuiltinPill(p) && isSortKey(p.k) ? activeSort === p.k : activePillKeys.has(pillKey(p)))
   const togglePill = (p: Pill) => {
     if (isBuiltinPill(p) && isSortKey(p.k)) {
       setSort((s) => (s === p.k ? null : p.k))
@@ -323,7 +353,7 @@ export function RecipesTab({
   // …and how much is currently ON — the badge, so a shut panel still says WHY the
   // grid below is short. The search query is deliberately not counted: it has its
   // own visible field.
-  const activeFilters = filters.size + tagFilter.length + (activeSort ? 1 : 0)
+  const activeFilters = activePillKeys.size + activeTags.length + (activeSort ? 1 : 0)
 
   return (
     <section>
@@ -424,7 +454,7 @@ export function RecipesTab({
       )}
       {tags.length > 0 && (
         <div ref={tagsScroll.ref} className="kitchen__tag-filter">
-          <Chip selected={tagFilter.length === 0} onClick={() => setTagFilter([])}>
+          <Chip selected={activeTags.length === 0} onClick={() => setTagFilter([])}>
             {t.recipes.allTag}
           </Chip>
           {tags.map((tg) => {

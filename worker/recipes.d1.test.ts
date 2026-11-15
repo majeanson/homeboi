@@ -208,6 +208,33 @@ describe('les étiquettes', () => {
     expect((await s.fetch('/api/recipe-tags', { method: 'PATCH', body: {} })).status).toBe(400)
   })
 
+  // A custom pill names tags in its rules. Renaming « Souper » left the pill asking
+  // for « Souper », which no recipe carried any more — tapping it emptied the book.
+  it('a rename follows into the custom pills; a removal never silently widens one', async () => {
+    const s = await household('recipes-tag-pills', undefined, { empty: true })
+    await add(s, { title: 'A', tags: ['Souper', 'Vite'] })
+    await patch(s, {
+      setPills: [
+        { id: 'p1', label: 'Soupers', rules: [{ field: 'tag', tags: ['Souper', 'Soir'] }, { field: 'totalMin', op: 'lte', n: 30 }] },
+        { id: 'p2', label: 'Vite seul', rules: [{ field: 'tag', tags: ['Vite'] }] },
+        { id: 'p3', label: 'Vite ou brunch', rules: [{ field: 'tag', tags: ['Vite', 'Brunch'] }] },
+      ],
+    })
+    await patch(s, { rename: { from: 'SOUPER', to: 'Soir' } })
+    let pills = (await tags(s)).pills
+    expect(pills.find((p) => p.id === 'p1')!.rules, 'renamed in place, merged into the « Soir » it already OR-ed').toEqual([
+      { field: 'tag', tags: ['Soir'] },
+      { field: 'totalMin', op: 'lte', n: 30 },
+    ])
+
+    await patch(s, { remove: 'vite' })
+    pills = (await tags(s)).pills
+    expect(pills.find((p) => p.id === 'p3')!.rules, 'dropped from a rule that names others').toEqual([{ field: 'tag', tags: ['Brunch'] }])
+    expect(pills.find((p) => p.id === 'p2')!.rules, 'a rule naming ONLY it stays — the pill is not widened to « every recipe »').toEqual([
+      { field: 'tag', tags: ['Vite'] },
+    ])
+  })
+
   it('a pill config keeps a good custom pill, drops junk, and every built-in stays reachable', async () => {
     const s = await household('recipes-pills', undefined, { empty: true })
     const { pills } = await patch(s, {

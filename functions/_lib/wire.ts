@@ -293,6 +293,7 @@ export interface UnplacedMealRow {
 export type MealHistoryWire =
   | { days: MealRow[]; nextBefore: number | null }
   | { dishes: { title: string; recipe_id: string | null; last_at: number }[] }
+  | { served: { recipe_id: string; last_at: number }[] }
 
 export interface MealIdeasWire {
   ideas: { id: string; title: string; recipe_id: string | null; suggested_by: string | null; date: number | null; created_at: number }[]

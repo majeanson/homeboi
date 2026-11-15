@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { mockApi, seedState } from './mocks'
+import { mockApi, seedState, BASE, MMID } from './mocks'
 
 // The recipe book's header, leaned to ONE line: no « Recettes » heading (the sub-tab
 // above already says the word), a COLLAPSED magnifier that becomes the search field
@@ -130,4 +130,56 @@ test('the popped filter panel keeps every control inside a 390px phone', async (
       .slice(0, 10)
   })
   expect(bleeding, 'nothing bleeds past the right edge').toEqual([])
+})
+
+// A filter whose chip has GONE must stop filtering. « Favoris » shows only while some
+// recipe is loved; un-hearting the last one hid the chip but the filter stayed on —
+// an empty book, a « Filtrer 1 » badge, and no chip left to untap (2026-11-14 audit).
+test('un-hearting the last favourite with « Favoris » on gives the book back — no stranded filter', async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('babillard-profile', 'm1'))
+  let loves = [{ recipe_id: 'rc1', member_id: 'm1' }]
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await mockApi(page)
+  await page.route('**/api/recipe-loves', (route) => {
+    if (route.request().method() === 'DELETE') loves = []
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify(route.request().method() === 'GET' ? { loves } : { ok: true }) })
+  })
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
+  await page.goto('/kitchen')
+  await page.locator('.subtabs__opt', { hasText: 'Recettes' }).click()
+  await expect(page.locator('.recipe-card')).toHaveCount(4, { timeout: 15_000 })
+
+  const btn = page.locator('.recipe-filter')
+  await btn.click()
+  await page.locator('.recipe-filters').getByRole('button', { name: 'Favoris' }).click()
+  await expect(page.locator('.recipe-card')).toHaveCount(1)
+  await expect(btn.locator('.recipe-filter__n')).toHaveText('1')
+
+  await page.locator('.recipe-card-wrap').first().locator('.hearts__btn').click()
+  await expect(page.locator('.recipe-filters').getByRole('button', { name: 'Favoris' })).toHaveCount(0)
+  await expect(page.locator('.recipe-card'), 'the whole book, not « aucune recette »').toHaveCount(4)
+  await expect(btn.locator('.recipe-filter__n'), 'nothing counted that cannot be seen').toHaveCount(0)
+})
+
+// « Oubliées » read when each recipe was last served from /api/meals' 3-day tail, so
+// a dish from three weeks ago said « jamais encore » and sorted with the never-cooked
+// ones. It reads the whole history now (/api/meal-history?lastServed=1).
+test('« Oubliées » knows a dish from three weeks ago — not « jamais encore »', async ({ page }) => {
+  await page.clock.setFixedTime(new Date(BASE * 1000))
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.setViewportSize({ width: 390, height: 844 })
+  await mockApi(page, { overrides: { 'meal-history': { served: [{ recipe_id: 'rc1', last_at: MMID - 21 * 86400 }] } } })
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
+  await page.goto('/kitchen')
+  await page.locator('.subtabs__opt', { hasText: 'Recettes' }).click()
+  await expect(page.locator('.recipe-card')).toHaveCount(4, { timeout: 15_000 })
+  await page.locator('.recipe-filter').click()
+  await page.locator('.recipe-filters').getByRole('button', { name: 'Oubliées' }).click()
+
+  const spaghetti = page.locator('.recipe-card', { hasText: 'Spaghetti maison' })
+  await expect(spaghetti.locator('.recipe-card__seen')).toHaveText(/vu il y a 21 jours/)
+  // Never-served recipes lead; the one served three weeks ago comes after them.
+  await expect(page.locator('.recipe-card').last()).toContainText('Spaghetti maison')
+  await expect(page.locator('.recipe-card').first().locator('.recipe-card__seen')).toHaveText(/jamais encore/)
 })

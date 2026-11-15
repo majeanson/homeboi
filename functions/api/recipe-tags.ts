@@ -360,6 +360,49 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     await setPref(ctx.env as never, actor.householdId, TAG_SLOTS_KEY, tagSlots)
   }
 
+  // …and every custom pill's tag rule. A « Soupers rapides » pill = tag Souper AND
+  // ≤ 30 min: after renaming Souper to Soir it went on asking for « Souper », which
+  // no recipe carries any more, so tapping it emptied the book. A rename rewrites the
+  // tag in place (deduped if the pill already named the target). A removal drops it
+  // from a rule that OR-s other tags too; a rule naming ONLY that tag is left as it
+  // is — dropping it would silently WIDEN the pill (« Soupers rapides » becoming
+  // « rapides »), and an honest pill that matches nothing is the lesser surprise.
+  const pillRow = await ctx.env.DB.prepare('SELECT recipe_pills_json FROM households WHERE id = ?')
+    .bind(actor.householdId)
+    .first<{ recipe_pills_json: string | null }>()
+  let rawPills: unknown = null
+  try {
+    rawPills = JSON.parse(pillRow?.recipe_pills_json ?? 'null')
+  } catch {
+    rawPills = null
+  }
+  const pills = cleanPills(rawPills)
+  let pillsChanged = false
+  const nextPills = pills.map((p) => {
+    if (!Array.isArray(p.rules)) return p
+    const rules = (p.rules as Record<string, unknown>[]).map((c) => {
+      if (c.field !== 'tag' || !Array.isArray(c.tags)) return c
+      const tags = c.tags as string[]
+      if (!tags.some((tg) => tg.toLowerCase() === fromKey)) return c
+      const next = renameTo
+        ? cleanTagList(tags.map((tg) => (tg.toLowerCase() === fromKey ? renameTo : tg)))
+        : tags.filter((tg) => tg.toLowerCase() !== fromKey)
+      if (next.length === 0) return c
+      pillsChanged = true
+      return { ...c, tags: next }
+    })
+    return { ...p, rules }
+  })
+  if (pillsChanged) {
+    updates.push(
+      ctx.env.DB.prepare('UPDATE households SET recipe_pills_json = ?, updated_at = ? WHERE id = ?').bind(
+        JSON.stringify(nextPills),
+        ts,
+        actor.householdId,
+      ),
+    )
+  }
+
   if (updates.length) await ctx.env.DB.batch(updates)
   return ok({ changed: updates.length })
 })

@@ -255,6 +255,25 @@ describe('l’historique', () => {
     expect(dishes[0], 'the most recent spelling and recipe link win').toMatchObject({ title: 'spaghetti', recipe_id: 'r-sp', last_at: day(-2) })
     expect(Object.keys(dishes[0]!).sort(), 'calm: « dernière fois », never « 12 fois »').toEqual(['last_at', 'recipe_id', 'title'])
   })
+
+  // « Oubliées » read « jamais encore » for anything served more than 3 days ago: it
+  // was derived from /api/meals' 3-day `recent`. This read covers the whole history.
+  it('« Oubliées » knows when each recipe was last served — weeks back, by link, not the future', async () => {
+    const s = await household('history-last-served', undefined, { empty: true })
+    await add(s, { title: 'Lasagne', date: day(-40), recipeId: 'r-las' })
+    await add(s, { title: 'Lasagne du dimanche', date: day(-20), recipeId: 'r-las' })
+    await add(s, { title: 'Chili', date: day(0), recipeId: 'r-chili' })
+    await add(s, { title: 'Chili', date: day(-1), recipeId: 'r-chili', isLeftover: true })
+    await add(s, { title: 'Tarte', date: day(3), recipeId: 'r-tarte' })
+    await add(s, { title: 'Sans lien', date: day(-5) })
+
+    const { served } = await okJson<{ served: { recipe_id: string; last_at: number }[] }>(s.fetch('/api/meal-history?lastServed=1'))
+    const byId = Object.fromEntries(served.map((x) => [x.recipe_id, x.last_at]))
+    expect(byId, 'the latest serving per recipe, whatever it was called that night; today counts; a planned future day and a title-only meal do not').toEqual({
+      'r-las': day(-20),
+      'r-chili': day(0),
+    })
+  })
 })
 
 // « À placer » (mig 0155): the week's meals with no day yet. A meal keeps its ID as it

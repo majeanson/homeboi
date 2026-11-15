@@ -102,6 +102,10 @@ export const MEAL_HISTORY_KEY = ['meal-history']
 // Prefix-invalidated by MEAL_HISTORY_KEY (TanStack fuzzy matching), so every meal
 // write that refreshes the Historique tab refreshes the « Déjà mangé » source too.
 export const MEAL_HISTORY_SUMMARY_KEY = ['meal-history', 'summary']
+// ?lastServed=1 — recipe id → the last day it was served, over the whole history
+// (« Oubliées »). Same prefix, so every meal write refreshes it too.
+export const MEAL_LAST_SERVED_KEY = ['meal-history', 'last-served']
+export type MealLastServed = { served: { recipe_id: string; last_at: number }[] }
 export const DAY_NOTES_KEY = ['day-notes']
 export const MEAL_IDEAS_KEY = ['meal-ideas']
 export const LEFTOVERS_KEY = ['leftovers']

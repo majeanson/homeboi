@@ -36,6 +36,24 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // restant isn't a new "we make this" signal). SQLite guarantees the bare
   // title/recipe_id come from the MAX(date) row of each group, so the casing and
   // recipe link are the most recent spelling of the dish.
+  // ── ?lastServed=1 — the recipe book's « Oubliées » sort: when each recipe was
+  // last on the table, over the WHOLE history. It used to be derived on the client
+  // from /api/meals' `recent` (RECENT_DAYS = 3), so a recipe served 10 days ago
+  // read « jamais encore » and sorted with the never-cooked ones — the sort could
+  // only ever tell "in the last 3 days" from "not". Keyed by the recipe LINK
+  // (title is not identity here: a renamed dish is still that recipe). Leftover
+  // rows excluded, like « Déjà mangé ». Today counts; a planned future day does not.
+  if (url.searchParams.get('lastServed') === '1') {
+    const { results } = await ctx.env.DB.prepare(
+      `SELECT recipe_id, MAX(date) AS last_at
+       FROM meals WHERE household_id = ? AND recipe_id IS NOT NULL AND date < ? AND is_leftover = 0
+       GROUP BY recipe_id`,
+    )
+      .bind(hh, today + DAY)
+      .all<{ recipe_id: string; last_at: number }>()
+    return okWire('meal-history', { served: results })
+  }
+
   if (url.searchParams.get('summary') === '1') {
     const { results } = await ctx.env.DB.prepare(
       `SELECT title, recipe_id, COUNT(*) AS times, MAX(date) AS last_at

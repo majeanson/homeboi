@@ -782,6 +782,8 @@ export const ROUTES: Partial<Wire> = {
       { title: 'Tacos', recipe_id: null, last_at: MMID - DAY },
       { title: 'Soupe poulet-nouilles', recipe_id: null, last_at: MMID - 2 * DAY },
     ],
+    // ?lastServed=1 (the recipe book's « Oubliées » sort) — same fixture, own field.
+    served: [{ recipe_id: 'rc1', last_at: MMID }],
   },
   'meal-ideas': {
     ideas: [
