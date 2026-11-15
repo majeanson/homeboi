@@ -37,9 +37,16 @@ import { type MealIdea, MEAL_IDEAS_KEY, MEALS_KEY, MEAL_HISTORY_KEY } from './ty
  */
 export function usePlanIdea() {
   const createWithUndo = useCreateWithUndo()
+  const park = useParkMeal()
   const t = useT()
   const { lang } = useLang()
-  return (idea: Pick<MealIdea, 'title' | 'recipe_id'>, date: number, slot: MealSlot) => {
+  // `date: null` = « À placer » (mig 0155) — the week's planning card instead of a
+  // real day; the picked slot rides along so it lands back in it once given a day.
+  return (idea: Pick<MealIdea, 'title' | 'recipe_id'>, date: number | null, slot: MealSlot) => {
+    if (date == null) {
+      void park(idea.title, idea.recipe_id ?? null, slot)
+      return
+    }
     void createWithUndo({
       endpoint: 'meals',
       body: { date, slot, title: idea.title, recipeId: idea.recipe_id ?? null, staples: [] },
@@ -75,7 +82,6 @@ export function MealIdeas({
   // Recipes as combobox options — ranked by cookability, badged "Prêt / il manque N".
   const recipeOpts = useMemo(() => recipeOptions(recipes, lowItems, listItems, t), [recipes, lowItems, listItems, t])
   const planIdea = usePlanIdea()
-  const park = useParkMeal()
 
   return (
     <MealPool<MealIdea, Recipe>
@@ -87,7 +93,7 @@ export function MealIdeas({
       buildAddBody={(title, picked) => ({ title, recipeId: picked?.data.id ?? null, suggestedBy: profileId })}
       onPlan={planIdea}
       // The idea stays in the pool; its copy waits in « À placer » for a day.
-      onPark={(idea) => void park(idea.title, idea.recipe_id ?? null)}
+      onPark={(idea, slot) => planIdea(idea, null, slot)}
       renderLead={(idea) => (idea.recipe_id ? <InlineIcon name="book-open-bold" size={14} color="var(--berry-deep)" /> : null)}
       // An idea born from a recipe: its 📖 picto opens that recipe (same tight
       // icon-only link as the combobox row). Tapping the chip still plans it.

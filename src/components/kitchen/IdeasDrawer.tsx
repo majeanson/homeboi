@@ -128,12 +128,12 @@ export function IdeasDrawer({
   // A recipe row (⭐ Favoris / the 🧊 use-soon shortlist) plans REUSABLY, like an
   // idea — nothing is consumed — and through the SAME helper, so it gets the same
   // « planifié — <jour> » toast and its « Annuler ».
-  function planRecipe(r: Recipe, date: number, slot: MealSlot) {
+  function planRecipe(r: Recipe, date: number | null, slot: MealSlot) {
     planIdea({ title: r.title, recipe_id: r.id }, date, slot)
   }
 
   // A bare AI-suggested title (🤖, no recipe link yet) plans the same way.
-  function planAiIdea(title: string, date: number, slot: MealSlot) {
+  function planAiIdea(title: string, date: number | null, slot: MealSlot) {
     planIdea({ title, recipe_id: null }, date, slot)
   }
 
@@ -291,7 +291,7 @@ function RecipeRows({
   rows: { key: string; title: string; sub?: string; icon: IconName; iconColor: string; recipe: Recipe }[]
   week: { date: number; label: string }[]
   readOnly: boolean
-  onPlan: (r: Recipe, date: number, slot: MealSlot) => void
+  onPlan: (r: Recipe, date: number | null, slot: MealSlot) => void
   faces?: (key: string) => ReactNode
 }) {
   const t = useT()
@@ -342,6 +342,10 @@ function RecipeRows({
                 close()
                 onPlan(row.recipe, date, planSlot)
               }}
+              onPickUnplaced={() => {
+                close()
+                onPlan(row.recipe, null, planSlot)
+              }}
             />
           )}
         </li>
@@ -362,7 +366,7 @@ function FavoritesChip({
   members: Member[]
   week: { date: number; label: string }[]
   readOnly: boolean
-  onPlan: (r: Recipe, date: number, slot: MealSlot) => void
+  onPlan: (r: Recipe, date: number | null, slot: MealSlot) => void
 }) {
   const t = useT()
   const { loversOf, lovedSet } = useLoves()
@@ -408,7 +412,7 @@ function PastChip({
   recipes: Recipe[]
   week: { date: number; label: string }[]
   readOnly: boolean
-  onPlan: (dish: Pick<PastDish, 'title' | 'recipe_id'>, date: number, slot: MealSlot) => void
+  onPlan: (dish: Pick<PastDish, 'title' | 'recipe_id'>, date: number | null, slot: MealSlot) => void
 }) {
   const t = useT()
   const { lang } = useLang()
@@ -480,6 +484,10 @@ function PastChip({
                   close()
                   onPlan(dish, date, planSlot)
                 }}
+                onPickUnplaced={() => {
+                  close()
+                  onPlan(dish, null, planSlot)
+                }}
               />
             )}
           </li>
@@ -500,7 +508,7 @@ function AiChip({
   suggest: ReturnType<typeof useMealSuggest>
   keptAi: Set<string>
   onKeep: (title: string) => void
-  onPlan: (title: string, date: number, slot: MealSlot) => void
+  onPlan: (title: string, date: number | null, slot: MealSlot) => void
   week: { date: number; label: string }[]
   readOnly: boolean
 }) {
@@ -576,6 +584,10 @@ function AiChip({
                     close()
                     onPlan(title, date, planSlot)
                   }}
+                  onPickUnplaced={() => {
+                    close()
+                    onPlan(title, null, planSlot)
+                  }}
                 />
               )}
             </li>
@@ -598,7 +610,7 @@ function KidChip({
   memberById: (id: string | null | undefined) => Member | undefined
   week: { date: number; label: string }[]
   readOnly: boolean
-  onPlan: (idea: MealIdea, date: number, slot: MealSlot) => void
+  onPlan: (idea: MealIdea, date: number | null, slot: MealSlot) => void
   onRemove: (idea: MealIdea) => void
 }) {
   const t = useT()
@@ -645,6 +657,10 @@ function KidChip({
                 onPickDay={(date) => {
                   close()
                   onPlan(idea, date, planSlot)
+                }}
+                onPickUnplaced={() => {
+                  close()
+                  onPlan(idea, null, planSlot)
                 }}
               />
             )}

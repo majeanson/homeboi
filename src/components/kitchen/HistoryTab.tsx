@@ -249,6 +249,10 @@ export function HistoryTab({
                           close()
                           planIdea({ title: openMeal.title, recipe_id: openMeal.recipe_id ?? null }, pickDate, planSlot)
                         }}
+                        onPickUnplaced={() => {
+                          close()
+                          planIdea({ title: openMeal.title, recipe_id: openMeal.recipe_id ?? null }, null, planSlot)
+                        }}
                       />
                     )}
                   </div>

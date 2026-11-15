@@ -98,7 +98,7 @@ export function RecipeScene({
   // null = "not picked yet" → follow the household's hero meal (Réglages ▸ Repas).
   const [planSlotPick, setPlanSlot] = useState<MealSlot | null>(null)
   const planSlot = planSlotPick ?? mealPrefs.hero
-  const [plannedDate, setPlannedDate] = useState<number | null>(null)
+  const [planned, setPlanned] = useState(false)
   const canCook = recipe.steps.length > 0 || recipe.ingredients.length > 0
   const imgSrc = recipeImg(recipe.image)
   // Per-tag household colours (migration 0037) — the same source the form and
@@ -207,18 +207,23 @@ export function RecipeScene({
     )
   }
 
-  async function planOn(date: number) {
-    setPlannedDate(date)
+  // `date: null` = « À placer » (mig 0155): the week grid's first card, the meal
+  // planned for the week without a day yet — the same `park` body useParkMeal sends.
+  async function planOn(date: number | null) {
+    setPlanned(true)
     setPlanning(false)
     // Optimistic badge above; roll it back on failure so the sheet never claims
     // a meal the server doesn't have. Lands on the chosen slot (souper default).
     await write('meals', {
       method: 'POST',
-      body: { date, slot: planSlot, title: recipe.title, staples: [], recipeId: recipe.id },
+      body:
+        date == null
+          ? { action: 'park', title: recipe.title, recipeId: recipe.id, slot: planSlot }
+          : { date, slot: planSlot, title: recipe.title, staples: [], recipeId: recipe.id },
       // MEAL_HISTORY_KEY: the picked day can be today, which « Historique » shows —
       // and every dish planned here feeds « Déjà mangé » (same key prefix).
       affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY, MONTH_KEY],
-    }).catch(() => setPlannedDate(null))
+    }).catch(() => setPlanned(false))
   }
 
   async function del() {
@@ -525,7 +530,14 @@ export function RecipeScene({
             "Planifier un souper" reveals the days next to the button (not lost up
             in the scrolled recipe body). */}
         {planning && (
-          <MealPlanPicker band slot={planSlot} onSlot={setPlanSlot} week={week} onPickDay={planOn} />
+          <MealPlanPicker
+            band
+            slot={planSlot}
+            onSlot={setPlanSlot}
+            week={week}
+            onPickDay={planOn}
+            onPickUnplaced={() => void planOn(null)}
+          />
         )}
 
         {/* The footer keeps ONLY the two primaries — Cuisiner leads, Planifier
@@ -543,9 +555,9 @@ export function RecipeScene({
                 type="button"
                 className="btn btn--ghost mono"
                 onClick={() => setPlanning((p) => !p)}
-                disabled={plannedDate != null}
+                disabled={planned}
               >
-                {plannedDate != null ? t.recipes.planned : t.recipes.plan}
+                {planned ? t.recipes.planned : t.recipes.plan}
               </button>
             )}
           </div>

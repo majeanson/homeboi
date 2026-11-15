@@ -76,7 +76,7 @@ export function MealPool<T extends { id: string; title: string }, O>({
   onPlan: (item: T, date: number, slot: MealSlot) => void
   // « À placer » — offer the week grid's dateless first card as the picker's first chip.
   // Ideas pass it (the idea stays, a copy waits for its day); Restants do not.
-  onPark?: ((item: T) => void) | undefined
+  onPark?: ((item: T, slot: MealSlot) => void) | undefined
   renderLead: (item: T) => ReactNode // the leading picto inside the chip (e.g. a recipe book glyph)
   // Route for that picto, when the row points at a real entity (an idea linked to a
   // recipe → its page). Same deal as the combobox's `iconTo`: the glyph leaves the
@@ -311,7 +311,7 @@ export function MealPool<T extends { id: string; title: string }, O>({
                     onPark
                       ? () => {
                           close()
-                          onPark(item)
+                          onPark(item, planSlot)
                         }
                       : undefined
                   }

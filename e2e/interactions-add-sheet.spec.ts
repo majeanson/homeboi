@@ -204,7 +204,7 @@ test.describe('add sheet', () => {
     )
     const del = page.waitForRequest((r) => isApi('DELETE', 'meals')(r) && r.postData()?.includes('planned1') === true)
     await page.locator('.ideas-drawer .kitchen__idea-name', { hasText: 'Soupe poulet-nouilles' }).click()
-    await page.locator('.ideas-drawer .meal-plan-pick__days .chip').first().click()
+    await page.locator('.ideas-drawer .meal-plan-pick__days .chip:not(.meal-plan-pick__unplaced)').first().click()
     const toast = page.locator('.undo-toast')
     await expect(toast).toContainText('« Soupe poulet-nouilles » planifié —')
     await toast.getByRole('button', { name: 'Annuler' }).click()

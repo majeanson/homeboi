@@ -37,8 +37,9 @@ test('the ideas drawer offers no day to plan on until the real week anchor arriv
   await expect(picker, 'the picker itself still opens — only its days are withheld').toBeVisible()
 
   // The row of "plan it on…" days must be EMPTY. With the epoch anchor it held ten
-  // weekday chips, every one of them writing a meal in January 1970.
-  await expect(picker.locator('.meal-plan-pick__days .chip')).toHaveCount(0)
+  // weekday chips, every one of them writing a meal in January 1970. (« À placer »
+  // carries no date, so it may stay — it is not a day.)
+  await expect(picker.locator('.meal-plan-pick__days .chip:not(.meal-plan-pick__unplaced)')).toHaveCount(0)
 })
 
 test('once the week anchor lands, the days are offered again', async ({ page }) => {
@@ -51,7 +52,7 @@ test('once the week anchor lands, the days are offered again', async ({ page }) 
   await expect(page.locator('.scene.ideas-drawer')).toBeVisible()
 
   await page.locator('.kitchen__idea-name').first().click()
-  const days = page.locator('.meal-plan-pick .meal-plan-pick__days .chip')
+  const days = page.locator('.meal-plan-pick .meal-plan-pick__days .chip:not(.meal-plan-pick__unplaced)')
   await expect(days.first()).toBeVisible()
   expect(await days.count()).toBeGreaterThan(0)
 })

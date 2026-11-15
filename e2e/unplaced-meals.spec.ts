@@ -24,16 +24,44 @@ const UNPLACED = [
 const mealsPost = (action: string) => (r: Request) =>
   r.method() === 'POST' && new URL(r.url()).pathname === '/api/meals' && new RegExp(`"action":"${action}"`).test(r.postData() ?? '')
 
+type Row = Record<string, unknown> & { id: string }
+
+/**
+ * /api/meals as a tiny STATEFUL server: a write moves the row, and the refetch every
+ * write triggers reads it back. A stateless echo (the first version of this spec) let
+ * that refetch put the old row straight back over the optimistic move — green locally,
+ * red on CI's single worker, where the refetch landed before the assertion.
+ */
+async function statefulMeals(page: Page) {
+  const st = { days: [...MEALS.days] as unknown as Row[], unplaced: [...UNPLACED] as Row[] }
+  await page.route('**/api/meals**', (route) => {
+    const req = route.request()
+    const url = new URL(req.url())
+    if (url.pathname !== '/api/meals') return route.fallback()
+    if (req.method() === 'GET') {
+      if (url.searchParams.has('date')) return route.fallback()
+      return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ ...MEALS, ...st }) })
+    }
+    const b = (req.postDataJSON() ?? {}) as Record<string, unknown>
+    if (b.action === 'place') {
+      const u = st.unplaced.find((x) => x.id === b.id)
+      st.unplaced = st.unplaced.filter((x) => x.id !== b.id)
+      if (u) st.days.push({ ...u, date: b.toDate, slot: b.slot, cook_member_id: null })
+    } else if (b.action === 'unplace') {
+      const m = st.days.find((x) => x.id === b.id)
+      st.days = st.days.filter((x) => x.id !== b.id)
+      if (m) st.unplaced.push({ id: m.id, title: m.title, recipe_id: m.recipe_id ?? null, slot: m.slot, is_leftover: 0, position: 99 })
+    }
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ ok: true, id: 'u-new' }) })
+  })
+}
+
 async function openGrid(page: Page) {
   await page.clock.setFixedTime(new Date(BASE * 1000))
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.setViewportSize({ width: 390, height: 844 })
-  await mockApi(page, { overrides: { meals: { ...MEALS, unplaced: UNPLACED } } })
-  await page.route('**/api/meals', (route) =>
-    route.request().method() === 'GET'
-      ? route.fallback()
-      : route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, id: 'u-new' }) }),
-  )
+  await mockApi(page)
+  await statefulMeals(page)
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
   await page.goto('/kitchen')
   await expect(page.locator('.kitchen__day').first()).toBeVisible({ timeout: 15_000 })
@@ -103,4 +131,36 @@ test('an idea goes to « À placer » from its day picker — the first chip', a
   await expect(first).toHaveText('À placer')
   const [req] = await Promise.all([page.waitForRequest(mealsPost('park')), first.click()])
   expect(req.postDataJSON()).toMatchObject({ action: 'park', title: 'Soupe poulet-nouilles' })
+})
+
+// « make sure we can plan for this "day" too … instead of a real day, from recipes and
+// such » (Marc, 2026-11-14): every planning picker offers « À placer » first.
+test('a recipe plans straight into « À placer » from its « Planifier »', async ({ page }) => {
+  await openGrid(page)
+  await page.goto('/kitchen/recipe/rc1')
+  await page.locator('.recipe-modal').waitFor({ state: 'visible', timeout: 15_000 })
+  await page.getByRole('button', { name: /^Planifier$/ }).click()
+  const chip = page.locator('.meal-plan-pick__unplaced')
+  await expect(chip).toHaveText('À placer')
+  const [req] = await Promise.all([page.waitForRequest(mealsPost('park')), chip.click()])
+  expect(req.postDataJSON()).toMatchObject({ action: 'park', recipeId: 'rc1', slot: 'supper' })
+  await expect(page.getByRole('button', { name: /Planifié/ })).toBeDisabled()
+})
+
+test('a planned meal goes back to « À placer » from « Déplacer… » — no drag, and « Annuler » puts it back', async ({ page }) => {
+  await openGrid(page)
+  await page.goto(`/kitchen/day/${MMID}?vue=repas`)
+  const row = page.locator('.day-mng__sec', { hasText: 'Souper' }).locator('.kitchen__meal-row', { hasText: 'Spaghetti maison' })
+  await expect(row).toBeVisible({ timeout: 15_000 })
+  await row.locator('.action-menu__btn').click()
+  await page.getByRole('menuitem', { name: 'Déplacer…' }).click()
+  const sheet = page.locator('.sheet.show')
+  const [req] = await Promise.all([page.waitForRequest(mealsPost('unplace')), sheet.locator('.meal-plan-pick__unplaced').click()])
+  expect(req.postDataJSON()).toMatchObject({ action: 'unplace', id: 'meal1' })
+  await expect(row).toHaveCount(0)
+  const [back] = await Promise.all([
+    page.waitForRequest(mealsPost('place')),
+    page.getByRole('button', { name: 'Annuler' }).click(),
+  ])
+  expect(back.postDataJSON()).toMatchObject({ action: 'place', id: 'meal1', toDate: MMID, slot: 'supper' })
 })

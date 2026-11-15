@@ -30,7 +30,7 @@ test('a meal moves to another day and slot from its row ⋯ « Déplacer… » �
   await expect(sheet).toContainText('Déplacer « Spaghetti maison »')
   // Pick « Dîner », then the third day of the window (two days on).
   await sheet.locator('.slot-picker .chip', { hasText: 'Dîner' }).click()
-  await sheet.locator('.meal-plan-pick__days .chip').nth(2).click()
+  await sheet.locator('.meal-plan-pick__days .chip:not(.meal-plan-pick__unplaced)').nth(2).click()
 
   // ONE reschedule through the owner (mealMutations.reschedule): id, the picked day,
   // the picked slot — the same body the drag sends.

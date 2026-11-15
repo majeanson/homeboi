@@ -55,7 +55,7 @@ import { isMealSlot, type MealSlot, WINDOW_DAYS_DEFAULT } from '../lib/mealSlots
 import { Sheet } from '../components/Sheet'
 import { MealPlanPicker } from '../components/kitchen/MealPlanPicker'
 import { useWeekLabeled } from '../components/kitchen/week'
-import { reschedule, restoreMeals, planMealRecipe } from '../components/kitchen/mealMutations'
+import { reschedule, restoreMeals, planMealRecipe, unplaceMeal, placeMeal } from '../components/kitchen/mealMutations'
 import {
   type Leftover,
   type MealRow,
@@ -493,6 +493,19 @@ function DayPlanScene() {
     if (toDate === m.date && moveSlot === m.slot) return
     void reschedule(qc, m.id, toDate, moveSlot)
     recordUndo({ message: t.undo.mealMoved(m.title), onUndo: () => void reschedule(qc, m.id, m.date, m.slot) })
+  }
+  // …or off every day, into « À placer » (mig 0155) — the mirror of dragging it onto
+  // the grid's first card. Same id both ways, so the undo is a place back, not a copy.
+  const moveToUnplaced = () => {
+    const m = moving
+    if (!m) return
+    setMoving(null)
+    void unplaceMeal(qc, m)
+    recordUndo({
+      message: t.undo.mealMoved(m.title),
+      onUndo: () =>
+        void placeMeal(qc, { id: m.id, title: m.title, recipe_id: m.recipe_id ?? null, slot: m.slot, is_leftover: m.is_leftover ?? 0, position: 0 }, m.date, m.slot),
+    })
   }
 
   // ?focus= — LAND ON THE THING, not merely on the page that contains it.
@@ -956,7 +969,9 @@ function DayPlanScene() {
       </div>
       {/* « Déplacer… » (the row ⋯): the shared day + slot picker, in a Sheet. */}
       <Sheet open={moving !== null} onClose={() => setMoving(null)} title={moving ? t.kitchen.moveToTitle(moving.title) : undefined} className="meal-move">
-        {moving && <MealPlanPicker slot={moveSlot} onSlot={setMoveSlot} week={moveWeek} onPickDay={moveTo} />}
+        {moving && (
+          <MealPlanPicker slot={moveSlot} onSlot={setMoveSlot} week={moveWeek} onPickDay={moveTo} onPickUnplaced={moveToUnplaced} />
+        )}
       </Sheet>
     </div>
   )
