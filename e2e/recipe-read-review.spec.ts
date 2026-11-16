@@ -128,7 +128,7 @@ test('a last-resort read (no AI, shaky) says so before any line is trusted', asy
   await page.goto('/dev/kit')
   const entry = page.locator('details.kit-entry').filter({ hasText: 'Ouvrir la vérification' })
   await entry.locator('summary').click()
-  const warning = /Lecture de secours, sans IA/
+  const warning = /Lecture de secours sans IA/
 
   await entry.getByRole('button', { name: 'Ouvrir la vérification' }).click()
   const modal = page.locator('.read-review')

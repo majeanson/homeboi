@@ -120,7 +120,7 @@ test('a spent AI quota reads as « L’IA se repose », not Cloudflare’s raw e
 
   const toast = page.locator('.ai-error-toast')
   await expect(toast.locator('.ai-error-toast__title')).toHaveText('L’IA se repose')
-  await expect(toast.locator('.ai-error-toast__msg')).toContainText('quota IA gratuit du jour est épuisé')
+  await expect(toast.locator('.ai-error-toast__msg')).toContainText('quota IA gratuit du jour épuisé')
   await expect(toast).not.toContainText('4006')
   // The ask dialog's backdrop sits over the toast while it is open — close it first.
   await page.keyboard.press('Escape')

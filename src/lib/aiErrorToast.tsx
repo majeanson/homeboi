@@ -4,7 +4,8 @@ import { api } from './api'
 import { useLens } from './audience'
 import { onAiError, type AiErrorEvent } from './aiErrorBus'
 import { aiSpentKind } from './aiQuota'
-import { formatNextUtcMidnight } from './format'
+import { formatNextUtcMidnight, formatTime } from './format'
+import { addLocalDays, todayLocalDay } from './localDay'
 
 // On-screen surfacing of AI failures. lib/api emits when a handler tagged a
 // response with X-AI-Error (a Workers AI call quietly degraded); we show a notice
@@ -77,7 +78,12 @@ export function AiErrorProvider({ children }: { children: ReactNode }) {
             <strong className="ai-error-toast__title">{spent ? t.aiErr.spentTitle : t.aiErr.title}</strong>
             {!spent && <span className="ai-error-toast__feature mono">{current.feature}</span>}
             <span className="ai-error-toast__msg">
-              {spent === 'quota' ? t.aiErr.quota(formatNextUtcMidnight(lang)) : spent === 'budget' ? t.aiErr.budget : current.message}
+              {spent === 'quota'
+                ? `${t.recipes.aiReasonQuota} — ${t.aiErr.back(formatNextUtcMidnight(lang))}`
+                : spent === 'budget'
+                  ? // The household's ceiling turns over at ITS midnight (_lib/usage).
+                    `${t.recipes.aiReasonBudget} — ${t.aiErr.back(formatTime(addLocalDays(todayLocalDay(), 1), lang))}`
+                  : current.message}
             </span>
             {queue.length > 1 && <span className="ai-error-toast__more mono">{t.aiErr.more(queue.length - 1)}</span>}
           </div>
