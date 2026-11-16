@@ -1,6 +1,6 @@
 import { badRequest, ok, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
-import { localDayStart, newId, nowSec } from '../_lib/ids'
+import { addLocalDays, localDayStart, newId, nowSec } from '../_lib/ids'
 import { profileMemberId } from '../_lib/profile'
 import { ingredientName } from '../_lib/ingredient'
 import { householdMealLayout, mealOrderSql } from '../_lib/mealSlots'
@@ -40,8 +40,6 @@ const asSlot = (v: unknown): string | null => (typeof v === 'string' && SLOTS.ha
 // collation, souper, dessert). Every meal read sorts through it so the list never
 // reshuffles between the kitchen grid, the board and the month.
 
-const DAY = 86400
-
 // "What we ate lately" lookback for the Restants quick-pick suggestions. The
 // forward grid starts at today, so today-only suggestions vanish whenever nothing
 // is planned today; this looks back a few days so "we ate this, there's some left"
@@ -78,16 +76,21 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const { results } = await ctx.env.DB.prepare(
     `SELECT id, date, slot, title, cook_member_id, suggested_by, recipe_id, position, is_leftover FROM meals WHERE household_id = ? AND date >= ? AND date < ? ORDER BY date, ${MEAL_ORDER}`,
   )
-    .bind(actor.householdId, today, today + DAY * windowDays)
+    // Calendar days (addLocalDays), never windowDays × 24 h: the spring week is an hour
+    // short, so the fixed bound reached past the next midnight and pulled a day the grid
+    // never shows into `days` — and « Magasiner la semaine » walks `days`.
+    .bind(actor.householdId, today, addLocalDays(today, windowDays))
     .all<MealRow>()
 
   // The last RECENT_DAYS days of planned, non-leftover meals (today included),
-  // newest first, deduped by title so a recurring meal shows once. Powers the
+  // newest first, deduped by title so a recurring meal shows once. Calendar days, not
+  // RECENT_DAYS × 24 h: across the autumn clock change three days are 73 h, so the
+  // fixed span started at 01:00 on the oldest day and lost every meal on it. Powers the
   // Restants "Suggestions" chips ("we ate this lately, there's some left").
   const { results: recentRows } = await ctx.env.DB.prepare(
     `SELECT id, date, slot, title, cook_member_id, suggested_by, recipe_id, position, is_leftover FROM meals WHERE household_id = ? AND is_leftover = 0 AND date >= ? AND date <= ? ORDER BY date DESC, ${MEAL_ORDER}`,
   )
-    .bind(actor.householdId, today - DAY * RECENT_DAYS, today)
+    .bind(actor.householdId, addLocalDays(today, -RECENT_DAYS), today)
     .all<MealRow>()
   const seen = new Set<string>()
   const recent = recentRows.filter((m) => {

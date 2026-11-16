@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { env } from 'cloudflare:workers'
 import { household, okJson, type Session } from '../functions/test/d1'
 import { addLocalDays, localDayStart } from '../functions/_lib/ids'
@@ -198,6 +198,63 @@ describe('les restants', () => {
     const { id } = await post(s, { title: 'Soupe' })
     await post(s, { action: 'plan', id, date: day(1) })
     expect((await plan(s)).days[0]).toMatchObject({ title: 'Soupe', slot: 'lunch', is_leftover: 1 })
+  })
+  it('two devices planning the same leftover at once make ONE meal (claim and consume are one batch)', async () => {
+    const s = await household('leftovers-race', undefined, { empty: true })
+    const { id } = await post(s, { title: 'Pâté chinois' })
+    const answers = await Promise.all([1, 2, 3, 4].map(() => post(s, { action: 'plan', id, date: day(1) })))
+    expect(answers.filter((a) => a.planned), 'only one tap wins').toHaveLength(1)
+    expect((await plan(s)).days.filter((m) => m.title === 'Pâté chinois')).toHaveLength(1)
+    expect(await pool(s)).toEqual([])
+  })
+
+  it('the client may mint the meal id (an offline plan’s undo needs it); a junk id is ignored', async () => {
+    const s = await household('leftovers-mint', undefined, { empty: true })
+    const a = await post(s, { title: 'Chili' })
+    const done = await post(s, { action: 'plan', id: a.id, date: day(1), mealId: 'AbCdEfGhJk23' })
+    expect(done.mealId).toBe('AbCdEfGhJk23')
+    expect((await plan(s)).days.find((m) => m.id === 'AbCdEfGhJk23')).toMatchObject({ title: 'Chili', is_leftover: 1 })
+
+    const b = await post(s, { title: 'Soupe' })
+    const junk = await post(s, { action: 'plan', id: b.id, date: day(1), mealId: "x'; DROP" })
+    expect(junk.planned).toBe(true)
+    expect(junk.mealId).not.toBe("x'; DROP")
+    expect((await plan(s)).days.find((m) => m.id === junk.mealId)?.title).toBe('Soupe')
+  })
+})
+
+describe('le plan des repas compte en jours, pas en 24 h (un jour a 23 h ou 25 h)', () => {
+  // America/Toronto falls back on 2026-11-01 and springs forward on 2027-03-14. A span of
+  // N × 86 400 s across either is an hour off a local midnight (CLAUDE.md, « Day
+  // arithmetic »): looking BACK over the 25 h day misses the oldest day, looking AHEAD
+  // over the 23 h day reaches into the next one.
+  const at = async <T>(instant: string, fn: () => Promise<T>) => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(instant))
+    try {
+      return await fn()
+    } finally {
+      vi.useRealTimers()
+    }
+  }
+
+  it('Restants’ « déjà mangé » chips keep the oldest of the three days', async () => {
+    await at('2026-11-03T17:00:00Z', async () => {
+      const s = await household('recent-spring', undefined, { empty: true })
+      await add(s, { title: 'Lasagne', date: day(-3) })
+      expect((await plan(s)).recent.map((m) => m.title)).toEqual(['Lasagne'])
+    })
+  })
+
+  it('the rolling window never pulls in the day after its last one', async () => {
+    await at('2027-03-10T16:00:00Z', async () => {
+      // Signed in INSIDE the faked clock: a session minted today has expired by 2027.
+      const s = await household('window-spring', undefined, { empty: true })
+      const w = (await plan(s)).windowDays
+      await add(s, { title: 'Dernier jour', date: day(w - 1) })
+      await add(s, { title: 'Hors fenêtre', date: day(w) })
+      expect((await plan(s)).days.map((m) => m.title)).toEqual(['Dernier jour'])
+    })
   })
 })
 

@@ -13,6 +13,8 @@ import type { Wire } from '../_lib/wire'
 const SLOTS = new Set(['breakfast', 'lunch', 'supper', 'snack', 'dessert'])
 // An unstated/unknown slot plans the leftover into the household's HERO meal
 // (Réglages ▸ Repas — the souper by default), never a hardcoded 'supper'.
+// A client-minted meal id: the same opaque shape newId() makes, nothing else.
+const MEAL_ID = /^[A-Za-z0-9]{12,32}$/
 const asSlot = (v: unknown): string | null => (typeof v === 'string' && SLOTS.has(v) ? v : null)
 
 export const onRequestGet = authed(async (ctx, actor) => {
@@ -35,6 +37,8 @@ export const onRequestPost = authed(async (ctx, actor) => {
     title?: string
     recipeId?: string
     sourceMealId?: string
+    // plan: an optional client-minted id for the new meal (see action 'plan')
+    mealId?: string
   }>(ctx.request)
 
   // ── Plan: a pool leftover becomes a real meal on the chosen day, tagged
@@ -43,28 +47,33 @@ export const onRequestPost = authed(async (ctx, actor) => {
   //    reusable like meal_ideas.
   if (body?.action === 'plan') {
     if (!body.id || typeof body.date !== 'number') return badRequest('id + date requis.')
-    const row = await ctx.env.DB.prepare(
-      'SELECT title, recipe_id FROM meal_leftovers WHERE id = ? AND household_id = ?',
-    )
-      .bind(body.id, actor.householdId)
-      .first<{ title: string; recipe_id: string | null }>()
-    if (!row) return ok({ ok: true }) // gone already
     const slot = asSlot(body.slot) ?? (await householdMealLayout(ctx.env, actor.householdId)).hero
     const date = localDayStart(new Date(body.date * 1000))
-    // Keep the new meal id so the client can offer a compensating undo (delete the
-    // meal + re-insert the pool row) — planning consumes the pool entry.
-    const mealId = newId()
-    await ctx.env.DB.prepare(
-      `INSERT INTO meals (id, household_id, date, slot, title, cook_member_id, suggested_by, recipe_id, created_at, position, is_leftover)
-       SELECT ?, ?, ?, ?, ?, NULL, NULL, ?, ?, COALESCE(MAX(position), -1) + 1, 1
-       FROM meals WHERE household_id = ? AND date = ? AND slot = ?`,
-    )
-      .bind(mealId, actor.householdId, date, slot, row.title, row.recipe_id, nowSec(), actor.householdId, date, slot)
-      .run()
-    await ctx.env.DB.prepare('DELETE FROM meal_leftovers WHERE id = ? AND household_id = ?')
-      .bind(body.id, actor.householdId)
-      .run()
-    return ok({ ok: true, planned: true, mealId, title: row.title })
+    // The new meal's id travels BACK to the client so it can offer a compensating
+    // undo (delete the meal + re-insert the pool row). The client may MINT it
+    // (`mealId`): a plan made offline is only queued, so it never hears the server's
+    // answer — without its own id, its « Annuler » put the leftover back and left
+    // the meal planned (audit 2026-11-15). Anything that is not a plain opaque id is
+    // ignored and the server mints one.
+    const mealId = typeof body.mealId === 'string' && MEAL_ID.test(body.mealId) ? body.mealId : newId()
+    // Claim and consume in ONE batch (a D1 batch is a transaction): the INSERT reads
+    // the pool row and the DELETE removes it, so two devices planning the same
+    // leftover at the same instant cannot both read it — the second batch's INSERT
+    // finds nothing and plans nothing. It used to be read → insert → delete as three
+    // separate statements, and both devices got a meal.
+    const [ins] = await ctx.env.DB.batch([
+      ctx.env.DB.prepare(
+        `INSERT INTO meals (id, household_id, date, slot, title, cook_member_id, suggested_by, recipe_id, created_at, position, is_leftover)
+         SELECT ?, household_id, ?, ?, title, NULL, NULL, recipe_id, ?,
+                (SELECT COALESCE(MAX(position), -1) + 1 FROM meals WHERE household_id = ? AND date = ? AND slot = ?), 1
+         FROM meal_leftovers WHERE id = ? AND household_id = ?
+         RETURNING title`,
+      ).bind(mealId, date, slot, nowSec(), actor.householdId, date, slot, body.id, actor.householdId),
+      ctx.env.DB.prepare('DELETE FROM meal_leftovers WHERE id = ? AND household_id = ?').bind(body.id, actor.householdId),
+    ])
+    const title = (ins?.results?.[0] as { title?: string } | undefined)?.title
+    if (!title) return ok({ ok: true }) // gone already (eaten, or another device planned it)
+    return ok({ ok: true, planned: true, mealId, title })
   }
 
   // ── Add an undated leftover to the pool. Returns the new id so the client can

@@ -123,3 +123,56 @@ test('a refused leftover plan offers no « Annuler » (it would duplicate the ro
   await expect(page.getByText(/« Pâté chinois » planifié/)).toHaveCount(0)
   await expect(page.locator('.undo-toast__btn')).toHaveCount(0)
 })
+
+// Audit follow-up (2026-11-15): a leftover planned OFFLINE is only queued, so the
+// client never heard the new meal's id — its « Annuler » re-added the leftover and
+// left the meal planned (the same dish twice: once in Restants, once on the day). The
+// client mints the meal id now, so the queued undo deletes exactly the meal the queued
+// plan creates, and the outbox replays them in that order.
+test('« Annuler » on a leftover planned offline removes the meal it planned', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await mockApi(page)
+  const sent: { method: string; path: string; body: Record<string, unknown> }[] = []
+  await page.route('**/api/meal-leftovers**', async (route) => {
+    const req = route.request()
+    if (req.method() === 'GET')
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ leftovers: [{ id: 'lo1', title: 'Pâté chinois', recipe_id: null, source_meal_id: null, created_at: 0 }] }),
+      })
+    const body = req.postDataJSON() as Record<string, unknown>
+    sent.push({ method: req.method(), path: 'meal-leftovers', body })
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(body.action === 'plan' ? { ok: true, planned: true, mealId: body.mealId, title: 'Pâté chinois' } : { ok: true, id: 'lo2' }),
+    })
+  })
+  await page.route('**/api/meals', async (route) => {
+    const req = route.request()
+    if (req.method() !== 'DELETE') return route.fallback()
+    sent.push({ method: 'DELETE', path: 'meals', body: req.postDataJSON() as Record<string, unknown> })
+    return route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' })
+  })
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+  await page.goto('/kitchen')
+  await expect(page.locator('.kitchen__day').first()).toBeVisible({ timeout: 15_000 })
+
+  const row = page.locator('.kitchen__ideas .kitchen__idea', { hasText: 'Pâté chinois' })
+  await row.scrollIntoViewIfNeeded()
+  await page.context().setOffline(true)
+  await expect(page.locator('.offline-bar')).toBeVisible()
+  await row.getByRole('button', { name: /Pâté chinois/ }).click()
+  await row.locator('.meal-plan-pick__days button').first().click()
+  await page.locator('.undo-toast__btn').click()
+  expect(sent, 'offline: nothing went over the wire yet').toEqual([])
+
+  await page.context().setOffline(false)
+  await expect.poll(() => sent.length, { timeout: 20_000 }).toBe(3)
+  const [planned, undone, readded] = sent
+  expect(planned).toMatchObject({ path: 'meal-leftovers', body: { action: 'plan', id: 'lo1' } })
+  expect(typeof planned!.body.mealId).toBe('string')
+  expect(undone, 'the undo deletes the very meal the plan made').toEqual({ method: 'DELETE', path: 'meals', body: { id: planned!.body.mealId } })
+  expect(readded).toMatchObject({ path: 'meal-leftovers', body: { title: 'Pâté chinois' } })
+})

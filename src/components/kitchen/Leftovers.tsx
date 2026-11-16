@@ -24,26 +24,42 @@ import { type Leftover, type MealRow, LEFTOVERS_KEY, MEALS_KEY, MEAL_HISTORY_KEY
 /** Plan a leftover onto a day+slot — consumed, so it records a compensating undo.
  * The param is the SUBSET of Leftover this actually reads, so the board can pass
  * its leaner /api/board row (no created_at there) without inventing one. */
+// The same opaque shape the server's newId() makes (functions/_lib/ids.ts), which is
+// all its MEAL_ID check accepts.
+const ID_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'
+function mintMealId(): string {
+  let out = ''
+  for (const b of crypto.getRandomValues(new Uint8Array(12))) out += ID_ALPHABET[b % ID_ALPHABET.length]
+  return out
+}
+
 export function usePlanLeftover() {
   const t = useT()
   const write = useWrite()
   const recordUndo = useRecordUndo()
   return async (l: Pick<Leftover, 'id' | 'title' | 'recipe_id' | 'source_meal_id'>, date: number, slot: MealSlot) => {
     const keys = [LEFTOVERS_KEY, MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY, MONTH_KEY]
+    // The new meal's id is minted HERE, not learned from the answer: a plan made
+    // offline is only queued, so there is no answer — and its « Annuler » used to put
+    // the leftover back while the meal stayed planned. The undo's DELETE queues behind
+    // the plan in the outbox, so it replays after it, on this very id.
+    const mealId = mintMealId()
     const res = await writeOrNull(write<{ mealId?: string }>('meal-leftovers', {
       method: 'POST',
-      body: { action: 'plan', id: l.id, date, slot },
+      body: { action: 'plan', id: l.id, date, slot, mealId },
       affectedKeys: keys,
     }))
     // Refused (writeOrNull already said « Pas enregistré ») → the leftover is still in
     // the pool, so there is nothing to undo. Offering « Annuler » anyway re-POSTed the
     // pool row: one tap and the leftover was in Restants TWICE.
     if (!res) return
-    const mealId = res && !res.queued ? res.data?.mealId : undefined
+    // Online, the server's answer names the meal (it is ours unless the server
+    // refused the shape); « gone already » (another device planned it) has none.
+    if (!res.queued && !res.data?.mealId) return
     recordUndo({
       message: t.undo.leftoverPlanned(l.title),
       onUndo: async () => {
-        if (mealId) await write('meals', { method: 'DELETE', body: { id: mealId }, affectedKeys: keys }).catch(writeFailed)
+        await write('meals', { method: 'DELETE', body: { id: res.data?.mealId ?? mealId }, affectedKeys: keys }).catch(writeFailed)
         await write('meal-leftovers', {
           method: 'POST',
           body: { title: l.title, recipeId: l.recipe_id ?? null, sourceMealId: l.source_meal_id ?? null },
