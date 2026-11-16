@@ -1,8 +1,10 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { useT } from '../i18n'
+import { useLang, useT } from '../i18n'
 import { api } from './api'
 import { useLens } from './audience'
 import { onAiError, type AiErrorEvent } from './aiErrorBus'
+import { aiSpentKind } from './aiQuota'
+import { formatNextUtcMidnight } from './format'
 
 // On-screen surfacing of AI failures. lib/api emits when a handler tagged a
 // response with X-AI-Error (a Workers AI call quietly degraded); we show a notice
@@ -29,6 +31,11 @@ export function AiErrorProvider({ children }: { children: ReactNode }) {
       onAiError((e) => {
         setQueue((q) => {
           if (q.some((x) => x.feature === e.feature && x.message === e.message)) return q
+          // A spent allowance is ONE fact, however many features hit it: capture, then
+          // suggestions, then the recipe reader each failing on the same empty quota
+          // stacked three notices for one reason. The first one says it for all.
+          const spent = aiSpentKind(e.message)
+          if (spent && q.some((x) => aiSpentKind(x.message) === spent)) return q
           return [...q, e]
         })
       }),
@@ -36,6 +43,11 @@ export function AiErrorProvider({ children }: { children: ReactNode }) {
   )
 
   const current = interrupts ? (queue[0] ?? null) : null
+  // Cloudflare's own words (« 4006: you have used up your daily free allocation… ») are
+  // for the journal — that is what « Accepter » still writes. The household reads why,
+  // in its language, and when it comes back; nothing else in the app is broken.
+  const spent = current ? aiSpentKind(current.message) : null
+  const { lang } = useLang()
 
   async function accept() {
     if (!current || saving) return
@@ -62,9 +74,11 @@ export function AiErrorProvider({ children }: { children: ReactNode }) {
       {current && (
         <div className="ai-error-toast" role="status" aria-live="assertive">
           <div className="ai-error-toast__body">
-            <strong className="ai-error-toast__title">{t.aiErr.title}</strong>
-            <span className="ai-error-toast__feature mono">{current.feature}</span>
-            <span className="ai-error-toast__msg">{current.message}</span>
+            <strong className="ai-error-toast__title">{spent ? t.aiErr.spentTitle : t.aiErr.title}</strong>
+            {!spent && <span className="ai-error-toast__feature mono">{current.feature}</span>}
+            <span className="ai-error-toast__msg">
+              {spent === 'quota' ? t.aiErr.quota(formatNextUtcMidnight(lang)) : spent === 'budget' ? t.aiErr.budget : current.message}
+            </span>
             {queue.length > 1 && <span className="ai-error-toast__more mono">{t.aiErr.more(queue.length - 1)}</span>}
           </div>
           <button type="button" className="ai-error-toast__btn" onClick={accept} disabled={saving}>

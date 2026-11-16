@@ -1051,6 +1051,9 @@ export function DevKit() {
   const [shareModalOpen, setShareModalOpen] = useState(false)
   const [drawChoiceOpen, setDrawChoiceOpen] = useState(false)
   const [readReviewOpen, setReadReviewOpen] = useState(false)
+  // The same photo specimen as the LAST-RESORT read: the AI quota spent, the phone's
+  // engine read the card poorly, kept anyway and said loudly (report.weakRead).
+  const [readReviewWeak, setReadReviewWeak] = useState(false)
   // The same panel with a PAGE-TEXT source (a link the AI organised) + « Guider l'IA ».
   const [readReviewTextOpen, setReadReviewTextOpen] = useState(false)
   const [drawChoiceMode, setDrawChoiceMode] = useState<DrawEditMode | null>(null)
@@ -3711,6 +3714,15 @@ export function DevKit() {
             </button>{' '}
             <button className="btn btn--ghost" onClick={() => setReadReviewTextOpen(true)}>
               Source : page web
+            </button>{' '}
+            <button
+              className="btn btn--ghost"
+              onClick={() => {
+                setReadReviewWeak(true)
+                setReadReviewOpen(true)
+              }}
+            >
+              Lecture de secours
             </button>
             {readReviewTextOpen && (
               <RecipeReadReview
@@ -3792,12 +3804,19 @@ export function DevKit() {
                   shakyCount: 1,
                   // The machine's confession lines (2026-10-30): a fallback reader answered
                   // because the first hit the day's budget, the photo was blurred.
-                  readerAttempts: [{ model: '@cf/mistralai/mistral-small-3.1-24b-instruct', reason: 'budget' }],
+                  readerAttempts: [{ model: '@cf/mistralai/mistral-small-3.1-24b-instruct', reason: readReviewWeak ? 'quota' : 'budget' }],
                   structuringAttempts: [],
                   photoWarnings: [{ page: 0, kind: 'blur' }],
+                  ...(readReviewWeak && { confidence: 31, weakRead: true }),
                 }}
-                onConfirm={() => setReadReviewOpen(false)}
-                onCancel={() => setReadReviewOpen(false)}
+                onConfirm={() => {
+                  setReadReviewOpen(false)
+                  setReadReviewWeak(false)
+                }}
+                onCancel={() => {
+                  setReadReviewOpen(false)
+                  setReadReviewWeak(false)
+                }}
               />
             )}
           </div>

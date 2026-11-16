@@ -116,3 +116,36 @@ test('« à vérifier » is a tap: looked at the photo, it is right → « véri
   await checked.click()
   await expect(flagged).toHaveCount(n)
 })
+
+// The last-resort read (2026-11-16): the AI quota is spent — every Workers AI model shares
+// it, so no smaller model can step in — and the phone's engine read the card with low
+// confidence. It is kept instead of « colle le texte », and the panel says so FIRST, in
+// the error tone, before any line is trusted. A normal read never says it.
+test('a last-resort read (no AI, shaky) says so before any line is trusted', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await mockApi(page)
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+  await page.goto('/dev/kit')
+  const entry = page.locator('details.kit-entry').filter({ hasText: 'Ouvrir la vérification' })
+  await entry.locator('summary').click()
+  const warning = /Lecture de secours, sans IA/
+
+  await entry.getByRole('button', { name: 'Ouvrir la vérification' }).click()
+  const modal = page.locator('.read-review')
+  await expect(modal).toBeVisible()
+  await expect(modal.getByText(warning)).toHaveCount(0)
+  await modal.getByRole('button', { name: /Annuler|Fermer/ }).first().click()
+  await expect(modal).toHaveCount(0)
+
+  await entry.getByRole('button', { name: 'Lecture de secours' }).click()
+  await expect(modal).toBeVisible()
+  const line = modal.locator('.status-msg--error', { hasText: warning })
+  await expect(line).toBeVisible()
+  // Said before the hints and the lines, not buried under them.
+  const [warnTop, firstLineTop] = await Promise.all([
+    line.evaluate((e) => e.getBoundingClientRect().top),
+    modal.locator('.read-review__line').first().evaluate((e) => e.getBoundingClientRect().top),
+  ])
+  expect(warnTop).toBeLessThan(firstLineTop)
+  await expect(modal).toContainText('quota IA gratuit du jour épuisé')
+})

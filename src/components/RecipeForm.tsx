@@ -15,7 +15,7 @@ import { useAi } from '../lib/ai'
 import { resizeImage, imgUrl, OCR_MAX, VISION_MAX, MAX_UPLOAD_BYTES } from '../lib/image'
 import { ocrImage, mergeOcrPages, disposeOcr, warmOcr, normalizeOcrText } from '../lib/ocr'
 import { repairImperialFromMetric } from '../lib/measure'
-import { useOcrEngine, useCloudOcrAvailable, markCloudOcrThrottled } from '../lib/ocrPref'
+import { useOcrEngine, useCloudOcrAvailable, markCloudOcrThrottled, deviceReadVerdict, OCR_MIN_CONFIDENCE } from '../lib/ocrPref'
 import { uploadMedia, MediaUnavailableError } from '../lib/uploadMedia'
 import { RecipeReadReview, type AiAttemptView, type AuditFlagView, type ReadReport, type ReadReviewDraft } from './RecipeReadReview'
 import { checkPhotoFile } from '../lib/photoCheck'
@@ -647,9 +647,17 @@ export function RecipeForm({
       // Pages are merged first: a wide shot + zoomed close-ups of the same recipe dedupe
       // to one transcript (the clearer zoom replaces a fuzzy line); separate pages
       // (ingredients here, steps there) just concatenate.
-      const structureOcr = async (): Promise<ReadDraft | null> => {
+      //
+      // `lastResort` (lib/ocrPref deviceReadVerdict): no AI reader answered — refused for
+      // a spent quota (every Workers AI model shares the account's allowance, so no
+      // smaller one can step in), failed, or off. The phone's low-confidence read used to
+      // be thrown away here, and the cook got « colle le texte » over a card the engine
+      // had mostly read. Now it is kept, marked `weakRead`, and the verify panel says so.
+      const structureOcr = async (lastResort = false): Promise<ReadDraft | null> => {
         const stitched = mergeOcrPages(texts).trim()
-        if (stitched.length < 25 || meanConf < 40) return null
+        const verdict = deviceReadVerdict(stitched.length, meanConf, lastResort)
+        if (verdict === 'drop') return null
+        if (verdict === 'weak') report.weakRead = true
         setReadStage('order')
         const t0 = Date.now()
         try {
@@ -687,6 +695,9 @@ export function RecipeForm({
         // three in a row was the better part of a minute before the structuring even
         // started); each one bumps the bar as it lands; the transcripts keep page order.
         const t0 = Date.now()
+        // What was already there (a device read that ran first) is not the vision
+        // reader's: only ITS pages vouch for the text.
+        const before = texts.length
         const pages = await Promise.all(
           files.map(async (file) => {
             // VISION_MAX, not PHOTO_MAX: the model never sees more than ~1120 px, so the
@@ -722,8 +733,12 @@ export function RecipeForm({
           // said in the verify panel, never silent.
           if (v?.readerAttempts?.length) report.readerAttempts.push(...v.readerAttempts)
         }
-        if (!texts.length) return null
-        meanConf = 95 // a vision transcript is a read, not a guess — structure it
+        // A vision transcript is a read, not a guess — structure it. But a vision reader
+        // that answered NOTHING must not lend its 95 % to a shaky device read already in
+        // `texts`: that passed a low-confidence phone read off as a confident one, with no
+        // warning, whenever the AI was out. Then the device read keeps its own score.
+        if (texts.length === before) return null
+        meanConf = 95
         return structureOcr()
       }
 
@@ -740,12 +755,15 @@ export function RecipeForm({
         draft = await readWithVision().then((d) => d, () => null)
         if (!good(draft)) {
           await readOnDevice()
-          draft = await structureOcr()
+          draft = await structureOcr(true)
         }
       } else {
         if (!texts.length) await readOnDevice()
         draft = await structureOcr()
         if (!good(draft) && aiEnabled) draft = await readWithVision()
+        // Only a read the gate DROPPED for low confidence gets a second look — a good read
+        // that structured badly must not cost a second structuring call.
+        if (!good(draft) && meanConf < OCR_MIN_CONFIDENCE) draft = await structureOcr(true)
       }
 
       if (!draft || !draftHasContent(draft)) {

@@ -87,3 +87,19 @@ export function useCloudOcrAvailable(): boolean {
   })
   return q.data?.cloudOcr ?? false
 }
+
+// THE GATE on a device transcript before it is structured into a recipe. Too little
+// text → nothing to build on. A low-confidence read → normally dropped, so the vision
+// reader can take over. But as the LAST RESORT — the vision reader was refused, failed,
+// or is off — the shaky read is KEPT as 'weak' and the verify panel says so before any
+// line is trusted: a card the phone mostly read, flagged, beats « colle le texte ».
+// The common last-resort case is a spent allowance: every Workers AI model draws on the
+// account's same free neurons, so no smaller model can step in (Marc, 2026-11-16).
+export const OCR_MIN_CHARS = 25
+export const OCR_MIN_CONFIDENCE = 40
+export type DeviceReadVerdict = 'drop' | 'keep' | 'weak'
+export function deviceReadVerdict(chars: number, meanConfidence: number, lastResort = false): DeviceReadVerdict {
+  if (chars < OCR_MIN_CHARS) return 'drop'
+  if (meanConfidence >= OCR_MIN_CONFIDENCE) return 'keep'
+  return lastResort ? 'weak' : 'drop'
+}

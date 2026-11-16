@@ -12,6 +12,7 @@ import { Cluster } from './Layout'
 import { Img } from './Img'
 import { Disclosure } from './Disclosure'
 import { EditField } from './EditField'
+import { StatusMessage } from './StatusMessage'
 
 // Verify-against-the-photo gate for a recipe read (Pillar 3 of the faithful-import
 // work). No capture is 100%, so instead of dropping a read straight into the form
@@ -75,6 +76,9 @@ export interface ReadReport {
   structuringAttempts: AiAttemptView[]
   /** What the photos themselves looked like before any reader ran (lib/photoCheck). */
   photoWarnings: { page: number; kind: PhotoWarningKind }[]
+  /** The AI was out (quota / budget) and the phone's engine read this with LOW
+   *  confidence: kept as a last resort instead of thrown away, and said loudly. */
+  weakRead?: boolean
 }
 
 /** One model tried and not answering, as the endpoints send it. */
@@ -357,6 +361,13 @@ export function RecipeReadReview({
         <p className="read-review__hint mono">
           {fromText ? t.recipes.reviewHintText : flaggedCount > 0 ? t.recipes.reviewHint : t.recipes.reviewHintClean}
         </p>
+        {/* The last-resort read (RecipeForm.structureOcr, lenient): not a hint among
+            hints — the first thing said, in the error tone, before any line is trusted. */}
+        {report?.weakRead ? (
+          <StatusMessage tone="error" live={false}>
+            {t.recipes.weakRead}
+          </StatusMessage>
+        ) : null}
         {/* Why the read waits here: what the audit found, one short line each. */}
         {report?.audit.length ? (
           <p className="read-review__hint read-review__audit mono" data-testid="read-review-audit">

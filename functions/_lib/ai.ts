@@ -1,4 +1,5 @@
 import { AiBudgetError, runModel } from './runModel'
+import { isAccountQuotaMessage } from '../../src/lib/aiQuota'
 // The one essential AI feature: classify a free-text capture into a structured
 // intent, then the handler routes it. Workers AI, in-network (Loi 25), free
 // Neuron tier. One inference per capture — never on a render loop.
@@ -743,8 +744,8 @@ export interface AiAttempt {
 // Cloudflare's own (« 4006: you have used up your daily free allocation of 10,000
 // neurons… »); the REST API spells the same refusal 3036 « Account limited ». Tagged a
 // generic « error » it read as « connexion ? » on the phone (2026-10-30, twice).
-const ACCOUNT_QUOTA = /\b(?:4006|3036)\b|daily free allocation|used up your daily|account limited/i
-export const isAccountQuotaError = (err: unknown): boolean => ACCOUNT_QUOTA.test(err instanceof Error ? err.message : String(err))
+// The pattern itself is shared with the phone's AI-error toast (src/lib/aiQuota).
+export const isAccountQuotaError = (err: unknown): boolean => isAccountQuotaMessage(err instanceof Error ? err.message : String(err))
 export const attemptReason = (err: unknown): AiAttemptReason => (err instanceof AiBudgetError ? 'budget' : isAccountQuotaError(err) ? 'quota' : 'error')
 
 export async function transcribeImage(

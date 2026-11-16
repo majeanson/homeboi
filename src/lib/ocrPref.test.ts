@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cloudOcrThrottled, markCloudOcrThrottled, resolveOcrEngine } from './ocrPref'
+import { cloudOcrThrottled, deviceReadVerdict, markCloudOcrThrottled, resolveOcrEngine } from './ocrPref'
 
 describe('a cloud reader that answered 429 is remembered, for an hour, on this device', () => {
   it('marks → throttled now, not an hour later; nothing marked → not throttled', () => {
@@ -31,5 +31,18 @@ describe('resolveOcrEngine — the reader a photo read will use', () => {
     ['bogus', true, true, 'cloud'],
   ] as const)('%s, cloud %s, AI %s → %s', (choice, cloud, ai, want) => {
     expect(resolveOcrEngine(choice, cloud, ai)).toBe(want)
+  })
+})
+
+describe('the gate on a device read: a shaky read is dropped, unless it is the last resort', () => {
+  it.each([
+    [10, 90, false, 'drop'], // too little text, however sure
+    [10, 90, true, 'drop'], // …even as the last resort: nothing to build on
+    [200, 85, false, 'keep'],
+    [200, 31, false, 'drop'], // shaky → the vision reader takes over
+    [200, 31, true, 'weak'], // no AI answered → kept, and flagged
+    [200, 85, true, 'keep'], // a sure read is never flagged weak
+  ] as const)('%i chars at %i %% (last resort %s) → %s', (chars, conf, last, want) => {
+    expect(deviceReadVerdict(chars, conf, last)).toBe(want)
   })
 })

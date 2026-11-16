@@ -1472,6 +1472,7 @@ export const FR = {
     // A model tried and not answering — never silent.
     readerFallback: (model: string) => `Lecteur de secours : ${model}`,
     structuringFallback: 'L’IA n’a pas organisé ce texte — lecture de forme seulement',
+    weakRead: 'Lecture de secours, sans IA : des lignes peuvent être fausses ou manquer. Vérifie chacune contre la photo.',
     aiReasonBudget: 'budget IA du jour de la maisonnée atteint',
     aiReasonQuota: 'quota IA gratuit du jour épuisé (tout le service)',
     aiReasonError: 'erreur du modèle',
@@ -2998,6 +2999,9 @@ export const FR = {
     accept: 'Accepter',
     saving: 'Enregistrement…',
     more: (n: number) => `+${n} autre${n > 1 ? 's' : ''}`,
+    spentTitle: 'L’IA se repose',
+    quota: (at: string) => `Le quota IA gratuit du jour est épuisé pour tout le service — il revient vers ${at}.`,
+    budget: 'Le budget IA du jour de la maisonnée est atteint — il revient à minuit.',
   },
   // Le ⚙ SIMPLE ↔ AVANCÉ générique (lib/surfaceMode) — les surfaces à deux faces
   // qui n'ont pas leur propre formulation (garde-manger, bassins de repas). Comme

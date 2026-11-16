@@ -102,6 +102,34 @@ test('a model failure surfaces the X-AI-Error toast AND the card\'s "not what yo
   await expect(page.locator('.search__related-chip').first()).toBeVisible()
 })
 
+// The account's free Workers AI allowance spent (2026-11-16): the toast used to print
+// Cloudflare's raw English (« 4006: you have used up your daily free allocation… »). It
+// now says why, in the household's language, and when it comes back; « Accepter » still
+// journals Cloudflare's own words for the operator.
+test('a spent AI quota reads as « L’IA se repose », not Cloudflare’s raw error, and the journal keeps the raw text', async ({ page }) => {
+  const raw = '4006: you have used up your daily free allocation of 10,000 neurons, please upgrade to Cloudflare’s Workers Paid plan'
+  await mockAsk(page, () => ({ answer: null, kind: 'none' }), { aiError: raw })
+  const journal: unknown[] = []
+  await page.route('**/api/ai-errors', async (route) => {
+    if (route.request().method() !== 'POST') return route.fallback()
+    journal.push(route.request().postDataJSON())
+    await route.fulfill({ status: 200, contentType: 'application/json', body: '{"ok":true}' })
+  })
+  await openAsk(page)
+  await askTyped(page, 'Une question quelconque')
+
+  const toast = page.locator('.ai-error-toast')
+  await expect(toast.locator('.ai-error-toast__title')).toHaveText('L’IA se repose')
+  await expect(toast.locator('.ai-error-toast__msg')).toContainText('quota IA gratuit du jour est épuisé')
+  await expect(toast).not.toContainText('4006')
+  // The ask dialog's backdrop sits over the toast while it is open — close it first.
+  await page.keyboard.press('Escape')
+  await expect(page.locator('.kit-modal__backdrop')).toHaveCount(0)
+  await toast.getByRole('button', { name: 'Accepter' }).click()
+  await expect(toast).toHaveCount(0)
+  expect(journal).toEqual([expect.objectContaining({ message: raw })])
+})
+
 test('closing the sheet unmounts it; reopening starts fresh (no stale question/answer)', async ({ page }) => {
   await mockAsk(page, () => ({ answer: 'Une réponse.', kind: 'note' }))
   await openAsk(page)

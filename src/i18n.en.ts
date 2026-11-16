@@ -1255,6 +1255,7 @@ export const EN: typeof FR = {
     photoWarnEdge: 'something runs past the frame — reframe on the page',
     readerFallback: (model: string) => `Fallback reader: ${model}`,
     structuringFallback: 'The AI did not organise this text — shape read only',
+    weakRead: 'Fallback read, no AI: lines may be wrong or missing. Check each one against the photo.',
     aiReasonBudget: 'the household’s AI budget for today is reached',
     aiReasonQuota: 'today’s free AI quota is spent (the whole service)',
     aiReasonError: 'model error',
@@ -2613,6 +2614,9 @@ export const EN: typeof FR = {
     accept: 'Accept',
     saving: 'Saving…',
     more: (n: number) => `+${n} more`,
+    spentTitle: 'The AI is resting',
+    quota: (at: string) => `Today’s free AI quota is spent for the whole service — it is back around ${at}.`,
+    budget: 'The household’s AI budget for today is reached — it is back at midnight.',
   },
   // The generic ⚙ SIMPLE ↔ ADVANCED (lib/surfaceMode) — two-faces surfaces without
   // their own wording (garde-manger, meal pools). The name says where the NEXT tap goes.
