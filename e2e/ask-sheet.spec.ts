@@ -122,11 +122,12 @@ test('a spent AI quota reads as « L’IA se repose », not Cloudflare’s raw e
   await expect(toast.locator('.ai-error-toast__title')).toHaveText('L’IA se repose')
   await expect(toast.locator('.ai-error-toast__msg')).toContainText('quota IA gratuit du jour épuisé')
   await expect(toast).not.toContainText('4006')
-  // The ask dialog's backdrop sits over the toast while it is open — close it first.
-  await page.keyboard.press('Escape')
-  await expect(page.locator('.kit-modal__backdrop')).toHaveCount(0)
+  // The notice paints OVER the dialog that raised it (it used to sit under the
+  // backdrop, unreachable until the dialog closed): accept it with the dialog open.
+  await expect(page.locator('.kit-modal__backdrop')).toHaveCount(1)
   await toast.getByRole('button', { name: 'Accepter' }).click()
   await expect(toast).toHaveCount(0)
+  await expect(page.locator('.kit-modal')).toHaveCount(1)
   expect(journal).toEqual([expect.objectContaining({ message: raw })])
 })
 

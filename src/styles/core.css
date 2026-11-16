@@ -110,7 +110,6 @@
   --z-chrome: 25; /* hub chrome: the kiosk rail… */
   --z-chrome-mobile: 30; /* …and the mobile tab bar */
   --z-toast: 40; /* .undo-toast, the board's idle pill — page-chrome level ON PURPOSE */
-  --z-toast-ai: 42; /* .ai-error-toast */
   --z-popover: 45; /* a word's glossary bubble: over a toast, under any scene */
   --z-scene: 50; /* full-screen scenes start here: cashier */
   --z-scene-flyer: 70; /* flyer / flipp pager */
@@ -123,6 +122,7 @@
   --z-tour: 158; /* a teaching layer, above whatever it points at */
   --z-modal: 160; /* .kit-modal__backdrop, .confirm-backdrop */
   --z-confirm: 161; /* a confirm raised from an OPEN sheet */
+  --z-toast-ai: 165; /* .ai-error-toast — over the dialog that raised it (layer-order.test) */
   --z-ambient: 200; /* the screensaver owns the screen */
   --z-zoom: 1000; /* image zoom */
   --z-menu: 1100; /* the ⋯ menu panel */

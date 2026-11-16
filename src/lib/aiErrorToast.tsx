@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { useLang, useT } from '../i18n'
 import { api } from './api'
 import { useLens } from './audience'
@@ -71,8 +72,13 @@ export function AiErrorProvider({ children }: { children: ReactNode }) {
       {children}
       {/* A toast, not a dialog: it takes no focus and traps nothing, so `alertdialog`
           promised a11y behaviour it never had (overlay-rule.test.ts). `status` +
-          assertive says what it is — an announcement with a dismiss. */}
-      {current && (
+          assertive says what it is — an announcement with a dismiss.
+          Portalled to <body> like Modal/Sheet: its z-index (--z-toast-ai, over every
+          dialog — layer-order.test.ts) only competes with theirs in the SAME stacking
+          context. Rendered in place, « Demander »'s backdrop covered it whatever the
+          number said (e2e/ask-sheet.spec.ts). */}
+      {current &&
+        createPortal(
         <div className="ai-error-toast" role="status" aria-live="assertive">
           <div className="ai-error-toast__body">
             <strong className="ai-error-toast__title">{spent ? t.aiErr.spentTitle : t.aiErr.title}</strong>
@@ -90,8 +96,9 @@ export function AiErrorProvider({ children }: { children: ReactNode }) {
           <button type="button" className="ai-error-toast__btn" onClick={accept} disabled={saving}>
             {saving ? t.aiErr.saving : t.aiErr.accept}
           </button>
-        </div>
-      )}
+        </div>,
+          document.body,
+        )}
     </>
   )
 }

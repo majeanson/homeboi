@@ -148,4 +148,16 @@ describe('fixed-overlay layer order', () => {
   it('the screensaver still owns the screen, over every dialog', () => {
     expect(z('.ambient')).toBeGreaterThan(z('.confirm'))
   })
+
+  // The AI-failure notice is NOT the undo pill. It never auto-dismisses (someone has to
+  // tap « Accepter »), and the thing that failed is very often the dialog or scene you
+  // are looking at: « Demander » (AskDialog, a Modal) raised it under its own backdrop,
+  // dimmed and dead until the dialog was closed (2026-11-16). It paints over every
+  // dialog and scene; only the screensaver, which owns the screen, covers it.
+  it('the AI-failure notice is reachable from inside the dialog that raised it', () => {
+    for (const sel of ['.kit-modal__backdrop', '.confirm', '.sheet', ...BELOW_SHEET]) {
+      expect(z('.ai-error-toast'), `.ai-error-toast must clear ${sel}`).toBeGreaterThan(z(sel))
+    }
+    expect(z('.ambient'), 'the screensaver still covers the notice').toBeGreaterThan(z('.ai-error-toast'))
+  })
 })

@@ -51,7 +51,7 @@ body.is-recording .add-fab {
      core.css the number; layer-order.test.ts reads the tokens to check the sandwich.
        24        the ＋ FAB
        25 / 30   hub chrome (kiosk rail, mobile tab bar)
-       40 / 42   .undo-toast / .ai-error-toast  ← page-chrome level ON PURPOSE
+       40        .undo-toast  ← page-chrome level ON PURPOSE
        50 … 150  full-screen scenes: cashier 50, flyer 70, recipe modal 80, cook 90,
                  note editor 140, DrawPad 150
        155 / 156 .scrim / .sheet — a Sheet can be opened from a scene (this rule)
@@ -61,15 +61,20 @@ body.is-recording .add-fab {
                  can be raised from an OPEN sheet (the peek's ⋯ ▸ Supprimer awaits
                  it with the sheet still mounted), so it has to clear 156 too; it
                  only ever had to clear 31 before this rule moved
+       165       .ai-error-toast — see below
        200       the screensaver — it owns the screen
        1000+     image zoom, the ⋯ menu panel, the drag ghost
-     The toast pair deliberately stays DOWN at 40/42: it is a bottom pill that
+     The undo toast deliberately stays DOWN at 40: it is a bottom pill that
      LINGERS (`.undo-toast--log`), so lifting it over a scene would park an
      interactive pill on the DrawPad canvas / cook stepper and eat taps there —
      e2e/cook-stepper.spec.ts and e2e/recipe-leftovers.spec.ts both encode that
      it is out of reach from a scene. The cost is that a toast raised while a
      sheet is open waits for the sheet to close; every sheet action that offers
-     an undo closes the sheet first today. */
+     an undo closes the sheet first today.
+     The AI-failure notice is the opposite case and sits at 165: it never
+     auto-dismisses, and what failed is usually the dialog in front of you —
+     at 42 « Demander » raised it under its own backdrop, unreachable until
+     the dialog closed (2026-11-16). One deliberate tap and it is gone. */
   z-index: var(--z-scrim);
   background: rgba(44, 39, 34, 0.32);
   opacity: 0;
