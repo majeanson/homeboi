@@ -5,17 +5,18 @@ import { ingredientName } from '../../lib/ingredient'
 import { withoutHeadings } from '../../lib/recipeSections'
 import { type Recipe } from '../../lib/recipes'
 import { BOARD_KEY } from '../../lib/queryKeys'
-import { type MealRow } from './types'
+import { type MealLink } from '../../lib/nextMeal'
 
-// "Shop this week", extracted from the Kitchen page: walk EVERY planned meal that
-// maps to a recipe (any slot, several per slot), pull each matched recipe's
+// "Shop this week", extracted from the Kitchen page: walk EVERY planned meal — the
+// dated ones AND the « À placer » bin (mig 0155), hence the minimal MealLink shape —
+// that maps to a recipe (any slot, several per slot), pull each matched recipe's
 // ingredients, drop anything already on the list (normalized), and confirm the
 // rest onto the shared grocery list in one write. `recipeFor` resolves a planned
 // meal to its recipe by the exact recipe_id link first (title as a fallback), so
 // renamed/duplicate recipes still shop.
 export function useRecipeShop(
-  meals: MealRow[],
-  recipeFor: (meal: MealRow) => Recipe | undefined,
+  meals: MealLink[],
+  recipeFor: (meal: MealLink) => Recipe | undefined,
   listItems: string[],
 ) {
   const write = useWrite()

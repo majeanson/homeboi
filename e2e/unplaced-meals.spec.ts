@@ -164,3 +164,32 @@ test('a planned meal goes back to « À placer » from « Déplacer… » — no
   ])
   expect(back.postDataJSON()).toMatchObject({ action: 'place', id: 'meal1', toDate: MMID, slot: 'supper' })
 })
+
+test('« Magasiner la semaine » shops the « À placer » meals too', async ({ page }) => {
+  // A week planned WITHOUT its days: nothing dated, one recipe waiting in the bin. The
+  // weekly shop walked only the dated meals, so this — the whole point of the bin —
+  // offered nothing to buy.
+  await page.clock.setFixedTime(new Date(BASE * 1000))
+  await page.setViewportSize({ width: 390, height: 844 })
+  await mockApi(page)
+  await page.route('**/api/meals**', (route) => {
+    const url = new URL(route.request().url())
+    if (url.pathname !== '/api/meals' || route.request().method() !== 'GET' || url.searchParams.has('date')) return route.fallback()
+    const unplaced = [{ id: 'u9', title: 'Tacos au poulet', recipe_id: 'rc2', slot: 'supper', is_leftover: 0, position: 0 }]
+    return route.fulfill({ contentType: 'application/json', body: JSON.stringify({ ...MEALS, days: [], recent: [], unplaced }) })
+  })
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+  await page.goto('/kitchen')
+  await expect(page.locator('.kitchen__day--unplaced')).toContainText('Tacos au poulet', { timeout: 15_000 })
+
+  await page.locator('.add-fab').click()
+  await page.locator('.sheet.show').getByRole('button', { name: /Magasiner la semaine/ }).click()
+  const shop = page.locator('.kitchen__shop')
+  await expect(shop.locator('.kitchen__staples-chips .chip', { hasText: 'Tortillas' })).toBeVisible()
+  await shop.getByRole('button', { name: 'Tout cocher' }).click()
+  const [req] = await Promise.all([
+    page.waitForRequest((r) => r.method() === 'POST' && new URL(r.url()).pathname === '/api/recipe-to-list'),
+    shop.locator('.btn--primary').click(),
+  ])
+  expect(req.postData() ?? '').toContain('Salsa')
+})

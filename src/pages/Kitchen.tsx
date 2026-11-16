@@ -266,7 +266,9 @@ export function Kitchen() {
   // taps a recipe then an empty day — a suggestion, not a decision).
   const { kidSuggest } = useMealPlanning(profileId)
   const { shopPrompt, setShopPrompt, shopBusy, beginShopWeek, toggleShop, toggleAllShop, confirmShop, shoppableCount } =
-    useRecipeShop(days, recipeForMeal, listItems)
+    // « À placer » meals shop too: a week planned without its days is still a week
+    // to buy for — the bin is exactly where a « plan the week, then shop » lands.
+    useRecipeShop([...days, ...unplaced], recipeForMeal, listItems)
   // How many shop items are currently ticked (the panel starts all-unchecked, so
   // this drives the "Ajouter (N)" label + disables the confirm until ≥1 is picked).
   const shopChecked = (shopPrompt ?? []).filter((o) => o.on).length

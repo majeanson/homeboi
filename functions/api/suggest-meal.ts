@@ -22,7 +22,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   // last serving is older than the neglected cutoff (or never served). Bringing a
   // few of these back is a GENTLE preference passed to the suggester, never shame.
   const NEGLECT_CUTOFF = addLocalDays(today, -14) // not served in > 14 days (local days, never ×86400 off a midnight)
-  const [low, recent, favs, neglected] = await Promise.all([
+  const [low, recent, favs, neglected, binned] = await Promise.all([
     ctx.env.DB.prepare('SELECT item FROM pantry_low WHERE household_id = ? ORDER BY marked_at DESC LIMIT 10')
       .bind(actor.householdId)
       .all<{ item: string }>(),
@@ -59,26 +59,38 @@ export const onRequestPost = authed(async (ctx, actor) => {
            ON m.recipe_id = r.id AND m.household_id = r.household_id
           AND m.date <= ?
         WHERE r.household_id = ?
+          AND r.id NOT IN (SELECT recipe_id FROM meals_unplaced WHERE household_id = ? AND recipe_id IS NOT NULL)
         GROUP BY r.id
        HAVING last IS NULL OR last < ?
         ORDER BY (last IS NULL) DESC, last ASC
         LIMIT 8`,
     )
-      .bind(today, actor.householdId, NEGLECT_CUTOFF)
+      .bind(today, actor.householdId, actor.householdId, NEGLECT_CUTOFF)
       .all<{ title: string; last: number | null }>(),
+    // « À placer » (mig 0155) — dishes already chosen for this week, just not given a
+    // day. Suggesting one back is an idea the household already had: they join the
+    // don't-repeat list (as `avoid`, not `recent` — they were not EATEN), leave the
+    // "forgotten" list above, and an echo the model sends anyway is dropped below.
+    ctx.env.DB.prepare('SELECT title FROM meals_unplaced WHERE household_id = ? ORDER BY position LIMIT 30')
+      .bind(actor.householdId)
+      .all<{ title: string }>(),
   ])
 
+  const inBin = binned.results.map((r) => r.title)
+  const binKeys = new Set(inBin.map((t) => t.trim().toLowerCase()))
   const report = { error: null as string | null }
-  const suggestions = await suggestMeals(
-    ctx.env,
-    low.results.map((r) => r.item),
-    recent.results.map((r) => r.title),
-    resolveLang(ctx.env, ctx.request),
-    favs.results.map((r) => r.title),
-    avoid,
-    report,
-    neglected.results.map((r) => r.title),
-  )
+  const suggestions = (
+    await suggestMeals(
+      ctx.env,
+      low.results.map((r) => r.item),
+      recent.results.map((r) => r.title),
+      resolveLang(ctx.env, ctx.request),
+      favs.results.map((r) => r.title),
+      [...avoid, ...inBin],
+      report,
+      neglected.results.map((r) => r.title),
+    )
+  ).filter((s) => !binKeys.has(s.trim().toLowerCase()))
   // The header rides on the 503 too: an empty batch from a real AI failure now
   // carries the reason, while a genuinely empty result stays a quiet 503.
   if (!suggestions.length) return withAiError(serviceUnavailable('Pas de suggestion pour le moment.'), report)

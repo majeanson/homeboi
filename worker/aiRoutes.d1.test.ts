@@ -272,6 +272,20 @@ describe('qu’est-ce qu’on mange', () => {
     expect(prompt.match(/oubliées depuis un bon moment[^\n]*?: ([^\\]*)/)?.[1], 'neglected').toContain('aucune')
   })
 
+  it('a dish waiting in « À placer » is not suggested back, nor called forgotten', async () => {
+    const s = await household('suggest-bin', undefined, { empty: true })
+    const binned = await okJson<{ id: string }>(s.fetch('/api/recipes', { method: 'POST', body: { title: 'Pâté chinois' } }))
+    await okJson(s.fetch('/api/recipes', { method: 'POST', body: { title: 'Lasagne oubliée' } }))
+    await okJson(s.fetch('/api/meals', { method: 'POST', body: { action: 'park', title: 'Pâté chinois', recipeId: binned.id, slot: 'supper' } }))
+    ai.on(TEXT, reply(['Chili', 'pâté chinois ', 'Tacos']))
+    expect(await okJson(s.fetch('/api/suggest-meal', { method: 'POST' })), 'an echo of the bin is dropped').toEqual({ suggestions: ['Chili', 'Tacos'] })
+    const prompt = ai.sent()
+    const forgotten = prompt.match(/oubliées depuis un bon moment[^\n]*?: ([^\\]*)/)?.[1] ?? ''
+    expect(forgotten).toContain('Lasagne oubliée')
+    expect(forgotten, 'already chosen for this week is not forgotten').not.toContain('Pâté chinois')
+    expect(prompt, 'it rides the don’t-repeat list').toContain('Pâté chinois')
+  })
+
   it('no suggestion is a 503 carrying the reason', async () => {
     const s = await household('suggest-fail', undefined, { empty: true })
     ai.on(TEXT, new Error('capacity'))
