@@ -650,6 +650,12 @@ export function Board() {
   // it sits above the early return below with the rest of them (the copy it replaced
   // was a plain function and could live further down).
   const saveAsLeftover = useAnnounceLeftover()
+  // « Créer des restants » from a meal peek carries the recipe the peek itself resolved
+  // (useOpenMeal: by link first, then by title) — these four doors used to pass
+  // { id, title } alone, so a leftover born from « Spaghetti maison » on the board
+  // lost its recipe: no 📖 on the pool row, and planning it later gave a bare title.
+  const leftoverFrom = (m: { id: string; title: string; recipe_id?: string | null }) =>
+    saveAsLeftover({ id: m.id, title: m.title, recipe_id: recipeFor(m)?.id ?? m.recipe_id ?? null })
   // Plan a pool leftover as tonight's supper — the ONE shared implementation
   // (usePlanLeftover, Leftovers.tsx). This page carried a hand-rolled copy until
   // 2026-09-03, and it had drifted twice over: its undo re-inserted the pool row
@@ -917,7 +923,7 @@ export function Board() {
           color: supperColor,
           slotLabel: heroCardLabel(heroSlot, t),
           daySec: todayDay,
-          onLeftover: ro ? undefined : () => saveAsLeftover({ id: m.id, title: m.title }),
+          onLeftover: ro ? undefined : () => leftoverFrom(m),
           onRemove: ro ? undefined : () => removeMealFromPlan(m.id, m.title, m.slot ?? heroSlot, todayDay, m.recipe_id),
         })
       }
@@ -963,7 +969,7 @@ export function Board() {
           color: mealPrefs.color(m.slot),
           slotLabel: slotLabel(m.slot),
           daySec: todayDay,
-          onLeftover: ro ? undefined : () => saveAsLeftover({ id: m.id, title: m.title }),
+          onLeftover: ro ? undefined : () => leftoverFrom(m),
           onRemove: ro ? undefined : () => removeMealFromPlan(m.id, m.title, m.slot, todayDay, m.recipe_id),
         })
       }
@@ -1339,7 +1345,7 @@ export function Board() {
               color: supperColor,
               slotLabel: slotLabel(heroSlot),
               daySec: tomorrowDay,
-              onLeftover: ro ? undefined : () => saveAsLeftover({ id: data.tomorrowMeal!.id, title: data.tomorrowMeal!.title }),
+              onLeftover: ro ? undefined : () => leftoverFrom(data.tomorrowMeal!),
               onRemove: ro ? undefined : () => removeMealFromPlan(data.tomorrowMeal!.id, data.tomorrowMeal!.title, heroSlot, tomorrowDay, data.tomorrowMeal!.recipe_id),
             })
           }
@@ -1359,7 +1365,7 @@ export function Board() {
               color: mealPrefs.color(m.slot),
               slotLabel: slotLabel(m.slot),
               daySec: tomorrowDay,
-              onLeftover: ro ? undefined : () => saveAsLeftover({ id: m.id, title: m.title }),
+              onLeftover: ro ? undefined : () => leftoverFrom(m),
               onRemove: ro ? undefined : () => removeMealFromPlan(m.id, m.title, m.slot, tomorrowDay, m.recipe_id),
             })
           }

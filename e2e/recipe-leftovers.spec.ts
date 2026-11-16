@@ -52,3 +52,74 @@ test('a recipe posts its leftovers without leaving the scene', async ({ page }) 
   await expect(page.getByRole('menuitem', { name: 'Dans les restants' })).toBeDisabled()
   expect(posted).toHaveLength(1)
 })
+
+// Audit 2026-11-15 (« Restants »). The board's meal peek offers « Créer des restants »
+// through the same shared hook — but its four doors handed it `{ id, title }` alone, so
+// the pool row lost the recipe the peek itself had just resolved (« Spaghetti maison »
+// → rc1, by title, in the fixture): no 📖 on the row, a bare title once planned.
+test('the board peek’s « Créer des restants » keeps the recipe the peek resolved', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  const posted: Record<string, unknown>[] = []
+  await mockApi(page)
+  await page.route('**/api/meal-leftovers**', async (route) => {
+    if (route.request().method() === 'POST') {
+      posted.push(route.request().postDataJSON())
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, id: 'lo-new' }) })
+    }
+    return route.fallback()
+  })
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+  await page.goto('/board')
+  await expect(page.locator('.board-wall')).toBeVisible({ timeout: 15_000 })
+
+  await page.locator('.now-card__meal').filter({ hasText: 'Spaghetti maison' }).first().click()
+  const sheet = page.locator('.detail-sheet')
+  await sheet.waitFor({ state: 'visible', timeout: 10_000 })
+  // A recipe-linked peek folds the plan tail into its ⋯ (the menu portals to <body>).
+  await sheet.locator('.action-menu__btn').click()
+  await page.getByRole('menuitem', { name: 'Créer des restants' }).click()
+
+  await expect.poll(() => posted.length).toBe(1)
+  expect(posted[0]).toMatchObject({ title: 'Spaghetti maison', recipeId: 'rc1', sourceMealId: 'meal1' })
+})
+
+// Same audit: planning a pool leftover the server REFUSES still offered « Annuler », and
+// that undo re-POSTs the pool row — so one tap put the (never-consumed) leftover in
+// Restants twice. A refused plan says « Pas enregistré » and offers nothing to undo.
+// (Worse: that undo toast took the bar over the failure notice, so the screen said
+// « planifié » about a plan that never happened.)
+test('a refused leftover plan offers no « Annuler » (it would duplicate the row)', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await mockApi(page)
+  const posts: Record<string, unknown>[] = []
+  await page.route('**/api/meal-leftovers**', async (route) => {
+    const req = route.request()
+    if (req.method() === 'POST') {
+      posts.push(req.postDataJSON())
+      return route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: 'Erreur serveur' }) })
+    }
+    if (req.method() === 'GET')
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ leftovers: [{ id: 'lo1', title: 'Pâté chinois', recipe_id: null, source_meal_id: null, created_at: 0 }] }),
+      })
+    return route.fallback()
+  })
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+  await page.goto('/kitchen')
+  await expect(page.locator('.kitchen__day').first()).toBeVisible({ timeout: 15_000 })
+
+  const row = page.locator('.kitchen__ideas .kitchen__idea', { hasText: 'Pâté chinois' })
+  await row.scrollIntoViewIfNeeded()
+  await row.getByRole('button', { name: /Pâté chinois/ }).click()
+  // Leftovers have no « À placer » chip (no onPark), so the first chip is a real day.
+  await row.locator('.meal-plan-pick__days button').first().click()
+
+  await expect(page.getByText('Pas enregistré — réessaie.')).toBeVisible()
+  expect(posts).toHaveLength(1)
+  expect(posts[0]).toMatchObject({ action: 'plan', id: 'lo1' })
+  // The notice rides the same bar as an undo; what must be absent is the undo itself.
+  await expect(page.getByText(/« Pâté chinois » planifié/)).toHaveCount(0)
+  await expect(page.locator('.undo-toast__btn')).toHaveCount(0)
+})

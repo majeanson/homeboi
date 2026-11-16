@@ -35,6 +35,10 @@ export function usePlanLeftover() {
       body: { action: 'plan', id: l.id, date, slot },
       affectedKeys: keys,
     }))
+    // Refused (writeOrNull already said « Pas enregistré ») → the leftover is still in
+    // the pool, so there is nothing to undo. Offering « Annuler » anyway re-POSTed the
+    // pool row: one tap and the leftover was in Restants TWICE.
+    if (!res) return
     const mealId = res && !res.queued ? res.data?.mealId : undefined
     recordUndo({
       message: t.undo.leftoverPlanned(l.title),
@@ -91,6 +95,8 @@ export function useAnnounceLeftover() {
       body: { title: from.title, recipeId: from.recipe_id ?? null, sourceMealId: from.id ?? null },
       affectedKeys: keys,
     }))
+    // Refused → nothing was added; no « Annuler » for a row that does not exist.
+    if (!res) return undefined
     const id = res && !res.queued ? res.data?.id : undefined
     if (opts?.undo !== false)
       recordUndo({
