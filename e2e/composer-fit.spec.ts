@@ -71,7 +71,11 @@ async function measure(page: Page, selector: string) {
     const el = document.querySelector(sel) as HTMLInputElement | HTMLTextAreaElement | null
     if (!el) return null
     const cs = getComputedStyle(el)
-    const inner = el.clientWidth - parseFloat(cs.paddingLeft || '0') - parseFloat(cs.paddingRight || '0')
+    // offsetWidth minus borders, NOT clientWidth: Chrome 158 (Playwright 1.65) started
+    // reporting an <input>'s clientWidth ~20px short of the box it actually paints —
+    // pixel-identical screenshots, the whole placeholder visible, and eight floors
+    // "failed" on a number that no longer meant typing width (2026-11-16).
+    const inner = el.offsetWidth - parseFloat(cs.borderLeftWidth || '0') - parseFloat(cs.borderRightWidth || '0') - parseFloat(cs.paddingLeft || '0') - parseFloat(cs.paddingRight || '0')
     const ctx = document.createElement('canvas').getContext('2d')
     let text = 0
     if (ctx) {
@@ -251,7 +255,8 @@ for (const width of [360, 390]) {
         const m = await card.locator(f.field).first().evaluate((el) => {
           const i = el as HTMLInputElement
           const cs = getComputedStyle(i)
-          const inner = i.clientWidth - parseFloat(cs.paddingLeft || '0') - parseFloat(cs.paddingRight || '0')
+          // offsetWidth, not clientWidth — see measure() above (Chrome 158).
+          const inner = i.offsetWidth - parseFloat(cs.borderLeftWidth || '0') - parseFloat(cs.borderRightWidth || '0') - parseFloat(cs.paddingLeft || '0') - parseFloat(cs.paddingRight || '0')
           const ctx = document.createElement('canvas').getContext('2d')!
           ctx.font = `${cs.fontStyle} ${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`
           return { width: Math.round(inner), placeholder: i.placeholder || '', placeholderPx: Math.round(ctx.measureText(i.placeholder || '').width) }
