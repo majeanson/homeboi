@@ -31,7 +31,8 @@
     "db:migrate:local": "wrangler d1 migrations apply babillard --local && npm run db:sync:local",
     "db:sync:local": "node --experimental-sqlite scripts/sync-local-d1.mjs",
     "db:migrate:prod": "wrangler d1 migrations apply babillard --remote",
-    "e2e:ci": "playwright test --workers=1 --retries=0 --forbid-only"
+    "e2e:ci": "playwright test --workers=1 --retries=0 --forbid-only",
+    "e2e:local": "node scripts/e2e-local.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.107.1",

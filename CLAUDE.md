@@ -184,8 +184,8 @@ npm run test:d1        # the REAL-RUNTIME suite: the Worker in workerd against a
                        #   Needs dist/ → run after a build. CI runs it after check:bundle.
 npm run test:watch     # vitest watch · npm run test:coverage = the same run + v8 floors per directory (vitest.config.ts; not a CI step)
 npm run e2e            # Playwright (boots its own Vite, stubs every /api/* — no D1/secrets)
-npm run e2e:ci         # …in CI's shape (workers 1, retries 0). Run THIS before pushing
-                       #   anything that touches shared machinery — see the note below.
+npm run e2e:ci         # …in CI's shape (workers 1, retries 0) — before pushing shared machinery (note below)
+npm run e2e:local      # the WHOLE suite in that shape on this machine: 8 shards in turn, one Vite each (~55 min)
 npm run e2e:sw         # SW offline-shell e2e only (own harness on the PROD bundle)
 npm run e2e:matrix     # ON-DEMAND visual state sweep → screenshots/matrix/manifest.json for
                        #   a review pass. Several frames per state; prunes; AXE per state. Weekly in CI.

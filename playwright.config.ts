@@ -45,8 +45,10 @@ export default defineConfig({
   // override with PW_WORKERS=2 for a flaky full-suite run on a constrained box.
   workers: process.env.CI ? 1 : Number(process.env.PW_WORKERS) || 4,
   timeout: 45_000,
-  reporter: [['list'], ['html', { open: 'never', outputFolder: 'e2e/report' }], ['./e2e/unknownGets.reporter.ts']],
-  outputDir: 'e2e/test-results',
+  // PW_REPORT_DIR / PW_OUTPUT_DIR: scripts/e2e-local.mjs gives each shard its own, so a
+  // later shard does not wipe the report and traces of an earlier red one.
+  reporter: [['list'], ['html', { open: 'never', outputFolder: process.env.PW_REPORT_DIR || 'e2e/report' }], ['./e2e/unknownGets.reporter.ts']],
+  outputDir: process.env.PW_OUTPUT_DIR || 'e2e/test-results',
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
     // CI runs retries: 0, so « on-first-retry » meant CI had NEVER recorded a trace — every

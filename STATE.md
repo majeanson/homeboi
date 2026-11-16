@@ -42,8 +42,8 @@
 - `npm run typecheck` · `npm run lint` (oxlint, since 2026-11-05) · `npm test` · `npm run test:d1` · `npm run build` · `npm run check:bundle` · `npm run knip` — green 2026-11-05, and all seven gate the deploy.
 - `npm run e2e:ci` — CI's E2E job is the standing whole-suite signal, and it chains off
   CI, so **a red CI means no E2E ran at all** (that hid three commits' worth of failures
-  for a day). It cannot be finished on Marc's machine: two attempts died of memory
-  pressure on 2026-09-22 (a V8 heap OOM, then Vite itself refusing connections mid-run).
+  for a day). One process OOMs on Marc's machine (2026-09-22); `npm run e2e:local` does not — 8
+  shards in turn, a Vite each, CI's strictness: 2 199 passed, 55 min, ≥ 5.3 GB free (2026-11-16).
 - `npm run e2e:sw` — 5 passed (the kiosk's offline reboot, against the real PROD bundle).
 - `npm run check:bundle` — the door's static closure is **9 chunks / 522 KB** (was 70 /
   1 131 before the hub went lazy); every chunk within budget; the SW precache covers all
