@@ -25,6 +25,9 @@ import { SharedRoutineView } from '../components/share/SharedRoutineView'
 // funnel); a signed-in Babillard visitor sees the same render plus an import action
 // (add to book / agenda / routines, or open a family in-app). Every query here hits ONLY
 // public endpoints while signed out, so an anonymous session never trips onAuthLost.
+// Page-local: a public share is read only here.
+const SHARE_PUBLIC_KEY = ['share-public']
+
 export function PartagePage() {
   const { id = '' } = useParams()
   const t = useT()
@@ -35,7 +38,7 @@ export function PartagePage() {
   const [err, setErr] = useState<string | null>(null)
 
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['share-public', id],
+    queryKey: [...SHARE_PUBLIC_KEY, id],
     queryFn: () => fetchPublicShare(id),
     enabled: !!id,
     retry: false,

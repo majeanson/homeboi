@@ -79,6 +79,9 @@ function targetMatch(targetKey: string | null, contacts: Contact[], members: Mem
   return m ? { kind, id, name: m.displayName } : null
 }
 
+// Page-local: a received family share is read only here.
+const FAMILY_SHARE_KEY = ['family-share']
+
 export function FamilyImportPage() {
   const t = useT()
   const { lang } = useLang()
@@ -93,7 +96,7 @@ export function FamilyImportPage() {
   const [codeInput, setCodeInput] = useState('')
 
   const shareQ = useQuery({
-    queryKey: ['family-share', shareId],
+    queryKey: [...FAMILY_SHARE_KEY, shareId],
     queryFn: () => api<ShareResponse>(`family-share?s=${encodeURIComponent(shareId!)}`),
     enabled: !!shareId,
     retry: false,

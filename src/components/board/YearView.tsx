@@ -21,6 +21,9 @@ import { type Lang } from '../../i18n'
 // read as month sections (this month open, the rest folded — the diary's
 // pattern). Its own cold read (/api/year, D-18 — fetched when the view opens,
 // never polled); tapping a mini-month drills into the Mois view at that month.
+// Page-local: /api/year is read only by this view.
+const YEAR_KEY = ['year']
+
 const KIND_COLOR: Record<YearPointKind | 'trip', string> = {
   fete: '#c9a227', // gold — the fêtes' celebratory tint
   birthday: '#B06A93', // pink — matches the cake rows elsewhere
@@ -65,7 +68,7 @@ export function YearView({
   // retry itself — the unfixed twin of the Mois bug (ddf0a4e): twelve blank
   // mini-months plus a lying « rien cette année », forever, with no button.
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ['year', from],
+    queryKey: [...YEAR_KEY, from],
     queryFn: () => api<YearData>(`year?from=${from}&to=${to}`),
     staleTime: 5 * 60_000,
     ...healOnError,

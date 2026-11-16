@@ -71,6 +71,10 @@ const PREVIEW_API: VoyageApi = {
   readOnly: true,
 }
 
+// Page-local: the invite preview is read only here (realtime nudges it through
+// ['shared-trips'], functions/_lib/realtime.ts).
+const SHARED_TRIP_JOIN_KEY = ['shared-trip-join']
+
 export function SharedVoyageJoinPage() {
   const t = useT()
   const { lang } = useLang()
@@ -86,7 +90,7 @@ export function SharedVoyageJoinPage() {
   const [err, setErr] = useState<string | null>(null)
 
   const previewQ = useQuery({
-    queryKey: ['shared-trip-join', token],
+    queryKey: [...SHARED_TRIP_JOIN_KEY, token],
     queryFn: () => api<JoinPreview>(`shared-trip-join?j=${encodeURIComponent(token!)}`),
     enabled: !!token,
     retry: false,

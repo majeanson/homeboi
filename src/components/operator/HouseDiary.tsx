@@ -11,7 +11,7 @@ import { EmptyState } from '../EmptyState'
 import { Disclosure } from '../Disclosure'
 import { colourFor } from '../../lib/things'
 import { groupByMonth, ageAt } from '../../lib/year'
-import { CARE_LOG_KEY, TRIPS_KEY, MEMBERS_KEY } from '../../lib/queryKeys'
+import { CARE_LOG_KEY, TRIPS_KEY, MEMBERS_KEY, CHORES_LEDGER_KEY } from '../../lib/queryKeys'
 import { useCarnets, carnetEmoji, CARNET_COLOUR, type CareLog } from '../../lib/carnets'
 import { useGallery } from '../../lib/drawingGallery'
 import type { Trip } from '../voyage/voyage'
@@ -89,9 +89,8 @@ export function HouseDiarySection({ help }: { help?: HelpMode }) {
   })
   const carnets = useCarnets({ live: false })
   const chores = useQuery({
-    // Local key: the year window is read only here (['chores-ledger'] alone is
-    // ChoreLedger's 30-day glance — two windows, two cache rows).
-    queryKey: ['chores-ledger', 'year'],
+    // The year window; CHORES_LEDGER_KEY alone is ChoreLedger's 30-day glance.
+    queryKey: [...CHORES_LEDGER_KEY, 'year'],
     queryFn: () => api<{ ledger: LedgerRow[] }>(`chores-ledger?since=${since}`),
     ...cold,
   })

@@ -1,4 +1,4 @@
-import { dealsKey } from '../lib/queryKeys'
+import { dealsKey, FLYERS_KEY } from '../lib/queryKeys'
 import { IconButton } from './IconButton'
 import { SearchField } from './SearchField'
 import { Loading } from './Fallback'
@@ -112,7 +112,7 @@ export function DealsBrowser({ onClose }: { onClose: () => void }) {
   const deals = dealsQ.data?.deals ?? null
   // Store flyers near the household — only fetched when the "Par magasin" tab is on.
   const flyersQ = useQuery({
-    queryKey: ['flyers', dayKey],
+    queryKey: [...FLYERS_KEY, dayKey],
     queryFn: () => api<{ flyers: FlyerSummary[] }>('flyers'),
     staleTime: 60 * 60 * 1000,
     retry: false,

@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { HEALTH_KEY } from '../lib/queryKeys'
 import { Link } from 'react-router-dom'
 import { TopBar } from '../components/TopBar'
 import { useLang } from '../i18n'
@@ -254,7 +255,7 @@ function LegalScene({ doc }: { doc: typeof PRIVACY }) {
   // unauthenticated visitor by design (it is what /login reads to decide whether the
   // password-reset door exists), which is exactly the caller this page has.
   const health = useQuery({
-    queryKey: ['health'],
+    queryKey: HEALTH_KEY,
     queryFn: () => api<{ contact: string | null }>('health'),
     staleTime: 60 * 60_000,
   })

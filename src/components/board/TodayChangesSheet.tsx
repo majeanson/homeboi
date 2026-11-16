@@ -28,13 +28,16 @@ export function TodayChangesSheet({ open, onClose }: { open: boolean; onClose: (
   )
 }
 
+// Page-local: read only by this sheet.
+const TODAY_CHANGES_KEY = ['today-changes']
+
 function TodayChangesBody() {
   const t = useT()
   const { lang } = useLang()
   const { data, isLoading } = useQuery({
     // Keyed on today's local day so a peek held open across local midnight (a kiosk
     // never closed) still reads as a fresh day on the next open, not yesterday's.
-    queryKey: ['today-changes', todayLocalDay()],
+    queryKey: [...TODAY_CHANGES_KEY, todayLocalDay()],
     queryFn: () => api<{ entries: ChangeRow[] }>('today-changes'),
     gcTime: 0,
   })

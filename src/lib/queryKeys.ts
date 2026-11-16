@@ -138,6 +138,10 @@ export const PHOTOS_KEY = ['photos']
 export const EVENTS_KEY = ['events']
 // Chores/tasks (/api/chores): read by the chore forms + Réglages corvées.
 export const CHORES_KEY = ['chores']
+// « Qui a fait quoi » (/api/chores-ledger): the board's Tâches view reads the 30-day
+// glance under this key, Réglages' house diary the year window under
+// [...CHORES_LEDGER_KEY, 'year'] — two windows, two cache rows, one prefix.
+export const CHORES_LEDGER_KEY = ['chores-ledger']
 // Weather glance (/api/weather): read on the board + departure + day page.
 export const WEATHER_KEY = ['weather']
 // Paired devices (/api/devices): read in Réglages devices.

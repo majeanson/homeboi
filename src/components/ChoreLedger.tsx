@@ -4,6 +4,7 @@ import { useOperatorT } from '../i18n.operator'
 import { type HelpMode } from '../lib/helpMode'
 import { OperatorSection } from './operator/OperatorSection'
 import { api } from '../lib/api'
+import { CHORES_LEDGER_KEY } from '../lib/queryKeys'
 import { Avatar } from './Avatar'
 import { EmptyState } from './EmptyState'
 import { colourFor } from '../lib/things'
@@ -31,16 +32,13 @@ interface LedgerRow {
   helpers: Helper[]
 }
 
-// Page-local query key: the ledger is read only here (the board's Tâches view), so it
-// stays beside its component rather than in src/lib/queryKeys.ts (cross-page only).
-const LEDGER_KEY = ['chores-ledger']
 
 export function ChoreLedger({ help }: { help?: HelpMode | undefined }) {
   const o18n = useOperatorT()
   const { lang } = useLang()
   const loc = lang === 'fr' ? 'fr-CA' : 'en-CA'
   const { data, isLoading } = useQuery({
-    queryKey: LEDGER_KEY,
+    queryKey: CHORES_LEDGER_KEY,
     queryFn: () => api<{ since: number; ledger: LedgerRow[] }>('chores-ledger'),
   })
   const ledger = data?.ledger ?? []
