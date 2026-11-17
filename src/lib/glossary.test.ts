@@ -626,3 +626,18 @@ describe('glossary — the delete and remove keys say what they do', () => {
     expect(walk(FR.kitchen, 'kitchen', []).filter(([, v]) => /\b(un|le|du) reste\b/.test(v))).toEqual([])
   })
 })
+
+// A word said twice across a comma is a list that lost an item: the EN landing read
+// « Appointments, tasks, tasks. » once FR's « tâches, à-faire » both translated to
+// "tasks" (review #13, 2026-11-17). Every string in all four dictionaries.
+describe('no list repeats a word', () => {
+  const repeated = (s: string) => /(?<![\p{L}-])([\p{L}-]+), \1(?![\p{L}-])/iu.exec(s)?.[0]
+  it('the detector sees « tasks, tasks » and not « tâches, à-faire »', () => {
+    expect(repeated('Appointments, tasks, tasks.')).toBe('tasks, tasks')
+    expect(repeated('Rendez-vous, tâches, à-faire.')).toBeUndefined()
+  })
+  it('in FR, EN and both Réglages dictionaries', () => {
+    const hits = [FR, EN, FR_OPERATOR, EN_OPERATOR].flatMap((d) => dictValues(d).map(repeated).filter(Boolean))
+    expect(hits).toEqual([])
+  })
+})

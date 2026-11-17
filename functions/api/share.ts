@@ -14,6 +14,7 @@ import {
 import { foldCardMedia } from '../_lib/routineCards'
 import { countLiveShares, insertShare, listLiveShares, readLiveShare, revokeShareById, MAX_SHARES } from '../_lib/shareStore'
 import { materializeFamilyShare } from '../_lib/familyShare'
+import { cleanRecipeMath, cleanRecipeTitle } from '../_lib/recipeText'
 
 // « Partager » — the ONE generic snapshot-share endpoint (migration 0102). Hand any
 // shareable thing (a recipe, a rendez-vous, a kid routine, a family) to a friend as a
@@ -74,9 +75,10 @@ async function buildContentShare(
       }>()
     if (!r) return null
     const built = buildRecipeSnapshot({
-      title: r.title,
-      ingredients: parseJsonArray<string>(r.ingredients_json, isStr),
-      steps: parseJsonArray<string>(r.steps_json, isStr),
+      // A share is a copy the recipient keeps: it leaves clean of import markup (recipeText).
+      title: cleanRecipeTitle(r.title),
+      ingredients: parseJsonArray<string>(r.ingredients_json, isStr).map(cleanRecipeMath),
+      steps: parseJsonArray<string>(r.steps_json, isStr).map(cleanRecipeMath),
       servings: r.servings,
       servingsUnit: r.servings_unit,
       prepMin: r.prep_min,

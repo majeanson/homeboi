@@ -1,3 +1,4 @@
+import { cleanRecipeMath, cleanRecipeTitle } from './recipeText'
 // Repairs for a recipe READ (photo or pasted text) whose structure came back wrong,
 // even though the words were read right. Pure, so every rule is tested on the real
 // card that broke it (recipeRepair.test.ts — Marc's « Brocoli sauté au miel et au
@@ -312,10 +313,12 @@ export function repairRecipeRead<
     notes?: string | null
   },
 >(r: R, opts: { footer?: boolean } = {}): R {
-  const title = unquoteTitle(r.title)
+  // A transcript's Markdown and LaTeX (a « # » title, an oven at 180 degrees in TeX) out with the quotes (recipeText).
+  const unquoted = unquoteTitle(r.title)
+  const title = unquoted ? cleanRecipeTitle(unquoted) || null : null
   // 0 + 1: un-quote every line, then drop field names and bare numbers.
-  const ing = salvageFieldLines(r.ingredients.map(unquoteLine).filter(Boolean))
-  const st = salvageFieldLines(r.steps.map(unquoteLine).filter(Boolean))
+  const ing = salvageFieldLines(r.ingredients.map((l) => cleanRecipeMath(unquoteLine(l))).filter(Boolean))
+  const st = salvageFieldLines(r.steps.map((l) => cleanRecipeMath(unquoteLine(l))).filter(Boolean))
   let servings = r.servings ?? ing.servings ?? st.servings
   const times = { ...r.times, prep: r.times.prep ?? ing.prep ?? st.prep, cook: r.times.cook ?? ing.cook ?? st.cook }
   // 2: the footer out of both lists; its yield is the servings when none was read — and

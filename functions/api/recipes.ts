@@ -7,6 +7,7 @@ import { MAX_INGREDIENT_LEN, MAX_INGREDIENTS, MAX_NOTES_LEN, MAX_STEP_LEN, MAX_S
 // THE row -> wire mapping for the list read lives in one place, with the reason the
 // as-imported snapshot is not in it. Its test is the guard.
 import { recipeListItem, parseOriginal, type RecipeRow, type RecipeOriginal } from '../_lib/recipeWire'
+import { cleanRecipeTitle } from '../_lib/recipeText'
 // The step-image lockstep rule lives in ONE server home (its client twin is
 // src/lib/parallelArray.ts) — see functions/_lib/recipeStepImages.ts.
 import { normalizeStepImages, stepImageKeys } from '../_lib/recipeStepImages'
@@ -148,7 +149,8 @@ export const onRequestGet = authed(async (ctx, actor) => {
 
 export const onRequestPost = authed(async (ctx, actor) => {
   const body = await readJson<RecipeBody>(ctx.request)
-  const title = body?.title?.trim()
+  // A pasted « # Titre » loses its Markdown mark on the way in (recipeText, review #13).
+  const title = cleanRecipeTitle(body?.title ?? '')
   if (!title) return badRequest('Titre requis.')
   const id = newId()
   const ts = nowSec()
@@ -186,7 +188,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
 export const onRequestPatch = authed(async (ctx, actor) => {
   const body = await readJson<RecipeBody>(ctx.request)
   if (!body?.id) return badRequest('id requis.')
-  const title = body.title?.trim()
+  const title = cleanRecipeTitle(body.title ?? '')
   if (!title) return badRequest('Titre requis.')
   const servings = typeof body.servings === 'number' && body.servings > 0 ? Math.floor(body.servings) : null
   const image = cleanImage(body.image)

@@ -296,6 +296,17 @@
      note tints (axe, 2026-09-15). Fading walks an ink toward its ground; mixing keeps
      it secondary while moving away from it. */
   color: color-mix(in srgb, currentColor 45%, var(--ink));
+  /* Never broken word by word: beside a drawing the card's flex row left the stamp a
+     sliver, and « il y a 65 j » stood one word per line (review #13, 2026-11-17). */
+  white-space: nowrap;
+}
+/* A drawing / photo / memo card: the stamp takes its own line under the media rather
+   than a sliver of the row beside it. */
+.note-card--media {
+  flex-wrap: wrap;
+}
+.note-card--media .note-card__age {
+  flex-basis: 100%;
 }
 
 /* --- « Mots » (0142): a parent text paper is a card holding its tap target + badges ---

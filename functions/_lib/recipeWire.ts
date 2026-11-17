@@ -1,6 +1,7 @@
 import { parseJsonArray } from './json'
 import { healTruncatedSteps } from './recipeImport'
 import { normalizeStepImages } from './recipeStepImages'
+import { cleanRecipeMath, cleanRecipeTitle } from './recipeText'
 
 // THE recipe row → wire mapping, in one place, because the list read is the most
 // shared payload in the app and what it carries is a decision, not an accident.
@@ -88,11 +89,13 @@ export function recipeListItem(r: RecipeRow) {
   // load — no destructive backfill — and once the cook re-saves, the full step
   // persists. Step count is unchanged, so the parallel stepImages array still lines
   // up. The snapshot is READ here and deliberately not returned.
-  const steps = healTruncatedSteps(parseJsonArray<string>(r.steps_json, isStr), parseOriginal(r.original_json)?.steps)
+  // A step's LaTeX (an oven at 180 degrees in TeX) as plain words, on every read: rows imported before
+  // the rule read clean without a rewrite (recipeText). Same count, so stepImages still align.
+  const steps = healTruncatedSteps(parseJsonArray<string>(r.steps_json, isStr), parseOriginal(r.original_json)?.steps).map(cleanRecipeMath)
   return {
     id: r.id,
-    title: r.title,
-    ingredients: parseJsonArray<string>(r.ingredients_json, isStr),
+    title: cleanRecipeTitle(r.title),
+    ingredients: parseJsonArray<string>(r.ingredients_json, isStr).map(cleanRecipeMath),
     steps,
     servings: r.servings,
     servingsUnit: r.servings_unit,

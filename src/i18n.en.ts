@@ -267,7 +267,7 @@ export const EN: typeof FR = {
     featSupper: 'Supper & groceries',
     featSupperBody: 'Plan the week’s meals — the grocery list fills itself. Recipes, flyer deals, step-by-step cook mode.',
     featAgenda: 'Agenda & lists',
-    featAgendaBody: 'Appointments, tasks, tasks. Type in plain words or dictate — “dentist for Léa tuesday 3pm” files on the right day, under the right name.',
+    featAgendaBody: 'Appointments, tasks, groceries. Type in plain words or dictate — “dentist for Léa tuesday 3pm” files on the right day, under the right name.',
     featRoutines: 'Kids’ routines',
     featRoutinesBody: 'Big picture cards, read aloud on the device. A pre-reader runs their own routine — no points, no rewards.',
     featCercle: 'The circle',
