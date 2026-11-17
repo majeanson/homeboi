@@ -7,6 +7,7 @@ import { STRANGER_POOL_PER_DAY, strangerSpend } from './usage'
 import { doorCounts, recentStrangerRemarks, type DoorCounts, type StrangerRemark } from './strangers'
 import { normalizeTaskDays } from './taskDay'
 import { pruneIpDaily } from './rateLimit'
+import { pruneRevokedSessions } from './auth'
 
 // The nightly cron, as one function with a REPORT (STATE.md §4-L, item L7).
 //
@@ -69,6 +70,8 @@ export interface NightlyDeps {
   taskDays: () => Promise<number>
   /** Drop the per-address counters (0159) older than yesterday. */
   pruneIpDaily: () => Promise<void>
+  /** Drop signed-out sessions (0160) whose cookie has expired anyway. */
+  pruneRevokedSessions: () => Promise<void>
 }
 
 export function realDeps(env: Env, now: number): NightlyDeps {
@@ -109,6 +112,7 @@ export function realDeps(env: Env, now: number): NightlyDeps {
     doorCounts: () => doorCounts(env, now),
     taskDays: () => normalizeTaskDays(env.DB),
     pruneIpDaily: () => pruneIpDaily(env, now),
+    pruneRevokedSessions: () => pruneRevokedSessions(env, now),
   }
 }
 
@@ -176,6 +180,7 @@ export async function runNightly(env: Env, now: number, deps: NightlyDeps = real
   }
   try {
     await deps.pruneIpDaily()
+    await deps.pruneRevokedSessions()
   } catch (err) {
     report.failed.push({ id: 'ip-daily', error: String((err as Error)?.message ?? err) })
   }

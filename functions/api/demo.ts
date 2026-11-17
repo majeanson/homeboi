@@ -172,8 +172,8 @@ async function mintShowcaseFallback(ctx: EventContext<Env, string, unknown>, now
   } catch {
     return serverError('Démo indisponible pour le moment.')
   }
-  // Bookkeeping row so the link is listable/revocable like any minted share link.
-  // Best-effort — the token stands on its own (same stance as guest/start).
+  // The row that makes the link listable and revocable like any minted share link —
+  // MANDATORY, as in guest/start (review 2026-11-17, P0 #7): no token without its row.
   try {
     await ctx.env.DB.prepare(
       'INSERT INTO guests (id, household_id, kind, target_key, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?)',
@@ -181,7 +181,7 @@ async function mintShowcaseFallback(ctx: EventContext<Env, string, unknown>, now
       .bind(guestId, householdId, 'showcase', null, now, now + DEMO_TTL)
       .run()
   } catch {
-    /* bookkeeping only */
+    return serverError('Démo indisponible pour le moment.')
   }
 
   return ok({ guestToken, expiresAt: now + DEMO_TTL })

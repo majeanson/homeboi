@@ -19,6 +19,7 @@ function deps(over: Partial<NightlyDeps> = {}): NightlyDeps {
     doorCounts: async () => ({ demos: 0, demosFull: 0, kept: 0, signups: 0, newHouseholds: 0, newConfirmed: 0, active: 0, stuckEmpty: 0 }),
     taskDays: async () => 0,
     pruneIpDaily: async () => {},
+    pruneRevokedSessions: async () => {},
     ...over,
   }
 }

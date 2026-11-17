@@ -58,6 +58,11 @@ interface NoteRow {
 const TEXT_CAP = 280
 
 export const onRequestGet = authed(async (ctx, actor) => {
+  // The fridge mots are the household's private notes to each other (and their voice
+  // transcripts): a guest link sees none. The board's MotsCard hid them from a guest in
+  // the UI only, and a showcase link can be standing (review 2026-11-17, P0 #7). Empty,
+  // not 403: a hidden card must not turn into an error on the read-only demo.
+  if (actor.scope === 'guest') return okWire('notes', { notes: [], more: false })
   const rows = await ctx.env.DB.prepare(
     `SELECT id, text, member_id, created_at, media_kind, media_key, scene_key, author_label,
             for_member_id, opened_at, saved_at, surface_at, transcript, updated_at, dismissed_at

@@ -168,15 +168,17 @@ export const onRequestGet = authed(async (ctx, actor) => {
     // the card, because a client-side hide is a hide the payload still carries:
     //   · a paper due later (« Plus tard », « Sa fête ») is not on the fridge yet — a
     //     surprise must not ride the board poll to the very face it is for;
-    //   · a guest link never receives a paper addressed to one person (the operator can
-    //     mint a showcase link to their OWN household — the mots card's privacy hide).
+    //   · a guest link receives NO paper at all (the operator can mint a showcase link to
+    //     their OWN household, and a standing one lives for years). It used to drop only
+    //     the addressed ones; the rest, transcripts included, rode the poll to a card the
+    //     UI merely hid (review 2026-11-17, P0 #7).
     ctx.env.DB.prepare(
       `SELECT id, text, member_id, created_at, media_kind, media_key, scene_key, author_label,
               for_member_id, opened_at, saved_at, transcript
          FROM notes
         WHERE household_id = ? AND dismissed_at IS NULL
           AND (surface_at IS NULL OR surface_at <= ?)
-          AND (? = 0 OR for_member_id IS NULL)
+          AND ? = 0
         ORDER BY created_at DESC LIMIT 12`,
     )
       .bind(hh, now, actor.scope === 'guest' ? 1 : 0)

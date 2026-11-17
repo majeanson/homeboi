@@ -2379,7 +2379,7 @@ export const FR = {
     you: 'toi',
     mint: 'Créer un lien d’invitation',
     mintAgain: 'Créer un autre lien',
-    linkReady: 'Envoie ce lien à la personne. Il vaut pour une seule maisonnée : la tienne.',
+    linkReady: 'Envoie ce lien à la personne. Il sert une seule fois : pour une autre personne, crée un nouveau lien.',
     linkLabel: 'Lien d’invitation',
     copy: 'Copier le lien',
     copied: 'Copié !',

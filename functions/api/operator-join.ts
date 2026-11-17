@@ -3,7 +3,7 @@ import { badRequest, conflict, forbidden, notFound, ok, readJson, serverError, t
 import { overAuthLimit, overIpDailyCap } from '../_lib/rateLimit'
 import { signInAs, sessionCookies, verifyOperatorInvite } from '../_lib/auth'
 import { hashPassword } from '../_lib/password'
-import { nowSec } from '../_lib/ids'
+import { newId, nowSec } from '../_lib/ids'
 import { isReservedEmail } from '../_lib/demoHousehold'
 
 // « Rejoindre une maisonnée » — redeem an operator invite (see operator-invite.ts and
@@ -25,6 +25,7 @@ import { isReservedEmail } from '../_lib/demoHousehold'
 interface Checked {
   householdId: string
   name: string
+  nonce: string
 }
 
 // Verify signature + expiry, then check the nonce against the household's LIVE value.
@@ -45,7 +46,7 @@ async function checkInvite(env: Env, token: string | null): Promise<Checked | Re
     return forbidden('Ce lien d’invitation a été réinitialisé — demande-s’en un nouveau.')
   }
   if (row.status && row.status !== 'active') return forbidden('Cette maisonnée n’accepte pas de nouveaux accès.')
-  return { householdId: row.id, name: row.name }
+  return { householdId: row.id, name: row.name, nonce: row.invite_nonce }
 }
 
 // The preview. Someone opening a texted link deserves to see WHOSE household they are
@@ -105,17 +106,28 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
   // Counted once the request is a real operator about to exist (0159, review P0 #6).
   if (await overIpDailyCap(ctx.env, ctx.request, 'account')) return tooManyRequests()
 
+  // SINGLE-USE (review 2026-11-17, P0 #7). The link was a bearer token for seven days:
+  // anyone it reached became a full operator, as many times as it was forwarded. One
+  // transaction now spends it: the nonce turns over only if it is still the one this link
+  // carries, and the operator is inserted only if THIS request's turnover landed — so two
+  // racing redemptions can never both join. The inviter mints a fresh link for the next.
+  const spent = newId()
+  let joined = 0
   try {
-    await ctx.env.DB.prepare(
-      'INSERT INTO operators (email, household_id, created_at, password_hash) VALUES (?, ?, ?, ?)',
-    )
-      .bind(email, checked.householdId, nowSec(), await hashPassword(password))
-      .run()
+    const [, insert] = await ctx.env.DB.batch([
+      ctx.env.DB.prepare('UPDATE households SET invite_nonce = ?, updated_at = ? WHERE id = ? AND invite_nonce = ?').bind(spent, nowSec(), checked.householdId, checked.nonce),
+      ctx.env.DB.prepare(
+        'INSERT INTO operators (email, household_id, created_at, password_hash) SELECT ?, ?, ?, ? WHERE (SELECT invite_nonce FROM households WHERE id = ?) = ?',
+      ).bind(email, checked.householdId, nowSec(), await hashPassword(password), checked.householdId, spent),
+    ])
+    joined = insert?.meta?.changes ?? 0
   } catch {
     // operators.email is the PRIMARY KEY, so two racing redemptions of the same link
     // with the same address cannot both land — the loser arrives here.
     return conflict('Ce courriel a déjà accès à cette maisonnée — connecte-toi.', 'already-member')
   }
+  // The turnover did not land: someone redeemed this link a moment ago.
+  if (joined === 0) return forbidden('Ce lien d’invitation a déjà servi — demande-s’en un nouveau.')
 
   // NOTHING IS SEEDED. This household already has a real family, and dropping fake
   // kids into it would be the exact confusion this whole feature exists to remove.

@@ -2075,7 +2075,7 @@ export const EN: typeof FR = {
     you: 'you',
     mint: 'Create an invite link',
     mintAgain: 'Create another link',
-    linkReady: 'Send this link to them. It works for one household only: yours.',
+    linkReady: 'Send this link to them. It works once: for someone else, make a new link.',
     linkLabel: 'Invite link',
     copy: 'Copy the link',
     copied: 'Copied!',

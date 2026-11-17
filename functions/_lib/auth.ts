@@ -17,7 +17,7 @@
 // `X-CSRF-Token` for state-changing operator requests.
 
 import type { Env } from './env'
-import { nowSec } from './ids'
+import { nowSec, sha256Hex } from './ids'
 
 const SESSION_COOKIE = 'bb_session'
 const CSRF_COOKIE = 'bb_csrf'
@@ -126,7 +126,9 @@ function readCookie(request: Request, name: string): string | null {
 // version-less (= revocable-by-nobody) cookie cannot be minted by habit. Exported
 // for tests only.
 export async function issueSession(env: Env, email: string, version = 1): Promise<{ session: string; csrf: string }> {
-  const session = await signToken(env, { e: email, v: version, x: nowSec() + SESSION_TTL })
+  // `n`: every sign-in is its own credential. Without it two sign-ins in the same second
+  // were byte-identical, and signing one out (0160 — revoked by hash) signed out both.
+  const session = await signToken(env, { e: email, v: version, x: nowSec() + SESSION_TTL, n: b64urlEncode(crypto.getRandomValues(new Uint8Array(9))) })
   // CSRF token is just a random value; security comes from "header must equal
   // cookie", which a cross-site attacker can't read.
   const csrf = b64urlEncode(crypto.getRandomValues(new Uint8Array(18)))
@@ -190,16 +192,38 @@ export interface CurrentOperator {
 // records). The stub-tolerant `?? 1` matches the column default: a row read before
 // 0134 ran, or a unit-test stub without the column, is version 1.
 export async function currentOperator(env: Env, request: Request): Promise<CurrentOperator | null> {
-  const payload = await verifyToken<{ e?: string; v?: number }>(env, readCookie(request, SESSION_COOKIE))
+  const cookie = readCookie(request, SESSION_COOKIE)
+  const payload = await verifyToken<{ e?: string; v?: number }>(env, cookie)
   if (!payload || typeof payload.e !== 'string') return null
-  const row = await env.DB.prepare('SELECT household_id, session_version FROM operators WHERE email = ?')
-    .bind(payload.e)
-    .first<{ household_id: string; session_version: number | null }>()
-  if (!row) return null
+  // …and not signed out on its own (0160): the same read, so logout costs no round trip.
+  const row = await env.DB.prepare(
+    'SELECT household_id, session_version, EXISTS (SELECT 1 FROM revoked_sessions WHERE token_hash = ?) AS revoked FROM operators WHERE email = ?',
+  )
+    .bind(await sha256Hex(cookie!), payload.e)
+    .first<{ household_id: string; session_version: number | null; revoked: number | null }>()
+  if (!row || row.revoked) return null
   const live = row.session_version ?? 1
   const minted = typeof payload.v === 'number' ? payload.v : 1
   if (minted !== live) return null
   return { email: payload.e, householdId: row.household_id }
+}
+
+// « Se déconnecter » on THIS device (0160, review 2026-11-17 P0 #7): the cookie the
+// request carries is refused from now until it would have expired anyway. Every other
+// device stays signed in — that is « Se déconnecter partout »'s job (revokeAllSessions).
+// A cookie that does not verify has nothing to revoke.
+export async function revokeThisSession(env: Env, request: Request): Promise<void> {
+  const cookie = readCookie(request, SESSION_COOKIE)
+  const payload = await verifyToken<{ x?: number }>(env, cookie)
+  if (!payload || !cookie) return
+  await env.DB.prepare('INSERT OR IGNORE INTO revoked_sessions (token_hash, expires_at) VALUES (?, ?)')
+    .bind(await sha256Hex(cookie), typeof payload.x === 'number' ? payload.x : nowSec() + SESSION_TTL)
+    .run()
+}
+
+/** The nightly prune: a row whose cookie has expired guards nothing any more. */
+export async function pruneRevokedSessions(env: Env, now = nowSec()): Promise<void> {
+  await env.DB.prepare('DELETE FROM revoked_sessions WHERE expires_at < ?').bind(now).run()
 }
 
 export function verifyCsrf(request: Request): boolean {

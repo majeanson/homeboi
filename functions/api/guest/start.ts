@@ -104,8 +104,10 @@ export const onRequestPost = authed(async (ctx, actor) => {
       return serverError('Impossible de créer le lien durable — réessaie.')
     }
   } else {
-    // Record the link so it can be listed + revoked (§509). Best-effort: the token is
-    // already valid regardless — a failed row write just means it can't be killed early.
+    // Record the link so it can be listed + revoked (§509). MANDATORY like the standing
+    // one (review 2026-11-17, P0 #7): it used to be best-effort, and a failed write handed
+    // out a week-long link nobody could see in Réglages or kill. The token is never
+    // returned without its row.
     try {
       await ctx.env.DB.prepare(
         'INSERT INTO guests (id, household_id, kind, target_key, label, lang, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
@@ -113,7 +115,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
         .bind(guestId, actor.householdId, kind, targetKey, label || null, lang, now, expiresAt)
         .run()
     } catch {
-      /* bookkeeping only — never fail the mint over it */
+      return serverError('Impossible de créer le lien — réessaie.')
     }
   }
 
