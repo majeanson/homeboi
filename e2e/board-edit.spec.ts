@@ -151,8 +151,10 @@ test.describe('board edit mode', () => {
 
   test('the size chip cycles the card through the widths', async ({ page }) => {
     await open(page)
-    await hold(page, 'today')
-    const slot = page.locator('.wg-slot[data-card="today"]')
+    // A masonry card that is always there at size 1 (« Aujourd'hui » moved up into the
+    // band, full width, review #15).
+    await hold(page, 'departure')
+    const slot = page.locator('.wg-slot[data-card="departure"]')
     const chip = slot.locator('.wg-slot__size')
 
     await expect(chip).toHaveText('1')
@@ -190,15 +192,15 @@ test.describe('board edit mode', () => {
   test('reordering UP inside the masonry persists', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 900 })
     await open(page)
-    await hold(page, 'today')
+    await hold(page, 'departure')
 
     const before = await order(page)
-    await dragOnto(page, 'today', 'autoCard')
+    await dragOnto(page, 'departure', 'autoCard')
     const after = await order(page)
     expect(after).not.toEqual(before)
-    expect(after.indexOf('today')).toBeLessThan(before.indexOf('today'))
+    expect(after.indexOf('departure')).toBeLessThan(before.indexOf('departure'))
     // It lands exactly where it was dropped: immediately before that card.
-    expect(after[after.indexOf('autoCard') - 1]).toBe('today')
+    expect(after[after.indexOf('autoCard') - 1]).toBe('departure')
   })
 
   test(`dropping on a card's TRAILING half lands after it — the reported bug`, async ({ page }) => {
@@ -377,25 +379,25 @@ test.describe('board edit mode', () => {
   test('two half cards sit side by side on a phone', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 900 })
     await open(page)
-    await hold(page, 'today')
+    await hold(page, 'departure')
 
     // The two cards that actually neighbour each other in the rendered flow — `nth(1)`
     // would be whatever the seed happens to put second, collapsed cards included.
     const visible = await page.locator('.board-grid > .wg-slot:not([hidden])').evaluateAll((els) =>
       els.map((e) => (e as HTMLElement).dataset.card!),
     )
-    const i = visible.indexOf('today')
+    const i = visible.indexOf('departure')
     const other = visible[i + 1]!
 
-    for (const card of ['today', other]) {
+    for (const card of ['departure', other]) {
       await page.locator(`.wg-slot[data-card="${card}"] .wg-slot__size`).click()
       await expect(page.locator(`.wg-slot[data-card="${card}"]`)).toHaveAttribute('style', /--wg-span-cols: ?1/)
     }
 
-    const a = await boxOf(page.locator('.wg-slot[data-card="today"]'))
+    const a = await boxOf(page.locator('.wg-slot[data-card="departure"]'))
     const b = await boxOf(page.locator(`.wg-slot[data-card="${other}"]`))
     // Same row, different columns — the whole point of giving a phone two of them.
-    expect(Math.abs(a.y - b.y), `${other} did not share a row with today`).toBeLessThan(4)
+    expect(Math.abs(a.y - b.y), `${other} did not share a row with departure`).toBeLessThan(4)
     expect(b.x).toBeGreaterThan(a.x + a.width - 4)
   })
 

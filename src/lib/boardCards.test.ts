@@ -23,7 +23,8 @@ const fresh = (): BoardCardPrefs => reconcile({})
 describe('reconcile — canonical shape', () => {
   it('an unset device gets every card, in canonical zones and order', () => {
     const p = fresh()
-    expect(p.band).toEqual(['notes', 'heroes', 'souvenirs', 'aRegler'])
+    // The day first (review #15): agenda, supper, the morning's to-dos, then the fridge.
+    expect(p.band).toEqual(['today', 'heroes', 'routineNext', 'todos', 'aRegler', 'notes', 'souvenirs'])
     expect(p.grid[0]).toBe('autoCard')
     expect([...p.band, ...p.grid].sort()).toEqual([...ALL].sort())
   })
@@ -44,18 +45,19 @@ describe('reconcile — canonical shape', () => {
   })
 
   it('splices a missing card in at its canonical position, not at the end', () => {
-    // A device that predates `habitudes`: it sits after `routineNext` canonically.
+    // A device that predates `habitudes`: it sits after `departure` canonically.
     const saved = ALL.filter((id) => id !== 'habitudes')
     const p = reconcile({ band: [], grid: saved })
-    expect(p.grid.indexOf('habitudes')).toBe(p.grid.indexOf('routineNext') + 1)
+    expect(p.grid.indexOf('habitudes')).toBe(p.grid.indexOf('departure') + 1)
     expect(p.grid.at(-1)).not.toBe('habitudes')
   })
 
-  it('splices « Avant de partir » right after « Aujourd’hui » into a pre-0116 layout', () => {
+  it('splices « Avant de partir » right after its canonical neighbour into a pre-0116 layout', () => {
     // A device that predates the departure card (mig 0116): v2 saved layout without it.
+    // (« L'auto » since review #15 moved « Aujourd'hui » up into the band.)
     const saved = ALL.filter((id) => id !== 'departure')
     const p = reconcile({ band: [], grid: saved })
-    expect(p.grid.indexOf('departure')).toBe(p.grid.indexOf('today') + 1)
+    expect(p.grid.indexOf('departure')).toBe(p.grid.indexOf('autoCard') + 1)
     // And a v1 {order,hidden} layout gets it too (mode default `always` survives).
     const v1 = reconcile({ order: ['today', 'upcoming'], hidden: [] })
     expect([...v1.band, ...v1.grid]).toContain('departure')
@@ -101,7 +103,8 @@ describe('reconcile — v1 → v2 migration', () => {
   })
 
   it('gives a v1 device the canonical band, which it never stored', () => {
-    expect(reconcile(V1).band).toEqual(DEFAULT_CARD_PREFS.band)
+    // …all of it but « Aujourd'hui », which its v1 grid holds: a saved card stays where it was saved.
+    expect(reconcile(V1).band).toEqual(DEFAULT_CARD_PREFS.band.filter((id) => id !== 'today'))
   })
 
   it('leaves cards the v1 device did not hide at their default mode', () => {
@@ -132,7 +135,7 @@ describe('reconcile — validation', () => {
       size: { today: 7 as unknown as 1, upcoming: 2 },
       mode: { today: 'sometimes' as unknown as 'auto', upcoming: 'never' },
     })
-    expect(cardSize(p, 'today')).toBe(1) // fell back to the card's default
+    expect(cardSize(p, 'today')).toBe('full') // fell back to the card's default
     expect(cardSize(p, 'upcoming')).toBe(2)
     expect(cardMode(p, 'today')).toBe('always') // its default, not 'sometimes'
     expect(cardMode(p, 'upcoming')).toBe('never')
@@ -172,10 +175,10 @@ describe('defaults reproduce the board we already ship', () => {
     expect(cardMode(fresh(), 'todos')).toBe('auto')
   })
 
-  it('the three former `column-span: all` cards, plus the band heroes, are full-width', () => {
+  it('the three former `column-span: all` cards, plus the band’s day and heroes, are full-width', () => {
     const p = fresh()
     const full = ALL.filter((id) => cardSize(p, id) === 'full')
-    expect(full.sort()).toEqual(['autoCard', 'drawings', 'heroes', 'notes', 'photos'])
+    expect(full.sort()).toEqual(['autoCard', 'drawings', 'heroes', 'notes', 'photos', 'today'])
   })
 })
 
@@ -186,7 +189,9 @@ describe('the merged task card', () => {
   it('keeps a saved layout as it was', () => {
     const saved = { band: ['todos', 'notes'], grid: ['today'], size: { todos: 'full' }, mode: { todos: 'always' } } as never
     const out = reconcile(saved)
-    expect(out.band.slice(0, 2)).toEqual(['todos', 'notes'])
+    // Its two saved cards keep the order it chose (the ones it never saved splice around them).
+    expect(out.band.indexOf('todos')).toBeLessThan(out.band.indexOf('notes'))
+    expect(out.grid).toContain('today')
     expect(out.size.todos).toBe('full')
     expect(out.mode.todos).toBe('always')
   })
@@ -286,8 +291,8 @@ describe('halvable', () => {
 
 describe('cardSize fallback', () => {
   it('an un-sized card takes the fallback (a phone renders it full width)', () => {
-    expect(cardSize(fresh(), 'today')).toBe(1) // canonical default
-    expect(cardSize(fresh(), 'today', 'full')).toBe('full')
+    expect(cardSize(fresh(), 'tomorrow')).toBe(1) // canonical default
+    expect(cardSize(fresh(), 'tomorrow', 'full')).toBe('full')
   })
 
   it('but an EXPLICIT choice always wins over the fallback', () => {

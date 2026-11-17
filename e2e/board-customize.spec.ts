@@ -93,12 +93,13 @@ test.describe('board layout customization', () => {
     await expect(page.locator('.wg-slot[data-card="notes"]')).toBeVisible()
 
     await openLayout(page)
-    // The band lists its four cards (Souvenirs joined on 2026-09-25; « Mots » folded into
-    // the fridge on 2026-09-29), and every one of them carries a drag grip: band cards used
-    // to be show/hide-only, pinned in place. That asymmetry is gone.
+    // The band lists its seven cards: since review #15 it opens with the day (« Aujourd'hui »,
+    // « Ce soir », routine, tâches, à régler) before the fridge and Souvenirs, and every
+    // one of them carries a drag grip: band cards used to be show/hide-only, pinned in
+    // place. That asymmetry is gone.
     const band = page.locator('.board-layout').first()
-    await expect(band.locator('.board-layout__row')).toHaveCount(4)
-    await expect(band.locator('.board-layout__row .dnd-grip')).toHaveCount(4)
+    await expect(band.locator('.board-layout__row')).toHaveCount(7)
+    await expect(band.locator('.board-layout__row .dnd-grip')).toHaveCount(7)
     // Each zone ends in a drop target, so a card can be moved into an emptied group.
     await expect(page.locator('.board-layout__end')).toHaveCount(2)
 

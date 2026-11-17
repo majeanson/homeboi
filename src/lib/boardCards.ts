@@ -124,13 +124,15 @@ export interface BoardCardMeta {
 // in at its position here rather than stranding it last, so a card added in a future
 // release lands where it belongs on a device that already has a saved layout.
 //
-// The defaults are chosen to REPRODUCE today's board: the band renders notes and the
-// heroes full-width, then « Mots » / « À régler » side by side (the band grid caps at 3
-// columns, which is what the old `.board-status` flex row did — a retired « Moments »
-// card was the third
-// until it was retired); the
-// masonry keeps its importance order with « L'auto », « Dessins » and « Photo du jour »
-// as full-width strips (they were the three `column-span: all` cards).
+// THE DAY FIRST (review #15, 2026-11-17; Marc chose this order). A fresh device used to
+// open on the fridge notes, the weather photo and « À régler », with the agenda the
+// fifth card down and « Tâches » the eleventh: at 6:45 a parent scrolled past the
+// decoration to find the day. The band is now the morning glance: « Aujourd'hui »
+// full-width, « Ce soir » + météo, then routine | tâches | à régler side by side (the
+// band grid caps at 3 columns), and only then the fridge and the keepsakes. The masonry
+// keeps its order with « L'auto », « Dessins » and « Photo du jour » as full-width strips.
+// DEFAULTS ONLY: a device that saved a layout keeps it (`reconcile` reads what it saved;
+// the canonical order only places a card it has never seen).
 //
 // `mode: 'always'` marks the cards that deliberately do NOT self-hide: « Dessins » keeps
 // its gallery door open even with zero drawings, « Avant de partir » always offers its
@@ -142,7 +144,18 @@ export interface BoardCardMeta {
 // clear day — so its empty signal is `dayClear`, passed by the lens. Same knob, different
 // question.
 export const BOARD_CARDS: readonly BoardCardMeta[] = [
-  // ── the pinned band (fridge notes ride above the heroes) ──
+  // ── the pinned band: the day, supper, the morning's to-dos, then the fridge ──
+  // « Aujourd'hui » owns the whole day: its agenda AND — on a busy day (≥2 timed
+  // things) — the day's timeline (the « fil » ribbon, formerly a card of its own).
+  { id: 'today', icon: 'sun-bold', tint: 'var(--marigold)', zone: 'band', size: 'full', mode: 'always' },
+  // `emptyTo`: a card-empty heroes tile (no supper AND no weather) only renders in
+  // mode 'always' — its placeholder opens the « Idées » drawer, the same door the
+  // in-card « Choisir un souper » CTA offers, so the board never goes silent at the
+  // supper decision (friction audit, cook seam #1).
+  { id: 'heroes', icon: 'sun-bold', tint: 'var(--marigold)', zone: 'band', size: 'full', mode: 'auto', emptyTo: '/kitchen/idees' },
+  { id: 'routineNext', icon: 'smiley-bold', tint: 'var(--berry)', zone: 'band', size: 1, mode: 'auto', emptyTo: '/maison?plus=routine' },
+  { id: 'todos', icon: 'check-bold', tint: 'var(--terracotta)', zone: 'band', size: 1, mode: 'auto' },
+  { id: 'aRegler', icon: 'warning-bold', tint: 'var(--marigold-deep)', zone: 'band', size: 1, mode: 'auto' },
   // `notes` is not `halvable`: a multi-card strip has no one-summary compact form.
   // `heroes` IS halvable — its mini is a MEDIA tile (the wonder photo + the
   // temperature, nothing else; DayHeroes.tsx), not the generic icon+title.
@@ -154,33 +167,22 @@ export const BOARD_CARDS: readonly BoardCardMeta[] = [
   // `emptyTo`: an empty notes card (mode 'always') taps straight into the ＋
   // « Note rapide » sheet (?plus=note), mirroring the strip's own head ＋.
   { id: 'notes', icon: 'push-pin-bold', tint: 'var(--marigold)', zone: 'band', size: 'full', mode: 'auto', halvable: false, emptyTo: '/board?plus=note' },
-  // `emptyTo`: a card-empty heroes tile (no supper AND no weather) only renders in
-  // mode 'always' — its placeholder opens the « Idées » drawer, the same door the
-  // in-card « Choisir un souper » CTA offers, so the board never goes silent at the
-  // supper decision (friction audit, cook seam #1).
-  { id: 'heroes', icon: 'sun-bold', tint: 'var(--marigold)', zone: 'band', size: 'full', mode: 'auto', emptyTo: '/kitchen/idees' },
   // (No « Mots » card since 0142 — an addressed mot is a paper on the fridge card above.
   // A saved layout that still names 'mots' just drops it: parse() skips unknown ids.)
   // « Souvenirs » (PLAN-mots C1): the keepsake shelf — kept mots, drawings, photos. 'auto':
   // nothing kept, no card; the first keepsake makes it appear beside the fridge.
   { id: 'souvenirs', icon: 'hand-heart-bold', tint: 'var(--berry)', zone: 'band', size: 1, mode: 'auto' },
-  { id: 'aRegler', icon: 'warning-bold', tint: 'var(--marigold-deep)', zone: 'band', size: 1, mode: 'auto' },
-  // ── the masonry: car → the day → standing lists → upcoming → media ──
-  // « Aujourd'hui » owns the whole day: its agenda AND — on a busy day (≥2 timed
-  // things) — the day's timeline (the « fil » ribbon, formerly a card of its own).
+  // ── the masonry: car → leaving → standing lists → upcoming → media ──
   { id: 'autoCard', icon: 'car-bold', tint: 'var(--sky-deep)', zone: 'grid', size: 'full', mode: 'auto', emptyTo: '/voiture' },
-  { id: 'today', icon: 'sun-bold', tint: 'var(--marigold)', zone: 'grid', size: 1, mode: 'always' },
   // « Avant de partir » — the departure concept's home (mig 0116): today's checklist
   // instances + bring-lists + the door to /board/departure. `always` because the
   // door + weather tip render on every day — leaving the house isn't conditional on
   // the agenda — so the card never sits slot-empty.
   { id: 'departure', icon: 'key-bold', tint: 'var(--marigold-deep)', zone: 'grid', size: 1, mode: 'always', emptyTo: '/board/departure' },
-  { id: 'routineNext', icon: 'smiley-bold', tint: 'var(--berry)', zone: 'grid', size: 1, mode: 'auto', emptyTo: '/maison?plus=routine' },
   { id: 'habitudes', icon: 'repeat-bold', tint: 'var(--sage-deep)', zone: 'grid', size: 1, mode: 'auto', emptyTo: '/board/habitudes' },
   { id: 'tomorrow', icon: 'sun-horizon-bold', tint: 'var(--sky)', zone: 'grid', size: 1, mode: 'auto' },
   { id: 'countdown', icon: 'hourglass-high-bold', tint: 'var(--berry-deep)', zone: 'grid', size: 1, mode: 'auto' },
   { id: 'toFinish', icon: 'check-bold', tint: 'var(--sage)', zone: 'grid', size: 1, mode: 'auto', emptyTo: '/kitchen?plus=leftovers' },
-  { id: 'todos', icon: 'check-bold', tint: 'var(--terracotta)', zone: 'grid', size: 1, mode: 'auto' },
   { id: 'upcoming', icon: 'calendar-blank-bold', tint: 'var(--sky)', zone: 'grid', size: 1, mode: 'auto', emptyTo: '/event/new' },
   { id: 'cercleNotes', icon: 'file-text-bold', tint: 'var(--teal-deep)', zone: 'grid', size: 1, mode: 'auto', emptyTo: '/notes?add=1' },
   { id: 'voyage', icon: 'map-pin-bold', tint: 'var(--teal)', zone: 'grid', size: 1, mode: 'auto', emptyTo: '/voyage/new' },
