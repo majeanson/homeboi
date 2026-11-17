@@ -35,6 +35,8 @@ import { type Deal } from '../lib/deals'
 import { MEALS_KEY, PANTRY_KEY, LEFTOVERS_KEY, RESERVE_KEY, type MealsData } from './kitchen/types'
 import { Icon, type IconName } from './Icon'
 import { useMemoAttach } from './MemoAttach'
+import { useCapture } from './CaptureForm'
+import { useNotice } from '../lib/toast'
 import { EditField } from './EditField'
 import { StatusMessage } from './StatusMessage'
 import { MotComposer } from './mots/MotComposer'
@@ -301,15 +303,28 @@ export function AddSheet({
   // Offline isn't this: useWrite queues + resolves, so the sheet still closes.
   // Cleared on the next attempt and whenever the mode / open state changes.
   const [err, setErr] = useState(false)
-  useEffect(() => {
-    setErr(false)
-  }, [mode, open])
-
-  // — « Note rapide » (board) — a plain fridge note: a line and/or ONE clipped memo.
-  // No AI here any more; the router moved to the header mic (AskDialog ▸ Classer).
+  // — « Note rapide » (board) — the capture spine (review #10): a line is filed by the AI
+  // (an appointment, a task, a list line, a meal… a note when it is none of those), the
+  // same `useCapture` as « Classer ». A line with ONE clipped memo stays a plain fridge
+  // note, and so does every line when the household's AI is off (nothing to classify).
   const [text, setText] = useState('')
   const noteVoice = useVoiceInput(setText)
   const noteMemo = useMemoAttach({ drawDraftId: 'memo' })
+  const notice = useNotice()
+  // Filed (first time, or from the degraded type picker): the sheet closes, and the
+  // undo toast says what landed and when (« Ajouté : Rendez-vous · dentiste · Léa ·
+  // mar. 24 nov., 15 h 00 »). A line the list already had creates nothing to undo, so
+  // its words go on a plain notice instead.
+  const capture = useCapture((r) => {
+    if (!r.undoable) notice(r.ack)
+    setText('')
+    close()
+  })
+  const { reset: resetCapture } = capture
+  useEffect(() => {
+    setErr(false)
+    resetCapture()
+  }, [mode, open, resetCapture])
 
   // — list item (Liste) — its own state + mic so a board draft never posts to
   // the grocery list by accident.
@@ -558,7 +573,18 @@ export function AddSheet({
   // `allowEmpty`; a note with neither is not, and the server says so too.
   async function submitNote(v: string) {
     const value = v.trim()
-    if ((!value && !noteMemo.draft) || busy) return
+    if ((!value && !noteMemo.draft) || busy || capture.busy) return
+    if (aiEnabled && !noteMemo.draft) {
+      // A route closes the sheet (useCapture's callback above). Offline, the words are
+      // queued and the sheet closes too; a degraded route (the model did not answer)
+      // keeps it open on the fallback note's type picker; a refusal keeps the words.
+      if ((await capture.submit(value)).outcome === 'queued') {
+        notice(t.capture.queued)
+        setText('')
+        close()
+      }
+      return
+    }
     setBusy(true)
     setErr(false)
     try {
@@ -818,25 +844,32 @@ export function AddSheet({
   // The memo controls used to sit BESIDE this field as three full-width buttons that
   // discarded whatever you'd typed. They're now the field's own 📎: one note, text and
   // attachment together.
+  //
+  // With the AI on it is the capture field (its sparkle and example, « Classer »'s), and
+  // `capture.panel` carries the degraded type picker / a refusal under it.
+  const filing = aiEnabled && !noteMemo.draft
   const noteForm = (
-    <EditField
-      value={text}
-      onChange={setText}
-      onSubmit={submitNote}
-      submitLabel={t.common.add}
-      submitLeadingIcon="plus-bold"
-      submitVariant="primary"
-      leadingIcon="pencil-simple-bold"
-      voice={noteVoice}
-      voiceLabel={t.capture.voice}
-      placeholder={noteVoice.listening ? t.capture.listening : t.notes.addPlaceholder}
-      ariaLabel={t.capture.quick}
-      busy={busy || noteMemo.busy}
-      allowEmpty={!!noteMemo.draft}
-      boxActions={noteMemo.attachButton}
-    >
-      {noteMemo.panel}
-    </EditField>
+    <>
+      <EditField
+        value={text}
+        onChange={setText}
+        onSubmit={submitNote}
+        submitLabel={t.common.add}
+        submitLeadingIcon="plus-bold"
+        submitVariant="primary"
+        leadingIcon={filing ? 'sparkle-bold' : 'pencil-simple-bold'}
+        voice={noteVoice}
+        voiceLabel={t.capture.voice}
+        placeholder={noteVoice.listening ? t.capture.listening : filing ? t.capture.placeholder : t.notes.addPlaceholder}
+        ariaLabel={t.capture.quick}
+        busy={busy || noteMemo.busy || capture.busy}
+        allowEmpty={!!noteMemo.draft}
+        boxActions={noteMemo.attachButton}
+      >
+        {noteMemo.panel}
+      </EditField>
+      {capture.panel}
+    </>
   )
 
   // One chooser tile — reused by the primary grid AND the "Plus…" overflow

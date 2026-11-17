@@ -19,16 +19,14 @@ export interface AddHelp {
 }
 
 export const ADD_HELP = {
-  // Bespoke rather than helpFromGuide('capture'): this tile is now a plain NOTE (a
-  // line + one clipped memo), while the guide's `capture` card is about the AI that
-  // files things — which moved to the header mic (« Parle à la maison » ▸ Classer).
-  // The bubble explains the tile; the « → Voir le guide » link still opens the card
-  // that tells you where the AI went.
+  // Bespoke rather than helpFromGuide('capture'): this tile is the capture field (the AI
+  // files the line, review #10) PLUS a fridge note's 📎, which the guide's `capture` card
+  // does not explain. The « → Voir le guide » link opens that card for the AI side.
   note: {
     card: 'capture',
     body: {
-      fr: 'Écris une note pour le babillard. Le trombone y joint un mémo vocal, un dessin ou une photo — la note garde tes mots.',
-      en: 'Write a note for the board. The paperclip attaches a voice memo, a drawing or a photo — the note keeps your words.',
+      fr: 'Écris ce que tu as en tête : « dentiste pour Léa mardi 15 h » devient un rendez-vous, « lait » va sur la liste, le reste devient une note. Avec le trombone (mémo vocal, dessin, photo), ça reste une note.',
+      en: 'Write what’s on your mind: “dentist for Léa Tuesday 3pm” becomes an appointment, “milk” goes on the list, anything else becomes a note. With the paperclip (voice memo, drawing, photo), it stays a note.',
     },
   },
   event: {

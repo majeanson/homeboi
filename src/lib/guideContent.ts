@@ -1174,8 +1174,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Le ＋ reste pour ajouter', en: 'The ＋ is still for adding' },
         detail: {
-          fr: 'Le bouton ＋ s’adapte à la section (une recette dans la cuisine, un article sur la liste). Sa « Note rapide » garde tes mots ET ce que tu y joins avec le 📎.',
-          en: 'The ＋ button adapts to the section (a recipe in the kitchen, an item on the list). Its “Quick note” keeps your words AND whatever you clip on with the 📎.',
+          fr: 'Le bouton ＋ s’adapte à la section ; sur le babillard, sa « Note rapide » range ce que tu écris (« dentiste pour Léa mardi 15 h » devient un rendez-vous). Avec un 📎, ça reste une note.',
+          en: 'The ＋ button adapts to the section; on the board, its “Quick note” files what you type (“dentist for Léa Tuesday 3pm” becomes an appointment). With a 📎, it stays a note.',
         },
         route: '/board?plus=1',
       },

@@ -88,6 +88,13 @@ export const onRequestPost = authed(async (ctx, actor) => {
 // correction. `table` is checked against an allowlist before it touches SQL.
 type Cleanup = { table: string; id: string }
 
+// What the client needs to SAY what it did (review #10, 2026-11-17: « Ajouté : dentiste ·
+// Léa » named neither an appointment nor a Tuesday, so nobody could check the capture had
+// worked). `when` is the instant (an event) or the household-local midnight (a day: a task,
+// a meal; `allDay`) the row landed on; `slot` names a meal's place in the day. Absent for
+// what has no day (a list line, a note, an undated leftover).
+type Routed = { kind: string; label: string; cleanup: Cleanup[]; when?: { at: number; allDay: boolean }; slot?: string }
+
 // Only these tables can be cleaned up, and only within the actor's household — so
 // a round-tripped ref grants no reach the actor doesn't already have.
 // `tasks` and `todos` are what a capture answered before 0150 (a correction can arrive from a
@@ -155,7 +162,7 @@ async function routeIntent(
   raw: string,
   ts: number,
   addedBy: string | null,
-): Promise<{ kind: string; label: string; cleanup: Cleanup[] }> {
+): Promise<Routed> {
   const hh = actor.householdId
   const p = intent.payload
 
@@ -176,7 +183,7 @@ async function routeIntent(
       )
         .bind(id, hh, forMember?.id ?? null, title, startAt, allDay ? 1 : 0, ts)
         .run()
-      return { kind: 'event', label: withWho(title), cleanup: [{ table: 'events', id }] }
+      return { kind: 'event', label: withWho(title), cleanup: [{ table: 'events', id }], when: { at: startAt, allDay } }
     }
     // ONE KIND OF THING (phase 4 of the unified task). A chore and an « entretien » are the same
     // task with different layers, so both intents land through the same rule as a typed task
@@ -191,7 +198,12 @@ async function routeIntent(
       // Through the one door every new task takes (_lib/taskWrite): the same rule, the same
       // columns, the day through the one encoder, the acting profile as its author.
       const { id } = await insertTask(env.DB, hh, { day: t.day, recur: t.recur, rotation: t.rotation }, addedBy, { at: ts, title, ref: null })
-      return { kind: 'task', label: withWho(title), cleanup: [{ table: 'home_projects', id }] }
+      return {
+        kind: 'task',
+        label: withWho(title),
+        cleanup: [{ table: 'home_projects', id }],
+        ...(t.day != null ? { when: { at: t.day, allDay: true } } : {}),
+      }
     }
     case 'list-item': {
       const itemText = p.item || p.text || raw
@@ -229,7 +241,7 @@ async function routeIntent(
       )
         .bind(id, hh, date, slot, title, forMember?.id ?? null, ts)
         .run()
-      return { kind: 'meal', label: withWho(title), cleanup: [{ table: 'meals', id }] }
+      return { kind: 'meal', label: withWho(title), cleanup: [{ table: 'meals', id }], when: { at: date, allDay: true }, slot }
     }
     case 'leftover': {
       // A cooked dish with extra. With a STATED day ("...pour demain") it's a real
@@ -248,7 +260,7 @@ async function routeIntent(
         )
           .bind(id, hh, date, slot, title, forMember?.id ?? null, ts)
           .run()
-        return { kind: 'leftover', label: withWho(title), cleanup: [{ table: 'meals', id }] }
+        return { kind: 'leftover', label: withWho(title), cleanup: [{ table: 'meals', id }], when: { at: date, allDay: true }, slot }
       }
       const id = newId()
       await env.DB.prepare(

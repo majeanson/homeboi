@@ -12,16 +12,16 @@ test.describe('add sheet', () => {
   // The single floating ＋ FAB is the add affordance everywhere — and it is
   // CONTEXTUAL: the board keeps the quick-capture chooser, the other sections
   // open their own actions (tested below).
-  test('the board ＋ note box posts a fridge note', async ({ page }) => {
+  test('the board ＋ note box files the line through capture', async ({ page }) => {
     await APP('/board')(page)
     await settle(page, '.hub')
     await page.locator('.add-fab').click()
     await expect(page.locator('.sheet.show')).toBeVisible()
     // The board ＋ hoists the « Note rapide » box to the TOP of the sheet (fast path),
-    // so a note is one write-and-Add away — no tile to pick first. It POSTs /api/notes,
-    // NOT /api/capture: the AI router moved to the header mic (see capture-*.spec.ts).
+    // so a line is one write-and-Add away — no tile to pick first. With the AI on it
+    // POSTs /api/capture (review #10; the AI-off and memo cases: plus-capture.spec.ts).
     await page.locator('.addsheet__lead input.edit-field__input').fill('Acheter du lait')
-    await expectApi(page, 'POST', 'notes', () =>
+    await expectApi(page, 'POST', 'capture', () =>
       page.locator('.addsheet__lead .edit-field__submit').click(),
     )
   })

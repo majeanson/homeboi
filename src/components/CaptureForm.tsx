@@ -1,11 +1,12 @@
-import { useState } from 'react'
-import { useT } from '../i18n'
+import { useCallback, useState } from 'react'
+import { useLang, useT } from '../i18n'
 import { ApiError } from '../lib/api'
 import { useWrite } from '../lib/write'
 import { useRecordUndo } from '../lib/toast'
 import { useVoiceInput } from '../lib/useVoiceInput'
 import { CATS, type CatKey } from '../lib/cats'
 import { CAPTURE_KEYS } from '../lib/captureKeys'
+import { captureAck, type CaptureKind, type RoutedAck } from '../lib/captureAck'
 import { Icon, type IconName } from './Icon'
 import { EditField } from './EditField'
 import { Disclosure } from './Disclosure'
@@ -24,12 +25,15 @@ import { StatusMessage } from './StatusMessage'
 // note tile is left to be a plain note that a memo can be clipped to.
 //
 // Extracted verbatim from AddSheet (state, offline write, degraded picker, re-route
-// cleanup, compensating undo) so BOTH surfaces can't drift — AskDialog renders it; the ＋
-// sheet no longer has a capture tile at all.
+// cleanup, compensating undo) so the surfaces can't drift. AskDialog and /share render
+// the form; the board's ＋ field runs the same `useCapture` (review #10, 2026-11-17:
+// the landing promised « dentiste pour Léa mardi 15h » « se range au bon jour », and
+// typed into the obvious place it became a fridge note). The two-mics problem above
+// stays solved there: a memo is the field's own 📎, and a line with a memo stays a note.
 
 // One « Tâche » (phase 4 of the unified task): a chore and an entretien are the same thing with
 // different layers, so the server routes both through `taskTarget` and there is one tile.
-export type CaptureType = 'event' | 'meal' | 'task' | 'list-item' | 'pantry-low' | 'leftover' | 'note'
+type CaptureType = CaptureKind
 
 // The 7 re-file tiles (the AI's « upkeep » files as a task).
 const TYPE_DRESS: { type: CaptureType; cat: CatKey; icon: IconName }[] = [
@@ -64,32 +68,27 @@ const CAPTURE_UNDO_EP: Record<string, string> = {
 }
 
 
+// How one submit ended, so a host that closes on success (the ＋ sheet) knows whether
+// it may: `routed` landed (`onRouted` got the words saying what and when), `queued` is
+// kept offline, `degraded` saved a fallback note that still wants a type picked, `failed` was refused.
+type CaptureOutcome = { outcome: 'routed' | 'queued' | 'degraded' | 'failed' | 'skipped' }
+
 /**
- * The ONE capture spine: type or speak a line, the AI files it, and the result comes
- * back as « Ajouté : X » with a « Corriger » disclosure that MOVES the capture rather
- * than duplicating it.
- *
- * `seed` pre-fills the field for a capture that arrived from somewhere else — today
- * the PWA share target (/share). That page used to re-implement this form beside it,
- * which is why a shared link landed with no routed label and no way back if the AI
- * mis-filed it: the recovery UI lives here, and only here. Seeding is read ONCE, at
- * mount; the caller owns whether the form is mounted at all.
- *
- * `onRouted` fires after a successful (non-degraded) route, so a host scene can offer
- * its own way onward without this form having to know about navigation.
+ * The capture spine's state and write, for any surface that hosts a capture field.
+ * `panel` is everything after the field: the offline / failed lines, the
+ * « Ajouté : … » confirmation, and the re-file tiles (shown when degraded, folded
+ * behind « Corriger » otherwise). A host that closes on a route never shows the
+ * confirmation line, so the undo toast carries the same words (`captureAck`).
  */
-export function CaptureForm({ seed, onRouted }: { seed?: string; onRouted?: () => void }) {
+export function useCapture(onRouted?: (r: { ack: string; undoable: boolean }) => void) {
   const t = useT()
+  const { lang } = useLang()
   const write = useWrite()
   const recordUndo = useRecordUndo()
-  const [text, setText] = useState(seed ?? '')
-  const voice = useVoiceInput(setText)
   // The last route's result, kept so we can (a) confirm "Ajouté : X", (b) offer the
   // re-route tiles, and (c) re-file with the ORIGINAL text + the rows to undo — the
   // input is cleared after a successful route, so a correction sources from here.
-  const [routed, setRouted] = useState<{ text: string; label: string; degraded: boolean; cleanup: Cleanup[] } | null>(
-    null,
-  )
+  const [routed, setRouted] = useState<{ text: string; ack: string; degraded: boolean; cleanup: Cleanup[] } | null>(null)
   // A-2 (bmad/10): capture goes through the offline-aware `write()` — the raw text is
   // enqueued to the SAME /api/capture endpoint and replayed on reconnect, so
   // routing/parseWhen still happen server-side, just later. `queued` confirms that calm
@@ -98,6 +97,12 @@ export function CaptureForm({ seed, onRouted }: { seed?: string; onRouted?: () =
   const [err, setErr] = useState(false)
   const [queued, setQueued] = useState(false)
   const [busy, setBusy] = useState(false)
+
+  const reset = useCallback(() => {
+    setRouted(null)
+    setErr(false)
+    setQueued(false)
+  }, [])
 
   // Compensating undo for a capture: the row(s) are already live, so delete each
   // via its own resource endpoint. Offline-aware (useWrite) and idempotent — a row
@@ -118,9 +123,9 @@ export function CaptureForm({ seed, onRouted }: { seed?: string; onRouted?: () =
   // router. A re-route re-files the text we already captured (the input was cleared on
   // the first success) and hands the server the PREVIOUS routing's rows to delete
   // (`undo`), so a correction MOVES the capture instead of duplicating it.
-  async function submit(value: string, forceType?: CaptureType) {
+  async function submit(value: string, forceType?: CaptureType): Promise<CaptureOutcome> {
     const v = (forceType ? routed?.text ?? value : value).trim()
-    if (!v || busy) return
+    if (!v || busy) return { outcome: 'skipped' }
     setErr(false)
     setQueued(false)
     setBusy(true)
@@ -130,37 +135,42 @@ export function CaptureForm({ seed, onRouted }: { seed?: string; onRouted?: () =
       // Longer than api()'s 20s default: the handler runs an inline AI
       // classification call before it ever writes, which can outrun that on a
       // slow connection while still genuinely being online and working.
-      const res = await write<{ type: string; degraded: boolean; routed: { kind: string; label: string; cleanup?: Cleanup[] } }>(
-        'capture',
-        { method: 'POST', body: { text: v, forceType, undo: prevCleanup }, affectedKeys: CAPTURE_KEYS, timeoutMs: 30_000 },
-      )
+      const res = await write<{ type: string; degraded: boolean; routed: RoutedAck & { cleanup?: Cleanup[] } }>('capture', {
+        method: 'POST',
+        body: { text: v, forceType, undo: prevCleanup },
+        affectedKeys: CAPTURE_KEYS,
+        timeoutMs: 30_000,
+      })
       if (res.queued) {
         // Offline: no routed/undo UI (there's nothing routed yet) — just the calm
-        // "it's kept" confirmation, and clear the box like a successful capture.
-        setText('')
+        // "it's kept" confirmation.
         setQueued(true)
-        return
+        return { outcome: 'queued' }
       }
       const degraded = res.data.degraded && !forceType
-      const label = res.data.routed?.label ?? v
+      const ack = captureAck(
+        res.data.routed ?? { kind: res.data.type, label: v },
+        { routed: t.capture.routed, types: t.capture.types, slots: t.kitchen.slots },
+        lang,
+      )
       const cleanup = res.data.routed?.cleanup ?? []
-      setRouted({ text: v, label, degraded, cleanup })
-      if (!degraded) setText('')
+      setRouted({ text: v, ack, degraded, cleanup })
+      if (degraded) return { outcome: 'degraded' }
       // Calm undo on every REAL route (not the degraded fallback note, which is
       // awaiting a re-route): the created row is live, so record a compensating
       // entry that deletes it. A re-route records a fresh entry for the new row;
       // any prior entry's delete then no-ops (the server already dropped that row).
-      if (!degraded && cleanup.length) {
-        recordUndo({ message: `${t.capture.routed} ${label}`, onUndo: () => void undoCapture(cleanup) })
-      }
+      if (cleanup.length) recordUndo({ message: ack, onUndo: () => void undoCapture(cleanup) })
       // A real route landed — the host scene may now offer its way onward. Outside
       // the cleanup guard above: a route with nothing to undo still routed.
-      if (!degraded) onRouted?.()
+      onRouted?.({ ack, undoable: cleanup.length > 0 })
+      return { outcome: 'routed' }
     } catch (e) {
       if (!(e instanceof ApiError)) throw e
       // A real 4xx/5xx (the server answered and said no): surface it so the tap
       // isn't silently lost. write() does NOT queue this case (see write.ts).
       setErr(true)
+      return { outcome: 'failed' }
     } finally {
       setBusy(false)
     }
@@ -172,7 +182,7 @@ export function CaptureForm({ seed, onRouted }: { seed?: string; onRouted?: () =
   const rerouteTiles = (
     <div className="cat-grid">
       {TYPE_DRESS.map((ty) => (
-        <button key={ty.type} type="button" className="cat-pick" onClick={() => void submit(text, ty.type)}>
+        <button key={ty.type} type="button" className="cat-pick" onClick={() => void submit('', ty.type)}>
           <span className="ct" style={{ background: CATS[ty.cat].wash }}>
             <Icon name={ty.icon} size={22} color={CATS[ty.cat].deep} />
           </span>
@@ -181,6 +191,62 @@ export function CaptureForm({ seed, onRouted }: { seed?: string; onRouted?: () =
       ))}
     </div>
   )
+
+  const panel = (
+    <>
+      {queued && <StatusMessage tone="info">{t.capture.queued}</StatusMessage>}
+      {err && <StatusMessage tone="error">{t.capture.failed}</StatusMessage>}
+
+      {/* After a route, lead with just the calm confirmation line (« Ajouté : Rendez-vous
+          · X · mar. 24 nov. »). Correction is a mis-route recovery, not the happy path, so
+          the 7 re-file tiles hide behind a quiet "Corriger" disclosure. The DEGRADED
+          fallback (AI off) is different: picking a type is REQUIRED, so those tiles stay. */}
+      {routed && (
+        <>
+          <p className="capture__routed mono">{routed.degraded ? t.capture.degraded : routed.ack}</p>
+          {routed.degraded ? (
+            rerouteTiles
+          ) : (
+            <Disclosure label={t.capture.correct} className="capture__correct">
+              {rerouteTiles}
+            </Disclosure>
+          )}
+        </>
+      )}
+    </>
+  )
+
+  return { submit, busy, reset, panel }
+}
+
+/**
+ * The ONE capture spine: type or speak a line, the AI files it, and the result comes
+ * back as « Ajouté : Rendez-vous · X · mar. 24 nov. » with a « Corriger » disclosure
+ * that MOVES the capture rather than duplicating it.
+ *
+ * `seed` pre-fills the field for a capture that arrived from somewhere else — today
+ * the PWA share target (/share). That page used to re-implement this form beside it,
+ * which is why a shared link landed with no routed label and no way back if the AI
+ * mis-filed it: the recovery UI lives here, and only here. Seeding is read ONCE, at
+ * mount; the caller owns whether the form is mounted at all.
+ *
+ * `onRouted` fires after a successful (non-degraded) route, so a host scene can offer
+ * its own way onward without this form having to know about navigation.
+ */
+export function CaptureForm({ seed, onRouted }: { seed?: string; onRouted?: () => void }) {
+  const t = useT()
+  const [text, setText] = useState(seed ?? '')
+  const voice = useVoiceInput(setText)
+  // The box clears once the words are safe somewhere: filed (a re-file tile included),
+  // or queued offline. A degraded fallback keeps them while a type is picked.
+  const capture = useCapture(() => {
+    setText('')
+    onRouted?.()
+  })
+
+  async function submit(v: string) {
+    if ((await capture.submit(v)).outcome === 'queued') setText('')
+  }
 
   return (
     <div className="capture-form">
@@ -196,30 +262,9 @@ export function CaptureForm({ seed, onRouted }: { seed?: string; onRouted?: () =
         voiceLabel={t.capture.voice}
         placeholder={voice.listening ? t.capture.listening : t.capture.placeholder}
         ariaLabel={t.common.add}
-        busy={busy}
+        busy={capture.busy}
       />
-
-      {queued && <StatusMessage tone="info">{t.capture.queued}</StatusMessage>}
-      {err && <StatusMessage tone="error">{t.capture.failed}</StatusMessage>}
-
-      {/* After a route, lead with just the calm confirmation line ("Ajouté : X").
-          Correction is a mis-route recovery, not the happy path, so the 7 re-file
-          tiles hide behind a quiet "Corriger" disclosure. The DEGRADED fallback (AI
-          off) is different: picking a type is REQUIRED, so those tiles stay shown. */}
-      {routed && (
-        <>
-          <p className="capture__routed mono">
-            {routed.degraded ? t.capture.degraded : `${t.capture.routed} ${routed.label}`}
-          </p>
-          {routed.degraded ? (
-            rerouteTiles
-          ) : (
-            <Disclosure label={t.capture.correct} className="capture__correct">
-              {rerouteTiles}
-            </Disclosure>
-          )}
-        </>
-      )}
+      {capture.panel}
     </div>
   )
 }
