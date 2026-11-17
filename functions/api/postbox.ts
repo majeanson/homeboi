@@ -124,7 +124,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     await deleteStagedMediaByKeys(ctx.env.DB, hh, 'postbox', keys)
   } else {
     // Dismissed — nothing references the blobs; free them + the staging rows.
-    for (const k of keys) await deleteR2Blob(ctx.env.PHOTOS, k)
+    for (const k of keys) await deleteR2Blob(ctx.env, k)
     await deleteStagedMediaByKeys(ctx.env.DB, hh, 'postbox', keys)
   }
 

@@ -107,7 +107,7 @@ export async function resetHouseholdContent(env: Env, householdId: string): Prom
     ...wipeStatements(env, householdId, RESET_TABLES),
     env.DB.prepare('UPDATE households SET updated_at = ? WHERE id = ?').bind(nowSec(), householdId),
   ])
-  for (const key of blobKeys) await deleteR2Blob(env.PHOTOS, key)
+  for (const key of blobKeys) await deleteR2Blob(env, key, householdId)
 }
 
 export type Row = Record<string, unknown>

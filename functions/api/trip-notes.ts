@@ -158,8 +158,8 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   if (newMediaKey) {
     if (row.media_kind !== 'drawing') return badRequest('Cette note n’est pas un dessin.')
     const sceneKey = isValidR2Key(body?.scene_key?.trim()) ? body!.scene_key!.trim() : null
-    if (row.media_key && row.media_key !== newMediaKey) await deleteR2Blob(ctx.env.PHOTOS, row.media_key)
-    if (row.scene_key && row.scene_key !== sceneKey) await deleteR2Blob(ctx.env.PHOTOS, row.scene_key)
+    if (row.media_key && row.media_key !== newMediaKey) await deleteR2Blob(ctx.env, row.media_key)
+    if (row.scene_key && row.scene_key !== sceneKey) await deleteR2Blob(ctx.env, row.scene_key)
     set('media_key', newMediaKey)
     set('scene_key', sceneKey)
   }
@@ -181,8 +181,8 @@ export const onRequestDelete = authed(async (ctx, actor) => {
   )
     .bind(id, actor.householdId)
     .first<{ media_key: string | null; scene_key: string | null }>()
-  await deleteR2Blob(ctx.env.PHOTOS, row?.media_key)
-  await deleteR2Blob(ctx.env.PHOTOS, row?.scene_key)
+  await deleteR2Blob(ctx.env, row?.media_key)
+  await deleteR2Blob(ctx.env, row?.scene_key)
   await ctx.env.DB.prepare('UPDATE trip_notes SET deleted_at = ? WHERE id = ? AND household_id = ?')
     .bind(nowSec(), id, actor.householdId)
     .run()

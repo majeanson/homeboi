@@ -194,7 +194,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   // Replacing the docs frees the previous R2 blobs (best-effort).
   if ('mediaKeys' in body && ctx.env.PHOTOS) {
     const next = new Set(parseMedia(mediaJson(body.mediaKeys)))
-    for (const key of parseMedia(owns.media_json)) if (!next.has(key)) await deleteR2Blob(ctx.env.PHOTOS, key)
+    for (const key of parseMedia(owns.media_json)) if (!next.has(key)) await deleteR2Blob(ctx.env, key)
   }
   return ok({ ok: true })
 })
@@ -206,7 +206,7 @@ export const onRequestDelete = authed(async (ctx, actor) => {
     .bind(body.id, actor.householdId)
     .first<{ media_json: string | null }>()
   // deleteR2Blob no-ops on an unset bucket, so no env.PHOTOS guard needed here.
-  if (owns) for (const key of parseMedia(owns.media_json)) await deleteR2Blob(ctx.env.PHOTOS, key)
+  if (owns) for (const key of parseMedia(owns.media_json)) await deleteR2Blob(ctx.env, key)
   await ctx.env.DB.prepare('DELETE FROM care_log WHERE id = ? AND household_id = ?').bind(body.id, actor.householdId).run()
   return ok({ ok: true })
 })

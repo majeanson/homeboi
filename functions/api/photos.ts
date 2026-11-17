@@ -56,7 +56,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
     .bind(actor.householdId, MAX_PHOTOS)
     .all<{ id: string; r2_key: string }>()
   for (const row of stale.results) {
-    await deleteR2Blob(ctx.env.PHOTOS, row.r2_key)
+    await deleteR2Blob(ctx.env, row.r2_key)
     await ctx.env.DB.prepare('DELETE FROM photos WHERE id = ? AND household_id = ?').bind(row.id, actor.householdId).run()
   }
   return ok({ id, key })
@@ -68,7 +68,7 @@ export const onRequestDelete = authed(async (ctx, actor) => {
   const row = await ctx.env.DB.prepare('SELECT media_key AS r2_key FROM photos WHERE id = ? AND household_id = ?')
     .bind(body.id, actor.householdId)
     .first<{ r2_key: string }>()
-  await deleteR2Blob(ctx.env.PHOTOS, row?.r2_key)
+  await deleteR2Blob(ctx.env, row?.r2_key)
   await ctx.env.DB.prepare('DELETE FROM photos WHERE id = ? AND household_id = ?')
     .bind(body.id, actor.householdId)
     .run()

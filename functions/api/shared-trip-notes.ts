@@ -1,7 +1,7 @@
 import { badRequest, notFound, ok, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
-import { deleteR2Blob } from '../_lib/r2'
+import { deleteR2Blob, ownsMedia, type R2Env } from '../_lib/r2'
 import { isValidR2Key } from '../_lib/validate'
 import { requireSharedTripMember, nudgeSharedTrip, householdName } from '../_lib/sharedTrip'
 
@@ -45,6 +45,15 @@ const VALID_CATEGORIES = new Set(['flight', 'hotel', 'car', 'activity', 'contact
 const cat = (v: unknown): string => (typeof v === 'string' && VALID_CATEGORIES.has(v) ? v : 'general')
 const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null)
 
+// A shared trip's note is cleared by any member, and its blob belongs to the household that
+// uploaded it: the AUTHOR (a note only takes its author's own blobs — see POST), or the
+// member who re-drew it. Each try frees only what that household owns (_lib/r2.ts), so
+// the second is a no-op once the first has freed it (review 2026-11-17, P0 #4).
+async function freeTripBlob(env: R2Env, key: string | null, author: string | null): Promise<void> {
+  if (author) await deleteR2Blob(env, key, author)
+  await deleteR2Blob(env, key)
+}
+
 export const onRequestGet = authed(async (ctx, actor) => {
   const tripId = new URL(ctx.request.url).searchParams.get('tripId')?.trim()
   const gate = await requireSharedTripMember(ctx.env, actor, tripId)
@@ -81,7 +90,10 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const mediaKey = kind ? body?.media_key?.trim() || null : null
   const label = body?.label?.trim()?.slice(0, 200) || null
   if (!text && !label && !(kind && mediaKey)) return badRequest('Note vide.')
-  const sceneKey = kind === 'drawing' && isValidR2Key(body?.scene_key?.trim()) ? body!.scene_key!.trim() : null
+  // Only a blob this household uploaded (review 2026-11-17, P0 #4 — `_lib/r2.ts`).
+  if (mediaKey && !(await ownsMedia(ctx.env, actor.householdId, mediaKey))) return badRequest('Pièce jointe inconnue.')
+  const rawScene = kind === 'drawing' && isValidR2Key(body?.scene_key?.trim()) ? body!.scene_key!.trim() : null
+  const sceneKey = rawScene && (await ownsMedia(ctx.env, actor.householdId, rawScene)) ? rawScene : null
   // Attribution is stamped server-side (never taken from the body): the acting household
   // + its display name at write time. author_label survives the household later leaving.
   const authorLabel = await householdName(ctx.env, actor.householdId)
@@ -129,10 +141,10 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   // Any member may edit any note (LWW). Read the row unscoped-by-household, then gate on
   // membership of its shared trip.
   const row = await ctx.env.DB.prepare(
-    'SELECT shared_trip_id, media_kind, media_key, scene_key FROM shared_trip_notes WHERE id = ? AND deleted_at IS NULL',
+    'SELECT shared_trip_id, media_kind, media_key, scene_key, author_household_id FROM shared_trip_notes WHERE id = ? AND deleted_at IS NULL',
   )
     .bind(id)
-    .first<{ shared_trip_id: string; media_kind: string | null; media_key: string | null; scene_key: string | null }>()
+    .first<{ shared_trip_id: string; media_kind: string | null; media_key: string | null; scene_key: string | null; author_household_id: string | null }>()
   if (!row) return notFound('Note introuvable.')
   const gate = await requireSharedTripMember(ctx.env, actor, row.shared_trip_id)
   if (gate instanceof Response) return gate
@@ -155,9 +167,11 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   const newMediaKey = body?.media_key?.trim()
   if (newMediaKey) {
     if (row.media_kind !== 'drawing') return badRequest('Cette note n’est pas un dessin.')
-    const sceneKey = isValidR2Key(body?.scene_key?.trim()) ? body!.scene_key!.trim() : null
-    if (row.media_key && row.media_key !== newMediaKey) await deleteR2Blob(ctx.env.PHOTOS, row.media_key)
-    if (row.scene_key && row.scene_key !== sceneKey) await deleteR2Blob(ctx.env.PHOTOS, row.scene_key)
+    if (!(await ownsMedia(ctx.env, actor.householdId, newMediaKey))) return badRequest('Pièce jointe inconnue.')
+    const rawScene = isValidR2Key(body?.scene_key?.trim()) ? body!.scene_key!.trim() : null
+    const sceneKey = rawScene && (await ownsMedia(ctx.env, actor.householdId, rawScene)) ? rawScene : null
+    if (row.media_key && row.media_key !== newMediaKey) await freeTripBlob(ctx.env, row.media_key, row.author_household_id)
+    if (row.scene_key && row.scene_key !== sceneKey) await freeTripBlob(ctx.env, row.scene_key, row.author_household_id)
     set('media_key', newMediaKey)
     set('scene_key', sceneKey)
   }
@@ -176,15 +190,15 @@ export const onRequestDelete = authed(async (ctx, actor) => {
   const id = body?.id?.trim()
   if (!id) return badRequest('id requis.')
   const row = await ctx.env.DB.prepare(
-    'SELECT shared_trip_id, media_key, scene_key FROM shared_trip_notes WHERE id = ? AND deleted_at IS NULL',
+    'SELECT shared_trip_id, media_key, scene_key, author_household_id FROM shared_trip_notes WHERE id = ? AND deleted_at IS NULL',
   )
     .bind(id)
-    .first<{ shared_trip_id: string; media_key: string | null; scene_key: string | null }>()
+    .first<{ shared_trip_id: string; media_key: string | null; scene_key: string | null; author_household_id: string | null }>()
   if (!row) return notFound('Note introuvable.')
   const gate = await requireSharedTripMember(ctx.env, actor, row.shared_trip_id)
   if (gate instanceof Response) return gate
-  await deleteR2Blob(ctx.env.PHOTOS, row.media_key)
-  await deleteR2Blob(ctx.env.PHOTOS, row.scene_key)
+  await freeTripBlob(ctx.env, row.media_key, row.author_household_id)
+  await freeTripBlob(ctx.env, row.scene_key, row.author_household_id)
   await ctx.env.DB.prepare('UPDATE shared_trip_notes SET deleted_at = ? WHERE id = ?')
     .bind(nowSec(), id)
     .run()

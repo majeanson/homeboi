@@ -195,7 +195,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   // Replacing the photo frees the previous R2 blob (best-effort).
   if ('photoKey' in body && ctx.env.PHOTOS) {
     const next = str(body.photoKey)
-    if (owns.photo_key !== next) await deleteR2Blob(ctx.env.PHOTOS, owns.photo_key)
+    if (owns.photo_key !== next) await deleteR2Blob(ctx.env, owns.photo_key)
   }
   return ok({ ok: true })
 })
@@ -210,7 +210,7 @@ export const onRequestDelete = authed(async (ctx, actor) => {
     .first<{ photo_key: string | null }>()
   // Free the card photo (best-effort). A linked event keeps its business_id; the
   // join just resolves to no name, exactly like a since-deleted contact.
-  await deleteR2Blob(ctx.env.PHOTOS, owns?.photo_key)
+  await deleteR2Blob(ctx.env, owns?.photo_key)
   await ctx.env.DB.prepare('UPDATE businesses SET deleted_at = ? WHERE id = ? AND household_id = ?')
     .bind(nowSec(), body.id, actor.householdId)
     .run()

@@ -72,7 +72,7 @@ export const onRequestDelete = authed(async (ctx, actor) => {
     .first<{ photo_key: string }>()
   if (!row) return notFound('Photo introuvable.')
   // Free the R2 blob first (best-effort — a leak is harmless but R2 stays tidy).
-  await deleteR2Blob(ctx.env.PHOTOS, row.photo_key)
+  await deleteR2Blob(ctx.env, row.photo_key)
   await ctx.env.DB.prepare('DELETE FROM contact_photos WHERE id = ? AND household_id = ?')
     .bind(body.id, actor.householdId)
     .run()

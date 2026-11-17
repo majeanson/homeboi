@@ -88,7 +88,7 @@ async function exportPrivateCopy(ctx: Ctx, householdId: string, trip: SharedTrip
   const tripId = newId()
   const ts = nowSec()
   // Re-copy the cover into a household-owned blob (the share keeps its own `st_` copy).
-  const newCover = await copyR2Blob(ctx.env.PHOTOS, trip.media_key, 'tn')
+  const newCover = await copyR2Blob(ctx.env, trip.media_key, 'tn')
   const inserts: D1PreparedStatement[] = [
     ctx.env.DB.prepare(
       'INSERT INTO trips (id, household_id, title, destination, start_at, end_at, members, media_kind, media_key, colour, notes, position, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)',
@@ -110,8 +110,8 @@ async function exportPrivateCopy(ctx: Ctx, householdId: string, trip: SharedTrip
 
   for (const n of notes.results) {
     const kind = n.media_kind === 'audio' || n.media_kind === 'drawing' || n.media_kind === 'image' ? n.media_kind : null
-    const newKey = kind ? await copyR2Blob(ctx.env.PHOTOS, n.media_key, 'tn') : null
-    const newScene = kind === 'drawing' ? await copyR2Blob(ctx.env.PHOTOS, n.scene_key, 'ts') : null
+    const newKey = kind ? await copyR2Blob(ctx.env, n.media_key, 'tn') : null
+    const newScene = kind === 'drawing' ? await copyR2Blob(ctx.env, n.scene_key, 'ts') : null
     inserts.push(
       ctx.env.DB.prepare(
         'INSERT INTO trip_notes (id, household_id, trip_id, category, label, text, media_kind, media_key, scene_key, member_id, date, position, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?)',

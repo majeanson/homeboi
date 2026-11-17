@@ -1,16 +1,59 @@
 import { badRequest, tooManyRequests } from './json'
 import type { Env } from './env'
 import { charge } from './usage'
-import { newId } from './ids'
+import { newId, nowSec } from './ids'
+import { currentHousehold } from './tz'
+
+/** What the R2 helpers need: the bucket (optional, like the binding) and the ledger. */
+export type R2Env = { DB: D1Database; PHOTOS?: R2Bucket | undefined }
+
+// WHO OWNS A BLOB (review 2026-11-17, P0 #4; migration 0158 `media_owners`). R2 keys are
+// flat and public by design (`/api/img/<key>` — a key is shown to anyone who sees the
+// picture), and a row's media key is whatever a request wrote into it. So a household
+// could store a key it had SEEN — another family's child's photo, or a nightly backup's
+// `backup/<hid>/…` — then delete its own row, and the cleanup freed the other family's
+// blob. Every blob that enters R2 now records its household here (in `putR2Blob`, so an
+// upload, a server fetch and a copy alike), and `deleteR2Blob` frees a blob only by
+// removing THIS household's ledger row in the same breath. A key that is foreign, or
+// unknown (a legacy blob the 0158 backfill could not see), is left in place: the failure
+// is an orphan in R2, never someone else's loss.
+async function recordOwner(env: Pick<Env, 'DB'>, key: string, householdId: string | undefined): Promise<void> {
+  if (!householdId) return
+  await env.DB.prepare('INSERT OR IGNORE INTO media_owners (media_key, household_id, created_at) VALUES (?, ?, ?)')
+    .bind(key, householdId, nowSec())
+    .run()
+}
+
+/** Does this household own this key? For a door that ACCEPTS a key into a row (the
+ *  blob would otherwise be displayed — or transcribed, at the household's AI cost —
+ *  on someone else's say-so). */
+export async function ownsMedia(env: Pick<Env, 'DB'>, householdId: string, key: string): Promise<boolean> {
+  const row = await env.DB.prepare('SELECT 1 AS ok FROM media_owners WHERE media_key = ? AND household_id = ?').bind(key, householdId).first()
+  return row != null
+}
 
 // Shared R2 helpers. `deleteR2Blob` is the one "free the blob, best-effort" path
 // every delete/cleanup handler needs: a cleared note's audio, a removed gallery
 // photo, a pruned board photo, a deleted recipe's image. R2 may be UNSET (optional
 // binding — see _lib/env.ts) and the delete may fail; neither must block the DB
 // write, so this no-ops when the bucket/key is missing and swallows delete errors.
-export async function deleteR2Blob(bucket: R2Bucket | undefined, key: string | null | undefined): Promise<void> {
-  if (!bucket || !key) return
-  await bucket.delete(key).catch(() => {
+//
+// It frees only a blob this household owns (see recordOwner above). The household is the
+// request's (authed() put it in scope); outside a request — the sweep, « Repartir à
+// neuf » — the caller names it, and with neither nothing is freed.
+export async function deleteR2Blob(
+  env: R2Env,
+  key: string | null | undefined,
+  householdId: string | undefined = currentHousehold()?.householdId,
+): Promise<void> {
+  if (!env.PHOTOS || !key || !householdId) return
+  try {
+    const released = await env.DB.prepare('DELETE FROM media_owners WHERE media_key = ? AND household_id = ?').bind(key, householdId).run()
+    if ((released.meta?.changes ?? 0) === 0) return
+  } catch {
+    return // the ledger could not say: keep the blob
+  }
+  await env.PHOTOS.delete(key).catch(() => {
     /* leave the orphan blob rather than fail the DB write that frees it */
   })
 }
@@ -137,18 +180,28 @@ export async function uploadR2Media(
     }
   }
   const ext = opts.extFromType ? extForContentType(contentType) : ''
-  const key = await putR2Blob(bucket, buf, contentType, opts.prefix, ext)
+  const key = await putR2Blob(opts.env, bucket, buf, contentType, opts.prefix, ext)
   return { key, contentType }
 }
 
 // Store bytes we ALREADY hold (not an incoming Request) under an opaque
 // `<prefix>_<id>` key — e.g. a place photo the server fetched from Google's CDN for
-// the « Le cercle » business import. Returns the new key.
-export async function putR2Blob(bucket: R2Bucket, buf: ArrayBuffer, contentType: string, prefix: string, ext = ''): Promise<string> {
+// the « Le cercle » business import. Returns the new key, recorded as the household's
+// (the request's, unless named — see deleteR2Blob for why this matters).
+export async function putR2Blob(
+  env: Pick<Env, 'DB'>,
+  bucket: R2Bucket,
+  buf: ArrayBuffer,
+  contentType: string,
+  prefix: string,
+  ext = '',
+  householdId: string | undefined = currentHousehold()?.householdId,
+): Promise<string> {
   const key = `${prefix}_${newId()}${ext}`
   // Forced on store: a type off the allowlist (a server-fetched SVG, a copy of a blob
   // stored before the rule) goes in as an opaque download, never as a renderable page.
   await bucket.put(key, buf, { httpMetadata: { contentType: safeMediaType(contentType) ?? 'application/octet-stream' } })
+  await recordOwner(env, key, householdId)
   return key
 }
 
@@ -160,14 +213,15 @@ export async function putR2Blob(bucket: R2Bucket, buf: ArrayBuffer, contentType:
 // is missing, so the text-only share path still works. Pairs with `deleteR2Blob` on
 // revoke/expire to free the copy.
 export async function copyR2Blob(
-  bucket: R2Bucket | undefined,
+  env: R2Env,
   srcKey: string | null | undefined,
   prefix: string,
 ): Promise<string | null> {
+  const bucket = env.PHOTOS
   if (!bucket || !srcKey) return null
   const src = await bucket.get(srcKey).catch(() => null)
   if (!src) return null
   const buf = await src.arrayBuffer()
   const contentType = src.httpMetadata?.contentType ?? 'application/octet-stream'
-  return putR2Blob(bucket, buf, contentType, prefix)
+  return putR2Blob(env, bucket, buf, contentType, prefix)
 }

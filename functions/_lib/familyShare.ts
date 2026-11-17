@@ -11,7 +11,7 @@
 // handled generically by shareStore (snapshotBlobKeys → intakeMediaKeys).
 
 import type { Env } from './env'
-import { copyR2Blob } from './r2'
+import { copyR2Blob, type R2Env } from './r2'
 import { sanitizeIntake, type IntakeSubmission, type SanitizeCaps } from './intake'
 
 // A shared family is built by a TRUSTED operator (not an anonymous intake guest), so it
@@ -38,14 +38,14 @@ async function ownedPhotoKeys(db: D1Database, hh: string): Promise<Set<string>> 
 // Copy each OWNED photo into a share-owned `fs_` blob so the snapshot is self-contained;
 // drop any key the sender doesn't own (anti-exfiltration). Returns the rewritten payload.
 async function snapshotPhotos(
-  photos: R2Bucket | undefined,
+  env: R2Env,
   s: IntakeSubmission,
   owned: Set<string>,
 ): Promise<IntakeSubmission> {
   const copy = async <T extends { photoKey: string | null }>(p: T): Promise<T> => {
     if (!p.photoKey) return p
     if (!owned.has(p.photoKey)) return { ...p, photoKey: null }
-    return { ...p, photoKey: await copyR2Blob(photos, p.photoKey, 'fs') }
+    return { ...p, photoKey: await copyR2Blob(env, p.photoKey, 'fs') }
   }
   const self = await copy(s.self)
   const household = await Promise.all(s.household.map(copy))
@@ -78,6 +78,6 @@ export async function materializeFamilyShare(env: Env, hh: string, rawPayload: u
   const sharedPeople = 1 + submission.household.length
 
   const owned = await ownedPhotoKeys(env.DB, hh)
-  const snapshot = await snapshotPhotos(env.PHOTOS, submission, owned)
+  const snapshot = await snapshotPhotos(env, submission, owned)
   return { payloadJson: JSON.stringify(snapshot), sharedPeople, totalPeople }
 }

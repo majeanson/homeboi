@@ -131,7 +131,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     binds.push(body.isChild ? 1 : 0)
   }
   if (body.clearPhoto && member.avatar_kind === 'photo') {
-    await deleteR2Blob(ctx.env.PHOTOS, member.avatar_ref)
+    await deleteR2Blob(ctx.env, member.avatar_ref)
     // Back to a colour avatar; clear the now-deleted R2 key (legacy: color
     // members keep avatar_ref == colour) so no stale key lingers.
     sets.push("avatar_kind = 'color'", 'avatar_ref = colour')
@@ -185,7 +185,7 @@ export const onRequestDelete = authed(async (ctx, actor) => {
   const m = await ctx.env.DB.prepare('SELECT avatar_kind, avatar_ref FROM members WHERE id = ? AND household_id = ?')
     .bind(id, hh)
     .first<{ avatar_kind: string; avatar_ref: string }>()
-  if (m?.avatar_kind === 'photo') await deleteR2Blob(ctx.env.PHOTOS, m.avatar_ref)
+  if (m?.avatar_kind === 'photo') await deleteR2Blob(ctx.env, m.avatar_ref)
   await freeMemberMediaBlobs(ctx.env, hh, id)
   await ctx.env.DB.batch([
     ...memberRefStatements(ctx.env, hh, id),

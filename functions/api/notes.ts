@@ -2,7 +2,7 @@ import { badRequest, notFound, ok, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { profileMemberId } from '../_lib/profile'
-import { deleteR2Blob } from '../_lib/r2'
+import { deleteR2Blob, ownsMedia } from '../_lib/r2'
 import { isValidR2Key } from '../_lib/validate'
 import { CAP_SQL, capped } from '../_lib/listCap'
 import { transcribeMot } from '../_lib/motTranscript'
@@ -86,7 +86,11 @@ export const onRequestPost = authed(async (ctx, actor) => {
       : null
   const mediaKey = kind ? body?.media_key?.trim() || null : null
   if (!text && !(kind && mediaKey)) return badRequest('Note vide.')
-  const sceneKey = kind === 'drawing' && isValidR2Key(body?.scene_key?.trim()) ? body!.scene_key!.trim() : null
+  // Only a blob this household uploaded: a key it had merely SEEN was stored, then freed
+  // on dismiss — and transcribed, at this household's AI cost (review 2026-11-17, P0 #4).
+  if (mediaKey && !(await ownsMedia(ctx.env, actor.householdId, mediaKey))) return badRequest('Pièce jointe inconnue.')
+  const rawScene = kind === 'drawing' && isValidR2Key(body?.scene_key?.trim()) ? body!.scene_key!.trim() : null
+  const sceneKey = rawScene && (await ownsMedia(ctx.env, actor.householdId, rawScene)) ? rawScene : null
 
   // A recipient must be a member of THIS household — never trust a posted id.
   let recipientId: string | null = null
@@ -133,15 +137,17 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   // ---- Re-draw a drawing note (a family doodle anyone can add to) -------------------
   const mediaKey = body?.media_key?.trim()
   if (mediaKey) {
-    const sceneKey = isValidR2Key(body?.scene_key?.trim()) ? body!.scene_key!.trim() : null
+    if (!(await ownsMedia(ctx.env, actor.householdId, mediaKey))) return badRequest('Pièce jointe inconnue.')
+    const rawScene = isValidR2Key(body?.scene_key?.trim()) ? body!.scene_key!.trim() : null
+    const sceneKey = rawScene && (await ownsMedia(ctx.env, actor.householdId, rawScene)) ? rawScene : null
     const row = await ctx.env.DB.prepare(
       "SELECT media_key, scene_key FROM notes WHERE id = ? AND household_id = ? AND media_kind = 'drawing' AND dismissed_at IS NULL",
     )
       .bind(id, actor.householdId)
       .first<{ media_key: string | null; scene_key: string | null }>()
     if (!row) return notFound('Dessin introuvable.')
-    if (row.media_key && row.media_key !== mediaKey) await deleteR2Blob(ctx.env.PHOTOS, row.media_key)
-    if (row.scene_key && row.scene_key !== sceneKey) await deleteR2Blob(ctx.env.PHOTOS, row.scene_key)
+    if (row.media_key && row.media_key !== mediaKey) await deleteR2Blob(ctx.env, row.media_key)
+    if (row.scene_key && row.scene_key !== sceneKey) await deleteR2Blob(ctx.env, row.scene_key)
     await ctx.env.DB.prepare('UPDATE notes SET media_key = ?, scene_key = ?, member_id = ?, created_at = ? WHERE id = ? AND household_id = ?')
       .bind(mediaKey, sceneKey, profileMemberId(ctx.request), nowSec(), id, actor.householdId)
       .run()
@@ -198,8 +204,8 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   // Un-keeping a note that already left the fridge: nothing shows it any more, so its
   // media goes the way a retired note's always did.
   if (hasSaved && !body!.saved && row.dismissed_at != null) {
-    await deleteR2Blob(ctx.env.PHOTOS, row.media_key)
-    await deleteR2Blob(ctx.env.PHOTOS, row.scene_key)
+    await deleteR2Blob(ctx.env, row.media_key)
+    await deleteR2Blob(ctx.env, row.scene_key)
   }
   return ok({ ok: true })
 })
@@ -215,8 +221,8 @@ export const onRequestDelete = authed(async (ctx, actor) => {
     .first<{ media_key: string | null; scene_key: string | null; saved_at: number | null }>()
   // A KEPT note leaves the fridge but stays on the Souvenirs shelf — so its media stays.
   if (row && !row.saved_at) {
-    await deleteR2Blob(ctx.env.PHOTOS, row.media_key)
-    await deleteR2Blob(ctx.env.PHOTOS, row.scene_key)
+    await deleteR2Blob(ctx.env, row.media_key)
+    await deleteR2Blob(ctx.env, row.scene_key)
   }
   await ctx.env.DB.prepare('UPDATE notes SET dismissed_at = ? WHERE id = ? AND household_id = ?')
     .bind(nowSec(), id, actor.householdId)

@@ -51,6 +51,9 @@ describe('repartir à neuf', () => {
     await env.DB.prepare('INSERT INTO photos (id, household_id, media_key, created_at) VALUES (?, ?, ?, ?)')
       .bind(`ph${Date.now()}`.slice(0, 12), a.householdId, key, Math.floor(Date.now() / 1000))
       .run()
+    // Planted by hand, so it is owned by hand: the ledger row an upload (or the 0158
+    // backfill) gives it. A blob nobody owns is never freed (_lib/r2.ts deleteR2Blob).
+    await env.DB.prepare('INSERT INTO media_owners (media_key, household_id, created_at) VALUES (?, ?, 1)').bind(key, a.householdId).run()
     // A setting, and a paired device.
     await env.DB.prepare("INSERT INTO household_preferences (household_id, key, value, updated_at) VALUES (?, 'reset-test', '{\"kept\":true}', 1)")
       .bind(a.householdId)

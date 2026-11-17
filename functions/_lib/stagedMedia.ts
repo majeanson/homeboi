@@ -99,7 +99,7 @@ export async function sweepAbandonedStagedMedia(
     .all<{ id: string; media_key: string }>()
   for (const m of stale.results) {
     if (referenced.has(m.media_key)) continue // a still-pending submission needs it
-    await deleteR2Blob(photos, m.media_key)
+    await deleteR2Blob({ DB: db, PHOTOS: photos }, m.media_key, householdId)
     await db.prepare('DELETE FROM staged_media WHERE id = ? AND household_id = ?').bind(m.id, householdId).run()
   }
 }

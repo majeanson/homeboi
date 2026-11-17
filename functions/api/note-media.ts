@@ -56,6 +56,6 @@ export const onRequestDelete = authed(async (ctx) => {
   const key = body?.key?.trim()
   if (!isValidR2Key(key)) return badRequest('key invalide.')
   if (!key!.startsWith('nm_') && !key!.startsWith('ns_')) return badRequest('key hors périmètre.')
-  await deleteR2Blob(ctx.env.PHOTOS, key)
+  await deleteR2Blob(ctx.env, key)
   return ok({ ok: true })
 })

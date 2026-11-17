@@ -1,33 +1,43 @@
 import { describe, it, expect, vi } from 'vitest'
 import { deleteR2Blob, mediaHeaders, safeMediaType } from './r2'
 
-// A minimal stand-in for the R2Bucket binding — only .delete() is exercised.
+// Minimal stand-ins: the bucket (only .delete()) and the ownership ledger, whose
+// DELETE reports `changes` — 1 when the row was this household's, 0 otherwise.
 const fakeBucket = (impl: (key: string) => Promise<void>) => ({ delete: vi.fn(impl) }) as unknown as R2Bucket
+
+const ledger = (owned: boolean) =>
+  ({ prepare: () => ({ bind: () => ({ run: async () => ({ meta: { changes: owned ? 1 : 0 } }) }) }) }) as unknown as D1Database
 
 describe('deleteR2Blob', () => {
   it('no-ops when the bucket is unset (R2 not bound)', async () => {
-    await expect(deleteR2Blob(undefined, 'nm_abc')).resolves.toBeUndefined()
+    await expect(deleteR2Blob({ DB: ledger(true) }, 'nm_abc', 'hh1')).resolves.toBeUndefined()
   })
 
-  it('no-ops when there is no key', async () => {
+  it('no-ops when there is no key, or no household to own it', async () => {
     const bucket = fakeBucket(async () => {})
-    await deleteR2Blob(bucket, null)
-    await deleteR2Blob(bucket, undefined)
-    await deleteR2Blob(bucket, '')
-    expect((bucket.delete as ReturnType<typeof vi.fn>)).not.toHaveBeenCalled()
+    for (const key of [null, undefined, '']) await deleteR2Blob({ DB: ledger(true), PHOTOS: bucket }, key, 'hh1')
+    await deleteR2Blob({ DB: ledger(true), PHOTOS: bucket }, 'nm_abc', undefined) // outside a request
+    expect(bucket.delete as ReturnType<typeof vi.fn>).not.toHaveBeenCalled()
   })
 
-  it('deletes the blob when both are present', async () => {
+  it('frees a blob this household owns', async () => {
     const bucket = fakeBucket(async () => {})
-    await deleteR2Blob(bucket, 'nm_abc')
+    await deleteR2Blob({ DB: ledger(true), PHOTOS: bucket }, 'nm_abc', 'hh1')
     expect(bucket.delete).toHaveBeenCalledWith('nm_abc')
+  })
+
+  // P0 #4 (review 2026-11-17): a key it only SAW — another family's photo, a backup.
+  it('leaves a blob it does not own where it is', async () => {
+    const bucket = fakeBucket(async () => {})
+    await deleteR2Blob({ DB: ledger(false), PHOTOS: bucket }, 'backup/hh2/2026-11-16.json', 'hh1')
+    expect(bucket.delete as ReturnType<typeof vi.fn>).not.toHaveBeenCalled()
   })
 
   it('swallows a failed delete (best-effort — never blocks the DB write)', async () => {
     const bucket = fakeBucket(async () => {
       throw new Error('R2 down')
     })
-    await expect(deleteR2Blob(bucket, 'nm_abc')).resolves.toBeUndefined()
+    await expect(deleteR2Blob({ DB: ledger(true), PHOTOS: bucket }, 'nm_abc', 'hh1')).resolves.toBeUndefined()
   })
 })
 

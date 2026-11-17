@@ -34,14 +34,14 @@ export interface LiveShare {
 
 // Free every share-owned R2 blob a stored snapshot holds (best-effort; no-ops when R2
 // is unset). Tolerates a malformed payload. Called on revoke + the expiry sweep.
-export async function freeShareBlobs(env: Env, kind: ShareKind, payloadJson: string): Promise<void> {
+export async function freeShareBlobs(env: Env, hh: string, kind: ShareKind, payloadJson: string): Promise<void> {
   let payload: unknown
   try {
     payload = JSON.parse(payloadJson)
   } catch {
     return
   }
-  for (const k of snapshotBlobKeys(kind, payload)) await deleteR2Blob(env.PHOTOS, k)
+  for (const k of snapshotBlobKeys(kind, payload)) await deleteR2Blob(env, k, hh)
 }
 
 // How many live (un-revoked, un-expired-at-write-time) shares this household holds —
@@ -93,7 +93,7 @@ export async function listLiveShares(env: Env, hh: string, kinds?: ShareKind[]):
     const kind = r.kind as ShareKind
     if (kinds && !kinds.includes(kind)) continue
     if (r.expires_at != null && r.expires_at < now) {
-      await freeShareBlobs(env, kind, r.payload)
+      await freeShareBlobs(env, hh, kind, r.payload)
       await env.DB.prepare('UPDATE shares SET revoked_at = ? WHERE id = ? AND source_household_id = ?')
         .bind(now, r.id, hh)
         .run()
@@ -134,7 +134,7 @@ export async function revokeShareById(env: Env, hh: string, id: string): Promise
     .bind(id, hh)
     .first<{ kind: string; payload: string }>()
   if (!row) return false
-  await freeShareBlobs(env, row.kind as ShareKind, row.payload)
+  await freeShareBlobs(env, hh, row.kind as ShareKind, row.payload)
   await env.DB.prepare('UPDATE shares SET revoked_at = ? WHERE id = ? AND source_household_id = ?')
     .bind(nowSec(), id, hh)
     .run()

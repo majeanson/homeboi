@@ -196,7 +196,7 @@ async function promote(ctx: Ctx, householdId: string, fromTripId: string): Promi
   const label = await householdName(ctx.env, householdId)
 
   // Copy the cover blob to a share-owned key (best-effort; null when R2 unset / missing).
-  const newCover = await copyR2Blob(ctx.env.PHOTOS, src.media_key, 'st')
+  const newCover = await copyR2Blob(ctx.env, src.media_key, 'st')
   const inserts: D1PreparedStatement[] = [
     ctx.env.DB.prepare(
       'INSERT INTO shared_trips (id, owner_household_id, title, destination, start_at, end_at, media_kind, media_key, colour, notes, invite_nonce, position, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)',
@@ -222,8 +222,8 @@ async function promote(ctx: Ctx, householdId: string, fromTripId: string): Promi
   // Notes carry the promoter as author; their media/scene blobs copy to share-owned keys.
   for (const n of notes.results) {
     const kind = n.media_kind === 'audio' || n.media_kind === 'drawing' || n.media_kind === 'image' ? n.media_kind : null
-    const newKey = kind ? await copyR2Blob(ctx.env.PHOTOS, n.media_key, 'st') : null
-    const newScene = kind === 'drawing' ? await copyR2Blob(ctx.env.PHOTOS, n.scene_key, 'ss') : null
+    const newKey = kind ? await copyR2Blob(ctx.env, n.media_key, 'st') : null
+    const newScene = kind === 'drawing' ? await copyR2Blob(ctx.env, n.scene_key, 'ss') : null
     inserts.push(
       ctx.env.DB.prepare(
         'INSERT INTO shared_trip_notes (id, shared_trip_id, category, label, text, media_kind, media_key, scene_key, author_household_id, author_label, date, position, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
@@ -272,10 +272,10 @@ async function promote(ctx: Ctx, householdId: string, fromTripId: string): Promi
     ctx.env.DB.prepare('UPDATE trip_packing SET deleted_at = ? WHERE trip_id = ? AND household_id = ? AND deleted_at IS NULL').bind(ts, fromTripId, householdId),
   ])
   // Free the ORIGINAL private blobs (the share owns its own `st_`/`ss_` copies now).
-  await deleteR2Blob(ctx.env.PHOTOS, src.media_key)
+  await deleteR2Blob(ctx.env, src.media_key)
   for (const n of notes.results) {
-    await deleteR2Blob(ctx.env.PHOTOS, n.media_key)
-    await deleteR2Blob(ctx.env.PHOTOS, n.scene_key)
+    await deleteR2Blob(ctx.env, n.media_key)
+    await deleteR2Blob(ctx.env, n.scene_key)
   }
   // Promote MOVED a dated band into the shared store — nudge ['month']/['board'] so the
   // now-shared trip re-surfaces on the calendar/board (membership-scoped read in
@@ -316,7 +316,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     set('media_kind', 'image') // cover is always a photo
     set('media_key', body.media_key.trim())
     if (gate.trip.media_key && gate.trip.media_key !== body.media_key.trim())
-      await deleteR2Blob(ctx.env.PHOTOS, gate.trip.media_key)
+      await deleteR2Blob(ctx.env, gate.trip.media_key)
   }
   if (sets.length === 0) return badRequest('Rien à modifier.')
   set('updated_at', nowSec())
@@ -338,15 +338,18 @@ export const onRequestDelete = authed(async (ctx, actor) => {
   if (gate.membership.role !== 'owner') return forbidden('Seul le propriétaire peut dissoudre ce voyage.')
 
   // Free the cover + every note's media/scene blob (best-effort; no-ops when R2 unset).
-  await deleteR2Blob(ctx.env.PHOTOS, gate.trip.media_key)
+  await deleteR2Blob(ctx.env, gate.trip.media_key)
   const blobs = await ctx.env.DB.prepare(
-    'SELECT media_key, scene_key FROM shared_trip_notes WHERE shared_trip_id = ? AND deleted_at IS NULL',
+    'SELECT media_key, scene_key, author_household_id FROM shared_trip_notes WHERE shared_trip_id = ? AND deleted_at IS NULL',
   )
     .bind(gate.trip.id)
-    .all<{ media_key: string | null; scene_key: string | null }>()
+    .all<{ media_key: string | null; scene_key: string | null; author_household_id: string | null }>()
+  // A note's blob is its author's (a member's photo on the owner's trip): free it as
+  // theirs, the trip going is the whole trip going (review 2026-11-17, P0 #4).
   for (const b of blobs.results) {
-    await deleteR2Blob(ctx.env.PHOTOS, b.media_key)
-    await deleteR2Blob(ctx.env.PHOTOS, b.scene_key)
+    const author = b.author_household_id ?? actor.householdId
+    await deleteR2Blob(ctx.env, b.media_key, author)
+    await deleteR2Blob(ctx.env, b.scene_key, author)
   }
 
   const ts = nowSec()

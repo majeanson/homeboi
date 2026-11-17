@@ -147,3 +147,69 @@ describe('les types servis sur notre origine', () => {
     await res.arrayBuffer()
   })
 })
+
+// P0 #4 (review 2026-11-17): R2 keys are public, and a cleanup freed whatever key its row
+// named. A household could store a key it had SEEN (a child's photo, a nightly backup),
+// delete its own row, and erase the other family's blob. Ownership is the ledger (0158).
+describe('a household frees only its own blobs', () => {
+  const owner = (key: string) => env.DB.prepare('SELECT household_id FROM media_owners WHERE media_key = ?').bind(key).first<{ household_id: string }>()
+  const plantNote = async (s: Session, key: string) => {
+    const id = `plnt${Date.now()}${Math.random().toString(36).slice(2, 8)}`
+    await env.DB.prepare("INSERT INTO notes (id, household_id, text, created_at, media_kind, media_key) VALUES (?, ?, '', ?, 'image', ?)").bind(id, s.householdId, Math.floor(Date.now() / 1000), key).run()
+    return id
+  }
+
+  it('an upload is recorded as its household’s, and its own note frees it', async () => {
+    const a = await household('own-a', undefined, { empty: true })
+    const { key } = await okJson<{ key: string }>(upload(a, '/api/note-media', 'image/png'))
+    expect(await owner(key)).toEqual({ household_id: a.householdId })
+    const { id } = await okJson<{ id: string }>(a.fetch('/api/notes', { method: 'POST', body: { media_kind: 'image', media_key: key } }))
+    await okJson(a.fetch('/api/notes', { method: 'DELETE', body: { id } }))
+    expect(await stored(key)).toBe(false)
+    expect(await owner(key)).toBeNull()
+  })
+
+  it('a key it only saw is refused at the door, and never freed by its rows', async () => {
+    const a = await household('victim-a', undefined, { empty: true })
+    const b = await household('thief-b', undefined, { empty: true })
+    const { key } = await okJson<{ key: string }>(upload(a, '/api/note-media', 'image/png'))
+    // The door.
+    expect((await b.fetch('/api/notes', { method: 'POST', body: { media_kind: 'image', media_key: key } })).status).toBe(400)
+    // A row that names it anyway (how every row looked before the ledger): its delete frees nothing.
+    const id = await plantNote(b, key)
+    await okJson(b.fetch('/api/notes', { method: 'DELETE', body: { id } }))
+    expect(await stored(key)).toBe(true)
+    expect(await owner(key)).toEqual({ household_id: a.householdId })
+  })
+
+  it('a nightly backup is no one’s media', async () => {
+    const a = await household('backup-a', undefined, { empty: true })
+    const b = await household('backup-b', undefined, { empty: true })
+    const backup = `backup/${a.householdId}/2026-11-16.json`
+    await env.PHOTOS!.put(backup, '{}')
+    const id = await plantNote(b, backup)
+    await okJson(b.fetch('/api/notes', { method: 'DELETE', body: { id } }))
+    expect(await stored(backup)).toBe(true)
+    expect((await b.fetch('/api/cercle', { method: 'POST', body: { firstName: 'X', photoKey: backup } })).status).toBe(400)
+  })
+})
+
+describe('0158 backfill', () => {
+  it('claims the keys a household’s rows already name — scalar and inside JSON — and nothing that is not a key', async () => {
+    const s = await household('backfill', undefined, { empty: true })
+    const now = Math.floor(Date.now() / 1000)
+    const tag = `${now}${Math.random().toString(36).slice(2, 6)}`
+    await env.DB.prepare("INSERT INTO notes (id, household_id, text, created_at, media_kind, media_key) VALUES (?, ?, '', ?, 'image', ?)").bind(`bfn${tag}`, s.householdId, now, `nm_legacy${tag}`).run()
+    await env.DB.prepare("INSERT INTO notes (id, household_id, text, created_at, media_kind, media_key) VALUES (?, ?, '', ?, 'image', ?)").bind(`bfb${tag}`, s.householdId, now, `backup/${s.householdId}/x.json`).run()
+    const member = (await okJson<{ id: string }>(s.fetch('/api/members', { method: 'POST', body: { name: 'Léa' } }))).id
+    await env.DB.prepare('INSERT INTO routines (id, household_id, member_id, name, cards_json, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+      .bind(`bfr${tag}`, s.householdId, member, 'Matin', JSON.stringify([{ label: 'Dents', photoKey: `rcp_legacy${tag}`, img: 'https://example.com/a.png' }]), now).run()
+    const backfill = env.TEST_MIGRATIONS.find((m) => m.name.startsWith('0158_'))!.queries.filter((q) => /INSERT OR IGNORE INTO media_owners/i.test(q))
+    expect(backfill.length).toBeGreaterThan(20)
+    for (const q of backfill) await env.DB.prepare(q).run()
+    const mine = (await env.DB.prepare('SELECT media_key FROM media_owners WHERE household_id = ?').bind(s.householdId).all<{ media_key: string }>()).results.map((r) => r.media_key)
+    expect(mine).toContain(`nm_legacy${tag}`)
+    expect(mine).toContain(`rcp_legacy${tag}`)
+    expect(mine.filter((k) => k.includes('/') || k.includes(':'))).toEqual([])
+  })
+})

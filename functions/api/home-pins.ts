@@ -121,7 +121,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
 
   if ('mediaKey' in body && ctx.env.PHOTOS) {
     const next = str(body.mediaKey)
-    if (owns.media_key !== next) await deleteR2Blob(ctx.env.PHOTOS, owns.media_key)
+    if (owns.media_key !== next) await deleteR2Blob(ctx.env, owns.media_key)
   }
   return ok({ ok: true })
 })
@@ -133,7 +133,7 @@ export const onRequestDelete = authed(async (ctx, actor) => {
     .bind(body.id, actor.householdId)
     .first<{ media_key: string | null }>()
   // deleteR2Blob no-ops on an unset bucket, so no env.PHOTOS guard needed here.
-  if (owns) await deleteR2Blob(ctx.env.PHOTOS, owns.media_key)
+  if (owns) await deleteR2Blob(ctx.env, owns.media_key)
   await ctx.env.DB.prepare('DELETE FROM home_pins WHERE id = ? AND household_id = ?').bind(body.id, actor.householdId).run()
   return ok({ ok: true })
 })

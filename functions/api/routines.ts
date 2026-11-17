@@ -314,7 +314,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     // step-image cleanup) — a swapped, cleared or removed card's blob would leak.
     if (ctx.env.PHOTOS && nextCards) {
       const kept = new Set(cardMediaKeys(nextCards))
-      for (const k of cardMediaKeys(prevCards)) if (!kept.has(k)) await deleteR2Blob(ctx.env.PHOTOS, k)
+      for (const k of cardMediaKeys(prevCards)) if (!kept.has(k)) await deleteR2Blob(ctx.env, k)
     }
     return ok({ ok: true })
   }
@@ -392,7 +392,7 @@ export const onRequestDelete = authed(async (ctx, actor) => {
       .first<{ cards_json: string; cards_narration_json: string | null; cards_photo_json: string | null }>()
     if (owns) {
       for (const key of cardMediaKeys(foldCardMedia(owns.cards_json, owns.cards_narration_json, owns.cards_photo_json)))
-        await deleteR2Blob(ctx.env.PHOTOS, key)
+        await deleteR2Blob(ctx.env, key)
     }
   }
   // routine_runs.routine_id FK-references this routine, so D1 blocks the delete

@@ -75,7 +75,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   const keys = row ? intakeMediaKeys(parsePayload(row.payload) ?? ({} as IntakeSubmission)) : []
 
   if (status === 'dismissed') {
-    for (const k of keys) await deleteR2Blob(ctx.env.PHOTOS, k)
+    for (const k of keys) await deleteR2Blob(ctx.env, k)
   }
   // Either way, the staging rows are done with — the blobs are now orphan-swept-proof
   // (merged: owned by a contact; dismissed: just deleted).

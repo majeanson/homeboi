@@ -1,7 +1,7 @@
 import { badRequest, ok, readJson, serviceUnavailable } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { resolveLang } from '../_lib/ai'
-import { putR2Blob } from '../_lib/r2'
+import { putR2Blob, type R2Env } from '../_lib/r2'
 import { googleMapsUrl, googleImageUrl, googleSorryContinue, isGoogleSorry, parseGoogleMapsUrl, parsePlaceOg } from '../_lib/placeImport'
 
 // « Le cercle » → Business: pre-fill a business card from a shared Google Maps link.
@@ -22,7 +22,8 @@ const MAX_PHOTO_BYTES = 5 * 1024 * 1024
 
 // Copy the place photo from Google's image CDN into R2 (best-effort). Returns the new
 // key, or null when R2 is unbound / the host isn't Google / the fetch fails.
-async function storePhoto(bucket: R2Bucket | undefined, photoUrl: string | null): Promise<string | null> {
+async function storePhoto(env: R2Env, photoUrl: string | null): Promise<string | null> {
+  const bucket = env.PHOTOS
   if (!bucket) return null
   const u = googleImageUrl(photoUrl)
   if (!u) return null
@@ -33,7 +34,7 @@ async function storePhoto(bucket: R2Bucket | undefined, photoUrl: string | null)
     if (!ct.startsWith('image/')) return null
     const buf = await res.arrayBuffer()
     if (buf.byteLength === 0 || buf.byteLength > MAX_PHOTO_BYTES) return null
-    return await putR2Blob(bucket, buf, ct, 'bz')
+    return await putR2Blob(env, bucket, buf, ct, 'bz')
   } catch {
     return null
   }
@@ -80,7 +81,7 @@ export const onRequestPost = authed(async (ctx) => {
   const fromUrl = parseGoogleMapsUrl(finalUrl)
   const name = og.name ?? fromUrl.name
   const address = og.address ?? fromUrl.address
-  const photoKey = await storePhoto(ctx.env.PHOTOS, og.photoUrl)
+  const photoKey = await storePhoto(ctx.env, og.photoUrl)
 
   // Nothing usable (a bare dropped-pin) — let the UI say "fill it in by hand".
   const empty = !name && !address

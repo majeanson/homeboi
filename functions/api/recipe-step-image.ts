@@ -34,7 +34,7 @@ export const onRequestDelete = authed(async (ctx) => {
   for (const key of keys) {
     const used = await ctx.env.DB.prepare('SELECT 1 FROM recipes WHERE steps_images_json LIKE ? LIMIT 1').bind(`%"${key}"%`).first()
     if (used) continue
-    await deleteR2Blob(ctx.env.PHOTOS, key)
+    await deleteR2Blob(ctx.env, key)
     freed++
   }
   return ok({ freed })

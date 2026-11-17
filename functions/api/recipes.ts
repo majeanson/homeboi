@@ -233,17 +233,17 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       actor.householdId,
     )
     .run()
-  if (isR2Key(prev.image) && prev.image !== image) await deleteR2Blob(ctx.env.PHOTOS, prev.image)
+  if (isR2Key(prev.image) && prev.image !== image) await deleteR2Blob(ctx.env, prev.image)
   // Free any step-photo blobs this edit orphaned (a key present before but no
   // longer in the saved array). Best-effort; never blocks the save.
   if (ctx.env.PHOTOS) {
     const kept = new Set(newStepImages)
     const orphaned = stepImageKeys(prev.steps_images_json).filter((k) => !kept.has(k))
-    for (const k of orphaned) await deleteR2Blob(ctx.env.PHOTOS, k)
+    for (const k of orphaned) await deleteR2Blob(ctx.env, k)
     // A re-import during the edit can replace the snapshot (and its source photos);
     // free every old source-page blob that is no longer among the ones just stored.
     const nextSrc = new Set(originalSourceImages(original))
-    for (const k of originalSourceImages(prev.original_json)) if (!nextSrc.has(k)) await deleteR2Blob(ctx.env.PHOTOS, k)
+    for (const k of originalSourceImages(prev.original_json)) if (!nextSrc.has(k)) await deleteR2Blob(ctx.env, k)
   }
   return ok({ ok: true })
 })
@@ -271,10 +271,10 @@ export const onRequestDelete = authed(async (ctx, actor) => {
   // The blobs only once the row is really gone: freed before, a refused delete left the
   // recipe standing with its photos destroyed.
   if (ctx.env.PHOTOS) {
-    if (isR2Key(row?.image)) await deleteR2Blob(ctx.env.PHOTOS, row?.image)
-    for (const k of stepImageKeys(row?.steps_images_json)) await deleteR2Blob(ctx.env.PHOTOS, k)
+    if (isR2Key(row?.image)) await deleteR2Blob(ctx.env, row?.image)
+    for (const k of stepImageKeys(row?.steps_images_json)) await deleteR2Blob(ctx.env, k)
     // The source-card photos live in the original snapshot (photo-import path).
-    for (const k of originalSourceImages(row?.original_json ?? null)) await deleteR2Blob(ctx.env.PHOTOS, k)
+    for (const k of originalSourceImages(row?.original_json ?? null)) await deleteR2Blob(ctx.env, k)
   }
   return ok({ ok: true })
 })

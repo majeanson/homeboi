@@ -273,7 +273,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   // Replacing the photo frees the previous R2 blob (best-effort).
   if ('mediaKey' in body && ctx.env.PHOTOS) {
     const next = str(body.mediaKey)
-    if (owns.media_key !== next) await deleteR2Blob(ctx.env.PHOTOS, owns.media_key)
+    if (owns.media_key !== next) await deleteR2Blob(ctx.env, owns.media_key)
   }
   return ok({ ok: true })
 })

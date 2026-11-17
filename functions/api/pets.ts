@@ -193,7 +193,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
 
   if ('photoKey' in body && ctx.env.PHOTOS) {
     const next = str(body.photoKey)
-    if (owns.photo_key !== next) await deleteR2Blob(ctx.env.PHOTOS, owns.photo_key)
+    if (owns.photo_key !== next) await deleteR2Blob(ctx.env, owns.photo_key)
   }
   return ok({ ok: true })
 })
@@ -217,6 +217,6 @@ export const onRequestDelete = authed(async (ctx, actor) => {
     ).bind(actor.householdId, body.id, body.id),
     ctx.env.DB.prepare("DELETE FROM contact_group_members WHERE person_kind = 'pet' AND person_id = ?").bind(body.id),
   ])
-  await deleteR2Blob(ctx.env.PHOTOS, owns.photo_key)
+  await deleteR2Blob(ctx.env, owns.photo_key)
   return ok({ ok: true })
 })

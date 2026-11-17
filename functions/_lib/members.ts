@@ -101,8 +101,8 @@ export async function freeMemberMediaBlobs(env: Env, householdId: string, member
     .bind(householdId, memberId, memberId)
     .all<{ media_key: string; scene_key: string | null }>()
   for (const r of results) {
-    await deleteR2Blob(env.PHOTOS, r.media_key)
-    await deleteR2Blob(env.PHOTOS, r.scene_key)
+    await deleteR2Blob(env, r.media_key, householdId)
+    await deleteR2Blob(env, r.scene_key, householdId)
   }
 }
 

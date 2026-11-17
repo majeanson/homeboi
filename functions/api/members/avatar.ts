@@ -29,7 +29,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const up = await uploadR2Media(ctx.env.PHOTOS!, ctx.request, { env: ctx.env, prefix: 'av', maxBytes: MAX_BYTES, accept: () => true })
   if ('error' in up) return up.error
   const key = up.key
-  if (member.avatar_kind === 'photo') await deleteR2Blob(ctx.env.PHOTOS, member.avatar_ref)
+  if (member.avatar_kind === 'photo') await deleteR2Blob(ctx.env, member.avatar_ref)
   await ctx.env.DB.prepare("UPDATE members SET avatar_kind = 'photo', avatar_ref = ? WHERE id = ? AND household_id = ?")
     .bind(key, id, actor.householdId)
     .run()

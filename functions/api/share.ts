@@ -1,6 +1,6 @@
 import { ok, badRequest, notFound, readJson, parseJsonArray, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
-import { copyR2Blob } from '../_lib/r2'
+import { copyR2Blob, type R2Env } from '../_lib/r2'
 import {
   isShareKind,
   clampSnapshotTtl,
@@ -45,10 +45,10 @@ const isStr = (v: unknown): v is string => typeof v === 'string'
 // Copy every share-owned media key in a freshly-built payload into an `sh_` blob, then
 // rewrite the payload to point at the copies. R2 unset → drop the owned keys (text
 // degrade), https images pass through untouched. Family does its own copy (fs_) upstream.
-async function copySnapshotMedia<T>(env: { PHOTOS?: R2Bucket }, kind: ShareKind, payload: T): Promise<T> {
+async function copySnapshotMedia<T>(env: R2Env, kind: ShareKind, payload: T): Promise<T> {
   if (!env.PHOTOS) return remapSnapshotBlobKeys(kind, payload, () => null)
   const map = new Map<string, string | null>()
-  for (const k of snapshotBlobKeys(kind, payload)) map.set(k, await copyR2Blob(env.PHOTOS, k, 'sh'))
+  for (const k of snapshotBlobKeys(kind, payload)) map.set(k, await copyR2Blob(env, k, 'sh'))
   return remapSnapshotBlobKeys(kind, payload, (k) => map.get(k) ?? null)
 }
 

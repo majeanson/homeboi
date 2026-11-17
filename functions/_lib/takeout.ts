@@ -36,6 +36,9 @@ export const TAKEOUT_EXCLUDE = new Set([
   'idempotency_keys',
   'ai_errors',
   'household_domains',
+  // The R2 ownership ledger (0158): identity, not content. A restore keeps it (the blobs
+  // are still the household's), and a takeout has no use for it.
+  'media_owners',
 ])
 
 // Tables scoped only through a parent (no household_id column of their own).

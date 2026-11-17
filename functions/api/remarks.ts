@@ -254,8 +254,8 @@ export const onRequestDelete = authed(async (ctx, actor) => {
     .bind(id)
     .all<{ media_key: string | null; scene_key: string | null }>()
   for (const b of blobs) {
-    await deleteR2Blob(ctx.env.PHOTOS, b.media_key)
-    await deleteR2Blob(ctx.env.PHOTOS, b.scene_key)
+    await deleteR2Blob(ctx.env, b.media_key)
+    await deleteR2Blob(ctx.env, b.scene_key)
   }
 
   await ctx.env.DB.prepare('UPDATE remarks SET deleted_at = ?1, updated_at = ?1 WHERE id = ?2 AND household_id = ?3')

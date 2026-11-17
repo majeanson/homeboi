@@ -3,6 +3,7 @@ import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { deleteR2Blob, uploadR2Media } from '../_lib/r2'
 import { birthdayOrNull } from '../_lib/birthdayRule'
+import { isValidR2Key } from '../_lib/validate'
 
 // « Le cercle » — the household people directory (contacts). GET returns the
 // whole circle (contacts + their relationship edges + named groups) in one shot;
@@ -95,6 +96,8 @@ interface PetRow {
 }
 
 const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v.trim() : null)
+// A photo key is shape-checked only — see the PATCH below for why not ownership.
+const photoKeyOk = (v: unknown): boolean => str(v) == null || isValidR2Key(str(v))
 const genderOrNull = (v: unknown): string | null => (v === 'm' || v === 'f' ? v : null)
 // A JSON value we control, re-serialized defensively (drops anything non-array /
 // non-object before storage so a bad client can't poison the column).
@@ -275,6 +278,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   }>(ctx.request)
   const firstName = str(body?.firstName)
   if (!firstName) return badRequest('Prénom requis.')
+  if (!photoKeyOk(body?.photoKey)) return badRequest('photoKey invalide.')
 
   const id = newId()
   const ts = nowSec()
@@ -347,6 +351,11 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   }
   setIf(body.lastName !== undefined, 'last_name', str(body.lastName) ?? '')
   setIf('nickname' in body, 'nickname', str(body.nickname))
+  // Shape only, not ownership: importing a family share writes the SENDER's `fs_` keys
+  // here on purpose. What made a foreign key dangerous was freeing it, and deleteR2Blob
+  // now frees only this household's blobs (review 2026-11-17, P0 #4). A `/` (backup/…)
+  // was never a key.
+  if ('photoKey' in body && !photoKeyOk(body.photoKey)) return badRequest('photoKey invalide.')
   setIf('photoKey' in body, 'media_key', str(body.photoKey))
   setIf('birthday' in body, 'birthday', birthdayOrNull(body.birthday))
   setIf('email' in body, 'email', str(body.email))
@@ -371,7 +380,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   // harmless but R2 stays tidy).
   if ('photoKey' in body && ctx.env.PHOTOS) {
     const next = str(body.photoKey)
-    if (owns.photo_key !== next) await deleteR2Blob(ctx.env.PHOTOS, owns.photo_key)
+    if (owns.photo_key !== next) await deleteR2Blob(ctx.env, owns.photo_key)
   }
   return ok({ ok: true })
 })
@@ -385,7 +394,7 @@ export const onRequestDelete = authed(async (ctx, actor) => {
     .first<{ photo_key: string | null }>()
   if (!owns) return notFound('Contact introuvable.')
 
-  await deleteR2Blob(ctx.env.PHOTOS, owns.photo_key)
+  await deleteR2Blob(ctx.env, owns.photo_key)
 
   // Free the gallery blobs (contact_photos rows cascade with the contact, but the
   // R2 objects don't — fetch their keys first, then best-effort delete each blob).
@@ -396,7 +405,7 @@ export const onRequestDelete = authed(async (ctx, actor) => {
       .bind(body.id, actor.householdId)
       .all<{ photo_key: string }>()
     for (const row of gallery.results) {
-      await deleteR2Blob(ctx.env.PHOTOS, row.photo_key)
+      await deleteR2Blob(ctx.env, row.photo_key)
     }
   }
 

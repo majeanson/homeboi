@@ -44,7 +44,7 @@ export async function importStepImages(env: Env, urls: (string | null)[], opts: 
       if (!buf.byteLength || buf.byteLength > maxEach) continue
       const verdict = await charge(env, 'upload', buf.byteLength)
       if (!verdict.allowed) break
-      keys[i] = await putR2Blob(env.PHOTOS, buf, type, 'rsi')
+      keys[i] = await putR2Blob(env, env.PHOTOS, buf, type, 'rsi')
     } catch {
       /* a photo that does not come is a step without a photo — never a failed import */
     }

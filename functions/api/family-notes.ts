@@ -193,8 +193,8 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       return badRequest('media_kind invalide.')
     }
     // Free any superseded blobs (no-op on an unset bucket).
-    if (row.media_key && row.media_key !== mediaKey) await deleteR2Blob(ctx.env.PHOTOS, row.media_key)
-    if (row.scene_key && row.scene_key !== sceneKey) await deleteR2Blob(ctx.env.PHOTOS, row.scene_key)
+    if (row.media_key && row.media_key !== mediaKey) await deleteR2Blob(ctx.env, row.media_key)
+    if (row.scene_key && row.scene_key !== sceneKey) await deleteR2Blob(ctx.env, row.scene_key)
   }
 
   await ctx.env.DB.prepare(
@@ -229,8 +229,8 @@ export const onRequestDelete = authed(async (ctx, actor) => {
   )
     .bind(id, actor.householdId)
     .first<{ media_key: string | null; scene_key: string | null }>()
-  await deleteR2Blob(ctx.env.PHOTOS, row?.media_key)
-  await deleteR2Blob(ctx.env.PHOTOS, row?.scene_key)
+  await deleteR2Blob(ctx.env, row?.media_key)
+  await deleteR2Blob(ctx.env, row?.scene_key)
   await ctx.env.DB.prepare('UPDATE family_notes SET deleted_at = ? WHERE id = ? AND household_id = ?')
     .bind(nowSec(), id, actor.householdId)
     .run()

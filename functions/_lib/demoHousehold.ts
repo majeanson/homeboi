@@ -204,6 +204,9 @@ export const HOUSEHOLD_TABLES: readonly string[] = [
   'usage_daily',
   'household_preferences',
   'household_domains',
+  // Who owns which R2 blob (0158, review P0 #4). The blob loop at the top of
+  // deleteHousehold runs before this batch, while these rows still say what is ours.
+  'media_owners',
   'operators',
 ] as const
 
@@ -384,8 +387,12 @@ export async function collectMediaKeys(env: Env, householdId: string): Promise<s
  * is a filename worth revisiting, not a reason to fork the delete.
  */
 export async function deleteHousehold(env: Env, householdId: string): Promise<void> {
-  const blobKeys = await collectMediaKeys(env, householdId).catch(() => [] as string[])
-  for (const key of blobKeys) await deleteR2Blob(env.PHOTOS, key)
+  const blobKeys = new Set(await collectMediaKeys(env, householdId).catch(() => [] as string[]))
+  // Everything the ownership ledger (0158) knows is this household's, too: the column
+  // inventory above misses whatever a row only holds inside JSON it does not parse.
+  const owned = await env.DB.prepare('SELECT media_key FROM media_owners WHERE household_id = ?').bind(householdId).all<{ media_key: string }>().catch(() => null)
+  for (const r of owned?.results ?? []) blobKeys.add(r.media_key)
+  for (const key of blobKeys) await deleteR2Blob(env, key, householdId)
 
   const P = env.DB.prepare.bind(env.DB)
   await env.DB.batch([

@@ -129,7 +129,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   if (typeof body?.media_key === 'string' && body.media_key.trim()) {
     set('media_kind', 'image') // cover is always a photo
     set('media_key', body.media_key.trim())
-    if (row.media_key && row.media_key !== body.media_key.trim()) await deleteR2Blob(ctx.env.PHOTOS, row.media_key)
+    if (row.media_key && row.media_key !== body.media_key.trim()) await deleteR2Blob(ctx.env, row.media_key)
   }
   if (sets.length === 0) return badRequest('Rien à modifier.')
   set('updated_at', nowSec())
@@ -167,6 +167,6 @@ export const onRequestDelete = authed(async (ctx, actor) => {
     ctx.env.DB.prepare('UPDATE trip_packing SET deleted_at = ? WHERE trip_id = ? AND household_id = ? AND deleted_at IS NULL').bind(ts, id, actor.householdId),
   ])
   const blobs = [row.media_key, ...notes.results.flatMap((n) => [n.media_key, n.scene_key])]
-  await Promise.all(blobs.map((key) => deleteR2Blob(ctx.env.PHOTOS, key)))
+  await Promise.all(blobs.map((key) => deleteR2Blob(ctx.env, key)))
   return ok({ ok: true })
 }, 'operator')
