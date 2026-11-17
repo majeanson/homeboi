@@ -1,5 +1,6 @@
 import type { Env } from '../_lib/env'
 import { badRequest, notFound, serviceUnavailable } from '../_lib/json'
+import { mediaHeaders, safeMediaType } from '../_lib/r2'
 
 // Same-origin proxy for Flipp flyer clipping images. The clippings live on
 // f.wishabi.net (cross-origin), which the service worker never caches — so a flyer
@@ -53,11 +54,12 @@ export const onRequestGet: PagesFunction<Env> = async (ctx) => {
   }
   if (!res) return serviceUnavailable('Image indisponible.')
   if (!res.ok) return notFound()
-  const ct = res.headers.get('content-type') ?? 'image/jpeg'
-  if (!ct.startsWith('image/')) return notFound()
+  // Same origin as the app, so the same allowlist + headers as /api/img: a clipping
+  // that arrives as SVG is not an image we will vouch for (review 2026-11-17, P0 #1).
+  const ct = safeMediaType(res.headers.get('content-type') ?? 'image/jpeg')
+  if (!ct?.startsWith('image/')) return notFound()
 
-  const headers = new Headers()
-  headers.set('content-type', ct)
+  const headers = mediaHeaders(ct)
   headers.set('cache-control', 'public, max-age=31536000, immutable')
   const out = new Response(res.body, { headers })
   ctx.waitUntil(cache.put(cacheKey, out.clone()))

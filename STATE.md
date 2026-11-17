@@ -82,8 +82,8 @@ interchangeable. Read this table before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md` is now
-> a number you can trust. It reads **0** — the last box, the D1 routes, closed on
-> 2026-11-06 (§4). **Asserted from the boxes themselves** by
+> a number you can trust. It reads **42** — all of them `REVIEW-TRACKER.md`'s (the 7-persona
+> review of 2026-11-17; 0 before it). **Asserted from the boxes themselves** by
 > `src/lib/docCounts.test.ts`, so this sentence cannot drift the way `REVIEW-PASS.md`'s
 > banner once did — it claimed 15 for twelve days against a single box.
 >
@@ -141,7 +141,7 @@ Three read-only audits (components/CSS · flows · tests/guards) on 2026-11-05 f
 - [x] `noUncheckedIndexedAccess` et `exactOptionalPropertyTypes` sont allumés dans les trois tsconfig. oxlint reste en `correctness` : `suspicious` + `perf` donnent 8 441 faux positifs d'une seule règle, et `iframe-missing-sandbox` casserait le lecteur PDF de `CarnetDocs`. Décision prise, à ne pas rouvrir sans nouvelle mesure. `exhaustive-deps` est passé en erreur le 2026-11-06 : la revue de fin a trouvé cet item du plan oublié, et un vrai bogue dedans (`tagSlots` absent du mémo de la cuisine).
 - [x] 7.1 : les 13 modules ont leurs tests, chacun vu rouge. `@testing-library/react` est là, et `npm run test:coverage` tient un plancher par dossier (`src/lib` 62,58 % de lignes) dans `vitest.config.ts`. Hors CI : personne n'a demandé d'en faire une barrière. Deux vrais bogues trouvés : un instantané effacé à la perte d'auth se réécrivait (`persist`), une écriture retenue partait deux fois au démontage (`toast`).
 
-> **No open box.** La dernière s'est fermée le 2026-11-06. Avant elles, 2026-09-29 : §K's six waves and §L are all closed; what is left is §M
+> **No open box.** Not here: the repo's open boxes are `REVIEW-TRACKER.md`'s (2026-11-17). La dernière d'ici s'est fermée le 2026-11-06. Avant elles, 2026-09-29 : §K's six waves and §L are all closed; what is left is §M
 > (needs a device) and F37's review (~12-29). New work starts from what real households do.
 >
 > **The standing work since 2026-11-05 is `plans/2026-11-05-SOLIDIFY.md`** — nine waves of

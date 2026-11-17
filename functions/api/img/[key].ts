@@ -1,5 +1,6 @@
 import type { Env } from '../../_lib/env'
 import { notFound } from '../../_lib/json'
+import { mediaHeaders } from '../../_lib/r2'
 
 // Serve a stored image from R2 by its opaque key. Unauthenticated BY DESIGN: the
 // key is a random, unguessable capability id (newId, ~71 bits), so a plain <img>
@@ -15,8 +16,10 @@ export const onRequestGet: PagesFunction<Env, 'key'> = async (ctx) => {
   const obj = await ctx.env.PHOTOS.get(key)
   if (!obj) return notFound()
 
-  const headers = new Headers()
-  obj.writeHttpMetadata(headers)
+  // NOT writeHttpMetadata: the stored type is re-checked against the allowlist on every
+  // serve, so a blob stored as SVG/HTML before the rule comes out as a download, never
+  // as a page on our origin (review 2026-11-17, P0 #1 — `_lib/r2.ts` safeMediaType).
+  const headers = mediaHeaders(obj.httpMetadata?.contentType)
   headers.set('etag', obj.httpEtag)
   headers.set('cache-control', 'public, max-age=31536000, immutable')
   return new Response(obj.body, { headers })

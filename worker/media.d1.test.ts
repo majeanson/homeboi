@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { env } from 'cloudflare:workers'
-import { household, okJson, type Session } from '../functions/test/d1'
+import { anon, household, okJson, type Session } from '../functions/test/d1'
 
 // LE CADRE, LES VISAGES, LES PIÈCES JOINTES against a real D1 and R2: three remaining doors
 // that store a blob. What they share is that the bucket has to stay honest: a capped frame
@@ -107,5 +107,43 @@ describe('la pièce jointe d’une remarque', () => {
     await env.PHOTOS!.put('rc_une-recette', new Uint8Array([1]))
     expect((await s.fetch('/api/remark-media', { method: 'DELETE', body: { key: 'rc_une-recette' } })).status, 'a leaked recipe key cannot be deleted here').toBe(400)
     expect(await stored('rc_une-recette')).toBe(true)
+  })
+})
+
+// P0 #1 (review 2026-11-17): /api/img serves on the app's own origin, so a blob that
+// renders as a page (SVG, HTML) was stored XSS under the household's session cookie.
+describe('les types servis sur notre origine', () => {
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(document.cookie)</script></svg>'
+
+  it('an SVG or HTML upload is refused at every door that used to take anything', async () => {
+    const s = await household('media-xss', undefined, { empty: true })
+    // Each door takes a PNG (the control: a 400 below is about the type, nothing else).
+    for (const path of ['/api/note-media', '/api/photos', '/api/recipe-image', '/api/remark-media', '/api/trip-doc-media']) {
+      expect((await upload(s, path, 'image/png')).status, `png → ${path}`).toBe(200)
+      for (const type of ['image/svg+xml', 'text/html'])
+        expect((await upload(s, path, type, svg)).status, `${type} → ${path}`).toBe(400)
+    }
+  })
+
+  it('an image goes in and comes out as itself, unsniffed and sandboxed', async () => {
+    const s = await household('media-ok', undefined, { empty: true })
+    const { key } = await okJson<{ key: string }>(upload(s, '/api/note-media', 'image/png'))
+    const res = await anon(`/api/img/${key}`)
+    expect(res.status).toBe(200)
+    expect(res.headers.get('content-type')).toBe('image/png')
+    expect(res.headers.get('x-content-type-options')).toBe('nosniff')
+    expect(res.headers.get('content-security-policy')).toMatch(/^sandbox; default-src 'none'.*, default-src 'self'/)
+    await res.arrayBuffer()
+  })
+
+  it('a blob already stored as SVG (before the rule) is served as a sandboxed download', async () => {
+    const key = 'nm_legacysvg' + Date.now()
+    await env.PHOTOS!.put(key, svg, { httpMetadata: { contentType: 'image/svg+xml' } })
+    const res = await anon(`/api/img/${key}`)
+    expect(res.status).toBe(200)
+    expect(res.headers.get('content-type')).toBe('application/octet-stream')
+    expect(res.headers.get('content-disposition')).toBe('attachment')
+    expect(res.headers.get('content-security-policy')).toMatch(/^sandbox; default-src 'none'.*, default-src 'self'/)
+    await res.arrayBuffer()
   })
 })

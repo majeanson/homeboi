@@ -120,6 +120,12 @@ export function headersFileSource(): string {
 export function withSecurityHeaders(res: Response): Response {
   if (res.status === 101) return res
   const headers = new Headers(res.headers)
-  for (const [name, value] of ENFORCED) headers.set(name, value)
+  for (const [name, value] of ENFORCED) {
+    // A handler that brought its OWN policy keeps it, and the app's is added beside it
+    // (comma-joined = two policies, and a browser enforces both, so this can only ever
+    // tighten). /api/img's `sandbox` was silently overwritten here (review 2026-11-17, P0 #1).
+    if (name === 'Content-Security-Policy' && headers.has(name)) headers.append(name, value)
+    else headers.set(name, value)
+  }
   return new Response(res.body, { status: res.status, statusText: res.statusText, headers })
 }

@@ -55,6 +55,43 @@ export interface UploadR2Opts {
   extFromType?: boolean
 }
 
+// THE ONE MEDIA TYPE ALLOWLIST (review 2026-11-17, P0 #1). `/api/img/<key>` serves a
+// blob on the APP's own origin, so whatever content-type a blob carries is a type the
+// browser renders AS the app: an `image/svg+xml` or `text/html` upload was stored XSS —
+// a <script> that runs with the household's session cookie, reachable by anyone the
+// key is shown to. Most upload doors passed `accept: () => true`, and the default
+// predicate (`image/*`) let SVG through on its own. So the type is decided HERE, once,
+// for every way a blob enters R2 (an upload, a server-side fetch, a copy) and again on
+// the way out (`mediaHeaders`), which also defuses any blob stored before this rule.
+//
+// Raster images, recorded audio, a PDF (a carnet / trip document) and the JSON scene of
+// an editable drawing. Nothing that can carry script when opened as a page.
+const SAFE_MEDIA =
+  /^(image\/(jpeg|png|webp|gif|avif|heic|heif)|audio\/(webm|ogg|mp4|mpeg|aac|wav|x-wav|wave|x-m4a|m4a|3gpp|flac)|application\/pdf|application\/json)$/
+
+/** The normalised (lowercase, no parameters) media type when it is one we store and
+ *  serve, else null. `audio/webm;codecs=opus` → `audio/webm`; `image/svg+xml` → null. */
+export function safeMediaType(contentType: string | null | undefined): string | null {
+  const t = (contentType ?? '').split(';')[0]!.trim().toLowerCase()
+  return SAFE_MEDIA.test(t) ? t : null
+}
+
+/** The response headers for serving a stored (or proxied) blob on the app origin. A type
+ *  off the allowlist is served as an opaque download. The CSP `sandbox` puts any page the
+ *  bytes might still become into an opaque origin with scripts off; `nosniff` stops a
+ *  browser from second-guessing the type. A PDF is the one exception to the sandbox:
+ *  Chrome refuses to render a PDF in a sandboxed document, and its viewer does not run
+ *  page script against our origin. */
+export function mediaHeaders(storedType: string | null | undefined): Headers {
+  const type = safeMediaType(storedType) ?? 'application/octet-stream'
+  const h = new Headers()
+  h.set('content-type', type)
+  h.set('x-content-type-options', 'nosniff')
+  if (type !== 'application/pdf') h.set('content-security-policy', "sandbox; default-src 'none'; img-src 'self'; media-src 'self'; style-src 'unsafe-inline'")
+  if (!/^(image|audio)\/|^application\/pdf$/.test(type)) h.set('content-disposition', 'attachment')
+  return h
+}
+
 // The file extension for a stored content-type, or '' for an unrecognised one — used
 // to make a key self-describe (see `extFromType`). Only the PDF case actually drives
 // behaviour today; the image cases keep a downloaded blob's name sensible.
@@ -74,8 +111,10 @@ export async function uploadR2Media(
   opts: UploadR2Opts,
 ): Promise<{ key: string; contentType: string } | { error: Response }> {
   const accept = opts.accept ?? ((t) => t.startsWith('image/'))
-  const contentType = request.headers.get('content-type') ?? ''
-  if (!accept(contentType)) return { error: badRequest(opts.typeError ?? 'Image requise.') }
+  const declared = request.headers.get('content-type') ?? ''
+  // The door's own predicate narrows; the allowlist is the floor no door can lower.
+  const contentType = safeMediaType(declared)
+  if (!contentType || !accept(declared)) return { error: badRequest(opts.typeError ?? 'Image requise.') }
   const buf = await request.arrayBuffer()
   if (buf.byteLength === 0 || buf.byteLength > opts.maxBytes)
     return { error: badRequest(opts.sizeError ?? 'Image vide ou trop grande.') }
@@ -107,7 +146,9 @@ export async function uploadR2Media(
 // the « Le cercle » business import. Returns the new key.
 export async function putR2Blob(bucket: R2Bucket, buf: ArrayBuffer, contentType: string, prefix: string, ext = ''): Promise<string> {
   const key = `${prefix}_${newId()}${ext}`
-  await bucket.put(key, buf, { httpMetadata: { contentType } })
+  // Forced on store: a type off the allowlist (a server-fetched SVG, a copy of a blob
+  // stored before the rule) goes in as an opaque download, never as a renderable page.
+  await bucket.put(key, buf, { httpMetadata: { contentType: safeMediaType(contentType) ?? 'application/octet-stream' } })
   return key
 }
 
