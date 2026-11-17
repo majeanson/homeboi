@@ -21,6 +21,7 @@ export function setDeviceToken(token: string, householdId: string): void {
   } catch {
     /* private mode — kiosk just won't persist; acceptable */
   }
+  syncMediaCookie()
 }
 
 export function clearDeviceToken(): void {
@@ -29,6 +30,26 @@ export function clearDeviceToken(): void {
     localStorage.removeItem(HOUSEHOLD_KEY)
   } catch {
     /* noop */
+  }
+  syncMediaCookie()
+}
+
+// THE PICTURES' CREDENTIAL (review 2026-11-17, P0 #7). /api/img serves a household's
+// blob only to that household (functions/api/img/[key].ts), and a plain <img> sends
+// cookies but never the X-Device-Token header — so a kiosk's (or a guest link's) token is
+// mirrored into `bb_media`, a cookie scoped to /api/img alone. Nothing new is exposed:
+// the token already sits in localStorage, readable by the same scripts. The device token
+// wins over a guest one, as in api.ts. Called on every set/clear and once at boot, so a
+// tablet paired before this existed starts sending it on its next start.
+export function syncMediaCookie(): void {
+  try {
+    const token = getDeviceToken() ?? getGuestToken()
+    const secure = location.protocol === 'https:' ? '; Secure' : ''
+    document.cookie = token
+      ? `bb_media=${encodeURIComponent(token)}; Path=/api/img; Max-Age=34560000; SameSite=Strict${secure}`
+      : `bb_media=; Path=/api/img; Max-Age=0; SameSite=Strict${secure}`
+  } catch {
+    /* no document (a worker, a test): nothing to mirror */
   }
 }
 
@@ -88,6 +109,7 @@ export function setGuestToken(token: string): void {
   } catch {
     /* private mode — won't persist; acceptable */
   }
+  syncMediaCookie()
 }
 
 export function clearGuestToken(): void {
@@ -97,6 +119,7 @@ export function clearGuestToken(): void {
   } catch {
     /* noop */
   }
+  syncMediaCookie()
 }
 
 // The share-mode of the current LINK guest (auth.ts GuestKind), learned from

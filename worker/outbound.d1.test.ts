@@ -271,7 +271,7 @@ describe('la fiche d’un commerce depuis Google Maps', () => {
     expect(blob!.httpMetadata?.contentType).toBe('image/png')
     expect([...new Uint8Array(await blob!.arrayBuffer())]).toEqual([1, 2, 3])
     expect(net.to(LINK)[0]!.headers.get('user-agent'), 'Google only previews for a crawler').toContain('facebookexternalhit')
-    expect((await anon(`/api/img/${res.photoKey}`)).status, 'the key serves').toBe(200)
+    expect((await s.fetch(`/api/img/${res.photoKey}`)).status, 'the key serves').toBe(200)
     expect(await env.DB.prepare('SELECT COUNT(*) AS n FROM businesses WHERE household_id = ?').bind(s.householdId).first('n'), 'a draft, not a card').toBe(0)
   })
 

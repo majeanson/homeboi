@@ -315,3 +315,17 @@ describe('promouvoir', () => {
     expect((await okJson<{ trips: { id: string }[] }>(a.fetch('/api/trips'))).trips.map((t) => t.id)).toEqual([tripId])
   })
 })
+
+// P0 #7 (review 2026-11-17): a trip's pictures load for the households on it, not for
+// whoever learns a key.
+describe('les images d’un voyage partagé', () => {
+  it('a co-traveller loads a note’s picture; a stranger does not', async () => {
+    const { a, b, id } = await pair('st-img')
+    const stranger = await household('st-img-stranger', undefined, { empty: true })
+    const doc = await upload(a, `/api/shared-trip-media?tripId=${id}`)
+    await addNote(a, id, { media_kind: 'image', media_key: doc.key })
+    const status = (s: Session) => s.fetch(`/api/img/${doc.key}`).then(async (r) => (await r.arrayBuffer(), r.status))
+    expect(await status(b)).toBe(200)
+    expect(await status(stranger)).toBe(404)
+  })
+})

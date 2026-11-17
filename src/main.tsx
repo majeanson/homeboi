@@ -27,7 +27,7 @@ import { restorePersistedCache, startPersistingCache, clearPersistedCache } from
 import { startOutbox, clearOutbox } from './lib/outbox'
 import { onAuthLost } from './lib/authEvents'
 import { useHouseholdTzSync } from './lib/householdTz'
-import { setGuestToken, clearGuestToken, clearGuestKind, isGuestPreview, setGuestPreview as persistGuestPreview, setDeviceToken, setDisplay, isPaired } from './lib/device'
+import { setGuestToken, clearGuestToken, clearGuestKind, isGuestPreview, setGuestPreview as persistGuestPreview, setDeviceToken, setDisplay, isPaired, syncMediaCookie } from './lib/device'
 import { connectRealtime, REALTIME_ENABLED } from './lib/realtime'
 import './styles.css'
 
@@ -91,6 +91,9 @@ try {
 } catch {
   /* noop — display boot is best-effort */
 }
+// Every boot: a tablet paired before the pictures needed a cookie (/api/img, 0158) starts
+// sending one now. Cheap and idempotent.
+syncMediaCookie()
 
 
 // Seeds the device FACE from the signed-in account, once (migration 0130).

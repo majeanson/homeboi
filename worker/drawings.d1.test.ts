@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { env } from 'cloudflare:workers'
-import { anon, household, okJson, type Session } from '../functions/test/d1'
+import { household, okJson, type Session } from '../functions/test/d1'
 
 // LES DESSINS against a real D1 and R2: the upload door every fridge note and kept drawing
 // shares, the gallery, and the rule that a drawing owns its blobs, so freeing one is that
@@ -34,7 +34,7 @@ describe('le téléversement', () => {
     expect(audio.key).toMatch(/^nm_/)
     expect(scene.key, 'the editable scene is addressed apart').toMatch(/^ns_/)
 
-    const served = await anon(`/api/img/${audio.key}`)
+    const served = await s.fetch(`/api/img/${audio.key}`)
     expect(served.status).toBe(200)
     expect(served.headers.get('content-type')).toBe('audio/webm')
     expect([...new Uint8Array(await served.arrayBuffer())]).toEqual([9, 8, 7])

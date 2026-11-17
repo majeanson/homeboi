@@ -128,7 +128,7 @@ describe('les types servis sur notre origine', () => {
   it('an image goes in and comes out as itself, unsniffed and sandboxed', async () => {
     const s = await household('media-ok', undefined, { empty: true })
     const { key } = await okJson<{ key: string }>(upload(s, '/api/note-media', 'image/png'))
-    const res = await anon(`/api/img/${key}`)
+    const res = await s.fetch(`/api/img/${key}`)
     expect(res.status).toBe(200)
     expect(res.headers.get('content-type')).toBe('image/png')
     expect(res.headers.get('x-content-type-options')).toBe('nosniff')
@@ -211,5 +211,48 @@ describe('0158 backfill', () => {
     expect(mine).toContain(`nm_legacy${tag}`)
     expect(mine).toContain(`rcp_legacy${tag}`)
     expect(mine.filter((k) => k.includes('/') || k.includes(':'))).toEqual([])
+  })
+})
+
+// P0 #7 (review 2026-11-17, Marc: « scoped, not expiring »): a key alone no longer opens
+// a household's picture.
+describe('who may load a picture', () => {
+  const img = (key: string, headers: Record<string, string> = {}) => anon(`/api/img/${key}`, { headers }).then(async (r) => (await r.arrayBuffer(), r.status))
+  const mine = async (s: Session) => (await okJson<{ key: string }>(upload(s, '/api/note-media', 'image/png'))).key
+
+  it('its household, yes; another household or nobody, no', async () => {
+    const a = await household('scope-a', undefined, { empty: true })
+    const b = await household('scope-b', undefined, { empty: true })
+    const key = await mine(a)
+    expect(await a.fetch(`/api/img/${key}`).then(async (r) => (await r.arrayBuffer(), r.status))).toBe(200)
+    expect(await b.fetch(`/api/img/${key}`).then(async (r) => (await r.arrayBuffer(), r.status))).toBe(404)
+    expect(await img(key)).toBe(404)
+  })
+
+  it('a guest link loads them through the bb_media cookie — until it is revoked', async () => {
+    const s = await household('scope-guest', undefined, { empty: true })
+    const key = await mine(s)
+    const { guestToken, guestId } = await okJson<{ guestToken: string; guestId: string }>(s.fetch('/api/guest/start', { method: 'POST', body: { kind: 'showcase' } }))
+    const cookie = { Cookie: `bb_media=${encodeURIComponent(guestToken)}` }
+    expect(await img(key, cookie)).toBe(200)
+    await okJson(s.fetch('/api/guest-links', { method: 'POST', body: { revokeId: guestId } }))
+    expect(await img(key, cookie)).toBe(404)
+  })
+
+  it('a live share makes its pictures public, for as long as it lives', async () => {
+    const s = await household('scope-share', undefined, { empty: true })
+    const key = await mine(s)
+    const id = `shr${Date.now()}`
+    await env.DB.prepare("INSERT INTO shares (id, source_household_id, kind, label, payload, created_at) VALUES (?, ?, 'recipe', 'x', ?, ?)")
+      .bind(id, s.householdId, JSON.stringify({ title: 'Tarte', image: key }), Math.floor(Date.now() / 1000)).run()
+    expect(await img(key)).toBe(200)
+    await env.DB.prepare('UPDATE shares SET revoked_at = ? WHERE id = ?').bind(Math.floor(Date.now() / 1000), id).run()
+    expect(await img(key)).toBe(404)
+  })
+
+  it('a legacy blob nobody owns is served as before', async () => {
+    const key = `nm_legacyunowned${Date.now()}`
+    await env.PHOTOS!.put(key, new Uint8Array([1, 2, 3]), { httpMetadata: { contentType: 'image/png' } })
+    expect(await img(key)).toBe(200)
   })
 })

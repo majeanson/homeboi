@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { env } from 'cloudflare:workers'
-import { anon, household, okJson, type Session } from '../functions/test/d1'
+import { household, okJson, type Session } from '../functions/test/d1'
 
 // LE LIVRE DE RECETTES against a real D1 and a real R2: the card, its as-imported snapshot,
 // the hearts, the tags that span every recipe, and the blobs a recipe owns (which must be
@@ -259,7 +259,7 @@ describe('les images d’une recette', () => {
     const s = await household('recipes-image', undefined, { empty: true })
     const first = await png(s, '/api/recipe-image')
     expect(first.key).toMatch(/^rc_/)
-    const served = await anon(`/api/img/${first.key}`)
+    const served = await s.fetch(`/api/img/${first.key}`)
     expect(served.headers.get('content-type')).toBe('image/png')
     expect(new Uint8Array(await served.arrayBuffer())[0]).toBe(137)
 
