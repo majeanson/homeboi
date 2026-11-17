@@ -119,3 +119,16 @@ describe('supprimer la maisonnée', () => {
     expect((await again.fetch('/api/list')).status).toBe(401)
   })
 })
+
+// P0 #5 (review 2026-11-17): fourteen nightly dumps of a family that left stayed in R2.
+describe('the copies leave with the household', () => {
+  it('deleting a household deletes its nightly backups, and only its own', async () => {
+    const a = await household('leave-backups', undefined, { empty: true })
+    const b = await household('leave-backups-neighbour', undefined, { empty: true })
+    for (const s of [a, b]) await env.PHOTOS!.put(`backup/${s.householdId}/2026-11-16.json`, '{}')
+    const r = await del(a, { password: a.password, name: 'Maisonnée leave-backups' })
+    expect(r.status, await r.clone().text()).toBe(200)
+    expect((await env.PHOTOS!.list({ prefix: `backup/${a.householdId}/` })).objects).toEqual([])
+    expect((await env.PHOTOS!.list({ prefix: `backup/${b.householdId}/` })).objects).toHaveLength(1)
+  })
+})

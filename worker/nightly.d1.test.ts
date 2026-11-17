@@ -37,3 +37,14 @@ describe('nightly', () => {
     expect(await env.PHOTOS!.get(`backup/${sandboxId}/${date}.json`)).toBeNull()
   })
 })
+
+// P0 #5 (review 2026-11-17): a 24-hour sandbox has nothing worth fourteen nights.
+describe('no copy of a sandbox', () => {
+  it('a live sandbox is not backed up', async () => {
+    const res = await anon('/api/demo', { method: 'POST', headers: { 'CF-Connecting-IP': '10.7.7.8' } })
+    const set = (res.headers as unknown as { getSetCookie(): string[] }).getSetCookie().map((c: string) => c.split(';')[0])
+    const me = (await (await anon('/api/auth/me', { headers: { Cookie: set.join('; ') } })).json()) as { household: { id: string } }
+    await runNightly(env, Math.floor(Date.now() / 1000))
+    expect((await env.PHOTOS!.list({ prefix: `backup/${me.household.id}/` })).objects).toEqual([])
+  })
+})

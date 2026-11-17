@@ -123,3 +123,29 @@ describe('account', () => {
     expect((await anon('/api/auth/login', { method: 'POST', body: { email: a.email, password: a.password }, headers: ip })).status).toBe(429)
   })
 })
+
+// P0 #5 (review 2026-11-17): the exempt doors mint a session, and `readJson` took any
+// body. A page elsewhere could form-POST text/plain JSON and sign the visitor into the
+// ATTACKER's account. A browser's exempt door now wants this origin, and a JSON door JSON.
+describe('login CSRF', () => {
+  const raw = (path: string, body: string, headers: Record<string, string>) =>
+    anon(path, { method: 'POST', raw: body, headers: { 'CF-Connecting-IP': `10.66.${Math.floor(Math.random() * 250)}.${Math.floor(Math.random() * 250)}`, ...headers } })
+
+  it('refuses a form post from another origin, and a non-JSON body from anywhere', async () => {
+    const a = await household('csrf-login', undefined, { empty: true })
+    const body = JSON.stringify({ email: a.email, password: a.password })
+    // The attack: a text/plain form on another site.
+    expect((await raw('/api/auth/login', body, { 'content-type': 'text/plain', Origin: 'https://evil.example' })).status).toBe(403)
+    // An older browser that says only where it came from.
+    expect((await raw('/api/auth/login', body, { 'content-type': 'application/json', 'Sec-Fetch-Site': 'cross-site' })).status).toBe(403)
+    // Same origin, but a form's type: still not a door that reads forms.
+    expect((await raw('/api/auth/login', body, { 'content-type': 'text/plain' })).status).toBe(415)
+    // The real thing: JSON from this origin.
+    expect((await raw('/api/auth/login', body, { 'content-type': 'application/json', Origin: 'https://babillard.test' })).status).toBe(200)
+  })
+
+  it('the bodyless doors check the origin too', async () => {
+    expect((await raw('/api/demo', '', { Origin: 'https://evil.example' })).status).toBe(403)
+    expect((await raw('/api/pair/start', '', { Origin: 'https://evil.example' })).status).toBe(403)
+  })
+})

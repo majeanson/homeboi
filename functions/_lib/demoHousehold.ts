@@ -412,6 +412,16 @@ export async function deleteHousehold(env: Env, householdId: string): Promise<vo
     ...HOUSEHOLD_TABLES.map((table) => P(`DELETE FROM ${table} WHERE ${scopeColumn(table)} = ?`).bind(householdId)),
     P('DELETE FROM households WHERE id = ?').bind(householdId),
   ])
+
+  // The nightly copies go with it (review 2026-11-17, P0 #5): fourteen full dumps of a
+  // family that asked to leave sat in R2 indefinitely, read by nothing, deleted by
+  // nothing. After the batch, so a delete that failed leaves the household its copies.
+  // Best-effort like every blob here: a copy left behind is retried by nothing, but it is
+  // no longer the only thing that remembers them.
+  if (env.PHOTOS) {
+    const listed = await env.PHOTOS.list({ prefix: `backup/${householdId}/` }).catch(() => null)
+    for (const o of listed?.objects ?? []) await env.PHOTOS.delete(o.key).catch(() => {})
+  }
 }
 
 /** How many sandbox households are currently alive (drives the mint cap). */

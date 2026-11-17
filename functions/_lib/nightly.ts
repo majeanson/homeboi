@@ -75,7 +75,9 @@ export function realDeps(env: Env, now: number): NightlyDeps {
   let plan: Promise<DumpPlan> | null = null
   const getPlan = () => (plan ??= planDump(env))
   return {
-    listHouseholds: async () => ((await env.DB.prepare('SELECT id FROM households').all<{ id: string }>()).results ?? []).map((r) => r.id),
+    // Not a sandbox (0157): a 24-hour throwaway has nothing worth keeping fourteen nights,
+    // and its copies outlived it (review 2026-11-17, P0 #5).
+    listHouseholds: async () => ((await env.DB.prepare('SELECT id FROM households WHERE is_sandbox = 0').all<{ id: string }>()).results ?? []).map((r) => r.id),
     backup: async (id, date) => {
       if (!bucket) return
       const dump = await dumpHousehold(env, id, await getPlan())

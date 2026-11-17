@@ -85,6 +85,39 @@ const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 // grows a POST it starts out gated, which is the right default.
 const CSRF_EXEMPT = new Set(['auth/login', 'auth/signup', 'auth/forgot', 'auth/reset', 'auth/verify', 'pair/start', 'demo', 'operator-join', 'mcp', 'remarks/shipped'])
 
+// …AND WHAT STANDS IN FOR IT on the exempt doors a BROWSER uses (review 2026-11-17, P0
+// #5). Exempt from the double-submit is not exempt from everything: these doors mint a
+// session or a device token, so a page on another origin could form-POST a text/plain
+// body that parses as JSON (`readJson` never looked at the type) and sign the visitor
+// into the ATTACKER's account — then everything they typed went there. Two checks, either
+// enough on its own:
+//   · the request must come from this origin. Every browser sends `Origin` on a POST; an
+//     older one at least sends `Sec-Fetch-Site`. Loopback origins pass: the Vite proxy
+//     (changeOrigin rewrites Host, not Origin) is how local dev and the real-data proxy
+//     talk to a Worker, and no attacker page is served from the visitor's own machine;
+//   · a door that reads a body takes it as `application/json` only, a type no form can
+//     send and a cross-origin fetch cannot send without a preflight this Worker never
+//     answers.
+// Not `mcp` (a non-browser client with its own bearer token, no cookie to ride) nor
+// `remarks/shipped` (the deploy pipeline's secret) — neither is a browser's door.
+const SAME_ORIGIN_DOORS = new Set(['auth/login', 'auth/signup', 'auth/forgot', 'auth/reset', 'auth/verify', 'pair/start', 'demo', 'operator-join'])
+const JSON_BODY_DOORS = new Set(['auth/login', 'auth/signup', 'auth/forgot', 'auth/reset', 'auth/verify', 'operator-join'])
+
+function crossOrigin(request: Request): boolean {
+  const origin = request.headers.get('Origin')
+  if (origin) {
+    if (origin === new URL(request.url).origin) return false
+    try {
+      const host = new URL(origin).hostname
+      return !(host === 'localhost' || host === '127.0.0.1')
+    } catch {
+      return true // 'null' (a sandboxed frame, a data: page) or garbage
+    }
+  }
+  const site = request.headers.get('Sec-Fetch-Site')
+  return site === 'cross-site' || site === 'same-site'
+}
+
 const METHOD_EXPORT: Record<string, string> = {
   GET: 'onRequestGet',
   HEAD: 'onRequestGet',
@@ -354,6 +387,9 @@ const app = {
       if (!exempt && !hasDeviceToken && !verifyCsrf(request)) {
         return forbidden('Bad or missing CSRF token.')
       }
+      if (exempt && SAME_ORIGIN_DOORS.has(apiPath) && crossOrigin(request)) return forbidden('Cross-origin request refused.')
+      if (exempt && JSON_BODY_DOORS.has(apiPath) && !/^application\/json\b/i.test(request.headers.get('content-type') ?? ''))
+        return new Response(JSON.stringify({ error: 'JSON requis.' }), { status: 415, headers: { 'content-type': 'application/json' } })
     }
 
     // 1.5 Per-kind guest scope (the share-mode privacy boundary). A guest token
