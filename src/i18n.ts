@@ -442,7 +442,7 @@ export const FR = {
     title: 'Veille',
   },
   capture: {
-    placeholder: 'Note quelque chose… (ex. souper spaghetti jeudi)',
+    placeholder: 'Ex. : dentiste mardi 15 h',
     quick: 'Note rapide',
     voice: 'Parler',
     listening: 'J’écoute…',

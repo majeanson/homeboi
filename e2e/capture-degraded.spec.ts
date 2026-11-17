@@ -114,7 +114,8 @@ test('picking a type re-routes with forceType and hands the note rows back as un
 
   // The re-file cleared the box and the degraded picker is gone (real route now).
   await expect(page.locator('.capture-form input.edit-field__input')).toHaveValue('')
-  await expect(page.locator('.capture__routed')).toHaveText('Ajouté : souper spaghetti jeudi')
+  // The line names the kind it was filed as (review #10): « Souper ».
+  await expect(page.locator('.capture__routed')).toHaveText('Ajouté : Souper · souper spaghetti jeudi')
 })
 
 // The re-file grid is SEVEN tiles wide-ish and had never been measured at 320px — the

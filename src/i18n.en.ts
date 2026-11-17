@@ -376,7 +376,7 @@ export const EN: typeof FR = {
     title: 'Idle',
   },
   capture: {
-    placeholder: 'Jot something down… (e.g. supper spaghetti thursday)',
+    placeholder: 'E.g. dentist tuesday 3pm',
     quick: 'Quick note',
     voice: 'Speak',
     listening: 'Listening…',

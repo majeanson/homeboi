@@ -86,3 +86,4 @@ Grandparent/sitter mode · trust & business pack · Marco's kill list. See the D
 - 2026-11-17 · #12 dated day chips past tomorrow; all-day car spans say « Toute la journée »; ?view=week (and other spellings) opens the week. #11's bundle cap fixed (TimeField copy out of the eager chunk)
 - 2026-11-17 · #13 recipe markup cleaned on import/save/read (+0161 for stored titles); drawing age on its own line; EN « tasks, tasks » fixed + a repeated-word guard
 - 2026-11-17 · #14 a priceless flyer item reaches the till with the ad's words (priceText) or « Voir la circulaire », never a blank
+- 2026-11-17 · #10 follow-up (post-merge E2E): the ＋ field's capture placeholder clipped at 360/390 px, so it is now « Ex. : dentiste mardi 15 h »; capture-degraded expects the kind in the line
