@@ -52,11 +52,11 @@ export function VoiceStatus({ voice, hint }: { voice: VoiceInput; hint?: string 
   const t = useT()
   // On iOS the only way back from a denial is Settings, so swap the recovery copy.
   const deniedMsg = isIos() ? t.list.voiceDeniedIos : t.list.voiceDenied
-  // Explain a remembered-blocked mic before the user even taps, so a kiosk that
-  // was never granted access doesn't look merely silent.
-  if (!voice.error && voice.permission === 'denied') {
-    return <StatusMessage tone="error">{deniedMsg}</StatusMessage>
-  }
+  // Only after a mic ATTEMPT (review 2026-11-17, P1 #8 — five of seven personas). This
+  // used to explain a remembered-blocked mic before anyone tapped, which put a red
+  // « Micro bloqué » under the field on every load for a family that never meant to
+  // speak. The button still reads as blocked (its title + `is-blocked`), and a tap on it
+  // sets `not-allowed`, which lands right here.
   if (voice.error) {
     const msg =
       voice.error === 'not-allowed' || voice.error === 'service-not-allowed'
