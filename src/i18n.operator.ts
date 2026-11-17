@@ -475,6 +475,7 @@ export const FR_OPERATOR = {
   eventDateLabel: 'Date',
   eventTimeLabel: 'Heure (optionnel)',
   eventUntilLabel: 'Jusqu’à',
+  eventUntilNone: 'Pas de fin',
   noEvents: 'Aucun rendez-vous à venir.',
   // D-17 (bmad/10) « La rentrée » — the school-year bounds, typed once a year.
   schoolYearTitle: 'Année scolaire',

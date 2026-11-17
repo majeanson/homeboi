@@ -4,7 +4,8 @@ import { useLang, useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { live } from '../../lib/query'
 import { formatTime } from '../../lib/format'
-import { useCarToday, type CarRide, type CarModel } from '../../lib/car'
+import { useCarToday, spanWindow, type CarRide, type CarModel } from '../../lib/car'
+import { addLocalDays } from '../../lib/localDay'
 import { useCars } from '../../lib/carPrefs'
 import { type Member } from '../../lib/members'
 import { MEMBERS_KEY } from '../../lib/queryKeys'
@@ -108,7 +109,7 @@ export function AutoCardView({ model, day }: { model: CarModel; day: number }) {
       busy = true
       const hId = spans.find((s) => s.holderId)?.holderId ?? null
       holder = memberOf(hId)
-      const windows = spans.map((s) => `${hhmm(s.start)}–${hhmm(s.end)}`).join(' · ')
+      const windows = spans.map((s) => spanWindow(s, day, addLocalDays(day, 1), hhmm, t.board.allDay)).join(' · ')
       // Same rule as the today branch above: a name gets « Avec X », a label stands alone.
       const hName = nameOf(hId)
       const label = spans.find((s) => s.label)?.label?.trim() || ''

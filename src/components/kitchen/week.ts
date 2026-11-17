@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { addLocalDays } from '../../lib/localDay'
-import { formatWeekday } from '../../lib/format'
-import { type Lang } from '../../i18n'
+import { dayChipLabel } from '../../lib/format'
+import { useT, type Lang } from '../../i18n'
 
 // The kitchen planning window, shared by everything that plans onto a day: today
 // through today + the household's « Jours affichés » (7–14, default 10). It used to
@@ -24,8 +24,10 @@ export function weekDates(weekStart: number, windowDays: number): number[] {
 
 /** The same window as the `{ date, label }` pairs MealPlanPicker's day chips take. */
 export function useWeekLabeled(weekStart: number, windowDays: number, lang: Lang): { date: number; label: string }[] {
+  const t = useT()
+  const { today, tomorrow } = t.board
   return useMemo(
-    () => weekDates(weekStart, windowDays).map((date) => ({ date, label: formatWeekday(date, lang) })),
-    [weekStart, windowDays, lang],
+    () => weekDates(weekStart, windowDays).map((date) => ({ date, label: dayChipLabel(date, lang, today, tomorrow) })),
+    [weekStart, windowDays, lang, today, tomorrow],
   )
 }

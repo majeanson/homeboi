@@ -14,7 +14,7 @@ import { weekDates } from './kitchen/week'
 import { WINDOW_DAYS_DEFAULT } from '../lib/mealSlots'
 import { useReserveLocations } from '../lib/reservePrefs'
 import { useVoiceInput, type VoiceInput } from '../lib/useVoiceInput'
-import { formatWeekday, formatRelativeWeekday } from '../lib/format'
+import { formatWeekday, dayChipLabel } from '../lib/format'
 import { OPERATOR_MODES, FORM_ROUTES, type AddSheetMode } from '../lib/addSheet'
 import { CATS, type CatKey } from '../lib/cats'
 import { Act } from './board/Act'
@@ -1130,7 +1130,7 @@ export function AddSheet({
             <div className="addsheet__days">
               {weekDays.map((d) => (
                 <Chip key={d} onClick={() => planDay(d)}>
-                  {formatRelativeWeekday(d, lang, t.board.today, t.board.tomorrow)}
+                  {dayChipLabel(d, lang, t.board.today, t.board.tomorrow)}
                 </Chip>
               ))}
             </div>

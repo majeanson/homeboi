@@ -24,6 +24,20 @@ export type BoardView = 'bento' | 'semaine' | 'month' | 'annee' | 'taches'
 
 export const BOARD_VIEWS: readonly BoardView[] = ['bento', 'semaine', 'month', 'annee', 'taches']
 
+// Other spellings of the same views in a link (`?view=week`), English and French: a
+// bookmarked or shared URL that named a view by its other word used to land on the grid
+// in silence (review #12, 2026-11-17). Lower-case keys (pickTab lower-cases the param).
+export const BOARD_VIEW_ALIASES: Readonly<Record<string, BoardView>> = {
+  week: 'semaine',
+  grid: 'bento',
+  grille: 'bento',
+  mois: 'month',
+  year: 'annee',
+  année: 'annee',
+  tasks: 'taches',
+  tâches: 'taches',
+}
+
 const KEY = 'babillard-boardview'
 
 /** « Grille » — where a fresh device lands, and where re-tapping the board's tab returns (HubLayout retapTab). */

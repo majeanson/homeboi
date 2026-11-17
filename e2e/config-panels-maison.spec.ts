@@ -198,7 +198,7 @@ test('a season seed posts a dated upkeep with its cadence and lead time', async 
 async function setTime(form: Locator, label: string, h: number, m: number) {
   const group = form.getByRole('group', { name: label, exact: true })
   await group.getByRole('combobox', { name: 'Heure' }).selectOption(String(h))
-  await group.getByRole('combobox', { name: 'Minutes' }).selectOption(String(m))
+  await group.getByRole('combobox', { name: 'Minute' }).selectOption(String(m))
 }
 
 test('a new work-hours block posts the member, the minutes and holdsCar', async ({ page }) => {

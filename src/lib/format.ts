@@ -20,6 +20,21 @@ function fmt(key: string, lang: Lang, opts: Intl.DateTimeFormatOptions): Intl.Da
   return f
 }
 
+// The NAME of a clock field in the locale (« Heure » / « Minute », "Hour" / "Minute"):
+// TimeField's two selects. Intl knows the words, so they cost the eager dictionary
+// nothing (it sits at its cap, scripts/check-bundle.mjs). Cached like the formatters.
+const fieldNames = new Map<Lang, Intl.DisplayNames | null>()
+export function clockFieldName(field: 'hour' | 'minute', lang: Lang): string {
+  if (!fieldNames.has(lang)) {
+    try {
+      fieldNames.set(lang, new Intl.DisplayNames(LOCALE[lang], { type: 'dateTimeField' }))
+    } catch {
+      fieldNames.set(lang, null) // an engine without dateTimeField names: the unit symbol below
+    }
+  }
+  return capitalize(fieldNames.get(lang)?.of(field) ?? (field === 'hour' ? 'h' : 'min'))
+}
+
 // Capitalize the first letter (e.g. a locale day name "lundi" → "Lundi"). Shared so
 // the departure/itinerary/day surfaces don't each re-declare it.
 export function capitalize(s: string): string {
@@ -110,6 +125,23 @@ export function formatRelativeWeekday(
   // "Aujourd'hui"/"Demain" chips (Intl lowercases the French weekday).
   const wd = formatWeekday(unixSec, lang)
   return wd.charAt(0).toUpperCase() + wd.slice(1)
+}
+
+// A day CHIP in a picker that runs past a week: « Aujourd'hui », « Demain », then
+// « Jeu 19 ». The meal window is ten days, so bare weekday names repeated (« mardi …
+// lundi mardi ») and nobody could tell tonight from next Tuesday (review #12,
+// 2026-11-17). The toddler lens keeps formatRelativeWeekday: a pre-reader hears names.
+export function dayChipLabel(
+  unixSec: number,
+  lang: Lang,
+  todayLabel: string,
+  tomorrowLabel: string,
+  now: number = Date.now(),
+): string {
+  const d = daysUntilLocal(unixSec, now)
+  if (d === 0) return todayLabel
+  if (d === 1) return tomorrowLabel
+  return `${capitalize(weekdayShort(unixSec, lang))} ${dayNum(unixSec, lang)}`
 }
 
 // These render LOCAL-midnight day-starts (the Kitchen day grid + the month view,

@@ -411,6 +411,7 @@ export const EN_OPERATOR: typeof FR_OPERATOR = {
   eventDateLabel: 'Date',
   eventTimeLabel: 'Time (optional)',
   eventUntilLabel: 'Until',
+  eventUntilNone: 'No end',
   noEvents: 'No upcoming appointments.',
   // D-17 (bmad/10) « La rentrée » — the school-year bounds, typed once a year.
   schoolYearTitle: 'School year',

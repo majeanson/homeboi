@@ -37,7 +37,7 @@ import { useEventPeekActions } from '../components/detail/EventPeekActions'
 import { useSurface } from '../lib/surface'
 import { useProfile } from '../lib/profile'
 import { ProfilePicker } from '../components/ProfilePicker'
-import { BOARD_VIEWS, readBoardView, saveBoardView, type BoardView } from '../lib/boardview'
+import { BOARD_VIEWS, BOARD_VIEW_ALIASES, readBoardView, saveBoardView, type BoardView } from '../lib/boardview'
 import { timeOfDay } from '../lib/timeofday'
 import { isDaypartAuto } from '../lib/theme'
 import { momentFocus } from '../lib/momentFocus'
@@ -239,7 +239,7 @@ export function Board() {
   // The view lives in the URL (?view=, linkable, survives a reload); localStorage is the
   // remembered default a bare /board opens on (solidify 4.1).
   const [rememberedView] = useState<BoardView>(() => readBoardView())
-  const [view] = useTabParam<BoardView>('view', rememberedView, BOARD_VIEWS)
+  const [view] = useTabParam<BoardView>('view', rememberedView, BOARD_VIEWS, BOARD_VIEW_ALIASES)
   // Pull « Mois » and « Année » down once the board is quiet, so the first tap on the
   // view toggle does not wait for the network (see warmCalendars above).
   useEffect(warmCalendars, [])

@@ -9,7 +9,7 @@ import { isGuest } from '../lib/device'
 import { useConfirm } from '../lib/confirm'
 import { LoadError } from '../components/LoadError'
 import { CAR_KEY, BOARD_KEY, MEMBERS_KEY, MONTH_KEY } from '../lib/queryKeys'
-import { useCarWeek, type CarDay, type CarRide, type CarModel } from '../lib/car'
+import { useCarWeek, spanWindow, type CarDay, type CarRide, type CarModel } from '../lib/car'
 import { useCars } from '../lib/carPrefs'
 import { type Member } from '../lib/members'
 import { useLens } from '../lib/audience'
@@ -327,7 +327,7 @@ function DayRow({
                   </span>
                 )}
               </span>
-              <span className="voiture__day-window mono">{d.carSpans.map((s) => `${hhmm(s.start)}–${hhmm(s.end)}`).join(' · ')}</span>
+              <span className="voiture__day-window mono">{d.carSpans.map((s) => spanWindow(s, d.day, addLocalDays(d.day, 1), hhmm, t.board.allDay)).join(' · ')}</span>
             </>
           ) : (
             <span className="voiture__day-free-label">{t.auto.freeAllDay}</span>

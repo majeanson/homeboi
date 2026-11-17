@@ -696,9 +696,9 @@ function TimeFieldDemo() {
           <TimeField value={v} onChange={setV} label="De" />
         </Field>
       </Demo>
-      <Demo label={`optional — « Sans heure » clears it and hides the minutes (value: « ${opt} »)`}>
+      <Demo label={`noneLabel — optional: that entry (the caller’s words) clears it and hides the minutes (value: « ${opt} »)`}>
         <Field inline as="div" label="Heure">
-          <TimeField optional value={opt} onChange={setOpt} label="Heure" />
+          <TimeField noneLabel="Toute la journée" value={opt} onChange={setOpt} label="Heure" />
         </Field>
       </Demo>
     </>

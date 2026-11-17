@@ -17,10 +17,10 @@ export function useTabParam<T extends string>(
   key: string,
   fallback: T,
   valid: readonly T[],
+  aliases?: Readonly<Record<string, T>>,
 ): [T, (v: T) => void] {
   const [params, setParams] = useSearchParams()
-  const raw = params.get(key)
-  const value = (raw && (valid as readonly string[]).includes(raw) ? raw : fallback) as T
+  const value = pickTab(params.get(key), fallback, valid, aliases)
   const setValue = useCallback(
     (v: T) => {
       setParams(
@@ -36,4 +36,13 @@ export function useTabParam<T extends string>(
     [key, fallback, setParams],
   )
   return [value, setValue]
+}
+
+// The tab a raw param names: one of `valid`, else what an ALIAS points at (another
+// spelling a person could reasonably type or share: `/board?view=week` for « semaine »,
+// which landed on the grid with no word said; review #12, 2026-11-17), else `fallback`.
+export function pickTab<T extends string>(raw: string | null, fallback: T, valid: readonly T[], aliases?: Readonly<Record<string, T>>): T {
+  if (!raw) return fallback
+  if ((valid as readonly string[]).includes(raw)) return raw as T
+  return aliases?.[raw.toLowerCase()] ?? fallback
 }

@@ -2602,7 +2602,7 @@ export const EN: typeof FR = {
     byStore: 'By store',
     share: 'Share',
   },
-  common: { tooMany: 'Too many tries. Try again in a minute.', loading: 'Loading…', cancel: 'Cancel', save: 'Save', back: 'Back', theme: 'Day / Night', lang: 'FR', add: 'Add', edit: 'Edit', done: 'Done', delete: 'Delete', confirmTitle: 'Confirm', deleteConfirm: 'Delete this? This can’t be undone.', saveFailed: 'Not saved — try again.', close: 'Close', hour: 'Hour', minute: 'Minutes', noTime: 'No time', moreActions: 'More actions', zoomIn: 'Zoom in', zoomOut: 'Zoom out', zoomReset: 'Reset zoom', emojiChoose: 'Pick an emoji', emojiChange: 'Change', emojiSearch: 'Search an emoji… (e.g. “water”, “tool”)', emojiClear: 'Remove emoji', emojiNoResult: 'No emoji found.', tooLong: (max: number) => `Text too long — it would be cut at ${max} characters. Shorten it before saving.` },
+  common: { tooMany: 'Too many tries. Try again in a minute.', loading: 'Loading…', cancel: 'Cancel', save: 'Save', back: 'Back', theme: 'Day / Night', lang: 'FR', add: 'Add', edit: 'Edit', done: 'Done', delete: 'Delete', confirmTitle: 'Confirm', deleteConfirm: 'Delete this? This can’t be undone.', saveFailed: 'Not saved — try again.', close: 'Close', moreActions: 'More actions', zoomIn: 'Zoom in', zoomOut: 'Zoom out', zoomReset: 'Reset zoom', emojiChoose: 'Pick an emoji', emojiChange: 'Change', emojiSearch: 'Search an emoji… (e.g. “water”, “tool”)', emojiClear: 'Remove emoji', emojiNoResult: 'No emoji found.', tooLong: (max: number) => `Text too long — it would be cut at ${max} characters. Shorten it before saving.` },
   share: {
     title: 'Add to Babillard',
     lead: 'Shared from another app. Tweak the text if needed, then add — the app sorts it (appointment, list, meal, note).',

@@ -14,6 +14,13 @@ interface CarSpan {
   holderId?: string | null
 }
 
+// A busy span as words: « 8 h 00–17 h 00 », or `allDay` when it covers the whole local
+// day [dayStart, dayEnd). An all-day rendez-vous that takes the car is exactly that span,
+// and it printed « 0 h 00–0 h 00 » (review #12, 2026-11-17).
+export function spanWindow(s: CarSpan, dayStart: number, dayEnd: number, hhmm: (at: number) => string, allDay: string): string {
+  return s.start <= dayStart && s.end >= dayEnd ? allDay : `${hhmm(s.start)}–${hhmm(s.end)}`
+}
+
 export interface CarRide {
   id: string
   title: string

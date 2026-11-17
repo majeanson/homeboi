@@ -12,7 +12,7 @@ const SCHEDULE = '/settings?tab=maison&focus=schedule'
 async function setTime(form: Locator, label: string, h: number, m: number) {
   const group = form.getByRole('group', { name: label, exact: true })
   await group.getByRole('combobox', { name: 'Heure' }).selectOption(String(h))
-  await group.getByRole('combobox', { name: 'Minutes' }).selectOption(String(m))
+  await group.getByRole('combobox', { name: 'Minute' }).selectOption(String(m))
 }
 
 test('a night shift is accepted: it says it ends the next day, and posts end < start', async ({ app, page }) => {

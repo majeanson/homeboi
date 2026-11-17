@@ -1,4 +1,5 @@
-import { useLang, useT } from '../i18n'
+import { useLang } from '../i18n'
+import { clockFieldName } from '../lib/format'
 
 // THE time-of-day control: an hour and a minute, always on a 24-hour clock.
 //
@@ -8,10 +9,10 @@ import { useLang, useT } from '../i18n'
 // attribute fixes that, so the control is two selects (the BirthdayPicker pattern),
 // which also stay native wheels on a phone.
 //
-// The value keeps the native input's shape, « HH:MM » (or '' when `optional` and
+// The value keeps the native input's shape, « HH:MM » (or '' when optional and
 // unset), so a call site swaps `onChange={(e) => set(e.target.value)}` for
-// `onChange={set}` and nothing else moves. `optional` adds « Sans heure » to the hour
-// list; picking it clears the value, and the minutes hide with it.
+// `onChange={set}` and nothing else moves. `noneLabel` makes it optional: that entry
+// (the caller's own words, e.g. « Toute la journée ») clears it and hides the minutes.
 //
 // Minutes step by `step` (5 by default); a stored value off the step (07:32) stays
 // listed, so opening a form never rewrites a time nobody touched.
@@ -32,21 +33,21 @@ export function TimeField({
   value,
   onChange,
   label,
-  optional = false,
+  noneLabel,
   step = 5,
   className,
 }: {
   value: string
   onChange: (v: string) => void
-  /** The field's accessible name (the group's); the two selects add « heure » / « minutes ». */
+  /** The field's accessible name (the group's); the two selects are « Heure » / « Minute ». */
   label: string
-  optional?: boolean
+  /** Makes it optional: the hour list's first entry, which clears the value. */
+  noneLabel?: string | undefined
   step?: number
   className?: string
 }) {
-  const t = useT()
   const { lang } = useLang()
-  const p = parseHhmm(value) ?? (optional ? null : { h: 0, m: 0 })
+  const p = parseHhmm(value) ?? (noneLabel ? null : { h: 0, m: 0 })
   const minutes = Array.from({ length: Math.ceil(60 / step) }, (_, i) => i * step)
   if (p && !minutes.includes(p.m)) minutes.push(p.m)
   minutes.sort((a, b) => a - b)
@@ -55,11 +56,11 @@ export function TimeField({
     <span className={'time-field' + (className ? ` ${className}` : '')} role="group" aria-label={label}>
       <select
         className="input time-field__part"
-        aria-label={t.common.hour}
+        aria-label={clockFieldName('hour', lang)}
         value={p ? String(p.h) : ''}
         onChange={(e) => onChange(e.target.value === '' ? '' : `${pad(Number(e.target.value))}:${pad(p?.m ?? 0)}`)}
       >
-        {optional && <option value="">{t.common.noTime}</option>}
+        {noneLabel && <option value="">{noneLabel}</option>}
         {HOURS.map((h) => (
           <option key={h} value={h}>
             {lang === 'fr' ? `${h} h` : pad(h)}
@@ -71,7 +72,7 @@ export function TimeField({
           {lang !== 'fr' && <span aria-hidden="true">:</span>}
           <select
             className="input time-field__part"
-            aria-label={t.common.minute}
+            aria-label={clockFieldName('minute', lang)}
             value={String(p.m)}
             onChange={(e) => onChange(`${pad(p.h)}:${pad(Number(e.target.value))}`)}
           >
