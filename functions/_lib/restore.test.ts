@@ -49,8 +49,11 @@ describe('fitRow', () => {
   it('keeps only live columns and re-points the household columns from the dump’s household to the target', () => {
     const live = new Set(['id', 'household_id', 'title'])
     expect(fitRow({ id: 'r', household_id: 'hhAAAAAAAAAA', title: 't', dropped_col: 1 }, live, 'hhAAAAAAAAAA', 'hhBBBBBBBBBB')).toEqual({ id: 'r', household_id: 'hhBBBBBBBBBB', title: 't' })
-    // Another household's id on a row (a joined shared trip) is left alone.
-    expect(fitRow({ id: 'r', household_id: 'hhOTHER00000' }, new Set(['id', 'household_id']), 'hhAAAAAAAAAA', 'hhBBBBBBBBBB')).toEqual({ id: 'r', household_id: 'hhOTHER00000' })
+    // The SCOPE column is forced to the target, whatever the dump says: a foreign id there
+    // wrote the row INTO that household (review 2026-11-17, P0 #2).
+    expect(fitRow({ id: 'r', household_id: 'hhOTHER00000' }, new Set(['id', 'household_id']), 'hhAAAAAAAAAA', 'hhBBBBBBBBBB', 'household_id')).toEqual({ id: 'r', household_id: 'hhBBBBBBBBBB' })
+    // An ATTRIBUTION column (a participant who wrote on a trip we own) keeps a foreign id.
+    expect(fitRow({ id: 'r', author_household_id: 'hhOTHER00000' }, new Set(['id', 'author_household_id']), 'hhAAAAAAAAAA', 'hhBBBBBBBBBB')).toEqual({ id: 'r', author_household_id: 'hhOTHER00000' })
   })
 })
 

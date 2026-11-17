@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { env } from 'cloudflare:workers'
 import { dump, household } from '../functions/test/d1'
 import { runNightly } from '../functions/_lib/nightly'
+import { CHILD_TABLES } from '../functions/_lib/demoHousehold'
 
 // The restore door end to end against the real D1 + R2 (STATE.md §4-L L8). A backup
 // that has never been restored is a hope; this is the rehearsal, run on every push.
@@ -79,5 +80,72 @@ describe('takeout restore', () => {
     const a = await household('garbage')
     expect((await a.fetch('/api/takeout/restore', { method: 'POST', body: { password: a.password, source: 'file', takeout: { hello: 1 } } })).status).toBe(400)
     expect((await a.fetch('/api/takeout/restore', { method: 'POST', body: { password: a.password, source: 'nope' } })).status).toBe(400)
+  })
+})
+
+// P0 #2 (review 2026-11-17): the restore is the TARGET household's door. A hand-edited
+// dump naming another household's id — on a scoped row, as a child's parent, or as a
+// trip it was never on — must land nowhere but the target, and touch nothing else.
+describe('a restore writes into the target household only', () => {
+  const now = () => Math.floor(Date.now() / 1000)
+  const trip = async (owner: string, title: string) => {
+    const id = `trip${now()}${Math.random().toString(36).slice(2, 8)}`
+    await env.DB.prepare('INSERT INTO shared_trips (id, owner_household_id, title, invite_nonce, created_at) VALUES (?, ?, ?, ?, ?)').bind(id, owner, title, 'n', now()).run()
+    return id
+  }
+  const member = (tripId: string, hh: string, role = 'member') =>
+    env.DB.prepare('INSERT INTO shared_trip_members (id, shared_trip_id, household_id, role, joined_at, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+      .bind(`stm${Math.random().toString(36).slice(2, 12)}`, tripId, hh, role, now(), now()).run()
+  const memberships = async (tripId: string) =>
+    (await env.DB.prepare('SELECT household_id FROM shared_trip_members WHERE shared_trip_id = ?').bind(tripId).all<{ household_id: string }>()).results.map((r) => r.household_id).sort()
+
+  it('a planted foreign id lands nowhere; the household’s own place on a friend’s trip survives', async () => {
+    const victim = await household('restore-victim')
+    const friend = await household('restore-friend', undefined, { empty: true })
+    const a = await household('restore-attacker')
+    const vTrip = await trip(victim.householdId, 'Voyage de la victime')
+    await member(vTrip, victim.householdId, 'owner')
+    const fTrip = await trip(friend.householdId, 'Voyage d’un ami')
+    await member(fTrip, friend.householdId, 'owner')
+    await member(fTrip, a.householdId) // the attacker really is on this one
+    const victimBefore = strip(await dump(victim.householdId))
+    const vTripMembers = await memberships(vTrip)
+
+    const d = await dump(a.householdId)
+    const parentOf = CHILD_TABLES.find(([, , parent]) => (victimBefore.tables[parent] ?? []).length > 0)!
+    const [childTable, fk, parentTable] = parentOf
+    const victimParent = victimBefore.tables[parentTable]![0]!.id as string
+    const planted = {
+      ...d,
+      tables: {
+        ...d.tables,
+        // A scoped row that names the victim.
+        notes: [...(d.tables.notes ?? []), { id: 'plantedNote01', household_id: victim.householdId, text: 'écrit chez la victime', created_at: now() }],
+        // A child of the victim's parent (no household column of its own).
+        [childTable]: [...(d.tables[childTable] ?? []), { ...((d.tables[childTable] ?? [])[0] ?? victimBefore.tables[childTable]?.[0] ?? {}), id: 'plantedChild1', [fk]: victimParent }],
+        // The attacker joins the victim's trip, and enrols the victim on its own.
+        shared_trip_members: [
+          ...(d.tables.shared_trip_members ?? []),
+          { id: 'plantedMemb01', shared_trip_id: vTrip, household_id: a.householdId, role: 'member', joined_at: now(), created_at: now() },
+        ],
+        shared_trip_notes: [
+          ...(d.tables.shared_trip_notes ?? []),
+          { id: 'plantedTNote1', shared_trip_id: vTrip, author_household_id: a.householdId, text: 'sur le voyage de la victime', created_at: now() },
+        ],
+      },
+    }
+    const res = await a.fetch('/api/takeout/restore', { method: 'POST', body: { password: a.password, source: 'file', takeout: planted } })
+    expect(res.status, await res.clone().text()).toBe(200)
+
+    expect(strip(await dump(victim.householdId))).toEqual(victimBefore)
+    expect(await memberships(vTrip)).toEqual(vTripMembers)
+    expect(await env.DB.prepare('SELECT COUNT(*) AS n FROM shared_trip_notes WHERE shared_trip_id = ?').bind(vTrip).first<{ n: number }>()).toEqual({ n: 0 })
+    // The scoped note was not dropped: it was pulled into the attacker's own household.
+    expect(await env.DB.prepare('SELECT household_id FROM notes WHERE id = ?').bind('plantedNote01').first()).toEqual({ household_id: a.householdId })
+    expect(await env.DB.prepare(`SELECT COUNT(*) AS n FROM ${childTable} WHERE ${fk} = ?`).bind(victimParent).first<{ n: number }>()).toEqual({
+      n: (victimBefore.tables[childTable] ?? []).filter((r) => r[fk] === victimParent).length,
+    })
+    // What was legitimately the attacker's — its place on the friend's trip — is back.
+    expect(await memberships(fTrip)).toEqual([a.householdId, friend.householdId].sort())
   })
 })

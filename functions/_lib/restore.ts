@@ -152,12 +152,22 @@ export function rewriteIds(rows: Row[], map: Map<string, string>): Row[] {
 }
 
 // Keep only the columns the live table has; the household columns re-pointed.
-export function fitRow(row: Row, live: Set<string>, fromHousehold: string, toHousehold: string): Row {
+//
+// The SCOPE column (household_id, or owner_household_id on shared_trips — whichever a
+// read filters on) is FORCED to the target, whatever the dump says. It used to be
+// re-pointed only when it equalled the dump's own declared id, so a hand-edited dump
+// carrying another household's id wrote rows INTO that household (review 2026-11-17,
+// P0 #2): the restore is the target household's door, and nothing it carries may land
+// anywhere else. The other household columns are ATTRIBUTION (`author_household_id`:
+// a participant who wrote on a trip we own), never scope, so a foreign value there is
+// real history and stays; the dump's own id is still re-pointed.
+export function fitRow(row: Row, live: Set<string>, fromHousehold: string, toHousehold: string, scope?: string): Row {
   const out: Row = {}
   for (const [k, v] of Object.entries(row)) {
     if (!live.has(k)) continue
     out[k] = (HOUSEHOLD_COLUMNS as readonly string[]).includes(k) && v === fromHousehold ? toHousehold : v
   }
+  if (scope && live.has(scope)) out[scope] = toHousehold
   return out
 }
 
@@ -309,9 +319,16 @@ function upgradeMots(t: Takeout): Takeout {
 }
 
 export async function restoreHousehold(env: Env, householdId: string, dump: Takeout): Promise<RestoreSummary> {
-  const takeout = upgradeTakeout(dump)
+  const upgraded = upgradeTakeout(dump)
   const P = env.DB.prepare.bind(env.DB)
-  const from = takeout.householdId
+  const from = upgraded.householdId
+  // A dump carries the trips the household is only a MEMBER of (a friend's). They are
+  // never inserted (step 4), so they leave before the id-collision check: the friend's
+  // trip is still alive after the wipe, and counting it made EVERY same-household
+  // restore of a trip member remap all its ids — which then cut the member's own rows
+  // off that trip (found 2026-11-17 by the P0 #2 test).
+  const trips = upgraded.tables.shared_trips
+  const takeout: Takeout = trips ? { ...upgraded, tables: { ...upgraded.tables, shared_trips: trips.filter((r) => r.owner_household_id === from) } } : upgraded
   const selfRefTables = new Map(SELF_REFS.map(([t, c]) => [t, c]))
   const childSet = new Set(CHILD_TABLES.map(([t]) => t))
   const contentSet = new Set(CONTENT_TABLES)
@@ -329,6 +346,20 @@ export async function restoreHousehold(env: Env, householdId: string, dump: Take
     if (cols.size === 0) skippedTables.push(name)
     else live.set(name, cols)
   }
+
+  // Who was on which trip BEFORE the wipe: every membership on a trip this household
+  // owns, and this household's own memberships on friends' trips. The wipe takes both
+  // (its rows on a friend's trip are its own content), and the restore may put back
+  // only what this set already allowed — never a NEW household on a trip (step 4).
+  const priorMembers = new Set(
+    (
+      await P(
+        'SELECT shared_trip_id, household_id FROM shared_trip_members WHERE household_id = ? OR shared_trip_id IN (SELECT id FROM shared_trips WHERE owner_household_id = ?)',
+      )
+        .bind(householdId, householdId)
+        .all<{ shared_trip_id: string; household_id: string }>()
+    ).results.map((r) => `${r.shared_trip_id} ${r.household_id}`),
+  )
 
   // 2. Wipe the content (the sweep's statements, minus the identity tables).
   await runBatches(env, wipeStatements(env, householdId, CONTENT_TABLES))
@@ -349,33 +380,48 @@ export async function restoreHousehold(env: Env, householdId: string, dump: Take
   }
   const map = remapped ? freshIdMap(ids) : new Map<string, string>()
 
-  // 4. Insert, parents first. Shared trips: only the ones this household OWNS; their
-  //    children only for trips that will exist.
+  // 4. Insert, parents first. Everything a dump carries lands in THIS household and
+  //    nowhere else (review 2026-11-17, P0 #2: a hand-edited dump wrote into others):
+  //    · a scoped row's scope column is forced to the target (fitRow);
+  //    · a child row (no household column) is kept only when its parent is a row THIS
+  //      restore inserted — never a foreign habit, routine or remark;
+  //    · shared trips: only the ones this household owns. A trip's rows by THIS
+  //      household land on a trip it owns or was already on; a row by ANOTHER
+  //      household only on a trip this one owns, where that household already was
+  //      (priorMembers). A restore never puts a household on a trip it was not on.
   const order = [...[...CONTENT_TABLES].reverse(), ...CHILD_TABLES.map(([t]) => t)].filter((t) => live.has(t))
-  const ownedTrips = new Set<string>()
+  const childParent = new Map(CHILD_TABLES.map(([t, fk, parent]) => [t, [fk, parent] as const]))
+  const tripWho = new Map([['shared_trip_members', 'household_id'], ['shared_trip_packing', 'household_id'], ['shared_trip_notes', 'author_household_id'], ['shared_trip_claims', 'author_household_id']])
+  const inserted = new Map<string, Set<string>>()
   const statements: D1PreparedStatement[] = []
   const selfRefFixes: D1PreparedStatement[] = []
   let rowCount = 0
   for (const name of order) {
     const cols = live.get(name)!
     let rows = rewriteIds(takeout.tables[name] ?? [], map)
-    if (name === 'shared_trips') {
-      rows = rows.filter((r) => r.owner_household_id === from)
-      for (const r of rows) if (typeof r.id === 'string') ownedTrips.add(r.id)
-    } else if (name === 'shared_trip_members' || name === 'shared_trip_notes' || name === 'shared_trip_packing' || name === 'shared_trip_claims') {
-      const tripIds = [...new Set(rows.map((r) => r.shared_trip_id).filter((v): v is string => typeof v === 'string'))]
-      const alive = new Set<string>(ownedTrips)
-      for (const part of chunk(tripIds.filter((id) => !alive.has(id)), 50)) {
-        const found = await P(`SELECT id FROM shared_trips WHERE id IN (${part.map(() => '?').join(',')})`).bind(...part).all<{ id: string }>()
-        for (const r of found.results ?? []) alive.add(r.id)
-      }
-      rows = rows.filter((r) => typeof r.shared_trip_id === 'string' && alive.has(r.shared_trip_id))
+    const ownedBy = (fk: string, parent: string) => (r: Row) => typeof r[fk] === 'string' && (inserted.get(parent)?.has(r[fk] as string) ?? false)
+    if (name === 'shared_trips') rows = rows.filter((r) => r.owner_household_id === from)
+    const whoCol = tripWho.get(name)
+    if (whoCol) {
+      const owned = inserted.get('shared_trips') ?? new Set<string>()
+      rows = rows.filter((r) => {
+        const trip = r.shared_trip_id
+        if (typeof trip !== 'string') return false
+        const who = r[whoCol] == null || r[whoCol] === from ? householdId : r[whoCol]
+        if (who === householdId) return owned.has(trip) || priorMembers.has(`${trip} ${householdId}`)
+        return owned.has(trip) && priorMembers.has(`${trip} ${String(who)}`)
+      })
     }
+    const child = childParent.get(name)
+    if (child) rows = rows.filter(ownedBy(child[0], child[1]))
     const selfRef = selfRefTables.get(name)
+    const mine = new Set(rows.map((r) => r.id).filter((x): x is string => typeof x === 'string'))
+    inserted.set(name, mine)
+    const scope = childSet.has(name) || name.startsWith('shared_trip_') ? undefined : scopeColumn(name)
     for (const raw of rows) {
-      const row = fitRow(raw, cols, from, householdId)
+      const row = fitRow(raw, cols, from, householdId, scope)
       if (selfRef && row[selfRef] != null) {
-        selfRefFixes.push(P(`UPDATE ${name} SET ${selfRef} = ? WHERE id = ?`).bind(row[selfRef], row.id))
+        if (mine.has(row[selfRef] as string)) selfRefFixes.push(P(`UPDATE ${name} SET ${selfRef} = ? WHERE id = ?`).bind(row[selfRef], row.id))
         row[selfRef] = null
       }
       const keys = Object.keys(row)
