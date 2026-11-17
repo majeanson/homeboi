@@ -11,7 +11,7 @@ import { isGuest } from '../lib/device'
 import { ZoomableImg } from './ZoomableImg'
 import { Icon, InlineIcon } from './Icon'
 import { SubTabs } from './SubTabs'
-import { type Deal, type FlyerSummary, dealDate, flippFlyerUrl, money } from '../lib/deals'
+import { type Deal, type FlyerSummary, dealDate, dealPriceWords, flippFlyerUrl, money } from '../lib/deals'
 import { type AddedTo } from '../lib/picks'
 import { FLYERS_KEY } from '../lib/queryKeys'
 import { useModal } from '../lib/useModal'
@@ -47,6 +47,7 @@ interface FlyerItem extends Box {
   id: number | null
   name: string
   price: number | null
+  priceText?: string | null // the ad's price in words when it states no number (/api/flyer)
   unitPrice: number | null
   unitLabel: string | null
   unitKind: 'mass' | 'volume' | null
@@ -521,7 +522,7 @@ export function FlyerViewer({
                 {selected.validTo ? ` · ${t.shop.until} ${fmtDate(selected.validTo)}` : ''}
               </span>
             </div>
-            <span className="flyer-detail__price">{money(selected.price, lang)}</span>
+            <span className="flyer-detail__price">{dealPriceWords(selected, lang, t.shop.viewFlyer)}</span>
           </div>
           <div className="flyer-detail__actions">
             {data && data.items.length > 1 && (
@@ -577,6 +578,7 @@ export function FlyerViewer({
                         image: selected.image,
                         validFrom: selected.validFrom,
                         validTo: selected.validTo,
+                        priceText: selected.priceText ?? null,
                       }),
                     )
                   } else {

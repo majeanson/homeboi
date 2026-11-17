@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { computeUnitPrice, stripProductCode } from './unitprice'
+import { computeUnitPrice, priceTextOf, stripProductCode } from './unitprice'
 
 describe('computeUnitPrice', () => {
   it('reads a volume size from the name (per litre)', () => {
@@ -86,5 +86,18 @@ describe('stripProductCode', () => {
 
   it('leaves a name with no leading code untouched', () => {
     expect(stripProductCode('poitrines de poulet 500 g')).toBe('poitrines de poulet 500 g')
+  })
+})
+
+// Review #14: a priceless flyer item reached the till as a blank where the price goes.
+describe('priceTextOf (what the ad says when it states no number)', () => {
+  it('keeps words that carry a figure and a money or percent mark', () => {
+    expect(priceTextOf({ pre_price_text: '2 /', post_price_text: '5 $' })).toBe('2 / 5 $')
+    expect(priceTextOf({ sale_story: 'Économisez 30 %' })).toBe('Économisez 30 %')
+  })
+  it('drops fragments a cashier cannot match', () => {
+    expect(priceTextOf({ pre_price_text: '2/' })).toBeNull()
+    expect(priceTextOf({ post_price_text: 'ch.' })).toBeNull()
+    expect(priceTextOf({})).toBeNull()
   })
 })

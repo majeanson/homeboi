@@ -125,3 +125,16 @@ export function computeUnitPrice(it: UnitPriceInput): UnitPrice | null {
   }
   return { unitPrice: each / (size.base / 1000), unitLabel: '/L', unitKind: 'volume' }
 }
+
+// The price a flyer item STATES in words, for one with no numeric price (a multi-buy,
+// « 30 % de rabais »): staged from the full flyer, such an item reached the cashier
+// card with a blank where the price goes (review #14, 2026-11-17). Only text carrying
+// a figure AND a money/percent mark counts: a bare « 2/ » or « ch. » is not a price a
+// cashier can match.
+export function priceTextOf(it: { pre_price_text?: string | null; post_price_text?: string | null; sale_story?: string | null }): string | null {
+  const said = (s: string) => /\d/.test(s) && /[$%¢]/.test(s)
+  const around = [it.pre_price_text, it.post_price_text].map((s) => (s ?? '').trim()).filter(Boolean).join(' ')
+  if (said(around)) return around.slice(0, 60)
+  const story = (it.sale_story ?? '').trim()
+  return said(story) ? story.slice(0, 60) : null
+}

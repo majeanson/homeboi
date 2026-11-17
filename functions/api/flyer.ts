@@ -2,7 +2,7 @@ import { badRequest, serviceUnavailable, okWire } from '../_lib/json'
 import { householdFlippLang, resolveFlippLang } from '../_lib/flippLang'
 import { authed } from '../_lib/route'
 import { isPostal, normalizePostal, householdPostal } from '../_lib/postal'
-import { computeUnitPrice, type UnitKind } from '../_lib/unitprice'
+import { computeUnitPrice, priceTextOf, type UnitKind } from '../_lib/unitprice'
 
 // PROOF OF CONCEPT — full flyer reconstruction (the "show the cashier the whole
 // flyer" half). Same undocumented Flipp backend + caveats as deals.ts.
@@ -35,6 +35,7 @@ interface RawItem {
   price?: number | null
   cutout_image_url?: string
   pre_price_text?: string | null
+  sale_story?: string | null
   post_price_text?: string | null
   valid_from?: string
   valid_to?: string
@@ -66,6 +67,10 @@ export interface FlyerItem extends Box {
   validFrom: string | null
   validTo: string | null
   image: string | null
+  // The ad's own price words when it states no single number (« 2 / 5 $ », « 30 % de
+  // rabais »): staged from here, a priceless item reached the cashier card as a blank
+  // where the price goes (review #14, 2026-11-17). Null when there is a price.
+  priceText: string | null
 }
 
 // Flyer images are served over http://; upgrade so an https app doesn't drop
@@ -151,6 +156,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
         validFrom: it.valid_from ?? null,
         validTo: it.valid_to ?? null,
         image: https(it.cutout_image_url),
+        priceText: typeof it.price === 'number' ? null : priceTextOf(it),
         ...box(it),
       }
     })

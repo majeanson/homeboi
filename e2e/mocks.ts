@@ -940,7 +940,7 @@ export const ROUTES: Partial<Wire> = {
       { id: 2, page: 2, left: 100, top: 0, right: 200, bottom: -100 },
     ],
     // A tiny inline SVG so the clipping renders in the offline screenshot.
-    items: [{ id: 101, name: 'Lait 2% 4L', price: 4.99, unitPrice: 1.25, unitLabel: '/L', unitKind: 'volume', validFrom: null, validTo: null, image: 'data:image/svg+xml,%3Csvg xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22 viewBox%3D%220 0 60 60%22%3E%3Crect width%3D%2260%22 height%3D%2260%22 fill%3D%22%23cfe8d6%22%2F%3E%3Ctext x%3D%2230%22 y%3D%2235%22 font-size%3D%2210%22 text-anchor%3D%22middle%22%3E🥛%3C%2Ftext%3E%3C%2Fsvg%3E', left: 10, top: -10, right: 40, bottom: -40 }],
+    items: [{ id: 101, name: 'Lait 2% 4L', price: 4.99, unitPrice: 1.25, unitLabel: '/L', unitKind: 'volume', validFrom: null, validTo: null, priceText: null, image: 'data:image/svg+xml,%3Csvg xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22 viewBox%3D%220 0 60 60%22%3E%3Crect width%3D%2260%22 height%3D%2260%22 fill%3D%22%23cfe8d6%22%2F%3E%3Ctext x%3D%2230%22 y%3D%2235%22 font-size%3D%2210%22 text-anchor%3D%22middle%22%3E🥛%3C%2Ftext%3E%3C%2Fsvg%3E', left: 10, top: -10, right: 40, bottom: -40 }],
   },
   ghost: GHOSTS,
   // « Les notes » (its own hub tab since the nav restructure — CercleNotes + global

@@ -140,7 +140,8 @@ describe('une circulaire', () => {
       ],
       items: [
         { id: 1, name: 'Beurre 454 g', price: 4.54, cutout_image_url: 'http://f.wishabi.net/a.jpg', left: 1, top: 2, right: 3, bottom: 4, ...run },
-        { id: 2, name: 'Pain', price: null, cutout_image_url: 'https://f.wishabi.net/b.jpg', ...run },
+        // No single number, but the ad states one in words (review #14): it reaches the till.
+        { id: 2, name: 'Pain', price: null, pre_price_text: '2 /', post_price_text: '5 $', cutout_image_url: 'https://f.wishabi.net/b.jpg', ...run },
         { id: 3, name: 'Promo 2 jours', price: 1, valid_from: '2026-11-07', valid_to: '2026-11-08' },
       ],
     })
@@ -151,8 +152,8 @@ describe('une circulaire', () => {
       { id: 2, page: 2, left: 0, top: 10, right: 100, bottom: 20 },
     ])
     expect(res.items, 'an item with no image cannot be composited').toEqual([
-      { id: 1, name: 'Beurre 454 g', price: 4.54, unitPrice: 10, unitLabel: '/kg', unitKind: 'mass', validFrom: '2026-11-05', validTo: '2026-11-11', image: 'https://f.wishabi.net/a.jpg', left: 1, top: 2, right: 3, bottom: 4 },
-      { id: 2, name: 'Pain', price: null, unitPrice: null, unitLabel: null, unitKind: null, validFrom: '2026-11-05', validTo: '2026-11-11', image: 'https://f.wishabi.net/b.jpg', left: 0, top: 0, right: 0, bottom: 0 },
+      { id: 1, name: 'Beurre 454 g', price: 4.54, unitPrice: 10, unitLabel: '/kg', unitKind: 'mass', validFrom: '2026-11-05', validTo: '2026-11-11', image: 'https://f.wishabi.net/a.jpg', priceText: null, left: 1, top: 2, right: 3, bottom: 4 },
+      { id: 2, name: 'Pain', price: null, unitPrice: null, unitLabel: null, unitKind: null, validFrom: '2026-11-05', validTo: '2026-11-11', image: 'https://f.wishabi.net/b.jpg', priceText: '2 / 5 $', left: 0, top: 0, right: 0, bottom: 0 },
     ])
     expect(new URL(net.calls[0]!.url).searchParams.get('postal_code')).toBe('H2X1Y4')
   })

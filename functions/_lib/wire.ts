@@ -767,6 +767,7 @@ export interface FlyerWire {
     validFrom: string | null
     validTo: string | null
     image: string | null
+    priceText: string | null // the ad's price in words when it states no number (review #14)
   })[]
 }
 

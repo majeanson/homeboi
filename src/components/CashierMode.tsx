@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { EmptyState } from './EmptyState'
 import { useLang, useT } from '../i18n'
-import { type Pick, money, dealValidity, dealEnded, flippFlyerUrl, flippItemUrl } from '../lib/deals'
+import { type Pick, money, dealPriceWords, dealValidity, dealEnded, flippFlyerUrl, flippItemUrl } from '../lib/deals'
 import type { ListItem } from '../lib/picks'
 import { refreshEndedDeals } from '../lib/picks'
 import { isGuest } from '../lib/device'
@@ -175,7 +175,7 @@ export function CashierMode({
                     )}
                     <span className="cashier__tile-for">{p.itemText}</span>
                     <span className="cashier__tile-name mono">{p.deal.name}</span>
-                    <span className="cashier__tile-price">{money(p.deal.price, lang)}</span>
+                    <span className="cashier__tile-price">{dealPriceWords(p.deal, lang, t.shop.viewFlyer)}</span>
                     <span className="cashier__tile-store mono">{p.deal.merchant}</span>
                     {ended && <span className="cashier__tile-ended mono">{t.shop.dealEnded}</span>}
                     {isShown && (
@@ -239,7 +239,7 @@ export function CashierMode({
           </div>
           <div className="bigcard__info">
             <span className="bigcard__name">{d.name}</span>
-            <span className="bigcard__price">{money(d.price, lang)}</span>
+            <span className="bigcard__price">{dealPriceWords(d, lang, t.shop.viewFlyer)}</span>
             {/* Below the price, as the page does: what the ad also states. The unit
                 price is what a match actually turns on (sizes rarely agree); an
                 AI-INFERRED size wears ≈ — at a till, a guess must never present itself

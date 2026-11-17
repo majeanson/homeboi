@@ -27,6 +27,18 @@ export interface Deal {
   // picture (`thumbnail_url: item.cutoutImageUrl`), where `image` prefers the clean
   // product photo for our tiles. Optional — older staged deals lack it; `image` stands in.
   cutout?: string | null
+  // The ad's price in WORDS when it states no single number (« 2 / 5 $ », « 30 % »),
+  // from the full flyer (/api/flyer). Optional: a search deal always has a price.
+  priceText?: string | null
+}
+
+// What goes where a deal's price is read (the cashier card, its tile, the flyer's
+// detail): the price; else the ad's own words; else `onFlyer` (« Voir la circulaire »),
+// because the picture beside it is the ad and carries the price. Never a blank: a
+// priceless item reached the till as « Prix pour framboises » and nothing (review
+// #14, 2026-11-17), and the cashier needs SOMETHING to match.
+export function dealPriceWords(d: { price: number | null; priceText?: string | null | undefined }, lang: 'fr' | 'en', onFlyer: string): string {
+  return d.price != null ? money(d.price, lang) : d.priceText || onFlyer
 }
 
 // A store's current flyer near the household (from /api/flyers) — lets you open a
