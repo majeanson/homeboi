@@ -1,4 +1,5 @@
-import { badRequest, conflict, notFound, ok, readJson, serverError } from '../../_lib/json'
+import { badRequest, conflict, notFound, ok, readJson, serverError, tooManyRequests } from '../../_lib/json'
+import { overAuthLimit } from '../../_lib/rateLimit'
 import { authed } from '../../_lib/route'
 import { issueDeviceToken } from '../../_lib/auth'
 import { newId, nowSec, sha256Hex } from '../../_lib/ids'
@@ -10,6 +11,10 @@ import { newId, nowSec, sha256Hex } from '../../_lib/ids'
 // Operator-scope only (a kiosk can't pair new kiosks). Goes through the normal
 // cookie + CSRF gate.
 export const onRequestPost = authed(async (ctx, actor) => {
+  // A code is six digits, so guessing one is a matter of attempts: bounded per address
+  // and per household, like every other door that takes a secret (review 2026-11-17,
+  // P0 #6 — start was limited, claim was not). A real operator types one code, once.
+  if (await overAuthLimit(ctx.env, ctx.request, `pair-claim:${actor.householdId}`)) return tooManyRequests()
   const body = await readJson<{ code?: string; label?: string }>(ctx.request)
   const code = body?.code?.trim()
   if (!code || !/^\d{6}$/.test(code)) return badRequest('Code à 6 chiffres requis.')

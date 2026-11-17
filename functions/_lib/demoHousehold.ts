@@ -237,6 +237,8 @@ export const scopeColumn = (table: string): string => SCOPE_COLUMN[table] ?? 'ho
 // one of the three sets, and an exemption to name a table that still exists.
 export const EXEMPT_TABLES: Readonly<Record<string, string>> = {
   households: 'deleted explicitly by id as the final statement',
+  ip_daily:
+    'per-ADDRESS daily counters (0159): a salted hash, no household column — the door opens before any household exists. Pruned nightly after two days (_lib/rateLimit.ts)',
   door_daily:
     'deployment-wide daily TOTALS (0141): no household column at all, by design — a count that could be traced back to a household would not be a total',
   password_resets: 'keyed by operator EMAIL, no household_id (0133): a reset row lives 30 minutes and the sweep never meets it',

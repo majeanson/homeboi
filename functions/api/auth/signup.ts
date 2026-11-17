@@ -1,6 +1,6 @@
 import type { Env } from '../../_lib/env'
 import { badRequest, conflict, forbidden, readJson, serverError, tooManyRequests } from '../../_lib/json'
-import { overAuthLimit } from '../../_lib/rateLimit'
+import { overAuthLimit, overIpDailyCap } from '../../_lib/rateLimit'
 import { signInAs, sessionCookies } from '../../_lib/auth'
 import { hashPassword } from '../../_lib/password'
 import { inviteAccepted } from '../../_lib/signupGate'
@@ -41,6 +41,9 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
 
   const existing = await ctx.env.DB.prepare('SELECT email FROM operators WHERE email = ?').bind(email).first()
   if (existing) return conflict('Un compte existe déjà pour ce courriel — connecte-toi.')
+  // Counted HERE, once the request is a real account about to exist (a typo above costs
+  // nothing): each new household brings its own AI and upload budget (0159, P0 #6).
+  if (await overIpDailyCap(ctx.env, ctx.request, 'account')) return tooManyRequests()
 
   const householdId = newId()
   const ts = nowSec()

@@ -1,6 +1,6 @@
 import type { Env } from './env'
 import { localDayStart, nowSec } from './ids'
-import { currentHousehold } from './tz'
+import { currentHousehold, DEFAULT_TZ } from './tz'
 
 // THE DAILY SPEND BOUND (STATE.md §4-K Wave 5, migration 0137).
 //
@@ -22,8 +22,9 @@ import { currentHousehold } from './tz'
 // accounting system ». It stops a burst and is blind to an hour of patient use. A daily
 // budget needs a counter that remembers, which is what 0137 is.
 //
-// The day is a `localDayStart()` in the HOUSEHOLD's zone (0135, ambient via `_lib/tz`),
-// so the counter turns over at the family's midnight rather than at UTC's.
+// The day is a `localDayStart()` in the DEPLOYMENT's zone (DEFAULT_TZ), not the household's:
+// the household's zone is its own to change, and each change used to open a fresh « day »
+// with a fresh budget (review 2026-11-17, P0 #6). One midnight for everyone: DEFAULT_TZ's.
 
 // WHO PAYS WHICH CEILING (migration 0139, 2026-09-24). Signup opened that day, and the
 // « household » ceiling below had been set for families Marc INVITED. So the ceiling now
@@ -140,7 +141,7 @@ export async function charge(env: Env, meter: Meter, amount = 1): Promise<UsageV
   if (!who) return { allowed: true, used: 0, limit: limits.household }
 
   const now = nowSec()
-  const day = localDayStart(new Date(now * 1000))
+  const day = localDayStart(new Date(now * 1000), DEFAULT_TZ)
   const ai = meter === 'ai' ? amount : 0
   const bytes = meter === 'upload' ? amount : 0
   const renders = meter === 'browser' ? amount : 0
@@ -197,7 +198,7 @@ export async function strangerSpend(env: Env, now = nowSec()): Promise<{ ai: num
 /** Today's counters for one household — for a future Réglages panel, and for the
  *  real-runtime tests, which should read what the app wrote rather than trust it. */
 export async function usageToday(env: Env, householdId: string): Promise<{ ai: number; bytes: number }> {
-  const day = localDayStart(new Date(nowSec() * 1000))
+  const day = localDayStart(new Date(nowSec() * 1000), DEFAULT_TZ)
   const row = await env.DB.prepare('SELECT ai_calls, upload_bytes FROM usage_daily WHERE household_id = ? AND day = ?')
     .bind(householdId, day)
     .first<{ ai_calls: number; upload_bytes: number }>()

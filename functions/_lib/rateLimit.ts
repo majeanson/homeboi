@@ -1,4 +1,6 @@
 import type { Env } from './env'
+import { localDayStart, nowSec, sha256Hex } from './ids'
+import { DEFAULT_TZ } from './tz'
 
 // The brute-force bound on the unauthenticated doors (STATE.md §4-L, item L2).
 //
@@ -56,4 +58,39 @@ export async function overAuthLimit(env: Env, request: Request, targetKey?: stri
 // Both bindings present: what /api/health reports as `rateLimit`.
 export function rateLimitEnabled(env: Env): boolean {
   return !!env.LIMIT_IP && !!env.LIMIT_KEY
+}
+
+// THE DAILY HALF (review 2026-11-17, P0 #6; migration 0159). The bindings above stop a
+// burst and forget it a minute later; this remembers a day. One atomic UPSERT per door,
+// keyed by a salted hash of the caller's address (never the address). FAILS OPEN: a
+// counter that cannot count must not cost a real visitor their account.
+export type IpDailyEvent = 'account' | 'demo'
+export const IP_DAILY_CAP: Readonly<Record<IpDailyEvent, number>> = {
+  // A family signs up once, a co-parent joins once. Five covers a shared address (a
+  // school, an office NAT) with room to spare.
+  account: 5,
+  // A visitor who closes the tab and comes back mints another; twenty is a lot of afternoons.
+  demo: 20,
+}
+
+export async function overIpDailyCap(env: Env, request: Request, event: IpDailyEvent, now = nowSec()): Promise<boolean> {
+  try {
+    const ipHash = await sha256Hex(`${clientIp(request)}|${env.SESSION_SECRET ?? ''}`)
+    const row = await env.DB.prepare(
+      `INSERT INTO ip_daily (ip_hash, day, event, n, updated_at) VALUES (?1, ?2, ?3, 1, ?4)
+       ON CONFLICT(ip_hash, day, event) DO UPDATE SET n = n + 1, updated_at = excluded.updated_at
+       RETURNING n`,
+    )
+      .bind(ipHash, localDayStart(new Date(now * 1000), DEFAULT_TZ), event, now)
+      .first<{ n: number }>()
+    return (row?.n ?? 0) > IP_DAILY_CAP[event]
+  } catch (err) {
+    console.error('[ip-daily]', event, err)
+    return false
+  }
+}
+
+/** The nightly prune: yesterday is the oldest day anyone asks about. */
+export async function pruneIpDaily(env: Env, now = nowSec()): Promise<void> {
+  await env.DB.prepare('DELETE FROM ip_daily WHERE day < ?').bind(now - 2 * 86_400).run()
 }

@@ -6,6 +6,7 @@ import { localDayOfWeek } from './ids'
 import { STRANGER_POOL_PER_DAY, strangerSpend } from './usage'
 import { doorCounts, recentStrangerRemarks, type DoorCounts, type StrangerRemark } from './strangers'
 import { normalizeTaskDays } from './taskDay'
+import { pruneIpDaily } from './rateLimit'
 
 // The nightly cron, as one function with a REPORT (STATE.md §4-L, item L7).
 //
@@ -66,6 +67,8 @@ export interface NightlyDeps {
   strangerRemarks: () => Promise<StrangerRemark[]>
   doorCounts: () => Promise<DoorCounts>
   taskDays: () => Promise<number>
+  /** Drop the per-address counters (0159) older than yesterday. */
+  pruneIpDaily: () => Promise<void>
 }
 
 export function realDeps(env: Env, now: number): NightlyDeps {
@@ -105,6 +108,7 @@ export function realDeps(env: Env, now: number): NightlyDeps {
     strangerRemarks: () => recentStrangerRemarks(env, now),
     doorCounts: () => doorCounts(env, now),
     taskDays: () => normalizeTaskDays(env.DB),
+    pruneIpDaily: () => pruneIpDaily(env, now),
   }
 }
 
@@ -169,6 +173,11 @@ export async function runNightly(env: Env, now: number, deps: NightlyDeps = real
     report.taskDaysFixed = await deps.taskDays()
   } catch (err) {
     report.failed.push({ id: 'task-days', error: String((err as Error)?.message ?? err) })
+  }
+  try {
+    await deps.pruneIpDaily()
+  } catch (err) {
+    report.failed.push({ id: 'ip-daily', error: String((err as Error)?.message ?? err) })
   }
   return report
 }

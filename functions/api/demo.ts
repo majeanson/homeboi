@@ -1,6 +1,6 @@
 import type { Env } from '../_lib/env'
 import { ok, serverError, tooManyRequests } from '../_lib/json'
-import { overAuthLimit } from '../_lib/rateLimit'
+import { overAuthLimit, overIpDailyCap } from '../_lib/rateLimit'
 import { issueGuestToken, signInAs, sessionCookies } from '../_lib/auth'
 import { hashPassword } from '../_lib/password'
 import { newId, nowSec } from '../_lib/ids'
@@ -69,6 +69,9 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
   } catch {
     /* count failed → be conservative, use the fallback */
   }
+  // …and one address minting sandbox after sandbox (each with its own daily AI and upload
+  // budget) gets the read-only look once it has had its afternoons (0159, review P0 #6).
+  if (alive < DEMO_SANDBOX_CAP && (await overIpDailyCap(ctx.env, ctx.request, 'demo', now))) return mintShowcaseFallback(ctx, now)
   if (alive >= DEMO_SANDBOX_CAP) {
     // A visitor who got the read-only look instead of a trial — the one number that says
     // the cap, not the door, is what turned them away (0141).

@@ -1,6 +1,6 @@
 import type { Env } from '../_lib/env'
 import { badRequest, conflict, forbidden, notFound, ok, readJson, serverError, tooManyRequests } from '../_lib/json'
-import { overAuthLimit } from '../_lib/rateLimit'
+import { overAuthLimit, overIpDailyCap } from '../_lib/rateLimit'
 import { signInAs, sessionCookies, verifyOperatorInvite } from '../_lib/auth'
 import { hashPassword } from '../_lib/password'
 import { nowSec } from '../_lib/ids'
@@ -101,6 +101,9 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
       'other-household',
     )
   }
+
+  // Counted once the request is a real operator about to exist (0159, review P0 #6).
+  if (await overIpDailyCap(ctx.env, ctx.request, 'account')) return tooManyRequests()
 
   try {
     await ctx.env.DB.prepare(
