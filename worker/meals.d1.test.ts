@@ -418,6 +418,24 @@ describe('« À placer » — the week without its days', () => {
     expect((await keys())[m3.id], 'a malformed key is dropped, the move still happens').toBeNull()
   })
 
+  it('« À placer » rows change meal type — the group as one, an unknown slot refused, never across households', async () => {
+    const s = await household('meals-unplaced-slot', undefined, { empty: true })
+    const other = await household('meals-unplaced-slot-b', undefined, { empty: true })
+    const park = async (title: string) => (await okJson<{ id: string }>(s.fetch('/api/meals', { method: 'POST', body: { action: 'park', title } }))).id
+    const a = await park('Brocoli')
+    const b = await park('Trempette')
+    const slots = async () => Object.fromEntries((await plan(s)).unplaced.map((u) => [u.id, u.slot]))
+    await action(s, { action: 'slot', ids: [a, b], slot: 'snack' })
+    expect(await slots()).toEqual({ [a]: 'snack', [b]: 'snack' })
+    expect((await s.fetch('/api/meals', { method: 'POST', body: { action: 'slot', ids: [a], slot: 'brunch' } })).status).toBe(400)
+    expect((await s.fetch('/api/meals', { method: 'POST', body: { action: 'slot', ids: [], slot: 'snack' } })).status).toBe(400)
+    await action(other, { action: 'slot', ids: [a], slot: 'dessert' })
+    expect((await slots())[a], 'another household changes nothing').toBe('snack')
+    // …and the row lands in its own slot when placed without one.
+    await action(s, { action: 'place', id: a, toDate: day(1) })
+    expect((await plan(s)).days.find((m) => m.id === a)?.slot).toBe('snack')
+  })
+
   it('one household never links another one’s bin rows', async () => {
     const a = await household('meals-unplaced-link-a', undefined, { empty: true })
     const b = await household('meals-unplaced-link-b', undefined, { empty: true })

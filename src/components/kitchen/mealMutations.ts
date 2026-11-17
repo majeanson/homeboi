@@ -148,6 +148,21 @@ export async function relinkUnplaced(qc: QueryClient, groups: string[][]) {
   }).catch(writeFailed)
 }
 
+// Change an « À placer » row's meal type (its whole linked group: a group lands as one,
+// in one slot). Optimistic, so the row's icon and the drag's big band follow at once.
+export async function setUnplacedSlot(qc: QueryClient, ids: string[], slot: string) {
+  const set = new Set(ids)
+  await writeWith(qc, 'meals', {
+    method: 'POST',
+    body: { action: 'slot', ids, slot },
+    affectedKeys: [MEALS_KEY],
+    optimistic: (c) =>
+      c.setQueryData<MealsData>(MEALS_KEY, (d) =>
+        d ? { ...d, unplaced: (d.unplaced ?? []).map((u) => (set.has(u.id) ? { ...u, slot } : u)) } : d,
+      ),
+  }).catch(writeFailed)
+}
+
 /** The bin's rows as their groups, in reading order: a group sits where its first
  *  row sits, and its rows follow in their own order. A key only one row carries (its
  *  partner was placed or removed) reads as alone. */

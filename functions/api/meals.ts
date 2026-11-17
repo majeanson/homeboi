@@ -118,7 +118,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
 
 export const onRequestPost = authed(async (ctx, actor) => {
   const body = await readJson<{
-    action?: 'move' | 'clear' | 'reschedule' | 'park' | 'unplace' | 'place' | 'link'
+    action?: 'move' | 'clear' | 'reschedule' | 'park' | 'unplace' | 'place' | 'link' | 'slot'
     // move
     id?: string
     dir?: 'up' | 'down'
@@ -141,6 +141,9 @@ export const onRequestPost = authed(async (ctx, actor) => {
     // bin's new grouping — each inner list becomes one group (a list of one = alone).
     linkId?: string
     groups?: string[][]
+    // « À placer » slot: the bin rows (a linked group lands as one, so it changes as one)
+    // whose meal type changes — the row's icon, and the slot it lands in.
+    ids?: string[]
   }>(ctx.request)
 
   // ── Reorder within a slot: ↑/↓ one step. Renumber the whole slot densely by
@@ -275,6 +278,21 @@ export const onRequestPost = authed(async (ctx, actor) => {
         stmts.push(ctx.env.DB.prepare('UPDATE meals_unplaced SET link_id = ? WHERE id = ? AND household_id = ?').bind(key, id, actor.householdId))
     }
     await ctx.env.DB.batch(stmts)
+    return ok({ ok: true })
+  }
+
+  // ── « À placer » meal type (Marc, 2026-11-17: « Quel repas ? → collation … changes the
+  //    icon and type and the drag-and-drop main zone »). The bin row's slot is its own
+  //    now, not only a choice made on the way to a day. An unknown slot is rejected.
+  if (body?.action === 'slot') {
+    const ids = Array.isArray(body.ids) ? body.ids : null
+    const slot = asSlot(body.slot)
+    if (!slot) return badRequest('Repas inconnu.')
+    if (!ids || ids.length === 0 || ids.length > UNPLACED_MAX || !ids.every((x) => typeof x === 'string' && x.length <= 64))
+      return badRequest('ids requis.')
+    await ctx.env.DB.batch(
+      ids.map((id) => ctx.env.DB.prepare('UPDATE meals_unplaced SET slot = ? WHERE id = ? AND household_id = ?').bind(slot, id, actor.householdId)),
+    )
     return ok({ ok: true })
   }
 

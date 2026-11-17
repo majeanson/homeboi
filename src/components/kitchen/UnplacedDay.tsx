@@ -14,7 +14,7 @@ import { IconButton } from '../IconButton'
 import { Chip, ChipGroup } from '../Chip'
 import { useSingleOpen } from '../Disclosure'
 import { MealPlanPicker } from './MealPlanPicker'
-import { placeMeal, relinkUnplaced, unplacedGroups } from './mealMutations'
+import { placeMeal, relinkUnplaced, setUnplacedSlot, unplacedGroups } from './mealMutations'
 import { type MealPick } from './comboOptions'
 import { BOARD_KEY, MONTH_KEY } from '../../lib/queryKeys'
 import { MEALS_KEY, MEAL_HISTORY_KEY, type UnplacedMeal } from './types'
@@ -94,7 +94,6 @@ export function UnplacedDay({
   const [adding, setAdding] = useState(false)
   const [text, setText] = useState('')
   const [busy, setBusy] = useState(false)
-  const [slotPick, setSlotPick] = useState<MealSlot | null>(null)
   // A press that then travels is a drag, not a tap — the grid's own guard (Kitchen's
   // tapDownRef), so letting go of a drag never also opens the day picker.
   const downRef = useRef<{ x: number; y: number } | null>(null)
@@ -159,7 +158,6 @@ export function UnplacedDay({
                 if (u.recipe_id) nav(`/kitchen/recipe/${u.recipe_id}`)
                 return
               }
-              setSlotPick(null)
               toggle(u.id)
             }}
           >
@@ -199,13 +197,16 @@ export function UnplacedDay({
         </div>
         {!ro && isOpen(u.id) && (
           <MealPlanPicker
-            slot={slotPick ?? slot}
-            onSlot={setSlotPick}
+            // « Quel repas ? » CHANGES the row (Marc, 2026-11-17): its icon, the slot it
+            // lands in, and the big band a drag of it opens — for its whole group, which
+            // lands as one. Not a pick held only for the trip to a day.
+            slot={slot}
+            onSlot={(s) => void setUnplacedSlot(qc, group.map((x) => x.id), s)}
             week={week}
             onPickDay={(date) => {
               close()
               // The whole group lands together, in the picked slot.
-              for (const m of group) void placeMeal(qc, m, date, slotPick ?? slot)
+              for (const m of group) void placeMeal(qc, m, date, slot)
             }}
           />
         )}

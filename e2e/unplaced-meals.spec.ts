@@ -52,6 +52,9 @@ async function statefulMeals(page: Page) {
         const key = g.length > 1 ? `k-${g.join('-')}` : null
         st.unplaced = st.unplaced.map((u) => (g.includes(u.id) ? { ...u, link_id: key } : u))
       }
+    } else if (b.action === 'slot') {
+      const ids = b.ids as string[]
+      st.unplaced = st.unplaced.map((u) => (ids.includes(u.id) ? { ...u, slot: b.slot } : u))
     } else if (b.action === 'unplace') {
       const m = st.days.find((x) => x.id === b.id)
       st.days = st.days.filter((x) => x.id !== b.id)
@@ -289,4 +292,31 @@ test('arriving over a day opens its meal pills — the meal’s own slot widest 
   const [req] = await Promise.all([page.waitForRequest(mealsPost('place')), page.mouse.up()])
   expect(req.postDataJSON()).toMatchObject({ action: 'place', id: 'u1', toDate: tomorrow, slot: 'lunch' })
   await expect(page.locator('.kitchen__slot-drops')).toHaveCount(0)
+})
+
+// « Quel repas ? → collation … changes the icon and type and the drag-and-drop main zone »
+// (Marc, 2026-11-17): the picker's slot is the ROW's slot now, not a pick for one trip.
+test('« Quel repas ? » changes the row itself — and a drag of it opens with that slot as the big band', async ({ page }) => {
+  await openGrid(page)
+  const bin = page.locator('.kitchen__day--unplaced')
+  await bin.locator('.kitchen__unplaced-open', { hasText: 'Lasagne' }).click()
+  const snack = bin.locator('.slot-picker').getByRole('button', { name: /Collation/ })
+  const [req] = await Promise.all([page.waitForRequest(mealsPost('slot')), snack.click()])
+  expect(req.postDataJSON()).toMatchObject({ action: 'slot', ids: ['u1'], slot: 'snack' })
+  await expect(snack).toHaveAttribute('aria-pressed', 'true')
+  // Close the panel, then drag the row: the band it opens is Collation.
+  await bin.locator('.kitchen__unplaced-open', { hasText: 'Lasagne' }).click()
+  const tomorrow = addLocalDays(MMID, 1)
+  const day = page.locator(`.kitchen__day[data-dnd-zone="${tomorrow}"]`)
+  const row = bin.locator('.kitchen__unplaced-row', { hasText: 'Lasagne' })
+  const a = await boxOf(row)
+  await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2)
+  await page.mouse.down()
+  await expect(page.locator('.dnd-ghost')).toBeVisible({ timeout: HOLD * 4 })
+  const d = await boxOf(day)
+  await page.mouse.move(d.x + d.width / 2, d.y + 20, { steps: 12 })
+  await expect(day.locator('.kitchen__slot-drop').first()).toHaveAttribute('data-dnd-zone', `slot:${tomorrow}:snack`)
+  await expect(day.locator('.kitchen__slot-drop').first()).toHaveClass(/is-main/)
+  const [place] = await Promise.all([page.waitForRequest(mealsPost('place')), page.mouse.up()])
+  expect(place.postDataJSON()).toMatchObject({ action: 'place', id: 'u1', toDate: tomorrow, slot: 'snack' })
 })
