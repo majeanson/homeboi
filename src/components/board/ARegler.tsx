@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useT } from '../../i18n'
 import { settingsHref } from '../../lib/settingsNav'
-import { useARegler, frictionRow } from '../../lib/aRegler'
+import { useARegler, frictionRow, withoutTonightMeal } from '../../lib/aRegler'
 import { Icon } from '../Icon'
 import { useReportEmpty } from '../../lib/useReportEmpty'
 import { useCardLens } from './CardLens'
@@ -21,10 +21,20 @@ import { CardMini } from './BoardCard'
 // Two looks: `chip` (a compact one-liner — used inline, e.g. « Cette semaine ») and
 // `card` (a hero-style tile that sits in the board status band, matching the
 // supper/weather heroes' card look + height).
-export function ARegler({ enabled, variant = 'chip' }: { enabled: boolean; variant?: 'chip' | 'card' }) {
+export function ARegler({
+  enabled,
+  variant = 'chip',
+  tonightShown = false,
+}: {
+  enabled: boolean
+  variant?: 'chip' | 'card'
+  /** « Ce soir » is on this board: it already says tonight's meal is unplanned. */
+  tonightShown?: boolean
+}) {
   const t = useT()
   const { data } = useARegler(enabled)
-  const signals = data?.signals ?? []
+  const all = data?.signals ?? []
+  const signals = tonightShown ? withoutTonightMeal(all) : all
   const empty = !enabled || signals.length === 0
   // No-op for the inline `chip` variant, which renders outside a CardSlot.
   useReportEmpty(empty)

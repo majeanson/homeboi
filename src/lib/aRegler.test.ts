@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { FR } from '../i18n'
-import { frictionRow, type Friction, type FrictionKind } from './aRegler'
+import { frictionRow, withoutTonightMeal, type Friction, type FrictionKind } from './aRegler'
 
 // The endpoint sends structure, this composes the sentence — so the promises that keep a
 // wall tablet calm and discreet live here, not in the scan.
@@ -42,5 +42,14 @@ describe('frictionRow', () => {
 
   it('does not print « undefined » when a low-stock line lost its item', () => {
     expect(row('meal-low', { label: 'Tacos' }).text).not.toContain('undefined')
+  })
+})
+
+// Review 2026-11-17, P1 #9: « Ce soir » already says tonight's meal is unplanned.
+describe('withoutTonightMeal', () => {
+  it('drops only TODAY’s empty hero meal; tomorrow’s and every other friction stay', () => {
+    const s = (kind: Friction['kind'], sub?: string): Friction => ({ kind, key: `${kind}:${sub}`, label: 'supper', at: 0, href: '/', ...(sub ? { sub } : {}) }) as Friction
+    const all = [s('meal-empty', 'today'), s('meal-empty', 'tomorrow'), s('ride'), s('meal-low', 'farine')]
+    expect(withoutTonightMeal(all).map((f) => `${f.kind}:${f.sub ?? ''}`)).toEqual(['meal-empty:tomorrow', 'ride:', 'meal-low:farine'])
   })
 })

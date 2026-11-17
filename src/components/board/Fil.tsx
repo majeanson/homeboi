@@ -50,6 +50,7 @@ export function Fil({
   nowLabel,
   freeLabel,
   lang,
+  showNow = true,
 }: {
   timed: FilTimed[]
   untimed: FilUntimed[]
@@ -57,6 +58,10 @@ export function Fil({
   nowLabel: string
   freeLabel: string
   lang: Lang
+  /** Draw the « maintenant » marker — only when the rows ARE today. Another day has no
+   *  « now » in it: a future day page put the marker above its first row, a past one
+   *  below its last (review 2026-11-17, P1 #9). */
+  showNow?: boolean
 }) {
   // A gentle minute tick so the « maintenant » marker drifts with the clock between
   // board polls (calm: minute granularity, no second hand).
@@ -75,7 +80,7 @@ export function Fil({
       <ol className="fil__list">
         {rows.map((r, i) => (
           <Fragment key={r.item.id}>
-            {i === nowIndex && marker}
+            {showNow && i === nowIndex && marker}
             {/* A calm « libre » divider in a notably open stretch — breathing room, not a
                 gap to fill. Sits in the space the proportional margin already opened up. */}
             {r.freeBefore && (
@@ -88,7 +93,7 @@ export function Fil({
             </li>
           </Fragment>
         ))}
-        {nowIndex === rows.length && marker}
+        {showNow && nowIndex === rows.length && marker}
       </ol>
       {untimed.length > 0 && (
         <>

@@ -789,6 +789,7 @@ function DayPlanScene() {
                 untimed={[]}
                 anytimeLabel={t.board.anytime}
                 nowLabel={t.board.now}
+                showNow={dayOffset === 0}
                 freeLabel={t.board.free}
                 lang={lang}
               />

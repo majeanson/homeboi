@@ -112,3 +112,30 @@ test('on the Fil, a started-but-unfinished window is neither dimmed nor struck; 
   await expect(endedRow.locator('.act--past')).toHaveCount(1)
   await expect(endedRow.locator('.act--live')).toHaveCount(0)
 })
+
+// Review 2026-11-17, P1 #9 (Marco): on a busy day the ribbon drew its own « maintenant »,
+// and the card drew a SECOND one under it — after the 19 h yoga — with the morning's
+// « Crêpes » below that. A past meal is not on the ribbon's time axis; it sits, struck,
+// with the day's meals above it, and the line is drawn once.
+test('on the Fil, the morning meal sits above the ribbon and « maintenant » is drawn once', async ({ page }) => {
+  await page.route('**/api/board', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: board([
+        { id: 'ended', title: 'Dentiste', start_at: ONE_PM - 3 * HOUR, end_at: ONE_PM - 2 * HOUR, all_day: 0, member_id: null },
+        { id: 'live', title: 'Réunion de parents', start_at: ONE_PM - HOUR / 2, end_at: ONE_PM + HOUR / 2, all_day: 0, member_id: null },
+        { id: 'later', title: 'Yoga', start_at: ONE_PM + 6 * HOUR, all_day: 0, member_id: null },
+      ]),
+    }),
+  )
+  await page.clock.setFixedTime(ONE_PM * 1000)
+  await page.goto('/board')
+  const card = page.locator('.wg-slot[data-card="today"]')
+  const fil = card.locator('.fil')
+  await fil.waitFor({ state: 'visible', timeout: 15_000 })
+  await expect(card.locator('.fil__now')).toHaveCount(1)
+  const crepes = card.getByText('Crêpes').first()
+  await expect(crepes).toBeVisible()
+  expect((await boxOf(crepes)).y).toBeLessThan((await boxOf(fil)).y)
+})

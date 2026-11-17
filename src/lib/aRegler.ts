@@ -51,6 +51,14 @@ export function useARegler(enabled: boolean) {
   })
 }
 
+// « Ce soir » already says tonight's hero meal is not planned, and offers to pick one.
+// The same fact as an « À régler » line beside it read as a second, louder alarm about
+// one thing (review 2026-11-17, P1 #9). So when that card is on the board, today's empty
+// meal leaves this one; tomorrow's stays (nothing else on the board says it).
+export function withoutTonightMeal(signals: Friction[]): Friction[] {
+  return signals.filter((s) => !(s.kind === 'meal-empty' && s.sub === 'today'))
+}
+
 // One signal → an icon + a human line, in the app language. Pure (takes `t`).
 export function frictionRow(f: Friction, t: Dict): { icon: IconName; text: string } {
   switch (f.kind) {

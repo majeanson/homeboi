@@ -942,7 +942,7 @@ export function Board() {
   // « Souvenirs » (C1) — the keepsake shelf. A guest sees the pictures, never another
   // face's kept mots (the board payload never carries an addressed one to a guest).
   nodes.souvenirs = <SouvenirsCard readOnly={ro} />
-  nodes.aRegler = <ARegler enabled={acts && !ro} variant="card" />
+  nodes.aRegler = <ARegler enabled={acts && !ro} variant="card" tonightShown={isCardVisible(boardCards, 'heroes')} />
   // « L'auto » glance — the car's status today + today's rides. #28
   nodes.autoCard = <AutoCard />
   // « Aujourd'hui » (+ « Demain » bunched) — the day's agenda, AND the day's
@@ -1018,7 +1018,13 @@ export function Board() {
   const liveMeals = otherMeals.filter((m) => !m.past)
   const pastMeals = otherMeals.filter((m) => m.past)
   const liveEvents = shownEvents.filter((e) => !evtPast(e))
-  const pastEls = [...pastMeals.map(mealAct), ...shownEvents.filter(evtPast).map(eventAct)]
+  // On the ribbon path the past EVENTS are dimmed inside the Fil, and the past MEALS ride
+  // with the live ones above it (`ribbonPastMeals` below): meals are not on its time axis.
+  // They used to land here instead, so the card drew a SECOND « Maintenant » marker under
+  // the ribbon — after the 19 h yoga — and the morning's « Déjeuner : Crêpes » after it
+  // (review 2026-11-17, P1 #9).
+  const pastEls = filActive ? [] : [...pastMeals.map(mealAct), ...shownEvents.filter(evtPast).map(eventAct)]
+  const ribbonPastMeals = filActive ? pastMeals : []
   // The meal `prepAct` leads the card with (« Préparer le repas · Macaroni chinois »).
   // Computed ONCE here so the grown row and the mini row can't disagree about whether
   // there is something to cook — the mini used not to name it at all, which is how an
@@ -1150,6 +1156,7 @@ export function Board() {
         "Ce soir" hero above. A past-slot meal sinks, struck, to the foot of the list.
         Each carries its slot food icon so the slots read apart, like La cuisine. */}
     {liveMeals.map(mealAct)}
+    {ribbonPastMeals.map(mealAct)}
     {filActive && (
       /* « Le fil du jour » — a busy day read as a SHAPE: timed events + L'auto rides
          + work windows placed on a time axis (past dimmed in place, a « maintenant »
