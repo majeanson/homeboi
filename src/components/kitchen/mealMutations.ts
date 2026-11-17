@@ -71,11 +71,13 @@ export async function restoreMeals(qc: QueryClient, meals: MealRow[]) {
 // the server's position. Same endpoint + keys as every other meal write.
 
 // A planned meal leaves its day for the bin (its slot rides along, so a dîner dragged
-// off and back is still a dîner).
-export async function unplaceMeal(qc: QueryClient, meal: MealRow) {
+// off and back is still a dîner). `linkId` (mig 0156): the bin group it joins — a
+// supper headline of two meals dragged off its day lands as a linked pair, because on
+// the day they already moved as one.
+export async function unplaceMeal(qc: QueryClient, meal: MealRow, linkId: string | null = null) {
   await writeWith(qc, 'meals', {
     method: 'POST',
-    body: { action: 'unplace', id: meal.id },
+    body: { action: 'unplace', id: meal.id, ...(linkId ? { linkId } : {}) },
     affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY, MONTH_KEY],
     optimistic: (c) =>
       c.setQueryData<MealsData>(MEALS_KEY, (d) =>
@@ -85,7 +87,7 @@ export async function unplaceMeal(qc: QueryClient, meal: MealRow) {
               days: d.days.filter((m) => m.id !== meal.id),
               unplaced: [
                 ...(d.unplaced ?? []).filter((u) => u.id !== meal.id),
-                { id: meal.id, title: meal.title, recipe_id: meal.recipe_id ?? null, slot: meal.slot, is_leftover: meal.is_leftover ?? 0, position: Number.MAX_SAFE_INTEGER },
+                { id: meal.id, title: meal.title, recipe_id: meal.recipe_id ?? null, slot: meal.slot, is_leftover: meal.is_leftover ?? 0, position: Number.MAX_SAFE_INTEGER, link_id: linkId },
               ],
             }
           : d,
@@ -114,4 +116,53 @@ export async function placeMeal(qc: QueryClient, u: UnplacedMeal, toDate: number
           : d,
       ),
   }).catch(writeFailed)
+}
+
+// A fresh bin group key, minted on the client so the optimistic paint and the server
+// agree on it (the server accepts only this shape — see asLinkId in api/meals.ts).
+export function newLinkId(): string {
+  const a = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+  let out = ''
+  for (const b of crypto.getRandomValues(new Uint8Array(12))) out += a[b % a.length]
+  return out
+}
+
+// Regroup « À placer » rows (mig 0156): `groups` is the bin's grouping as it should
+// read AFTER the gesture — every list of two or more becomes one linked group, a list
+// of one goes back to alone. Linking two neighbours and cutting a group in two are the
+// same write, and each is undone by the opposite tap on the same connector.
+export async function relinkUnplaced(qc: QueryClient, groups: string[][]) {
+  const keyOf = new Map<string, string | null>()
+  for (const g of groups) {
+    const k = g.length > 1 ? newLinkId() : null
+    for (const id of g) keyOf.set(id, k)
+  }
+  await writeWith(qc, 'meals', {
+    method: 'POST',
+    body: { action: 'link', groups },
+    affectedKeys: [MEALS_KEY],
+    optimistic: (c) =>
+      c.setQueryData<MealsData>(MEALS_KEY, (d) =>
+        d ? { ...d, unplaced: (d.unplaced ?? []).map((u) => (keyOf.has(u.id) ? { ...u, link_id: keyOf.get(u.id) ?? null } : u)) } : d,
+      ),
+  }).catch(writeFailed)
+}
+
+/** The bin's rows as their groups, in reading order: a group sits where its first
+ *  row sits, and its rows follow in their own order. A key only one row carries (its
+ *  partner was placed or removed) reads as alone. */
+export function unplacedGroups<T extends { id: string; link_id?: string | null }>(rows: T[]): T[][] {
+  const out: T[][] = []
+  const at = new Map<string, T[]>()
+  for (const r of rows) {
+    const k = r.link_id
+    const g = k ? at.get(k) : undefined
+    if (g) g.push(r)
+    else {
+      const ng = [r]
+      out.push(ng)
+      if (k) at.set(k, ng)
+    }
+  }
+  return out
 }

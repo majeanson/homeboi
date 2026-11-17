@@ -47,6 +47,11 @@ async function statefulMeals(page: Page) {
       const u = st.unplaced.find((x) => x.id === b.id)
       st.unplaced = st.unplaced.filter((x) => x.id !== b.id)
       if (u) st.days.push({ ...u, date: b.toDate, slot: b.slot, cook_member_id: null })
+    } else if (b.action === 'link') {
+      for (const g of b.groups as string[][]) {
+        const key = g.length > 1 ? `k-${g.join('-')}` : null
+        st.unplaced = st.unplaced.map((u) => (g.includes(u.id) ? { ...u, link_id: key } : u))
+      }
     } else if (b.action === 'unplace') {
       const m = st.days.find((x) => x.id === b.id)
       st.days = st.days.filter((x) => x.id !== b.id)
@@ -115,7 +120,7 @@ test('a planned side meal drags off its day INTO « À placer »', async ({ page
 
 test('without a drag: tap a row, pick a day (the mouse / keyboard mirror)', async ({ page }) => {
   await openGrid(page)
-  await page.getByRole('button', { name: /Poké bols/ }).click()
+  await page.locator('.kitchen__unplaced-open', { hasText: 'Poké bols' }).click()
   const picker = page.locator('.kitchen__day--unplaced .meal-plan-pick')
   await expect(picker).toBeVisible()
   const [req] = await Promise.all([page.waitForRequest(mealsPost('place')), picker.locator('.meal-plan-pick__days button').nth(2).click()])
@@ -192,4 +197,74 @@ test('« Magasiner la semaine » shops the « À placer » meals too', async ({ 
     shop.locator('.btn--primary').click(),
   ])
   expect(req.postData() ?? '').toContain('Salsa')
+})
+
+// ── Linked rows (mig 0156; Marc, 2026-11-16: « link two recipes together in the À placer
+// panel so that after they move together until explicitly unlinked »).
+
+test('the 🔗 between two rows links them — one bracket — and the same 🔗 cuts them apart', async ({ page }) => {
+  await openGrid(page)
+  const bin = page.locator('.kitchen__day--unplaced')
+  const link = bin.getByRole('button', { name: /Lier « Lasagne » et « Poké bols »/ })
+  await expect(link).toHaveAttribute('aria-pressed', 'false')
+  const [req] = await Promise.all([page.waitForRequest(mealsPost('link')), link.click()])
+  expect(req.postDataJSON()).toMatchObject({ action: 'link', groups: [['u1', 'u2']] })
+  const group = bin.locator('.kitchen__unplaced-group.is-linked')
+  await expect(group.locator('.kitchen__unplaced-row')).toHaveText([/Lasagne/, /Poké bols/])
+  await expect(link).toHaveAttribute('aria-pressed', 'true')
+
+  const [cut] = await Promise.all([page.waitForRequest(mealsPost('link')), link.click()])
+  expect(cut.postDataJSON()).toMatchObject({ action: 'link', groups: [['u1'], ['u2']] })
+  await expect(bin.locator('.kitchen__unplaced-group.is-linked')).toHaveCount(0)
+})
+
+test('a linked pair drags as one: both land on the day, in one slot', async ({ page }) => {
+  await openGrid(page)
+  await page.getByRole('button', { name: /Lier « Lasagne » et « Poké bols »/ }).click()
+  await expect(page.locator('.kitchen__unplaced-group.is-linked')).toBeVisible()
+  const tomorrow = addLocalDays(MMID, 1)
+  const placed: unknown[] = []
+  page.on('request', (r) => void (mealsPost('place')(r) && placed.push(r.postDataJSON())))
+  const row = page.locator('.kitchen__unplaced-row', { hasText: 'Poké bols' })
+  const target = page.locator(`.kitchen__day[data-dnd-zone="${tomorrow}"]`)
+  await holdDrag(page, row, target)
+  await expect.poll(() => placed.length).toBe(2)
+  expect(placed).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ id: 'u1', toDate: tomorrow, slot: 'supper' }),
+      expect.objectContaining({ id: 'u2', toDate: tomorrow, slot: 'supper' }),
+    ]),
+  )
+  await expect(page.locator('.kitchen__unplaced-row')).toHaveCount(0)
+  await expect(target).toContainText('Lasagne')
+  await expect(target).toContainText('Poké bols')
+})
+
+// « drop inside specific meals for a date … dinner being the most spacious and obvious
+// drop zone » (same day): arriving over a day opens its meal pills, the hero widest.
+test('arriving over a day opens its meal pills — the souper widest — and a pill picks the slot', async ({ page }) => {
+  await openGrid(page)
+  const tomorrow = addLocalDays(MMID, 1)
+  const day = page.locator(`.kitchen__day[data-dnd-zone="${tomorrow}"]`)
+  const row = page.locator('.kitchen__unplaced-row', { hasText: 'Lasagne' })
+  const a = await boxOf(row)
+  await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2)
+  await page.mouse.down()
+  await expect(page.locator('.dnd-ghost')).toBeVisible({ timeout: HOLD * 4 })
+  await expect(page.locator('.kitchen__slot-drops'), 'no pills before arriving anywhere').toHaveCount(0)
+  const d = await boxOf(day)
+  await page.mouse.move(d.x + d.width / 2, d.y + d.height / 2, { steps: 12 })
+  const pills = day.locator('.kitchen__slot-drop')
+  await expect(pills.first()).toHaveClass(/is-hero/)
+  await expect(page.locator('.kitchen__slot-drops'), 'only the day under the finger opens').toHaveCount(1)
+  const hero = await boxOf(pills.first())
+  const side = await boxOf(pills.nth(1))
+  expect(hero.width * hero.height, 'the hero is the big, obvious target').toBeGreaterThan(side.width * side.height * 3)
+  const lunch = day.locator(`[data-dnd-zone="slot:${tomorrow}:lunch"]`)
+  const l = await boxOf(lunch)
+  await page.mouse.move(l.x + l.width / 2, l.y + l.height / 2, { steps: 6 })
+  await expect(lunch).toHaveClass(/is-over/)
+  const [req] = await Promise.all([page.waitForRequest(mealsPost('place')), page.mouse.up()])
+  expect(req.postDataJSON()).toMatchObject({ action: 'place', id: 'u1', toDate: tomorrow, slot: 'lunch' })
+  await expect(page.locator('.kitchen__slot-drops')).toHaveCount(0)
 })

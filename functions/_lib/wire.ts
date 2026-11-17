@@ -287,6 +287,8 @@ export interface UnplacedMealRow {
   slot: string | null
   is_leftover: number
   position: number
+  /** Mig 0156: rows sharing a key move as one (drag, tap-to-place); null = alone. */
+  link_id: string | null
 }
 
 /** Two faces of one route: the paged past, and `?summary=1`'s dish list. */

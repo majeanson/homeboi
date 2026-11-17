@@ -894,3 +894,98 @@
 .kitchen__unplaced-row.is-dragging {
   opacity: 0.45;
 }
+
+/* « À placer » LINKED rows (mig 0156): a group of rows that move as one, drawn in one
+   bracket on its leading edge — the same inset rail a day card wears, because a linked
+   group IS a little day without a date. Between two neighbouring rows sits the 🔗
+   toggle: faint while they are apart (an invitation), accent while they are linked. It
+   is a 38px target centred in the gap, and the negative margins pull the rows back
+   together so the bin does not get taller just for carrying it. */
+.kitchen__unplaced-group.is-linked {
+  border-radius: var(--radius-sm);
+  box-shadow: inset 3px 0 0 var(--accent);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  padding-left: 0.45rem;
+}
+.kitchen__unplaced-link {
+  /* Under the meal icons, like a chain between them: the 38px button's glyph centre
+     sits on the 18px slot icon's centre. */
+  align-self: flex-start;
+  margin: -0.7rem 0 -0.7rem -10px;
+  position: relative;
+  z-index: 1;
+  color: var(--ink-faint);
+  opacity: 0.55;
+}
+.kitchen__unplaced-link.is-on {
+  color: var(--accent);
+  opacity: 1;
+}
+.kitchen__unplaced-link:hover,
+.kitchen__unplaced-link:focus-visible {
+  opacity: 1;
+}
+
+/* A day's meal pills while a drag hovers it — a panel laid OVER the card, never
+   resizing it (a card that grew under a moving finger would shove the next day under
+   the pointer). On a short card the panel keeps a floor and hangs past the card's
+   bottom edge instead, over the next day — the pills stay finger-sized either way.
+   The hero (souper) is the top band, most of the panel and the full width: the
+   biggest, most obvious target, and where a drop « somewhere on the day » lands. The
+   side slots share one row beneath. Each pill is its own drop zone (Kitchen's
+   SLOT_ZONE); the gaps between them still read as the day itself. */
+.kitchen__slot-drops {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  right: 4px;
+  height: max(calc(100% - 8px), 7rem);
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  background: var(--card);
+  box-shadow: var(--shadow-md);
+}
+.kitchen__slot-drops-sides {
+  flex: 1 1 0;
+  min-height: 2.5rem;
+  display: flex;
+  gap: 4px;
+}
+.kitchen__slot-drop {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.25rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px dashed color-mix(in srgb, var(--slot-c) 60%, var(--line-strong));
+  background: color-mix(in srgb, var(--slot-c) 10%, var(--card));
+  color: var(--ink-soft);
+  font-size: 0.75rem;
+}
+.kitchen__slot-drop.is-hero {
+  flex: 1.8 1 0;
+  gap: 0.45rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--slot-c) 18%, var(--card));
+}
+.kitchen__slot-drop.is-over {
+  border-style: solid;
+  border-color: var(--slot-c);
+  background: color-mix(in srgb, var(--slot-c) 32%, var(--card));
+  color: var(--ink);
+}
+.kitchen__slot-drop > svg {
+  color: var(--slot-c);
+}
+.kitchen__slot-drop-label {
+  max-width: 100%;
+}

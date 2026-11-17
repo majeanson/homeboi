@@ -1140,6 +1140,7 @@ export const EN: typeof FR = {
     unplacedEmpty: "This week's meals, no day yet. Drop them here, then onto a day.",
     unplacedAdd: 'Add a meal to place',
     unplacedRemove: 'Remove from "To place"',
+    unplacedLink: (a: string, b: string) => `Link "${a}" and "${b}" — they move together`,
     addIdea: 'Add an idea',
     removeIdea: 'Remove idea',
     shopWeek: 'Shop the week',

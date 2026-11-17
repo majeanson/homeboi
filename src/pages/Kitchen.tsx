@@ -39,12 +39,12 @@ import { MealIdeas } from '../components/kitchen/MealIdeas'
 import { Leftovers, usePlanLeftover } from '../components/kitchen/Leftovers'
 import { weekDates, useWeekLabeled } from '../components/kitchen/week'
 import { useRecipeForMeal } from '../components/kitchen/mealLookup'
-import { reschedule, planMeal, planMealRecipe, placeMeal, unplaceMeal } from '../components/kitchen/mealMutations'
+import { reschedule, planMeal, planMealRecipe, placeMeal, unplaceMeal, newLinkId } from '../components/kitchen/mealMutations'
 import { UnplacedDay, UNPLACED_ZONE } from '../components/kitchen/UnplacedDay'
 import { EntityCombobox, type ComboOption } from '../components/EntityCombobox'
 import { mealPickOptions, type MealPick } from '../components/kitchen/comboOptions'
 import { isGuest } from '../lib/device'
-import { SLOT_ICON_NAME, WINDOW_DAYS_DEFAULT } from '../lib/mealSlots'
+import { SLOT_ICON_NAME, WINDOW_DAYS_DEFAULT, slotLabel, type MealSlot } from '../lib/mealSlots'
 import { useMealPrefs } from '../lib/mealPrefs'
 import { useKitchenActions, NO_KITCHEN_ACTIONS } from '../lib/kitchenActions'
 import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
@@ -224,42 +224,85 @@ export function Kitchen() {
   // `unplaced:<id>` onto a day, and the bin itself is a zone (UNPLACED_ZONE) any
   // planned meal — a whole supper headline or one side meal — can be dropped into.
   const UNPLACED_PREFIX = `${UNPLACED_ZONE}:`
+  // …and a fourth kind of ZONE: one meal pill of a day, `slot:<date>:<slot>` (Marc,
+  // 2026-11-16: « drop inside specific meals for a date … dinner being the most spacious
+  // and obvious drop zone »). They appear only on the day the drag has arrived over
+  // (see the week grid), nested inside the day's own zone — the hit-test walks up to the
+  // NEAREST zone, so a pill wins over its day, and the gaps between pills still read as
+  // « the day » (a meal keeps its own slot there, as before).
+  const SLOT_ZONE = /^slot:(\d+):([^:]+)$/
   const dayDnd = usePointerDnd({
     onDrop: (fromKey, toKey) => {
       if (toKey === UNPLACED_ZONE) {
         if (fromKey.startsWith(UNPLACED_PREFIX)) return
         const one = MEAL_KEY.exec(fromKey)
         const moving = one ? days.filter((m) => m.id === one[3]) : mealsFor(Number(fromKey), heroSlot)
-        for (const m of moving) void unplaceMeal(qc, m)
+        // A headline of several meals moved as one on its day — it stays one in the bin.
+        const link = moving.length > 1 ? newLinkId() : null
+        for (const m of moving) void unplaceMeal(qc, m, link)
         return
       }
+      const into = SLOT_ZONE.exec(toKey)
+      const to = into ? Number(into[1]) : Number(toKey)
+      const toSlot = into?.[2] ?? null
+      if (!Number.isFinite(to)) return
       if (fromKey.startsWith(UNPLACED_PREFIX)) {
         const u = unplaced.find((x) => x.id === fromKey.slice(UNPLACED_PREFIX.length))
-        const day = Number(toKey)
-        if (u && Number.isFinite(day)) void placeMeal(qc, u, day, u.slot ?? heroSlot)
+        if (!u) return
+        // A linked group (mig 0156) lands as one, in one slot: the pill's, else the
+        // grabbed row's own, else the hero.
+        const group = u.link_id ? unplaced.filter((x) => x.link_id === u.link_id) : [u]
+        const slot = toSlot ?? u.slot ?? heroSlot
+        for (const m of group) void placeMeal(qc, m, to, slot)
         return
       }
-      const to = Number(toKey)
-      if (!Number.isFinite(to)) return
       const one = MEAL_KEY.exec(fromKey)
       if (one) {
         const [, fromDate, slot, id] = one
-        if (Number(fromDate) === to || !id || !slot) return
-        reschedule(qc, id, to, slot)
+        if (!id || !slot) return
+        const dest = toSlot ?? slot
+        if (Number(fromDate) === to && dest === slot) return
+        reschedule(qc, id, to, dest)
         return
       }
       const from = Number(fromKey)
-      if (!Number.isFinite(from) || from === to) return
-      for (const m of mealsFor(from, heroSlot)) reschedule(qc, m.id, to, heroSlot)
+      const dest = toSlot ?? heroSlot
+      if (!Number.isFinite(from) || (from === to && dest === heroSlot)) return
+      for (const m of mealsFor(from, heroSlot)) reschedule(qc, m.id, to, dest)
     },
     canDrop: (fromKey, toKey) => {
       if (fromKey.startsWith(UNPLACED_PREFIX)) return toKey !== UNPLACED_ZONE
       const one = MEAL_KEY.exec(fromKey)
+      const into = SLOT_ZONE.exec(toKey)
+      if (into) return one ? !(one[1] === into[1] && one[2] === into[2]) : !(fromKey === into[1] && into[2] === heroSlot)
       return one ? one[1] !== toKey : fromKey !== toKey
     },
     // Press-and-hold to move a day's plan — a calm, deliberate gesture, not a flick.
     holdMs: DND_HOLD_MS,
   })
+
+  // The day a live drag is over — its own zone or one of its meal pills. Only THAT day
+  // opens its pills: seven days of pills at once would be a wall of targets.
+  const overDay = dayDnd.activeId == null || dayDnd.over == null ? null : (SLOT_ZONE.exec(dayDnd.over)?.[1] ?? dayDnd.over)
+  // The pills, hero FIRST and widest: the souper (or the household's hero) is the drop
+  // most drags mean, so it is the biggest target; the visible side slots follow in the
+  // household's order.
+  const dropSlots = [heroSlot, ...mealPrefs.sideSlots.filter((x) => mealPrefs.isVisible(x))]
+  const slotPill = (date: number, sl: MealSlot) => {
+    const key = `slot:${date}:${sl}`
+    const hero = sl === heroSlot
+    return (
+      <div
+        key={sl}
+        data-dnd-zone={key}
+        className={'kitchen__slot-drop' + (hero ? ' is-hero' : '') + (dayDnd.over === key ? ' is-over' : '')}
+        style={{ '--slot-c': mealPrefs.color(sl) ?? 'var(--accent)' } as React.CSSProperties}
+      >
+        <Icon name={SLOT_ICON_NAME[sl]} size={hero ? 22 : 16} />
+        <span className="kitchen__slot-drop-label ellipsis">{slotLabel(sl, t)}</span>
+      </div>
+    )
+  }
 
   // The week-action flows (shop / suggest) + the toddler kid-suggest. The per-day
   // meal editing moved to DayPlanPage; this page keeps only kidSuggest (the toddler
@@ -587,7 +630,8 @@ export function Kitchen() {
               // insertion LINE this used to draw was telling a small lie about where
               // the drop would land. It wears the dotted « into » outline instead —
               // the third cue in lib/dnd's « THE THREE DROP CUES ».
-              const overHere = dropCueOf(dayDnd, String(date)) === 'into'
+              const slotsHere = overDay === String(date)
+              const overHere = slotsHere || dropCueOf(dayDnd, String(date)) === 'into'
               return (
               <li
                 key={date}
@@ -599,6 +643,19 @@ export function Kitchen() {
                   (overHere ? ' is-droptarget' : '')
                 }
               >
+                {/* The day's meal pills while a drag hovers it — laid OVER the card (no
+                    layout change under a moving finger: a card that grew would shove
+                    the next day under the pointer). Pointer-only and aria-hidden: the
+                    non-drag doors (the tap-a-row day picker, the day scene's slot
+                    fields) already pick a slot. */}
+                {slotsHere && (
+                  <div className="kitchen__slot-drops" aria-hidden="true">
+                    {slotPill(date, heroSlot)}
+                    {dropSlots.length > 1 && (
+                      <div className="kitchen__slot-drops-sides">{dropSlots.slice(1).map((sl) => slotPill(date, sl))}</div>
+                    )}
+                  </div>
+                )}
                 {/* The date + the edit door stick as the pill's header — its ONLY
                     two jobs are "which day" and "manage it"; the meals scroll below.
                     Today/tomorrow get a relative tag; today's whole card lights up

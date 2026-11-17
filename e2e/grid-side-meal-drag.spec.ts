@@ -38,8 +38,10 @@ async function openGrid(page: Page) {
   await expect(page.locator('.kitchen__day.is-today')).toBeVisible({ timeout: 15_000 })
 }
 
-/** Press-and-hold a row past DND_HOLD_MS, carry it onto a day zone, release. */
-async function holdDrag(page: Page, from: ReturnType<Page['locator']>, toZoneDate: number) {
+/** Press-and-hold a row past DND_HOLD_MS, carry it onto a day zone, release — onto
+ *  one of the day's meal pills when `slot` is given (they open as the drag arrives;
+ *  the hero pill is the big band where a drop « on the day » lands). */
+async function holdDrag(page: Page, from: ReturnType<Page['locator']>, toZoneDate: number, slot?: string) {
   const target = page.locator(`.kitchen__day[data-dnd-zone="${toZoneDate}"]`)
   await target.scrollIntoViewIfNeeded()
   const a = await from.boundingBox()
@@ -54,15 +56,25 @@ async function holdDrag(page: Page, from: ReturnType<Page['locator']>, toZoneDat
   await page.mouse.move(sx + 2, sy + 2)
   await page.mouse.move(b.x + b.width / 2, b.y + 20, { steps: 12 })
   await expect(target).toHaveClass(/is-droptarget/)
+  if (slot) {
+    const pill = target.locator(`[data-dnd-zone="slot:${toZoneDate}:${slot}"]`)
+    const p = await pill.boundingBox()
+    if (!p) throw new Error('slot pill not measurable')
+    await page.mouse.move(p.x + p.width / 2, p.y + p.height / 2, { steps: 6 })
+    await expect(pill).toHaveClass(/is-over/)
+  }
   await page.mouse.up()
 }
 
-test('a side meal (breakfast) drags to the next day as ONE meal, in its own slot', async ({ page }) => {
+// Since the meal pills (2026-11-16), the big band of a hovered day IS the souper: a
+// breakfast dropped there becomes a souper, on purpose — it says so under the finger.
+// Its own slot is its own pill.
+test('a side meal (breakfast) drags to the next day as ONE meal, onto its own slot pill', async ({ page }) => {
   await openGrid(page)
   const nextDay = addLocalDays(MMID, 1)
   const crepes = page.locator('.kitchen__day.is-today').locator('.kitchen__day-meal', { hasText: 'Crêpes' })
   await expect(crepes).toBeVisible()
-  const [req] = await Promise.all([page.waitForRequest(isReschedule, { timeout: 20_000 }), holdDrag(page, crepes, nextDay)])
+  const [req] = await Promise.all([page.waitForRequest(isReschedule, { timeout: 20_000 }), holdDrag(page, crepes, nextDay, 'breakfast')])
   const body = JSON.parse(req.postData() ?? '{}') as { action: string; id: string; toDate: number; slot?: string }
   expect(body).toMatchObject({ action: 'reschedule', id: 'meal4', toDate: nextDay, slot: 'breakfast' })
 })

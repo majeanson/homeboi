@@ -49,6 +49,9 @@ const RECENT_DAYS = 3
 // « À placer » holds a WEEK's worth of undated meals — a handful, not a backlog. The
 // cap is a ceiling against a runaway client, far above any real week.
 const UNPLACED_MAX = 40
+// A bin group key the client minted (a day's headline unplaced as a linked pair): the
+// newId shape, never anything a reader would have to guard.
+const asLinkId = (v: unknown): string | null => (typeof v === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(v) ? v : null)
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const today = localDayStart(new Date(Date.now()))
@@ -105,7 +108,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   // offline snapshot all carry it: a meal moving between the bin and a day is one
   // write against one cache, never two caches that disagree mid-drag.
   const { results: unplaced } = await ctx.env.DB.prepare(
-    'SELECT id, title, recipe_id, slot, is_leftover, position FROM meals_unplaced WHERE household_id = ? ORDER BY position, created_at, id',
+    'SELECT id, title, recipe_id, slot, is_leftover, position, link_id FROM meals_unplaced WHERE household_id = ? ORDER BY position, created_at, id',
   )
     .bind(actor.householdId)
     .all<UnplacedMealRow>()
@@ -115,7 +118,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
 
 export const onRequestPost = authed(async (ctx, actor) => {
   const body = await readJson<{
-    action?: 'move' | 'clear' | 'reschedule' | 'park' | 'unplace' | 'place'
+    action?: 'move' | 'clear' | 'reschedule' | 'park' | 'unplace' | 'place' | 'link'
     // move
     id?: string
     dir?: 'up' | 'down'
@@ -133,6 +136,11 @@ export const onRequestPost = authed(async (ctx, actor) => {
     suggestedBy?: string // the child's member id, for "suggéré par X"
     isLeftover?: boolean // announce-from-a-meal WITH a day: a planned leftover (badged "Restants")
     sourceMealId?: string // optional provenance — the meal it was left over from
+    // « À placer » links (mig 0156). unplace: the group key the meal joins in the bin
+    // (a supper headline of two meals dragged off its day stays a pair). link: the
+    // bin's new grouping — each inner list becomes one group (a list of one = alone).
+    linkId?: string
+    groups?: string[][]
   }>(ctx.request)
 
   // ── Reorder within a slot: ↑/↓ one step. Renumber the whole slot densely by
@@ -224,9 +232,9 @@ export const onRequestPost = authed(async (ctx, actor) => {
     if (!m) return ok({ ok: true }) // gone already (or already parked) — nothing to move
     await ctx.env.DB.batch([
       ctx.env.DB.prepare(
-        `INSERT OR IGNORE INTO meals_unplaced (id, household_id, title, recipe_id, slot, is_leftover, position, created_at)
-         SELECT ?, ?, ?, ?, ?, ?, COALESCE(MAX(position), -1) + 1, ? FROM meals_unplaced WHERE household_id = ?`,
-      ).bind(body.id, actor.householdId, m.title, m.recipe_id, m.slot, m.is_leftover ? 1 : 0, nowSec(), actor.householdId),
+        `INSERT OR IGNORE INTO meals_unplaced (id, household_id, title, recipe_id, slot, is_leftover, position, created_at, link_id)
+         SELECT ?, ?, ?, ?, ?, ?, COALESCE(MAX(position), -1) + 1, ?, ? FROM meals_unplaced WHERE household_id = ?`,
+      ).bind(body.id, actor.householdId, m.title, m.recipe_id, m.slot, m.is_leftover ? 1 : 0, nowSec(), asLinkId(body.linkId), actor.householdId),
       ctx.env.DB.prepare('DELETE FROM meals WHERE id = ? AND household_id = ?').bind(body.id, actor.householdId),
     ])
     return ok({ ok: true })
@@ -247,6 +255,26 @@ export const onRequestPost = authed(async (ctx, actor) => {
       ).bind(body.id, actor.householdId, toDate, slot, u.title, u.recipe_id, nowSec(), u.is_leftover ? 1 : 0, actor.householdId, toDate, slot),
       ctx.env.DB.prepare('DELETE FROM meals_unplaced WHERE id = ? AND household_id = ?').bind(body.id, actor.householdId),
     ])
+    return ok({ ok: true })
+  }
+
+  // ── « À placer » links (mig 0156): regroup bin rows. Each inner list is one group —
+  //    two or more ids share a fresh key, a list of one goes back to alone — so linking
+  //    two groups and cutting one in two are the SAME write (the client sends the
+  //    groups as they should read after the gesture). Rows of another household, or
+  //    already placed, simply match nothing.
+  if (body?.action === 'link') {
+    const groups = Array.isArray(body.groups) ? body.groups : null
+    if (!groups || groups.length === 0 || groups.length > UNPLACED_MAX) return badRequest('groups requis.')
+    const stmts: D1PreparedStatement[] = []
+    for (const g of groups) {
+      if (!Array.isArray(g) || g.length === 0 || g.length > UNPLACED_MAX || !g.every((x) => typeof x === 'string' && x.length <= 64))
+        return badRequest('groups invalide.')
+      const key = g.length > 1 ? newId() : null
+      for (const id of g)
+        stmts.push(ctx.env.DB.prepare('UPDATE meals_unplaced SET link_id = ? WHERE id = ? AND household_id = ?').bind(key, id, actor.householdId))
+    }
+    await ctx.env.DB.batch(stmts)
     return ok({ ok: true })
   }
 

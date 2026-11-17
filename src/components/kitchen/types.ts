@@ -81,6 +81,8 @@ export interface UnplacedMeal {
   slot: string | null // the slot it came from; null = the hero at drop time
   is_leftover: number
   position: number
+  // Mig 0156: bin rows sharing a key move as one until unlinked; null/absent = alone.
+  link_id?: string | null
 }
 export type MealsData = { days: MealRow[]; weekStart: number; windowDays: number; recent: MealRow[]; unplaced?: UnplacedMeal[] }
 // One « Historique » page: up to a fortnight of past planned days (newest first,

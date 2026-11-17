@@ -1,0 +1,13 @@
+-- « À placer », linked meals (Marc, 2026-11-16: « link two recipes together in the
+-- À placer panel so that after they move together until explicitly unlinked »).
+--
+-- On a day, a slot's meals already travel together (the supper headline drags the
+-- whole slot). In the bin each row was alone, so « spaghetti + salade César » had to
+-- be placed twice and could land on two days. link_id groups bin rows: every row
+-- that shares one moves as one (drag, tap-to-place), until the household unlinks it.
+--
+-- link_id: an opaque group key (newId shape), NULL = alone. Not a FK, not a table of
+-- its own — a group is nothing but the rows that share the key, so a row placed or
+-- removed simply leaves it, and a group of one reads as alone. Soft, like slot.
+-- Additive, forward-only, filename-locked.
+ALTER TABLE meals_unplaced ADD COLUMN link_id TEXT;

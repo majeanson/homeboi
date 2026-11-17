@@ -1343,6 +1343,7 @@ export const FR = {
     unplacedEmpty: 'Les repas de la semaine, sans jour encore. Glisse-les ici, puis sur un jour.',
     unplacedAdd: 'Ajouter un repas à placer',
     unplacedRemove: 'Retirer de « À placer »',
+    unplacedLink: (a: string, b: string) => `Lier « ${a} » et « ${b} » — ils se placent ensemble`,
     addIdea: 'Ajouter une idée',
     removeIdea: 'Retirer l’idée',
     shopWeek: 'Magasiner la semaine',

@@ -23,7 +23,7 @@ interface MealsRead {
   weekStart: number
   windowDays: number
   recent: Meal[]
-  unplaced: { id: string; title: string; recipe_id: string | null; slot: string | null; is_leftover: number; position: number }[]
+  unplaced: { id: string; title: string; recipe_id: string | null; slot: string | null; is_leftover: number; position: number; link_id: string | null }[]
 }
 
 const today = () => localDayStart(new Date())
@@ -373,6 +373,58 @@ describe('« À placer » — the week without its days', () => {
     expect((await plan(s)).days.map((m) => m.id), 'a planned meal with that id is untouched').toContain(parked.id)
     await okJson(s.fetch('/api/meals', { method: 'DELETE', body: { id: soupe.id, unplaced: true } }))
     expect((await plan(s)).unplaced).toEqual([])
+  })
+
+  // Mig 0156 (Marc, 2026-11-16: « link two recipes together … they move together until
+  // explicitly unlinked »). The server only stores the grouping; moving a group as one is
+  // the client's (Kitchen's dayDnd, UnplacedDay's picker) — e2e/unplaced-meals.spec.ts.
+  it('« À placer » rows link into a group, split back, and a headline unplaces as a pair', async () => {
+    const s = await household('meals-unplaced-link', undefined, { empty: true })
+    const park = async (title: string) => (await okJson<{ id: string }>(s.fetch('/api/meals', { method: 'POST', body: { action: 'park', title } }))).id
+    const a = await park('Spaghetti')
+    const b = await park('Salade César')
+    const c = await park('Tacos')
+    const keys = async () => Object.fromEntries((await plan(s)).unplaced.map((u) => [u.id, u.link_id]))
+
+    expect(Object.values(await keys()), 'a parked row is alone').toEqual([null, null, null])
+    await action(s, { action: 'link', groups: [[a, b]] })
+    let k = await keys()
+    expect(k[a], 'linked rows share one key').toBeTruthy()
+    expect(k[b]).toBe(k[a])
+    expect(k[c], 'a row outside the gesture is untouched').toBeNull()
+
+    // Grow the group, then cut it after its first row: one write each.
+    await action(s, { action: 'link', groups: [[a, b, c]] })
+    k = await keys()
+    expect(new Set([k[a], k[b], k[c]]).size).toBe(1)
+    await action(s, { action: 'link', groups: [[a], [b, c]] })
+    k = await keys()
+    expect(k[a], 'a group of one reads as alone').toBeNull()
+    expect(k[b]).toBeTruthy()
+    expect(k[c]).toBe(k[b])
+    expect((await s.fetch('/api/meals', { method: 'POST', body: { action: 'link', groups: [] } })).status).toBe(400)
+    expect((await s.fetch('/api/meals', { method: 'POST', body: { action: 'link', groups: [['x'.repeat(65)]] } })).status).toBe(400)
+
+    // A supper headline of two meals dragged off its day joins the bin as ONE group.
+    const m1 = await add(s, { title: 'Poulet', date: day(1), slot: 'supper' })
+    const m2 = await add(s, { title: 'Riz', date: day(1), slot: 'supper' })
+    await action(s, { action: 'unplace', id: m1.id, linkId: 'pairKey123' })
+    await action(s, { action: 'unplace', id: m2.id, linkId: 'pairKey123' })
+    k = await keys()
+    expect(k[m1.id]).toBe('pairKey123')
+    expect(k[m2.id]).toBe('pairKey123')
+    const m3 = await add(s, { title: 'Soupe', date: day(2), slot: 'supper' })
+    await action(s, { action: 'unplace', id: m3.id, linkId: 'not a key; DROP' })
+    expect((await keys())[m3.id], 'a malformed key is dropped, the move still happens').toBeNull()
+  })
+
+  it('one household never links another one’s bin rows', async () => {
+    const a = await household('meals-unplaced-link-a', undefined, { empty: true })
+    const b = await household('meals-unplaced-link-b', undefined, { empty: true })
+    const x = (await okJson<{ id: string }>(a.fetch('/api/meals', { method: 'POST', body: { action: 'park', title: 'Lasagne' } }))).id
+    const y = (await okJson<{ id: string }>(a.fetch('/api/meals', { method: 'POST', body: { action: 'park', title: 'Pain à l’ail' } }))).id
+    await action(b, { action: 'link', groups: [[x, y]] })
+    expect((await plan(a)).unplaced.map((u) => u.link_id)).toEqual([null, null])
   })
 
   it('one household never sees, places or removes another one’s bin', async () => {

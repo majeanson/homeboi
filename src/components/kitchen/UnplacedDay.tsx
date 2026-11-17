@@ -1,4 +1,4 @@
-import { useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
+import { Fragment, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
@@ -13,7 +13,7 @@ import { Icon } from '../Icon'
 import { IconButton } from '../IconButton'
 import { useSingleOpen } from '../Disclosure'
 import { MealPlanPicker } from './MealPlanPicker'
-import { placeMeal } from './mealMutations'
+import { placeMeal, relinkUnplaced, unplacedGroups } from './mealMutations'
 import { type MealPick } from './comboOptions'
 import { BOARD_KEY, MONTH_KEY } from '../../lib/queryKeys'
 import { MEALS_KEY, MEAL_HISTORY_KEY, type UnplacedMeal } from './types'
@@ -37,6 +37,15 @@ const MEAL_KEYS = [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY, MONTH_KEY]
 //     thumb that would rather tap), tap the row for the same day picker the ideas use.
 // Rows are CONSUMED when placed: the meal moves, it does not copy (that is the line
 // between this and the reusable ideas pool).
+//
+// LINKED rows (mig 0156; Marc, 2026-11-16: « link two recipes together … so that after
+// they move together until explicitly unlinked »). On a day, a slot's meals already
+// travel as one — the supper headline drags them all. Here each row was alone, so
+// « spaghetti + salade » had to be placed twice. Between two neighbouring rows sits one
+// small 🔗 toggle: tap it and the two (or their groups) become one group, drawn in one
+// bracket; tap the same 🔗 inside a group and it is cut there. A group drags, places
+// (tap → day picker) and lands as one, in the grabbed row's slot. The toggle is its own
+// undo, and it is a real button — the link is never a touch-only gesture.
 
 type Dnd = ReturnType<typeof usePointerDnd>
 
@@ -106,7 +115,93 @@ export function UnplacedDay({
   }
 
   const rows = removal.visible(items)
+  const groups = unplacedGroups(rows)
   const over = dropCueOf(dnd, UNPLACED_ZONE) === 'into'
+  // The group being dragged (any of its rows can be the grip) dims as one.
+  const draggingId = dnd.activeId?.startsWith(`${UNPLACED_ZONE}:`) ? dnd.activeId.slice(UNPLACED_ZONE.length + 1) : null
+
+  // The 🔗 between two neighbouring rows: pressed = they are linked. A read-only
+  // viewer sees the bracket, not the button.
+  // No toggle before the first row (`a` absent).
+  const linkToggle = (a: UnplacedMeal | undefined, b: UnplacedMeal | undefined, linked: boolean, onClick: () => void) =>
+    ro || !a || !b ? null : (
+      <IconButton
+        icon="link-bold"
+        variant="bare"
+        size="sm"
+        iconSize={14}
+        className="kitchen__unplaced-link"
+        pressed={linked}
+        label={t.kitchen.unplacedLink(a.title, b.title)}
+        onClick={onClick}
+      />
+    )
+
+  const row = (u: UnplacedMeal, group: UnplacedMeal[]) => {
+    const slot = (u.slot as MealSlot | null) ?? mealPrefs.hero
+    const start = (e: ReactPointerEvent) => {
+      downRef.current = { x: e.clientX, y: e.clientY }
+      dnd.start(`${UNPLACED_ZONE}:${u.id}`, group.map((x) => x.title).join(' · '), e)
+    }
+    const dragging = draggingId != null && group.some((x) => x.id === draggingId)
+    return (
+      <div className="kitchen__unplaced-item">
+        {/* A plain div carries the drag (it holds two buttons — no role of its
+            own, nested-interactive). The title button is the tap door. */}
+        <div
+          className={'kitchen__day-meal kitchen__unplaced-row' + (dragging ? ' is-dragging' : '')}
+          onPointerDown={ro ? undefined : start}
+          title={ro ? undefined : t.kitchen.dragDay}
+        >
+          <button
+            type="button"
+            className="kitchen__unplaced-open"
+            aria-expanded={ro ? undefined : isOpen(u.id)}
+            onClick={(e) => {
+              const d = downRef.current
+              if (d && (Math.abs(e.clientX - d.x) > 6 || Math.abs(e.clientY - d.y) > 6)) return
+              if (ro) {
+                if (u.recipe_id) nav(`/kitchen/recipe/${u.recipe_id}`)
+                return
+              }
+              setSlotPick(null)
+              toggle(u.id)
+            }}
+          >
+            <Icon name={SLOT_ICON_NAME[slot]} size={18} color={mealPrefs.color(slot)} />
+            <span className="kitchen__day-meal-text">
+              <span className="kitchen__day-meal-title">{u.title}</span>
+            </span>
+          </button>
+          {/* One quiet ✕ — the row is a meal waiting for a day, not a record to
+              manage (its recipe opens from the day it lands on). Removes THIS row
+              only; its partners stay linked to each other. */}
+          {!ro && (
+            <IconButton
+              icon="x-bold"
+              variant="bare"
+              size="sm"
+              className="kitchen__unplaced-remove"
+              label={t.kitchen.unplacedRemove}
+              onClick={() => removeRow(u)}
+            />
+          )}
+        </div>
+        {!ro && isOpen(u.id) && (
+          <MealPlanPicker
+            slot={slotPick ?? slot}
+            onSlot={setSlotPick}
+            week={week}
+            onPickDay={(date) => {
+              close()
+              // The whole group lands together, in the picked slot.
+              for (const m of group) void placeMeal(qc, m, date, slotPick ?? slot)
+            }}
+          />
+        )}
+      </div>
+    )
+  }
   return (
     <li
       data-dnd-zone={UNPLACED_ZONE}
@@ -158,66 +253,24 @@ export function UnplacedDay({
           !adding && <span className="kitchen__day-sum-empty mono">{t.kitchen.unplacedEmpty}</span>
         ) : (
           <div className="kitchen__day-meals">
-            {rows.map((u) => {
-              const slot = (u.slot as MealSlot | null) ?? mealPrefs.hero
-              const start = (e: ReactPointerEvent) => {
-                downRef.current = { x: e.clientX, y: e.clientY }
-                dnd.start(`${UNPLACED_ZONE}:${u.id}`, u.title, e)
-              }
+            {groups.map((g, gi) => {
+              const prev = groups[gi - 1] ?? []
               return (
-                <div key={u.id} className="kitchen__unplaced-item">
-                  {/* A plain div carries the drag (it holds two buttons — no role of its
-                      own, nested-interactive). The title button is the tap door. */}
-                  <div
-                    className={'kitchen__day-meal kitchen__unplaced-row' + (dnd.activeId === `${UNPLACED_ZONE}:${u.id}` ? ' is-dragging' : '')}
-                    onPointerDown={ro ? undefined : start}
-                    title={ro ? undefined : t.kitchen.dragDay}
-                  >
-                    <button
-                      type="button"
-                      className="kitchen__unplaced-open"
-                      aria-expanded={ro ? undefined : isOpen(u.id)}
-                      onClick={(e) => {
-                        const d = downRef.current
-                        if (d && (Math.abs(e.clientX - d.x) > 6 || Math.abs(e.clientY - d.y) > 6)) return
-                        if (ro) {
-                          if (u.recipe_id) nav(`/kitchen/recipe/${u.recipe_id}`)
-                          return
-                        }
-                        setSlotPick(null)
-                        toggle(u.id)
-                      }}
-                    >
-                      <Icon name={SLOT_ICON_NAME[slot]} size={18} color={mealPrefs.color(slot)} />
-                      <span className="kitchen__day-meal-text">
-                        <span className="kitchen__day-meal-title">{u.title}</span>
-                      </span>
-                    </button>
-                    {/* One quiet ✕ — the row is a meal waiting for a day, not a record to
-                        manage (its recipe opens from the day it lands on). */}
-                    {!ro && (
-                      <IconButton
-                        icon="x-bold"
-                        variant="bare"
-                        size="sm"
-                        className="kitchen__unplaced-remove"
-                        label={t.kitchen.unplacedRemove}
-                        onClick={() => removeRow(u)}
-                      />
-                    )}
+                <Fragment key={g[0]?.id}>
+                  {/* Between two groups: link them (their rows become one group). */}
+                  {linkToggle(prev.at(-1), g[0], false, () => void relinkUnplaced(qc, [[...prev, ...g].map((x) => x.id)]))}
+                  <div className={'kitchen__unplaced-group' + (g.length > 1 ? ' is-linked' : '')}>
+                    {g.map((u, i) => (
+                      <Fragment key={u.id}>
+                        {/* Inside a group: cut it here (each side keeps its own rows). */}
+                        {linkToggle(g[i - 1], u, true, () =>
+                          void relinkUnplaced(qc, [g.slice(0, i).map((x) => x.id), g.slice(i).map((x) => x.id)]),
+                        )}
+                        {row(u, g)}
+                      </Fragment>
+                    ))}
                   </div>
-                  {!ro && isOpen(u.id) && (
-                    <MealPlanPicker
-                      slot={slotPick ?? slot}
-                      onSlot={setSlotPick}
-                      week={week}
-                      onPickDay={(date) => {
-                        close()
-                        void placeMeal(qc, u, date, slotPick ?? slot)
-                      }}
-                    />
-                  )}
-                </div>
+                </Fragment>
               )
             })}
           </div>
