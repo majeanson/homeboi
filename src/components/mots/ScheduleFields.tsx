@@ -1,5 +1,6 @@
 import { type ReactNode } from 'react'
 import { useT } from '../../i18n'
+import { TimeField } from '../TimeField'
 
 // The « Plus tard » date+time picker, shared by the mot composer AND the sender-outbox
 // reschedule modal. Calm quick-presets sit above the native inputs so the common cases
@@ -16,7 +17,7 @@ export function dateStr(d: Date): string {
 export function todayDateStr(): string {
   return dateStr(new Date())
 }
-// Local HH:MM for the native <input type="time"> seed (reschedule seeds from surface_at).
+// Local HH:MM for the TimeField seed (reschedule seeds from surface_at).
 export function hhmm(d: Date): string {
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
@@ -107,7 +108,7 @@ export function ScheduleFields({
           onChange={(e) => onDate(e.target.value)}
           aria-label={fn.when}
         />
-        <input className="input" type="time" value={time} onChange={(e) => onTime(e.target.value)} aria-label={fn.when} />
+        <TimeField value={time} onChange={onTime} label={fn.when} />
       </div>
     </div>
   )

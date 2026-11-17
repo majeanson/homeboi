@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Locator } from '@playwright/test'
 import { isApi, panelsReady } from './interact'
 
 // Réglages config panels, Maison (templates, routines, members, chores, schedule, groups). Each test asserts the write fires AND carries the right
@@ -194,14 +194,20 @@ test('a season seed posts a dated upkeep with its cadence and lead time', async 
   expect(body.leadSeconds).toBe(3 * 7 * 86_400)
 })
 
+// A TimeField (components/TimeField.tsx) is a group of two selects named by its label.
+async function setTime(form: Locator, label: string, h: number, m: number) {
+  const group = form.getByRole('group', { name: label, exact: true })
+  await group.getByRole('combobox', { name: 'Heure' }).selectOption(String(h))
+  await group.getByRole('combobox', { name: 'Minutes' }).selectOption(String(m))
+}
+
 test('a new work-hours block posts the member, the minutes and holdsCar', async ({ page }) => {
   await page.goto('/settings?tab=maison&focus=schedule')
   await page.locator('#op-schedule').getByRole('button', { name: 'Ajouter un horaire' }).click()
   const form = page.locator('.operator__inline-form').last()
   await form.getByRole('button', { name: 'Papa', exact: true }).click()
-  const times = form.locator('input[type="time"]')
-  await times.nth(0).fill('08:00')
-  await times.nth(1).fill('16:30')
+  await setTime(form, 'De', 8, 0)
+  await setTime(form, 'à', 16, 30)
   const [req] = await Promise.all([
     page.waitForRequest(isApi('POST', 'schedule'), { timeout: 20_000 }),
     form.getByRole('button', { name: 'Ajouter', exact: true }).click(),

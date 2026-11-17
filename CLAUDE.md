@@ -78,7 +78,7 @@ Before implementing ANY change, do this first — it's faster than the rework it
 
 | Need | Use (not a new one) | Where |
 | --- | --- | --- |
-| Type/edit text + clear/mic/actions · a LABELLED control (label above or beside, hint, error) | **`EditField`** · **`Field`** (`inline` for label-beside; `as="div"` around a composed control; raw date/select/number stay raw `.input` inside it) | `components/EditField.tsx`, `components/Field.tsx` |
+| Type/edit text + clear/mic/actions · a LABELLED control (label above or beside, hint, error) | **`EditField`** · **`Field`** (`inline` for label-beside; `as="div"` around a composed control; raw date/select/number stay raw `.input` inside it; a time of day is **`TimeField`**, 24 h, `time-field-rule.test.ts`) | `components/EditField.tsx`, `components/Field.tsx`, `components/TimeField.tsx` |
 | "Search + pick an existing thing + free-text" | **`EntityCombobox`** | `components/EntityCombobox.tsx` (options in `kitchen/comboOptions.tsx`) |
 | An activity / list row (check / nav / info) | **`Act`** + `Section` | `components/board/Act.tsx` |
 | Generic checklist row | **`CheckRow`** / **`ListRow`** | `components/CheckRow.tsx`, `components/ListRow.tsx` |
@@ -674,7 +674,7 @@ scroller. Réglages ▸ Régler ▸ Système's (then) nine subs were simply uncl
   `keyboard-fit`, `write-rule`, `write-owners`, `swallow-rule`, `intl-rule`, `nested-interactive`,
   `discovery`, `demoHousehold`, `realtime`, `layer-order`, `chip-rule`, `img-rule`, `glossary`,
   `undoTier`, `tour-rule`, `docCounts`, `devkitParity`, `link-button-rule`, `autofocus`,
-  `usageRule`, `csrfExempt`, `schemaRefs`, `deadCopy`, `keyShape`, `load-error-rule`, `dnd-mirror`, `hscroll-rule`, `kit-class-rule`, `avatar-rule`, `empty-rule`, `status-rule`, `search-rule`, `icon-button-rule`, `btn-order`, `field-rule`, `segmented-rule`, `overlay-naming`, `prop-naming`, `tabparam-rule`, `dead-class`, `dup-rule`, `structure-rule`, `routeSweep`, `routesTable`, `d1Coverage`, `e2e-rule`, `conventions`, `taskSchedule-rule`, `look-rule`, `effort-rule`, `task-merge-rule`, `task-faces-rule`, `fetch-rule`, `querykey-rule`, `surface-rule`, `detail-rule` — are the best thing in this codebase, and a green one
+  `usageRule`, `csrfExempt`, `schemaRefs`, `deadCopy`, `keyShape`, `load-error-rule`, `dnd-mirror`, `hscroll-rule`, `kit-class-rule`, `avatar-rule`, `empty-rule`, `status-rule`, `search-rule`, `icon-button-rule`, `btn-order`, `field-rule`, `segmented-rule`, `overlay-naming`, `prop-naming`, `tabparam-rule`, `dead-class`, `dup-rule`, `structure-rule`, `routeSweep`, `routesTable`, `d1Coverage`, `e2e-rule`, `conventions`, `taskSchedule-rule`, `time-field-rule`, `look-rule`, `effort-rule`, `task-merge-rule`, `task-faces-rule`, `fetch-rule`, `querykey-rule`, `surface-rule`, `detail-rule` — are the best thing in this codebase, and a green one
   proves nothing on its own: `nested-interactive` once reported green over the very
   defect it was written for (STATE.md §5 has the story). Plant the violation (or stash
   the fix), watch the guard fail, restore. **And check that the plant actually landed**

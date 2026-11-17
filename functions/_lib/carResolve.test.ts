@@ -40,8 +40,8 @@ describe('carBusySpansForDay — template', () => {
     expect(carBusySpansForDay(SUN, BLOCKS)).toEqual([])
   })
 
-  it('drops an inverted block defensively', () => {
-    const bad: ScheduleBlock = { id: 'x', memberId: 'm', startMin: min(17), endMin: min(8), holdsCar: true, recur: wk([1]), anchorAt: 0 }
+  it('drops a block whose end equals its start (no window at all)', () => {
+    const bad: ScheduleBlock = { id: 'x', memberId: 'm', startMin: min(8), endMin: min(8), holdsCar: true, recur: wk([1]), anchorAt: 0 }
     expect(carBusySpansForDay(MON, [bad])).toEqual([])
   })
 
@@ -166,5 +166,30 @@ describe('workOccurrencesInRange — an adjusted day releases the car', () => {
     expect(workOccurrencesInRange(BLOCKS, WED, addLocalDays(WED, 1))).toEqual(
       workOccurrencesInRange(BLOCKS, WED, addLocalDays(WED, 1), []),
     )
+  })
+})
+
+// Review #11 (2026-11-17): a nurse's 23 h – 7 h 30 shift was refused (end before start).
+// An end before the start now ENDS THE NEXT DAY, for every reader.
+describe('a night shift (end before start) ends the next day', () => {
+  // Mélanie: Mondays 23:00 → Tuesday 07:30, takes the car.
+  const NIGHT: ScheduleBlock = { id: 'n', memberId: 'mel', label: 'Nuit', startMin: min(23), endMin: min(7, 30), holdsCar: true, recur: wk([1]), anchorAt: 0 }
+  const TUE = addLocalDays(MON, 1)
+
+  it('the car is out from Monday 23:00 to Tuesday 07:30, on both days', () => {
+    const span = { start: atOn(MON, 23), end: atOn(TUE, 7, 30), label: 'Nuit', holderId: 'mel' }
+    expect(carBusySpansForDay(MON, [NIGHT])).toEqual([span])
+    expect(carBusySpansForDay(TUE, [NIGHT])).toEqual([span])
+    expect(carBusySpansForDay(addLocalDays(TUE, 1), [NIGHT])).toEqual([])
+  })
+
+  it('she is out at 3 a.m. Tuesday and home by 8', () => {
+    expect(membersOutAt(TUE, [NIGHT], atOn(TUE, 3))).toEqual(['mel'])
+    expect(membersOutAt(TUE, [NIGHT], atOn(TUE, 8))).toEqual([])
+  })
+
+  it('the agenda shows it on Monday, ending Tuesday morning', () => {
+    const occ = workOccurrencesInRange([NIGHT], MON, addLocalDays(MON, 2))
+    expect(occ.map((o) => [o.at, o.endAt])).toEqual([[atOn(MON, 23), atOn(TUE, 7, 30)]])
   })
 })

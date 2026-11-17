@@ -82,6 +82,25 @@ export interface CarDayOverride {
 // correct across DST (delegates to localTimeOnDay, the same snap _lib/recur uses).
 const at = (dayStart: number, min: number): number => localTimeOnDay(dayStart, min * 60)
 
+// A block is a window unless its end equals its start. An end BEFORE the start is a
+// night shift that ends the next day (review #11, 2026-11-17: a 23 h – 7 h 30 nurse's
+// shift was refused outright). ONE rule for every reader: the car's spans, who is out,
+// and the agenda's work windows.
+const isWindow = (b: ScheduleBlock): boolean => b.endMin !== b.startMin
+const overnight = (b: ScheduleBlock): boolean => b.endMin < b.startMin
+// The instant the occurrence that STARTS on `day` ends.
+const blockEnd = (day: number, b: ScheduleBlock): number => at(overnight(b) ? addLocalDays(day, 1) : day, b.endMin)
+// Every window of `b` that covers part of the local day `day`: the one starting that
+// day, and last night's still running into it.
+function windowsTouching(day: number, b: ScheduleBlock): { start: number; end: number }[] {
+  if (!isWindow(b)) return []
+  const out: { start: number; end: number }[] = []
+  const prev = addLocalDays(day, -1)
+  if (overnight(b) && blockActiveOn(b, prev)) out.push({ start: at(prev, b.startMin), end: blockEnd(prev, b) })
+  if (blockActiveOn(b, day)) out.push({ start: at(day, b.startMin), end: blockEnd(day, b) })
+  return out
+}
+
 // The car's BUSY spans for ONE local day. An override for the car/day REPLACES the
 // template (a single window, or nothing when the car stays home); otherwise the
 // template applies — every holds_car block active (weekday + fortnight) on this day.
@@ -105,13 +124,9 @@ export function carBusySpansForDay(
     return []
   }
   return blocks
-    .filter((b) => b.holdsCar && b.endMin > b.startMin && blockActiveOn(b, dayStart))
-    .map((b) => ({
-      start: at(dayStart, b.startMin),
-      end: at(dayStart, b.endMin),
-      label: b.label ?? undefined,
-      holderId: b.memberId,
-    }))
+    .filter((b) => b.holdsCar)
+    .flatMap((b) => windowsTouching(dayStart, b).map((w) => ({ ...w, label: b.label ?? undefined, holderId: b.memberId })))
+    .sort((a, b) => a.start - b.start)
 }
 
 // Presence — the member ids who are OUT at instant `t` (ANY block, car-holding or
@@ -132,8 +147,7 @@ export function membersOutAt(
 ): string[] {
   const out = new Set<string>()
   for (const b of blocks) {
-    if (b.endMin <= b.startMin || !blockActiveOn(b, dayStart)) continue
-    if (t >= at(dayStart, b.startMin) && t < at(dayStart, b.endMin)) out.add(b.memberId)
+    if (windowsTouching(dayStart, b).some((w) => t >= w.start && t < w.end)) out.add(b.memberId)
   }
   if (override && !override.free && override.holderId && override.startMin != null && override.endMin != null) {
     if (override.endMin > override.startMin && t >= at(dayStart, override.startMin) && t < at(dayStart, override.endMin)) {
@@ -179,9 +193,11 @@ export function workOccurrencesInRange(
   const out: WorkOccurrence[] = []
   for (let day = localDayStart(new Date(rangeStart * 1000)); day < rangeEnd; day = addLocalDays(day, 1)) {
     for (const b of blocks) {
-      if (b.endMin <= b.startMin || !blockActiveOn(b, day)) continue
+      // An occurrence belongs to the day it STARTS (a night shift is Tuesday's, ending
+      // Wednesday morning), like an event.
+      if (!isWindow(b) || !blockActiveOn(b, day)) continue
       const startAt = at(day, b.startMin)
-      const endAt = at(day, b.endMin)
+      const endAt = blockEnd(day, b)
       if (endAt <= rangeStart || startAt >= rangeEnd) continue
       out.push({
         id: `work:${b.id}:${day}`,

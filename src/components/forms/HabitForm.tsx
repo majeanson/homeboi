@@ -1,4 +1,5 @@
 import { Field } from '../Field'
+import { TimeField } from '../TimeField'
 import { useState } from 'react'
 import { useWrite } from '../../lib/write'
 import { useT } from '../../i18n'
@@ -329,26 +330,22 @@ export function HabitForm({
                 <span>{fn.everyHoursUnit}</span>
               </Field>
               <Cluster className="habit-form__window">
-                <Field inline className="mono" label={fn.windowFromLabel}>
-                  <input
-                    className="input"
-                    type="time"
+                <Field inline as="div" className="mono" label={fn.windowFromLabel}>
+                  <TimeField
                     value={minutesToHhmm(windowStart)}
-                    aria-label={fn.windowFromLabel}
-                    onChange={(e) => {
-                      const m = hhmmToMinutes(e.target.value)
+                    label={fn.windowFromLabel}
+                    onChange={(v) => {
+                      const m = hhmmToMinutes(v)
                       if (m !== null) setWindowStart(m)
                     }}
                   />
                 </Field>
-                <Field inline className="mono" label={fn.windowToLabel}>
-                  <input
-                    className="input"
-                    type="time"
+                <Field inline as="div" className="mono" label={fn.windowToLabel}>
+                  <TimeField
                     value={minutesToHhmm(windowEnd)}
-                    aria-label={fn.windowToLabel}
-                    onChange={(e) => {
-                      const m = hhmmToMinutes(e.target.value)
+                    label={fn.windowToLabel}
+                    onChange={(v) => {
+                      const m = hhmmToMinutes(v)
                       if (m !== null) setWindowEnd(m)
                     }}
                   />

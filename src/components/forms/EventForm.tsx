@@ -1,4 +1,5 @@
 import { Field } from '../Field'
+import { TimeField } from '../TimeField'
 import { IconButton } from '../IconButton'
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -293,27 +294,15 @@ export function EventForm({
           aria-label={o18n.eventDateLabel}
         />
       </Field>
-      <Field inline className="mono" label={o18n.eventTimeLabel}>
-        <input
-          className="input"
-          type="time"
-          value={time}
-          onChange={(e) => setStartTime(e.target.value)}
-          aria-label={o18n.eventTimeLabel}
-        />
+      <Field inline as="div" className="mono" label={o18n.eventTimeLabel}>
+        <TimeField optional value={time} onChange={setStartTime} label={o18n.eventTimeLabel} />
       </Field>
       {/* Optional « Jusqu'à ». Only offered once a start time exists: an all-day
           rendez-vous already spans the whole day. Blank stays the default — a point,
           exactly as before — so nothing about an existing rendez-vous changes. */}
       {time && (
-        <Field inline className="mono" label={o18n.eventUntilLabel}>
-          <input
-            className="input"
-            type="time"
-            value={endTime}
-            onChange={(e) => setEndTime(e.target.value)}
-            aria-label={o18n.eventUntilLabel}
-          />
+        <Field inline as="div" className="mono" label={o18n.eventUntilLabel}>
+          <TimeField optional value={endTime} onChange={setEndTime} label={o18n.eventUntilLabel} />
         </Field>
       )}
       {members.length > 0 && (

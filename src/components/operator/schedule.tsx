@@ -16,6 +16,9 @@ import { EditField } from '../EditField'
 import { RowActions } from '../RowActions'
 import { EmptyState } from '../EmptyState'
 import { StatusMessage } from '../StatusMessage'
+import { Field } from '../Field'
+import { TimeField } from '../TimeField'
+import { loadStateOf } from '../Fallback'
 import { OperatorSection } from './OperatorSection'
 
 // Réglages ▸ Maison ▸ L'auto & horaires. The quiet weekly schedule backdrop (migration 0069):
@@ -53,11 +56,15 @@ export function ScheduleSection({ help }: { help?: HelpMode }) {
   const write = useWrite()
   const removal = useDeferredRemoval(SCHEDULE_KEY)
   const ro = isGuest()
-  const { data: blocksData } = useQuery({
+  const blocksQ = useQuery({
     queryKey: SCHEDULE_KEY,
     queryFn: () => api<{ blocks: ScheduleBlock[] }>('schedule'),
     ...live,
   })
+  const blocksData = blocksQ.data
+  // Still loading, nothing cached: the rows' shape, never « Aucun horaire » (review #11:
+  // read at 3 a.m. on hospital wifi, that empty line got a schedule entered twice).
+  const wait = loadStateOf(blocksQ, { shape: 'row', count: 2 })
   const { data: membersData } = useQuery({
     queryKey: MEMBERS_KEY,
     queryFn: () => api<{ members: Member[] }>('members'),
@@ -94,7 +101,7 @@ export function ScheduleSection({ help }: { help?: HelpMode }) {
 
   return (
     <OperatorSection title={o18n.schedTitle} help={help} helpKey="schedule">
-      {blocks.length === 0 ? (
+      {wait ?? (blocks.length === 0 ? (
         <EmptyState>{o18n.schedEmpty}</EmptyState>
       ) : (
         <ul className="operator__list meal-slots">
@@ -134,7 +141,7 @@ export function ScheduleSection({ help }: { help?: HelpMode }) {
             ),
           )}
         </ul>
-      )}
+      ))}
       {/* Add opens the form in a Modal, not unfolded under the list — a long schedule
           pushed it below the fold, so the form you just asked for was off-screen. (Editing
           stays in place on the row you tapped: it's anchored, not stranded.) */}
@@ -193,10 +200,15 @@ function BlockForm({
   const toggleDay = (d: number) =>
     setWeekdays((cur) => (cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d].sort((a, b) => a - b)))
 
+  // A night shift (23 h → 7 h 30) ends the next day: an end before the start says so
+  // (review #11; `blockEnd` in _lib/carResolve reads it the same way). Only an end EQUAL
+  // to the start is no window at all.
+  const overnight = (hhmmToMin(end) ?? 0) < (hhmmToMin(start) ?? 0)
+
   async function submit() {
     const startMin = hhmmToMin(start)
     const endMin = hhmmToMin(end)
-    if (!memberId || startMin == null || endMin == null || endMin <= startMin) {
+    if (!memberId || startMin == null || endMin == null || endMin === startMin) {
       setErr(true)
       return
     }
@@ -228,14 +240,12 @@ function BlockForm({
       </div>
       <EditField value={label} onChange={setLabel} placeholder={o18n.schedLabel} ariaLabel={o18n.schedLabel} />
       <div className="operator__rotation mono">
-        <label className="mono">
-          {o18n.schedFrom}{' '}
-          <input className="input" type="time" value={start} onChange={(e) => setStart(e.target.value)} />
-        </label>
-        <label className="mono">
-          {o18n.schedTo}{' '}
-          <input className="input" type="time" value={end} onChange={(e) => setEnd(e.target.value)} />
-        </label>
+        <Field inline as="div" label={o18n.schedFrom}>
+          <TimeField value={start} onChange={setStart} label={o18n.schedFrom} />
+        </Field>
+        <Field inline as="div" label={o18n.schedTo} hint={overnight ? o18n.schedNextDay : undefined}>
+          <TimeField value={end} onChange={setEnd} label={o18n.schedTo} />
+        </Field>
       </div>
       <div className="recur__days">
         {t.recur.weekdayShort.map((lbl, d) => (

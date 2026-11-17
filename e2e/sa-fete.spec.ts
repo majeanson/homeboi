@@ -69,7 +69,9 @@ test('« Sa fête » shows only for a recipient with a birthday, and sets that m
   await expect(fete).toBeVisible()
   await fete.click()
   await expect(composer.locator('input[type="date"]')).toHaveValue('2025-06-15')
-  await expect(composer.locator('input[type="time"]')).toHaveValue('08:00')
+  // TimeField: an hour select and a minute select (always 24 h).
+  await expect(composer.locator('.time-field select').nth(0)).toHaveValue('8')
+  await expect(composer.locator('.time-field select').nth(1)).toHaveValue('0')
 
   // Switching back to a face without one hides it again — no stale chip.
   await pickFace(page, composer, 'Maman')

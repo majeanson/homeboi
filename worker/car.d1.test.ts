@@ -96,6 +96,19 @@ describe('où est l’auto', () => {
     expect(car.days.map((d) => d.day), 'a missing param means today, never day zero').toEqual([today()])
   })
 
+  // Review #11: a 23 h – 7 h 30 night shift was refused (« end must be after start »).
+  it('a night shift (end before start) is kept, and holds the car into the next morning', async () => {
+    const s = await household('car-night', undefined, { empty: true })
+    await withCar(s)
+    const mel = await member(s, 'Mélanie')
+    const d = day(1)
+    await add(s, { memberId: mel, label: 'Nuit', startMin: 23 * 60, endMin: 7 * 60 + 30, weekdays: [dow(d)] })
+    expect((await blocks(s))[0]).toMatchObject({ startMin: 1380, endMin: 450 })
+    const [night, morning, after] = (await range(s, d, day(4))).days
+    // The evening it starts, and the morning it runs into; not the day after.
+    expect([night?.carSpans.length, morning?.carSpans.length, after?.carSpans.length]).toEqual([1, 1, 0])
+  })
+
   it('a block that holds the car makes the day busy; one that does not leaves it free', async () => {
     const s = await household('car-busy', undefined, { empty: true })
     await withCar(s)

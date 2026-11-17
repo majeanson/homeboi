@@ -19,6 +19,8 @@ import { SceneHead } from '../components/SceneHead'
 import { ActionMenu } from '../components/ActionMenu'
 import { EmptyState } from '../components/EmptyState'
 import { Avatar } from '../components/Avatar'
+import { Field } from '../components/Field'
+import { TimeField } from '../components/TimeField'
 import { Icon } from '../components/Icon'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { useNavigate } from 'react-router-dom'
@@ -407,7 +409,9 @@ function DayEditor({
   // Deliberately the RAW schedule span, not `carSpans`: this editor writes a car_day
   // override of the WORK window, so it must prefill from the template it replaces. A
   // rendez-vous that takes the car is not something this form can edit.
-  const seedSpan = d.spans[0]
+  // The first window STARTING this day: last night's shift still running into it (a span
+  // from yesterday 23 h) is not a window this day's override replaces.
+  const seedSpan = d.spans.find((s) => s.start >= d.day)
   const [holderId, setHolderId] = useState<string | null>(d.override?.holderId ?? seedSpan?.holderId ?? null)
   const [start, setStart] = useState(minToHHMM(d.override?.startMin ?? (seedSpan ? minutesOfDay(seedSpan.start) : 8 * 60)))
   const [end, setEnd] = useState(minToHHMM(d.override?.endMin ?? (seedSpan ? minutesOfDay(seedSpan.end) : 17 * 60)))
@@ -437,8 +441,12 @@ function DayEditor({
         ))}
       </div>
       <div className="voiture__times mono">
-        <label>{t.auto.from} <input className="input" type="time" value={start} onChange={(e) => setStart(e.target.value)} /></label>
-        <label>{t.auto.to} <input className="input" type="time" value={end} onChange={(e) => setEnd(e.target.value)} /></label>
+        <Field inline as="div" label={t.auto.from}>
+          <TimeField value={start} onChange={setStart} label={t.auto.from} />
+        </Field>
+        <Field inline as="div" label={t.auto.to}>
+          <TimeField value={end} onChange={setEnd} label={t.auto.to} />
+        </Field>
       </div>
       <div className="voiture__editor-actions">
         <button type="button" className="btn btn--primary" onClick={save}>{t.common.save}</button>

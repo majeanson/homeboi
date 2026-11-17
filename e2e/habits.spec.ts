@@ -273,17 +273,22 @@ test.describe('the habit form', () => {
     await expect(page.locator('.reminders__hint')).toContainText('jamais dans ta poche')
     const add = page.getByRole('button', { name: 'Ajouter un rappel' })
     await add.click()
-    await expect(page.locator('.reminders__time')).toHaveValue('09:00')
+    // A reminder's time is a TimeField (hour + minute selects): read it back as « H:MM ».
+    const at = (i: number) => page.locator('.reminders__time').nth(i).locator('select')
+    const timeOf = async (i: number) => `${await at(i).nth(0).inputValue()}:${await at(i).nth(1).inputValue()}`
+    await expect.poll(() => timeOf(0)).toBe('9:0')
     // Each next reminder lands an hour later, so repeated ＋ never collides.
     await add.click()
-    await expect(page.locator('.reminders__time').nth(1)).toHaveValue('10:00')
-    // Typing an EARLIER time re-sorts, matching what the server normalizes to.
-    await page.locator('.reminders__time').nth(1).fill('07:30')
-    await expect(page.locator('.reminders__time').first()).toHaveValue('07:30')
+    await expect.poll(() => timeOf(1)).toBe('10:0')
+    // An EARLIER hour re-sorts, matching what the server normalizes to.
+    await at(1).nth(0).selectOption('7')
+    await expect.poll(() => timeOf(0)).toBe('7:0')
+    await at(0).nth(1).selectOption('30')
+    await expect.poll(() => timeOf(0)).toBe('7:30')
 
     await page.getByRole('button', { name: 'Retirer ce rappel' }).first().click()
     await expect(page.locator('.reminders__time')).toHaveCount(1)
-    await expect(page.locator('.reminders__time')).toHaveValue('09:00')
+    await expect.poll(() => timeOf(0)).toBe('9:0')
   })
 })
 

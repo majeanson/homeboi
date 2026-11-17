@@ -1,4 +1,5 @@
 import { IconButton } from '../IconButton'
+import { TimeField } from '../TimeField'
 import { useT } from '../../i18n'
 import { Icon } from '../Icon'
 import { Cluster } from '../Layout'
@@ -13,7 +14,7 @@ import { Cluster } from '../Layout'
 
 const pad = (n: number) => String(n).padStart(2, '0')
 
-/** 540 → "09:00" (what <input type="time"> speaks). */
+/** 540 → "09:00" (the value TimeField speaks). */
 export function minutesToHhmm(min: number): string {
   return `${pad(Math.floor(min / 60))}:${pad(min % 60)}`
 }
@@ -49,13 +50,7 @@ export function ReminderTimesField({ value, onChange }: { value: number[]; onCha
       <p className="reminders__sub mono">{fn.remindersSub}</p>
       {value.map((min, i) => (
         <Cluster key={i} className="reminders__row">
-          <input
-            className="input reminders__time"
-            type="time"
-            value={minutesToHhmm(min)}
-            aria-label={fn.reminderAt}
-            onChange={(e) => setAt(i, e.target.value)}
-          />
+          <TimeField className="reminders__time" value={minutesToHhmm(min)} label={fn.reminderAt} onChange={(v) => setAt(i, v)} />
           <IconButton icon="x-bold" label={fn.removeReminder} iconSize={16} onClick={() => commit(value.filter((_, j) => j !== i))} />
         </Cluster>
       ))}

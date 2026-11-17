@@ -1,6 +1,7 @@
 import { Segmented } from '../components/Segmented'
 import { SettingsRow } from '../components/operator/SettingsRow'
 import { Field } from '../components/Field'
+import { TimeField } from '../components/TimeField'
 import { IconButton } from '../components/IconButton'
 // B-11 (bmad/10) — cercle.css moved out of the eager shell (position-immaterial
 // .cercle-*/.cf-* classes); load it whenever this page renders instead.
@@ -684,6 +685,26 @@ function SegmentedDemo() {
   )
 }
 
+// THE time-of-day control (review #11): two selects, 24-hour in both languages.
+function TimeFieldDemo() {
+  const [v, setV] = useState('08:00')
+  const [opt, setOpt] = useState('')
+  return (
+    <>
+      <Demo label={`TimeField — never AM/PM, whatever the browser's locale (value: « ${v} »)`}>
+        <Field inline as="div" label="De">
+          <TimeField value={v} onChange={setV} label="De" />
+        </Field>
+      </Demo>
+      <Demo label={`optional — « Sans heure » clears it and hides the minutes (value: « ${opt} »)`}>
+        <Field inline as="div" label="Heure">
+          <TimeField optional value={opt} onChange={setOpt} label="Heure" />
+        </Field>
+      </Demo>
+    </>
+  )
+}
+
 // The effort of a task (0149): the picker IS a Segmented; tap the same dot again to clear.
 function EffortDemo() {
   const [v, setV] = useState<number | null>(3)
@@ -1179,6 +1200,13 @@ export function DevKit() {
           </Demo>
         </>
       ),
+    },
+    {
+      cat: 'Saisie',
+      name: 'TimeField',
+      file: 'components/TimeField.tsx',
+      kw: 'time heure horaire minutes 24 h am pm select champ',
+      render: () => <TimeFieldDemo />,
     },
     {
       cat: 'Saisie',

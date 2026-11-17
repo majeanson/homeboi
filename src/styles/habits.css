@@ -413,7 +413,7 @@
 }
 
 .reminders__time {
-  max-width: 9rem;
+  flex: none; /* TimeField: two selects at their natural width */
 }
 
 .reminders__add {

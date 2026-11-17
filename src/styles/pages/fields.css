@@ -584,3 +584,15 @@
 .combobox__header {
   display: contents;
 }
+
+/* TimeField: an hour and a minute select, side by side (24-hour, never AM/PM). Each
+   select is as wide as its longest option, never a full-line `.input`. */
+.time-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.time-field .time-field__part {
+  width: auto;
+  min-width: 0;
+}

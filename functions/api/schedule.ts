@@ -119,7 +119,9 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const memberId = body?.memberId?.trim()
   const startMin = minute(body?.startMin)
   const endMin = minute(body?.endMin)
-  if (!memberId || startMin == null || endMin == null || endMin <= startMin) {
+  // An end before the start is a night shift ending the next day (review #11, _lib/carResolve
+  // `blockEnd`); only an end EQUAL to the start is no window.
+  if (!memberId || startMin == null || endMin == null || endMin === startMin) {
     return badRequest('Membre + plage horaire valide requis.')
   }
   const id = newId()
@@ -150,7 +152,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   const memberId = body?.memberId?.trim()
   const startMin = minute(body?.startMin)
   const endMin = minute(body?.endMin)
-  if (!id || !memberId || startMin == null || endMin == null || endMin <= startMin) {
+  if (!id || !memberId || startMin == null || endMin == null || endMin === startMin) {
     return badRequest('id + membre + plage horaire valide requis.')
   }
   const { interval, anchor } = resolveRecurrence(body)
