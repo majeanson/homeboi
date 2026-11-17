@@ -73,7 +73,7 @@ async function openGrid(page: Page) {
 }
 
 /** Press-and-hold a row past DND_HOLD_MS, carry it onto a zone, release. */
-async function holdDrag(page: Page, from: Locator, target: Locator) {
+async function holdDrag(page: Page, from: Locator, target: Locator, cue: Locator = target, cueClass = /is-droptarget/) {
   const a = await boxOf(from)
   const sx = a.x + a.width / 2
   const sy = a.y + a.height / 2
@@ -84,7 +84,7 @@ async function holdDrag(page: Page, from: Locator, target: Locator) {
   await page.mouse.move(sx + 2, sy + 2)
   const b = await boxOf(target)
   await page.mouse.move(b.x + b.width / 2, b.y + 20, { steps: 12 })
-  await expect(target).toHaveClass(/is-droptarget/)
+  await expect(cue).toHaveClass(cueClass)
   await page.mouse.up()
 }
 
@@ -202,25 +202,45 @@ test('« Magasiner la semaine » shops the « À placer » meals too', async ({ 
 // ── Linked rows (mig 0156; Marc, 2026-11-16: « link two recipes together in the À placer
 // panel so that after they move together until explicitly unlinked »).
 
-test('the 🔗 between two rows links them — one bracket — and the same 🔗 cuts them apart', async ({ page }) => {
+// Marc, 2026-11-17: the link « appears on drag and drop … not with always-on UI buttons ».
+test('drag a row onto another: they link — one bracket — and the broken chain on its line detaches it', async ({ page }) => {
   await openGrid(page)
   const bin = page.locator('.kitchen__day--unplaced')
-  const link = bin.getByRole('button', { name: /Lier « Lasagne » et « Poké bols »/ })
-  await expect(link).toHaveAttribute('aria-pressed', 'false')
-  const [req] = await Promise.all([page.waitForRequest(mealsPost('link')), link.click()])
+  await expect(bin.locator('.kitchen__unplaced-unlink'), 'nothing between or on unlinked rows').toHaveCount(0)
+  const poke = bin.locator('.kitchen__unplaced-row', { hasText: 'Poké bols' })
+  const lasagne = bin.locator('.kitchen__unplaced-item', { hasText: 'Lasagne' })
+  const lasagneGroup = bin.locator('.kitchen__unplaced-group', { hasText: 'Lasagne' })
+  const [req] = await Promise.all([
+    page.waitForRequest(mealsPost('link'), { timeout: 20_000 }),
+    holdDrag(page, poke, lasagne, lasagneGroup, /is-linktarget/),
+  ])
   expect(req.postDataJSON()).toMatchObject({ action: 'link', groups: [['u1', 'u2']] })
   const group = bin.locator('.kitchen__unplaced-group.is-linked')
   await expect(group.locator('.kitchen__unplaced-row')).toHaveText([/Lasagne/, /Poké bols/])
-  await expect(link).toHaveAttribute('aria-pressed', 'true')
-
-  const [cut] = await Promise.all([page.waitForRequest(mealsPost('link')), link.click()])
-  expect(cut.postDataJSON()).toMatchObject({ action: 'link', groups: [['u1'], ['u2']] })
+  // Unlink sits on the row's own line, beside its ✕ — not on a line of its own.
+  const unlink = bin.getByRole('button', { name: /Détacher « Poké bols »/ })
+  const r = await boxOf(bin.locator('.kitchen__unplaced-row', { hasText: 'Poké bols' }))
+  const u = await boxOf(unlink)
+  expect(u.y >= r.y - 1 && u.y + u.height <= r.y + r.height + 1, 'the unlink is inside its row').toBe(true)
+  const [cut] = await Promise.all([page.waitForRequest(mealsPost('link')), unlink.click()])
+  expect(cut.postDataJSON()).toMatchObject({ action: 'link', groups: [['u2'], ['u1']] })
   await expect(bin.locator('.kitchen__unplaced-group.is-linked')).toHaveCount(0)
+})
+
+test('without a drag: tap a row, « Lier à » the other one (the non-drag mirror)', async ({ page }) => {
+  await openGrid(page)
+  const bin = page.locator('.kitchen__day--unplaced')
+  await bin.locator('.kitchen__unplaced-open', { hasText: 'Lasagne' }).click()
+  const chip = bin.locator('.chip-group', { hasText: 'Lier à' }).getByRole('button', { name: /Poké bols/ })
+  const [req] = await Promise.all([page.waitForRequest(mealsPost('link')), chip.click()])
+  expect(req.postDataJSON()).toMatchObject({ action: 'link', groups: [['u1', 'u2']] })
+  await expect(bin.locator('.kitchen__unplaced-group.is-linked')).toBeVisible()
 })
 
 test('a linked pair drags as one: both land on the day, in one slot', async ({ page }) => {
   await openGrid(page)
-  await page.getByRole('button', { name: /Lier « Lasagne » et « Poké bols »/ }).click()
+  await page.locator('.kitchen__unplaced-open', { hasText: 'Lasagne' }).click()
+  await page.locator('.chip-group', { hasText: 'Lier à' }).getByRole('button', { name: /Poké bols/ }).click()
   await expect(page.locator('.kitchen__unplaced-group.is-linked')).toBeVisible()
   const tomorrow = addLocalDays(MMID, 1)
   const placed: unknown[] = []
@@ -241,8 +261,9 @@ test('a linked pair drags as one: both land on the day, in one slot', async ({ p
 })
 
 // « drop inside specific meals for a date … dinner being the most spacious and obvious
-// drop zone » (same day): arriving over a day opens its meal pills, the hero widest.
-test('arriving over a day opens its meal pills — the souper widest — and a pill picks the slot', async ({ page }) => {
+// drop zone » (same day): arriving over a day opens its meal pills, the dragged meal's
+// own slot widest (Lasagne is a souper here; 2026-11-17: the band follows the meal).
+test('arriving over a day opens its meal pills — the meal’s own slot widest — and a pill picks the slot', async ({ page }) => {
   await openGrid(page)
   const tomorrow = addLocalDays(MMID, 1)
   const day = page.locator(`.kitchen__day[data-dnd-zone="${tomorrow}"]`)
@@ -255,7 +276,8 @@ test('arriving over a day opens its meal pills — the souper widest — and a p
   const d = await boxOf(day)
   await page.mouse.move(d.x + d.width / 2, d.y + d.height / 2, { steps: 12 })
   const pills = day.locator('.kitchen__slot-drop')
-  await expect(pills.first()).toHaveClass(/is-hero/)
+  await expect(pills.first()).toHaveClass(/is-main/)
+  await expect(pills.first()).toHaveAttribute('data-dnd-zone', `slot:${tomorrow}:supper`)
   await expect(page.locator('.kitchen__slot-drops'), 'only the day under the finger opens').toHaveCount(1)
   const hero = await boxOf(pills.first())
   const side = await boxOf(pills.nth(1))

@@ -1,4 +1,4 @@
-import { Fragment, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
+import { useRef, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
@@ -11,6 +11,7 @@ import { useMealPrefs } from '../../lib/mealPrefs'
 import { EntityCombobox, type ComboOption } from '../EntityCombobox'
 import { Icon } from '../Icon'
 import { IconButton } from '../IconButton'
+import { Chip, ChipGroup } from '../Chip'
 import { useSingleOpen } from '../Disclosure'
 import { MealPlanPicker } from './MealPlanPicker'
 import { placeMeal, relinkUnplaced, unplacedGroups } from './mealMutations'
@@ -41,11 +42,15 @@ const MEAL_KEYS = [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY, MONTH_KEY]
 // LINKED rows (mig 0156; Marc, 2026-11-16: « link two recipes together … so that after
 // they move together until explicitly unlinked »). On a day, a slot's meals already
 // travel as one — the supper headline drags them all. Here each row was alone, so
-// « spaghetti + salade » had to be placed twice. Between two neighbouring rows sits one
-// small 🔗 toggle: tap it and the two (or their groups) become one group, drawn in one
-// bracket; tap the same 🔗 inside a group and it is cut there. A group drags, places
-// (tap → day picker) and lands as one, in the grabbed row's slot. The toggle is its own
-// undo, and it is a real button — the link is never a touch-only gesture.
+// « spaghetti + salade » had to be placed twice. LINK = drag one row onto another
+// (each row is its own drop zone, UNPLACED_ROW, nested in the bin's): the two (or
+// their groups) become one group, drawn in one bracket. Marc, 2026-11-17: « link
+// appears on drag and drop … not with always-on UI buttons » — so no chain sits
+// between rows any more. UNLINK = the small broken-chain on a linked row's own line,
+// beside its ✕: that row leaves, the rest stay together. A group drags, places (tap →
+// day picker) and lands as one, in the grabbed row's slot.
+// The non-drag mirror of LINK (dnd-mirror): tap a row — the panel that opens under it
+// lists the other groups as « Lier à » chips. Only there, never always on.
 
 type Dnd = ReturnType<typeof usePointerDnd>
 
@@ -116,26 +121,15 @@ export function UnplacedDay({
 
   const rows = removal.visible(items)
   const groups = unplacedGroups(rows)
-  const over = dropCueOf(dnd, UNPLACED_ZONE) === 'into'
   // The group being dragged (any of its rows can be the grip) dims as one.
   const draggingId = dnd.activeId?.startsWith(`${UNPLACED_ZONE}:`) ? dnd.activeId.slice(UNPLACED_ZONE.length + 1) : null
-
-  // The 🔗 between two neighbouring rows: pressed = they are linked. A read-only
-  // viewer sees the bracket, not the button.
-  // No toggle before the first row (`a` absent).
-  const linkToggle = (a: UnplacedMeal | undefined, b: UnplacedMeal | undefined, linked: boolean, onClick: () => void) =>
-    ro || !a || !b ? null : (
-      <IconButton
-        icon="link-bold"
-        variant="bare"
-        size="sm"
-        iconSize={14}
-        className="kitchen__unplaced-link"
-        pressed={linked}
-        label={t.kitchen.unplacedLink(a.title, b.title)}
-        onClick={onClick}
-      />
-    )
+  // A row under the drag: for a bin row that is « link with this group »; for a meal
+  // coming off a day it is just the bin (Kitchen's onDrop treats it so) — the cue says
+  // which.
+  const overRowId = dnd.over?.startsWith(`${UNPLACED_ROW}:`) ? dnd.over.slice(UNPLACED_ROW.length + 1) : null
+  const linkTarget = draggingId != null && overRowId != null ? groups.find((g) => g.some((x) => x.id === overRowId)) : undefined
+  const over = dropCueOf(dnd, UNPLACED_ZONE) === 'into' || (overRowId != null && draggingId == null)
+  const join = (a: UnplacedMeal[], b: UnplacedMeal[]) => void relinkUnplaced(qc, [[...a, ...b].map((x) => x.id)])
 
   const row = (u: UnplacedMeal, group: UnplacedMeal[]) => {
     const slot = (u.slot as MealSlot | null) ?? mealPrefs.hero
@@ -144,8 +138,9 @@ export function UnplacedDay({
       dnd.start(`${UNPLACED_ZONE}:${u.id}`, group.map((x) => x.title).join(' · '), e)
     }
     const dragging = draggingId != null && group.some((x) => x.id === draggingId)
+    const others = groups.filter((g) => g !== group)
     return (
-      <div className="kitchen__unplaced-item">
+      <div key={u.id} className="kitchen__unplaced-item" data-dnd-zone={ro ? undefined : `${UNPLACED_ROW}:${u.id}`}>
         {/* A plain div carries the drag (it holds two buttons — no role of its
             own, nested-interactive). The title button is the tap door. */}
         <div
@@ -175,7 +170,22 @@ export function UnplacedDay({
           </button>
           {/* One quiet ✕ — the row is a meal waiting for a day, not a record to
               manage (its recipe opens from the day it lands on). Removes THIS row
-              only; its partners stay linked to each other. */}
+              only; its partners stay linked to each other. On a LINKED row a
+              broken chain sits before it, on the same line: this row leaves the
+              group (a group of two simply comes apart). */}
+          {!ro && group.length > 1 && (
+            <IconButton
+              icon="link-break-bold"
+              variant="bare"
+              size="sm"
+              iconSize={14}
+              className="kitchen__unplaced-unlink"
+              label={t.kitchen.unplacedUnlink(u.title)}
+              onClick={() =>
+                void relinkUnplaced(qc, [[u.id], group.filter((x) => x.id !== u.id).map((x) => x.id)])
+              }
+            />
+          )}
           {!ro && (
             <IconButton
               icon="x-bold"
@@ -198,6 +208,23 @@ export function UnplacedDay({
               for (const m of group) void placeMeal(qc, m, date, slotPick ?? slot)
             }}
           />
+        )}
+        {/* The drag-to-link mirror: the other groups, one chip each. */}
+        {!ro && isOpen(u.id) && others.length > 0 && (
+          <ChipGroup label={t.kitchen.unplacedLinkTo}>
+            {others.map((g) => (
+              <Chip
+                key={g[0]?.id}
+                icon="link-bold"
+                onClick={() => {
+                  close()
+                  join(group, g)
+                }}
+              >
+                {g.map((x) => x.title).join(' · ')}
+              </Chip>
+            ))}
+          </ChipGroup>
         )}
       </div>
     )
@@ -253,26 +280,16 @@ export function UnplacedDay({
           !adding && <span className="kitchen__day-sum-empty mono">{t.kitchen.unplacedEmpty}</span>
         ) : (
           <div className="kitchen__day-meals">
-            {groups.map((g, gi) => {
-              const prev = groups[gi - 1] ?? []
-              return (
-                <Fragment key={g[0]?.id}>
-                  {/* Between two groups: link them (their rows become one group). */}
-                  {linkToggle(prev.at(-1), g[0], false, () => void relinkUnplaced(qc, [[...prev, ...g].map((x) => x.id)]))}
-                  <div className={'kitchen__unplaced-group' + (g.length > 1 ? ' is-linked' : '')}>
-                    {g.map((u, i) => (
-                      <Fragment key={u.id}>
-                        {/* Inside a group: cut it here (each side keeps its own rows). */}
-                        {linkToggle(g[i - 1], u, true, () =>
-                          void relinkUnplaced(qc, [g.slice(0, i).map((x) => x.id), g.slice(i).map((x) => x.id)]),
-                        )}
-                        {row(u, g)}
-                      </Fragment>
-                    ))}
-                  </div>
-                </Fragment>
-              )
-            })}
+            {groups.map((g) => (
+              <div
+                key={g[0]?.id}
+                className={
+                  'kitchen__unplaced-group' + (g.length > 1 ? ' is-linked' : '') + (g === linkTarget ? ' is-linktarget' : '')
+                }
+              >
+                {g.map((u) => row(u, g))}
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -282,3 +299,6 @@ export function UnplacedDay({
 
 /** The drop zone key of « À placer » on the week grid; a row drags as `unplaced:<id>`. */
 export const UNPLACED_ZONE = 'unplaced'
+/** One row of the bin as a drop zone, `unplacedrow:<id>` — a bin row dropped here links
+ *  the two groups; anything else dropped here is simply a drop into the bin. */
+export const UNPLACED_ROW = 'unplacedrow'

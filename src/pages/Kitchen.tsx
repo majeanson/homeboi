@@ -39,8 +39,8 @@ import { MealIdeas } from '../components/kitchen/MealIdeas'
 import { Leftovers, usePlanLeftover } from '../components/kitchen/Leftovers'
 import { weekDates, useWeekLabeled } from '../components/kitchen/week'
 import { useRecipeForMeal } from '../components/kitchen/mealLookup'
-import { reschedule, planMeal, planMealRecipe, placeMeal, unplaceMeal, newLinkId } from '../components/kitchen/mealMutations'
-import { UnplacedDay, UNPLACED_ZONE } from '../components/kitchen/UnplacedDay'
+import { reschedule, planMeal, planMealRecipe, placeMeal, unplaceMeal, newLinkId, relinkUnplaced } from '../components/kitchen/mealMutations'
+import { UnplacedDay, UNPLACED_ZONE, UNPLACED_ROW } from '../components/kitchen/UnplacedDay'
 import { EntityCombobox, type ComboOption } from '../components/EntityCombobox'
 import { mealPickOptions, type MealPick } from '../components/kitchen/comboOptions'
 import { isGuest } from '../lib/device'
@@ -231,9 +231,23 @@ export function Kitchen() {
   // NEAREST zone, so a pill wins over its day, and the gaps between pills still read as
   // « the day » (a meal keeps its own slot there, as before).
   const SLOT_ZONE = /^slot:(\d+):([^:]+)$/
+  // …and each « À placer » row is a zone too (UNPLACED_ROW): a bin row dropped on
+  // another LINKS their groups (Marc, 2026-11-17: the link « appears on drag and drop »);
+  // a meal coming off a day and dropped on a row is just a drop into the bin.
+  const ROW_PREFIX = `${UNPLACED_ROW}:`
+  const groupOf = (id: string) => {
+    const u = unplaced.find((x) => x.id === id)
+    return !u ? [] : u.link_id ? unplaced.filter((x) => x.link_id === u.link_id) : [u]
+  }
   const dayDnd = usePointerDnd({
     onDrop: (fromKey, toKey) => {
-      if (toKey === UNPLACED_ZONE) {
+      if (toKey.startsWith(ROW_PREFIX) && fromKey.startsWith(UNPLACED_PREFIX)) {
+        const a = groupOf(toKey.slice(ROW_PREFIX.length))
+        const b = groupOf(fromKey.slice(UNPLACED_PREFIX.length))
+        if (a.length && b.length) void relinkUnplaced(qc, [[...a, ...b].map((x) => x.id)])
+        return
+      }
+      if (toKey === UNPLACED_ZONE || toKey.startsWith(ROW_PREFIX)) {
         if (fromKey.startsWith(UNPLACED_PREFIX)) return
         const one = MEAL_KEY.exec(fromKey)
         const moving = one ? days.filter((m) => m.id === one[3]) : mealsFor(Number(fromKey), heroSlot)
@@ -251,7 +265,7 @@ export function Kitchen() {
         if (!u) return
         // A linked group (mig 0156) lands as one, in one slot: the pill's, else the
         // grabbed row's own, else the hero.
-        const group = u.link_id ? unplaced.filter((x) => x.link_id === u.link_id) : [u]
+        const group = groupOf(u.id)
         const slot = toSlot ?? u.slot ?? heroSlot
         for (const m of group) void placeMeal(qc, m, to, slot)
         return
@@ -271,7 +285,14 @@ export function Kitchen() {
       for (const m of mealsFor(from, heroSlot)) reschedule(qc, m.id, to, dest)
     },
     canDrop: (fromKey, toKey) => {
-      if (fromKey.startsWith(UNPLACED_PREFIX)) return toKey !== UNPLACED_ZONE
+      if (fromKey.startsWith(UNPLACED_PREFIX)) {
+        if (toKey === UNPLACED_ZONE) return false
+        // Onto a row of its OWN group: already linked, nothing to do.
+        if (toKey.startsWith(ROW_PREFIX))
+          return !groupOf(fromKey.slice(UNPLACED_PREFIX.length)).some((x) => `${ROW_PREFIX}${x.id}` === toKey)
+        return true
+      }
+      if (toKey.startsWith(ROW_PREFIX)) return true
       const one = MEAL_KEY.exec(fromKey)
       const into = SLOT_ZONE.exec(toKey)
       if (into) return one ? !(one[1] === into[1] && one[2] === into[2]) : !(fromKey === into[1] && into[2] === heroSlot)
@@ -284,21 +305,32 @@ export function Kitchen() {
   // The day a live drag is over — its own zone or one of its meal pills. Only THAT day
   // opens its pills: seven days of pills at once would be a wall of targets.
   const overDay = dayDnd.activeId == null || dayDnd.over == null ? null : (SLOT_ZONE.exec(dayDnd.over)?.[1] ?? dayDnd.over)
-  // The pills, hero FIRST and widest: the souper (or the household's hero) is the drop
-  // most drags mean, so it is the biggest target; the visible side slots follow in the
-  // household's order.
-  const dropSlots = [heroSlot, ...mealPrefs.sideSlots.filter((x) => mealPrefs.isVisible(x))]
+  // The pills. The big band is the DRAGGED meal's own slot — the one it keeps when it
+  // lands « anywhere on the day » (a souper headline → the hero, a side meal → its
+  // slot, a bin row → its slot or the hero). Marc, 2026-11-17: a breakfast dropped
+  // carelessly must not turn into a souper. The other visible slots follow in the
+  // household's order (hero first).
+  const dragSlot = ((): MealSlot => {
+    const k = dayDnd.activeId
+    if (!k) return heroSlot
+    if (k.startsWith(UNPLACED_PREFIX)) {
+      const u = unplaced.find((x) => x.id === k.slice(UNPLACED_PREFIX.length))
+      return (u?.slot as MealSlot | null | undefined) ?? heroSlot
+    }
+    return (MEAL_KEY.exec(k)?.[2] as MealSlot | undefined) ?? heroSlot
+  })()
+  const sideDrops = [heroSlot, ...mealPrefs.sideSlots.filter((x) => mealPrefs.isVisible(x))].filter((x) => x !== dragSlot)
   const slotPill = (date: number, sl: MealSlot) => {
     const key = `slot:${date}:${sl}`
-    const hero = sl === heroSlot
+    const main = sl === dragSlot
     return (
       <div
         key={sl}
         data-dnd-zone={key}
-        className={'kitchen__slot-drop' + (hero ? ' is-hero' : '') + (dayDnd.over === key ? ' is-over' : '')}
+        className={'kitchen__slot-drop' + (main ? ' is-main' : '') + (dayDnd.over === key ? ' is-over' : '')}
         style={{ '--slot-c': mealPrefs.color(sl) ?? 'var(--accent)' } as React.CSSProperties}
       >
-        <Icon name={SLOT_ICON_NAME[sl]} size={hero ? 22 : 16} />
+        <Icon name={SLOT_ICON_NAME[sl]} size={main ? 22 : 16} />
         <span className="kitchen__slot-drop-label ellipsis">{slotLabel(sl, t)}</span>
       </div>
     )
@@ -650,9 +682,9 @@ export function Kitchen() {
                     fields) already pick a slot. */}
                 {slotsHere && (
                   <div className="kitchen__slot-drops" aria-hidden="true">
-                    {slotPill(date, heroSlot)}
-                    {dropSlots.length > 1 && (
-                      <div className="kitchen__slot-drops-sides">{dropSlots.slice(1).map((sl) => slotPill(date, sl))}</div>
+                    {slotPill(date, dragSlot)}
+                    {sideDrops.length > 0 && (
+                      <div className="kitchen__slot-drops-sides">{sideDrops.map((sl) => slotPill(date, sl))}</div>
                     )}
                   </div>
                 )}

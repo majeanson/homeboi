@@ -897,42 +897,41 @@
 
 /* « À placer » LINKED rows (mig 0156): a group of rows that move as one, drawn in one
    bracket on its leading edge — the same inset rail a day card wears, because a linked
-   group IS a little day without a date. Between two neighbouring rows sits the 🔗
-   toggle: faint while they are apart (an invitation), accent while they are linked. It
-   is a 38px target centred in the gap, and the negative margins pull the rows back
-   together so the bin does not get taller just for carrying it. */
-.kitchen__unplaced-group.is-linked {
+   group IS a little day without a date. Linking is a drag (a row dropped on another),
+   so nothing sits between rows; while a dragged row hovers a group, that group wears
+   the dotted « into » outline — « you will join these ». Unlinking is the faint broken
+   chain on a linked row's own line, beside its ✕. */
+.kitchen__unplaced-group {
   border-radius: var(--radius-sm);
+}
+.kitchen__unplaced-group.is-linked {
   box-shadow: inset 3px 0 0 var(--accent);
   background: color-mix(in srgb, var(--accent) 6%, transparent);
   padding-left: 0.45rem;
 }
-.kitchen__unplaced-link {
-  /* Under the meal icons, like a chain between them: the 38px button's glyph centre
-     sits on the 18px slot icon's centre. */
-  align-self: flex-start;
-  margin: -0.7rem 0 -0.7rem -10px;
-  position: relative;
-  z-index: 1;
+.kitchen__unplaced-group.is-linktarget {
+  outline: 2px dashed var(--accent);
+  outline-offset: 2px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.kitchen__unplaced-unlink {
+  flex: none;
   color: var(--ink-faint);
-  opacity: 0.55;
 }
-.kitchen__unplaced-link.is-on {
+.kitchen__unplaced-unlink:hover,
+.kitchen__unplaced-unlink:focus-visible {
   color: var(--accent);
-  opacity: 1;
-}
-.kitchen__unplaced-link:hover,
-.kitchen__unplaced-link:focus-visible {
-  opacity: 1;
 }
 
 /* A day's meal pills while a drag hovers it — a panel laid OVER the card, never
    resizing it (a card that grew under a moving finger would shove the next day under
    the pointer). On a short card the panel keeps a floor and hangs past the card's
    bottom edge instead, over the next day — the pills stay finger-sized either way.
-   The hero (souper) is the top band, most of the panel and the full width: the
-   biggest, most obvious target, and where a drop « somewhere on the day » lands. The
-   side slots share one row beneath. Each pill is its own drop zone (Kitchen's
+   The top band is the DRAGGED meal's own slot (a souper → Souper, a breakfast →
+   Déjeuner, an « À placer » row → its slot): most of the panel and the full width,
+   the biggest, most obvious target, and where a drop « somewhere on the day » lands
+   — so a careless drop never changes what the meal is. The other slots share one
+   row beneath. Each pill is its own drop zone (Kitchen's
    SLOT_ZONE); the gaps between them still read as the day itself. */
 .kitchen__slot-drops {
   position: absolute;
@@ -969,7 +968,7 @@
   color: var(--ink-soft);
   font-size: 0.75rem;
 }
-.kitchen__slot-drop.is-hero {
+.kitchen__slot-drop.is-main {
   flex: 1.8 1 0;
   gap: 0.45rem;
   font-size: 1rem;

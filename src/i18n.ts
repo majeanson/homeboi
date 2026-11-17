@@ -1343,7 +1343,9 @@ export const FR = {
     unplacedEmpty: 'Les repas de la semaine, sans jour encore. Glisse-les ici, puis sur un jour.',
     unplacedAdd: 'Ajouter un repas à placer',
     unplacedRemove: 'Retirer de « À placer »',
-    unplacedLink: (a: string, b: string) => `Lier « ${a} » et « ${b} » — ils se placent ensemble`,
+    // Linked rows (mig 0156): link = drag a row onto another (or « Lier à » in the open row).
+    unplacedLinkTo: 'Lier à',
+    unplacedUnlink: (a: string) => `Détacher « ${a} » du groupe`,
     addIdea: 'Ajouter une idée',
     removeIdea: 'Retirer l’idée',
     shopWeek: 'Magasiner la semaine',

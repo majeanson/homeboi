@@ -40,8 +40,9 @@ async function openGrid(page: Page) {
 
 /** Press-and-hold a row past DND_HOLD_MS, carry it onto a day zone, release — onto
  *  one of the day's meal pills when `slot` is given (they open as the drag arrives;
- *  the hero pill is the big band where a drop « on the day » lands). */
-async function holdDrag(page: Page, from: ReturnType<Page['locator']>, toZoneDate: number, slot?: string) {
+ *  the big band — the dragged meal's own slot, `main` when given — is where a drop
+ *  « on the day » lands). */
+async function holdDrag(page: Page, from: ReturnType<Page['locator']>, toZoneDate: number, slot?: string, main?: string) {
   const target = page.locator(`.kitchen__day[data-dnd-zone="${toZoneDate}"]`)
   await target.scrollIntoViewIfNeeded()
   const a = await from.boundingBox()
@@ -56,6 +57,7 @@ async function holdDrag(page: Page, from: ReturnType<Page['locator']>, toZoneDat
   await page.mouse.move(sx + 2, sy + 2)
   await page.mouse.move(b.x + b.width / 2, b.y + 20, { steps: 12 })
   await expect(target).toHaveClass(/is-droptarget/)
+  if (main) await expect(target.locator(`[data-dnd-zone="slot:${toZoneDate}:${main}"]`)).toHaveClass(/is-main/)
   if (slot) {
     const pill = target.locator(`[data-dnd-zone="slot:${toZoneDate}:${slot}"]`)
     const p = await pill.boundingBox()
@@ -66,15 +68,15 @@ async function holdDrag(page: Page, from: ReturnType<Page['locator']>, toZoneDat
   await page.mouse.up()
 }
 
-// Since the meal pills (2026-11-16), the big band of a hovered day IS the souper: a
-// breakfast dropped there becomes a souper, on purpose — it says so under the finger.
-// Its own slot is its own pill.
-test('a side meal (breakfast) drags to the next day as ONE meal, onto its own slot pill', async ({ page }) => {
+// Since the meal pills (2026-11-16) a hovered day opens one pill per meal; the big band
+// is the DRAGGED meal's own slot (Marc, 2026-11-17), so a breakfast dropped « on the
+// day » stays a breakfast. Another slot is its own, smaller pill.
+test('a side meal (breakfast) drags to the next day as ONE meal, and stays a breakfast', async ({ page }) => {
   await openGrid(page)
   const nextDay = addLocalDays(MMID, 1)
   const crepes = page.locator('.kitchen__day.is-today').locator('.kitchen__day-meal', { hasText: 'Crêpes' })
   await expect(crepes).toBeVisible()
-  const [req] = await Promise.all([page.waitForRequest(isReschedule, { timeout: 20_000 }), holdDrag(page, crepes, nextDay, 'breakfast')])
+  const [req] = await Promise.all([page.waitForRequest(isReschedule, { timeout: 20_000 }), holdDrag(page, crepes, nextDay, undefined, 'breakfast')])
   const body = JSON.parse(req.postData() ?? '{}') as { action: string; id: string; toDate: number; slot?: string }
   expect(body).toMatchObject({ action: 'reschedule', id: 'meal4', toDate: nextDay, slot: 'breakfast' })
 })
