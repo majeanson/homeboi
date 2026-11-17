@@ -82,7 +82,7 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
   try {
     await ctx.env.DB.batch([
       ctx.env.DB.prepare(
-        'INSERT INTO households (id, name, tier, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
+        'INSERT INTO households (id, name, tier, status, created_at, updated_at, is_sandbox) VALUES (?, ?, ?, ?, ?, ?, 1)',
       ).bind(householdId, DEMO_NAME, 'free', 'active', now, now),
       ctx.env.DB.prepare(
         'INSERT INTO operators (email, household_id, created_at, password_hash) VALUES (?, ?, ?, ?)',

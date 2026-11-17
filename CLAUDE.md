@@ -435,8 +435,8 @@ find-or-create the read-only singleton demo household, reseed if stale, mint a
 deleting the sandbox's `operators` row is the session kill switch. **Shipped:** the
 « Garder ma maisonnée » claim flow — `POST /api/demo/claim` (sandbox-operator-only,
 signup-grade validation + invite gate) rewrites the operators row's email + password
-**in place**, so the household, its data and the session survive while the email-LIKE
-sweep/cap stop matching it; the board claim banner (`SampleBanner`'s sandbox face,
+**in place** and clears `households.is_sandbox` (0157, all the sweep/cap read; `.invalid` is
+refused at signup/join/claim), so household, data and session survive; the board claim banner (`SampleBanner`'s sandbox face,
 `lib/demo.ts` `useSandbox()`) links to the `/garder` form.
 
 The fallback (and any operator-minted showcase link) is an ordinary guest, so

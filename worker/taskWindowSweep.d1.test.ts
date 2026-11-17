@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { applyD1Migrations } from 'cloudflare:test'
 import { env } from 'cloudflare:workers'
-import { household, okJson } from '../functions/test/d1'
+import { household, householdRowFor, okJson } from '../functions/test/d1'
 import { nowSec } from '../functions/_lib/ids'
 import type { TasksWire } from '../functions/_lib/wire'
 
@@ -27,7 +27,7 @@ describe('0151 — the to-dos an old Worker wrote in the window', () => {
     expect(SWEEP, 'the sweep is on disk').toHaveLength(1)
     await applyD1Migrations(DRILL, MIGRATIONS.filter((m) => m.name < '0151_'))
     const s = await household('window-sweep', undefined, { empty: true })
-    const hhRow = await env.DB.prepare('SELECT * FROM households WHERE id = ?').bind(s.householdId).first<Record<string, unknown>>()
+    const hhRow = await householdRowFor(DRILL, s.householdId)
     const keys = Object.keys(hhRow!)
     await DRILL.prepare(`INSERT INTO households (${keys.join(', ')}) VALUES (${keys.map(() => '?').join(', ')})`).bind(...keys.map((k) => hhRow![k] ?? null)).run()
     const ts = nowSec()

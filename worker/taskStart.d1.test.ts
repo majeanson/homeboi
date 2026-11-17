@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import { applyD1Migrations } from 'cloudflare:test'
 import { env } from 'cloudflare:workers'
-import { household, okJson, type Session } from '../functions/test/d1'
+import { household, householdRowFor, okJson, type Session } from '../functions/test/d1'
 import { addLocalDays, localDayStart } from '../functions/_lib/ids'
 import { parseRecur } from '../functions/_lib/recur'
 import { spineTask, type SpineTaskRow } from '../functions/_lib/taskItem'
@@ -94,7 +94,7 @@ beforeAll(async () => {
 
   variety = await household('start-variety', undefined, { empty: true })
   seeded = await household('start-sample')
-  for (const s of [variety, seeded]) await insertRows(DRILL, 'households', [(await env.DB.prepare('SELECT * FROM households WHERE id = ?').bind(s.householdId).first<Row>())!])
+  for (const s of [variety, seeded]) await insertRows(DRILL, 'households', [await householdRowFor(DRILL, s.householdId)])
 
   const hh = variety.householdId
   const base = { household_id: hh, created_at: now - 40 * 86400, updated_at: now - 40 * 86400 }

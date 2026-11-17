@@ -57,12 +57,14 @@ describe('demo claim', () => {
     expect(hh?.name).toBe('Chez nous')
     const item = await env.DB.prepare("SELECT COUNT(*) AS n FROM list_items WHERE household_id = ? AND text = 'des œufs'").bind(s.householdId).first<{ n: number }>()
     expect(item?.n, 'what the visitor tried survives').toBe(1)
-    // Out of the sweep and the cap: both key on the sandbox address (SANDBOX_EMAIL_LIKE),
-    // so ask THIS household's operator directly — a global count would race any other
-    // file minting a sandbox at the same moment.
+    // Out of the sweep and the cap: both key on `households.is_sandbox` (0157), so ask
+    // THIS household directly — a global count would race any other file minting a
+    // sandbox at the same moment. The address left the sandbox namespace too.
     const op = await env.DB.prepare('SELECT email FROM operators WHERE household_id = ?').bind(s.householdId).first<{ email: string }>()
     expect(op?.email).toBe(email)
-    expect(isSandboxEmail(op!.email), 'a claimed household leaves the sweep and frees its slot').toBe(false)
+    expect(isSandboxEmail(op!.email)).toBe(false)
+    const flag = await env.DB.prepare('SELECT is_sandbox FROM households WHERE id = ?').bind(s.householdId).first<{ is_sandbox: number }>()
+    expect(flag, 'a claimed household leaves the sweep and frees its slot').toEqual({ is_sandbox: 0 })
   })
 
   it('409s an address that already has an account', async () => {

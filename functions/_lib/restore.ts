@@ -41,7 +41,9 @@ export const MAX_RESTORE_BYTES = 20 * 1024 * 1024
 export const BATCH = 40
 
 // The households row's identity: never overwritten by a restore.
-export const HOUSEHOLD_KEEP: ReadonlySet<string> = new Set(['id', 'tier', 'status', 'stripe_customer_id', 'created_at', 'invite_nonce'])
+// `is_sandbox` (0157) above all: a sandbox's dump restored into a real household
+// would otherwise mark it for the demo sweep.
+export const HOUSEHOLD_KEEP: ReadonlySet<string> = new Set(['id', 'tier', 'status', 'stripe_customer_id', 'created_at', 'invite_nonce', 'is_sandbox'])
 
 // The columns that name a household on a row, rewritten from the dump's household to
 // the target's (a no-op on a same-household restore).

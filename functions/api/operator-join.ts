@@ -4,6 +4,7 @@ import { overAuthLimit } from '../_lib/rateLimit'
 import { signInAs, sessionCookies, verifyOperatorInvite } from '../_lib/auth'
 import { hashPassword } from '../_lib/password'
 import { nowSec } from '../_lib/ids'
+import { isReservedEmail } from '../_lib/demoHousehold'
 
 // « Rejoindre une maisonnée » — redeem an operator invite (see operator-invite.ts and
 // migration 0128). This is the endpoint that makes a household able to hold two
@@ -67,7 +68,9 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
   if (checked instanceof Response) return checked
 
   const email = body?.email?.trim().toLowerCase()
-  if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return badRequest('Courriel invalide.')
+  // A `.invalid` address is where the sandboxes live; a co-parent joining with one put
+  // the whole household in the demo sweep (review 2026-11-17, P0 #3).
+  if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || isReservedEmail(email)) return badRequest('Courriel invalide.')
   const password = body?.password ?? ''
   // The same 8-character floor as signup and demo/claim. One number, three places —
   // if it ever moves it moves in all three.

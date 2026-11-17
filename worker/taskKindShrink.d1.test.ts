@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import { applyD1Migrations } from 'cloudflare:test'
 import { env } from 'cloudflare:workers'
-import { household, okJson, type Session } from '../functions/test/d1'
+import { household, householdRowFor, okJson, type Session } from '../functions/test/d1'
 import { addLocalDays, localDayStart, localTimeOnDay } from '../functions/_lib/ids'
 import { runWithTz } from '../functions/_lib/tz'
 import { spineTask, type SpineTaskRow } from '../functions/_lib/taskItem'
@@ -176,7 +176,7 @@ beforeAll(async () => {
   for (const [i, tz] of ZONES.entries()) {
     const s = await household(`shrink-${i}`, undefined, { empty: true })
     await env.DB.prepare('UPDATE households SET tz = ? WHERE id = ?').bind(tz, s.householdId).run()
-    await insertRows(DRILL, 'households', [(await env.DB.prepare('SELECT * FROM households WHERE id = ?').bind(s.householdId).first<Row>())!])
+    await insertRows(DRILL, 'households', [await householdRowFor(DRILL, s.householdId)])
     const p = `k${i}`
     const v = variety(s.householdId, p, tz)
     await insertRows(DRILL, 'home_projects', v.rows)

@@ -6,7 +6,7 @@ import { hashPassword } from '../../_lib/password'
 import { inviteAccepted } from '../../_lib/signupGate'
 import { nowSec } from '../../_lib/ids'
 import { countDoor } from '../../_lib/strangers'
-import { DEMO_SANDBOX_DOMAIN, isSandboxEmail } from '../../_lib/demoHousehold'
+import { isReservedEmail, isSandboxEmail } from '../../_lib/demoHousehold'
 import { mailEnabled } from '../../_lib/mail'
 import { sendVerification } from '../../_lib/verify'
 
@@ -45,7 +45,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return badRequest('Courriel invalide.')
   // A claimed address must leave the sandbox namespace, or the sweep would still
   // (or the legacy singleton logic could) treat the household as disposable.
-  if (email.endsWith(DEMO_SANDBOX_DOMAIN)) return badRequest('Courriel invalide.')
+  if (isReservedEmail(email)) return badRequest('Courriel invalide.')
   const password = body?.password ?? ''
   if (password.length < 8) return badRequest('Mot de passe trop court (8 caractères minimum).')
 
@@ -71,8 +71,8 @@ export const onRequestPost = authed(async (ctx, actor) => {
       // Stamped whether or not it is renamed: a claimed household must never read as
       // « untouched » to anything keying on updated_at.
       name
-        ? ctx.env.DB.prepare('UPDATE households SET name = ?, updated_at = ? WHERE id = ?').bind(name, ts, actor.householdId)
-        : ctx.env.DB.prepare('UPDATE households SET updated_at = ? WHERE id = ?').bind(ts, actor.householdId),
+        ? ctx.env.DB.prepare('UPDATE households SET name = ?, updated_at = ?, is_sandbox = 0 WHERE id = ?').bind(name, ts, actor.householdId)
+        : ctx.env.DB.prepare('UPDATE households SET updated_at = ?, is_sandbox = 0 WHERE id = ?').bind(ts, actor.householdId),
     ]
     const [opUpdate] = await ctx.env.DB.batch(statements)
     // No row moved ⇒ the sweep deleted the sandbox between resolve and claim

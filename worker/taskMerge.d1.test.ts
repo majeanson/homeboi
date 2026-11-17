@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import { applyD1Migrations } from 'cloudflare:test'
 import { env } from 'cloudflare:workers'
-import { household, okJson, type Session } from '../functions/test/d1'
+import { household, householdRowFor, okJson, type Session } from '../functions/test/d1'
 import { addLocalDays, localDayStart } from '../functions/_lib/ids'
 import { present } from '../functions/_lib/taskItem'
 import { choreTask, homeTask, todoTask, type ChoreTaskRow, type HomeTaskRow, type TodoTaskRow } from '../functions/test/legacyTaskReaders'
@@ -212,7 +212,7 @@ const MIGRATIONS = env.TEST_MIGRATIONS
 const MERGE = MIGRATIONS.filter((m) => m.name.startsWith('0150_'))
 
 async function copyHousehold(s: Session) {
-  const hh = await env.DB.prepare('SELECT * FROM households WHERE id = ?').bind(s.householdId).first<Row>()
+  const hh = await householdRowFor(DRILL, s.householdId)
   await insertRows(DRILL, 'households', [hh!])
 }
 

@@ -27,24 +27,30 @@ import { deleteR2Blob } from './r2'
 
 export const DEMO_SANDBOX_DOMAIN = '@babillard.invalid'
 export const DEMO_SANDBOX_PREFIX = 'demo-'
-// LIKE pattern for sandbox operators. The legacy read-only singleton is
-// `demo@babillard.invalid` (no dash) and deliberately does NOT match.
-const SANDBOX_EMAIL_LIKE = `${DEMO_SANDBOX_PREFIX}%${DEMO_SANDBOX_DOMAIN}`
 
 export function sandboxEmail(householdId: string): string {
   return `${DEMO_SANDBOX_PREFIX}${householdId}${DEMO_SANDBOX_DOMAIN}`
 }
 
-// The pure mirror of SANDBOX_EMAIL_LIKE — "is this operator a sweepable sandbox?".
-// The sweep + cap query key on the operators.email LIKE pattern and NOTHING else
-// (no column, no household flag), so « Garder ma maisonnée » (demo/claim.ts)
-// converts a sandbox into a real account by rewriting that one email in place:
-// once it no longer matches, the household is invisible to the sweep and stops
-// counting against the cap. demoHousehold.test.ts pins that a claimed email
-// falls outside the pattern. The legacy singleton `demo@babillard.invalid`
-// (no dash) deliberately does not match either.
+// "Is this operator a sandbox's throwaway?" — for the claim door and the write stamp
+// (route.ts). The sweep + cap do NOT read it any more: they key on
+// `households.is_sandbox` (0157), set by the mint and cleared by « Garder ma
+// maisonnée » (demo/claim.ts), because an email is something a person can type
+// (review 2026-11-17, P0 #3). The legacy singleton `demo@babillard.invalid` (no dash)
+// deliberately does not match.
 export function isSandboxEmail(email: string): boolean {
   return email.startsWith(DEMO_SANDBOX_PREFIX) && email.endsWith(DEMO_SANDBOX_DOMAIN)
+}
+
+// An address a PERSON may not take: anything under the RFC 2606 `.invalid` TLD, which
+// can never receive mail — and which is where the sandboxes and the legacy singleton
+// live. Refused at every door that writes `operators.email` (signup, operator-join, the
+// claim). The sweep no longer keys on the email (it reads `households.is_sandbox`,
+// migration 0157), but the trust class, the stranger counts and the client's sandbox
+// face still read it, so a real account must never wear one (review 2026-11-17, P0 #3:
+// a co-parent who joined with `demo-x@babillard.invalid` got the family swept).
+export function isReservedEmail(email: string): boolean {
+  return /\.invalid$/i.test(email.trim())
 }
 
 // One afternoon of real use; after this the next mint sweeps the household away.
@@ -403,9 +409,7 @@ export async function deleteHousehold(env: Env, householdId: string): Promise<vo
 
 /** How many sandbox households are currently alive (drives the mint cap). */
 export async function countDemoSandboxes(env: Env): Promise<number> {
-  const row = await env.DB.prepare('SELECT COUNT(*) AS n FROM operators WHERE email LIKE ?')
-    .bind(SANDBOX_EMAIL_LIKE)
-    .first<{ n: number }>()
+  const row = await env.DB.prepare('SELECT COUNT(*) AS n FROM households WHERE is_sandbox = 1').first<{ n: number }>()
   return row?.n ?? 0
 }
 
@@ -419,12 +423,12 @@ export async function sweepExpiredDemoSandboxes(env: Env, now: number, limit = 2
   //     it opened, and the slot is worth more than the empty household.
   // Oldest first either way, so a backlog drains in the order it arrived.
   const { results } = await env.DB.prepare(
-    `SELECT h.id FROM households h JOIN operators o ON o.household_id = h.id
-     WHERE o.email LIKE ?
+    `SELECT h.id FROM households h
+     WHERE h.is_sandbox = 1
        AND (h.created_at < ? OR (h.created_at < ? AND h.updated_at <= h.created_at))
      ORDER BY h.created_at LIMIT ?`,
   )
-    .bind(SANDBOX_EMAIL_LIKE, now - DEMO_SANDBOX_TTL, now - DEMO_SANDBOX_IDLE_TTL, limit)
+    .bind(now - DEMO_SANDBOX_TTL, now - DEMO_SANDBOX_IDLE_TTL, limit)
     .all<{ id: string }>()
   let swept = 0
   for (const row of results) {
@@ -445,10 +449,9 @@ export async function sweepExpiredDemoSandboxes(env: Env, now: number, limit = 2
  *  zero; anything else means the delete is failing (the nightly alert's signal). */
 export async function countStaleDemoSandboxes(env: Env, now: number): Promise<number> {
   const row = await env.DB.prepare(
-    `SELECT COUNT(*) AS n FROM households h JOIN operators o ON o.household_id = h.id
-     WHERE o.email LIKE ? AND h.created_at < ?`,
+    'SELECT COUNT(*) AS n FROM households h WHERE h.is_sandbox = 1 AND h.created_at < ?',
   )
-    .bind(SANDBOX_EMAIL_LIKE, now - DEMO_SANDBOX_TTL)
+    .bind(now - DEMO_SANDBOX_TTL)
     .first<{ n: number }>()
   return row?.n ?? 0
 }

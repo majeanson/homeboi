@@ -121,3 +121,14 @@ export async function okJson<T = { ok: boolean }>(res: Promise<Response>): Promi
   if (!r.ok) throw new Error(`${r.status}: ${text.slice(0, 300)}`)
   return JSON.parse(text) as T
 }
+
+// Today's households row for a DRILL database built at an older migration: only the columns
+// that schema has. The drills replay old migrations into a side database and copy the
+// household across, so a column added to households LATER (0157 `is_sandbox`) has nowhere
+// to land there — and is not what any drill is about.
+export async function householdRowFor(drill: D1Database, householdId: string): Promise<Record<string, unknown>> {
+  const row = await env.DB.prepare('SELECT * FROM households WHERE id = ?').bind(householdId).first<Record<string, unknown>>()
+  if (!row) throw new Error(`no household ${householdId}`)
+  const cols = new Set((await drill.prepare('PRAGMA table_info(households)').all<{ name: string }>()).results.map((c) => c.name))
+  return Object.fromEntries(Object.entries(row).filter(([k]) => cols.has(k)))
+}

@@ -8,6 +8,7 @@ import { newId, nowSec } from '../../_lib/ids'
 import { countDoor, isWalkerEmail } from '../../_lib/strangers'
 import { sendVerification } from '../../_lib/verify'
 import { mailEnabled } from '../../_lib/mail'
+import { isReservedEmail } from '../../_lib/demoHousehold'
 
 // Self-serve signup: a new family creates its household + operator account in
 // one step (name the household, pick email + password) and lands signed in —
@@ -29,7 +30,8 @@ export const onRequestPost: PagesFunction<Env> = async (ctx) => {
     ctx.request,
   )
   const email = body?.email?.trim().toLowerCase()
-  if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return badRequest('Courriel invalide.')
+  // A `.invalid` address is where the sandboxes live; a person may not take one (P0 #3).
+  if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || isReservedEmail(email)) return badRequest('Courriel invalide.')
   const password = body?.password ?? ''
   if (password.length < 8) return badRequest('Mot de passe trop court (8 caractères minimum).')
   const name = body?.householdName?.trim().slice(0, 60)

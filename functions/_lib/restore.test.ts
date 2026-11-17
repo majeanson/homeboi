@@ -65,7 +65,7 @@ describe('the content set', () => {
     }
     for (const t of ['members', 'recipes', 'events', 'notes', 'list_items', 'routines']) expect(CONTENT_TABLES, t).toContain(t)
     expect(CONTENT_TABLES.length).toBe(HOUSEHOLD_TABLES.filter((t) => !TAKEOUT_EXCLUDE.has(t)).length)
-    expect([...HOUSEHOLD_KEEP]).toEqual(['id', 'tier', 'status', 'stripe_customer_id', 'created_at', 'invite_nonce'])
+    expect([...HOUSEHOLD_KEEP]).toEqual(['id', 'tier', 'status', 'stripe_customer_id', 'created_at', 'invite_nonce', 'is_sandbox'])
   })
   it('chunks', () => {
     expect(chunk([1, 2, 3, 4, 5], 2)).toEqual([[1, 2], [3, 4], [5]])
