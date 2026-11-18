@@ -32,6 +32,11 @@ async function kidBoard(page: Page, opts: Parameters<typeof mockApi>[1] = {}) {
   await seedState(page, { theme: 'day', audience: 'toddler', lang: 'fr', calm: true })
   await page.goto('/board')
   await page.locator('.hub').waitFor({ state: 'visible', timeout: 15_000 })
+  // Since review #25 the first screen is tonight / now-next / routine / doors, and the
+  // rest folds behind « Tout voir »; these tests are about that rest, so open it.
+  const more = page.locator('.today-kid__more .disclosure__summary')
+  await more.waitFor({ state: 'visible', timeout: 15_000 })
+  await more.click()
 }
 
 test('the toddler board renders picture tiles, not the parent bento', async ({ page }) => {

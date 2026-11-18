@@ -84,10 +84,14 @@ test.describe('fridge notes', () => {
     await expect(note).toHaveCount(0) // optimistically removed
   })
 
-  test('toddler sees the note too (read-aloud, not cleared)', async ({ page }) => {
+  // Review #25: a parent's TEXT note is not for a pre-reader; the toddler lens keeps only
+  // drawings from the fridge (behind « Tout voir »), and their own mots, read aloud.
+  test('toddler does not get the parents’ text notes', async ({ page }) => {
     await APP('/board', 'toddler')(page)
     await settle(page, '.kid__main')
-    await expect(page.locator('.notes--kid .note-card', { hasText: 'examen' })).toBeVisible()
+    await page.locator('.today-kid__more .disclosure__summary').click()
+    await expect(page.locator('.today-kid__more .today-kid__section').first()).toBeVisible()
+    await expect(page.locator('.note-card', { hasText: 'examen' })).toHaveCount(0)
   })
 
   // Tidy seam #1: « Tout effacer » empties the whole strip as ONE undoable action —
@@ -115,6 +119,8 @@ test('toddler board shows « Mes habitudes » due today, read-aloud not marked',
   await settle(page, '.kid__main')
   // « Bouger un peu » is an every-day 'hours' household habit — due today under any
   // clock — so it surfaces as a picture-first hear-first tile (no frozen clock needed).
+  // It sits behind « Tout voir » since review #25.
+  await page.locator('.today-kid__more .disclosure__summary').click()
   const tile = page.locator('.today-kid__section .bigtile', { hasText: 'Bouger un peu' })
   await expect(tile).toBeVisible()
   // Reading is a nicety, not a mark: a tap on a habit tile must NOT fire a habits write

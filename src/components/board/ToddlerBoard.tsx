@@ -1,5 +1,10 @@
 import { Loading } from '../Fallback'
 import { Link } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { api } from '../../lib/api'
+import { ROUTINES_KEY } from '../../lib/queryKeys'
+import { pickMomentRoutine } from '../../lib/routineTod'
+import { Disclosure } from '../Disclosure'
 import { useLang, useT } from '../../i18n'
 import { BigTiles, Sayable, type Tile } from '../BigTiles'
 import { Icon, InlineIcon } from '../Icon'
@@ -75,6 +80,18 @@ export function ToddlerBoard({
   const tip = weatherTip(weather)
 
   const todayEvents = model.today.events
+  // « Maintenant, ensuite »: what is on now or next — the first two of today's rendez-vous
+  // not yet over (a point counts as over an hour after it starts). The rest of the day
+  // waits in « Tout voir ».
+  const nowSec = Math.floor(Date.now() / 1000)
+  const nowNext = todayEvents.filter((e) => (e.all_day ? true : (e.end_at ?? e.start_at + 3600) > nowSec)).slice(0, 2)
+  // The routine of the moment (the parent board's « Prochaine routine », same pick).
+  const routines = useQuery({
+    queryKey: ROUTINES_KEY,
+    queryFn: () => api<{ routines: { id: string; name: string; timeOfDay: string | null; cards: { icon?: string }[] }[] }>('routines'),
+    staleTime: 5 * 60_000,
+  }).data?.routines
+  const routine = pickMomentRoutine(routines ?? [], Date.now())
   // The SAME list as the parent card (lib/boardModel): due, owed or ticked today, lensed.
   const todayTasks = model.tasks
   const tomorrowEvents = model.tomorrow.events
@@ -247,13 +264,19 @@ export function ToddlerBoard({
         <Loading />
       ) : (
         <>
+          {/* ONE SCREEN FIRST (review #25, 2026-11-17). This lens stacked greeting,
+              heroes, notes, mots, doors, timeline, meals, leftovers, events, tasks,
+              departure, défi, habits, tomorrow, photos — many screens of scrolling
+              for a three-year-old, who does not scroll on purpose. The first screen is
+              now tonight, now / next, the routine and the doors; everything else
+              waits one tap away in « Tout voir », for the parent who wants it. */}
           <div className="today-kid__heroes">
             {/* Supper heroes follow the same show/hide as the parent board. */}
             {mealPrefs.isVisible(model.meals.hero) && mealHero(data.tonight, 'tonight')}
-            {mealPrefs.isVisible(model.meals.hero) && mealHero(data.tomorrowMeal, 'tomorrow')}
             {weatherHero}
           </div>
-          <Notes notes={data.notes ?? []} members={data.members} toddler />
+          {/* « Maintenant, ensuite » — the next two things today, not the whole day. */}
+          {kidSection(t.board.today, eventTiles(nowNext))}
           {/* « Un mot pour toi » — the mots waiting for the picked child, picture-first
               and hear-first. Self-hides when nothing waits (empty tiles → no section). */}
           {kidSection(fnMots.kidTitle, motTiles)}
@@ -261,6 +284,13 @@ export function ToddlerBoard({
               collection (draw new ones with handwriting lines / tracing / colour-in
               / stickers, and see everything they've kept). */}
           <div className="today-kid__doors">
+            {/* The routine of the moment leads the doors: the one thing a child DOES. */}
+            {routine && (
+              <Link to={`/routine/${routine.id}/run`} className="today-kid__draw today-kid__routine">
+                <span className="today-kid__draw-icn" aria-hidden="true">▶</span>
+                <span>{routine.name}</span>
+              </Link>
+            )}
             <Link to="/drawings" className="today-kid__draw">
               <span className="today-kid__draw-icn" aria-hidden="true">🎨</span>
               <span>{t.memo.galleryTitle}</span>
@@ -276,6 +306,17 @@ export function ToddlerBoard({
               midi → soir → dodo) the play space uses, so a pre-reader gets the same
               "shape of the day" the parent ribbon gives. Honours the per-device
               « Aujourd'hui » toggle (Réglages ▸ Affichage ▸ Disposition). */}
+          {/* An empty day says so on the first screen, not behind the fold. */}
+          {kidAllClear && (
+            <Sayable className="today-kid__clear" text={`🌤️ ${t.board.kidAllClear}`} />
+          )}
+          <Disclosure label={t.board.seeAll} className="today-kid__more">
+          {/* The fridge, drawings only: a parent's text note is not for a pre-reader
+              (review #25); their own mots ride above, read aloud. */}
+          <Notes notes={data.notes ?? []} members={data.members} toddler variant="drawings" />
+          {mealPrefs.isVisible(model.meals.hero) && (
+            <div className="today-kid__heroes">{mealHero(data.tomorrowMeal, 'tomorrow')}</div>
+          )}
           {isCardVisible(boardCards, 'today') && (
             <section className="today-kid__section">
               <Sayable className="today-kid__h" text={t.board.fil} />
@@ -308,7 +349,7 @@ export function ToddlerBoard({
               narration: l.title,
             })),
           )}
-          {kidSection(t.board.today, eventTiles(todayEvents))}
+          {kidSection(t.board.today, eventTiles(todayEvents.filter((e) => !nowNext.includes(e))))}
           {/* « Tâches » — read aloud too. The parent board's ONE card, the same predicate
               (lib/boardModel `tasks`): what is due, owed or ticked today, whose turn riding
               in the sub. A ticked one wears the done look, as on the card. */}
@@ -386,12 +427,10 @@ export function ToddlerBoard({
               color: memberColor(m.cook_member_id) ?? undefined,
             })),
           ])}
-          {kidAllClear && (
-            <Sayable className="today-kid__clear" text={`🌤️ ${t.board.kidAllClear}`} />
-          )}
           <PhotoFrame />
           {/* « Photo du jour » — a big tap-to-hear tile in the toddler lens. */}
           <WonderFrame />
+          </Disclosure>
         </>
       )}
     </main>
