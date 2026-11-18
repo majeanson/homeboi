@@ -13,7 +13,10 @@ test('tabbing down the phone board never leaves the focused control under the ba
   const hidden: string[] = []
   for (let i = 0; i < 60; i++) {
     await page.keyboard.press('Tab')
-    const hit = await page.evaluate(() => {
+    const hit = await page.evaluate(async () => {
+      // Two frames: a card that loads late (« Mes habitudes ») can shift the layout between
+      // the focus scroll and the measure — one CI run read « Marcher dehors » mid-shift.
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
       const el = document.activeElement as HTMLElement | null
       if (!el || el === document.body || !el.closest('.hub__body')) return null
       const r = el.getBoundingClientRect()
