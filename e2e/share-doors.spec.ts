@@ -12,13 +12,11 @@ import { BASE } from './mocks'
 // The form's kind picker — the one <select> offering the box.
 const kindPicker = (page: Page) => page.locator('select').filter({ has: page.locator('option[value="postbox"]') })
 
-test('the board ＋ offers « Lien pour la gardienne », and it lands on the form set to the sitter', async ({ page, app }) => {
-  await app.boot({ viewport: { width: 390, height: 844 }, clock: 'BASE', route: '/board' })
-  await expect(page.locator('.board-wall')).toBeVisible({ timeout: 15_000 })
-  await page.locator('.add-fab').click()
-  await page.locator('.cat-pick[data-mode="sitter-link"]').click()
-  await expect(page).toHaveURL(/\/settings\?.*kind=sitter/)
-  await expect(kindPicker(page)).toHaveValue('sitter')
+// The board ＋ tile for this door left in review #16 (nine tiles was too many); the
+// door it opened stays: the form, preset to the sitter, from its Réglages link.
+test('« Lien pour la gardienne » lands on the form set to the sitter', async ({ page, app }) => {
+  await app.boot({ viewport: { width: 390, height: 844 }, clock: 'BASE', route: '/settings?tab=settings&focus=guestLinks&kind=sitter' })
+  await expect(kindPicker(page)).toHaveValue('sitter', { timeout: 15_000 })
 })
 
 test('the Mots card carries « Boîte aux lettres », and it lands on the form set to the box', async ({ page, app }) => {

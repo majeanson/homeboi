@@ -57,17 +57,30 @@ test.describe('add sheet', () => {
     await expect(page.locator('.scene input[type="date"]')).toBeVisible()
   })
 
-  test('the board ＋ plan-today tile opens the day planner', async ({ page }) => {
+  // Review #16: nine tiles was decision paralysis. The day planner rides the « Aujourd'hui »
+  // and « Demain » card heads, the sitter link lives in Réglages ▸ Partage, and the
+  // grocery line came in.
+  test('the board ＋ is slim: a grocery line, no planner or sitter tiles', async ({ page }) => {
     await APP('/board')(page)
     await settle(page, '.hub')
     await page.locator('.add-fab').click()
     await expect(page.locator('.sheet.show')).toBeVisible()
-    // The board chooser shows every tile at once now (no "Plus…" overflow), so
-    // "Planifier aujourd'hui" is directly present and navigates to that day's planner.
-    await expect(page.locator('.cat-pick', { hasText: 'Planifier aujourd’hui' })).toBeVisible()
+    const tile = (mode: string) => page.locator(`.sheet.show .cat-pick[data-mode="${mode}"]`)
+    await expect(tile('list-item')).toBeVisible()
+    for (const gone of ['plan-today', 'plan-tomorrow', 'sitter-link']) await expect(tile(gone)).toHaveCount(0)
+    await expect(page.locator('.sheet.show .cat-pick')).toHaveCount(7)
+
+    await tile('list-item').click()
+    await page.locator('.sheet.show input.edit-field__input').last().fill('Lait')
+    await expectApi(page, 'POST', 'list', () => page.locator('.sheet.show .edit-field__submit').last().click())
+  })
+
+  test('the « Aujourd’hui » card head still opens the day planner', async ({ page }) => {
+    await APP('/board')(page)
+    await settle(page, '.hub')
     await Promise.all([
       page.waitForURL(/\/kitchen\/day\/\d+/),
-      page.locator('.cat-pick', { hasText: 'Planifier aujourd’hui' }).click(),
+      page.locator('.wg-slot[data-card="today"]').getByRole('link', { name: /Planifier aujourd/ }).click(),
     ])
   })
 

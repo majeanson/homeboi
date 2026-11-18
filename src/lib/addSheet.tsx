@@ -137,7 +137,14 @@ export const SECTION_MODES: Record<string, AddSheetMode[]> & { board: AddSheetMo
   // creates + manages them), so offering "add a routine" from the board too was a
   // redundant second door. Add routines from Routines; the board ＋ stays the
   // glance-surface quick-adds that have no section of their own.
-  board: ['note', 'event', 'todo', 'mot', 'habit-pick', 'voyage', 'plan-today', 'plan-tomorrow', 'departure', 'sitter-link'],
+  //
+  // SLIMMED (review #16, 2026-11-17): nine tiles on the most-used control was decision
+  // paralysis. « Planifier aujourd'hui / demain » left: the « Aujourd'hui » and « Demain »
+  // cards carry that door on their own heads (and the week and month views on every
+  // day). « Lien pour la gardienne » left: minting a link is Réglages ▸ Partage's form,
+  // which the Mots card's « Boîte aux lettres » also opens. And the grocery line
+  // (`list-item`) came IN: « ajoute du lait » is the board's most common add after a note.
+  board: ['note', 'event', 'todo', 'list-item', 'mot', 'habit-pick', 'voyage', 'departure'],
   // `cook` isn't an "add" — it's a shortcut to cook mode for the next meal due —
   // but it rides the kitchen ＋ as the most-wanted kitchen action (see AddSheet,
   // where it's navigate-only and resolves its target from the meal plan). `reserve`

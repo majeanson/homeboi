@@ -1182,8 +1182,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Des raccourcis selon la section', en: 'Shortcuts per section' },
         detail: {
-          fr: 'Sur le babillard, le ＋ offre aussi « Planifier aujourd’hui » et « Planifier demain » — toute la journée d’un coup : repas, rendez-vous, tâches, note.',
-          en: 'On the board, the ＋ also offers “Plan today” and “Plan tomorrow” — the whole day at once: meals, events, tasks, note.',
+          fr: 'Sur le babillard, le ＋ ajoute aussi à la liste d’épicerie. Pour toute la journée d’un coup (repas, rendez-vous, tâches, note), c’est « Planifier » en tête d’« Aujourd’hui » et de « Demain ».',
+          en: 'On the board, the ＋ also adds to the grocery list. For the whole day at once (meals, events, tasks, note), it’s “Plan” at the top of “Today” and “Tomorrow”.',
         },
       },
       {

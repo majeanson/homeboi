@@ -128,7 +128,7 @@ at all (❌).
 | Board card · edit mode (move/resize/hide) | ✅ « Organiser le babillard » chip at the board foot (the retired hint's slot)⁷ | ✅ hold `.wg-slot` (works with a mouse-hold too) | — | — | ✅ board▸layout + `/board?edit=1` | revert button | ✅ |
 | Greeting · « Depuis ce matin » | ✅ the greeting IS a button — now named (`aria-label`) + a `greeting` help entry⁸ | — | — | — | ✅ armed « ? » explains it | — | ✅ |
 | Face · switch | ✅ chipᴹ / `MemberSwitcher`ᴷ | — | — | — | — | — | ✅ |
-| View · Grille/Mois/Année · day plan · departure | ✅ `BoardViewToggle`, card pills, mini corners | — | — | ＋ `plan-today/tomorrow/departure` | — | — | ✅ |
+| View · Grille/Mois/Année · day plan · departure | ✅ `BoardViewToggle`, card pills, mini corners | — | — | ＋ `departure` (day plan: the « Aujourd'hui » / « Demain » heads since review #16) | — | — | ✅ |
 | Mois · day · read / add to it | ✅ tap the cell (tap again = close) | — | ➖ the pane below IS the day | day ⋯ (rendez-vous / corvée / repas → `?vue=repas` / note) | ✅ « Voir la journée » → `/kitchen/day/:date` (the « Journée » face) | — | ✅ |
 | Mois · highlight one kind | ✅ the legend chips are toggles (`aria-pressed`, `?type=`) — the pane becomes that kind's month roll-up | — | ➖ roll-up rows keep their own peeks (one renderer) | — | ➖ device-local reading lens, no setting | ➖ nothing written | ✅ real buttons, Enter/Space |
 
@@ -248,7 +248,7 @@ and because the scoring pass that added them found a gap in the first one.
 | Entity · action | Row | Gesture | Peek | Add path | Réglages / link | Undo | Non-touch |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Co-operator · invite | — | — | — | — | ✅ settings▸coop « Créer un lien » | — | ✅ |
-| Guest link · **mint** (C, 2026-09-29) | — | — | ✅ contact ⋯ « Lui demander de compléter » (the box, aimed at them) | ✅ board ＋ « Lien pour la gardienne » · the Mots card's « Boîte aux lettres » | ✅ settings▸tablets — the ONE form every door opens (`?kind=&target=` preset) | — | ✅ |
+| Guest link · **mint** (C, 2026-09-29) | — | — | ✅ contact ⋯ « Lui demander de compléter » (the box, aimed at them) | ✅ the Mots card's « Boîte aux lettres » (the board ＋ tile left in review #16) | ✅ settings▸tablets — the ONE form every door opens (`?kind=&target=` preset) | — | ✅ |
 | Guest link / shared copy · **withdraw** | ✅ one row each in « Ce que j'ai partagé » (links, then copies — was two lists) | — | — | — | ✅ settings▸tablets | confirm for a standing link or a copy; a timed link is one tap | ✅ |
 | Co-operator · rotate the link | — | — | — | — | ✅ settings▸coop « Réinitialiser » | confirm¹⁹ | ✅ |
 | Co-operator · **remove access** | ✅ `RowActions` 🗑 | — | ➖²⁰ | — | ✅ settings▸coop | confirm²¹ **+ your password**²⁵ | ✅ |
