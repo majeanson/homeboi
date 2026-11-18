@@ -39,6 +39,25 @@ const FEATURES: {
 // The calm promise, in four short lines — the honest "what it won't do".
 const PROMISES = ['promise1', 'promise2', 'promise3', 'promise4'] as const
 
+// What the privacy page promises, said on the door (review #30, 2026-11-17: « that is a
+// real selling point buried in the footer »). Kept HERE, not in i18n.ts: the eager FR
+// dictionary sits at its cap, and this page is the only reader (the LegalPage precedent).
+// Each line is checkable against /confidentialite; change them together.
+const PRIVACY_POINTS = {
+  fr: [
+    'Aucun traceur, aucune analyse de ce que tu fais.',
+    'Une copie de sauvegarde chaque nuit, gardée 14 jours.',
+    'Tout exporter en un fichier, ou tout effacer d’un geste.',
+    'Rien qui sonne dans ta poche : le babillard attend qu’on le regarde.',
+  ],
+  en: [
+    'No trackers, no analytics on what you do.',
+    'A backup copy every night, kept 14 days.',
+    'Export everything in one file, or erase it all in one gesture.',
+    'Nothing buzzing in your pocket: the board waits to be looked at.',
+  ],
+} as const
+
 export function Home() {
   const t = useT()
   const { lang } = useLang()
@@ -99,11 +118,11 @@ export function Home() {
             <button type="button" className="btn home__cta-demo" onClick={tryDemo} disabled={demoBusy}>
               {demoBusy ? t.home.demoOpening : t.home.ctaDemo}
             </button>
-            {/* Returning user / setting up a second device: the device-role fork
-                (→ /setup → login or pair) stays one tap away as the quiet path. Labelled
+            {/* Returning user: straight to the login (review #30 — it went to /setup, a device-role
+                fork that reads « create your household », the opposite of what it says). Labelled
                 "J'ai déjà un compte" and drawn as a plain text link, not a third button: two
                 buttons are the choice a stranger makes, this is for someone who is NOT new. */}
-            <Link to="/setup" className="home__cta-link">
+            <Link to="/login" className="home__cta-link">
               {t.home.ctaReturning}
             </Link>
           </div>
@@ -160,6 +179,12 @@ export function Home() {
               <li key={p} className="home__promise-row">
                 <Icon name="check-bold" size={18} color="var(--sage-deep)" />
                 <span>{t.home[p]}</span>
+              </li>
+            ))}
+            {PRIVACY_POINTS[lang].map((p) => (
+              <li key={p} className="home__promise-row">
+                <Icon name="check-bold" size={18} color="var(--sage-deep)" />
+                <span>{p}</span>
               </li>
             ))}
           </ul>

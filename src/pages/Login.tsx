@@ -95,6 +95,12 @@ export function Login() {
         <p className="auth__alt mono">
           {t.login.noAccount} <Link to="/signup">{t.login.gotoSignup}</Link>
         </p>
+        {/* A wall tablet does not sign in, it pairs. The landing's « J'ai déjà un compte »
+            lands here since review #30 (it went through /setup), so the tablet's door is
+            here too. */}
+        <p className="auth__alt mono">
+          <Link to="/pair">{t.home.ctaPair}</Link>
+        </p>
       </main>
     </div>
   )

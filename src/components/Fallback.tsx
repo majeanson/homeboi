@@ -108,6 +108,11 @@ export function PairPrompt() {
           </Link>
         </>
       )}
+      {/* The way back to the pitch and the demo (review #30): a signed-out device met only
+          « Jumeler / Connexion » here, with no word about what this is. */}
+      <Link to="/" className="pairprompt__home mono">
+        {t.shareLink.joinCta}
+      </Link>
     </main>
   )
 }

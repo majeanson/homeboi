@@ -9,19 +9,18 @@ import { APP, settle, expectApi } from './interact'
 // ───────────────────────────── navigation ──────────────────────────────
 
 test.describe('navigation', () => {
-  test('the marketing front door routes through setup to pair / login', async ({ page }) => {
-    // A first-time visitor — signed out, no device role chosen — sees marketing.
-    // (A returning device would be redirected straight to /board by the smart entry.)
+  test('the marketing front door leads to the login, and the login to pairing', async ({ page }) => {
+    // A first-time visitor — signed out, no account on this device — sees marketing.
+    // « J'ai déjà un compte » goes straight to the login since review #30 (it went through
+    // /setup, which reads « create your household »); a wall tablet pairs from there.
     await page.emulateMedia({ reducedMotion: 'reduce' })
     await mockApi(page, { signedIn: false })
     await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
     await page.goto('/')
     await settle(page, '.home__title')
-    await page.locator('a[href="/setup"]').first().click()
-    await expect(page).toHaveURL(/\/setup$/)
-    // "Wall tablet" (second card now — your own device leads, step 1) is the
-    // pairing path.
-    await page.locator('.setup__choice').nth(1).click()
+    await page.locator('.home__cta-link').click()
+    await expect(page).toHaveURL(/\/login$/)
+    await page.locator('a[href="/pair"]').first().click()
     await expect(page).toHaveURL(/\/pair$/)
   })
 

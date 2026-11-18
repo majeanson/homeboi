@@ -2,7 +2,6 @@ import { useT } from './i18n'
 import { lazy, Suspense, useEffect } from 'react'
 import { Routes, Route, Navigate, useSearchParams, useLocation } from 'react-router-dom'
 import { Home } from './pages/Home'
-import { useSurface } from './lib/surface'
 import { useAuth, wasSignedIn } from './lib/auth'
 import { isPaired } from './lib/device'
 import { remeasureViewport } from './lib/viewportVars'
@@ -161,10 +160,14 @@ function LegacyHubRedirect({ map }: { map: (p: URLSearchParams) => { path: strin
 // is what keeps a returning phone off the marketing page when `auth/me` can't be
 // reached at all (offline cold start): a network failure there always reads as
 // "signed out" (see lib/auth.tsx), which used to be the only signal this route had.
+//
+// A CHOSEN SURFACE ALONE IS NOT A HOME (review #30, 2026-11-17). Anyone who once tapped
+// « tablette au mur » on /setup and never paired or signed in was sent to /board forever,
+// where a signed-out device meets only « Jumeler / Connexion »: no pitch, no demo, no way
+// back. Only a device with an account behind it (paired, or signed in once) skips the door.
 function Entry() {
-  const { chosen } = useSurface()
   const { signedIn, loading } = useAuth()
-  if (chosen || isPaired() || wasSignedIn()) return <Navigate to="/board" replace />
+  if (isPaired() || wasSignedIn()) return <Navigate to="/board" replace />
   if (loading) return <Loading />
   if (signedIn) return <Navigate to="/board" replace />
   return <Home />
@@ -177,6 +180,22 @@ function Entry() {
 // bottom: a dead band hiding its lower third, with no keyboard in sight (the day
 // page opened from the calendar stopped at « Dîner »). A pure re-read: a keyboard
 // that really is still up keeps its fit. See lib/viewportVars.ts.
+// The tab name OUTSIDE the hub, in the reader's language (review #30). index.html ships a
+// French title, and only the hub renamed it — so /signup, /login and /conditions read
+// « Toute la maisonnée, d'un coup d'œil » under an English UI. The hub's own per-tab
+// title (HubLayout) runs in the child first; this leaves those routes alone.
+// …and the two pages that name themselves (a shared thing's own label).
+const HUB_PATHS = ['/board', '/kitchen', '/liste', '/notes', '/maison', '/settings', '/partage', '/voyage/rejoindre']
+function TitleOnNav() {
+  const t = useT()
+  const { pathname } = useLocation()
+  useEffect(() => {
+    if (HUB_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'))) return
+    document.title = `${t.appName} · ${t.home.title.replace(/\.$/, '')}`
+  }, [pathname, t])
+  return null
+}
+
 function ViewportOnNav() {
   const { pathname } = useLocation()
   useEffect(() => {
@@ -189,6 +208,7 @@ export function AppRoutes() {
   return (
     <Suspense fallback={<Loading />}>
       <ViewportOnNav />
+      <TitleOnNav />
       <Routes>
         <Route path="/" element={<Entry />} />
         <Route path="/setup" element={<Setup />} />

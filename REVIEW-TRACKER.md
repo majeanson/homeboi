@@ -54,8 +54,14 @@ Progress on the 43 items kept from the 7-persona review (2026-11-17).
 
   `glossary.test.ts` now fails if a retired word returns; 4 specs moved with the words (47 green); plant (« Grille » back) seen red.
 - [x] 28. Rename « rappel » honestly (it only makes an item show earlier on the board). **Done** `f5af8570`: verified: the picker already read « Afficher dès », but the event form's fold was « Répétition et rappel » (EN « Repeat & reminder ») and the task form's « this row cannot keep … » line said « de rappel ». They are now « Répéter, afficher d'avance » / « Repeat, show ahead » and « d'affichage à l'avance ». Habit reminders keep the word (they really do open the scene on screen). `glossary.test.ts` holds both labels; 2 specs moved (49 green); plant red.
-- [x] 29. « Placer ce soir » button on meal ideas. **Done** (`feat(cuisine): « Ce soir » en un geste…`): verified: an idea took « pick a slot, then a day », with no tonight shortcut. `MealPlanPicker` (all 12 planning doors: Idées and its sources, recipes, history, « Déplacer… ») now leads with a « Ce soir » chip whenever today is in the window: today, in the household's hero slot. The slot is the caller's state, so the chip asks for it through `onSlot` and picks once it comes back down; no call site changed. Tests: e2e `plan-tonight.spec.ts` (one tap → POST meals at today + souper; also after « Dîner » was picked); the 82 picker/ideas specs green; plant red.
-- [ ] 30. Landing fixes: reachable on a device that once chose a surface; « J'ai déjà un compte » → login; localised titles; promote the privacy selling points.
+- [x] 29. « Placer ce soir » button on meal ideas. **Done** `a860146f`: verified: an idea took « pick a slot, then a day », with no tonight shortcut. `MealPlanPicker` (all 12 planning doors: Idées and its sources, recipes, history, « Déplacer… ») now leads with a « Ce soir » chip whenever today is in the window: today, in the household's hero slot. The slot is the caller's state, so the chip asks for it through `onSlot` and picks once it comes back down; no call site changed. Tests: e2e `plan-tonight.spec.ts` (one tap → POST meals at today + souper; also after « Dîner » was picked); the 82 picker/ideas specs green; plant red.
+- [x] 30. Landing fixes: reachable on a device that once chose a surface; « J'ai déjà un compte » → login; localised titles; promote the privacy selling points. **Done** (`fix(accueil): la porte reste ouverte…`): all four verified.
+  - `Entry` sent any device that ever chose a surface to `/board`, signed out or not; now only a paired or once-signed-in device skips the landing. The signed-out prompt (`PairPrompt`) also links back to `/` (« Découvrir Babillard »).
+  - « J'ai déjà un compte » → `/login` (it went through `/setup`), and since that link was the landing's only road to pairing, the login page now offers « Jumeler une tablette ».
+  - `TitleOnNav` titles every non-hub route « Babillard · <tagline> » in the reader's language; the hub's own titles and the two self-titled pages are left alone.
+  - The privacy page's checkable points (no trackers, nightly copies kept 14 days, export or erase in one gesture, nothing in your pocket) join the landing's promise list. Their copy sits beside Home, since the eager FR chunk is at its cap.
+
+  Tests: e2e `landing-door.spec.ts`, `interactions-navigation` rewritten (landing → login → pair); the 8 specs that open `/` green; plant red. Not done: the static boot loader « Chargement… » before JS.
 - [ ] 31. Pets as rendez-vous subjects; recurrence end dates / exceptions.
 
 ## P2: accessibility. ⚠ Show Marc each change, one by one, BEFORE implementing
@@ -112,3 +118,4 @@ Grandparent/sitter mode · trust & business pack · Marco's kill list. See the D
 - 2026-11-17 · #27 seven calques replaced (À long terme, Pas encore fait / Prévu le, Repas plus anciens, Point de départ, Qui je suis, sections, Aperçu) and locked by a test
 - 2026-11-17 · #28 a lead is « afficher d'avance », not « rappel » (event fold, task-axis line)
 - 2026-11-17 · #29 every meal picker leads with « Ce soir » (today, hero slot), one tap
+- 2026-11-17 · #30 landing reachable without an account; « J'ai déjà un compte » → login (+ pair door there); localized titles; privacy points on the landing
