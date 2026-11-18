@@ -1,12 +1,18 @@
 name: Dependabot auto-merge
 
-# MINOR AND PATCH UPDATES MERGE THEMSELVES ONCE CI IS GREEN (2026-09-30). The weekly
-# minor-and-patch group sat for nine days in September with CI green the whole time, and
-# the majors queued up behind it. The rule stays what dependabot.yml says — CI is the gate
-# — this only removes the person clicking « Merge » after the gate already said yes.
+# MINOR AND PATCH UPDATES MERGE THEMSELVES ONCE CI **AND THE BROWSER SUITE** ARE GREEN.
+# (2026-09-30, gated on E2E 2026-11-18, review #36.) The weekly minor-and-patch group sat
+# for nine days in September with CI green the whole time; this removes the person
+# clicking « Merge » after the gates already said yes.
 #
-#   · Listens for « CI & Deploy » finishing on a dependabot/* branch. That run is the full
-#     gate (typecheck · test · build · check:bundle · test:d1 · knip) — the same as a push.
+#   · Listens for « E2E (Playwright) » finishing on a dependabot/* branch. E2E itself only
+#     starts after « CI & Deploy » succeeded there (the full gate: typecheck · test · build
+#     · check:bundle · test:d1 · knip), so this waits for BOTH. It used to listen for CI
+#     alone — and since E2E runs AFTER the deploy on main, a minor bump to React Router,
+#     TanStack or Vite reached the household tablets with zero browser tests.
+#   · A run whose jobs were all SKIPPED still concludes « success » (that is what E2E does
+#     when CI failed), so the step below also requires every E2E job to have actually run
+#     and passed before it merges anything.
 #   · Merges ONLY: the grouped « minor-and-patch » pull request, or a single bump whose
 #     MAJOR number does not change (« from 4.1.8 to 4.1.11 »). A major — React, Vite,
 #     TypeScript, an actions/* version — keeps waiting for a person; those are the ones
@@ -20,7 +26,7 @@ name: Dependabot auto-merge
 
 on:
   workflow_run:
-    workflows: ['CI & Deploy']
+    workflows: ['E2E (Playwright)']
     types: [completed]
 
 permissions:
@@ -32,7 +38,6 @@ jobs:
   merge:
     if: >-
       github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'pull_request' &&
       startsWith(github.event.workflow_run.head_branch, 'dependabot/')
     runs-on: ubuntu-latest
     steps:
@@ -42,8 +47,14 @@ jobs:
           GH_REPO: ${{ github.repository }}
           BRANCH: ${{ github.event.workflow_run.head_branch }}
           HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
         run: |
           set -euo pipefail
+          # Every E2E job ran and passed — not « all skipped » (see the header).
+          jobs="$(gh run view "$RUN_ID" --json jobs --jq '[.jobs[].conclusion]')"
+          if [ "$(jq 'length > 0 and all(. == "success")' <<<"$jobs")" != true ]; then
+            echo "E2E run $RUN_ID did not pass every job ($jobs); not merging"; exit 0
+          fi
           pr="$(gh pr list --head "$BRANCH" --state open --json number,title,headRefOid --jq '.[0] // empty')"
           if [ -z "$pr" ]; then echo "no open PR for $BRANCH (already merged?)"; exit 0; fi
           number="$(jq -r .number <<<"$pr")"

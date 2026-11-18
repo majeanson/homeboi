@@ -98,7 +98,7 @@ Progress on the 43 items kept from the 7-persona review (2026-11-17).
   - **Reorder.** `DragPill` announces « <label>, position N sur M » through one polite `lib/announce.ts` region.
 
   Tests: e2e `a11y-keyboard.spec.ts` (4 plants red). Full suite: 2 load-only failures, green alone.
-- [x] 35. Language & names: `lang="fr-CA"`, `lang="en"` on English text, item names in repeated buttons, aria-hidden emoji, list adder in text. **Done** (`fix(a11y): la bonne langue, le bon nom…`), approved by Marc 2026-11-18 (all three recommended options).
+- [x] 35. Language & names: `lang="fr-CA"`, `lang="en"` on English text, item names in repeated buttons, aria-hidden emoji, list adder in text. **Done** `0cae6603`, approved by Marc 2026-11-18 (all three recommended options).
   - **Page language.** `<html lang>` is fr-CA / en-CA, applied on BOOT too (it was only set on a change, so an English household loaded marked French).
   - **Recipe language.** `recipeLangAttr` puts a recipe's own `lang` on its scene and its book card when it differs from the page's. Flyer/cashier text is left alone: its language is unknown.
   - **Names.** Hearts « J'aime — <recette> » (one fixed name, `aria-pressed` the state). Every habit button carries its habit. Measure pills « Écouter : 1/2 tasse — farine » (`ingredientOf`).
@@ -108,7 +108,12 @@ Progress on the 43 items kept from the 7-persona review (2026-11-17).
   Tests: unit `IngredientLine.test.ts`, e2e `a11y-language.spec.ts` (5 plants red), `habits.spec` follows the fixed toggle name; 37 related specs green.
 
 ## P3: engineering
-- [ ] 36. Gate Dependabot auto-merge on e2e.
+- [x] 36. Gate Dependabot auto-merge on e2e. **Done** (`ci(dependabot): attendre les navigateurs avant de fusionner…`). Verified: auto-merge listened for CI only and deployed, while E2E ran on main after the deploy.
+  - `e2e.yml` also runs after CI on `dependabot/**`, with `permissions: contents: read` (it runs the branch's code in a workflow_run context).
+  - `dependabot-automerge.yml` listens for « E2E (Playwright) ». It requires every E2E job to have run and passed, since an all-skipped run (what E2E does when CI failed) concludes « success ».
+  - CLAUDE.md's E2E line says so.
+
+  Tests: `scripts/automerge-gate.test.mjs` (red on the old workflows).
 - [ ] 37. Quick wins: delete `functions/_middleware.ts` + its test; sunset the chores/todos/home-projects aliases; rename `home_projects` → `tasks`; `ON DELETE CASCADE` from households; ai-test operator-only.
 - [ ] 38. Write-path quirks: guest fake-success, double 404 handling, outbox dropping 429/408, hidden A_REGLER/tour side effects.
 - [ ] 39. Client UUIDs for creates → delete tmpIds, outbox id rewriting, healing deletes.
@@ -161,3 +166,4 @@ Grandparent/sitter mode · trust & business pack · Marco's kill list. See the D
 - 2026-11-18 · #33 headings (cards h2, scenes h1 + tab title), empty cards unnamed, month grid rows/names/roving keys, sub-tab panels
 - 2026-11-18 · #34 base focus ring + ink field rings, keyboard toddler exit, weather card one control (guard extended), reorder announced
 - 2026-11-18 · #35 fr-CA/en-CA (on boot too), recipe lang, item names on hearts/habits/pills, list adder in words; emoji claim stale
+- 2026-11-18 · #36 Dependabot auto-merge waits for E2E (which now runs on dependabot/** read-only; all-skipped refused)

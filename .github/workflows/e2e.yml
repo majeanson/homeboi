@@ -11,8 +11,16 @@ on:
   workflow_run:
     workflows: ['CI & Deploy']
     types: [completed]
-    branches: [main]
+    # main (signal after a deploy) AND a Dependabot branch — dependabot-automerge.yml now
+    # waits for THIS to pass before merging a bump (review #36): CI alone let a minor bump
+    # to React Router or Vite reach the household tablets with zero browser tests.
+    branches: [main, 'dependabot/**']
   workflow_dispatch:
+
+# Read-only: this runs a Dependabot branch's code in a workflow_run context, whose
+# token would otherwise be the repository's. It needs no write and no secret.
+permissions:
+  contents: read
 
 # One E2E run per source commit; supersede an in-flight run for the same sha.
 concurrency:
