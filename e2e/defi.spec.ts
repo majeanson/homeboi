@@ -11,7 +11,8 @@ async function board(page: Page) {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.clock.setFixedTime(new Date(BASE * 1000))
   await mockApi(page)
-  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
+  // The défi is opt-in since review #23: this spec is about the défi, so it opts in.
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, defi: true })
   await page.goto('/board')
   await page.locator('.hub').waitFor({ state: 'visible', timeout: 15_000 })
 }
@@ -123,4 +124,26 @@ test.describe('Le défi du jour', () => {
     await page.locator('.guide-sheet .guide-sheet__more').click()
     await expect(page).toHaveURL(/card=habits/)
   })
+})
+
+// Review #23 (2026-11-17): a daily challenge on the family board is a nudge, so it is
+// asked for. Off by default; Réglages ▸ Affichage & veille turns it on for this device.
+test('the défi is off until this device asks for it', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.clock.setFixedTime(new Date(BASE * 1000))
+  await mockApi(page)
+  await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true })
+  await page.goto('/board')
+  await page.locator('.habitudes-card').waitFor({ state: 'visible', timeout: 15_000 })
+  await expect(page.getByRole('button', { name: 'Pige un défi' })).toHaveCount(0)
+
+  await page.goto('/settings?focus=habits')
+  const row = page.locator('#op-habits').locator('.settings-row, .operator__seg').filter({ hasText: 'Le défi du jour' })
+  await row.getByRole('button').click()
+  // In-app, not page.goto(): seedState's init script re-runs on a load and would reset it.
+  await page.evaluate(() => {
+    history.pushState({}, '', '/board')
+    dispatchEvent(new PopStateEvent('popstate'))
+  })
+  await expect(page.locator('.habitudes-card').getByRole('button', { name: 'Pige un défi' })).toBeVisible()
 })

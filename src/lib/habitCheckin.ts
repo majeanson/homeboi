@@ -32,6 +32,10 @@ export interface HabitCheckinSettings {
   autoOpen: boolean
   /** Let a habit's reminder times open the scene during the day. */
   reminders: boolean
+  /** « Le défi du jour » on this device. OFF by default (review #23, 2026-11-17): a daily
+   *  challenge on the family board is a nudge, and calm means a nudge is asked for. A
+   *  défi someone already took today still shows (it is household news, not a nudge). */
+  defi?: boolean
   /** The last local day whose morning open already happened (0 = never). */
   lastShownDay: number
   /** Reminder minutes already fired, and the local day they belong to. */
@@ -41,6 +45,7 @@ export interface HabitCheckinSettings {
 const DEFAULTS: HabitCheckinSettings = {
   autoOpen: true,
   reminders: true,
+  defi: false,
   lastShownDay: 0,
   fired: { day: 0, minutes: [] },
 }

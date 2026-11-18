@@ -552,6 +552,8 @@ export const EN_OPERATOR: typeof FR_OPERATOR = {
   habitCheckinMorning: 'Open in the morning',
   habitCheckinMorningHint: 'On the first opening of the day, if something is waiting. Once only: closing it is your answer.',
   habitCheckinReminders: 'Habit reminders',
+  habitCheckinDefi: 'Today’s challenge',
+  habitCheckinDefiHint: 'A small idea to try as a family, every day. Off until you ask for it; a challenge already taken today stays visible.',
   habitCheckinRemindersHint: 'At the times you picked, on the screen that’s on — never in your pocket, never during a routine or a form.',
   habitCheckinReplay: 'Replay today’s opening',
   ambientMinutes: (n: number) => (n === 1 ? '1 minute' : `${n} minutes`),

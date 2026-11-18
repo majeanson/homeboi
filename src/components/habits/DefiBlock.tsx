@@ -22,6 +22,7 @@ import {
 import type { Defi } from '../../lib/defiDeck'
 import { type HelpMode } from '../../lib/helpMode'
 import { useVoiceInput } from '../../lib/useVoiceInput'
+import { useHabitCheckin } from '../../lib/habitCheckin'
 import { Avatar } from '../Avatar'
 import { Cluster } from '../Layout'
 import { EditField } from '../EditField'
@@ -54,6 +55,7 @@ export function DefiBlock({
 
   const commit = useCommitDefi()
   const toggleMark = useToggleDefiMark()
+  const defiOn = useHabitCheckin().defi === true
 
   // A committed défi (its habit + today's text) or null. Re-rolls live only in
   // local state below — nothing but the accepted défi is ever written.
@@ -183,6 +185,10 @@ export function DefiBlock({
 
   // --- Guest with no défi drawn: nothing to offer (read-only, can't pige) -----
   if (ro) return null
+
+  // --- Not asked for on this device (review #23): no « Pige un défi » invitation. A
+  // défi someone took today still shows above, it is the household's, not a nudge.
+  if (!defiOn) return null
 
   // --- Not committed: the pige flow ------------------------------------------
   return (

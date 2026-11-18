@@ -1622,6 +1622,8 @@ export interface AppState {
   // /board. Answered-for-today by default — same idea as pre-seeding the tour as
   // "seen". Pass `habitCheckin: true` to leave it armed and exercise the trigger.
   habitCheckin?: boolean
+  // « Le défi du jour » on this device: opt-IN since review #23, so off unless a spec asks.
+  defi?: boolean
   // « Ma liste Flipp » (operator/shopping FlippSection): has THIS device already
   // copied the signet? Unset/false = a first-timer, so the five-step one-time setup
   // renders open — which is what every other state photographs. Pass `true` for the
@@ -1682,7 +1684,7 @@ export async function seedState(page: Page, s: AppState) {
       if (!state.habitCheckin) {
         localStorage.setItem(
           'babillard-habitudes-checkin',
-          JSON.stringify({ autoOpen: false, reminders: false, lastShownDay: 0, fired: { day: 0, minutes: [] } }),
+          JSON.stringify({ autoOpen: false, reminders: false, defi: state.defi === true, lastShownDay: 0, fired: { day: 0, minutes: [] } }),
         )
       }
       // Opt-IN (unlike the three above): the default is the first-timer, because that

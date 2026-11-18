@@ -147,6 +147,17 @@ export function HabitCheckinSection({ help }: { help?: HelpMode }) {
       </SettingsRow>
       <p className="operator__hint mono">{fn.habitCheckinRemindersHint}</p>
 
+      {/* Opt-IN since review #23: off until this device asks for it. */}
+      <SettingsRow label={fn.habitCheckinDefi}>
+        <Toggle
+          on={c.defi === true}
+          icon="sparkle-bold"
+          label={c.defi ? fn.ambientOnWord : fn.ambientOffWord}
+          onClick={() => setHabitCheckin({ defi: !c.defi })}
+        />
+      </SettingsRow>
+      <p className="operator__hint mono">{fn.habitCheckinDefiHint}</p>
+
       {/* Dev tooling (the idleDebug spirit): a morning open fires once per local
           day, so it's otherwise unobservable until tomorrow. */}
       <button type="button" className="btn btn--ghost" onClick={() => replayHabitCheckin()}>

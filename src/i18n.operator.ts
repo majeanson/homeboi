@@ -634,6 +634,8 @@ export const FR_OPERATOR = {
   habitCheckinMorning: 'Ouvrir le matin',
   habitCheckinMorningHint: 'À la première ouverture de la journée, si quelque chose t’attend. Une seule fois : le fermer, c’est ta réponse.',
   habitCheckinReminders: 'Rappels d’habitudes',
+  habitCheckinDefi: 'Le défi du jour',
+  habitCheckinDefiHint: 'Une petite idée à essayer en famille, chaque jour. Éteint tant que tu ne le demandes pas ; un défi déjà pris aujourd’hui reste visible.',
   habitCheckinRemindersHint: 'Aux heures que tu as choisies, sur l’écran allumé — jamais dans ta poche, jamais pendant une routine ou un formulaire.',
   habitCheckinReplay: 'Rejouer l’ouverture du jour',
   ambientMinutes: (n: number) => (n === 1 ? '1 minute' : `${n} minutes`),
