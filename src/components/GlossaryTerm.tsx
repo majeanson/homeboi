@@ -74,22 +74,34 @@ export function GlossaryTermMark({ id, label }: { id: string; label: string }) {
   // So the position is `fixed`, measured from the WORD, and clamped to the viewport in
   // one layout effect (before paint — no flash). Same clamp, but now it is the only
   // boundary that still applies.
-  useLayoutEffect(() => {
+  const place = () => {
     const el = popRef.current
     const btn = btnRef.current
-    if (!open || !term || !el || !btn) return
+    if (!el || !btn) return
     const b = btn.getBoundingClientRect()
     const pad = 8
     el.style.top = `${Math.round(b.bottom + 6)}px`
     el.style.left = `${Math.round(Math.max(pad, Math.min(b.left, window.innerWidth - el.offsetWidth - pad)))}px`
+  }
+  useLayoutEffect(() => {
+    if (!open || !term) return
+    place()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- place reads refs only
   }, [open, term, lang])
 
   // A fixed layer anchored to a word must not outlive the word's position: once the page
   // scrolls, the definition would point at a different line. Closing is honest and
   // cheaper than following.
+  //
+  // EXCEPT the scroll the tap itself caused. A word in the lower band of the screen is
+  // scrolled clear of the tab bar and the ＋ when it takes focus (`.hub__body`'s
+  // scroll-padding, review #17), and that scroll arrives just after this opens — so the
+  // definition opened and shut at once (lexicon.spec @320px). For a beat after opening,
+  // the definition follows its word instead; past that, a scroll is the reader's own.
   useEffect(() => {
     if (!open) return
-    const close = () => setOpen(false)
+    const opened = performance.now()
+    const close = () => (performance.now() - opened < 700 ? place() : setOpen(false))
     window.addEventListener('scroll', close, true)
     window.addEventListener('resize', close)
     return () => {

@@ -145,7 +145,11 @@ test('opening a composer that is already in view does not move the page', async 
     const scroller = document.querySelector('.hub__body')
     if (!btn || !scroller) return
     const row = btn.closest('.kitchen__day') as HTMLElement
-    scroller.scrollTop += row.getBoundingClientRect().top - window.innerHeight / 2
+    // The middle of the FREE area: since review #17 the body reserves the tab bar + ＋
+    // band as scroll-padding, and a composer opening inside that band is rightly lifted
+    // out of it — that is not « already in view ».
+    const band = parseFloat(getComputedStyle(scroller).scrollPaddingBottom) || 0
+    scroller.scrollTop += row.getBoundingClientRect().top - (window.innerHeight - band) / 2
   })
   await settled(page)
   const before = await scrollTop()

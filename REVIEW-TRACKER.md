@@ -96,3 +96,4 @@ Grandparent/sitter mode · trust & business pack · Marco's kill list. See the D
 - 2026-11-17 · #21 month cells name their first items; bigger markers; the legend readable on a phone
 - 2026-11-17 · #22 contrast measured in all six day-part palettes (axe at zero); twilight inks, tint boost, dusk marigold fixed
 - 2026-11-17 · #23 « Le défi du jour » is opt-in per device (Réglages ▸ Affichage & veille); a défi already taken still shows
+- 2026-11-17 · #17 follow-up (post-merge E2E): a glossary word in the lower band opened and shut (its focus scroll closed it), now it follows its word for a beat; kitchen-inline-plan parks its row above the reserved band
