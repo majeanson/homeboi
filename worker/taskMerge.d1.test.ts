@@ -121,10 +121,10 @@ async function oldHistory(hh: string, ref: { kind: string; id: string }) {
 // The NEW month and ledger reads (the handler's SQL, copied: their derivations are unchanged
 // code, so equal rows mean equal cells). The others are compared through the real endpoints.
 const NEW = {
-  monthChores: "SELECT id, title, colour AS color, rotation_json, current_idx, last_done_at, recur_json, at AS recur_start, created_at FROM home_projects WHERE household_id = ? AND kind IS NULL",
-  monthHomes: "SELECT id, kind, title, colour AS color, at, recur_json, recur_from, last_done_at FROM home_projects WHERE household_id = ? AND kind IN ('plan', 'upkeep') AND at IS NOT NULL",
+  monthChores: "SELECT id, title, colour AS color, rotation_json, current_idx, last_done_at, recur_json, at AS recur_start, created_at FROM tasks WHERE household_id = ? AND kind IS NULL",
+  monthHomes: "SELECT id, kind, title, colour AS color, at, recur_json, recur_from, last_done_at FROM tasks WHERE household_id = ? AND kind IN ('plan', 'upkeep') AND at IS NOT NULL",
   ledger: `SELECT tp.task_id, tp.role, tp.contributed_at, tp.member_id AS member_id, t.title AS chore_title, t.colour AS chore_color
-       FROM task_participants tp JOIN home_projects t ON t.id = tp.task_id AND t.household_id = ?
+       FROM task_participants tp JOIN tasks t ON t.id = tp.task_id AND t.household_id = ?
       WHERE tp.contributed_at >= ? ORDER BY tp.contributed_at DESC, tp.id`,
 }
 // A recurring chore with no start reads its created_at as its start, now WRITTEN by 0152.
@@ -311,7 +311,7 @@ async function buildSample(s: Session): Promise<Map<string, string>> {
 
 // The migrated rows, back into the Worker's database, where the real endpoints read them.
 async function copyBack(hh: string) {
-  await insertRows(env.DB, 'home_projects', await all(DRILL, 'SELECT * FROM home_projects WHERE household_id = ? ORDER BY rowid', hh))
+  await insertRows(env.DB, 'tasks', await all(DRILL, 'SELECT * FROM home_projects WHERE household_id = ? ORDER BY rowid', hh))
   await insertRows(env.DB, 'task_participants', await all(DRILL, 'SELECT tp.* FROM task_participants tp JOIN home_projects t ON t.id = tp.task_id WHERE t.household_id = ? ORDER BY tp.rowid', hh))
   await insertRows(env.DB, 'todos', await all(DRILL, 'SELECT * FROM todos WHERE household_id = ? ORDER BY rowid', hh))
 }
@@ -334,7 +334,8 @@ beforeAll(async () => {
   // them now (0152 writes the start a recurring chore read as « from created_at »; its own
   // drill is worker/taskStart.d1.test.ts).
   await applyD1Migrations(DRILL, MERGE)
-  await applyD1Migrations(DRILL, MIGRATIONS.filter((m) => m.name > '0150_'))
+  // …up to the rename (0162): this drill reads its own copy under the spine's old name.
+  await applyD1Migrations(DRILL, MIGRATIONS.filter((m) => m.name > '0150_' && m.name < '0162_'))
   await copyBack(s1.householdId)
   await copyBack(s2.householdId)
 
@@ -436,8 +437,8 @@ describe('the merge, run on pre-merge households', () => {
         // The chores among the tasks (0153 left them no kind): the drill knows their ids.
         const chores = new Set(d().before.ids.chores)
         const titles = (rows: { id: string; title: string }[], n: number) => rows.filter((r) => chores.has(r.id)).slice(0, n).map((r) => ({ title: r.title }))
-        expect(titles(await all(env.DB, 'SELECT id, title FROM home_projects WHERE household_id = ? AND kind IS NULL AND last_done_at >= ?', hh(), D(-7)), 20)).toEqual(d().before.recap)
-        expect(titles(await all(env.DB, 'SELECT id, title FROM home_projects WHERE household_id = ? AND kind IS NULL ORDER BY created_at', hh()), 30)).toEqual(d().before.ask)
+        expect(titles(await all(env.DB, 'SELECT id, title FROM tasks WHERE household_id = ? AND kind IS NULL AND last_done_at >= ?', hh(), D(-7)), 20)).toEqual(d().before.recap)
+        expect(titles(await all(env.DB, 'SELECT id, title FROM tasks WHERE household_id = ? AND kind IS NULL ORDER BY created_at', hh()), 30)).toEqual(d().before.ask)
       })
     })
   }
@@ -482,7 +483,7 @@ describe('the merge, run on pre-merge households', () => {
     expect((await env.DB.prepare('SELECT COUNT(*) AS n FROM task_participants WHERE task_id = ?').bind('drillC4aaaaa').first<{ n: number }>())?.n).toBe(0)
     await okJson(s.fetch('/api/todos', { method: 'PATCH', body: { clearChecked: true, ids: ['drillT5aaaaa'] } }))
     // « Vider » keeps every task as history since 0153: stamped, never deleted.
-    expect(await env.DB.prepare('SELECT cleared_at IS NOT NULL AS cleared FROM home_projects WHERE id = ?').bind('drillT5aaaaa').first()).toEqual({ cleared: 1 })
+    expect(await env.DB.prepare('SELECT cleared_at IS NOT NULL AS cleared FROM tasks WHERE id = ?').bind('drillT5aaaaa').first()).toEqual({ cleared: 1 })
     // A departure row still ticks in its own table.
     await okJson(s.fetch('/api/todos', { method: 'PATCH', body: { id: 'drillD1aaaaa', done: true } }))
     expect((await env.DB.prepare('SELECT done_at FROM todos WHERE id = ?').bind('drillD1aaaaa').first<{ done_at: number | null }>())?.done_at).not.toBeNull()
@@ -504,13 +505,13 @@ describe('the safety net: a copy taken BEFORE the merge restores AFTER it', () =
     expect(byKey(got)).toEqual(byKey(unmap(sample.before.tasks) as TaskItem[]))
     // The chores and the loose to-dos came back as tasks (no kind, 0153), the home rows as
     // themselves, and the checklists stayed put.
-    const kinds = await all<{ kind: string | null; n: number }>(env.DB, 'SELECT kind, COUNT(*) AS n FROM home_projects WHERE household_id = ? GROUP BY kind ORDER BY kind', restored.householdId)
+    const kinds = await all<{ kind: string | null; n: number }>(env.DB, 'SELECT kind, COUNT(*) AS n FROM tasks WHERE household_id = ? GROUP BY kind ORDER BY kind', restored.householdId)
     expect(kinds).toEqual([
       { kind: null, n: 16 },
       { kind: 'plan', n: 1 },
       { kind: 'upkeep', n: 3 },
     ])
     expect((await all(env.DB, 'SELECT id FROM todos WHERE household_id = ?', restored.householdId)).length).toBe(4)
-    expect((await all(env.DB, 'SELECT tp.id FROM task_participants tp JOIN home_projects t ON t.id = tp.task_id WHERE t.household_id = ?', restored.householdId)).length).toBe(2)
+    expect((await all(env.DB, 'SELECT tp.id FROM task_participants tp JOIN tasks t ON t.id = tp.task_id WHERE t.household_id = ?', restored.householdId)).length).toBe(2)
   })
 })

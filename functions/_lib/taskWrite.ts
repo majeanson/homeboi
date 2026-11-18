@@ -174,7 +174,7 @@ export async function insertTask(db: D1Database, hh: string, b: TaskBody, author
   }
   const names = Object.keys(cols)
   await db
-    .prepare(`INSERT INTO home_projects (${names.join(', ')}) VALUES (${names.map(() => '?').join(', ')})`)
+    .prepare(`INSERT INTO tasks (${names.join(', ')}) VALUES (${names.map(() => '?').join(', ')})`)
     .bind(...names.map((n) => cols[n]))
     .run()
   return { id, face }

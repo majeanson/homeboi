@@ -13,7 +13,7 @@ import { emojiIcon, hexColorOrNull, taskEffort } from '../_lib/validate'
 // À cocher — the departure checklists (« Avant de partir », mig 0116) and, as an alias, every
 // task. Migration 0046.
 //
-// AN ALIAS since 0150, over TWO tables. A task lives on the spine (`home_projects`: its day in
+// AN ALIAS since 0150, over TWO tables. A task lives on the spine (`tasks`: its day in
 // `at`, its tick in `last_done_at`). A departure CHECKLIST INSTANCE (source_template_id = the
 // todo_templates id it was instantiated from) is not a task and stays in `todos`, with its own
 // mark-in-place and its own « Vider », which DELETES (it is swept by day anyway). This endpoint
@@ -93,7 +93,7 @@ function bothTables(db: D1Database, hh: string, id: string, sets: Record<string,
   const oldName = (c: string) => (c === 'at' ? 'day' : c === 'last_done_at' ? 'done_at' : c)
   const vals = spineCols.map((c) => sets[c])
   return [
-    db.prepare(`UPDATE home_projects SET ${spineCols.map((c) => `${c} = ?`).join(', ')} WHERE id = ? AND household_id = ?`).bind(...vals, id, hh),
+    db.prepare(`UPDATE tasks SET ${spineCols.map((c) => `${c} = ?`).join(', ')} WHERE id = ? AND household_id = ?`).bind(...vals, id, hh),
     db.prepare(`UPDATE todos SET ${spineCols.map((c) => `${oldName(c)} = ?`).join(', ')} WHERE id = ? AND household_id = ?${departureOnly ?? ''}`).bind(...vals, id, hh),
   ]
 }

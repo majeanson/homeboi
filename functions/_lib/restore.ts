@@ -193,7 +193,24 @@ export interface RestoreSummary {
 // note — its author (`author_member_id`) as `member_id`, its recipient (`member_id`) as
 // `for_member_id` — and the `mots` table leaves the dump. Pure; unit-tested.
 export function upgradeTakeout(t: Takeout): Takeout {
-  return upgradeTasks(upgradeMots(t))
+  return toLiveSpine(upgradeTasks(upgradeMots(fromLiveSpine(t))))
+}
+
+// 0162 renamed the spine `home_projects` → `tasks`, and `tasks` already meant something in a
+// copy: before 0150 it held the OLD chores, which upgradeTasks folds into the spine. So a copy
+// says which one it holds — `spine: 'tasks'` (every takeout since 0162, _lib/takeout.ts): its
+// `tasks` IS the spine. The chain below speaks the spine's old name, so such a copy is read
+// into it first, and whatever the chain leaves is handed back under the live name. A copy
+// with no marker keeps its meaning: `home_projects` is the spine, `tasks` the old chores.
+function fromLiveSpine(t: Takeout): Takeout {
+  if (t.spine !== 'tasks' || !t.tables.tasks) return t
+  const { tasks, ...rest } = t.tables
+  return { ...t, tables: { ...rest, home_projects: tasks } }
+}
+function toLiveSpine(t: Takeout): Takeout {
+  const { home_projects, ...rest } = t.tables
+  if (!home_projects) return t
+  return { ...t, spine: 'tasks', tables: { ...rest, tasks: home_projects } }
 }
 
 // A copy taken BEFORE migration 0150 holds its chores in `tasks` (a table that no longer exists)

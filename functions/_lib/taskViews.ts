@@ -11,7 +11,7 @@ import type { TaskItem, TasksWire } from './wire'
 // EVERY READER OF A TASK READS IT HERE (plans/2026-11-06-TACHE-UNIFIEE.md, « align every view »).
 //
 // One row shape, `TaskRow`, read with one column list, `TASK_COLS`, from the one table every
-// task lives in since 0150 (`home_projects`, the spine), turned into a task by ONE builder
+// task lives in since 0150 (`tasks`, the spine), turned into a task by ONE builder
 // (`spineTask`, _lib/taskItem). A reader — the board, the calendar, the year, « Cette semaine »,
 // the recap, the house assistant, the Tâches view — asks this file for what it shows.
 //
@@ -84,7 +84,7 @@ export interface TaskRow {
 export const taskOf = (r: TaskRow, today: number, now: number): TaskItem | null => spineTask(r, today, now)
 
 const rowsOf = async (db: D1Database, where: string, ...binds: unknown[]): Promise<TaskRow[]> =>
-  (await db.prepare(`SELECT ${TASK_COLS} FROM home_projects WHERE ${where}`).bind(...binds).all<TaskRow>()).results.map(withTaskDay)
+  (await db.prepare(`SELECT ${TASK_COLS} FROM tasks WHERE ${where}`).bind(...binds).all<TaskRow>()).results.map(withTaskDay)
 
 // ── /api/board ─────────────────────────────────────────────────────────────────────────────
 
@@ -133,7 +133,7 @@ export async function subjectHistory(db: D1Database, hh: string, ref: SubjectRef
       .prepare(
         `SELECT t.id, t.title, tp.contributed_at AS at, tp.member_id AS who_id
            FROM task_participants tp
-           JOIN home_projects t ON t.id = tp.task_id AND t.household_id = ?
+           JOIN tasks t ON t.id = tp.task_id AND t.household_id = ?
           WHERE ${match('t.')}
           ORDER BY tp.contributed_at DESC LIMIT ?`,
       )

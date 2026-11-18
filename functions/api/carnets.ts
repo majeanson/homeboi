@@ -9,7 +9,7 @@ import { carnetLifeSoon, fetchCarnetLifeItems } from '../_lib/carnetLife'
 // A top-level carnet is a house or a car (parent_id NULL); a child is a thing
 // inside it (water heater, roof) or a room ('zone'). Every node is the same shape,
 // so carnets nest. Each keeps an identity here, a service history (care_log), a
-// recurring-upkeep cadence (home_projects.carnet_id), and a « long jeu » lifecycle
+// recurring-upkeep cadence (tasks.carnet_id), and a « long jeu » lifecycle
 // (installed_at + lifespan_months → a DERIVED "à prévoir", see carnetLife.ts).
 //
 //   GET    /api/carnets -> the whole tree + the lifecycle "soon" glance

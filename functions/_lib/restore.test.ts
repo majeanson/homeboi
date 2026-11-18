@@ -125,39 +125,60 @@ describe('upgradeTakeout (a pre-0150 copy: chores in `tasks`, loose to-dos in `t
   const up = upgradeTakeout({ ...base, tables: { tasks: [chore], todos: [loose, departure], home_projects: [{ id: 'homeAAAAAAAA', kind: 'plan', at: null }] } })
 
   it('moves the chores and the loose to-dos onto the spine, ids kept, with no kind (0153); the departure rows stay', () => {
-    expect(up.tables.tasks).toBeUndefined()
+    // The spine leaves under its live name (0162), and the copy says so.
+    expect(up.tables.home_projects).toBeUndefined()
+    expect(up.spine).toBe('tasks')
     expect(up.tables.todos).toEqual([departure])
-    expect(up.tables.home_projects!.map((r) => [r.id, r.kind])).toEqual([
+    expect(up.tables.tasks!.map((r) => [r.id, r.kind])).toEqual([
       ['homeAAAAAAAA', 'plan'],
       ['choreAAAAAAA', null],
       ['todoAAAAAAAA', null],
     ])
   })
   it('maps each column the way 0150 does, and every day through the one encoder (0153)', () => {
-    const [, c, t] = up.tables.home_projects!
+    const [, c, t] = up.tables.tasks!
     // The chore's start: the local day every reader showed it on (the 13th in Toronto), at midnight.
     expect(c).toMatchObject({ at: localDayStart(new Date(UTC14 * 1000)), recur_json: '{"freq":"weekly"}', rotation_json: '["m1"]', last_done_by: 'm1', announce_evening: 1, effort: 2, updated_at: MADE, colour: '#88A36F' })
     expect(c!.at).toBe(addLocalDays(localDayStart(new Date(Date.UTC(2026, 2, 14, 12))), -1))
     expect(t).toMatchObject({ at: LOCAL20, last_done_at: null, member_id: 'm2', position: 4, colour: null, updated_at: 6 })
     // No `undefined` reaches a bind: D1 refuses one.
-    for (const r of up.tables.home_projects!.slice(1)) for (const v of Object.values(r)) expect(v).not.toBeUndefined()
+    for (const r of up.tables.tasks!.slice(1)) for (const v of Object.values(r)) expect(v).not.toBeUndefined()
   })
   it('is idempotent, brings a copy from between 0150 and 0153 forward, and leaves a post-0153 copy alone', () => {
     expect(upgradeTakeout(up)).toEqual(up)
     const between = upgradeTakeout({ ...base, tables: { todos: [departure], home_projects: [{ id: 'x', kind: 'chore', at: UTC14 }] } })
-    expect(between.tables.home_projects).toEqual([{ id: 'x', kind: null, at: localDayStart(new Date(UTC14 * 1000)) }])
+    expect(between.tables.tasks).toEqual([{ id: 'x', kind: null, at: localDayStart(new Date(UTC14 * 1000)) }])
+    // A post-0153 copy keeps every row as it was, under the live name.
     const post = { ...base, tables: { todos: [departure], home_projects: [{ id: 'x', kind: null, at: LOCAL20 }] } }
-    expect(upgradeTakeout(post)).toBe(post)
+    expect(upgradeTakeout(post).tables).toEqual({ todos: [departure], tasks: [{ id: 'x', kind: null, at: LOCAL20 }] })
   })
   it('writes 0152’s start: a recurring chore with none gets its created_at’s day, from `tasks` or already on the spine', () => {
     const noStart = upgradeTakeout({ ...base, tables: { tasks: [{ ...chore, recur_start: null }] } })
-    expect(noStart.tables.home_projects![0]).toMatchObject({ at: localDayStart(new Date(MADE * 1000)) })
+    expect(noStart.tables.tasks![0]).toMatchObject({ at: localDayStart(new Date(MADE * 1000)) })
     const between = { ...base, tables: { home_projects: [
       { id: 'a', kind: 'chore', at: null, recur_json: '{"freq":"daily"}', created_at: MADE },
       { id: 'b', kind: 'chore', at: null, recur_json: '{"freq":"hourly"}', created_at: MADE + 1 },
       { id: 'c', kind: 'upkeep', at: null, recur_json: '{"freq":"daily"}', created_at: MADE + 2 },
     ] } }
     // Only the real recurrence on a chore: a malformed one is a one-off, an undated home row stays undated.
-    expect(upgradeTakeout(between).tables.home_projects!.map((r) => r.at)).toEqual([localDayStart(new Date(MADE * 1000)), null, null])
+    expect(upgradeTakeout(between).tables.tasks!.map((r) => r.at)).toEqual([localDayStart(new Date(MADE * 1000)), null, null])
+  })
+})
+
+// 0162 (review #37): the spine is named `tasks`, a name a pre-0150 copy already used for its
+// OLD chores. A copy made since says `spine: 'tasks'`, and only then is its `tasks` the spine.
+describe('upgradeTakeout (a copy made after 0162: `spine: "tasks"`)', () => {
+  const LOCAL20 = localDayStart(new Date(Date.UTC(2026, 2, 20, 12)))
+  const row = { id: 'planAAAAAAAA', kind: 'plan', title: 'Toit', at: LOCAL20, rotation_json: '[]' }
+  it('reads its `tasks` as the spine: a plan stays a plan, nothing is folded as an old chore', () => {
+    const live = { ...base, spine: 'tasks' as const, tables: { tasks: [row], todos: [] } }
+    const up = upgradeTakeout(live)
+    expect(up.tables.tasks).toEqual([row])
+    expect(up.tables.home_projects).toBeUndefined()
+    expect(upgradeTakeout(up)).toEqual(up)
+  })
+  it('without the marker, `tasks` is still the OLD chores (a pre-0150 copy), brought onto the spine', () => {
+    const old = upgradeTakeout({ ...base, tables: { tasks: [{ id: 'choreBBBBBBB', title: 'Bac', created_at: 1, recur_json: null, recur_start: null }] } })
+    expect(old.tables.tasks!.map((r) => [r.id, r.kind, r.rotation_json])).toEqual([['choreBBBBBBB', null, '[]']])
   })
 })

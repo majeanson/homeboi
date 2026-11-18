@@ -134,7 +134,7 @@ beforeAll(async () => {
   // The real sample seed, as a seeded household holds it, in the shape of its era: before 0153
   // a task had a face, a series or a rotation was a chore, anything else a loose to-do.
   const era = (r: Row): Row => (r.kind != null ? r : { ...r, kind: r.recur_json != null || r.rotation_json !== '[]' ? 'chore' : 'todo' })
-  await insertRows(DRILL, 'home_projects', (await all(env.DB, 'SELECT * FROM home_projects WHERE household_id = ?', seeded.householdId)).map(era))
+  await insertRows(DRILL, 'home_projects', (await all(env.DB, 'SELECT * FROM tasks WHERE household_id = ?', seeded.householdId)).map(era))
 
   for (const s of [variety, seeded]) {
     beforeRows.set(s.householdId, await rowsOf(s.householdId))
@@ -191,7 +191,7 @@ describe('0152 — every recurring task carries its start', () => {
     // which decodes every day to the local midnight it showed (_lib/taskDay): the drill compares
     // days as days.
     const shrunk = (r: Row): Row => ({ ...r, kind: r.kind === 'plan' || r.kind === 'upkeep' ? r.kind : null })
-    await insertRows(env.DB, 'home_projects', (await all(DRILL, 'SELECT * FROM home_projects WHERE household_id = ?', hh)).map(shrunk))
+    await insertRows(env.DB, 'tasks', (await all(DRILL, 'SELECT * FROM home_projects WHERE household_id = ?', hh)).map(shrunk))
     const got = (await okJson<TasksWire>(variety.fetch('/api/tasks'))).tasks
     const asDays = (i: ReturnType<typeof identity>) => i && { ...i, day: taskDay(i.day), overdueSince: taskDay(i.overdueSince) }
     const was = new Map(beforeRows.get(hh)!.map((r) => [r.id, asDays(identity(before(r)))]))

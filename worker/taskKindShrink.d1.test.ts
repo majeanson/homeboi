@@ -162,8 +162,11 @@ interface Household {
   lines: Row[]
 }
 const houses: Household[] = []
-const rowsOf = (hh: string) => all<TaskRow>(DRILL, `SELECT ${TASK_COLS} FROM home_projects WHERE household_id = ? ORDER BY id`, hh)
-const rawOf = (hh: string) => all(DRILL, 'SELECT * FROM home_projects WHERE household_id = ? ORDER BY id', hh)
+// The drill's spine goes by its name of the moment: `home_projects` through 0153, `tasks` once
+// the later migrations (0162, the rename) have run, before the nightly backfill does.
+let spine = 'home_projects'
+const rowsOf = (hh: string) => all<TaskRow>(DRILL, `SELECT ${TASK_COLS} FROM ${spine} WHERE household_id = ? ORDER BY id`, hh)
+const rawOf = (hh: string) => all(DRILL, `SELECT * FROM ${spine} WHERE household_id = ? ORDER BY id`, hh)
 let afterShrink = new Map<string, Row[]>()
 let fixedFirst = 0
 let fixedAgain = -1
@@ -196,6 +199,9 @@ beforeAll(async () => {
   // THE MIGRATION, as wrangler would apply it…
   await applyD1Migrations(DRILL, SHRINK)
   afterShrink = new Map(await Promise.all(houses.map(async (h) => [h.s.householdId, await rawOf(h.s.householdId)] as const)))
+  // …then the rest of the migrations as production went (0162 names the spine `tasks`)…
+  await applyD1Migrations(DRILL, MIGRATIONS.filter((m) => m.name > '0153_'))
+  spine = 'tasks'
   // …then the Worker's backfill, as the nightly cron runs it, twice.
   fixedFirst = await normalizeTaskDays(DRILL)
   fixedAgain = await normalizeTaskDays(DRILL)
@@ -250,7 +256,11 @@ describe('0153 — a task is a task, and its day is a local midnight', () => {
   it('is idempotent: a second backfill changes nothing, and so does a second run of the migration', async () => {
     expect(fixedAgain).toBe(0)
     const once = await Promise.all(houses.map((h) => rawOf(h.s.householdId)))
+    // 0153 again, at its own point in history: the spine under the name it had then (0162
+    // renamed it afterwards; wrangler never re-runs a migration, so this is the only way to ask).
+    await DRILL.prepare('ALTER TABLE tasks RENAME TO home_projects').run()
     for (const q of SHRINK[0]!.queries) await DRILL.prepare(q).run()
+    await DRILL.prepare('ALTER TABLE home_projects RENAME TO tasks').run()
     expect(await normalizeTaskDays(DRILL)).toBe(0)
     expect(await Promise.all(houses.map((h) => rawOf(h.s.householdId)))).toEqual(once)
   })
@@ -258,7 +268,7 @@ describe('0153 — a task is a task, and its day is a local midnight', () => {
   it('departure checklists and « qui a aidé » are untouched', async () => {
     for (const h of houses) {
       expect(await all(DRILL, 'SELECT * FROM todos WHERE household_id = ? ORDER BY id', h.s.householdId)).toEqual(h.departures)
-      expect(await all(DRILL, 'SELECT tp.* FROM task_participants tp JOIN home_projects t ON t.id = tp.task_id WHERE t.household_id = ? ORDER BY tp.id', h.s.householdId)).toEqual(h.lines)
+      expect(await all(DRILL, 'SELECT tp.* FROM task_participants tp JOIN tasks t ON t.id = tp.task_id WHERE t.household_id = ? ORDER BY tp.id', h.s.householdId)).toEqual(h.lines)
     }
   })
 
@@ -292,7 +302,7 @@ describe('0153 — a task is a task, and its day is a local midnight', () => {
     for (const [n, tz] of ZONES.entries()) {
       const h = houses[n]!
       // The rows exactly as 0153 left them, `at` still in the three old encodings.
-      await insertRows(env.DB, 'home_projects', afterShrink.get(h.s.householdId)!)
+      await insertRows(env.DB, 'tasks', afterShrink.get(h.s.householdId)!)
       await insertRows(env.DB, 'task_participants', h.lines)
       const was = new Map(h.before.map((r) => [r.id, shown(read(r, tz), tz)]))
       const vaisselle = `${h.p}C3`.padEnd(12, 'a')
@@ -311,7 +321,7 @@ describe('0153 — a task is a task, and its day is a local midnight', () => {
       // The stored day, decoded, is the date the household sees (the /api/chores alias that read
       // it back as recur_start is gone, review #37).
       const c1id = `${h.p}C1`.padEnd(12, 'a')
-      const c1 = await env.DB.prepare('SELECT at FROM home_projects WHERE id = ?').bind(c1id).first<{ at: number | null }>()
+      const c1 = await env.DB.prepare('SELECT at FROM tasks WHERE id = ?').bind(c1id).first<{ at: number | null }>()
       expect(taskDay(c1!.at, tz)).toBe(taskDay(h.before.find((r) => r.id === c1id)!.at, tz))
     }
   })

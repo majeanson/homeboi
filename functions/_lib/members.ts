@@ -56,10 +56,10 @@ export function memberRefStatements(env: Env, householdId: string, memberId: str
     P('UPDATE events SET member_id = NULL WHERE member_id = ? AND household_id = ?').bind(id, hh),
     // Every task is on the spine since 0150: who last did it, and who wrote a to-do. Both are
     // soft refs there, so this is tidiness, not an FK to satisfy: the row reads « Maisonnée ».
-    P('UPDATE home_projects SET last_done_by = NULL WHERE last_done_by = ? AND household_id = ?').bind(id, hh),
-    P('UPDATE home_projects SET member_id = NULL WHERE member_id = ? AND household_id = ?').bind(id, hh),
+    P('UPDATE tasks SET last_done_by = NULL WHERE last_done_by = ? AND household_id = ?').bind(id, hh),
+    P('UPDATE tasks SET member_id = NULL WHERE member_id = ? AND household_id = ?').bind(id, hh),
     P('UPDATE meals SET cook_member_id = NULL WHERE cook_member_id = ? AND household_id = ?').bind(id, hh),
-    P('UPDATE task_participants SET member_id = NULL WHERE member_id = ? AND task_id IN (SELECT id FROM home_projects WHERE household_id = ?)').bind(id, hh),
+    P('UPDATE task_participants SET member_id = NULL WHERE member_id = ? AND task_id IN (SELECT id FROM tasks WHERE household_id = ?)').bind(id, hh),
     P('UPDATE notes SET member_id = NULL WHERE member_id = ? AND household_id = ?').bind(id, hh),
     P('UPDATE day_notes SET member_id = NULL WHERE member_id = ? AND household_id = ?').bind(id, hh),
     // The departure instances (the loose to-dos moved to the spine, above). This one is an FK,

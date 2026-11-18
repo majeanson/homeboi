@@ -40,7 +40,7 @@ interface ProjectRow {
 
 export const onRequestGet = authed(async (ctx, actor) => {
   const { results } = await ctx.env.DB.prepare(
-    `SELECT id, kind, title, notes, budget_cents, colour AS color, at, recur_json, recur_from, lead_seconds, last_done_at, snoozed_until, carnet_id, subject_kind, subject_id, rotation_json, current_idx, last_done_by, icon, effort FROM home_projects WHERE household_id = ? AND ${FACE.home} ORDER BY created_at`,
+    `SELECT id, kind, title, notes, budget_cents, colour AS color, at, recur_json, recur_from, lead_seconds, last_done_at, snoozed_until, carnet_id, subject_kind, subject_id, rotation_json, current_idx, last_done_by, icon, effort FROM tasks WHERE household_id = ? AND ${FACE.home} ORDER BY created_at`,
   )
     .bind(actor.householdId)
     .all<ProjectRow>()

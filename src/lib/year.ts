@@ -206,7 +206,7 @@ export function useSchoolYear(): SchoolYear | null {
 
 // A-4 (bmad/09): the FR-CA season-turnover ritual SEEDS. Not a system — a
 // short curated list the Entretien section OFFERS when the household hasn't
-// written its own version. Accepting one creates a NORMAL home_projects row
+// written its own version. Accepting one creates a NORMAL tasks row
 // (kind 'upkeep', this recurrence, this carnet link) through the normal
 // endpoint — Marc's constraint: it must ride the existing Corvées/Projets
 // machinery, never sit beside it. `match` keywords (folded) hide a seed once
@@ -358,7 +358,7 @@ export function seasonPacks(seeds: readonly SeasonSeed[], nowMs: number = Date.n
 }
 
 // The NEXT local-midnight occurrence of a month/day anchor from `nowMs` — the
-// `at` a seed's home_projects row anchors its recurrence on.
+// `at` a seed's tasks row anchors its recurrence on.
 export function nextAnchorSec(anchor: { month: number; day: number }, nowMs: number = Date.now()): number {
   const now = new Date(nowMs)
   const thisYear = new Date(now.getFullYear(), anchor.month - 1, anchor.day)

@@ -48,7 +48,7 @@ const WEEKLY = { freq: 'weekly', interval: 1, weekdays: [2] }
 const member = async (s: Session, name: string) => (await okJson<{ id: string }>(s.fetch('/api/members', { method: 'POST', body: { name } }))).id
 const capture = async (s: Session, text: string, forceType: string) =>
   okJson<{ type: string; routed: { kind: string; cleanup: { table: string; id: string }[] } }>(s.fetch('/api/capture', { method: 'POST', body: { text, forceType } }))
-const stored = (id: string, cols: string) => env.DB.prepare(`SELECT ${cols} FROM home_projects WHERE id = ?`).bind(id).first()
+const stored = (id: string, cols: string) => env.DB.prepare(`SELECT ${cols} FROM tasks WHERE id = ?`).bind(id).first()
 
 describe('the one form’s writes', () => {
   it('a bare title, a dated title, a recurrence and notes each wear the face the rule says, and read back open', async () => {
@@ -167,8 +167,8 @@ describe('capture lands like the form', () => {
     const a = await capture(s, 'sortir les poubelles chaque mardi', 'task')
     const b = await capture(s, 'sortir les poubelles chaque mardi', 'upkeep')
     expect([a.type, b.type, a.routed.kind, b.routed.kind]).toEqual(['task', 'task', 'task', 'task'])
-    expect([a.routed.cleanup[0]?.table, b.routed.cleanup[0]?.table]).toEqual(['home_projects', 'home_projects'])
-    const rows = await env.DB.prepare("SELECT kind, recur_json, rotation_json FROM home_projects WHERE household_id = ?").bind(s.householdId).all<{ kind: string | null; recur_json: string }>()
+    expect([a.routed.cleanup[0]?.table, b.routed.cleanup[0]?.table]).toEqual(['tasks', 'tasks'])
+    const rows = await env.DB.prepare("SELECT kind, recur_json, rotation_json FROM tasks WHERE household_id = ?").bind(s.householdId).all<{ kind: string | null; recur_json: string }>()
     expect(rows.results.map((r) => [r.kind, JSON.parse(r.recur_json)])).toEqual([
       [null, { freq: 'weekly', interval: 1, weekdays: [2] }],
       [null, { freq: 'weekly', interval: 1, weekdays: [2] }],
@@ -179,7 +179,7 @@ describe('capture lands like the form', () => {
   it('a task with no schedule reads open, and its correction deletes it', async () => {
     const s = await household('capture-todo', undefined, { empty: true })
     const r = await capture(s, 'appeler la garderie', 'task')
-    expect(r.routed.cleanup[0]?.table).toBe('home_projects')
+    expect(r.routed.cleanup[0]?.table).toBe('tasks')
     const id = r.routed.cleanup[0]!.id
     expect(await stored(id, 'kind')).toEqual({ kind: null })
     const got = await tasks(s)

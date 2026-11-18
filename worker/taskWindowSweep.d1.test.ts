@@ -60,11 +60,11 @@ describe('0151 — the to-dos an old Worker wrote in the window', () => {
     // Then every later migration, as production went (0153: the loose row is a task, no kind),
     // and the row read back through the real Worker.
     await applyD1Migrations(DRILL, MIGRATIONS.filter((m) => m.name > '0151_'))
-    const rows = (await DRILL.prepare('SELECT * FROM home_projects WHERE household_id = ?').bind(s.householdId).all<Record<string, unknown>>()).results
+    const rows = (await DRILL.prepare('SELECT * FROM tasks WHERE household_id = ?').bind(s.householdId).all<Record<string, unknown>>()).results
     expect(rows.map((r) => r.kind)).toEqual([null])
     for (const r of rows) {
       const k = Object.keys(r)
-      await env.DB.prepare(`INSERT INTO home_projects (${k.join(', ')}) VALUES (${k.map(() => '?').join(', ')})`).bind(...k.map((x) => r[x] ?? null)).run()
+      await env.DB.prepare(`INSERT INTO tasks (${k.join(', ')}) VALUES (${k.map(() => '?').join(', ')})`).bind(...k.map((x) => r[x] ?? null)).run()
     }
     const tasks = await okJson<TasksWire>(s.fetch('/api/tasks'))
     expect(tasks.tasks.map((t) => t.title)).toEqual(['Écrit pendant la fenêtre'])

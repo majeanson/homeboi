@@ -5,7 +5,7 @@ import { DEFAULT_TZ, isValidTz } from './tz'
 // « Still to do » (3), the owner's decision of 2026-11-10: « every task stores its day as a
 // household-LOCAL midnight »).
 //
-// WHAT WAS STORED. `home_projects.at` held three encodings, by where the row was written:
+// WHAT WAS STORED. `tasks.at` held three encodings, by where the row was written:
 //   · a household-local midnight: every to-do, every capture, the season seeds, the sample;
 //   · a UTC midnight (`dateToAnchorSec`): what the old chore and home forms wrote, and the one
 //     form until today for any task with a schedule;
@@ -45,7 +45,7 @@ export function taskDay(sec: number | null | undefined, tz?: string): number | n
 
 /** A write's day: whatever a body sent (a local midnight from today's client, a UTC midnight
  *  or an instant from an older bundle or a queued write), stored as the day it falls on.
- *  THE encoder: every write of `home_projects.at` goes through it. */
+ *  THE encoder: every write of `tasks.at` goes through it. */
 export function taskDayOf(v: unknown): number | null {
   if (v == null || v === '') return null
   const n = Number(v)
@@ -72,12 +72,12 @@ export async function normalizeTaskDays(db: D1Database, householdId?: string): P
   for (const h of households) {
     const tz = h.tz ?? DEFAULT_TZ
     if (!isValidTz(tz)) continue
-    const rows = (await db.prepare('SELECT id, at FROM home_projects WHERE household_id = ? AND at IS NOT NULL').bind(h.id).all<{ id: string; at: number }>()).results
+    const rows = (await db.prepare('SELECT id, at FROM tasks WHERE household_id = ? AND at IS NOT NULL').bind(h.id).all<{ id: string; at: number }>()).results
     const stmts = rows
       .map((r) => ({ id: r.id, at: r.at, day: taskDay(r.at, tz) }))
       .filter((r) => r.day !== r.at)
       // `AND at = ?`: a write that landed between the read and this UPDATE wins.
-      .map((r) => db.prepare('UPDATE home_projects SET at = ? WHERE id = ? AND household_id = ? AND at = ?').bind(r.day, r.id, h.id, r.at))
+      .map((r) => db.prepare('UPDATE tasks SET at = ? WHERE id = ? AND household_id = ? AND at = ?').bind(r.day, r.id, h.id, r.at))
     for (let i = 0; i < stmts.length; i += 50) {
       const done = await db.batch(stmts.slice(i, i + 50))
       fixed += done.reduce((n, d) => n + (d.meta.changes ?? 0), 0)

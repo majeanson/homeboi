@@ -201,7 +201,7 @@ async function routeIntent(
       return {
         kind: 'task',
         label: withWho(title),
-        cleanup: [{ table: 'home_projects', id }],
+        cleanup: [{ table: 'tasks', id }],
         ...(t.day != null ? { when: { at: t.day, allDay: true } } : {}),
       }
     }

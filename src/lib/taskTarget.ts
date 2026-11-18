@@ -1,7 +1,7 @@
 // IS A TASK A HOME ROW? — the one rule (plans/2026-11-06-TACHE-UNIFIEE.md, phase 4, then 0153).
 //
 // A task is a title plus optional layers. The household never picks a « type »: it fills the
-// layers it wants. Every task lives in ONE table (`home_projects`, the spine, 0150), and since
+// layers it wants. Every task lives in ONE table (`tasks`, the spine, 0150), and since
 // 0153 a row is one of two things: a TASK (no kind) or a HOME row (`kind` 'plan' or 'upkeep', a
 // behaviour some surfaces still ask about: the season card, a project's notes and budget,
 // « Sur quoi ? », « Reporter »). What used to be a chore and what used to be a to-do are one

@@ -8,7 +8,7 @@ import { taskEffort } from './validate'
 import type { TaskItem } from './wire'
 
 // A TASK, READ SIDE — one shape over every task row (plans/2026-11-06-TACHE-UNIFIEE.md). Since
-// migration 0150 every task lives in ONE table, `home_projects` (« the spine »); this is what a
+// migration 0150 every task lives in ONE table, `tasks` (« the spine »); this is what a
 // row looks like to a reader, so the board, the Tâches view and a subject's page cannot each
 // decide what « done » means. A READER does not come here: it reads one row shape through
 // _lib/taskViews.ts, which hands it to `spineTask`, the one builder.
@@ -138,7 +138,7 @@ export const todoRowsSql = (select: string, rest: string): string =>
   `WITH todo_rows AS (
      SELECT id, household_id, title, at AS day, member_id, last_done_at AS done_at, position, NULL AS section, NULL AS source_template_id,
             created_at, updated_at, subject_kind, subject_id, icon, colour, effort
-       FROM home_projects WHERE household_id = ?1 AND ${FACE.task}
+       FROM tasks WHERE household_id = ?1 AND ${FACE.task}
      UNION ALL
      SELECT id, household_id, title, day, member_id, done_at, position, section, source_template_id,
             created_at, updated_at, subject_kind, subject_id, icon, colour, effort
@@ -151,7 +151,7 @@ export const todoRowsSql = (select: string, rest: string): string =>
 // through the task's own household guard, so a wrong household cannot wipe another's log.
 export function deleteTaskStatements(db: D1Database, householdId: string, id: string): D1PreparedStatement[] {
   return [
-    db.prepare('DELETE FROM task_participants WHERE task_id IN (SELECT id FROM home_projects WHERE id = ? AND household_id = ?)').bind(id, householdId),
-    db.prepare('DELETE FROM home_projects WHERE id = ? AND household_id = ?').bind(id, householdId),
+    db.prepare('DELETE FROM task_participants WHERE task_id IN (SELECT id FROM tasks WHERE id = ? AND household_id = ?)').bind(id, householdId),
+    db.prepare('DELETE FROM tasks WHERE id = ? AND household_id = ?').bind(id, householdId),
   ]
 }

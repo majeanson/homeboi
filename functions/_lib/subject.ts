@@ -12,7 +12,7 @@ export interface SubjectRef {
 
 const isKind = (v: unknown): v is SubjectKind => typeof v === 'string' && (SUBJECT_KINDS as readonly string[]).includes(v)
 
-// What a row says. `carnet_id` reads as subject_kind 'carnet': a home_projects row keeps its
+// What a row says. `carnet_id` reads as subject_kind 'carnet': a tasks row keeps its
 // carnet there (the migration's note), so both spellings answer the same question here and
 // nowhere else. Garbage in the kind column reads as no subject rather than a bad link.
 export function subjectFromRow(row: {
@@ -41,7 +41,7 @@ const OWNED: Record<SubjectKind, readonly string[]> = {
     'SELECT id FROM contacts WHERE id = ? AND household_id = ?',
   ],
   pet: ['SELECT id FROM pets WHERE id = ? AND household_id = ? AND deleted_at IS NULL'],
-  project: [`SELECT id FROM home_projects WHERE id = ? AND household_id = ? AND kind = 'plan'`],
+  project: [`SELECT id FROM tasks WHERE id = ? AND household_id = ? AND kind = 'plan'`],
   trip: ['SELECT id FROM trips WHERE id = ? AND household_id = ? AND deleted_at IS NULL'],
 }
 

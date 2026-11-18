@@ -62,7 +62,7 @@ export async function deleteHealing(
       table === 'todos'
         ? db.prepare(todoRowsSql(`id, ${textColumn} AS text`, 'WHERE created_at <= ?2 ORDER BY done_at IS NOT NULL, created_at')).bind(householdId, asOf)
         : table === 'tasks'
-          ? db.prepare('SELECT id, title AS text FROM home_projects WHERE household_id = ? AND created_at <= ? ORDER BY last_done_at IS NOT NULL, created_at').bind(householdId, asOf)
+          ? db.prepare('SELECT id, title AS text FROM tasks WHERE household_id = ? AND created_at <= ? ORDER BY last_done_at IS NOT NULL, created_at').bind(householdId, asOf)
           : db.prepare(`SELECT id, ${textColumn} AS text FROM ${table} WHERE household_id = ? AND created_at <= ? ORDER BY checked_at IS NOT NULL, created_at`).bind(householdId, asOf)
     const { results } = await stmt.all<{ id: string; text: string }>()
     const hit = results.find((r) => normalizeItem(r.text) === key)

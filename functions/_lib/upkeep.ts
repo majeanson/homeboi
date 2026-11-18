@@ -1,5 +1,5 @@
 // « Projets & Entretien » occurrence/status derivation — the ONE place that
-// answers "when is this home_projects row due, and is it late?". Before this
+// answers "when is this tasks row due, and is it late?". Before this
 // module, home-projects.ts / board.ts / month.ts / year.ts each re-implemented
 // the expansion; they all consume these helpers now, so a semantic (like
 // completion-relative recurrence) lands everywhere at once.

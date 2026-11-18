@@ -149,6 +149,6 @@ describe('l’entretien', () => {
     const c = await okJson<{ id: string }>(s.fetch('/api/carnets', { method: 'POST', body: { name: 'Maison' } }))
     const id = await add(s, { subject: carnetOf(c.id) })
     await okJson(s.fetch('/api/tasks', { method: 'DELETE', body: { id } }))
-    expect(await env.DB.prepare('SELECT 1 FROM home_projects WHERE id = ?').bind(id).first()).toBeNull()
+    expect(await env.DB.prepare('SELECT 1 FROM tasks WHERE id = ?').bind(id).first()).toBeNull()
   })
 })

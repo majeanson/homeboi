@@ -33,7 +33,7 @@ describe('the task writes', () => {
     const s = await household('tasks-untick-noop', undefined, { empty: true })
     const chore = await okJson<{ id: string }>(s.fetch('/api/tasks', { method: 'POST', body: { title: 'Bac', rotation: ['a', 'b'] } }))
     await s.fetch('/api/tasks', { method: 'PATCH', body: { id: chore.id, done: false } })
-    expect(await env.DB.prepare('SELECT current_idx FROM home_projects WHERE id = ?').bind(chore.id).first()).toEqual({ current_idx: 0 })
+    expect(await env.DB.prepare('SELECT current_idx FROM tasks WHERE id = ?').bind(chore.id).first()).toEqual({ current_idx: 0 })
   })
 
   it('a tick keeps its real moment, however late it reaches the server', async () => {
@@ -41,19 +41,19 @@ describe('the task writes', () => {
     const last = today() - 600 // 23:50 last night, held in the outbox past midnight
     const todo = await addTodo(s, { title: 'Formulaire' })
     await s.fetch('/api/todos', { method: 'PATCH', body: { id: todo.id, done: true, doneAt: last } })
-    expect(await env.DB.prepare('SELECT last_done_at AS done_at FROM home_projects WHERE id = ?').bind(todo.id).first()).toEqual({ done_at: last })
+    expect(await env.DB.prepare('SELECT last_done_at AS done_at FROM tasks WHERE id = ?').bind(todo.id).first()).toEqual({ done_at: last })
     expect((await tasks(s)).tasks, 'its day has passed: already cleared').toEqual([])
 
     const chore = await okJson<{ id: string }>(s.fetch('/api/tasks', { method: 'POST', body: { title: 'Bac' } }))
     await s.fetch('/api/tasks', { method: 'PATCH', body: { id: chore.id, done: true, doneAt: last } })
-    expect(await env.DB.prepare('SELECT last_done_at FROM home_projects WHERE id = ?').bind(chore.id).first()).toEqual({ last_done_at: last })
+    expect(await env.DB.prepare('SELECT last_done_at FROM tasks WHERE id = ?').bind(chore.id).first()).toEqual({ last_done_at: last })
   })
 
   it('a clock in the future cannot stamp the future', async () => {
     const s = await household('tasks-clock', undefined, { empty: true })
     const todo = await addTodo(s, { title: 'Formulaire' })
     await s.fetch('/api/todos', { method: 'PATCH', body: { id: todo.id, done: true, doneAt: Math.floor(Date.now() / 1000) + 86400 } })
-    const row = await env.DB.prepare('SELECT last_done_at AS done_at FROM home_projects WHERE id = ?').bind(todo.id).first<{ done_at: number }>()
+    const row = await env.DB.prepare('SELECT last_done_at AS done_at FROM tasks WHERE id = ?').bind(todo.id).first<{ done_at: number }>()
     expect(row!.done_at).toBeLessThanOrEqual(Math.floor(Date.now() / 1000))
   })
 
@@ -64,7 +64,7 @@ describe('the task writes', () => {
     const chore = await okJson<{ id: string }>(s.fetch('/api/tasks', { method: 'POST', body: { title: 'Bac', rotation: [a.id, b.id] } }))
     await s.fetch('/api/tasks', { method: 'PATCH', body: { id: chore.id, done: true } })
     await s.fetch('/api/tasks', { method: 'PATCH', body: { id: chore.id, done: false } })
-    expect(await env.DB.prepare('SELECT last_done_at, current_idx FROM home_projects WHERE id = ?').bind(chore.id).first()).toEqual({ last_done_at: null, current_idx: 0 })
+    expect(await env.DB.prepare('SELECT last_done_at, current_idx FROM tasks WHERE id = ?').bind(chore.id).first()).toEqual({ last_done_at: null, current_idx: 0 })
     expect(await env.DB.prepare('SELECT COUNT(*) AS n FROM task_participants WHERE task_id = ?').bind(chore.id).first()).toEqual({ n: 0 })
 
     const home = await okJson<{ id: string }>(s.fetch('/api/tasks', { method: 'POST', body: { title: 'Filtre', kind: 'upkeep', at: today() } }))
@@ -80,7 +80,7 @@ describe('the task writes', () => {
     await s.fetch('/api/tasks', { method: 'PATCH', body: { id: home.id, done: true } })
     await s.fetch('/api/tasks', { method: 'PATCH', body: { clearChecked: true, ids: [home.id] } })
     expect((await board(s)).tasks.map((t) => t.id)).toEqual([keep.id])
-    expect(await env.DB.prepare('SELECT last_done_at IS NOT NULL AS kept FROM home_projects WHERE id = ?').bind(home.id).first()).toEqual({ kept: 1 })
+    expect(await env.DB.prepare('SELECT last_done_at IS NOT NULL AS kept FROM tasks WHERE id = ?').bind(home.id).first()).toEqual({ kept: 1 })
   })
 })
 
@@ -88,7 +88,7 @@ describe('the task writes', () => {
 // be, through the one door (/api/tasks) and through the aliases an older bundle still calls.
 describe('the one tick, the one « Vider », the one delete', () => {
   const lines = (id: string) => env.DB.prepare('SELECT member_id FROM task_participants WHERE task_id = ? ORDER BY contributed_at').bind(id).all<{ member_id: string | null }>()
-  const row = (id: string) => env.DB.prepare('SELECT kind, last_done_at, last_done_by, current_idx, cleared_at FROM home_projects WHERE id = ?').bind(id).first<{ kind: string | null; last_done_at: number | null; last_done_by: string | null; current_idx: number; cleared_at: number | null }>()
+  const row = (id: string) => env.DB.prepare('SELECT kind, last_done_at, last_done_by, current_idx, cleared_at FROM tasks WHERE id = ?').bind(id).first<{ kind: string | null; last_done_at: number | null; last_done_by: string | null; current_idx: number; cleared_at: number | null }>()
   const tick = (s: Session, id: string, headers?: Record<string, string>) => s.fetch('/api/tasks', { method: 'PATCH', body: { id, done: true }, headers })
 
   it('every tick records who did it: the face the device acts as, else whose turn it was', async () => {
@@ -179,7 +179,7 @@ describe('the one tick, the one « Vider », the one delete', () => {
     const t = await addTodo(s, { title: 'Midi', day: noon })
     const c = await okJson<{ id: string }>(s.fetch('/api/tasks', { method: 'POST', body: { title: 'Bac', recur: { freq: 'weekly', interval: 1, weekdays: [] }, at: noon } }))
     const h = await okJson<{ id: string }>(s.fetch('/api/tasks', { method: 'POST', body: { title: 'Filtre', kind: 'upkeep', at: noon } }))
-    const at = async (id: string) => (await env.DB.prepare('SELECT at FROM home_projects WHERE id = ?').bind(id).first<{ at: number }>())?.at
+    const at = async (id: string) => (await env.DB.prepare('SELECT at FROM tasks WHERE id = ?').bind(id).first<{ at: number }>())?.at
     for (const id of [t.id, c.id, h.id]) expect(await at(id), id).toBe(today())
   })
 })
@@ -196,7 +196,7 @@ describe('rotation on any recurring task', () => {
     expect(first).toMatchObject({ who_id: a.id, team: [a.id, b.id] })
     await s.fetch('/api/tasks', { method: 'PATCH', body: { id: home.id, done: true } })
     expect((await tasks(s)).tasks.find((t) => t.id === home.id)).toMatchObject({ who_id: b.id, dueToday: false })
-    expect(await env.DB.prepare('SELECT last_done_by FROM home_projects WHERE id = ?').bind(home.id).first()).toEqual({ last_done_by: a.id })
+    expect(await env.DB.prepare('SELECT last_done_by FROM tasks WHERE id = ?').bind(home.id).first()).toEqual({ last_done_by: a.id })
   })
 
   it('the rotation edits with the rest of the row', async () => {
@@ -240,11 +240,11 @@ describe('the task read', () => {
 
     // Yesterday, by hand: the only thing the end of a day changes is which side of
     // midnight the stamp sits on.
-    await env.DB.prepare('UPDATE home_projects SET last_done_at = ? WHERE id = ?').bind(today() - 60, made.id).run()
+    await env.DB.prepare('UPDATE tasks SET last_done_at = ? WHERE id = ?').bind(today() - 60, made.id).run()
     const after = await todos(s)
     expect((await tasks(s)).tasks).toEqual([])
     expect(after.todos, 'the glance drops it too').toEqual([])
-    expect(await env.DB.prepare('SELECT 1 AS x FROM home_projects WHERE id = ?').bind(made.id).first(), 'not deleted: it is history').toEqual({ x: 1 })
+    expect(await env.DB.prepare('SELECT 1 AS x FROM tasks WHERE id = ?').bind(made.id).first(), 'not deleted: it is history').toEqual({ x: 1 })
   })
 
   it('a checked recurring task moves on, a checked one-off does not vanish from the board', async () => {

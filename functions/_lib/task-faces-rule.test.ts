@@ -123,7 +123,8 @@ describe('the faces live in one place, and a former chore and a former to-do are
     expect(code, `${last}: the spine's kind is checked`).toMatch(/kind\s+TEXT\s+CHECK\s*\(\s*kind IS NULL OR kind IN \('plan', 'upkeep'\)\s*\)/)
     for (const f of sqls.filter((x) => x > last)) {
       const later = readFileSync(join(dir, f), 'utf8').replace(/--[^\n]*/g, '')
-      expect(/home_projects/.test(later) && /'(?:chore|todo)'/.test(later), `${f} writes a retired kind`).toBe(false)
+      // The spine under either of its names (0162 renamed it `tasks`).
+      expect(/\b(?:home_projects|tasks)\b/.test(later) && /'(?:chore|todo)'/.test(later), `${f} writes a retired kind`).toBe(false)
     }
   })
 
@@ -133,7 +134,7 @@ describe('the faces live in one place, and a former chore and a former to-do are
     const OLD_COPIES = 'functions/_lib/restore.ts'
     const spelled = worker
       .filter((f) => f.rel !== OLD_COPIES)
-      .filter((f) => statementsOn(f.src, 'home_projects').some((s) => /'(?:chore|todo)'/.test(s)) || /\bFACE\.(?:chore|todo)\b/.test(f.src))
+      .filter((f) => statementsOn(f.src, 'tasks').some((s) => /'(?:chore|todo)'/.test(s)) || /\bFACE\.(?:chore|todo)\b/.test(f.src))
       .map((f) => f.rel)
     expect(file(OLD_COPIES).src, `${OLD_COPIES}: canary, it brings 0153 forward`).toMatch(/function shrinkKinds/)
     expect(spelled, 'a task has no kind (0153): write NULL, read FACE.task').toEqual([])
@@ -171,17 +172,17 @@ describe('the faces live in one place, and a former chore and a former to-do are
     for (const rel of READERS) {
       const f = worker.find((x) => x.rel === rel)
       expect(f, rel).toBeDefined()
-      expect(f!.src, `${rel}: ask _lib/taskViews for the rows`).not.toMatch(/\bFROM\s+home_projects\b/)
+      expect(f!.src, `${rel}: ask _lib/taskViews for the rows`).not.toMatch(/\bFROM\s+tasks\b/)
       expect(f!.src, `${rel}: canary, it reads through taskViews`).toMatch(/from '[^']*\btaskViews'/)
     }
   })
 
   it('every read in _lib/taskViews of the spine’s rows uses the one column list, through the one day decoder', () => {
     const src = file('functions/_lib/taskViews.ts').src
-    const selects = [...src.matchAll(/SELECT ([^`]*?) FROM home_projects\b/g)].map((m) => (m[1] ?? '').trim())
+    const selects = [...src.matchAll(/SELECT ([^`]*?) FROM tasks\b/g)].map((m) => (m[1] ?? '').trim())
     expect(selects, 'canary: the helper is there').toContain('${TASK_COLS}')
     expect(selects.filter((s) => s !== '${TASK_COLS}'), 'a second column list is a second row shape').toEqual([])
-    expect(src, 'every row is handed over decoded (_lib/taskDay)').toMatch(/FROM home_projects WHERE \$\{where\}`\)[^\n]*\.map\(withTaskDay\)/)
+    expect(src, 'every row is handed over decoded (_lib/taskDay)').toMatch(/FROM tasks WHERE \$\{where\}`\)[^\n]*\.map\(withTaskDay\)/)
   })
 
   it('no rule in _lib/taskViews reads a face: one rule per question, off the axes', () => {

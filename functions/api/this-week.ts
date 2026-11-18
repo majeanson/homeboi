@@ -65,7 +65,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
               t.title AS chore_title, t.colour AS chore_color,
               m.display_name AS name, m.avatar_kind, m.avatar_ref, m.colour
          FROM task_participants tp
-         JOIN home_projects t ON t.id = tp.task_id AND t.household_id = ?
+         JOIN tasks t ON t.id = tp.task_id AND t.household_id = ?
          LEFT JOIN members m ON m.id = tp.member_id
         WHERE tp.contributed_at >= ? AND tp.contributed_at < ?
         ORDER BY tp.contributed_at DESC`,

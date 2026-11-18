@@ -82,8 +82,8 @@ export const DEMO_SANDBOX_IDLE_TTL = 2 * 3600
 // The look of a task (0148: `icon` on three task tables and `pets`, `colour` on `todos`) is
 // the same case: plain columns, no ref at all. worker/taskLook.d1.test.ts sweeps one.
 // So is the effort of a task (0149, `effort` on the three task tables): worker/taskEffort.d1.test.ts.
-// The merge (0150) moved `tasks` and the loose `todos` rows into `home_projects` and dropped
-// `tasks`: one line less below, and `task_participants` now hangs off `home_projects`.
+// The merge (0150) moved the old `tasks` (chores) and the loose `todos` rows into the spine,
+// named `home_projects` until 0162 renamed it `tasks`; `task_participants` hangs off it.
 
 // Self-referencing FKs that must be nulled before the bulk DELETE — SQLite checks
 // FKs per row, so a parent row deleted before its child row in the SAME statement
@@ -99,7 +99,7 @@ export const SELF_REFS: ReadonlyArray<readonly [table: string, column: string]> 
 export const CHILD_TABLES: ReadonlyArray<readonly [table: string, fk: string, parent: string]> = [
   // Every task is on the spine since 0150, and the log's task_id became a soft ref to it: no
   // FK would remove these lines any more, so the sweep must (worker/taskMerge.d1.test.ts).
-  ['task_participants', 'task_id', 'home_projects'],
+  ['task_participants', 'task_id', 'tasks'],
   ['routine_runs', 'routine_id', 'routines'],
   ['habit_marks', 'habit_id', 'habits'],
   ['habit_days', 'habit_id', 'habits'],
@@ -126,7 +126,7 @@ export const HOUSEHOLD_TABLES: readonly string[] = [
   'care_log',
   'home_pins',
   // THE task table since 0150 (chores and loose to-dos moved in; `tasks` was dropped).
-  'home_projects',
+  'tasks',
   'pets',
   'contacts',
   'contact_groups',

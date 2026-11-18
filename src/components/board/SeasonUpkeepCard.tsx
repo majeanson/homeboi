@@ -13,7 +13,7 @@ import { useReportEmpty } from '../../lib/useReportEmpty'
 import { BoardCard } from './BoardCard'
 import { Act } from './Act'
 
-// The board « Cette saison » glance — upkeep (home_projects 'upkeep') owed now
+// The board « Cette saison » glance — upkeep (tasks 'upkeep') owed now
 // (overdueSince, the calm carry-forward) or due before the season turns over
 // (nextAt). The selection is seasonUpkeepItems (lib/season) — the SAME lens the
 // Réglages Entretien glance reads, so the two never drift. Rows are checkable

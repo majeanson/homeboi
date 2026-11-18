@@ -45,7 +45,7 @@ export const TAKEOUT_EXCLUDE = new Set([
 const VIA_PARENT: Record<string, { parent: string; fk: string }> = {
   contact_group_members: { parent: 'contact_groups', fk: 'group_id' },
   // Every task is on the spine since 0150 (it was `tasks`, the chores alone).
-  task_participants: { parent: 'home_projects', fk: 'task_id' },
+  task_participants: { parent: 'tasks', fk: 'task_id' },
   routine_runs: { parent: 'routines', fk: 'routine_id' },
   // « Les remarques » (0136). Without this line the journal — every explanation, every
   // « pas réglé » note, every attachment key — is absent from each takeout AND from the
@@ -70,6 +70,9 @@ type Row = Record<string, unknown>
 export interface Takeout {
   app: string
   format: 1
+  // Since 0162 the task spine is the `tasks` table. Before 0150 a `tasks` table held the OLD
+  // chores, so a copy says which one it means: present = the spine (restore.ts upgradeTakeout).
+  spine?: 'tasks'
   householdId: string
   exportedAt: number // unix seconds
   household: Row | null
@@ -193,6 +196,7 @@ export async function dumpHousehold(env: Env, householdId: string, plan?: DumpPl
   return {
     app: 'Babillard',
     format: 1,
+    spine: 'tasks',
     householdId,
     exportedAt: Math.floor(Date.now() / 1000),
     household,

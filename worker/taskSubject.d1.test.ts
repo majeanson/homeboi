@@ -6,7 +6,7 @@ import type { Env } from '../functions/_lib/env'
 
 // « SUR QUOI ? » against a real D1 (migration 0146): one soft ref on the three task tables.
 // What only a real schema can say: the columns exist on all three, a foreign id stores NULL,
-// a carnet on home_projects stays in carnet_id, and dropping the subject touches no task.
+// a carnet on tasks stays in carnet_id, and dropping the subject touches no task.
 
 const carnet = (s: Session, name = 'Maison') => okJson<{ id: string }>(s.fetch('/api/carnets', { method: 'POST', body: { name } }))
 const member = async (s: Session) =>
@@ -25,13 +25,13 @@ describe('the subject of a task', () => {
     const s = await household('subject-rw', undefined, { empty: true })
     const c = await carnet(s)
     const chore = await addChore(s, { kind: 'carnet', id: c.id })
-    expect(await row('home_projects', chore.id)).toEqual({ subject_kind: 'carnet', subject_id: c.id })
+    expect(await row('tasks', chore.id)).toEqual({ subject_kind: 'carnet', subject_id: c.id })
     const todo = await addTodo(s)
-    expect(await row('home_projects', todo.id)).toEqual({ subject_kind: null, subject_id: null })
+    expect(await row('tasks', todo.id)).toEqual({ subject_kind: null, subject_id: null })
     expect((await s.fetch('/api/todos', { method: 'PATCH', body: { id: todo.id, subject: { kind: 'carnet', id: c.id } } })).status).toBe(200)
-    expect(await row('home_projects', todo.id)).toEqual({ subject_kind: 'carnet', subject_id: c.id })
+    expect(await row('tasks', todo.id)).toEqual({ subject_kind: 'carnet', subject_id: c.id })
     await s.fetch('/api/tasks', { method: 'PATCH', body: { id: chore.id, title: 'Gouttières', subject: null } })
-    expect(await row('home_projects', chore.id)).toEqual({ subject_kind: null, subject_id: null })
+    expect(await row('tasks', chore.id)).toEqual({ subject_kind: null, subject_id: null })
   })
 
   it('a subject the household does not own stores NULL, not a link across households', async () => {
@@ -39,18 +39,18 @@ describe('the subject of a task', () => {
     const other = await household('subject-theirs', undefined, { empty: true })
     const theirs = await carnet(other, 'Autre')
     const chore = await addChore(s, { kind: 'carnet', id: theirs.id })
-    expect(await row('home_projects', chore.id)).toEqual({ subject_kind: null, subject_id: null })
+    expect(await row('tasks', chore.id)).toEqual({ subject_kind: null, subject_id: null })
     const garbage = await addTodo(s, { kind: 'moon', id: 'x' })
-    expect(await row('home_projects', garbage.id)).toEqual({ subject_kind: null, subject_id: null })
+    expect(await row('tasks', garbage.id)).toEqual({ subject_kind: null, subject_id: null })
   })
 
-  it('home_projects: a carnet stays in carnet_id, any other kind clears it — one subject', async () => {
+  it('tasks: a carnet stays in carnet_id, any other kind clears it — one subject', async () => {
     const s = await household('subject-home', undefined, { empty: true })
     const c = await carnet(s)
     const m = await member(s)
     const made = await addProject(s, { subject: { kind: 'carnet', id: c.id } })
     const read = () =>
-      env.DB.prepare('SELECT carnet_id, subject_kind, subject_id FROM home_projects WHERE id = ?').bind(made.id).first<Record<string, string | null>>()
+      env.DB.prepare('SELECT carnet_id, subject_kind, subject_id FROM tasks WHERE id = ?').bind(made.id).first<Record<string, string | null>>()
     expect(await read()).toEqual({ carnet_id: c.id, subject_kind: null, subject_id: null })
     await s.fetch('/api/tasks', { method: 'PATCH', body: { id: made.id, title: 'Toit', kind: 'upkeep', subject: { kind: 'person', id: m } } })
     expect(await read()).toEqual({ carnet_id: null, subject_kind: 'person', subject_id: m })
@@ -63,12 +63,12 @@ describe('the subject of a task', () => {
     const s = await household('subject-self', undefined, { empty: true })
     const plan = await addProject(s, { kind: 'plan' })
     await s.fetch('/api/tasks', { method: 'PATCH', body: { id: plan.id, title: 'Toit', kind: 'plan', subject: { kind: 'project', id: plan.id } } })
-    expect(await row('home_projects', plan.id)).toEqual({ subject_kind: null, subject_id: null })
+    expect(await row('tasks', plan.id)).toEqual({ subject_kind: null, subject_id: null })
     const upkeep = await addProject(s, {})
     const chore = await addChore(s, { kind: 'project', id: upkeep.id })
-    expect(await row('home_projects', chore.id)).toEqual({ subject_kind: null, subject_id: null })
+    expect(await row('tasks', chore.id)).toEqual({ subject_kind: null, subject_id: null })
     const onPlan = await addChore(s, { kind: 'project', id: plan.id })
-    expect(await row('home_projects', onPlan.id)).toEqual({ subject_kind: 'project', subject_id: plan.id })
+    expect(await row('tasks', onPlan.id)).toEqual({ subject_kind: 'project', subject_id: plan.id })
   })
 
   it('deleting the subject leaves the task, and the sweep is not tripped by the ref', async () => {
@@ -76,8 +76,8 @@ describe('the subject of a task', () => {
     const c = await carnet(s)
     const chore = await addChore(s, { kind: 'carnet', id: c.id })
     await env.DB.prepare('DELETE FROM carnets WHERE id = ?').bind(c.id).run()
-    expect(await row('home_projects', chore.id), 'an orphan ref stays as it was: no cascade, no rewrite').toEqual({ subject_kind: 'carnet', subject_id: c.id })
+    expect(await row('tasks', chore.id), 'an orphan ref stays as it was: no cascade, no rewrite').toEqual({ subject_kind: 'carnet', subject_id: c.id })
     await deleteHousehold(env as unknown as Env, s.householdId)
-    expect(await row('home_projects', chore.id)).toBeNull()
+    expect(await row('tasks', chore.id)).toBeNull()
   })
 })

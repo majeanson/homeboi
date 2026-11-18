@@ -141,7 +141,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     return r ? ok({ ok: true, ...r }) : notFound('Tâche introuvable.')
   }
   // An edit from the one form: every layer, one spelling.
-  const row = await db.prepare('SELECT kind FROM home_projects WHERE id = ? AND household_id = ?').bind(id, hh).first<{ kind: string | null }>()
+  const row = await db.prepare('SELECT kind FROM tasks WHERE id = ? AND household_id = ?').bind(id, hh).first<{ kind: string | null }>()
   if (!row) return notFound('Tâche introuvable.')
   const axes = bodyAxes(body)
   const current = faceOfKind(row.kind)
@@ -154,7 +154,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   if (face !== current) sets.kind = kindFor(face, body, axes.recur != null)
   const names = Object.keys(sets)
   await db
-    .prepare(`UPDATE home_projects SET ${names.map((n) => `${n} = ?`).join(', ')} WHERE id = ? AND household_id = ?`)
+    .prepare(`UPDATE tasks SET ${names.map((n) => `${n} = ?`).join(', ')} WHERE id = ? AND household_id = ?`)
     .bind(...names.map((n) => sets[n]), id, hh)
     .run()
   return ok({ ok: true, face })

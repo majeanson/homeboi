@@ -56,7 +56,7 @@ export const GHOSTS_KEY = ['ghosts']
 // Shopping-list purchase history (the « déjà acheté » log). Read by La liste, Quick-add,
 // and Réglages ▸ Magasinage. Shared so a purchase/clear refreshes all three.
 export const HISTORY_KEY = ['list-history']
-// Projets & Entretien (home_projects): the longer-horizon home work under Corvées.
+// Projets & Entretien (tasks): the longer-horizon home work under Corvées.
 // Read by the Réglages Corvées sub-tabs (Projets/Entretien) AND surfaced on the
 // board + month (dated upkeep), so the key is shared — an edit invalidates it and
 // every surface refreshes. Filtered by `kind` ('plan'|'upkeep') on the client.

@@ -30,7 +30,7 @@ export interface Chore {
   icon?: string | null // the look (0148), null = « comme le sujet »
   effort?: number | null // 0149: five dots, null = not said
 }
-// "Projets & Entretien" (home_projects) — the longer-horizon home work under
+// "Projets & Entretien" (tasks) — the longer-horizon home work under
 // Corvées. ONE row shape; `kind` discriminates the two sub-tabs. A row may carry
 // both a budget and a recurrence. Mirrors the raw GET payload (snake_case).
 export interface HomeProject {

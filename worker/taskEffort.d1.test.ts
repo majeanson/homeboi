@@ -27,14 +27,14 @@ describe('the effort of a task', () => {
     expect(got.tasks.map((x) => x.id).sort(), 'NULL in the new column still reads as a present row').toEqual([plain.id, rated.id].sort())
     expect(effortIn(got.tasks, plain.id)).toBeNull()
     expect(effortIn(got.tasks, rated.id)).toBe(4)
-    expect(await stored('home_projects', rated.id), 'the edit form opens on what was stored').toBe(4)
+    expect(await stored('tasks', rated.id), 'the edit form opens on what was stored').toBe(4)
     // The one form sends every layer (review #37: the /api/chores alias, which took a
     // partial edit, is gone): an effort it sends as null is cleared.
     expect((await patch(s, 'tasks', { id: rated.id, title: 'Gouttières', effort: null })).status).toBe(200)
     got = await tasks(s)
     expect(effortIn(got.tasks, rated.id)).toBeNull()
     expect((await patch(s, 'tasks', { id: plain.id, title: 'Bac bleu' })).status).toBe(200)
-    expect(await stored('home_projects', plain.id), 'an edit that does not send the effort leaves it unset').toBeNull()
+    expect(await stored('tasks', plain.id), 'an edit that does not send the effort leaves it unset').toBeNull()
   })
 
   it('anything that is not a dot from 1 to 5 stores NULL, on POST and on PATCH', async () => {
@@ -43,14 +43,14 @@ describe('the effort of a task', () => {
     const b = await post(s, 'todos', { title: 'B', effort: 6 })
     const c = await post(s, 'tasks', { title: 'C', kind: 'plan', effort: '3' })
     const d = await post(s, 'todos', { title: 'D', effort: 2.5 })
-    expect(await stored('home_projects', a.id)).toBeNull()
-    expect(await stored('home_projects', b.id)).toBeNull()
-    expect(await stored('home_projects', c.id)).toBeNull()
-    expect(await stored('home_projects', d.id)).toBeNull()
+    expect(await stored('tasks', a.id)).toBeNull()
+    expect(await stored('tasks', b.id)).toBeNull()
+    expect(await stored('tasks', c.id)).toBeNull()
+    expect(await stored('tasks', d.id)).toBeNull()
     await patch(s, 'todos', { id: d.id, effort: 3 })
-    expect(await stored('home_projects', d.id)).toBe(3)
+    expect(await stored('tasks', d.id)).toBe(3)
     await patch(s, 'todos', { id: d.id, effort: 'beaucoup' })
-    expect(await stored('home_projects', d.id)).toBeNull()
+    expect(await stored('tasks', d.id)).toBeNull()
   })
 
   it('a to-do: NULL effort reads back open on /api/todos and /api/tasks, beside a rated one', async () => {
@@ -72,7 +72,7 @@ describe('the effort of a task', () => {
     expect(effortIn(all.tasks, rated.id), '/api/tasks SELECTs the column for to-dos too').toBe(1)
     // A PATCH that only sends the effort leaves the look and the title alone.
     await patch(s, 'todos', { id: rated.id, effort: 5 })
-    expect(await env.DB.prepare('SELECT title, effort, icon FROM home_projects WHERE id = ?').bind(rated.id).first()).toEqual({ title: 'Appeler', effort: 5, icon: null })
+    expect(await env.DB.prepare('SELECT title, effort, icon FROM tasks WHERE id = ?').bind(rated.id).first()).toEqual({ title: 'Appeler', effort: 5, icon: null })
   })
 
   it('a home row: the effort reaches the board, the Tâches view and the edit form', async () => {
@@ -90,15 +90,15 @@ describe('the effort of a task', () => {
     expect(effortIn(rows.projects, plain.id)).toBeNull()
     // The one form sends every layer (the home-projects alias's partial edit is gone, review #37).
     await patch(s, 'tasks', { id: rated.id, title: 'Le jardin', kind: 'plan', at: today, effort: 2 })
-    expect(await stored('home_projects', rated.id)).toBe(2)
+    expect(await stored('tasks', rated.id)).toBe(2)
     await patch(s, 'tasks', { id: rated.id, title: 'Le jardin', kind: 'plan', at: today, effort: null })
-    expect(await stored('home_projects', rated.id)).toBeNull()
+    expect(await stored('tasks', rated.id)).toBeNull()
   })
 
   it('the sandbox sweep is not tripped by the new column', async () => {
     const s = await household('effort-sweep', undefined, { empty: true })
     const a = await post(s, 'todos', { title: 'A', effort: 3 })
     await deleteHousehold(env as unknown as Env, s.householdId)
-    expect(await env.DB.prepare('SELECT id FROM home_projects WHERE id = ?').bind(a.id).first()).toBeNull()
+    expect(await env.DB.prepare('SELECT id FROM tasks WHERE id = ?').bind(a.id).first()).toBeNull()
   })
 })

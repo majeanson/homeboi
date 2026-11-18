@@ -129,7 +129,7 @@ const bringTemplateOf = (v: unknown): string | null => {
   return s || null
 }
 // The rendez-vous' free-text note (migration 0121) — « apporter la carte d'assurance
-// maladie », « 3e étage ». Same normalizer as home_projects.notes (trim, empty →
+// maladie », « 3e étage ». Same normalizer as tasks.notes (trim, empty →
 // null, one spelling for "free-text detail"), plus a hard cap: this rides in the
 // board/month payloads, and a runaway paste there costs every glance a slow poll.
 // EventForm's textarea carries the same number as `maxLength`, so the box refuses the

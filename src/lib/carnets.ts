@@ -7,7 +7,7 @@ import { CARNETS_KEY, CARE_LOG_KEY, HOME_PINS_KEY } from './queryKeys'
 // the water heater INSIDE a house). Mirrors the camelCase shape /api/carnets returns.
 // A top-level carnet (parentId null) is a member of Le cercle; a child is a thing or
 // a room ('zone'). Each keeps an identity here + a service history (care_log) + a
-// recurring cadence (home_projects.carnet_id) + a « long jeu » lifecycle.
+// recurring cadence (tasks.carnet_id) + a « long jeu » lifecycle.
 
 export type CarnetKind = 'home' | 'auto' | 'appliance' | 'system' | 'zone' | 'thing'
 

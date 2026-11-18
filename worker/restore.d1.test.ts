@@ -12,6 +12,11 @@ describe('takeout restore', () => {
   it('a household restored from its own dump is byte-for-byte what it was — ids kept', async () => {
     const a = await household('restore')
     const before = await dump(a.householdId)
+    // Since 0162 a copy names its spine `tasks` and says so (a pre-0150 copy's `tasks` is the old
+    // chores): the round trip below is the end-to-end proof restore reads it as the spine.
+    expect(before.spine).toBe('tasks')
+    expect(before.tables.tasks?.length, 'canary: the seeded household has tasks').toBeGreaterThan(0)
+    expect(before.tables.home_projects).toBeUndefined()
     // Then the household changes: a new note, a renamed household.
     expect((await a.fetch('/api/notes', { method: 'POST', body: { text: 'ajouté après la copie' } })).status).toBeLessThan(300)
     expect((await a.fetch('/api/household', { method: 'PATCH', body: { name: 'Renommée depuis' } })).status).toBe(200)

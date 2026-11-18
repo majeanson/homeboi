@@ -17,7 +17,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
   const id = new URL(ctx.request.url).searchParams.get('id')?.trim()
   if (!id) return badRequest('id requis.')
   const row = await ctx.env.DB.prepare(
-    `SELECT id, title, rotation_json, current_idx, last_done_at, last_done_by, colour AS color, recur_json, at AS recur_start, lead_seconds, announce_evening, subject_kind, subject_id, icon, effort FROM home_projects WHERE id = ? AND household_id = ? AND ${FACE.task}`,
+    `SELECT id, title, rotation_json, current_idx, last_done_at, last_done_by, colour AS color, recur_json, at AS recur_start, lead_seconds, announce_evening, subject_kind, subject_id, icon, effort FROM tasks WHERE id = ? AND household_id = ? AND ${FACE.task}`,
   )
     .bind(id, actor.householdId)
     .first<NonNullable<Wire['tasks/one']['task']>>()

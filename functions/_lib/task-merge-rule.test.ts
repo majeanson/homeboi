@@ -55,13 +55,16 @@ const ANY_FACE: Record<string, string> = {
 describe('one table of tasks', () => {
   it('walks the Worker’s sources (canary: a scan that reads nothing passes everything)', () => {
     expect(files.length).toBeGreaterThan(150)
-    expect(hits(/\bFROM home_projects\b/g).length).toBeGreaterThan(10)
+    expect(hits(/\bFROM tasks\b/g).length).toBeGreaterThan(10)
     expect(files.find((f) => f.rel === 'functions/api/todos.ts')?.src).toMatch(/INSERT INTO todos/)
   })
 
-  it('no SQL names `tasks`: chores live on the spine', () => {
-    const named = hits(/\b(?:FROM|INTO|UPDATE|JOIN)\s+tasks\b/g).map((h) => h.file)
-    expect(named, 'read and write chores on home_projects with FACE.chore (_lib/taskItem)').toEqual([])
+  // The spine was `home_projects` until 0162 named it `tasks` (review #37). Before that, this
+  // test kept code off the OLD `tasks` (the chores, dropped by 0150); now the old name is the
+  // one nothing may speak.
+  it('no SQL names `home_projects`: the spine is `tasks` since 0162', () => {
+    const named = hits(/\b(?:FROM|INTO|UPDATE|JOIN)\s+home_projects\b/g).map((h) => h.file)
+    expect(named, 'read and write every task on `tasks`, with its face (_lib/taskItem FACE)').toEqual([])
   })
 
   it('only the departure path touches `todos`', () => {
@@ -73,7 +76,7 @@ describe('one table of tasks', () => {
   })
 
   it('every read or change of the spine names its face, or one row by id', () => {
-    const blind = hits(/\b(?:FROM|UPDATE)\s+home_projects\b/g)
+    const blind = hits(/\b(?:FROM|UPDATE)\s+tasks\b/g)
       .filter((h) => !ANY_FACE[h.file])
       .filter((h) => {
         const s = statement(h)

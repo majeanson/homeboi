@@ -39,8 +39,8 @@ describe('the look of a task', () => {
     const s = await household('look-garbage', undefined, { empty: true })
     const a = await post(s, 'tasks', { title: 'A', icon: 'DROP TABLE' })
     const b = await post(s, 'todos', { title: 'B', icon: '🍂🍂🍂🍂🍂🍂🍂🍂🍂🍂🍂🍂🍂🍂🍂🍂🍂' })
-    expect(await env.DB.prepare('SELECT icon FROM home_projects WHERE id = ?').bind(a.id).first()).toEqual({ icon: null })
-    expect(await env.DB.prepare('SELECT icon FROM home_projects WHERE id = ?').bind(b.id).first()).toEqual({ icon: null })
+    expect(await env.DB.prepare('SELECT icon FROM tasks WHERE id = ?').bind(a.id).first()).toEqual({ icon: null })
+    expect(await env.DB.prepare('SELECT icon FROM tasks WHERE id = ?').bind(b.id).first()).toEqual({ icon: null })
   })
 
   it('a to-do: icon and colour NULL read back open, on both endpoints, beside a dressed one', async () => {
@@ -59,9 +59,9 @@ describe('the look of a task', () => {
     expect(lookIn(all.tasks, dressed.id)).toEqual({ icon: '🐶', color: '#B06A93' })
     // Each half on its own: clearing the icon leaves the colour.
     await patch(s, 'todos', { id: dressed.id, icon: null })
-    expect(await env.DB.prepare('SELECT icon, colour FROM home_projects WHERE id = ?').bind(dressed.id).first()).toEqual({ icon: null, colour: '#B06A93' })
+    expect(await env.DB.prepare('SELECT icon, colour FROM tasks WHERE id = ?').bind(dressed.id).first()).toEqual({ icon: null, colour: '#B06A93' })
     await patch(s, 'todos', { id: dressed.id, color: null })
-    expect(await env.DB.prepare('SELECT icon, colour FROM home_projects WHERE id = ?').bind(dressed.id).first()).toEqual({ icon: null, colour: null })
+    expect(await env.DB.prepare('SELECT icon, colour FROM tasks WHERE id = ?').bind(dressed.id).first()).toEqual({ icon: null, colour: null })
   })
 
   it('a home project: the icon reaches the board, the Tâches view and the project as a subject', async () => {
@@ -75,7 +75,7 @@ describe('the look of a task', () => {
     const got = await tasks(s)
     expect(got.subjects.projects.find((p) => p.id === plan.id)?.icon).toBe('🌱')
     await patch(s, 'tasks', { id: plan.id, title: 'Le jardin', kind: 'plan', at: today, icon: '🌻' })
-    expect(await env.DB.prepare('SELECT icon FROM home_projects WHERE id = ?').bind(plan.id).first()).toEqual({ icon: '🌻' })
+    expect(await env.DB.prepare('SELECT icon FROM tasks WHERE id = ?').bind(plan.id).first()).toEqual({ icon: '🌻' })
   })
 
   it('a pet: no icon reads null, one round-trips through /api/pets, /api/cercle and the subjects', async () => {
@@ -98,6 +98,6 @@ describe('the look of a task', () => {
     const s = await household('look-sweep', undefined, { empty: true })
     const a = await post(s, 'todos', { title: 'A', icon: '🧹', color: '#88A36F' })
     await deleteHousehold(env as unknown as Env, s.householdId)
-    expect(await env.DB.prepare('SELECT id FROM home_projects WHERE id = ?').bind(a.id).first()).toBeNull()
+    expect(await env.DB.prepare('SELECT id FROM tasks WHERE id = ?').bind(a.id).first()).toBeNull()
   })
 })

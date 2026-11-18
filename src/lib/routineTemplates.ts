@@ -115,7 +115,7 @@ export function choreTemplates(lang: Lang): DeckCard[] {
   return CHORES.map((ch) => ({ icon: ch.icon, label: ch.label[lang] }))
 }
 
-// Starter presets for "Projets & Entretien" (home_projects), one set per kind —
+// Starter presets for "Projets & Entretien" (tasks), one set per kind —
 // the same emoji+label preset-chip idiom as choreTemplates, so the form is "pick
 // a common one, tweak" instead of a blank field. 'plan' = aspirational home
 // projects (a new kitchen); 'upkeep' = recurring maintenance (furnace filter).

@@ -1,0 +1,13 @@
+-- The task table takes its name (review 2026-11-17, #37).
+--
+-- Since 0150 every task is a row of `home_projects`, a table named after the one feature
+-- it absorbed: a new reader looks for `tasks` and finds nothing. The name `tasks` has been
+-- free since 0150 dropped the old chores table.
+--
+-- A rename and nothing else: ids, columns, indexes and the 0153 CHECK stay as they are.
+-- Nothing references the table by a foreign key (`task_participants.task_id` is a soft ref
+-- since 0150). A copy taken before this migration still restores: its spine is
+-- `home_projects`, and a copy taken before 0150 holds its OLD chores under `tasks` — a
+-- takeout made from here on says `spine: 'tasks'`, which is how restore tells the two apart
+-- (functions/_lib/restore.ts `upgradeTakeout`).
+ALTER TABLE home_projects RENAME TO tasks;

@@ -27,7 +27,7 @@ type Who = string | null
 /** Tick a task done at `at`. `complete: false` is a helper pitching in (a toddler in kid view):
  *  logged, but the task is not finished and the turn does not move. Null: no such task. */
 export async function tickTask(db: D1Database, hh: string, id: string, o: { who: Who; at: number; complete?: boolean | undefined; role?: string | undefined }): Promise<{ complete: boolean; nextIdx: number } | null> {
-  const row = await db.prepare('SELECT rotation_json, current_idx FROM home_projects WHERE id = ? AND household_id = ?').bind(id, hh).first<{ rotation_json: string; current_idx: number }>()
+  const row = await db.prepare('SELECT rotation_json, current_idx FROM tasks WHERE id = ? AND household_id = ?').bind(id, hh).first<{ rotation_json: string; current_idx: number }>()
   if (!row) return null
   const rotation = parseRotation(row.rotation_json)
   const who = o.who ?? turnOf(rotation, row.current_idx)
@@ -39,7 +39,7 @@ export async function tickTask(db: D1Database, hh: string, id: string, o: { who:
   if (complete)
     writes.push(
       db
-        .prepare('UPDATE home_projects SET last_done_at = ?, last_done_by = ?, current_idx = ?, snoozed_until = NULL, updated_at = ? WHERE id = ? AND household_id = ?')
+        .prepare('UPDATE tasks SET last_done_at = ?, last_done_by = ?, current_idx = ?, snoozed_until = NULL, updated_at = ? WHERE id = ? AND household_id = ?')
         .bind(o.at, who, nextIdx, nowSec(), id, hh),
     )
   await db.batch(writes)
@@ -50,7 +50,7 @@ export async function tickTask(db: D1Database, hh: string, id: string, o: { who:
  *  doubled untick never walks the turn backwards. */
 export async function untickTask(db: D1Database, hh: string, id: string): Promise<boolean> {
   const row = await db
-    .prepare('SELECT rotation_json, current_idx, last_done_at FROM home_projects WHERE id = ? AND household_id = ?')
+    .prepare('SELECT rotation_json, current_idx, last_done_at FROM tasks WHERE id = ? AND household_id = ?')
     .bind(id, hh)
     .first<{ rotation_json: string; current_idx: number; last_done_at: number | null }>()
   if (!row) return false
@@ -58,7 +58,7 @@ export async function untickTask(db: D1Database, hh: string, id: string): Promis
   await db.batch([
     db.prepare('DELETE FROM task_participants WHERE task_id = ? AND contributed_at = ?').bind(id, row.last_done_at),
     db
-      .prepare('UPDATE home_projects SET last_done_at = NULL, last_done_by = NULL, cleared_at = NULL, current_idx = ?, updated_at = ? WHERE id = ? AND household_id = ?')
+      .prepare('UPDATE tasks SET last_done_at = NULL, last_done_by = NULL, cleared_at = NULL, current_idx = ?, updated_at = ? WHERE id = ? AND household_id = ?')
       .bind(prevTurnIdx(parseRotation(row.rotation_json), row.current_idx), nowSec(), id, hh),
   ])
   return true
@@ -84,7 +84,7 @@ export function clearTaskStatements(db: D1Database, hh: string, ids: readonly st
   const out: D1PreparedStatement[] = []
   for (let i = 0; i < ids.length; i += 50) {
     const slice = ids.slice(i, i + 50)
-    out.push(db.prepare(`UPDATE home_projects SET cleared_at = ? WHERE household_id = ? AND id IN (${slice.map(() => '?').join(',')})`).bind(ts, hh, ...slice))
+    out.push(db.prepare(`UPDATE tasks SET cleared_at = ? WHERE household_id = ? AND id IN (${slice.map(() => '?').join(',')})`).bind(ts, hh, ...slice))
   }
   return out
 }
@@ -94,11 +94,11 @@ export function clearTaskStatements(db: D1Database, hh: string, ids: readonly st
 export async function clearTasks(db: D1Database, hh: string, ids: readonly string[] | null, items: unknown, asOf: unknown): Promise<string[]> {
   const ts = nowSec()
   if (ids == null) {
-    await db.prepare('UPDATE home_projects SET cleared_at = ? WHERE household_id = ? AND last_done_at IS NOT NULL').bind(ts, hh).run()
+    await db.prepare('UPDATE tasks SET cleared_at = ? WHERE household_id = ? AND last_done_at IS NOT NULL').bind(ts, hh).run()
     return []
   }
   const rows = (
-    await db.prepare('SELECT id, title AS text, created_at, last_done_at IS NOT NULL AS done FROM home_projects WHERE household_id = ?').bind(hh).all<{ id: string; text: string; created_at: number; done: number }>()
+    await db.prepare('SELECT id, title AS text, created_at, last_done_at IS NOT NULL AS done FROM tasks WHERE household_id = ?').bind(hh).all<{ id: string; text: string; created_at: number; done: number }>()
   ).results.map((r) => ({ ...r, done: r.done === 1 }))
   const doomed = clearedRows(rows, ids, items, asOf).map((r) => r.id)
   if (doomed.length > 0) await db.batch(clearTaskStatements(db, hh, doomed, ts))
@@ -114,7 +114,7 @@ export async function snoozeTask(db: D1Database, hh: string, id: string, mode: u
     const today = localDayStart(new Date(nowSec() * 1000))
     if (mode === 'cycle') {
       const row = await db
-        .prepare('SELECT at, recur_json, recur_from, last_done_at FROM home_projects WHERE id = ? AND household_id = ?')
+        .prepare('SELECT at, recur_json, recur_from, last_done_at FROM tasks WHERE id = ? AND household_id = ?')
         .bind(id, hh)
         .first<{ at: number | null; recur_json: string | null; recur_from: string | null; last_done_at: number | null }>()
       if (!row) return 'missing'
@@ -123,6 +123,6 @@ export async function snoozeTask(db: D1Database, hh: string, id: string, mode: u
       until = addLocalDays(today, 7)
     }
   }
-  const res = await db.prepare('UPDATE home_projects SET snoozed_until = ?, updated_at = ? WHERE id = ? AND household_id = ?').bind(until, nowSec(), id, hh).run()
+  const res = await db.prepare('UPDATE tasks SET snoozed_until = ?, updated_at = ? WHERE id = ? AND household_id = ?').bind(until, nowSec(), id, hh).run()
   return res.meta.changes ? { until } : 'missing'
 }

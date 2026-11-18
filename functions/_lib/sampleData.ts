@@ -25,7 +25,7 @@ const SAMPLE_TABLES = [
   'contact_links', // polymorphic edges (no DB FK, but conceptually first)
   'recipe_loves', // → recipes, members
   'care_log', // → carnets
-  'home_projects', // soft-ref carnets; every sample task since 0150 (chores + loose to-dos)
+  'tasks', // soft-ref carnets; every sample task since 0150 (chores + loose to-dos)
   'carnets', // flat (all parent_id NULL) → after its care_log/pins
   'pets', // soft-ref businesses
   'contacts', // → members (member_id)
@@ -84,7 +84,7 @@ export async function clearSampleData(env: Env, householdId: string): Promise<vo
     // A sample chore someone ticked while exploring carries « qui a aidé » lines. Since 0150
     // their task_id is a soft ref (no FK would remove them, nor block the delete), so they go
     // first, or they would outlive their task.
-    env.DB.prepare('DELETE FROM task_participants WHERE task_id IN (SELECT id FROM home_projects WHERE household_id = ? AND is_sample = 1)').bind(householdId),
+    env.DB.prepare('DELETE FROM task_participants WHERE task_id IN (SELECT id FROM tasks WHERE household_id = ? AND is_sample = 1)').bind(householdId),
     ...SAMPLE_TABLES.map((tbl) =>
       env.DB.prepare(`DELETE FROM ${tbl} WHERE household_id = ? AND is_sample = 1`).bind(householdId),
     ),
@@ -471,7 +471,7 @@ export async function seedSampleData(env: Env, householdId: string, ts = nowSec(
     ).map(([title, rotation, idx, colour, start]) =>
       P(
         // A task on the spine (0150), with no kind (0153): its start is `at`, a local midnight.
-        `INSERT INTO home_projects (id, household_id, kind, title, rotation_json, current_idx, colour, recur_json, at, created_at, updated_at, is_sample)
+        `INSERT INTO tasks (id, household_id, kind, title, rotation_json, current_idx, colour, recur_json, at, created_at, updated_at, is_sample)
          VALUES (?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       ).bind(newId(), h, title, JSON.stringify(rotation), idx, colour, JSON.stringify({ freq: 'weekly', interval: 1, weekdays: [] }), start, ts, ts, S),
     ),
@@ -530,7 +530,7 @@ export async function seedSampleData(env: Env, householdId: string, ts = nowSec(
     ).map(([title, mid, day, pos]) =>
       P(
         // A task on the spine (0150), with no kind (0153): its day is `at`, its author `member_id`.
-        `INSERT INTO home_projects (id, household_id, kind, title, at, member_id, position, colour, created_at, updated_at, is_sample)
+        `INSERT INTO tasks (id, household_id, kind, title, at, member_id, position, colour, created_at, updated_at, is_sample)
          VALUES (?, ?, NULL, ?, ?, ?, ?, NULL, ?, ?, ?)`,
       ).bind(newId(), h, title, day, mid, pos, ts, ts, S),
     ),
@@ -641,7 +641,7 @@ export async function seedSampleData(env: Env, householdId: string, ts = nowSec(
          VALUES (?, ?, ?, ?, 'service', ?, ?, ?, ?)`,
       ).bind(newId(), h, carnetId, atSec, title, ts, ts, S),
     ),
-    // home_projects — dated upkeep + a planned project (surface on the board's « Cette
+    // tasks — dated upkeep + a planned project (surface on the board's « Cette
     // saison » / « Les carnets »). Tied to the home or the car carnet.
     ...(
       [
@@ -652,7 +652,7 @@ export async function seedSampleData(env: Env, householdId: string, ts = nowSec(
       ] as [string, string, number, string, string][]
     ).map(([kind, title, atSec, carnetId, colour]) =>
       P(
-        `INSERT INTO home_projects (id, household_id, kind, title, colour, at, carnet_id, created_at, updated_at, is_sample)
+        `INSERT INTO tasks (id, household_id, kind, title, colour, at, carnet_id, created_at, updated_at, is_sample)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       ).bind(newId(), h, kind, title, colour, atSec, carnetId, ts, ts, S),
     ),

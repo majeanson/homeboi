@@ -29,7 +29,7 @@ interface Ledger {
 
 const one = async (s: Session, id: string): Promise<Row | undefined> => {
   const r = await env.DB.prepare(
-    'SELECT id, title, rotation_json, current_idx, last_done_at, last_done_by, colour AS color, recur_json, at AS recur_start, lead_seconds, announce_evening FROM home_projects WHERE id = ? AND household_id = ?',
+    'SELECT id, title, rotation_json, current_idx, last_done_at, last_done_by, colour AS color, recur_json, at AS recur_start, lead_seconds, announce_evening FROM tasks WHERE id = ? AND household_id = ?',
   )
     .bind(id, s.householdId)
     .first<Row>()
@@ -89,7 +89,7 @@ describe('une tâche à tour de rôle', () => {
     const s = await household('turns-seed', undefined, { empty: true })
     const c = (await okJson<{ id: string }>(s.fetch('/api/carnets', { method: 'POST', body: { name: 'Maison' } }))).id
     const id = await add(s, { kind: 'upkeep', title: 'Nettoyer les gouttières', icon: '🍂', at: 1700000000, recur: { freq: 'yearly' }, leadSeconds: 3 * 7 * 86400, subject: { kind: 'carnet', id: c } })
-    const row = () => env.DB.prepare('SELECT kind, carnet_id, subject_kind, lead_seconds, last_done_at FROM home_projects WHERE id = ?').bind(id).first()
+    const row = () => env.DB.prepare('SELECT kind, carnet_id, subject_kind, lead_seconds, last_done_at FROM tasks WHERE id = ?').bind(id).first()
     // Three weeks asked, seven days kept: the one cap every task path shares (_lib/taskWrite).
     expect(await row()).toMatchObject({ kind: 'upkeep', carnet_id: c, subject_kind: null, lead_seconds: 7 * 86400, last_done_at: null })
     await tick(s, id)

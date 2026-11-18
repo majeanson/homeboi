@@ -84,7 +84,7 @@ async function build(tag: string, instant: string): Promise<Fixture> {
   const chore = { ...base, kind: null, recur_from: 'anchor' }
   const todo = { household_id: hh, kind: null, colour: null, created_at: now - 5 * 86400, updated_at: now - 5 * 86400 }
   const home = { household_id: hh, created_at: now - 60 * 86400, updated_at: now - 60 * 86400 }
-  await insertRows('home_projects', [
+  await insertRows('tasks', [
     // ── chores (the old `tasks`): `at` is the recurrence's chosen start, NULL = created_at
     { ...chore, id: id('C1aaaaaaa'), title: 'Sortir les poubelles', rotation_json: JSON.stringify([m1, m2]), current_idx: 1, last_done_at: D(-1) + 3600, last_done_by: m1, colour: '#88A36F', recur_json: WEEKLY, at: UTC_TODAY - 6 * 86400, lead_seconds: 3600, announce_evening: 1 },
     // A recurring chore made with no start: 0152 wrote its created_at as `at` (the date it
@@ -183,7 +183,7 @@ for (const [tag, instant] of Object.entries(INSTANTS)) {
     }
 
     it('the canary: the fixture holds every kind of row, open and ticked (a task has no kind since 0153)', async () => {
-      const kinds = await env.DB.prepare('SELECT kind, COUNT(*) AS n FROM home_projects WHERE household_id = ? GROUP BY kind ORDER BY kind').bind(f().s.householdId).all()
+      const kinds = await env.DB.prepare('SELECT kind, COUNT(*) AS n FROM tasks WHERE household_id = ? GROUP BY kind ORDER BY kind').bind(f().s.householdId).all()
       expect(kinds.results).toEqual([
         { kind: null, n: 23 },
         { kind: 'plan', n: 6 },
