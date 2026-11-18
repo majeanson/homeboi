@@ -391,7 +391,8 @@ export const FR_OPERATOR = {
   eventNotePlaceholder: 'Ce qu’il faut apporter, l’étage, quoi demander…',
   // Le repli « Répéter » + « Afficher dès » : deux réglages à leur valeur par défaut
   // la plupart du temps.
-  eventWhenMore: 'Répétition et rappel',
+  // Not « rappel » (review #28): nothing rings — the board only shows it earlier.
+  eventWhenMore: 'Répéter, afficher d’avance',
   eventBring: 'À apporter',
   // Inline bring-list builder in the event form's « À apporter » section.
   bringAddItem: 'Ajoute un article…',

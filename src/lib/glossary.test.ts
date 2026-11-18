@@ -660,3 +660,13 @@ describe('the retired calques stay retired', () => {
     expect(FR.tasks.horizons.late).not.toBe('En attente')
   })
 })
+
+// Review #28 (2026-11-17): « rappel » on a rendez-vous's lead promised a reminder; nothing
+// rings, the board only shows it earlier. Habit reminders (they open the scene on screen)
+// keep the word honestly.
+describe('a lead is not called a reminder', () => {
+  it('the event fold and the task-axis line say what it does', () => {
+    expect(FR_OPERATOR.eventWhenMore).not.toMatch(/rappel/i)
+    expect(FR.tasks.form.axes.lead).not.toMatch(/rappel/i)
+  })
+})

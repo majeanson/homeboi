@@ -166,7 +166,7 @@ test('settings-recur-weekly', async ({ page, app }) => {
   await page.getByRole('button', { name: 'Ajouter un rendez-vous' }).click() // → /event/new scene
   // « Répéter » + « Afficher dès » are the form's third optional section now — both sit
   // at their default on nearly every rendez-vous, so they wait behind a Disclosure.
-  await page.getByRole('button', { name: 'Répétition et rappel' }).click()
+  await page.getByRole('button', { name: 'Répéter, afficher d’avance' }).click()
   await page.locator('.recur select').first().waitFor({ state: 'visible' })
   await page.locator('.recur select').first().selectOption('weekly')
   await page.locator('.recur__days').waitFor({ state: 'visible' })

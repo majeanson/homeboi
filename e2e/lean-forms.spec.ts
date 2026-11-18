@@ -58,13 +58,13 @@ test('the event form folds « Répéter » + « Afficher dès » away', async ({
   await expect(page.getByPlaceholder('Quoi ? (ex. dentiste)')).toBeVisible()
 
   await expect(page.locator('.recur')).toHaveCount(0)
-  const fold = page.getByRole('button', { name: 'Répétition et rappel' })
+  const fold = page.getByRole('button', { name: 'Répéter, afficher d’avance' })
   await expect(fold).toHaveAttribute('aria-expanded', 'false')
   await fold.click()
   await expect(page.locator('.recur')).toBeVisible()
 
   // Three optional sections, in one consistent shape.
-  for (const label of ['Répétition et rappel', 'Prend l’auto', 'À apporter']) {
+  for (const label of ['Répéter, afficher d’avance', 'Prend l’auto', 'À apporter']) {
     await expect(page.getByRole('button', { name: label })).toBeVisible()
   }
 })

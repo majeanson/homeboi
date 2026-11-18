@@ -3056,7 +3056,7 @@ export const FR = {
         date: 'de date',
         who: 'de personne',
         recur: 'de récurrence',
-        lead: 'de rappel',
+        lead: 'd’affichage à l’avance',
         evening: 'd’annonce la veille',
         fromDone: 'de « à partir de la dernière fois »',
         notes: 'de notes',

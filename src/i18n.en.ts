@@ -2659,7 +2659,7 @@ export const EN: typeof FR = {
         date: 'a date',
         who: 'a person',
         recur: 'a repeat',
-        lead: 'a reminder',
+        lead: 'an early showing',
         evening: 'the evening-before line',
         fromDone: '« from the last time »',
         notes: 'written notes',

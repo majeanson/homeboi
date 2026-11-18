@@ -332,7 +332,7 @@ export const EN_OPERATOR: typeof FR_OPERATOR = {
   eventNotePlaceholder: 'What to bring, which floor, what to ask…',
   // The « Repeat » + « Show from » fold: two settings that sit at their default on
   // nearly every rendez-vous.
-  eventWhenMore: 'Repeat & reminder',
+  eventWhenMore: 'Repeat, show ahead',
   eventBring: 'What to bring',
   // Inline bring-list builder in the event form's bring section.
   bringAddItem: 'Add an item…',
