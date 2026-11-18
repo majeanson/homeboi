@@ -67,14 +67,14 @@ describe('the look of a task', () => {
   it('a home project: the icon reaches the board, the Tâches view and the project as a subject', async () => {
     const s = await household('look-home', undefined, { empty: true })
     const today = localDayStart(new Date())
-    const plain = await post(s, 'home-projects', { title: 'Toit', kind: 'upkeep', at: today })
-    const plan = await post(s, 'home-projects', { title: 'Le jardin', kind: 'plan', icon: '🌱', at: today })
+    const plain = await post(s, 'tasks', { title: 'Toit', kind: 'upkeep', at: today })
+    const plan = await post(s, 'tasks', { title: 'Le jardin', kind: 'plan', icon: '🌱', at: today })
     const board = await okJson<BoardWire>(s.fetch('/api/board'))
     expect(lookIn(board.tasks, plain.id)?.icon).toBeNull()
     expect(lookIn(board.tasks, plan.id)?.icon).toBe('🌱')
     const got = await tasks(s)
     expect(got.subjects.projects.find((p) => p.id === plan.id)?.icon).toBe('🌱')
-    await patch(s, 'home-projects', { id: plan.id, icon: '🌻' })
+    await patch(s, 'tasks', { id: plan.id, title: 'Le jardin', kind: 'plan', at: today, icon: '🌻' })
     expect(await env.DB.prepare('SELECT icon FROM home_projects WHERE id = ?').bind(plan.id).first()).toEqual({ icon: '🌻' })
   })
 

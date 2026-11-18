@@ -18,7 +18,7 @@ const row = (table: string, id: string) =>
 const addChore = (s: Session, subject?: unknown) => okJson<{ id: string }>(s.fetch('/api/tasks', { method: 'POST', body: { title: 'Gouttières', subject } }))
 const addTodo = (s: Session, subject?: unknown) => okJson<{ id: string }>(s.fetch('/api/todos', { method: 'POST', body: { title: 'Appeler', subject } }))
 const addProject = (s: Session, body: Record<string, unknown>) =>
-  okJson<{ id: string }>(s.fetch('/api/home-projects', { method: 'POST', body: { title: 'Toit', kind: 'upkeep', ...body } }))
+  okJson<{ id: string }>(s.fetch('/api/tasks', { method: 'POST', body: { title: 'Toit', kind: 'upkeep', ...body } }))
 
 describe('the subject of a task', () => {
   it('a chore and a todo take a subject on POST and on PATCH, and clear it with null', async () => {
@@ -52,17 +52,17 @@ describe('the subject of a task', () => {
     const read = () =>
       env.DB.prepare('SELECT carnet_id, subject_kind, subject_id FROM home_projects WHERE id = ?').bind(made.id).first<Record<string, string | null>>()
     expect(await read()).toEqual({ carnet_id: c.id, subject_kind: null, subject_id: null })
-    await s.fetch('/api/home-projects', { method: 'PATCH', body: { id: made.id, subject: { kind: 'person', id: m } } })
+    await s.fetch('/api/tasks', { method: 'PATCH', body: { id: made.id, title: 'Toit', kind: 'upkeep', subject: { kind: 'person', id: m } } })
     expect(await read()).toEqual({ carnet_id: null, subject_kind: 'person', subject_id: m })
-    // The older door still means one subject.
-    await s.fetch('/api/home-projects', { method: 'PATCH', body: { id: made.id, carnetId: c.id } })
+    // A carnet is one subject too, stored where a home row keeps it.
+    await s.fetch('/api/tasks', { method: 'PATCH', body: { id: made.id, title: 'Toit', kind: 'upkeep', subject: { kind: 'carnet', id: c.id } } })
     expect(await read()).toEqual({ carnet_id: c.id, subject_kind: null, subject_id: null })
   })
 
   it('a project cannot be its own subject, and only a plan can be a project', async () => {
     const s = await household('subject-self', undefined, { empty: true })
     const plan = await addProject(s, { kind: 'plan' })
-    await s.fetch('/api/home-projects', { method: 'PATCH', body: { id: plan.id, subject: { kind: 'project', id: plan.id } } })
+    await s.fetch('/api/tasks', { method: 'PATCH', body: { id: plan.id, title: 'Toit', kind: 'plan', subject: { kind: 'project', id: plan.id } } })
     expect(await row('home_projects', plan.id)).toEqual({ subject_kind: null, subject_id: null })
     const upkeep = await addProject(s, {})
     const chore = await addChore(s, { kind: 'project', id: upkeep.id })

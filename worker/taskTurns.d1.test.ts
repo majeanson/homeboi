@@ -78,7 +78,7 @@ describe('une tâche à tour de rôle', () => {
     expect((await one1(s, id)).task).toMatchObject({ id, title: 'Vaisselle', recur_start: localDayStart(new Date(1700000000 * 1000)), lead_seconds: 86400 })
     expect(JSON.parse((await one1(s, id)).task!.rotation_json)).toEqual([a])
     expect((await one1(other, id)).task, 'another household reads nothing').toBeNull()
-    const home = (await okJson<{ id: string }>(s.fetch('/api/home-projects', { method: 'POST', body: { title: 'Toit', kind: 'upkeep' } }))).id
+    const home = (await okJson<{ id: string }>(s.fetch('/api/tasks', { method: 'POST', body: { title: 'Toit', kind: 'upkeep' } }))).id
     expect((await one1(s, home)).task, 'a home row is not a task').toBeNull()
     expect((await s.fetch('/api/tasks/one')).status).toBe(400)
   })

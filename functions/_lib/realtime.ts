@@ -104,11 +104,6 @@ const PATH_KEYS: Record<string, string[][]> = {
   // The shared list — drives the board glance, ghost strip, and list history.
   list: [['board'], ['ghosts'], ['list-history']],
   'chores-ledger': [['board'], ['month']],
-  // Projets & Entretien (home_projects): dated upkeep shows on the board + month,
-  // and the Réglages sub-tabs read ['home-projects']. Mirrors the chores keys.
-  // …and ['carnets']: « Projets & Entretien » rows render inside a carnet's own
-  // sections, so another device sitting on that carnet was stale until its next poll.
-  'home-projects': [['home-projects'], ['board'], ['month'], ['carnets'], ['tasks']],
   // « Les carnets » (cared-for things): the tree feeds the cercle SubTab + the
   // board's « Les carnets » glance; a care-log entry refreshes the same surfaces.
   carnets: [['carnets'], ['board']],

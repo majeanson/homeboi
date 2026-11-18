@@ -41,7 +41,7 @@ describe('the effort of a task', () => {
     const s = await household('effort-garbage', undefined, { empty: true })
     const a = await post(s, 'tasks', { title: 'A', effort: 0 })
     const b = await post(s, 'todos', { title: 'B', effort: 6 })
-    const c = await post(s, 'home-projects', { title: 'C', kind: 'plan', effort: '3' })
+    const c = await post(s, 'tasks', { title: 'C', kind: 'plan', effort: '3' })
     const d = await post(s, 'todos', { title: 'D', effort: 2.5 })
     expect(await stored('home_projects', a.id)).toBeNull()
     expect(await stored('home_projects', b.id)).toBeNull()
@@ -78,8 +78,8 @@ describe('the effort of a task', () => {
   it('a home row: the effort reaches the board, the Tâches view and the edit form', async () => {
     const s = await household('effort-home', undefined, { empty: true })
     const today = localDayStart(new Date())
-    const plain = await post(s, 'home-projects', { title: 'Toit', kind: 'upkeep', at: today })
-    const rated = await post(s, 'home-projects', { title: 'Le jardin', kind: 'plan', effort: 5, at: today })
+    const plain = await post(s, 'tasks', { title: 'Toit', kind: 'upkeep', at: today })
+    const rated = await post(s, 'tasks', { title: 'Le jardin', kind: 'plan', effort: 5, at: today })
     const board = await okJson<BoardWire>(s.fetch('/api/board'))
     expect(board.tasks.map((x) => x.id).sort(), 'a NULL effort does not hide a due row from the board').toEqual([plain.id, rated.id].sort())
     expect(effortIn(board.tasks, plain.id)).toBeNull()
@@ -88,9 +88,10 @@ describe('the effort of a task', () => {
     const rows = await okJson<{ projects: { id: string; effort: number | null }[] }>(s.fetch('/api/home-projects'))
     expect(effortIn(rows.projects, rated.id)).toBe(5)
     expect(effortIn(rows.projects, plain.id)).toBeNull()
-    await patch(s, 'home-projects', { id: rated.id, effort: 2 })
+    // The one form sends every layer (the home-projects alias's partial edit is gone, review #37).
+    await patch(s, 'tasks', { id: rated.id, title: 'Le jardin', kind: 'plan', at: today, effort: 2 })
     expect(await stored('home_projects', rated.id)).toBe(2)
-    await patch(s, 'home-projects', { id: rated.id, effort: null })
+    await patch(s, 'tasks', { id: rated.id, title: 'Le jardin', kind: 'plan', at: today, effort: null })
     expect(await stored('home_projects', rated.id)).toBeNull()
   })
 

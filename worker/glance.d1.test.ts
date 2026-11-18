@@ -63,7 +63,7 @@ describe('cette semaine', () => {
     await okJson(s.fetch('/api/meals', { method: 'POST', body: { date: day(2), title: 'Tacos' } }))
     await okJson(s.fetch('/api/events', { method: 'POST', body: { title: 'Dentiste', startAt: day(3) + 3600 } }))
     await okJson(s.fetch('/api/events', { method: 'POST', body: { title: 'Trop loin', startAt: day(20) } }))
-    await okJson(s.fetch('/api/home-projects', { method: 'POST', body: { title: 'Filtre', at: day(4) } }))
+    await okJson(s.fetch('/api/tasks', { method: 'POST', body: { title: 'Filtre', kind: 'plan', at: day(4) } }))
     const chore = await okJson<{ id: string }>(s.fetch('/api/tasks', { method: 'POST', body: { title: 'Vaisselle', rotation: [zoe] } }))
     await okJson(s.fetch('/api/tasks', { method: 'PATCH', body: { id: chore.id, done: true } }))
     await env.DB.prepare('UPDATE task_participants SET contributed_at = ? WHERE task_id = ?').bind(day(-2) + 3600, chore.id).run()
@@ -86,7 +86,7 @@ describe('l’année', () => {
     const s = await household('year-points', undefined, { empty: true })
     await okJson(s.fetch('/api/events', { method: 'POST', body: { title: 'Anniversaire de mariage', startAt: day(40), recur: { freq: 'yearly' } } }))
     await okJson(s.fetch('/api/events', { method: 'POST', body: { title: 'Soccer', startAt: day(1), recur: { freq: 'weekly' } } }))
-    await okJson(s.fetch('/api/home-projects', { method: 'POST', body: { title: 'Ramonage', kind: 'upkeep', at: day(60) } }))
+    await okJson(s.fetch('/api/tasks', { method: 'POST', body: { title: 'Ramonage', kind: 'upkeep', at: day(60) } }))
     await okJson(s.fetch('/api/trips', { method: 'POST', body: { title: 'Gaspésie', startAt: day(80), endAt: day(85) } }))
 
     const y = await okJson<{ events: { title: string }[]; tasks: { title: string }[]; trips: { title: string }[] }>(s.fetch(`/api/year?from=${today()}&to=${day(365)}`))

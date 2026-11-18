@@ -33,7 +33,8 @@ function handler(src: string, name: string): string {
 const refusals = (body: string) => [...body.matchAll(/\bbadRequest\(\s*'([^']*)'/g)].map((m) => m[1])
 
 // The one form's door (/api/tasks, 0150) and the three aliases it left standing.
-const TASK_APIS = ['functions/api/tasks.ts', 'functions/api/todos.ts', 'functions/api/home-projects.ts']
+// The handlers that WRITE a task (home-projects is read-only since review #37).
+const TASK_APIS = ['functions/api/tasks.ts', 'functions/api/todos.ts']
 const POST_OK = new Set(['Titre requis.', 'Modèle introuvable.'])
 const PATCH_OK = new Set(['id requis.', 'snooze invalide.'])
 
@@ -88,6 +89,17 @@ describe('no UI branches on a task’s table', () => {
   })
   it('the form, its scene and the row never branch on a door’s kind', () => {
     const hits = FORM_FILES.flatMap((f) => (KIND_BRANCH.test(read(f)) ? [f] : []))
+    expect(hits).toEqual([])
+  })
+})
+
+// Review #37 retired the task aliases' writes: /api/chores is gone, /api/home-projects only
+// reads. A write the client sends to either is a 404/405 the outbox would hold and replay for
+// ever — so no client code may name one as the endpoint of a write.
+describe('no write goes through a retired task alias', () => {
+  const RETIRED = /\b(?:write|createWithUndo|createMany|writeOrNull)\s*(?:<[^>]*>)?\(\s*['"`](?:chores|home-projects)['"`]|endpoint:\s*['"`](?:chores|home-projects)['"`]/
+  it('no client source writes to chores or home-projects', () => {
+    const hits = sourceFiles(join(ROOT, 'src')).filter((f) => RETIRED.test(blankComments(readFileSync(f, 'utf8')))).map((f) => relative(ROOT, f).split(sep).join('/'))
     expect(hits).toEqual([])
   })
 })
