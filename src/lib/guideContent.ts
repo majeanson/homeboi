@@ -446,8 +446,8 @@ export const GUIDE: GuideEntry[] = [
       {
         label: { fr: 'Changer la vue', en: 'Change the view' },
         detail: {
-          fr: 'Cinq vues : la Grille (la journée), La semaine (sept jours écrits au long), le Mois, L’année et les Tâches. Le visage choisi filtre tout — [[mot:maisonnee|Maisonnée]] montre tout le monde, un visage montre ses affaires à lui, et une ligne sous les commandes dit ce qui est à lui en ce moment (un mot qui attend, son prochain rendez-vous, la routine du moment), rien quand rien n’attend.',
-          en: 'Five views: the Grid (the day), The week (seven days spelled out), the Month, The year and Tasks. The picked face filters everything — Household shows everyone, a face shows just their things, and one line under the controls says what is theirs right now (a message waiting, their next appointment, the routine of the moment), nothing when nothing is pending.',
+          fr: 'Cinq vues : l’Aperçu (la journée), La semaine (sept jours écrits au long), le Mois, L’année et les Tâches. Le visage choisi filtre tout — [[mot:maisonnee|Maisonnée]] montre tout le monde, un visage montre ses affaires à lui, et une ligne sous les commandes dit ce qui est à lui en ce moment (un mot qui attend, son prochain rendez-vous, la routine du moment), rien quand rien n’attend.',
+          en: 'Five views: the Overview (the day), The week (seven days spelled out), the Month, The year and Tasks. The picked face filters everything — Household shows everyone, a face shows just their things, and one line under the controls says what is theirs right now (a message waiting, their next appointment, the routine of the moment), nothing when nothing is pending.',
         },
       },
       {
@@ -1025,7 +1025,7 @@ export const GUIDE: GuideEntry[] = [
         route: '/maison?plus=1',
       },
       {
-        label: { fr: 'Cinq sous-onglets', en: 'Five sub-tabs' },
+        label: { fr: 'Cinq sections', en: 'Five sections' },
         detail: {
           fr: 'Routines (les cartes-images des enfants), Famille (ta parenté), Social (les amis et leurs familles à eux), Commerces (tes commerces) et Carnets (maison, auto…) — voir [[card:routines|Routines]], [[card:cercle|Le cercle]] et [[card:carnets|Les carnets]] pour le détail de chacun.',
           en: 'Routines (the kids’ picture cards), Family (your kin), Social (friends and their own families), Business (your businesses) and Carnets (home, car…) — see [[card:routines|Routines]], [[card:cercle|The circle]] and [[card:carnets|The carnets]] for each one’s detail.',
@@ -1495,7 +1495,7 @@ export const GUIDE: GuideEntry[] = [
         why: { fr: 'Quand tu rappelles le plombier, tu sais déjà tout — et tu retrouves la facture en un geste.', en: 'When you call the plumber back, you already know everything — and the invoice is one tap away.' },
       },
       {
-        label: { fr: 'Le long jeu', en: 'The long game' },
+        label: { fr: 'À long terme', en: 'Long term' },
         detail: {
           fr: 'Donne une date d’installation et une durée de vie : Babillard calcule « à prévoir vers 20XX » et te fait un petit signe quand ça approche, sur le babillard. Le calendrier ne sait pas faire ça.',
           en: 'Give an install date and a service life: Babillard works out “plan around 20XX” and gives you a gentle nudge on the board when it nears. A calendar can’t do that.',

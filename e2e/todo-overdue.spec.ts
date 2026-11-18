@@ -53,7 +53,7 @@ test('a loose to-do left on a past day leads the card, and its peek says since w
   // Tap it: the peek says since when. Calm: a date and nothing more, no « 3 jours de retard ».
   await row.locator('.act__hit').click()
   const when = page.locator('.detail-sheet__when')
-  await expect(when).toContainText('En attente depuis')
+  await expect(when).toContainText('Prévu le')
   await expect(when).not.toContainText(/jours?/)
 })
 
@@ -75,5 +75,5 @@ test('a stale checklist instance is never presented as owed', async ({ page }) =
 test('with nothing overdue no row wears the owed line', async ({ page }) => {
   await board(page, ROUTES.todos)
   await expect(card(page)).toBeVisible()
-  await expect(card(page).locator('.act .when', { hasText: 'En attente depuis' })).toHaveCount(0)
+  await expect(card(page).locator('.act .when', { hasText: 'Prévu le' })).toHaveCount(0)
 })

@@ -11,7 +11,7 @@ test('the view lists what the bento does not: a someday task', async ({ page, ap
   await app.boot(OPEN)
   await expect(page.locator('.tasks-view')).toContainText('Boîte à lunch des enfants')
   await expect(page.locator('.tasks-view')).toContainText('Un jour')
-  await expect(page.locator('.tasks-view')).toContainText('En attente')
+  await expect(page.locator('.tasks-view')).toContainText('Pas encore fait')
 })
 
 test('the lens is in the URL, and survives a reload', async ({ page, app }) => {

@@ -27,7 +27,7 @@ test('an overdue entretien waits on « Tâches », and its peek says since when'
   // The row stays quiet; the peek carries the muted date, never a count or « X jours de retard ».
   await expect(r.locator('.when')).toHaveCount(0)
   await r.locator('.act__hit').click()
-  await expect(page.locator('.detail-sheet__when')).toContainText('En attente depuis')
+  await expect(page.locator('.detail-sheet__when')).toContainText('Prévu le')
 })
 
 test('checking it hides the row behind the undo toast, and undo brings it back', async ({ page, app }) => {

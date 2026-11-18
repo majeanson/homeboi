@@ -111,7 +111,7 @@ test.describe('navigation', () => {
     const on = page.locator('.boardview .segmented__opt[aria-checked="true"]')
     await expect(on).toHaveAttribute('aria-label', 'Mois', { timeout: 15_000 })
     await page.locator('.hubnav a[href="/board"]').click()
-    await expect(on).toHaveAttribute('aria-label', 'Grille')
+    await expect(on).toHaveAttribute('aria-label', 'Aperçu')
     // …and the device remembers it (a reload here would re-run seedState's init script).
     expect(await page.evaluate(() => localStorage.getItem('babillard-boardview'))).toBe('bento')
   })

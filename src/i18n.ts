@@ -759,7 +759,7 @@ export const FR = {
     soon: 'Bientôt',
     // Entretien carry-forward — the calm « owed since » sub-line on a missed
     // occurrence (muted date only; never a badge, count or « X jours de retard »).
-    lateSince: (d: string) => `En attente depuis le ${d}`,
+    lateSince: (d: string) => `Prévu le ${d}`,
     turn: 'C’est le tour de',
     done: 'Fait',
     help: 'Aider',
@@ -905,7 +905,7 @@ export const FR = {
   },
   boardView: {
     label: 'Vue du babillard',
-    bento: 'Grille',
+    bento: 'Aperçu',
     semaine: 'La semaine',
     month: 'Mois',
     annee: 'L’année',
@@ -925,7 +925,7 @@ export const FR = {
       trip: 'Voyages',
       event: 'Rendez-vous annuels',
       task: 'Tâches',
-      life: 'Le long jeu',
+      life: 'À long terme',
       // D-17 « La rentrée » — the school-year bounds (rentrée, dernier jour, relâches).
       ecole: 'Année scolaire',
     },
@@ -1125,7 +1125,7 @@ export const FR = {
     segCarnet: 'Le carnet',
     breadcrumb: 'Où on est',
     allGood: 'Rien à surveiller — tout va bien.',
-    longJeu: 'Le long jeu',
+    longJeu: 'À long terme',
     overdue: 'À prévoir bientôt',
     replaceAround: (year: number) => `À prévoir vers ${year}`,
     yearsOut: (n: number) => `dans ~${n} an${n > 1 ? 's' : ''}`,
@@ -1264,7 +1264,7 @@ export const FR = {
     tabRecipes: 'Recettes',
     tabHistory: 'Historique',
     historyEmpty: 'Aucun repas passé encore — le plan d’aujourd’hui deviendra l’historique de demain.',
-    historyMore: 'Voir plus loin',
+    historyMore: 'Repas plus anciens',
     historyEnd: 'Le tout début de vos repas.',
     planAgain: 'Remettre au menu',
     slots: { breakfast: 'Déjeuner', lunch: 'Dîner', supper: 'Souper', snack: 'Collation', dessert: 'Dessert' },
@@ -1891,7 +1891,7 @@ export const FR = {
     memberBadge: 'Maisonnée',
     // The "voir le cercle selon une personne" focus row (reuses MemberSwitcher).
     focusLabel: 'Voir selon une personne',
-    focusSelf: 'La personne au centre',
+    focusSelf: 'Point de départ',
     focusNone: 'Aucun lien connu',
     egoHint: 'Touche un visage pour le mettre au centre',
     webHint: 'Tes cercles : chaque famille, chaque groupe — touche un visage pour l’ouvrir',
@@ -2384,7 +2384,7 @@ export const FR = {
     copy: 'Copier le lien',
     copied: 'Copié !',
     expires: (when: string) => `Le lien expire le ${when}.`,
-    myFace: 'Mon visage',
+    myFace: 'Qui je suis',
     myFaceHint:
       'Ce que ce compte ajoute portera ce visage-là sur un appareil qui n’en a pas encore choisi un. La tablette partagée ne change pas : c’est toujours la personne devant qui touche le sien.',
     remove: 'Retirer l’accès',
@@ -3025,7 +3025,7 @@ export const FR = {
     subjectKinds: { carnet: 'Carnet', person: 'Personne', pet: 'Animal', project: 'Projet', trip: 'Voyage' },
     lensLabel: 'Regarder par',
     lens: { horizon: 'Quand', sujet: 'Sujet', qui: 'Personne' },
-    horizons: { late: 'En attente', today: 'Aujourd’hui', week: 'Cette semaine', month: 'Ce mois-ci', later: 'Plus tard', someday: 'Un jour' },
+    horizons: { late: 'Pas encore fait', today: 'Aujourd’hui', week: 'Cette semaine', month: 'Ce mois-ci', later: 'Plus tard', someday: 'Un jour' },
     subjectLabel: 'Sur quoi ?',
     noSubject: 'Sans sujet',
     allSubjects: 'Tous les sujets',

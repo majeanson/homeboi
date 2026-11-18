@@ -645,3 +645,18 @@ describe('no list repeats a word', () => {
     expect(hits).toEqual([])
   })
 })
+
+// Review #27 (2026-11-17): calques and abstractions a household read without knowing what
+// they meant. Each was replaced in place; none may come back to the dictionaries.
+describe('the retired calques stay retired', () => {
+  const RETIRED = ['Le long jeu', 'The long game', 'Voir plus loin', 'La personne au centre', 'Mon visage', 'sous-onglets', 'En attente depuis']
+  it('in FR, EN and both Réglages dictionaries', () => {
+    const all = [FR, EN, FR_OPERATOR, EN_OPERATOR].flatMap((d) => dictValues(d))
+    expect(RETIRED.filter((w) => all.some((s) => s.includes(w)))).toEqual([])
+    // A board view is « Aperçu », never « Grille » (the bento glance of the day).
+    expect(FR.boardView.bento).not.toBe('Grille')
+    // A late task is « Pas encore fait »; « En attente » keeps its real jobs (a mot not
+    // yet opened, a pairing awaiting approval).
+    expect(FR.tasks.horizons.late).not.toBe('En attente')
+  })
+})

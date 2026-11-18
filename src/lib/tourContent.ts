@@ -249,8 +249,8 @@ const BASE_TOURS: Tour[] = [
         icon: 'fork-knife-bold',
         title: { fr: 'Repas, garde-manger, recettes', en: 'Meals, pantry, recipes' },
         body: {
-          fr: 'Les sous-onglets : planifie les repas de la semaine, signale ce qui achève, et garde tes recettes.',
-          en: 'The sub-tabs: plan the week’s meals, flag what’s running low, and keep your recipes.',
+          fr: 'Les sections : planifie les repas de la semaine, signale ce qui achève, et garde tes recettes.',
+          en: 'The sections: plan the week’s meals, flag what’s running low, and keep your recipes.',
         },
       },
       {
@@ -292,8 +292,8 @@ const BASE_TOURS: Tour[] = [
         target: 'maison-sections',
         icon: 'stack-bold',
         card: 'maison',
-        title: { fr: 'Cinq sous-onglets', en: 'Five sub-tabs' },
-        body: guidePoint('maison', 'Cinq sous-onglets'),
+        title: { fr: 'Cinq sections', en: 'Five sections' },
+        body: guidePoint('maison', 'Cinq sections'),
       },
       {
         target: 'routines-grid',
