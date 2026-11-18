@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { QueryClient } from '@tanstack/react-query'
-import { writeWith } from './write'
+import { onWriteAttempt, writeWith } from './write'
+import { GuestReadOnlyError, wrote, writeOrNull } from './writeFailed'
 
 // B-9 (bmad/10) — idempotence dès le premier geste. Before this, only an
 // offline-outbox REPLAY carried an Idempotency-Key (a fresh one minted at
@@ -36,9 +37,6 @@ vi.mock('./outbox', () => ({
   outboxCount: async () => 0,
 }))
 
-// Not under test here (A-5's per-device tour heuristic) — no-op it so the test
-// doesn't depend on its own localStorage bookkeeping.
-vi.mock('./tourOffer', () => ({ bumpWriteCount: () => {} }))
 
 describe('writeWith — B-9 idempotency', () => {
   beforeEach(() => {
@@ -98,12 +96,14 @@ describe('writeWith — B-9 idempotency', () => {
     await expect(writeWith(new QueryClient(), 'list', { method: 'PATCH', body: { id: 'x', checked: true } })).rejects.toBeInstanceOf(MockApiError)
   })
 
-  it('a guest write still short-circuits before any network call or enqueue', async () => {
+  it('a guest write is REFUSED before any network call or enqueue — a rejection, not a fake success', async () => {
     localStorage.setItem('babillard-guest-token', 'tok')
     const qc = new QueryClient()
-    const res = await writeWith(qc, 'list', { method: 'POST', body: { text: 'Lait' } })
-
-    expect(res).toEqual({ data: null, queued: false })
+    // Review #38: it used to resolve { data: null }, typed as the caller's T, so a follow-up
+    // that assumes the write landed ran anyway. The helpers read the rejection calmly.
+    await expect(writeWith(qc, 'list', { method: 'POST', body: { text: 'Lait' } })).rejects.toBeInstanceOf(GuestReadOnlyError)
+    expect(await wrote(writeWith(qc, 'list', { method: 'POST', body: { text: 'Lait' } })), 'wrote(): it did not land').toBe(false)
+    expect(await writeOrNull(writeWith(qc, 'list', { method: 'POST', body: { text: 'Lait' } }))).toBeNull()
     expect(apiMock).not.toHaveBeenCalled()
     expect(enqueueMock).not.toHaveBeenCalled()
   })
@@ -166,5 +166,36 @@ describe('writeWith — an optimistic change survives the poll race', () => {
     await qc.fetchQuery({ queryKey: KEY, queryFn: () => later(5, { rows: 0 }), staleTime: 0 })
     await w
     expect(runs).toBe(1)
+  })
+})
+
+// Review #38: the write path's own side effects are named, not hidden.
+describe('writeWith — what a write also stales, and who hears it', () => {
+  beforeEach(() => {
+    apiMock.mockReset()
+    apiMock.mockResolvedValue({ ok: true })
+    localStorage.clear()
+  })
+
+  it('« À régler » follows the server’s map: a virement stales it (the hand copy forgot), a list item does not', async () => {
+    const qc = new QueryClient()
+    const spy = vi.spyOn(qc, 'invalidateQueries')
+    await writeWith(qc, 'transfers', { method: 'POST', body: {}, affectedKeys: [['transfers']] })
+    expect(spy.mock.calls.map((c) => c[0]?.queryKey)).toContainEqual(['a-regler'])
+    spy.mockClear()
+    await writeWith(qc, 'list', { method: 'POST', body: { text: 'Lait' }, affectedKeys: [['board']] })
+    expect(spy.mock.calls.map((c) => c[0]?.queryKey)).not.toContainEqual(['a-regler'])
+  })
+
+  it('a real write attempt is announced to its listeners; a guest’s is not', async () => {
+    const qc = new QueryClient()
+    let heard = 0
+    const off = onWriteAttempt(() => heard++)
+    await writeWith(qc, 'list', { method: 'POST', body: { text: 'Lait' } })
+    expect(heard).toBe(1)
+    localStorage.setItem('babillard-guest-token', 'tok')
+    await writeWith(qc, 'list', { method: 'POST', body: {} }).catch(() => {})
+    expect(heard, 'a refused guest write is not an attempt').toBe(1)
+    off()
   })
 })

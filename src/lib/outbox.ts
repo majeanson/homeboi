@@ -174,9 +174,9 @@ export const MAX_ATTEMPTS = 5
 
 export type ReplayVerdict =
   | 'auth-lost' // 401 — the device/session is revoked; stop, the auth-lost path clears the queue
-  | 'drop' // 4xx — moot write (row gone/forbidden/conflicting); the poll reconciles
+  | 'drop' // 4xx — moot write (row gone/forbidden/conflicting); the poll reconciles. Not 408/425/429
   | 'dead-letter' // 5xx past MAX_ATTEMPTS — the server will not take this one; let the rest through
-  | 'retry' // 5xx under the cap — stop the run, count the attempt, try next trigger
+  | 'retry' // 5xx (or 408/425/429) under the cap — stop the run, count the attempt, try next trigger
   | 'wait' // network/transport failure — stop the run, DON'T count it against this entry
 
 // What to do with one failed replay. Pure + exported so the policy is unit-tested
@@ -190,6 +190,11 @@ export type ReplayVerdict =
 export function replayVerdict(err: unknown, priorAttempts: number): ReplayVerdict {
   if (!(err instanceof ApiError)) return 'wait' // fetch threw: no server answer at all
   if (err.status === 401) return 'auth-lost'
+  // « Not now », not « never » (review #38): a request timeout, « too early » and a rate
+  // limit (the server sends Retry-After, _lib/json.ts) say nothing about the write itself.
+  // Dropping them threw away a write the server would have taken a minute later — the
+  // first limiter on a common write would have lost data in silence. Bounded like a 5xx.
+  if (err.status === 408 || err.status === 425 || err.status === 429) return priorAttempts + 1 >= MAX_ATTEMPTS ? 'dead-letter' : 'retry'
   if (err.status >= 400 && err.status < 500) return 'drop'
   return priorAttempts + 1 >= MAX_ATTEMPTS ? 'dead-letter' : 'retry'
 }

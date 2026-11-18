@@ -87,6 +87,15 @@ describe('replayVerdict', () => {
     expect(replayVerdict(apiErr(409), 0)).toBe('drop')
   })
 
+  // Review #38: « not now » is not « never ». A rate limit or a timeout says nothing about the
+  // write; dropping it lost a write the server would have taken a minute later.
+  it('keeps a 408 / 425 / 429 to try again, bounded like a 5xx', () => {
+    for (const s of [408, 425, 429]) {
+      expect(replayVerdict(apiErr(s), 0), String(s)).toBe('retry')
+      expect(replayVerdict(apiErr(s), MAX_ATTEMPTS - 1), String(s)).toBe('dead-letter')
+    }
+  })
+
   it('retries a 5xx while the entry has attempts left', () => {
     expect(replayVerdict(apiErr(500), 0)).toBe('retry')
     expect(replayVerdict(apiErr(503), MAX_ATTEMPTS - 2)).toBe('retry')

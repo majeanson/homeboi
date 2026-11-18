@@ -4,8 +4,9 @@ import { api, ApiError } from './api'
 import { enqueue, onOutboxChange, outboxCount } from './outbox'
 import { isGuest } from './device'
 import { resolveTmpIdsIn, resolveTmpIdsInBody } from './tmpIds'
-import { bumpWriteCount } from './tourOffer'
 import { A_REGLER_KEY } from './queryKeys'
+import { GuestReadOnlyError } from './writeFailed'
+import { keysForPath } from '../../functions/_lib/realtime'
 
 // « À régler » (the board heads-up card, functions/api/a-regler) is a cross-domain
 // scan DERIVED from events (driverless rides), meals (empty/low suppers), pantry
@@ -13,15 +14,23 @@ import { A_REGLER_KEY } from './queryKeys'
 // no gift idea). A write to any of those changes what the card shows, so we always
 // invalidate it alongside the call site's own keys — centralized here so every
 // current AND future write site stays in sync without each having to remember
-// A_REGLER_KEY (the card otherwise lagged up to its 5-min poll). Mirrors the
-// server-side keysForPath map in functions/_lib/realtime.ts — keep the two in step.
-const A_REGLER_PATHS = new Set(['events', 'meals', 'pantry', 'recipes', 'cercle', 'members', 'capture'])
-
-// The affected keys for this write, plus A_REGLER_KEY when the path feeds the card.
+// A_REGLER_KEY (the card otherwise lagged up to its 5-min poll).
+//
+// WHICH writes feed it is the SERVER's map (functions/_lib/realtime.ts keysForPath, a pure
+// module), read here — not a second list « kept in step » by hand (review #38). The hand
+// copy had drifted: a virement (transfers, transfer-plans) changes the card, and only the
+// server knew, so the device that made it waited for the poll.
 function withAReglerKeys(path: string, keys: QueryKey[]): QueryKey[] {
-  const [bare = ''] = (path || '').split('?')
-  const [seg = ''] = bare.replace(/^\/+/, '').split('/')
-  return A_REGLER_PATHS.has(seg) ? [...keys, A_REGLER_KEY] : keys
+  const feedsCard = keysForPath(path).some((k) => k.length === 1 && k[0] === A_REGLER_KEY[0])
+  return feedsCard ? [...keys, A_REGLER_KEY] : keys
+}
+
+// The write attempts' listeners (review #38): anything that wants to know a real write was
+// attempted subscribes here, so the one function every write goes through holds no counter.
+const writeListeners = new Set<() => void>()
+export function onWriteAttempt(fn: () => void): () => void {
+  writeListeners.add(fn)
+  return () => writeListeners.delete(fn)
 }
 
 // The offline-aware write helper (NFR-OFFLINE-1). Replaces the scattered
@@ -98,13 +107,14 @@ export async function writeWith<T = unknown>(
   // NOT apply the optimistic change, hit the network, or queue to the outbox — so
   // a guest can never see a row "disappear" then reappear (the bug that let it
   // look like a delete went through). The UI also hides mutating controls for a
-  // guest; this is the structural backstop for any control that slips through.
-  if (isGuest()) return { data: null as T, queued: false }
+  // guest; this is the structural backstop for any control that slips through. It REJECTS
+  // (review #38): resolving made every follow-up that assumes the write landed run anyway.
+  if (isGuest()) throw new GuestReadOnlyError()
 
-  // A-5 (bmad/08): the per-device power-user proxy — count real write attempts
-  // so the discovery tour can quietly offer itself to heavy editors. A local
-  // heuristic only; never displayed, never sent anywhere (see lib/tourOffer).
-  bumpWriteCount()
+  // Whoever listens for a real write attempt (lib/tourOffer's « heavy editor » offer, A-5).
+  // The data layer names no listener: it only says a write is being attempted.
+
+  for (const fn of writeListeners) fn()
 
   // Cancel what is ALREADY in flight for these keys before painting the change: a poll
   // sent before the tap would otherwise land after it and repaint the old state — the
@@ -164,8 +174,10 @@ export async function writeWith<T = unknown>(
     if (err instanceof ApiError) {
       // A DELETE the server answers 404 is a row that is ALREADY GONE — what the caller wanted.
       // Treating it as a failure made “Annuler” on an add the user had since swiped away say
-      // « Pas enregistré » (writeFailed), and every deferred delete re-derive the same fact by
-      // hand (useDeferredRemoval.rejectionMeansGone). The refetch below shows the truth.
+      // « Pas enregistré » (writeFailed). The refetch below shows the truth. Only a DELETE:
+      // a « Vider les cochés » PATCH answers 404 too when nothing was left to clear, and
+      // that one stays a rejection, which useDeferredRemoval.rejectionMeansGone reads as
+      // « already gone » (review #38 found the two not redundant: each owns its method).
       if (err.status === 404 && method === 'DELETE') return { data: null as T, queued: false }
       throw err
     }

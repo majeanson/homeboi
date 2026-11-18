@@ -43,3 +43,15 @@ export async function writeOrNull<T>(p: Promise<T>): Promise<T | null> {
     return null
   }
 }
+
+// A read-only guest's write, refused before it leaves the device (lib/write's chokepoint).
+// It used to RESOLVE — `{ data: null }` typed as the caller's T — so a follow-up that assumed
+// the write landed ran anyway, and `r.data.id` crashed (review #38). Now it rejects, quietly:
+// not an ApiError, so writeFailed says nothing (the guest was never offered the control),
+// `wrote()` answers false and `writeOrNull()` null.
+export class GuestReadOnlyError extends Error {
+  constructor() {
+    super('Lecture seule')
+    this.name = 'GuestReadOnlyError'
+  }
+}

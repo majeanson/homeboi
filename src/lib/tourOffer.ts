@@ -1,5 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { createDeviceStore } from './createDeviceStore'
+import { onWriteAttempt } from './write'
 import { useLens } from './audience'
 import { isGuest, isPaired } from './device'
 import { DISCOVERY_PROBES } from './discovery'
@@ -35,10 +36,13 @@ const writes = createDeviceStore<number>('babillard-write-count', 0, {
   write: (v) => String(v),
 })
 
-// Called by writeWith() on every real (non-guest) write attempt.
-export function bumpWriteCount(): void {
+// Counts every real (non-guest) write attempt, by LISTENING to the write path (review #38):
+// lib/write used to call this itself, an onboarding counter inside the one function every
+// write goes through. It announces « a write was attempted »; this module decides it counts.
+function bumpWriteCount(): void {
   writes.set(writes.get() + 1)
 }
+onWriteAttempt(bumpWriteCount)
 
 const offeredAt = createDeviceStore<number>('babillard-tour-offer-at', 0, {
   read: (raw) => {
