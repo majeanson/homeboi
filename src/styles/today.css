@@ -1554,3 +1554,27 @@
   background: var(--marigold);
   color: #fff;
 }
+
+/* « À régler » with several frictions (review #24): each one named, with its own door,
+   instead of the lead plus a « +N » that sent the tap into Réglages. */
+.now-card__frictions {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+  position: relative; /* over the decorative blob */
+}
+.now-card__frictions a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: inherit;
+  font-weight: 700;
+  font-size: 16px;
+  text-decoration: none;
+}
+.now-card__frictions a:hover,
+.now-card__frictions a:focus-visible {
+  text-decoration: underline;
+}

@@ -1278,14 +1278,6 @@
   align-self: flex-start;
   margin: 0.6rem 0 0.4rem;
 }
-.cercle-complete__n {
-  margin-inline-start: 0.4rem;
-  padding: 0.05rem 0.4rem;
-  border-radius: var(--radius-pill);
-  background: var(--surface);
-  color: var(--ink-soft);
-  font-size: 0.72rem;
-}
 /* Empty-state nudge: shown in place of the button when nothing is deducible yet,
    guiding the operator to seed a few links first ("then complete here"). */
 .cercle-complete__hint {

@@ -383,7 +383,8 @@ export function Notes({
                 )}
                 {toLine(n)}
                 {from}
-                {age}
+                {/* A drawing or photo is a keepsake: no « il y a 65 j » on it (review #24). */}
+                {!isVisual && age}
                 {!ro && !toddler && (
                   <button
                     type="button"

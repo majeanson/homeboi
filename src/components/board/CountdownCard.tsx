@@ -5,7 +5,10 @@ import { Cluster } from '../Layout'
 import { InlineIcon } from '../Icon'
 import { isGuest } from '../../lib/device'
 import { useReportEmpty } from '../../lib/useReportEmpty'
-import { daysUntilLocal, todayLocalDay } from '../../lib/localDay'
+import { addLocalDays, daysUntilLocal, todayLocalDay } from '../../lib/localDay'
+
+// How far ahead a day may be OFFERED (a pinned countdown counts any distance).
+const OFFER_WITHIN_DAYS = 21
 import {
   nextMajorFete,
   useCountdown,
@@ -57,7 +60,10 @@ export function CountdownCard({ upcoming }: { upcoming: EventRow[] }) {
         ? [{ id: `fete-${fete.holiday.id}-${fete.at}`, label: fete.holiday.label[lang], emoji: fete.holiday.emoji, at: fete.at }]
         : []),
     ]
-      .filter((c) => c.at >= todaySec && skipped[c.id] !== c.at)
+      // Only a day close enough to count (review #24, 2026-11-17): Noël was offered from
+      // July, so « Compter les dodos ? » sat on the board as a question every morning for
+      // months until someone answered it. Three weeks out it is an idea worth a tap.
+      .filter((c) => c.at >= todaySec && c.at <= addLocalDays(todaySec, OFFER_WITHIN_DAYS) && skipped[c.id] !== c.at)
       .sort((a, b) => a.at - b.at)
     return candidates[0]
   }, [ro, upcoming, skipped, todaySec, lang])

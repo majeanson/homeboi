@@ -211,11 +211,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.a-regler__count {
-  flex: none;
-  font-variant-numeric: tabular-nums;
-  color: var(--ink-soft);
-}
 /* The EXPANDED friction rows (full list) — used by « Cette semaine » and any inline
    list, NOT the compact board chip above. */
 .a-regler__row {

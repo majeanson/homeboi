@@ -108,8 +108,9 @@ export function CompleteFamilies({
   return (
     <>
       <button type="button" className="btn btn--ghost btn--sm cercle-complete" disabled={disabled} onClick={() => setOpen(true)}>
+        {/* No count badge (review #24): « 6 » read as a to-do list owed to the app. The
+            button shows only when there is something to suggest; the sheet lists it. */}
         <Icon name="users-three-bold" size={15} /> {t.cercle.completeFamilies}
-        <span className="mono cercle-complete__n">{proposals.length}</span>
       </button>
       <ReviewChecklist
         open={open}

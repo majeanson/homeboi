@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom'
 import { useT } from '../../i18n'
-import { settingsHref } from '../../lib/settingsNav'
 import { useARegler, frictionRow, withoutTonightMeal } from '../../lib/aRegler'
 import { Icon } from '../Icon'
 import { useReportEmpty } from '../../lib/useReportEmpty'
@@ -43,11 +42,15 @@ export function ARegler({
   const lens = useCardLens()
   const [lead] = signals
   if (empty || !lead) return null
-  // The first friction is the headline; with a SINGLE friction, tap goes straight to
-  // its one-tap fix; with several, to « Cette semaine » for the full list.
+  // The first friction is the headline, and a tap goes straight to its one-tap fix.
+  // SEVERAL used to show « +2 » — a number nobody could read — and send the tap into
+  // Réglages ▸ Cette semaine, which is settings, not the problems (review #24,
+  // 2026-11-17). Now each one is NAMED, with its own fix, up to three; never a count.
   const first = frictionRow(lead, t)
-  const to = signals.length === 1 ? lead.href : settingsHref({ tab: 'board', focus: 'thisWeek' })
-  const aria = `${t.aRegler.title} (${signals.length})`
+  const to = lead.href
+  const aria = t.aRegler.title
+  const shown = signals.slice(0, 3)
+  const several = shown.length > 1
 
   // Card: a hero-style tile (marigold = a warm heads-up), label + the lead friction as
   // the headline + a « +N » when there are more, the friction's glyph bottom-right.
@@ -66,14 +69,32 @@ export function ARegler({
         />
       )
     }
+    // Several: the card is a plain tile and each friction its own link (a link cannot
+    // hold links). One: the whole tile is the door, as before.
+    const Tile = several ? 'section' : Link
+    const tileProps = several ? { 'aria-label': aria } : { to, 'aria-label': aria }
     return (
-      <Link to={to} className="now-card now-card--regler" aria-label={aria}>
+      <Tile {...(tileProps as { to: string })} className="now-card now-card--regler">
         <div className="blob" />
         <div className="label">
           <Icon name="warning-bold" size={13} /> {t.aRegler.title}
         </div>
-        <div className="what">{first.text}</div>
-        {signals.length > 1 && <div className="who mono">+{signals.length - 1}</div>}
+        {several ? (
+          <ul className="now-card__frictions">
+            {shown.map((s) => {
+              const r = frictionRow(s, t)
+              return (
+                <li key={s.href + r.text}>
+                  <Link to={s.href}>
+                    <Icon name={r.icon} size={16} /> {r.text}
+                  </Link>
+                </li>
+              )
+            })}
+          </ul>
+        ) : (
+          <div className="what">{first.text}</div>
+        )}
         <div className="icn" aria-hidden="true">
           <Icon name={first.icon} size={34} />
         </div>
@@ -96,11 +117,11 @@ export function ARegler({
             <Icon name="caret-up-bold" size={14} />
           </button>
         )}
-      </Link>
+      </Tile>
     )
   }
 
-  // Chip: one quiet line — the label + the first friction + a « +N ». Used inline.
+  // Chip: one quiet line — the label + the first friction, its own door. No count (#24).
   return (
     <Link to={to} className="a-regler" aria-label={aria}>
       <Icon name="warning-bold" size={14} />
@@ -108,7 +129,6 @@ export function ARegler({
       <span className="a-regler__lead">
         <Icon name={first.icon} size={14} /> {first.text}
       </span>
-      {signals.length > 1 && <span className="a-regler__count mono">+{signals.length - 1}</span>}
       <Icon name="caret-right-bold" size={13} />
     </Link>
   )
