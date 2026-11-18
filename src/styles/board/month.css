@@ -657,7 +657,7 @@
      60%, not the 80% that merely clears day: checked against every paper tier the
      palette defines, including both dusk drifts (lib/daypartDrift), where 70% lands
      exactly on 4.50 with nothing left. 60% → worst case 4.97, on dusk-1. */
-  color: color-mix(in srgb, var(--sky-deep) 60%, var(--ink));
+  color: var(--sky-ink); /* the TEXT tier: the 60% mix fell to 4.17:1 on twilight's card (review #22) */
 }
 .fil__now-label::before {
   content: '';

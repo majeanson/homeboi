@@ -65,3 +65,24 @@ describe('the ink ramp still descends', () => {
     expect(luminance(parseHex(NIGHT.inkSoft))).toBeLessThan(luminance(parseHex(NIGHT.ink)))
   })
 })
+
+// Review #22: the twilight tiers' section inks were tuned on their washes alone, and
+// the same tokens are used on --card, where they sat at 3.4–4.5:1 every evening. Keep
+// in step with :root[data-theme='twilight' | 'deep-twilight'] in styles/core.css.
+const TWILIGHTS = {
+  twilight: {
+    grounds: ['#564a57', '#5b4a33', '#5b4034', '#424d33', '#364a55', '#4d3346', '#31504b'],
+    inks: ['#f4b465', '#edb49f', '#b7c6a5', '#a2c6d4', '#d9b8c5', '#82cec5'],
+  },
+  'deep-twilight': {
+    grounds: ['#3a3140', '#463821', '#452e23', '#323a24', '#28363f', '#392636', '#243a37'],
+    inks: ['#f2a03d', '#e49072', '#96ad7f', '#7bb0c9', '#c798b0', '#41b7aa'],
+  },
+}
+describe('twilight section inks clear AA on the card AND every wash', () => {
+  for (const [tier, t] of Object.entries(TWILIGHTS)) {
+    it(tier, () => {
+      for (const ink of t.inks) for (const g of t.grounds) expect(contrast(ink, g), `${ink} on ${g}`).toBeGreaterThanOrEqual(4.5)
+    })
+  }
+})

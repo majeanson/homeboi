@@ -168,3 +168,50 @@ for (const theme of ['day', 'night'] as const) {
     }
   }
 }
+
+// THE DAY-PART PALETTES (review #22, 2026-11-17). The two passes above pin the drift OFF
+// (seedState), so the six palettes a kiosk actually wears through the day were never
+// measured — and Sam found « Bientôt » at 1.53:1 in twilight and « Le point du jour » at
+// 2.83:1, every evening, without anyone choosing it. Here the REAL drift runs: auto on,
+// the clock stopped inside each part (Toronto, where the mock's midnights live), the hub
+// tabs on a phone. Same axe, same exclusion, same zero.
+const DAYPARTS = [
+  { part: 'dawn', hour: 6.5 },
+  { part: 'noon', hour: 12 },
+  { part: 'afternoon', hour: 15 },
+  { part: 'dusk', hour: 17.5 },
+  { part: 'twilight', hour: 19 },
+  { part: 'deep-twilight', hour: 19.75 },
+] as const
+const HUB = SURFACES.filter((s) => ['board', 'kitchen', 'recipes', 'liste', 'notes', 'maison', 'famille', 'settings'].includes(s.name))
+
+test.describe('day-part palettes', () => {
+  test.use({ timezoneId: 'America/Toronto' })
+  for (const { part, hour } of DAYPARTS) {
+    test(`no WCAG AA contrast failures on the hub tabs @mobile-${part}`, async ({ page }) => {
+      test.setTimeout(HUB.length * 5_000)
+      await page.setViewportSize({ width: 390, height: 844 })
+      await page.clock.setFixedTime(new Date((MMID + hour * 3600) * 1000))
+      await mockApi(page)
+      await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+      // After seedState's « drift off »: the drift is the thing under test.
+      await page.addInitScript(() => localStorage.setItem('babillard-daypart-auto', '1'))
+      const failures: string[] = []
+      for (const s of HUB) {
+        await page.goto(s.route)
+        await expect(page.locator('.loading, .skeleton'), `${s.name} finished loading`).toHaveCount(0, { timeout: 15_000 })
+        await settled(page)
+        // The palette really is the part's: a drift that stayed off would measure « day ».
+        expect(await page.evaluate(() => document.documentElement.dataset.daypart), `${s.name} wears ${part}`).toBe(part)
+        const res = await new AxeBuilder({ page }).exclude('.avatar__initial').withTags(['wcag2a', 'wcag2aa']).analyze()
+        for (const v of res.violations.filter((x) => x.id === 'color-contrast')) {
+          for (const n of v.nodes) {
+            const d = (n.any[0]?.data ?? {}) as { fgColor?: string; bgColor?: string; contrastRatio?: number }
+            failures.push(`  ${s.name}: ${d.contrastRatio}:1  ${d.fgColor} on ${d.bgColor}  — ${n.target.join(' ')}`)
+          }
+        }
+      }
+      expect(failures, `text below WCAG AA in ${part}:\n` + failures.join('\n')).toEqual([])
+    })
+  }
+})

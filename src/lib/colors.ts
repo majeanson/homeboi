@@ -85,7 +85,10 @@ export function tintInk(hex: string): string {
     // Dark/mid colours (L ≤ 0.35) keep the floor; brighter ones ramp up to the cap.
     inkPct = Math.min(INK_CAP_PCT, Math.round(INK_FLOOR_PCT + Math.max(0, L - 0.35) * INK_SLOPE))
   }
-  return `color-mix(in srgb, ${hex} ${100 - inkPct}%, var(--ink) ${inkPct}%)`
+  // `--tint-boost` (0 unless a theme sets it) leans further toward the ink where the
+  // ground is a MID-tone: twilight's violet card took member-tinted titles to 3.9–4.2:1
+  // (review #22). Measured over PALETTE: +22% clears 4.6:1 there; other tiers need none.
+  return `color-mix(in srgb, ${hex} calc(${100 - inkPct}% - var(--tint-boost, 0%)), var(--ink) calc(${inkPct}% + var(--tint-boost, 0%)))`
 }
 
 /**

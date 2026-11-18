@@ -294,6 +294,7 @@
   --ink-faint: #c6bdb3; /* lifted from #a99e95 → 4.5:1 on card — time labels (.when) */
   --line: #7e727b;
   --line-strong: #a498a0; /* 3:1 on card — the check-disc border must be visible */
+  --tint-boost: 22%; /* tintInk leans toward --ink on this mid-tone ground (review #22) */
 
   --marigold-wash: #5b4a33;
   --terracotta-wash: #5b4034;
@@ -312,13 +313,14 @@
   --berry-deep: #ab7695; /* 3.07:1 */
   --teal-deep: #54a59d; /* 3.04:1 */
 
-  /* Section ink tier (text on wash) — lightened past 4.5:1 on the twilight washes. */
-  --marigold-ink: #f4b05d; /* 4.54:1 */
-  --terracotta-ink: #eba38b; /* 4.55:1 */
-  --sage-ink: #abbe99; /* 4.51:1 */
-  --sky-ink: #8fbcd1; /* 4.53:1 */
-  --berry-ink: #c897b4; /* 4.55:1 */
-  --teal-ink: #6fc9c0; /* 4.53:1 */
+  /* Section ink tier — ≥4.6:1 on the twilight washes AND on --card (review #22: tuned on the
+     washes alone, they sat at 3.4–4.5:1 where the same tokens are used on a card). */
+  --marigold-ink: #f4b465;
+  --terracotta-ink: #edb49f;
+  --sage-ink: #b7c6a5;
+  --sky-ink: #a2c6d4;
+  --berry-ink: #d9b8c5;
+  --teal-ink: #82cec5;
 }
 
 :root[data-theme='deep-twilight'] {
@@ -342,13 +344,13 @@
   --terracotta-deep: #c55e44; /* 3.03:1 */
   --berry-deep: #9f6387; /* 3.06:1 */
 
-  /* Section ink tier (text on wash) — ≥4.5:1 on the deep-twilight washes. */
+  /* Section ink tier — ≥4.6:1 on the deep-twilight washes AND on --card (review #22). */
   --marigold-ink: #f2a03d; /* 5.34:1 */
-  --terracotta-ink: #e3805f; /* 4.51:1 */
-  --sage-ink: #8fa877; /* 4.55:1 */
+  --terracotta-ink: #e49072;
+  --sage-ink: #96ad7f;
   --sky-ink: #7bb0c9; /* 5.26:1 */
-  --berry-ink: #bd83a5; /* 4.62:1 */
-  --teal-ink: #34b3a6; /* 4.69:1 */
+  --berry-ink: #c798b0;
+  --teal-ink: #41b7aa;
 
   --accent-ink: #221c12;
   --on-primary: #221c12;
@@ -411,6 +413,8 @@
 :root[data-theme='day'][data-daypart='dusk'] {
   --paper: #faecd6;
   --paper-deep: #f1dec2;
+  /* The warmer ground took the day marigold text to 4.27:1 (review #22, axe on Découvrir). */
+  --marigold-ink: #8c561d; /* 4.61:1 on paper-deep */
   --accent: #e88f4a;
   --marigold: #e88f4a;
   --sky: #6fa3bd;
