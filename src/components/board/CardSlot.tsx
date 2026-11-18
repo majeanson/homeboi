@@ -301,7 +301,9 @@ export function CardSlot({
       // from DOM order. DOM order stays the household's own stored layout order — a
       // meaningful sequence — and landmarks mean nobody has to tab through the whole
       // wall to reach the card they want.
-      aria-label={label}
+      // …but a card that reports EMPTY is 0 px of nothing (review #33): unnamed, it leaves
+      // the landmark list. Edit mode keeps every card named, since it can still be moved.
+      aria-label={isEmpty && !editing ? undefined : label}
       // Drop targets exist only while editing. Always-on would also opt every board card
       // out of tap-to-hear, which excludes `[data-dnd-zone]` by design.
       data-dnd-zone={editing ? key : undefined}

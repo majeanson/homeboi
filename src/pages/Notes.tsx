@@ -20,7 +20,7 @@ import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
 import { NOTES_HELP } from '../lib/notesHelp'
 import { CercleNotes } from '../components/cercle/CercleNotes'
 import { VirementsSection } from '../components/virements/VirementsSection'
-import { SubTabs } from '../components/SubTabs'
+import { SubTabs, useTabPanel } from '../components/SubTabs'
 import { useTabParam } from '../lib/tabParam'
 import { isGuest } from '../lib/device'
 import { NotesKidView } from '../components/cercle/NotesKidView'
@@ -61,6 +61,7 @@ function NotesParent() {
   // « Ouvrir » and the back button all land on the same one — the useTabParam
   // convention every other hub tab follows. The default stores as NO param.
   const [section, setSection] = useTabParam<'notes' | 'virements'>('section', 'notes', ['notes', 'virements'])
+  const notesPanel = useTabPanel(section) // the tabs name the panel they switch (review #33)
   const ro = isGuest()
 
   // Doors in from elsewhere: ?item=<id> (a global-search hit, §892 — land on that
@@ -133,10 +134,13 @@ function NotesParent() {
           ariaLabel={t.nav.notes}
           pick={help.pick}
           armed={help.active}
+          {...notesPanel.tabs}
         />
       )}
       {help.bubbleFor('virements')}
 
+      {/* A tabpanel only when the tabs are there (a guest gets none to label it). */}
+      <div {...(ro ? {} : notesPanel.panel)}>
       {section === 'virements' ? (
         <VirementsSection members={members} />
       ) : (
@@ -153,6 +157,7 @@ function NotesParent() {
           />
         </>
       )}
+      </div>
     </main>
   )
 }

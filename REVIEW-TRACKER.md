@@ -71,7 +71,7 @@ Progress on the 43 items kept from the 7-persona review (2026-11-17).
   Tests: unit (recur, recurLabel, eventPeople, petFaces), d1 `events.d1.test.ts` (end, skip, 404 one-off, pet in Qui), e2e `event-series-pet.spec.ts`; plants red. ACTIONS.md gains the skip row.
 
 ## P2: accessibility. ⚠ Show Marc each change, one by one, BEFORE implementing
-- [x] 32. Settings & combobox names (`SettingsRow` label/hint; `EntityCombobox` pattern). **Done** (`fix(a11y): chaque réglage dit ce qu'il allume…`), approved by Marc 2026-11-18 (all three recommended options). Claims verified. Correction: arrows + `aria-activedescendant` already worked.
+- [x] 32. Settings & combobox names (`SettingsRow` label/hint; `EntityCombobox` pattern). **Done** `dc032dc3`, approved by Marc 2026-11-18 (all three recommended options). Claims verified. Correction: arrows + `aria-activedescendant` already worked.
   - `SettingsRow` gives its label + hint ids. A `div` row is a `role=group` named and described by them, and `Toggle` reads `useSettingsRow()` → « <label> <state> », described by the hint. The theme row's « suit l'heure » reason moved to its hint so it is announced.
   - `EntityCombobox`:
     - options are `tabIndex=-1` (Tab leaves the field);
@@ -81,7 +81,16 @@ Progress on the 43 items kept from the 7-persona review (2026-11-17).
     - the open-picto is a pointer shortcut (`aria-hidden`, out of the tab order).
 
   Tests: e2e `a11y-names.spec.ts` (3 plants red); 38 specs touching combobox/rows green.
-- [ ] 33. Structure: card headings, tabpanels, scene titles, empty regions, month grid rows and names.
+- [x] 33. Structure: card headings, tabpanels, scene titles, empty regions, month grid rows and names. **Done** (`fix(a11y): des titres, des régions, une vraie grille…`), approved by Marc 2026-11-18 (all four recommended options). Claims verified.
+  - **Headings.** `SecLabel` → h2 (h3 nested), Notes' card title h2 (it was `aria-hidden`), `SectionHeader` → h2, all CSS-reset. `SceneHead` → h1, and it names the browser tab while open.
+  - **Regions.** An empty `CardSlot` is unnamed (outside edit mode); the inner « Dessins » region is unnamed.
+  - **Month grid.**
+    - week `role=row`s (`display: contents`);
+    - cells named by `dayName`, the names and never a count. The week view's « — 3 » went too, the same evidence (#13);
+    - one roving Tab stop: ←→↑↓ / Home / End.
+  - **Tabpanels.** `SubTabs` `panelId` + `useTabPanel()`: La cuisine, Maison, Notes and the recipe book's Aa · Collections control a named tabpanel.
+
+  Tests: e2e `a11y-structure.spec.ts` (4 plants red). Full suite: 2 tests followed the new semantics (`config-panels-kitchen` by role; `habits` yesterday cell across rows); door-sweep was load (green alone).
 - [ ] 34. Focus & keyboard: global `:focus-visible`, « Bon matin » focus, keyboard toddler-exit, nested weather button, announced reorders.
 - [ ] 35. Language & names: `lang="fr-CA"`, `lang="en"` on English text, item names in repeated buttons, aria-hidden emoji, list adder in text.
 
@@ -136,3 +145,4 @@ Grandparent/sitter mode · trust & business pack · Marco's kill list. See the D
 - 2026-11-17 · #30 landing reachable without an account; « J'ai déjà un compte » → login (+ pair door there); localized titles; privacy points on the landing
 - 2026-11-18 · #31 pets in « Pour qui ? » (faces via useFaceRoster, poll untouched); « Jusqu'au » + « Pas cette fois » on recurring rendez-vous
 - 2026-11-18 · #32 Réglages toggles named by their row; EntityCombobox: Tab passes, Esc anywhere, named groups, picto out of AT
+- 2026-11-18 · #33 headings (cards h2, scenes h1 + tab title), empty cards unnamed, month grid rows/names/roving keys, sub-tab panels

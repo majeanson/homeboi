@@ -17,6 +17,11 @@
 }
 /* The head's corner controls (« Tout effacer » + the ＋ add door) sit together
    on the right; the head's space-between pushes the group to the corner. */
+/* The title is an h2 since review #33; it keeps the head's mono look. */
+.notes__title {
+  margin: 0;
+  font: inherit;
+}
 .notes__head-actions {
   display: flex;
   align-items: center;

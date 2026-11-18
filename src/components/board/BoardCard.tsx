@@ -79,6 +79,7 @@ export function SecLabel({
   const lens = useCardLens()
   const helpable = !!help && !!helpKey && help.active
   const reducible = !nested && !!lens?.expanded
+  const Heading = nested ? 'h3' : 'h2'
   return (
     <>
       <div
@@ -90,22 +91,27 @@ export function SecLabel({
             {icon ? <Icon name={icon} size={16} /> : iconNode}
           </span>
         )}
-        {helpable ? (
-          <button
-            type="button"
-            className="help-title"
-            data-help={helpKey}
-            onClick={(e) => {
-              e.stopPropagation()
-              help!.pick(helpKey!, () => {})()
-            }}
-            title={t.help.learnMore}
-          >
+        {/* A REAL heading (review #33): a card title was a <b> in a <div>, so the board's
+            heading list held the H1 and nothing else. h2 for a card, h3 for a section
+            nested in one; `.sec-label__h` resets it so nothing looks different. */}
+        <Heading className="sec-label__h">
+          {helpable ? (
+            <button
+              type="button"
+              className="help-title"
+              data-help={helpKey}
+              onClick={(e) => {
+                e.stopPropagation()
+                help!.pick(helpKey!, () => {})()
+              }}
+              title={t.help.learnMore}
+            >
+              <b>{label}</b>
+            </button>
+          ) : (
             <b>{label}</b>
-          </button>
-        ) : (
-          <b>{label}</b>
-        )}
+          )}
+        </Heading>
         <span className="ln" />
         {count ? <span className="ct">{count}</span> : null}
         {/* Stop the click here: an expanded card's whole header collapses it, and the

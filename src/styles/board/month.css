@@ -66,6 +66,11 @@
   pointer-events: none;
 }
 
+/* A week is a role=row for assistive tech only (review #33): `contents` keeps every cell
+   a direct item of the 7-column grid, so the layout is exactly what it was. */
+.monthv__row {
+  display: contents;
+}
 .monthv__grid {
   display: grid;
   /* minmax(0,1fr), not 1fr: a bare fr keeps a min-content floor, and in détaillé the cell

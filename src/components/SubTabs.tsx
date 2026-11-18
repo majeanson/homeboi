@@ -1,4 +1,4 @@
-import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useId, useRef, type CSSProperties, type ReactNode } from 'react'
 import { tintScope } from '../lib/colors'
 import { Icon, InlineIcon, type IconName } from './Icon'
 import { useHScroll } from '../lib/hscroll'
@@ -39,6 +39,7 @@ export function SubTabs<K extends string>({
   arrows,
   className,
   tint,
+  panelId,
 }: {
   options: ReadonlyArray<SubTabOption<K>>
   value: K
@@ -56,6 +57,10 @@ export function SubTabs<K extends string>({
   armed?: boolean
   // A trailing control on the row, e.g. the help "?" <HelpToggle/>.
   trailing?: ReactNode
+  // The id of the role="tabpanel" these tabs control (review #33), from `useTabPanel`.
+  // Without it the tabs carry no ids: an aria-controls naming a panel that is not
+  // there would be worse than none.
+  panelId?: string | undefined
   // `data-tour` anchor id placed on the tablist (for the guided tour).
   tour?: string
   // 'mini' = the compact variant (`.subtabs--mini`), e.g. the recipe-book Aa/Collections toggle.
@@ -172,6 +177,8 @@ export function SubTabs<K extends string>({
             type="button"
             role="tab"
             aria-selected={value === o.key}
+            id={panelId ? tabIdOf(panelId, o.key) : undefined}
+            aria-controls={panelId}
             tabIndex={value === o.key ? 0 : -1}
             className={'subtabs__opt' + (value === o.key ? ' is-on' : '')}
             aria-label={o.ariaLabel}
@@ -187,4 +194,25 @@ export function SubTabs<K extends string>({
       {trailing}
     </div>
   )
+}
+
+// A tab's id, from the panel it controls — what the panel's aria-labelledby points at.
+const tabIdOf = (panelId: string, key: string) => `${panelId}-tab-${key}`
+
+/**
+ * Tabs that switch PANELS name their panel (review #33): « Recettes, onglet 3 sur 4 »,
+ * and a screen reader can step into what it controls. Spread `tabs` on the SubTabs and
+ * `panel` on the element holding the current tab's content — one element whatever the
+ * tab, its label following the selection.
+ *
+ *   const tp = useTabPanel(kitTab)
+ *   <SubTabs {...tp.tabs} … />
+ *   <div {...tp.panel}>{kitTab === 'meals' && …}</div>
+ */
+export function useTabPanel(value: string): {
+  tabs: { panelId: string }
+  panel: { id: string; role: 'tabpanel'; 'aria-labelledby': string }
+} {
+  const id = useId()
+  return { tabs: { panelId: id }, panel: { id, role: 'tabpanel', 'aria-labelledby': tabIdOf(id, value) } }
 }

@@ -392,7 +392,7 @@ test.describe('the board card + the calendar', () => {
 
     // Yesterday's IS done — it is named, with the day-neutral « Fait » (never « Fait
     // aujourd'hui »: this row renders for a date weeks back).
-    await page.locator('.monthv__cell:has(+ .monthv__cell.is-today)').click()
+    await yesterdayCell(page).click()
     const walk = panel.locator('.act', { hasText: 'Marcher dehors' })
     await expect(walk).toBeVisible()
     await expect(walk).toContainText('Fait')
@@ -403,7 +403,7 @@ test.describe('the board card + the calendar', () => {
     await board(page, 'month')
     await page.locator('.monthv').waitFor({ state: 'visible', timeout: 15_000 })
     // Yesterday, where both the household habit and Maman's were done.
-    await page.locator('.monthv__cell:has(+ .monthv__cell.is-today)').click()
+    await yesterdayCell(page).click()
     const panel = page.locator('.monthv__day')
 
     // Maman's done habit is hers — never shown to whoever is standing at the tablet.
@@ -604,3 +604,12 @@ test('the habit form never bleeds off a narrow phone', async ({ page }) => {
   await expect(page.locator('.habit-form__window')).toBeVisible()
   await noOverflow(page, '.scene')
 })
+
+// The cell before today's, in grid order. A bare `:has(+ …)` is not enough: since
+// review #33 each week is its own role=row, so a Sunday-today has no previous sibling.
+function yesterdayCell(page: import('@playwright/test').Page) {
+  // Today mid-week: its row-sibling before it. Today on a Sunday: the last cell of the row above.
+  return page.locator(
+    '.monthv__cell:has(+ .monthv__cell.is-today), .monthv__row:has(+ .monthv__row > .monthv__cell.is-today:first-child) > .monthv__cell:last-child',
+  )
+}

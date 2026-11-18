@@ -130,6 +130,8 @@
   min-width: 0;
 }
 .section-header__title {
+  margin: 0; /* an h2 since review #33 — the heading, not the browser's default spacing */
+  font-size: inherit;
   font-weight: 700;
 }
 .section-header__sub {

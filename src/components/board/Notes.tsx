@@ -251,18 +251,25 @@ export function Notes({
   // for a read-only guest and when R2 is unbound (503 surfaced on a prior save).
   const canDraw = variant === 'drawings' && !ro && !drawHidden
 
+  // Unnamed on purpose (review #33): the card slot around it is already the « Dessins » /
+  // « Mots » region — a second region of the same name inside the first was noise in the
+  // landmark list.
   return (
-    <section className={'notes' + (toddler ? ' notes--kid' : '') + (variant === 'drawings' ? ' notes--drawings' : '')} aria-label={title}>
+    <section className={'notes' + (toddler ? ' notes--kid' : '') + (variant === 'drawings' ? ' notes--drawings' : '')}>
       <div className="notes__head mono">
-        {help?.active && variant !== 'drawings' ? (
-          <button type="button" className="help-title" onClick={() => help.pick('mots', () => {})()} title={t.help.learnMore}>
-            <InlineIcon name="push-pin-bold" /> {title}
-          </button>
-        ) : (
-          <span aria-hidden="true">
-            <InlineIcon name={variant === 'drawings' ? 'paint-brush-bold' : 'push-pin-bold'} /> {title}
-          </span>
-        )}
+        {/* The card's heading (review #33) — it was an aria-hidden span, leaning on the
+            section's name, which made the title the one thing the card never said. */}
+        <h2 className="notes__title">
+          {help?.active && variant !== 'drawings' ? (
+            <button type="button" className="help-title" onClick={() => help.pick('mots', () => {})()} title={t.help.learnMore}>
+              <InlineIcon name="push-pin-bold" /> {title}
+            </button>
+          ) : (
+            <>
+              <InlineIcon name={variant === 'drawings' ? 'paint-brush-bold' : 'push-pin-bold'} /> {title}
+            </>
+          )}
+        </h2>
         <span className="notes__head-actions">
           {/* « Tout effacer » — one tap empties the strip, one toast undoes it.
               Writes, so hidden from a guest; parent lens only (the toddler tap-to-

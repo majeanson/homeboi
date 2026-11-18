@@ -7,13 +7,13 @@ import { healOnError } from '../../lib/query'
 import { useProfile } from '../../lib/profile'
 import { useMealPrefs } from '../../lib/mealPrefs'
 import { addLocalDays, localDayStart, localYMD } from '../../lib/localDay'
-import { formatDayShort, formatDayLong, weekdayShort, dayNum, capitalize as cap } from '../../lib/format'
+import { formatDayShort, weekdayShort, dayNum, capitalize as cap } from '../../lib/format'
 import { type Lang } from '../../i18n'
 import { Icon } from '../Icon'
 import { Loading } from '../Fallback'
 import { LoadError } from '../LoadError'
 import { DayMark } from './DayMark'
-import { bucketByDay, markersFor, tripSpansByDay, type MonthData } from './dayLines'
+import { bucketByDay, dayName, markersFor, tripSpansByDay, type MonthData } from './dayLines'
 import { type Dict, type Member } from './types'
 
 
@@ -134,7 +134,7 @@ export function WeekView({
               <Link
                 to={`/kitchen/day/${d}`}
                 className="weekv__day-link"
-                aria-label={`${formatDayLong(d, lang)}${lines.length ? ` — ${lines.length}` : ''}`}
+                aria-label={dayName(d, lines, t, lang)}
               >
                 <span className="weekv__date">
                   <span className="weekv__dow mono">{cap(weekdayShort(d, lang))}</span>

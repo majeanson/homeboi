@@ -17,7 +17,7 @@ import { pictoFor } from '../../lib/picto'
 import { todayLocalDay } from '../../lib/localDay'
 import { InlineIcon } from '../Icon'
 import { SearchField } from '../SearchField'
-import { SubTabs } from '../SubTabs'
+import { SubTabs, useTabPanel } from '../SubTabs'
 import { Chip } from '../Chip'
 import { EmptyState } from '../EmptyState'
 import { type HelpMode } from '../../lib/helpMode'
@@ -247,6 +247,9 @@ export function RecipesTab({
   // "Collections" view: cluster the SAME ordered/filtered list into per-tag
   // sections (a recipe with several tags appears in each), untagged ones under
   // "Autres". Null unless grouping is on AND there are tags to group by.
+  // The Aa · Collections tabs show only when there is something to group by (review #33).
+  const arrangeTabs = recipes.length > 0 && tags.length > 0
+  const recPanel = useTabPanel(groupView ? 'collections' : 'aa')
   const groups = useMemo(() => {
     if (!groupView || tags.length === 0) return null
     // Selected tag chips pick which collection sections to show (a UNION of those
@@ -394,11 +397,12 @@ export function RecipesTab({
               {activeFilters > 0 && <span className="recipe-filter__n mono">{activeFilters}</span>}
             </button>
           )}
-          {recipes.length > 0 && tags.length > 0 && (
+          {arrangeTabs && (
             <div className="recipe-view-toggle">
               <SubTabs
                 size="mini"
                 ariaLabel={t.recipes.arrange}
+                {...recPanel.tabs}
                 value={groupView ? 'collections' : 'aa'}
                 onSelect={(k) => setGroupView(k === 'collections')}
                 options={[
@@ -504,6 +508,8 @@ export function RecipesTab({
               re-arranges only — pills/tags still filter. In Collections the tag
               chips pick WHICH sections show (a union) rather than narrowing the
               recipes; the section headings make that legible without a hint line. */}
+          {/* The panel the Aa · Collections tabs switch (review #33) — only while they show. */}
+          <div {...(arrangeTabs ? recPanel.panel : {})}>
           {recipeOrder.length === 0 ? (
             // The book has recipes — the FILTERS hid them all. Say so (instead of
             // the misleading "no recipes yet") and offer the one-tap way back.
@@ -545,6 +551,7 @@ export function RecipesTab({
           ) : (
             <div className="recipe-grid">{recipeOrder.map(renderCard)}</div>
           )}
+          </div>
         </>
       )}
     </section>

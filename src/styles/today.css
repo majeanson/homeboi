@@ -923,6 +923,15 @@
      was dead.) */
   flex-wrap: wrap;
 }
+/* The title's heading element (review #33) carries no look of its own: the <b> inside
+   keeps the type, the row keeps the layout. */
+.sec-label__h {
+  margin: 0;
+  font: inherit;
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
 .sec-label b {
   font-family: var(--display);
   font-weight: 700;

@@ -58,7 +58,7 @@ import { CompleteFamilies } from '../components/cercle/CompleteFamilies'
 import { FamilyShareModal } from '../components/cercle/FamilyShareModal'
 import { familyToShare } from '../lib/cercleShare'
 import type { IntakeSubmission } from '../lib/intake'
-import { SubTabs } from '../components/SubTabs'
+import { SubTabs, useTabPanel } from '../components/SubTabs'
 import { MemberSwitcher } from '../components/MemberSwitcher'
 import { FaceSelect } from '../components/FaceSelect'
 import { useProfile } from '../lib/profile'
@@ -175,6 +175,7 @@ function MaisonParent() {
   // is the default now (the merged tab's primary door — matches the toddler lens'
   // own default) — Famille used to be, back when this page was just Le cercle.
   const [section, setSection] = useTabParam<Section>('section', 'routines', ['routines', 'family', 'social', 'business', 'carnets'])
+  const sectionPanel = useTabPanel(section) // the pills name the panel they switch (review #33)
   // Which GUIDE card (and so which TOUR — same id, the SectionIntro convention) the
   // « ? » bar offers here: the section you are LOOKING at, not the tab in general.
   // The table is shared with the ＋ sheet (lib/sectionCard) so the two can't disagree.
@@ -815,6 +816,7 @@ function MaisonParent() {
         pick={help.pick}
         armed={help.active}
         tour="maison-sections"
+        {...sectionPanel.tabs}
       />
       {help.hint && <HelpHint card={sectionCard} />}
       {help.bubbleFor('social')}
@@ -895,6 +897,7 @@ function MaisonParent() {
       {/* « Notre monde » is reached from the distinct launch button in the view
           row's trailing slot (a full-screen scene, /cercle/monde) — see `viewSwitch`. */}
 
+      <div {...sectionPanel.panel}>
       {section === 'routines' ? (
         /* Routines — self-contained (own query, own data-tour anchor), like
            Business/Carnets below. Bubble ownership: RoutinesTab used to render its
@@ -1262,6 +1265,7 @@ function MaisonParent() {
           <JoindreRail people={sectionJoindre} businesses={[]} />
         </>
       )}
+      </div>
       {/* One floating drag label for the page (person → group). */}
       <DragGhost ghost={dnd.ghost} />
     </main>

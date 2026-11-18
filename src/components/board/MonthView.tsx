@@ -41,6 +41,7 @@ import { colorOf, nameOf, type Dict, type Member } from './types'
 // lines as grid cells; WeekView draws the same lines as rows.
 import {
   bucketByDay,
+  dayName,
   markersFor,
   tripSpansByDay,
   type DayBucket,
@@ -254,6 +255,25 @@ export function MonthView({
   const { signedIn } = useAuth()
 
   const grid = useMemo(() => monthGrid(selYMD.year, selYMD.month), [selYMD.year, selYMD.month])
+  // ONE Tab stop in the grid (review #33): the day the arrows last reached, else the
+  // selected day, else the grid's first. The arrows move the focus; they do not open a
+  // day — Enter / Space (the button's own click) does, as a tap does.
+  const gridRef = useRef<HTMLDivElement>(null)
+  const [focusDay, setFocusDay] = useState<number | null>(null)
+  const rovingDay = focusDay != null && grid.days.includes(focusDay) ? focusDay : grid.days.includes(selected) ? selected : grid.days[0]
+  const gridKeys = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (rovingDay == null || !(e.target as HTMLElement).matches('[role="gridcell"]')) return
+    const i = grid.days.indexOf(rovingDay)
+    const col = i % 7
+    const moves: Record<string, number> = { ArrowLeft: i - 1, ArrowRight: i + 1, ArrowUp: i - 7, ArrowDown: i + 7, Home: i - col, End: i - col + 6 }
+    const to = moves[e.key]
+    if (to === undefined) return
+    e.preventDefault()
+    const d = grid.days[Math.max(0, Math.min(grid.days.length - 1, to))]
+    if (d == null) return
+    setFocusDay(d)
+    gridRef.current?.querySelector<HTMLElement>(`[data-day="${d}"]`)?.focus()
+  }
   const from = grid.days[0] ?? 0
   const to = (grid.days[grid.days.length - 1] ?? 0) + DAY
 
@@ -727,13 +747,21 @@ export function MonthView({
           wifi — say it once here, with the hand back. */}
       {!data && isError && <LoadError onRetry={() => void refetch()} />}
 
-      <div className="monthv__grid" role="grid" aria-label={title}>
-        {grid.days.slice(0, 7).map((d) => (
-          <div key={`h${d}`} className="monthv__dow mono" role="columnheader">
-            {cap(weekdayShort(d, lang))}
-          </div>
-        ))}
-        {grid.days.map((d) => {
+      {/* A REAL grid (review #33, approved by Marc): rows of weeks (`display: contents`,
+          so the 7-column layout is untouched), each day named in full, and ONE Tab stop —
+          the arrows walk the days (←→ a day, ↑↓ a week, Home/End the week's ends), Enter
+          or Space opens the day, exactly as a tap does. It was ~30 Tab stops named « 4 ». */}
+      <div className="monthv__grid" role="grid" aria-label={title} ref={gridRef} onKeyDown={gridKeys}>
+        <div className="monthv__row" role="row">
+          {grid.days.slice(0, 7).map((d) => (
+            <div key={`h${d}`} className="monthv__dow mono" role="columnheader">
+              {cap(weekdayShort(d, lang))}
+            </div>
+          ))}
+        </div>
+        {weeksOf(grid.days).map((week) => (
+        <div key={`w${week[0]}`} className="monthv__row" role="row">
+        {week.map((d) => {
           const b = byDay.get(d)
           // The marker walk: habits are deliberately NOT cell markers (why: `markersFor`
           // in dayLines — the same rule « La semaine » reads, so the two glances agree).
@@ -768,7 +796,20 @@ export function MonthView({
             (on && !lit ? ' is-on' : '') +
             (lit ? (hit ? ' is-lit' : ' is-dim') : '')
           return (
-            <button key={d} type="button" role="gridcell" aria-selected={on} className={cls} onClick={() => pickDay(d)}>
+            <button
+              key={d}
+              type="button"
+              role="gridcell"
+              aria-selected={on}
+              aria-label={dayName(d, marks, t, lang)}
+              data-day={d}
+              tabIndex={d === rovingDay ? 0 : -1}
+              className={cls}
+              onClick={() => {
+                setFocusDay(d)
+                pickDay(d)
+              }}
+            >
               <span className="monthv__num">{localYMD(d).day}</span>
               {shown.length > 0 && (
                 <span className="monthv__dots" aria-hidden="true">
@@ -805,6 +846,8 @@ export function MonthView({
             </button>
           )
         })}
+        </div>
+        ))}
       </div>
 
       {/* Shape key AND the highlight lens: the dots are shape-coded, so this tells a
@@ -979,4 +1022,11 @@ export function MonthView({
       {eventActions.node}
     </div>
   )
+}
+
+// The grid's days cut into weeks — one role="row" each (review #33).
+function weeksOf(days: readonly number[]): number[][] {
+  const out: number[][] = []
+  for (let i = 0; i < days.length; i += 7) out.push(days.slice(i, i + 7))
+  return out
 }

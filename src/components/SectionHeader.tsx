@@ -30,7 +30,7 @@ export function SectionHeader({
         )}
         {icon && <Icon name={icon} size={18} color={iconColor} />}
         <span className="section-header__text">
-          <span className="section-header__title">{title}</span>
+          <h2 className="section-header__title">{title}</h2>
           {subtitle != null && <span className="section-header__sub mono">{subtitle}</span>}
         </span>
       </div>

@@ -53,7 +53,7 @@ test('« Jours affichés » patches household with the chosen window', async ({ 
   await expect(section).toBeVisible()
 
   // The window select lives in its own section under the slot list.
-  const select = section.getByLabel('La grille montre')
+  const select = section.getByRole('combobox', { name: 'La grille montre' })
   await expect(select).toBeVisible()
   // The fixture household has never set one, so it reads the default.
   await expect(select).toHaveValue('10')
@@ -73,7 +73,7 @@ test('the window picker only offers what the rest of the app supports', async ({
   // would stop seeing the plan. If someone widens the picker, they have to fix
   // those surfaces first — so the offered set is pinned here.
   await page.goto('/settings?tab=recipes&sub=meals')
-  const select = page.locator('#operator-panel').getByLabel('La grille montre')
+  const select = page.locator('#operator-panel').getByRole('combobox', { name: 'La grille montre' })
   await expect(select).toBeVisible()
   const values = await select.locator('option').evaluateAll((os) => os.map((o) => (o as HTMLOptionElement).value))
   expect(values).toEqual(['7', '10', '14'])

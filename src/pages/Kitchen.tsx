@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Icon, InlineIcon, type IconName } from '../components/Icon'
 import { HubHead } from '../components/HubHead'
-import { SubTabs } from '../components/SubTabs'
+import { SubTabs, useTabPanel } from '../components/SubTabs'
 import { Chip } from '../components/Chip'
 import { Cluster } from '../components/Layout'
 import { Avatar } from '../components/Avatar'
@@ -116,6 +116,7 @@ export function Kitchen() {
   // Held in the URL (?tab=) so it survives the return from a full-screen add/edit
   // scene — add a recipe from Recettes and you come back to Recettes. See tabParam.
   const [kitTab, setKitTab] = useTabParam('tab', 'meals', ['meals', 'pantry', 'recipes', 'history'] as const)
+  const kitPanel = useTabPanel(kitTab) // the sub-tabs name the panel they switch (review #33)
   // Contextual "?" help mode for the WHOLE tab (shared hook): arm it once at the
   // sub-tab nav, then tap a tab OR any sub-section heading below (Idées de repas,
   // Restants, Il en manque, La réserve, Recettes, Collections) to learn what that
@@ -497,6 +498,7 @@ export function Kitchen() {
           armed={tabHelp.active}
           ariaLabel={t.kitchen.title}
           tour="kitchen-tabs"
+          {...kitPanel.tabs}
         />
         {tabHelp.hint && <HelpHint card="kitchen" />}
         {/* The sub-tab bubbles render HERE (next to the nav). Heading bubbles render
@@ -507,6 +509,7 @@ export function Kitchen() {
         {tabHelp.bubbleFor('recipes')}
         {tabHelp.bubbleFor('history')}
 
+        <div {...kitPanel.panel}>
         {kitTab === 'meals' && (
         <section>
           {/* « Magasiner la semaine » still lives in the ＋ Add sheet (see
@@ -882,6 +885,7 @@ export function Kitchen() {
             help={tabHelp}
           />
         )}
+        </div>
       </main>
       {/* C-14 — the ONE Idées drawer + « Vide-frigo » live on the /kitchen/idees
           scene now (IdeasPage), reached from the grid opener above and the ＋ Add

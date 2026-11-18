@@ -1,5 +1,5 @@
 import { IconButton } from './IconButton'
-import type { ReactNode } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import { InlineIcon, type IconName } from './Icon'
 import { HelpDot } from './HelpDot'
 import { OfflineBanner } from './OfflineBanner'
@@ -58,6 +58,17 @@ export function SceneHead({
   const t = useT()
   // Always called (rules-of-hooks); only used when `backTo` is given.
   const back = useSceneClose(backTo ?? '/')
+  // The scene names the browser tab while it is open (review #33: a recipe, cook mode, the
+  // cashier all left « Babillard »), the hub's own « La liste · Babillard » shape, and
+  // hands back whatever was there when it closes. Only a plain-text title can name a tab.
+  useEffect(() => {
+    if (typeof title !== 'string' || !title.trim()) return
+    const before = document.title
+    document.title = `${title} · ${t.appName}`
+    return () => {
+      document.title = before
+    }
+  }, [title, t.appName])
   return (
     <>
     {offline && <OfflineBanner />}
@@ -66,14 +77,14 @@ export function SceneHead({
         <IconButton icon="arrow-left-bold" label={closeLabel ?? t.common.back} onClick={back} className="scene__head-back" />
       )}
       <div className="scene__head-titles">
-        <h2 className="scene__head-title">
+        <h1 className="scene__head-title">
           {icon && (
             <>
               <InlineIcon name={icon} />{' '}
             </>
           )}
           {title}
-        </h2>
+        </h1>
         {subtitle != null && <span className="scene__head-sub mono">{subtitle}</span>}
       </div>
       <div className="scene__head-actions">

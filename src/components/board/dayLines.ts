@@ -1,5 +1,5 @@
 import { CATS } from '../../lib/cats'
-import { formatTime } from '../../lib/format'
+import { formatDayLong, formatTime } from '../../lib/format'
 import { addLocalDays } from '../../lib/localDay'
 import { isMealSlot, type MealSlot } from '../../lib/mealSlots'
 import { type MealPrefs } from '../../lib/mealPrefs'
@@ -213,4 +213,15 @@ export function linesFor(
 export const GLANCE_HIDDEN: ReadonlySet<DotKind> = new Set<DotKind>(['habit'])
 export function markersFor(b: DayBucket | undefined, members: Member[], meals: MealPrefs, t: Dict, lang: Lang): Line[] {
   return linesFor(b, members, meals, t, lang).filter((l) => !GLANCE_HIDDEN.has(l.kind))
+}
+
+/**
+ * A day's NAME for a screen reader (review #33): « mercredi 4 novembre — Dentiste, Soccer »,
+ * or « — Libre ». The month cells said « 4 » and the week rows « jeudi 19 novembre — 3 »:
+ * three of what, and a count is the one thing a calm glance never shows. The names, the
+ * first four of them, as the glance itself draws them.
+ */
+export function dayName(day: number, lines: readonly Pick<Line, 'label'>[], t: Dict, lang: Lang): string {
+  const names = lines.slice(0, 4).map((l) => l.label)
+  return `${formatDayLong(day, lang)} — ${names.length ? names.join(', ') + (lines.length > 4 ? '…' : '') : t.week.free}`
 }
