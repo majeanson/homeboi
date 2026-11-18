@@ -1,4 +1,7 @@
+import { useEffect, useState } from 'react'
 import { useT } from '../../i18n'
+import { useMealPrefs } from '../../lib/mealPrefs'
+import { todayLocalDay } from '../../lib/localDay'
 import { type MealSlot } from '../../lib/mealSlots'
 import { Chip } from '../Chip'
 import { SlotPicker } from './SlotPicker'
@@ -29,8 +32,35 @@ export function MealPlanPicker({
   band?: boolean
 }) {
   const t = useT()
+  const { hero } = useMealPrefs()
+  // « CE SOIR » FIRST (review #29, 2026-11-17): « Choisir un souper » led to ideas with
+  // no way to put one on tonight but « pick a slot, then a day ». One tap now: the
+  // household's hero slot, today. The slot is the PARENT's state, so the chip asks for
+  // it through `onSlot` and picks the day once the new slot has come back down — every
+  // call site keeps its `onPickDay(date)` and gets the shortcut for free.
+  const today = todayLocalDay()
+  const hasToday = week.some((d) => d.date === today)
+  const [pendingTonight, setPendingTonight] = useState(false)
+  useEffect(() => {
+    if (pendingTonight && slot === hero) {
+      setPendingTonight(false)
+      onPickDay(today)
+    }
+  }, [pendingTonight, slot, hero, today, onPickDay])
+  const pickTonight = () => {
+    if (slot === hero) onPickDay(today)
+    else {
+      onSlot(hero)
+      setPendingTonight(true)
+    }
+  }
   return (
     <div className={'meal-plan-pick' + (band ? ' meal-plan-pick--band' : '')}>
+      {hasToday && (
+        <Chip className="meal-plan-pick__tonight" onClick={pickTonight}>
+          {t.board.tonight}
+        </Chip>
+      )}
       <span className="meal-plan-pick__label mono">{t.recipes.planSlot}</span>
       <SlotPicker value={slot} onChange={onSlot} />
       <span className="meal-plan-pick__label mono">{t.recipes.planPick}</span>

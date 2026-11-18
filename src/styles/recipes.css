@@ -1403,3 +1403,10 @@
   flex-direction: column;
   gap: 0.8rem;
 }
+
+/* « Ce soir » leads the picker (review #29): one tap puts the idea on tonight's hero
+   slot, before the slot + day choice for any other day. */
+.meal-plan-pick__tonight {
+  align-self: flex-start;
+  font-weight: 700;
+}
