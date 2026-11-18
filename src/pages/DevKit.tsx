@@ -1483,6 +1483,9 @@ export function DevKit() {
             iconColor: 'var(--berry-deep)',
             keywords: ['pâtes', 'boeuf'],
             badge: <span className="combobox__badge is-ready mono">Prêt</span>,
+            // iconTo: the picto is a pointer shortcut to the thing (hidden from Tab + AT)
+            iconTo: '/kitchen',
+            iconToLabel: 'Ouvrir la recette',
           },
           {
             id: 'r2',

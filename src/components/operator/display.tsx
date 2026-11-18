@@ -135,7 +135,7 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
   return (
     <OperatorSection title={o18n.display} help={help} helpKey="display">
       <div className="operator__display">
-        <SettingsRow label={o18n.themeLabel}>
+        <SettingsRow label={o18n.themeLabel} hint={ambient ? o18n.themeFollowsTime : undefined}>
           {/* While ambient is on, day/night follows the time (auto day/night) —
               the manual toggle is governed by it, so show it disabled with a
               hint rather than letting a tap be silently re-asserted next tick. */}
@@ -153,7 +153,6 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
             />{' '}
             {theme === 'night' ? o18n.themeNight : o18n.themeDay}
           </button>
-          {ambient && <p className="operator__seg-hint mono">{o18n.themeFollowsTime}</p>}
         </SettingsRow>
         <SettingsRow label={o18n.ambientLabel}>
           <Toggle

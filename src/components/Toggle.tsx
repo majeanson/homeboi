@@ -1,4 +1,6 @@
+import { useId } from 'react'
 import { InlineIcon, type IconName } from './Icon'
+import { useSettingsRow } from './operator/SettingsRow'
 
 // THE calm on/off pill — filled (btn--primary) when on, plain when off, with a glyph +
 // label and `aria-pressed` reflecting state. The shared version of the switch that was
@@ -26,11 +28,18 @@ export function Toggle({
   iconColor?: string
   size?: number
 }) {
+  const self = useId()
+  const row = useSettingsRow()
   return (
     <button
       type="button"
       className={`btn${on ? ' btn--primary' : ''}`}
       aria-pressed={on}
+      // Inside a Réglages row: « <the row's label> <my state> », described by its hint
+      // (review #32) — alone, a state word (« Activée ») never says WHAT is on.
+      id={self}
+      aria-labelledby={row.labelId ? `${row.labelId} ${self}` : undefined}
+      aria-describedby={row.hintId}
       disabled={disabled}
       aria-disabled={disabled || undefined}
       onClick={onClick}

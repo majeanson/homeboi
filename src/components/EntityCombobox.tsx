@@ -28,6 +28,29 @@ import { VoiceButton, VoiceStatus } from './VoiceButton'
 // (e.g. the ＋ sheet) without an invalid nested form, and so arrow-key navigation
 // works.
 
+// Was the field reached by Tab? (review #32) Tabbing PAST a picker must not drop a
+// keyboard user into its list; a field focused by a tap, or by the ＋ / ✏️ that revealed
+// it (Enter included), still opens. One listener for the whole app: the last key pressed,
+// cleared by any pointer press.
+let viaTab = false
+if (typeof window !== 'undefined') {
+  window.addEventListener('keydown', (e) => (viaTab = e.key === 'Tab'), true)
+  window.addEventListener('pointerdown', () => (viaTab = false), true)
+}
+
+// Contiguous runs of options sharing a group (the caller keeps groups contiguous): a run
+// with a heading renders as a named role="group", a run without one as bare options.
+function segmentsOf<T>(shown: readonly ComboOption<T>[]): { group: string | null; start: number; items: ComboOption<T>[] }[] {
+  const out: { group: string | null; start: number; items: ComboOption<T>[] }[] = []
+  shown.forEach((o, i) => {
+    const g = o.group ?? null
+    const last = out[out.length - 1]
+    if (last && last.group === g) last.items.push(o)
+    else out.push({ group: g, start: i, items: [o] })
+  })
+  return out
+}
+
 export interface ComboOption<T = unknown> {
   /** Stable id — list keys + active-row tracking. */
   id: string
@@ -257,6 +280,65 @@ export function EntityCombobox<T>({
     setOpen(true)
   }
 
+  // One option row. Options are NOT tab stops (review #32): the input owns focus and moves
+  // through them with the arrows (aria-activedescendant), so Tab leaves the field instead
+  // of walking every option. The open-picto beside a row is a pointer shortcut, kept out
+  // of the tab order and the accessibility tree — a link inside a listbox reads as noise,
+  // and the thing it opens has its own page.
+  const renderOption = (o: ComboOption<T>, i: number) => {
+    const row = (
+      <button
+        type="button"
+        id={`${listId}-${o.id}`}
+        role="option"
+        tabIndex={-1}
+        aria-selected={i === activeIdx}
+        className={'combobox__row' + (i === activeIdx ? ' is-active' : '')}
+        onPointerEnter={() => setActive(i)}
+        // Keep the input focused on press so the wrapper's onBlur never fires
+        // (relatedTarget is null on touch / Safari when a button isn't focused), which
+        // would unmount the menu before this click lands — the pick would silently no-op.
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={() => pick(o)}
+      >
+        <span className="combobox__row-main">
+          <span className="combobox__row-title">
+            {o.icon && !o.iconTo && (
+              <>
+                <InlineIcon name={o.icon} size={14} color={o.iconColor} />{' '}
+              </>
+            )}
+            {o.label}
+          </span>
+          {o.hint && <span className="combobox__row-hint">{o.hint}</span>}
+        </span>
+        {o.badge}
+      </button>
+    )
+    return (
+      <li key={o.id} role="presentation">
+        {o.icon && o.iconTo ? (
+          <div className="combobox__opt" role="presentation">
+            <Link
+              to={o.iconTo}
+              className="combobox__open"
+              tabIndex={-1}
+              aria-hidden="true"
+              title={o.iconToLabel ?? o.label}
+              onMouseDown={(e) => e.preventDefault()}
+              style={o.iconColor ? { color: o.iconColor } : undefined}
+            >
+              <Icon name={o.icon} size={16} />
+            </Link>
+            {row}
+          </div>
+        ) : (
+          row
+        )}
+      </li>
+    )
+  }
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     // Mid-IME-composition keys steer the composition, not the dropdown — Enter
     // here confirms the composed text, never a pick/commit (keyCode 229 = the
@@ -341,6 +423,17 @@ export function EntityCombobox<T>({
       // a composer, and fields.css then gives the box its own full-width line.
       className={'edit-field combobox' + (submitLabel || secondaryLabel ? ' edit-field--cta' : '') + (className ? ` ${className}` : '')}
       onBlur={handleBlur}
+      // Escape closes the list from ANYWHERE inside it (review #32): a header control
+      // the list carries was a dead end — Esc there did nothing, the list stayed open.
+      // The input's own handler runs first and stops it, so this only sees the rest.
+      onKeyDown={(e) => {
+        if (e.key !== 'Escape' || !open || e.target === inputRef.current) return
+        e.preventDefault()
+        e.stopPropagation()
+        setOpen(false)
+        setActive(-1)
+        inputRef.current?.focus()
+      }}
     >
       <div className="edit-field__row">
         <div className="edit-field__box">
@@ -358,7 +451,8 @@ export function EntityCombobox<T>({
               setActive(-1)
               setOpen(true)
             }}
-            onFocus={() => !typeaheadOnly && setOpen(true)}
+            onFocus={() => !typeaheadOnly && !viaTab && setOpen(true)}
+            onClick={() => !typeaheadOnly && setOpen(true)}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
             aria-label={ariaLabel ?? placeholder}
@@ -484,62 +578,22 @@ export function EntityCombobox<T>({
             <EmptyState size="cell">{noMatchLabel}</EmptyState>
           ) : (
             <ul className="combobox__list" id={listId} role="listbox">
-              {shown.map((o, i) => {
-                // A group heading prints once, when this option's group differs
-                // from the previous shown option's (caller keeps groups contiguous).
-                const heading = o.group && o.group !== shown[i - 1]?.group ? o.group : null
-                const row = (
-                  <button
-                    type="button"
-                    id={`${listId}-${o.id}`}
-                    role="option"
-                    aria-selected={i === activeIdx}
-                    className={'combobox__row' + (i === activeIdx ? ' is-active' : '')}
-                    onPointerEnter={() => setActive(i)}
-                    // Keep the input focused on press so the wrapper's onBlur
-                    // never fires (relatedTarget is null on touch / Safari when a
-                    // button isn't focused), which would unmount the menu before
-                    // this click lands — the pick would silently no-op.
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => pick(o)}
-                  >
-                    <span className="combobox__row-main">
-                      <span className="combobox__row-title">
-                        {o.icon && !o.iconTo && (
-                          <>
-                            <InlineIcon name={o.icon} size={14} color={o.iconColor} />{' '}
-                          </>
-                        )}
-                        {o.label}
-                      </span>
-                      {o.hint && <span className="combobox__row-hint">{o.hint}</span>}
-                    </span>
-                    {o.badge}
-                  </button>
-                )
-                return (
-                  <li key={o.id} role="presentation">
-                    {heading && <p className="combobox__group mono">{heading}</p>}
-                    {o.icon && o.iconTo ? (
-                      <div className="combobox__opt" role="presentation">
-                        <Link
-                          to={o.iconTo}
-                          className="combobox__open"
-                          aria-label={o.iconToLabel ?? o.label}
-                          title={o.iconToLabel ?? o.label}
-                          onMouseDown={(e) => e.preventDefault()}
-                          style={o.iconColor ? { color: o.iconColor } : undefined}
-                        >
-                          <Icon name={o.icon} size={16} />
-                        </Link>
-                        {row}
-                      </div>
-                    ) : (
-                      row
-                    )}
+              {segmentsOf(shown).map((seg) =>
+                seg.group ? (
+                  // A heading names its run of options (review #32): a listbox may hold
+                  // options and GROUPS, and a bare <p> between options named nothing.
+                  <li key={`g-${seg.start}`} role="group" aria-labelledby={`${listId}-g${seg.start}`} className="combobox__seg">
+                    <p id={`${listId}-g${seg.start}`} className="combobox__group mono">
+                      {seg.group}
+                    </p>
+                    <ul role="presentation" className="combobox__seg-list">
+                      {seg.items.map((o, k) => renderOption(o, seg.start + k))}
+                    </ul>
                   </li>
-                )
-              })}
+                ) : (
+                  seg.items.map((o, k) => renderOption(o, seg.start + k))
+                ),
+              )}
             </ul>
           )}
         </div>
