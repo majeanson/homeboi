@@ -100,12 +100,10 @@ const SILENT_PATHS = new Set<string>([
 const PATH_KEYS: Record<string, string[][]> = {
   // A restore replaces the whole household: every open surface must refetch. The
   // client invalidates everything itself too — this is for the OTHER devices.
-  'takeout/restore': [['board'], ['month'], ['members'], ['cercle'], ['chores'], ['todos'], ['tasks'], ['meals'], ['recipes'], ['list-history'], ['ghosts'], ['household'], ['trips'], ['habits'], ['transfers'], ['family-notes'], ['home-projects'], ['carnets'], ['day-notes']],
+  'takeout/restore': [['board'], ['month'], ['members'], ['cercle'], ['todos'], ['tasks'], ['meals'], ['recipes'], ['list-history'], ['ghosts'], ['household'], ['trips'], ['habits'], ['transfers'], ['family-notes'], ['home-projects'], ['carnets'], ['day-notes']],
   // The shared list — drives the board glance, ghost strip, and list history.
   list: [['board'], ['ghosts'], ['list-history']],
-  // Chores + the rotation ledger feed the board, the chores tab, and the month.
-  chores: [['chores'], ['board'], ['month'], ['tasks']],
-  'chores-ledger': [['chores'], ['board'], ['month']],
+  'chores-ledger': [['board'], ['month']],
   // Projets & Entretien (home_projects): dated upkeep shows on the board + month,
   // and the Réglages sub-tabs read ['home-projects']. Mirrors the chores keys.
   // …and ['carnets']: « Projets & Entretien » rows render inside a carnet's own
@@ -219,7 +217,7 @@ const PATH_KEYS: Record<string, string[][]> = {
   todos: [['todos'], ['board'], ['month'], ['tasks']],
   // The one task form's door (0150). It writes any face, and an edit can move a row from one
   // face to another, so every surface that shows a face hears it: the union of the three aliases.
-  tasks: [['tasks'], ['board'], ['month'], ['chores'], ['todos'], ['home-projects'], ['carnets']],
+  tasks: [['tasks'], ['board'], ['month'], ['todos'], ['home-projects'], ['carnets'], ['chores-ledger']],
   'todo-templates': [['todo-templates']],
   // « Partager » — a snapshot share create/revoke only changes the sender's « Mes
   // partages » ledger (Réglages ▸ Partage + the ShareModal), so nudge that one cache.

@@ -57,13 +57,13 @@ type Cleanup = { table: string; id: string }
 // CLEANUP_TABLES allowlist (keep the two in step).
 const CAPTURE_UNDO_EP: Record<string, string> = {
   events: 'events',
-  tasks: 'chores',
+  tasks: 'tasks', // the spine's one door (the /api/chores alias is gone, review #37)
   todos: 'todos',
   list_items: 'list',
   pantry_low: 'pantry',
   meals: 'meals',
   meal_leftovers: 'meal-leftovers',
-  home_projects: 'home-projects',
+  home_projects: 'tasks',
   notes: 'notes',
 }
 

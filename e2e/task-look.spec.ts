@@ -50,7 +50,7 @@ test('the task form: the look is folded, suggests from the title, and sends a pi
 })
 
 test('a to-do opens the one form, its look already open, and saving patches it', async ({ page, app }) => {
-  await app.boot({ route: '/board?view=taches', wait: '.tasks-view', api: { overrides: { tasks: frame, chores: { chores: [choreRowOf(own)] } } } })
+  await app.boot({ route: '/board?view=taches', wait: '.tasks-view', api: { overrides: { tasks: frame }, taskRows: [choreRowOf(own)] } })
   // A to-do's peek has the same « Modifier » as every task: the one form, at /todo/:id.
   await page.locator('[data-item="l-own"] .act__hit').click()
   const peek = page.locator('.detail-sheet')

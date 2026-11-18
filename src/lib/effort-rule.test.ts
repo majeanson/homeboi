@@ -61,7 +61,7 @@ describe('effort rule — one door to write it, one control to pick it', () => {
 
   it('the handlers the rule exists for are read', () => {
     const touching = handlers.filter((f) => /\bbody\??\.effort\b/.test(f.raw)).map((f) => f.path)
-    expect(touching).toEqual(expect.arrayContaining(['functions/api/chores.ts', 'functions/api/home-projects.ts', 'functions/api/todos.ts']))
+    expect(touching).toEqual(expect.arrayContaining(['functions/api/home-projects.ts', 'functions/api/todos.ts']))
   })
 
   it('every handler takes the body’s effort through taskEffort', () => {

@@ -65,8 +65,6 @@ const OLD = {
     'SELECT id, title, day, member_id, done_at, section, source_template_id, subject_kind, subject_id, icon, colour AS color, effort FROM todos WHERE household_id = ? AND source_template_id IS NULL AND section IS NULL AND (done_at IS NULL OR done_at >= ?) ORDER BY created_at, position LIMIT 500',
   boardChores: `SELECT ${OLD_CHORE_COLS}, announce_evening FROM tasks WHERE household_id = ? ORDER BY created_at`,
   boardHomes: `SELECT ${HOME_TASK_COLS} FROM home_projects WHERE household_id = ? AND (at IS NOT NULL OR last_done_at >= ?)`,
-  choresGet:
-    'SELECT id, title, rotation_json, current_idx, last_done_at, last_done_by, colour AS color, recur_json, recur_start, lead_seconds, announce_evening, subject_kind, subject_id, icon, effort FROM tasks WHERE household_id = ? ORDER BY created_at',
   homeGet:
     'SELECT id, kind, title, notes, budget_cents, colour AS color, at, recur_json, recur_from, lead_seconds, last_done_at, snoozed_until, carnet_id, subject_kind, subject_id, rotation_json, current_idx, last_done_by, icon, effort FROM home_projects WHERE household_id = ? ORDER BY created_at',
   todosDay:
@@ -171,7 +169,6 @@ async function before(hh: string) {
     tasks: [...homes.map((h) => homeTask(h, today, now)), ...chores.map((c) => choreTask(c, today, now)), ...todos.map((t) => todoTask(t, today))].filter(present),
     boardTasks: [...boardHomes.map((h) => homeTask(h, today, now)), ...boardChores.map((c) => choreTask(c, today, now))].filter(present).filter((i) => i.onBoard),
     boardChores,
-    choresGet: await all(DRILL, OLD.choresGet, hh),
     homeGet: (await all<HomeTaskRow & Row>(DRILL, OLD.homeGet, hh)).map((p) => ({ ...p, ...upkeepStatus(p, today) })),
     todosGlance: await all(DRILL, OLD.todosGlance, hh, today, today, today),
     todosDays: await Promise.all([D(-3), today, D(1)].map((d) => all(DRILL, OLD.todosDay, hh, d))),
@@ -400,15 +397,11 @@ describe('the merge, run on pre-merge households', () => {
         for (const td of onBoard) expect(now.get(td.key), td.key).toEqual(settle(td))
       })
 
-      it('the three alias GETs answer what they answered', async () => {
-        // Since 0153 /api/chores and /api/todos serve EVERY task (nothing tells a chore from a to-do):
-        // each old answer is judged on the rows it held, with each day decoded (_lib/taskDay).
+      it('the alias GETs that remain answer what they answered', async () => {
+        // Since 0153 /api/todos serves EVERY task (nothing tells a chore from a to-do): each old
+        // answer is judged on the rows it held, with each day decoded (_lib/taskDay). The
+        // /api/chores alias is gone (review #37), and its comparison with it.
         const only = <T extends { id: string }>(xs: T[], was: { id: string }[]) => byId(xs.filter((x) => was.some((w) => w.id === x.id)))
-        const chores = await okJson<{ chores: Row[] }>(d().s.fetch('/api/chores'))
-        // 0152 wrote a recurring chore's start where it had none (its created_at, read so before).
-        const created = new Map((await all<{ id: string; created_at: number }>(env.DB, 'SELECT id, created_at FROM home_projects WHERE household_id = ?', hh())).map((r) => [r.id, r.created_at]))
-        const choresBefore = (d().before.choresGet as Row[]).map((c) => started(c, created.get(c.id as string))).map((c) => ({ ...c, recur_start: taskDay(c.recur_start as number | null) })) as unknown as { id: string }[]
-        expect(only(chores.chores as { id: string }[], choresBefore)).toEqual(byId(choresBefore))
         const homes = await okJson<{ projects: Row[] }>(d().s.fetch('/api/home-projects'))
         const homesBefore = (d().before.homeGet as unknown as (Row & { at: number | null; recur_json: string | null; last_done_at: number | null })[]).map((p) => {
           const { nextAt: _n, dueToday: _d, overdueSince: _o, snoozedUntil: _s, ...row } = p as Row
@@ -480,12 +473,12 @@ describe('the merge, run on pre-merge households', () => {
     expect(by('drillC3aaaaa')?.overdueSince, 'an overdue chore is still owed').not.toBeNull()
   })
 
-  it('the migrated rows keep working through the aliases: a tick logs, an untick takes it back, a to-do clears and stays as history', async () => {
+  it('the migrated rows keep working: a tick logs, an untick takes it back, a to-do clears and stays as history', async () => {
     const s = built.s
-    await okJson(s.fetch('/api/chores', { method: 'PATCH', body: { id: 'drillC4aaaaa' } }))
+    await okJson(s.fetch('/api/tasks', { method: 'PATCH', body: { id: 'drillC4aaaaa', done: true } }))
     const line = await env.DB.prepare('SELECT COUNT(*) AS n FROM task_participants WHERE task_id = ?').bind('drillC4aaaaa').first<{ n: number }>()
     expect(line?.n).toBe(1)
-    await okJson(s.fetch('/api/chores', { method: 'PATCH', body: { id: 'drillC4aaaaa', undo: true } }))
+    await okJson(s.fetch('/api/tasks', { method: 'PATCH', body: { id: 'drillC4aaaaa', done: false } }))
     expect((await env.DB.prepare('SELECT COUNT(*) AS n FROM task_participants WHERE task_id = ?').bind('drillC4aaaaa').first<{ n: number }>())?.n).toBe(0)
     await okJson(s.fetch('/api/todos', { method: 'PATCH', body: { clearChecked: true, ids: ['drillT5aaaaa'] } }))
     // « Vider » keeps every task as history since 0153: stamped, never deleted.

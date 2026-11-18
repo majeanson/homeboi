@@ -21,24 +21,23 @@ const lookIn = (xs: { id: string; icon: string | null; color: string | null }[],
 }
 
 describe('the look of a task', () => {
-  it('a chore: no icon reads null, an emoji round-trips, null puts the subject back', async () => {
+  it('a task: no icon reads null, an emoji round-trips, null puts the subject back', async () => {
     const s = await household('look-chore', undefined, { empty: true })
-    const plain = await post(s, 'chores', { title: 'Bac' })
-    const dressed = await post(s, 'chores', { title: 'Gouttières', icon: '🍂' })
+    const plain = await post(s, 'tasks', { title: 'Bac' })
+    const dressed = await post(s, 'tasks', { title: 'Gouttières', icon: '🍂' })
     let got = await tasks(s)
     // No colour picked is NULL since 0153 (`hexColorOrNull`, as a to-do always was), and reads as the sage default.
     expect(lookIn(got.tasks, plain.id)).toEqual({ icon: null, color: null })
-    expect(lookIn(got.tasks, dressed.id)?.icon).toBe('🍂')
-    const chores = await okJson<{ chores: { id: string; icon: string | null }[] }>(s.fetch('/api/chores'))
-    expect(chores.chores.find((c) => c.id === dressed.id)?.icon, 'the form opens on what was stored').toBe('🍂')
-    await patch(s, 'chores', { id: dressed.id, icon: null })
+    expect(lookIn(got.tasks, dressed.id)?.icon, 'the form opens on what was stored').toBe('🍂')
+    // The one form sends every layer (the partial-edit /api/chores alias is gone, review #37).
+    await patch(s, 'tasks', { id: dressed.id, title: 'Gouttières', icon: null })
     got = await tasks(s)
     expect(lookIn(got.tasks, dressed.id)?.icon).toBeNull()
   })
 
   it('an icon that is not an emoji stores NULL', async () => {
     const s = await household('look-garbage', undefined, { empty: true })
-    const a = await post(s, 'chores', { title: 'A', icon: 'DROP TABLE' })
+    const a = await post(s, 'tasks', { title: 'A', icon: 'DROP TABLE' })
     const b = await post(s, 'todos', { title: 'B', icon: '🍂🍂🍂🍂🍂🍂🍂🍂🍂🍂🍂🍂🍂🍂🍂🍂🍂' })
     expect(await env.DB.prepare('SELECT icon FROM home_projects WHERE id = ?').bind(a.id).first()).toEqual({ icon: null })
     expect(await env.DB.prepare('SELECT icon FROM home_projects WHERE id = ?').bind(b.id).first()).toEqual({ icon: null })

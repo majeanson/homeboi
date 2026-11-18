@@ -14,7 +14,8 @@ const member = async (s: Session) =>
 
 const row = (table: string, id: string) =>
   env.DB.prepare(`SELECT subject_kind, subject_id FROM ${table} WHERE id = ?`).bind(id).first<{ subject_kind: string | null; subject_id: string | null }>()
-const addChore = (s: Session, subject?: unknown) => okJson<{ id: string }>(s.fetch('/api/chores', { method: 'POST', body: { title: 'Gouttières', subject } }))
+// A task through the one door (the /api/chores alias is gone, review #37).
+const addChore = (s: Session, subject?: unknown) => okJson<{ id: string }>(s.fetch('/api/tasks', { method: 'POST', body: { title: 'Gouttières', subject } }))
 const addTodo = (s: Session, subject?: unknown) => okJson<{ id: string }>(s.fetch('/api/todos', { method: 'POST', body: { title: 'Appeler', subject } }))
 const addProject = (s: Session, body: Record<string, unknown>) =>
   okJson<{ id: string }>(s.fetch('/api/home-projects', { method: 'POST', body: { title: 'Toit', kind: 'upkeep', ...body } }))
@@ -29,7 +30,7 @@ describe('the subject of a task', () => {
     expect(await row('home_projects', todo.id)).toEqual({ subject_kind: null, subject_id: null })
     expect((await s.fetch('/api/todos', { method: 'PATCH', body: { id: todo.id, subject: { kind: 'carnet', id: c.id } } })).status).toBe(200)
     expect(await row('home_projects', todo.id)).toEqual({ subject_kind: 'carnet', subject_id: c.id })
-    await s.fetch('/api/chores', { method: 'PATCH', body: { id: chore.id, subject: null } })
+    await s.fetch('/api/tasks', { method: 'PATCH', body: { id: chore.id, title: 'Gouttières', subject: null } })
     expect(await row('home_projects', chore.id)).toEqual({ subject_kind: null, subject_id: null })
   })
 

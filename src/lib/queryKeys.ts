@@ -136,8 +136,6 @@ export const MEMBERS_KEY = ['members']
 export const PHOTOS_KEY = ['photos']
 // Calendar events (/api/events): read by the event forms + Réglages agenda.
 export const EVENTS_KEY = ['events']
-// Chores/tasks (/api/chores): read by the chore forms + Réglages corvées.
-export const CHORES_KEY = ['chores']
 // « Qui a fait quoi » (/api/chores-ledger): the board's Tâches view reads the 30-day
 // glance under this key, Réglages' house diary the year window under
 // [...CHORES_LEDGER_KEY, 'year'] — two windows, two cache rows, one prefix.

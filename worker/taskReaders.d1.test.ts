@@ -200,8 +200,7 @@ for (const [tag, instant] of Object.entries(INSTANTS)) {
       for (const ref of f().subjects) expect(await read(`/api/tasks?subject=${ref.kind}:${ref.id}`), ref.kind).toMatchSnapshot()
     })
 
-    it('the three aliases', async () => {
-      expect(await read('/api/chores')).toMatchSnapshot()
+    it('the aliases that remain (/api/chores is gone, review #37)', async () => {
       expect(await read('/api/home-projects')).toMatchSnapshot()
       expect(await read('/api/todos')).toMatchSnapshot()
       for (const n of [-3, 0, 1]) expect(await read(`/api/todos?date=${addLocalDays(f().today, n)}`), `todos ${n}`).toMatchSnapshot()

@@ -154,7 +154,7 @@ test('a linked finder opens on its answer and says it while folded', async ({ pa
 
 test('a to-do’s one form holds its effort, and saving patches it', async ({ page, app }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  await app.boot({ route: '/todo/e-quick', wait: '.task-form', api: { overrides: { tasks: frame, chores: { chores: [choreRowOf(quick)] } } } })
+  await app.boot({ route: '/todo/e-quick', wait: '.task-form', api: { overrides: { tasks: frame }, taskRows: [choreRowOf(quick)] } })
   const edit = page.locator('.scene .task-form')
   // It already has an effort, so its fold opens itself: editing never hides a pick.
   await expect(edit.getByRole('button', { name: /^Effort/ })).toHaveAttribute('aria-expanded', 'true')

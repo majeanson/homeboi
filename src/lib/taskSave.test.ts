@@ -46,7 +46,7 @@ describe('taskWrite: one endpoint, one spelling of every layer', () => {
     const w = taskWrite(emptyDraft({ title: 'Toit', subject: { kind: 'carnet', id: 'k1' } }), { table: 'task', id: 't1' })
     expect(w).toMatchObject({ endpoint: 'tasks', method: 'PATCH', body: { id: 't1', title: 'Toit', subject: { kind: 'carnet', id: 'k1' } } })
     // Every surface hears it: an edit can move a row from one face to another.
-    expect(w.affectedKeys.length).toBe(7)
+    expect(w.affectedKeys.length).toBe(6) // board, tasks, todos, home rows, month, carnets (the chores cache is gone, review #37)
   })
 })
 
@@ -93,11 +93,13 @@ describe('what a row writes: one door, one spelling, whatever the row is', () =>
     expect(w[0]).toMatchObject({ endpoint: 'tasks', method: 'PATCH', body: { clearChecked: true, ids: ['t', 'c', 'h'], items: [{ id: 't', text: 'T' }, { id: 'c', text: 'C' }, { id: 'h', text: 'H' }] } })
     expect(clearWrites([])).toEqual([])
   })
-  it('the edit scene reads a task from the alias that serves every task with its schedule', () => {
+  it('the edit scene reads ONE task, with its schedule (/api/tasks/one)', () => {
     const r = taskRead('task')
-    expect(r.path).toBe('chores')
+    expect(r.path('a b')).toBe('tasks/one?id=a%20b')
+    expect(r.key('a')).toEqual(['tasks', 'one', 'a'])
     const day = localDayStart(new Date(Date.UTC(2030, 2, 14, 12)))
-    expect(r.draftOf({ chores: [{ id: 'a', title: 'Toit', recur_start: day, subject_kind: 'pet', subject_id: 'p' }] }, 'a')).toMatchObject({ title: 'Toit', subject: { kind: 'pet', id: 'p' }, date: '2030-03-14' })
-    expect(r.draftOf({ chores: [] }, 'a')).toBeUndefined()
+    expect(r.draftOf({ task: { id: 'a', title: 'Toit', recur_start: day, subject_kind: 'pet', subject_id: 'p' } }, 'a')).toMatchObject({ title: 'Toit', subject: { kind: 'pet', id: 'p' }, date: '2030-03-14' })
+    expect(r.draftOf({ task: null }, 'a')).toBeUndefined()
+    expect(r.draftOf({ task: { id: 'b', title: 'Autre' } }, 'a'), 'a frame for another row is not this one').toBeUndefined()
   })
 })

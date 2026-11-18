@@ -3,6 +3,7 @@ import { env } from 'cloudflare:workers'
 import { household, okJson, type Session } from '../functions/test/d1'
 import { localDayStart, addLocalDays } from '../functions/_lib/ids'
 import type { TasksWire } from '../functions/_lib/wire'
+import { taskDay } from '../functions/_lib/taskDay'
 
 // THE ONE TASK FORM against a real D1 (plans/2026-11-06-TACHE-UNIFIEE.md, phase 4). Since the
 // merge (0150) the form writes ONE endpoint, /api/tasks, and the server picks the face: a task
@@ -80,9 +81,9 @@ describe('the one form’s writes', () => {
       notes: null,
     })
     expect(await stored(noted.id!, 'kind, notes, budget_cents, at'), 'a one-off is a project, undated').toEqual({ kind: 'plan', notes: 'trois devis', budget_cents: 1_500_000, at: null })
-    // A series' start is the local midnight it was given, read back as recur_start by the alias.
-    const chores = await okJson<{ chores: { id: string; recur_start: number | null }[] }>(s.fetch('/api/chores'))
-    expect(chores.chores.find((c) => c.id === weekly.id)?.recur_start).toBe(LOCAL(2030, 3, 12))
+    // A series' start is the local midnight it was given (the alias that read it back as
+    // recur_start is gone, review #37 — the stored day, through the one decoder).
+    expect(taskDay(((await stored(weekly.id!, 'at')) as { at: number | null }).at)).toBe(LOCAL(2030, 3, 12))
   })
 
   it('a bundle from before 0153 sends `day` (local) beside `at` (a UTC midnight): the day wins, one encoding stored', async () => {

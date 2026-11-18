@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest'
 // that does the arithmetic, so home_projects could join by calling it. A second spelling is how
 // two tables would come to disagree about whose turn it is.
 //
-// Plant: `rotation[idx % rotation.length]` in functions/api/chores.ts.
+// Plant: `rotation[idx % rotation.length]` in functions/api/month.ts.
 
 const FUNCTIONS = join(__dirname, '..')
 const walk = (d: string): string[] =>
@@ -21,7 +21,7 @@ describe('one rotation code path', () => {
   const files = walk(FUNCTIONS)
 
   it('walks the handlers (canary)', () => {
-    expect(files.some((f) => f.endsWith('chores.ts'))).toBe(true)
+    expect(files.some((f) => f.endsWith('tasks.ts'))).toBe(true)
     expect(files.some((f) => f.endsWith('home-projects.ts'))).toBe(true)
   })
 

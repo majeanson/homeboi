@@ -26,10 +26,10 @@ export function TaskFormPage({ table }: { table?: TaskFace | undefined }) {
   const [params] = useSearchParams()
   const editing = id && table ? { table, id } : null
   const read = taskRead(table ?? 'task')
-  const q = useQuery({ queryKey: read.key, queryFn: () => api<unknown>(read.path), enabled: !!editing })
+  const q = useQuery({ queryKey: read.key(id ?? ''), queryFn: () => api<unknown>(read.path(id ?? '')), enabled: !!editing })
   const draft = editing ? read.draftOf(q.data, editing.id) : undefined
   const wait = editing && !draft ? loadStateOf(q) : null
-  const actions = useTaskActions(read.key)
+  const actions = useTaskActions(read.scope)
 
   const start = Number(params.get('start'))
   const carnet = params.get('carnet')

@@ -51,7 +51,7 @@ const FACE_EXPORTS = ['FACE', 'faceOfKind', 'todoRowsSql', 'Face']
 const ALLOWED: Record<string, string> = {
   'functions/_lib/taskItem.ts': 'defines the faces',
   'functions/_lib/taskViews.ts': 'THE reader: `faceOfKind` stamps a cell’s `source`, `todoRowsSql` reads the departure checklists; no rule reads a face (held below)',
-  'functions/api/chores.ts': 'alias kept for old tabs and queued writes: serves every task (FACE.task) in its old shape',
+  'functions/api/tasks/one.ts': 'the one form’s read of ONE task (FACE.task), with its whole schedule',
   'functions/api/home-projects.ts': 'serves the home rows (FACE.home): the season card, the carnets, Réglages, search',
   'functions/api/todos.ts': 'alias kept for old tabs and queued writes: every task beside the departure checklists',
   'functions/api/tasks.ts': 'the one door: an edit keeps or raises a row’s face (faceAfter)',
@@ -78,7 +78,7 @@ const CLIENT_ALLOWED: Record<string, string> = {
 }
 
 // The task handlers: where a body's date becomes a stored day.
-const TASK_HANDLERS = ['functions/api/tasks.ts', 'functions/api/chores.ts', 'functions/api/todos.ts', 'functions/api/home-projects.ts']
+const TASK_HANDLERS = ['functions/api/tasks.ts', 'functions/api/todos.ts', 'functions/api/home-projects.ts']
 // The client's task files: none may speak the appointment pair (a UTC midnight).
 const TASK_CLIENT = (rel: string) =>
   rel === 'src/lib/taskSave.ts' || rel === 'src/lib/tasks.ts' || rel === 'src/pages/TaskFormPage.tsx' || rel === 'src/components/forms/TaskForm.tsx' || rel.startsWith('src/components/tasks/')

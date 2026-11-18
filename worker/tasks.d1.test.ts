@@ -31,8 +31,8 @@ describe('the task writes', () => {
 
   it('an untick with nothing ticked leaves the turn where it is', async () => {
     const s = await household('tasks-untick-noop', undefined, { empty: true })
-    const chore = await okJson<{ id: string }>(s.fetch('/api/chores', { method: 'POST', body: { title: 'Bac', rotation: ['a', 'b'] } }))
-    await s.fetch('/api/chores', { method: 'PATCH', body: { id: chore.id, undo: true } })
+    const chore = await okJson<{ id: string }>(s.fetch('/api/tasks', { method: 'POST', body: { title: 'Bac', rotation: ['a', 'b'] } }))
+    await s.fetch('/api/tasks', { method: 'PATCH', body: { id: chore.id, done: false } })
     expect(await env.DB.prepare('SELECT current_idx FROM home_projects WHERE id = ?').bind(chore.id).first()).toEqual({ current_idx: 0 })
   })
 
@@ -44,8 +44,8 @@ describe('the task writes', () => {
     expect(await env.DB.prepare('SELECT last_done_at AS done_at FROM home_projects WHERE id = ?').bind(todo.id).first()).toEqual({ done_at: last })
     expect((await tasks(s)).tasks, 'its day has passed: already cleared').toEqual([])
 
-    const chore = await okJson<{ id: string }>(s.fetch('/api/chores', { method: 'POST', body: { title: 'Bac' } }))
-    await s.fetch('/api/chores', { method: 'PATCH', body: { id: chore.id, complete: true, doneAt: last } })
+    const chore = await okJson<{ id: string }>(s.fetch('/api/tasks', { method: 'POST', body: { title: 'Bac' } }))
+    await s.fetch('/api/tasks', { method: 'PATCH', body: { id: chore.id, done: true, doneAt: last } })
     expect(await env.DB.prepare('SELECT last_done_at FROM home_projects WHERE id = ?').bind(chore.id).first()).toEqual({ last_done_at: last })
   })
 
@@ -61,9 +61,9 @@ describe('the task writes', () => {
     const s = await household('tasks-untick', undefined, { empty: true })
     const a = await okJson<{ id: string }>(s.fetch('/api/members', { method: 'POST', body: { name: 'Léa' } }))
     const b = await okJson<{ id: string }>(s.fetch('/api/members', { method: 'POST', body: { name: 'Noah' } }))
-    const chore = await okJson<{ id: string }>(s.fetch('/api/chores', { method: 'POST', body: { title: 'Bac', rotation: [a.id, b.id] } }))
-    await s.fetch('/api/chores', { method: 'PATCH', body: { id: chore.id, complete: true } })
-    await s.fetch('/api/chores', { method: 'PATCH', body: { id: chore.id, undo: true } })
+    const chore = await okJson<{ id: string }>(s.fetch('/api/tasks', { method: 'POST', body: { title: 'Bac', rotation: [a.id, b.id] } }))
+    await s.fetch('/api/tasks', { method: 'PATCH', body: { id: chore.id, done: true } })
+    await s.fetch('/api/tasks', { method: 'PATCH', body: { id: chore.id, done: false } })
     expect(await env.DB.prepare('SELECT last_done_at, current_idx FROM home_projects WHERE id = ?').bind(chore.id).first()).toEqual({ last_done_at: null, current_idx: 0 })
     expect(await env.DB.prepare('SELECT COUNT(*) AS n FROM task_participants WHERE task_id = ?').bind(chore.id).first()).toEqual({ n: 0 })
 
@@ -136,12 +136,12 @@ describe('the one tick, the one « Vider », the one delete', () => {
   it('« Vider les cochés » keeps every task as history, through the door and through each alias', async () => {
     const s = await household('gesture-clear', undefined, { empty: true })
     const a = await addTodo(s, { title: 'A' })
-    const b = await okJson<{ id: string }>(s.fetch('/api/chores', { method: 'POST', body: { title: 'B' } }))
+    const b = await okJson<{ id: string }>(s.fetch('/api/tasks', { method: 'POST', body: { title: 'B' } }))
     const c = await addTodo(s, { title: 'C' })
     for (const x of [a, b, c]) await tick(s, x.id)
     expect((await s.fetch('/api/tasks', { method: 'PATCH', body: { clearChecked: true, ids: [a.id] } })).status).toBe(200)
     expect((await s.fetch('/api/todos', { method: 'PATCH', body: { clearChecked: true, ids: [b.id] } })).status).toBe(200)
-    expect((await s.fetch('/api/chores', { method: 'PATCH', body: { clearChecked: true, ids: [c.id] } })).status).toBe(200)
+    expect((await s.fetch('/api/tasks', { method: 'PATCH', body: { clearChecked: true, ids: [c.id] } })).status).toBe(200)
     for (const x of [a, b, c]) expect((await row(x.id))?.cleared_at, 'stamped, never deleted').not.toBeNull()
     expect((await tasks(s)).tasks, 'out of the day').toEqual([])
   })
@@ -161,7 +161,7 @@ describe('the one tick, the one « Vider », the one delete', () => {
     expect(del.status).toBe(200)
     expect(await row(u.id)).toBeNull()
     expect((await s.fetch('/api/tasks', { method: 'DELETE', body: { id: 'tmp-old', text: 'appeler', asOf } })).status, 'nothing left: a 404, never a vacuous ok').toBe(404)
-    expect((await s.fetch('/api/chores', { method: 'DELETE', body: { id: 'nope' } })).status).toBe(404)
+    expect((await s.fetch('/api/tasks', { method: 'DELETE', body: { id: 'nope' } })).status).toBe(404)
   })
 
   it('a tick replayed from the outbox after midnight keeps its real day, through the one door', async () => {
@@ -177,7 +177,7 @@ describe('the one tick, the one « Vider », the one delete', () => {
     const s = await household('gesture-day', undefined, { empty: true })
     const noon = today() + 12 * 3600
     const t = await addTodo(s, { title: 'Midi', day: noon })
-    const c = await okJson<{ id: string }>(s.fetch('/api/chores', { method: 'POST', body: { title: 'Bac', recur: { freq: 'weekly', interval: 1, weekdays: [] }, start: noon } }))
+    const c = await okJson<{ id: string }>(s.fetch('/api/tasks', { method: 'POST', body: { title: 'Bac', recur: { freq: 'weekly', interval: 1, weekdays: [] }, at: noon } }))
     const h = await okJson<{ id: string }>(s.fetch('/api/home-projects', { method: 'POST', body: { title: 'Filtre', kind: 'upkeep', at: noon } }))
     const at = async (id: string) => (await env.DB.prepare('SELECT at FROM home_projects WHERE id = ?').bind(id).first<{ at: number }>())?.at
     for (const id of [t.id, c.id, h.id]) expect(await at(id), id).toBe(today())
@@ -211,7 +211,7 @@ describe('rotation on any recurring task', () => {
 describe('the task read', () => {
   it('holds all three tables and keeps departure instances out', async () => {
     const s = await household('tasks-all', undefined, { empty: true })
-    await s.fetch('/api/chores', { method: 'POST', body: { title: 'Sortir le bac' } })
+    await s.fetch('/api/tasks', { method: 'POST', body: { title: 'Sortir le bac' } })
     await s.fetch('/api/home-projects', { method: 'POST', body: { title: 'Gouttières', kind: 'upkeep' } })
     await addTodo(s, { title: 'Appeler la garderie' })
     await addTodo(s, { title: 'Clés', departure: true, section: 'Avant de partir' })
@@ -225,7 +225,7 @@ describe('the task read', () => {
     await addTodo(s, { title: 'Un jour' })
     await addTodo(s, { title: 'Pour aujourd’hui', day: today() })
     await addTodo(s, { title: 'En retard', day: addLocalDays(today(), -2) })
-    await s.fetch('/api/chores', { method: 'POST', body: { title: 'Sans date' } })
+    await s.fetch('/api/tasks', { method: 'POST', body: { title: 'Sans date' } })
     await s.fetch('/api/home-projects', { method: 'POST', body: { title: 'Dû hier', kind: 'upkeep', at: addLocalDays(today(), -1) } })
     // One list on the board since 2026-11-08: the to-dos due or owed today ride it too.
     expect(titles((await board(s)).tasks)).toEqual(['Dû hier', 'En retard', 'Pour aujourd’hui'])
@@ -250,11 +250,11 @@ describe('the task read', () => {
   it('a checked recurring task moves on, a checked one-off does not vanish from the board', async () => {
     const s = await household('tasks-moves', undefined, { empty: true })
     const weekly = await okJson<{ id: string }>(
-      s.fetch('/api/chores', { method: 'POST', body: { title: 'Bac', recur: { freq: 'weekly', interval: 1, weekdays: [] }, start: addLocalDays(today(), -7) } }),
+      s.fetch('/api/tasks', { method: 'POST', body: { title: 'Bac', recur: { freq: 'weekly', interval: 1, weekdays: [] }, at: addLocalDays(today(), -7) } }),
     )
     const once = await okJson<{ id: string }>(s.fetch('/api/home-projects', { method: 'POST', body: { title: 'Filtre', kind: 'upkeep', at: today() } }))
     expect(titles((await board(s)).tasks)).toEqual(['Bac', 'Filtre'])
-    await s.fetch('/api/chores', { method: 'PATCH', body: { id: weekly.id, complete: true } })
+    await s.fetch('/api/tasks', { method: 'PATCH', body: { id: weekly.id, done: true } })
     await s.fetch('/api/home-projects', { method: 'PATCH', body: { id: once.id } })
     const after = await board(s)
     expect(after.tasks.map((t) => [t.title, t.done])).toEqual([['Filtre', 'ticked']])
@@ -276,10 +276,10 @@ describe('the task read', () => {
     const s = await household('tasks-history', undefined, { empty: true })
     const c = await okJson<{ id: string }>(s.fetch('/api/carnets', { method: 'POST', body: { name: 'La maison' } }))
     const subject = { kind: 'carnet', id: c.id }
-    const chore = await okJson<{ id: string }>(s.fetch('/api/chores', { method: 'POST', body: { title: 'Balayer', subject } }))
+    const chore = await okJson<{ id: string }>(s.fetch('/api/tasks', { method: 'POST', body: { title: 'Balayer', subject } }))
     const home = await okJson<{ id: string }>(s.fetch('/api/home-projects', { method: 'POST', body: { title: 'Toit', kind: 'upkeep', subject } }))
     const todo = await addTodo(s, { title: 'Appeler', subject })
-    await s.fetch('/api/chores', { method: 'PATCH', body: { id: chore.id, complete: true } })
+    await s.fetch('/api/tasks', { method: 'PATCH', body: { id: chore.id, done: true } })
     await s.fetch('/api/home-projects', { method: 'PATCH', body: { id: home.id } })
     // Ticked last night (an outbox replay keeps its real moment): its log line and its stamp
     // are the same moment, so the history names it once (every tick is logged since 0153).

@@ -52,7 +52,8 @@ async function seed(page: Page, opts: { guest?: boolean } = {}) {
     ),
   )
   await page.route('**/api/events**', (route: Route) => route.fulfill(route.request().method() === 'GET' ? json({ events: [EVENT] }) : json({ ok: true })))
-  await page.route('**/api/chores**', (route: Route) => route.fulfill(route.request().method() === 'GET' ? json({ chores: [CHORE] }) : json({ ok: true })))
+  // The one form's read of a task (functions/api/tasks/one; it was /api/chores, review #37).
+  await page.route('**/api/tasks/one**', (route: Route) => route.fulfill(json({ task: new URL(route.request().url()).searchParams.get('id') === CHORE.id ? CHORE : null })))
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', calm: true, boardView: 'month', surface: 'mobile' })
 }
 

@@ -308,10 +308,11 @@ describe('0153 — a task is a task, and its day is a local midnight', () => {
       check((await okJson<TasksWire>(h.s.fetch('/api/tasks'))).tasks)
       expect(await normalizeTaskDays(env.DB, h.s.householdId)).toBeGreaterThan(5)
       check((await okJson<TasksWire>(h.s.fetch('/api/tasks'))).tasks)
-      // The one form reads the day back as the date the household sees (lib/taskSave: chores serves every task).
-      const chores = await okJson<{ chores: { id: string; recur_start: number | null }[] }>(h.s.fetch('/api/chores'))
-      const c1 = chores.chores.find((c) => c.id === `${h.p}C1`.padEnd(12, 'a'))!
-      expect(c1.recur_start).toBe(taskDay(h.before.find((r) => r.id === c1.id)!.at, tz))
+      // The stored day, decoded, is the date the household sees (the /api/chores alias that read
+      // it back as recur_start is gone, review #37).
+      const c1id = `${h.p}C1`.padEnd(12, 'a')
+      const c1 = await env.DB.prepare('SELECT at FROM home_projects WHERE id = ?').bind(c1id).first<{ at: number | null }>()
+      expect(taskDay(c1!.at, tz)).toBe(taskDay(h.before.find((r) => r.id === c1id)!.at, tz))
     }
   })
 })

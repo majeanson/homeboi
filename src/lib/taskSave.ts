@@ -3,7 +3,7 @@ import type { RecurValue } from '../components/RecurPicker'
 import type { Chore, HomeProject } from '../components/operator/types'
 import { inputFromLocalDay, localDayFromInput, todayLocalDay } from './localDay'
 import { parseMoney } from './money'
-import { BOARD_KEY, CARNETS_KEY, CHORES_KEY, HOME_PROJECTS_KEY, MONTH_KEY, TASKS_KEY, TODOS_KEY } from './queryKeys'
+import { BOARD_KEY, CARNETS_KEY, HOME_PROJECTS_KEY, MONTH_KEY, TASKS_KEY, TODOS_KEY } from './queryKeys'
 import { recurOf } from './recurLabel'
 import { healingClearBody, healingDeleteBody } from './staleDelete'
 import { lookColour, subjectRefOf, type SubjectRef } from './subjects'
@@ -84,7 +84,9 @@ interface Face<Row> {
   /** The edit scene's path. */
   scene: (id: string) => string
   /** The cache the edit scene reads its row from, and how to find it there. */
-  read: { key: QueryKey; path: string; find: (frame: unknown, id: string) => Row | undefined }
+  read: { key: (id: string) => QueryKey; path: (id: string) => string; find: (frame: unknown, id: string) => Row | undefined }
+  /** The LIST this face's rows live in — what a delete from the form holds back (useTaskActions). */
+  scope: QueryKey
   toDraft: (row: Row) => TaskDraft
   /** « Reporter »: only the face with a snooze. */
   snoozes: boolean
@@ -94,11 +96,19 @@ const recurring = (d: TaskDraft) => d.recur != null
 // The task's day: a household-local midnight. A recurrence needs one to count from: today.
 const dayOf = (d: TaskDraft): number | null => localDayFromInput(d.date) ?? (recurring(d) ? todayLocalDay() : null)
 
-// A task, read from the alias that serves every task with its whole schedule (its start, its
-// lead), which the Tâches frame does not carry.
+// A task, read ONE row at a time with its whole schedule (its start, its lead, its turn),
+// which the Tâches frame does not carry — /api/tasks/one (it was the /api/chores alias, review #37).
 const TASK: Face<Chore> = {
   scene: (id) => `/todo/${id}`,
-  read: { key: CHORES_KEY, path: 'chores', find: (frame, id) => (frame as { chores?: Chore[] } | undefined)?.chores?.find((c) => c.id === id) },
+  read: {
+    key: (id) => [...TASKS_KEY, 'one', id],
+    path: (id) => `tasks/one?id=${encodeURIComponent(id)}`,
+    find: (frame, id) => {
+      const task = (frame as { task?: Chore | null } | undefined)?.task
+      return task?.id === id ? task : undefined
+    },
+  },
+  scope: TASKS_KEY,
   toDraft: (c) =>
     emptyDraft({
       title: c.title,
@@ -119,10 +129,11 @@ const TASK: Face<Chore> = {
 const HOME: Face<HomeProject> = {
   scene: (id) => `/home-project/${id}`,
   read: {
-    key: HOME_PROJECTS_KEY,
-    path: 'home-projects',
+    key: () => HOME_PROJECTS_KEY,
+    path: () => 'home-projects',
     find: (frame, id) => (frame as { projects?: HomeProject[] } | undefined)?.projects?.find((p) => p.id === id),
   },
+  scope: HOME_PROJECTS_KEY,
   toDraft: (p) =>
     emptyDraft({
       title: p.title,
@@ -156,7 +167,7 @@ export interface TaskWrite {
 }
 
 // Every surface that shows a task: a write may land in, or move a row to, any of them.
-const ALL_KEYS: QueryKey[] = [BOARD_KEY, TASKS_KEY, CHORES_KEY, TODOS_KEY, HOME_PROJECTS_KEY, MONTH_KEY, CARNETS_KEY]
+const ALL_KEYS: QueryKey[] = [BOARD_KEY, TASKS_KEY, TODOS_KEY, HOME_PROJECTS_KEY, MONTH_KEY, CARNETS_KEY]
 
 /** The form's layers in the one spelling /api/tasks reads. */
 const layers = (d: TaskDraft) => ({
@@ -191,7 +202,7 @@ export const rowDraft = (face: TaskFace, row: unknown): TaskDraft => (faceOf(fac
 /** How the edit scene finds a row: the cache, the endpoint, and the row → draft step. */
 export function taskRead(face: TaskFace) {
   const t = faceOf(face)
-  return { key: t.read.key, path: t.read.path, draftOf: (frame: unknown, id: string): TaskDraft | undefined => {
+  return { key: t.read.key, path: t.read.path, scope: t.scope, draftOf: (frame: unknown, id: string): TaskDraft | undefined => {
     const row = t.read.find(frame, id)
     return row ? (t.toDraft as (r: unknown) => TaskDraft)(row) : undefined
   } }

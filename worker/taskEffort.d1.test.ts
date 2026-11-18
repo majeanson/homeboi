@@ -19,27 +19,27 @@ const effortIn = (xs: { id: string; effort: number | null }[], id: string) => xs
 const stored = async (table: string, id: string) => (await env.DB.prepare(`SELECT effort FROM ${table} WHERE id = ?`).bind(id).first<{ effort: number | null }>())?.effort
 
 describe('the effort of a task', () => {
-  it('a chore: unrated reads null and open, a dot round-trips, the form reads it, null clears it', async () => {
+  it('a task: unrated reads null and open, a dot round-trips, the form reads it, null clears it', async () => {
     const s = await household('effort-chore', undefined, { empty: true })
-    const plain = await post(s, 'chores', { title: 'Bac' })
-    const rated = await post(s, 'chores', { title: 'Gouttières', effort: 4 })
+    const plain = await post(s, 'tasks', { title: 'Bac' })
+    const rated = await post(s, 'tasks', { title: 'Gouttières', effort: 4 })
     let got = await tasks(s)
     expect(got.tasks.map((x) => x.id).sort(), 'NULL in the new column still reads as a present row').toEqual([plain.id, rated.id].sort())
     expect(effortIn(got.tasks, plain.id)).toBeNull()
     expect(effortIn(got.tasks, rated.id)).toBe(4)
-    const chores = await okJson<{ chores: { id: string; effort: number | null }[] }>(s.fetch('/api/chores'))
-    expect(effortIn(chores.chores, rated.id), 'the edit form opens on what was stored').toBe(4)
-    expect(effortIn(chores.chores, plain.id)).toBeNull()
-    await patch(s, 'chores', { id: rated.id, effort: null })
+    expect(await stored('home_projects', rated.id), 'the edit form opens on what was stored').toBe(4)
+    // The one form sends every layer (review #37: the /api/chores alias, which took a
+    // partial edit, is gone): an effort it sends as null is cleared.
+    expect((await patch(s, 'tasks', { id: rated.id, title: 'Gouttières', effort: null })).status).toBe(200)
     got = await tasks(s)
     expect(effortIn(got.tasks, rated.id)).toBeNull()
-    await patch(s, 'chores', { id: plain.id, title: 'Bac bleu' })
-    expect(await stored('home_projects', plain.id), 'an edit that does not send the effort leaves it').toBeNull()
+    expect((await patch(s, 'tasks', { id: plain.id, title: 'Bac bleu' })).status).toBe(200)
+    expect(await stored('home_projects', plain.id), 'an edit that does not send the effort leaves it unset').toBeNull()
   })
 
   it('anything that is not a dot from 1 to 5 stores NULL, on POST and on PATCH', async () => {
     const s = await household('effort-garbage', undefined, { empty: true })
-    const a = await post(s, 'chores', { title: 'A', effort: 0 })
+    const a = await post(s, 'tasks', { title: 'A', effort: 0 })
     const b = await post(s, 'todos', { title: 'B', effort: 6 })
     const c = await post(s, 'home-projects', { title: 'C', kind: 'plan', effort: '3' })
     const d = await post(s, 'todos', { title: 'D', effort: 2.5 })

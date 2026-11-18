@@ -28,7 +28,6 @@ import * as cercleGroups from '../functions/api/cercle-groups'
 import * as cercleLinks from '../functions/api/cercle-links'
 import * as cerclePhotos from '../functions/api/cercle-photos'
 import * as pets from '../functions/api/pets'
-import * as chores from '../functions/api/chores'
 import * as choresLedger from '../functions/api/chores-ledger'
 import * as dayNotes from '../functions/api/day-notes'
 import * as deals from '../functions/api/deals'
@@ -109,6 +108,7 @@ import * as takeout from '../functions/api/takeout'
 import * as takeoutBackups from '../functions/api/takeout/backups'
 import * as takeoutRestore from '../functions/api/takeout/restore'
 import * as tasks from '../functions/api/tasks'
+import * as tasksOne from '../functions/api/tasks/one'
 import * as todos from '../functions/api/todos'
 import * as todoTemplates from '../functions/api/todo-templates'
 import * as transcribe from '../functions/api/transcribe'
@@ -180,7 +180,6 @@ const TABLE: Record<string, RouteMod> = {
   'cercle-groups': cercleGroups,
   'cercle-links': cercleLinks,
   'cercle-photos': cerclePhotos,
-  chores,
   'chores-ledger': choresLedger,
   'day-notes': dayNotes,
   deals,
@@ -277,6 +276,7 @@ const TABLE: Record<string, RouteMod> = {
   'takeout/backups': takeoutBackups,
   'takeout/restore': takeoutRestore,
   tasks,
+  'tasks/one': tasksOne,
   todos,
   'todo-templates': todoTemplates,
   transcribe,

@@ -92,7 +92,7 @@ export const boardTask = (t: Pick<TaskItem, 'source' | 'id' | 'title'> & Partial
 // A someday task: in the Tâches view, never on the bento board.
 export const somedayTask = (t: Pick<TaskItem, 'source' | 'id' | 'title'> & Partial<TaskItem>): TaskItem =>
   boardTask({ day: null, dueToday: false, onBoard: false, ...t })
-// The same task as /api/chores serves it since 0153 (every task, with its schedule): the
+// The same task as /api/tasks/one serves it (every task, with its schedule): the
 // edit scene reads it there (lib/taskSave `taskRead`). Its day is the start a fixture gave it.
 export const choreRowOf = (t: TaskItem) => ({
   id: t.id,
@@ -435,16 +435,16 @@ const GHOST_MANAGE = {
   ],
 }
 
-const CHORES = {
-  chores: [
+// The tasks the one form can open, in /api/tasks/one's row shape (it was the /api/chores
+// alias's list, deleted in review #37).
+type TaskOneRow = NonNullable<Wire['tasks/one']['task']>
+const TASK_ROWS: TaskOneRow[] = [
     { id: 'c1', title: 'Sortir les poubelles', rotation_json: JSON.stringify(['m1', 'm2']), current_idx: 0, last_done_at: null, last_done_by: null, color: '#88A36F', recur_json: null, recur_start: null, lead_seconds: null, announce_evening: null, subject_kind: null, subject_id: null, icon: null, effort: null },
     { id: 'c2', title: 'Vaisselle', rotation_json: JSON.stringify(['m2', 'm1']), current_idx: 1, last_done_at: BASE - DAY, last_done_by: null, color: '#7BB0C9', recur_json: null, recur_start: null, lead_seconds: null, announce_evening: null, subject_kind: null, subject_id: null, icon: null, effort: null },
-    // Since 0153 this alias serves every task, the edit scene's read (lib/taskSave): the two
-    // tasks TODOS lists too, in this shape.
+    // The two tasks TODOS lists too, so their edit scenes open on a row.
     { id: 'td1', title: 'Clés + téléphone + portefeuille', rotation_json: '[]', current_idx: 0, last_done_at: null, last_done_by: null, color: null, recur_json: null, recur_start: localDayStart(new Date()), lead_seconds: null, announce_evening: null, subject_kind: null, subject_id: null, icon: null, effort: null },
     { id: 'td2', title: 'Boîte à lunch des enfants', rotation_json: '[]', current_idx: 0, last_done_at: null, last_done_by: null, color: null, recur_json: null, recur_start: null, lead_seconds: null, announce_evening: null, subject_kind: null, subject_id: null, icon: null, effort: null },
-  ],
-}
+]
 
 const EVENTS = {
   events: [
@@ -863,7 +863,8 @@ export const ROUTES: Partial<Wire> = {
     members: MEMBERS.map((m, i) => ({ ...m, sort_order: i, email: null, phone: null, birthday: null, notes: null, gender: null, companion: null })),
   },
   'pair/devices': DEVICES,
-  chores: CHORES,
+  // Answered per id by the handler in mockApi (TASK_ROWS / opts.taskRows); this is its shape.
+  'tasks/one': { task: null },
   events: EVENTS,
   year: YEAR,
   health: HEALTH,
@@ -1078,6 +1079,9 @@ export async function mockApi(
      *  not the screen anyone actually uses. Merged over ROUTES, so an unlisted path
      *  keeps its default. */
     overrides?: Record<string, unknown>
+    /** The rows GET /api/tasks/one?id= answers from (the one form's read), by id. Default:
+     *  TASK_ROWS. A spec that edits a task of its own frame passes its row here. */
+    taskRows?: TaskOneRow[]
   } = {},
 ) {
   const signedIn = opts.signedIn ?? true
@@ -1201,6 +1205,13 @@ export async function mockApi(
       return
     }
 
+    // One task with its schedule, by id — the one form's read (functions/api/tasks/one).
+    if (method === 'GET' && path === 'tasks/one') {
+      const id = url.searchParams.get('id')
+      const task = (opts.taskRows ?? TASK_ROWS).find((r) => r.id === id) ?? null
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ task }) })
+      return
+    }
     if (method !== 'GET') {
       // Record a note clear so the next board read reflects it (realistic soft-delete).
       if (method === 'DELETE' && path === 'notes') {

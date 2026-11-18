@@ -556,8 +556,9 @@ export interface PairDevicesWire {
   devices: { id: string; label: string | null; kind: string; created_at: number; last_seen_at: number | null; revoked_at: number | null }[]
 }
 
-export interface ChoresWire {
-  chores: {
+// GET /api/tasks/one?id= — one task with its whole schedule, what the one form opens on.
+export interface TaskOneWire {
+  task: {
     id: string
     title: string
     rotation_json: string
@@ -573,7 +574,7 @@ export interface ChoresWire {
     subject_id: string | null
     icon: string | null
     effort: number | null
-  }[]
+  } | null
 }
 
 export interface EventsWire {
@@ -1200,7 +1201,6 @@ export type Wire = {
   car: CarWire
   carnets: CarnetsWire
   cercle: CercleWire
-  chores: ChoresWire
   'day-notes': DayNotesWire
   deals: DealsWire
   drawings: DrawingsWire
@@ -1243,6 +1243,7 @@ export type Wire = {
   'home-pins': HomePinsWire
   'home-projects': HomeProjectsWire
   tasks: TasksWire
+  'tasks/one': TaskOneWire
   intake: IntakeWire
   'meal-leftovers': MealLeftoversWire
   notes: NotesWire
