@@ -4,7 +4,7 @@
 > (`src/pages/DevKit.tsx`) — a dev-only page that renders the shared primitives live
 > across the four presentation axes. Every entry is **collapsed by default** (name +
 > file path at a glance), **searchable** by name/path, and unfolds to a live specimen.
-> Reach it from **Réglages ▸ Affichage ▸ "Kit de composants (dev)"**, or `/dev/kit`.
+> Reach it from **Réglages ▸ Système ▸ Avancé ▸ « Kit de composants »**, or `/dev/kit`.
 > Keep it open alongside a chat to point at "this component, here" without running flows.
 > Which of these primitives carries which USER ACTION, from where, is **`ACTIONS.md`**
 > (the door matrix) — consult it before wiring any new edit/delete/add affordance.

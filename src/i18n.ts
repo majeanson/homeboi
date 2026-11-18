@@ -375,7 +375,7 @@ export const FR = {
     keep: 'Garder',
     clear: 'Vider les exemples',
     clearing: 'On vide…',
-    clearConfirm: 'Vider les exemples et partir avec ta maisonnée ? Tu pourras toujours les recharger dans Réglages ▸ Découvrir.',
+    clearConfirm: 'Vider les exemples et partir avec ta maisonnée ? Tu pourras toujours les recharger dans Réglages.',
     load: 'Charger des exemples',
     present: 'Données d’exemple présentes.',
     absent: 'Aucune donnée d’exemple.',

@@ -82,7 +82,7 @@ interchangeable. Read this table before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md` is now
-> a number you can trust. It reads **26** — all of them `REVIEW-TRACKER.md`'s (the 7-persona
+> a number you can trust. It reads **25** — all of them `REVIEW-TRACKER.md`'s (the 7-persona
 > review of 2026-11-17; 0 before it). **Asserted from the boxes themselves** by
 > `src/lib/docCounts.test.ts`, so this sentence cannot drift the way `REVIEW-PASS.md`'s
 > banner once did — it claimed 15 for twelve days against a single box.
@@ -277,7 +277,7 @@ blocker at any wave above.
 - **Keyboard, needs Marc's phone.** Two suspects the code cannot settle: iOS still
   reporting a shrunken viewport after dismissal (the tab bar stays hidden — the
   diagnostic shows `open=true ae=BODY`), and a stranded pan after close (`open=false
-  vvT>0`). Réglages ▸ Système ▸ Appareils & accès ▸ « diagnostic clavier », on the screen
+  vvT>0`). Réglages ▸ Système ▸ Avancé ▸ « diagnostic clavier », on the screen
   where it happens. Fixed blind and proven by the fake-vv e2e: dialogs and sheets fit the
   visible band, a tall textarea follows its caret line, date/time inputs are pinned,
   « above the band » is corrected too (`997306a5`, `2d9ab542`).

@@ -11,8 +11,8 @@ import { useSampleWrite } from '../../lib/sample'
 // The Réglages home for the demo/sample data (onboarding Phase 1). The board banner
 // is the primary keep/clear surface, but once it's dismissed (« Garder ») the
 // operator still needs a way to clear the examples later — and a way to bring them
-// back on an empty household. This is that persistent control, living in the Guide
-// (Réglages ▸ Guide) beside the onboarding-reset affordances. Operator-only by
+// back on an empty household. This is that persistent control, living in « Avancé »
+// (Réglages ▸ Système, review #18; it sat on Découvrir beside « Déconnexion »). Operator-only by
 // virtue of Réglages; clearing removes ONLY is_sample rows (never your own).
 export function SampleDataControls() {
   const t = useT()
@@ -50,7 +50,6 @@ export function SampleDataControls() {
 
   return (
     <div className="guide__sample">
-      <h3 className="guide__group-title">{t.sample.manageTitle}</h3>
       <p className="guide__sample-line">{count > 0 ? t.sample.present : t.sample.absent}</p>
       {count > 0 ? (
         <Cluster>

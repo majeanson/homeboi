@@ -265,7 +265,7 @@ and because the scoring pass that added them found a gap in the first one.
 | Remarque · delete | ✅ `RowActions` 🗑 | — | — | — | — | confirm **+** deferred²⁹ | ✅ |
 | Maisonnée · **partir (tout supprimer)** | — | — | — | — | ✅ settings▸tablets, replié sous l'export³² | confirm **+** mot de passe²⁵ **+** le nom retapé³² | ✅ |
 | Maisonnée · **repartir à neuf (tout le contenu)** | — | — | — | — | ✅ settings▸tablets, replié entre la restauration et « Supprimer »³⁴ | confirm **+** mot de passe²⁵ **+** le nom retapé³⁴ | ✅ |
-| Exemples · **charger / vider** | — | — | — | ✅ « Charger des exemples » sur la WelcomeCard du babillard vide³⁴ | ✅ Réglages ▸ Découvrir (`SampleDataControls`) · « Vider et commencer » sur le `SampleBanner` | vider : confirm (ton danger, les deux portes) | ✅ |
+| Exemples · **charger / vider** | — | — | — | ✅ « Charger des exemples » sur la WelcomeCard du babillard vide³⁴ | ✅ Réglages ▸ Système ▸ Avancé (`SampleDataControls`; Découvrir until review #18) · « Vider et commencer » sur le `SampleBanner` | vider : confirm (ton danger, les deux portes) | ✅ |
 | Confidentialité · **lire la politique / les conditions** | — | — | — | — | ✅ settings▸tablets (deux liens) **et** le pied de la porte marketing³³ | — (lecture) | ✅ |
 
 19. Confirm, and it names what is lost: the link texted last night stops working.

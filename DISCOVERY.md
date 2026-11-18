@@ -139,9 +139,10 @@ the one source; this is a reading of it, not a second copy:
 | maison | `members` → La maisonnée | members · cercleGroups |
 | maison | `cars` → L'auto & horaires | cars · schedule |
 | maison | `annee` → Cette année | houseDiary |
-| settings | `tablets` → Appareils & accès | claimTablet · devices · guestLinks · health · buildInfo · takeout · micTest · kbDebug · aiLog |
+| settings | `tablets` → Appareils & accès | claimTablet · devices · coop · sessions · guestLinks · health · buildInfo · takeout · micTest · remarks |
 | settings | `display` → Affichage & veille | display · ambient · habits · photos · calm |
 | settings | `ai` → Voix & IA | ai · voice |
+| settings | `advanced` → Avancé | mcpAgent · kbDebug · aiLog · sample · devKit (the dev tools, review #18) |
 
 Each section carries an `access` (`device` / `household` / `operator`): a viewer's pill
 row and stacks DERIVE from it — a link guest sees only `device` cards (and only pills

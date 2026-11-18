@@ -230,6 +230,21 @@ export const OPERATOR_HELP = {
       en: `Live-checks whether the AI models (text and vision) respond — useful before reporting a capture or suggestion issue.`,
     },
   },
+  // « Avancé » (review #18): the two cards that had no card of their own before.
+  devKit: {
+    card: 'settings',
+    body: {
+      fr: `Le catalogue vivant des pièces de l'app, pour qui la développe. Rien ici ne change ta maisonnée.`,
+      en: `The live catalogue of the app's building blocks, for whoever builds it. Nothing here changes your household.`,
+    },
+  },
+  sample: {
+    card: 'settings',
+    body: {
+      fr: `Charge une famille de démo pour explorer, ou retire-la. Seules les données d'exemple sont touchées, jamais les tiennes.`,
+      en: `Load a demo family to explore, or take it away. Only the sample data is touched, never yours.`,
+    },
+  },
   aiLog: {
     // Was 'set-ailog' — same fix as aiTest above.
     card: 'ai',

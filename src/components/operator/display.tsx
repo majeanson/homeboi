@@ -3,7 +3,6 @@ import { SettingsRow } from './SettingsRow'
 import { useEffect, useState } from 'react'
 import { SoundToggle } from '../SoundToggle'
 import { useSoundOn } from '../../lib/sound'
-import { Link } from 'react-router-dom'
 import { useLang, useT, type Lang } from '../../i18n'
 import { useOperatorT } from '../../i18n.operator'
 import { type HelpMode } from '../../lib/helpMode'
@@ -300,13 +299,7 @@ export function DisplaySection({ help }: { help?: HelpMode }) {
           nudge is the other; lib/install). Renders nothing where there is nothing to
           offer, one line where the app is already installed. */}
       <InstallHint />
-      {/* Dev-only: the live component catalogue. Searchable, collapsed — handy to
-          keep open alongside while building. Settings is operator-only already. */}
-      <p className="operator__hint mono">
-        <Link to="/dev/kit" className="devkit__link">
-          <InlineIcon name="gear-six-bold" size={14} /> Kit de composants (dev)
-        </Link>
-      </p>
+      {/* (The component kit link lived here; it is a card in Système ▸ « Avancé » now.) */}
     </OperatorSection>
   )
 }

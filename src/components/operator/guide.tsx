@@ -1,7 +1,6 @@
 import { SearchField } from '../SearchField'
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type Ref } from 'react'
 import { tintScope } from '../../lib/colors'
-import { needsOperator } from '../../lib/device'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useLang, useT } from '../../i18n'
 import { useOperatorT } from '../../i18n.operator'
@@ -12,7 +11,6 @@ import { useTour } from '../../lib/tour'
 import { resetWelcome } from '../WelcomeCard'
 import { OperatorSection } from './OperatorSection'
 import { FeatureMap } from '../FeatureMap'
-import { SampleDataControls } from './sampleData'
 import { DidYouKnowCard, WhatsNewLine } from './discover'
 import { markTourOffered } from '../../lib/tourOffer'
 import { Icon } from '../Icon'
@@ -456,11 +454,8 @@ export function DiscoverSection() {
         </div>
       )}
 
-      {/* Manage the first-run demo data (onboarding Phase 1): clear the examples or
-          load them onto an empty household. Mirrors the board banner. Kept at the
-          very bottom — operator maintenance, not part of the manual you read. */}
-      {/* seed POST/DELETE are operator-only — a kiosk never sees the examples switch. */}
-      {!q && !needsOperator() && <SampleDataControls />}
+      {/* (The demo-data switch lived here, beside « Déconnexion »; it is a card in
+          Système ▸ « Avancé » since review #18.) */}
     </OperatorSection>
   )
 }

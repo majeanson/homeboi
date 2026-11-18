@@ -146,8 +146,8 @@ describe('who sees what — derived from access, never an allowlist', () => {
         expect(seen.map((s) => s.key)).toEqual(all.filter((s) => s.access !== 'operator').map((s) => s.key))
       }
     }
-    // Its own diagnostics stay reachable — a wall tablet debugs its own keyboard.
-    expect(visibleSections('settings', 'tablets', kiosk).map((s) => s.key)).toContain('kbDebug')
+    // Its own diagnostics stay reachable (in « Avancé » since review #18) — a wall tablet debugs its own keyboard.
+    expect(visibleSections('settings', 'advanced', kiosk).map((s) => s.key)).toContain('kbDebug')
     expect(visibleSections('settings', 'tablets', kiosk).map((s) => s.key)).not.toContain('takeout')
   })
 

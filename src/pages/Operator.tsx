@@ -10,6 +10,7 @@ import { useAi } from '../lib/ai'
 import { isPaired, isGuestLocked } from '../lib/device'
 import { useProfile } from '../lib/profile'
 import { DisplaySection, VoiceSection, CalmSection, MeasureColorsSection } from '../components/operator/display'
+import { DevKitSection, SampleDataSection } from '../components/operator/advanced'
 import { AmbientSettingsSection, HabitCheckinSection } from '../components/operator/ambient'
 import { BoardLayoutSection } from '../components/operator/boardLayout'
 import { ShopSection, StoreFilterSection, FlippSection, HistorySection, GhostSection } from '../components/operator/shopping'
@@ -354,6 +355,8 @@ function OperatorHub() {
       members: o18n.members,
       devices: o18n.devices,
       mcpAgent: o18n.agentTitle,
+      devKit: o18n.devKitTitle,
+      sample: t.sample.manageTitle,
 
       routines: o18n.routines,
     }
@@ -445,6 +448,9 @@ function OperatorHub() {
     calm: <CalmSection help={operatorHelp} />,
     ai: <AiSection help={operatorHelp} />,
     voice: <VoiceSection help={operatorHelp} />,
+    // « Avancé » (review #18) — mcpAgent, kbDebug and aiLog above moved there too.
+    sample: <SampleDataSection help={operatorHelp} />,
+    devKit: <DevKitSection help={operatorHelp} />,
   }
   // Pill labels, from the taxonomy's i18n keys (SUB_LABEL_KEY) — typed against the
   // tree, so a pill can't lose its label in a reshuffle.

@@ -89,11 +89,8 @@ export const SETTINGS_TREE = {
     tablets: [
       s('claimTablet', 'operator'),
       s('devices', 'operator'),
-      // « Agent IA (MCP) » — mints the read-only agent credential (functions/api/mcp.ts).
-      // It stacks HERE, under the same pill, because the row it creates is a device in
-      // the list right above it and is revoked from there: a separate pill would put
-      // the mint and the revoke on two different screens. C-15 — an existing sub.
-      s('mcpAgent', 'operator'),
+      // (« Agent IA (MCP) » minted here until review #18; it is in « Avancé » now. The
+      // credential it creates is still a row of the device list above, revoked there.)
       // « L'autre parent » — a SECOND operator account for this household
       // (migration 0128). It sits here rather than in maison ▸ members because that
       // sub is about the FACES on the board (who the household is), and this is
@@ -108,10 +105,7 @@ export const SETTINGS_TREE = {
       s('buildInfo', 'household'),
       s('takeout', 'operator'),
       s('micTest', 'household'),
-      s('kbDebug', 'household'),
-      s('aiLog', 'household'),
-      // « Les remarques » (0136) — l'autre chose que l'app a à dire sur elle-même,
-      // empilée à côté du journal d'erreurs IA plutôt qu'en quinzième pilule (C-15).
+      // « Les remarques » (0136) — l'autre chose que l'app a à dire sur elle-même.
       // 'household' et non 'operator' : un kiosque apparié doit pouvoir signaler.
       s('remarks', 'household'),
     ],
@@ -120,6 +114,13 @@ export const SETTINGS_TREE = {
     display: [s('display', 'device'), s('ambient', 'device'), s('habits', 'device'), s('photos', 'household'), s('calm', 'device')],
     // Voix & IA: the on-device read-aloud voice (a guest's), and the household's AI switch.
     ai: [s('ai', 'household'), s('voice', 'device')],
+    // « Avancé » (review #18, 2026-11-17; Marc: a section, no feature flag). The page
+    // a parent opened to pair a tablet also read « Agent IA (MCP) », « jeton », « JSON »,
+    // « Diagnostic clavier », « Tester l'IA » — a developer console beside « Supprimer la
+    // maisonnée », and « Charger des exemples » sat on Découvrir next to « Déconnexion ».
+    // The tools stay one pill away, last, for whoever needs them. A deliberate exception
+    // to C-15's « never a new pill »: this pill exists to take cards OFF the others.
+    advanced: [s('mcpAgent', 'operator'), s('kbDebug', 'household'), s('aiLog', 'household'), s('sample', 'operator'), s('devKit', 'device')],
   },
 } as const satisfies Record<string, Record<string, readonly SettingsSection[]>>
 
@@ -142,7 +143,7 @@ export const SUB_LABEL_KEY = {
   kitchen: { apparence: 'kitchenLookTitle', meals: 'mealColors', reserve: 'reserveTitle' },
   liste: { shop: 'shopping', history: 'subHistoryTracking' },
   maison: { routines: 'subHomeTasks', members: 'members', cars: 'subCarsHours', annee: 'diaryTab' },
-  settings: { tablets: 'subDevicesAccess', display: 'subDisplayIdle', ai: 'subVoiceAi' },
+  settings: { tablets: 'subDevicesAccess', display: 'subDisplayIdle', ai: 'subVoiceAi', advanced: 'subAdvanced' },
 } as const satisfies { [T in SettingsTabId]: { [S in SettingsSubId<T>]: string } }
 
 // Retired ?sub= ids WITHIN a still-current tab → the sub that hosts them now, so
@@ -179,7 +180,7 @@ export const LEGACY_TAB: Readonly<
   guide: { tab: 'decouvrir' },
   household: { tab: 'maison', sub: 'members' },
   devices: { tab: 'settings', sub: 'tablets' },
-  mcpAgent: { tab: 'settings', sub: 'tablets' },
+  mcpAgent: { tab: 'settings', sub: 'advanced' },
   agenda: {
     tab: 'board',
     sub: 'events',
@@ -198,7 +199,7 @@ export const LEGACY_TAB: Readonly<
   calm: { tab: 'settings', sub: 'display' },
   photos: { tab: 'settings', sub: 'display' },
   week: { tab: 'board', sub: 'events' },
-  'ai-log': { tab: 'settings', sub: 'tablets' },
+  'ai-log': { tab: 'settings', sub: 'advanced' },
   cercle: { tab: 'maison', sub: 'members' },
   routines: { tab: 'maison', sub: 'routines' },
 }

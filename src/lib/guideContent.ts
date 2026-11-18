@@ -1147,7 +1147,7 @@ export const GUIDE: GuideEntry[] = [
           fr: 'Un petit journal d’entretien note ce qui a brisé et quand — tu vois la vraie cause au lieu de deviner.',
           en: 'A small maintenance log records what broke and when — you see the real cause instead of guessing.',
         },
-        route: '/settings?tab=settings&sub=tablets&focus=aiLog',
+        route: '/settings?focus=aiLog',
       },
     ],
   },

@@ -311,7 +311,7 @@ export const EN: typeof FR = {
     keep: 'Keep',
     clear: 'Clear the examples',
     clearing: 'Clearing…',
-    clearConfirm: 'Clear the examples and start with your household? You can always reload them in Settings ▸ Discover.',
+    clearConfirm: 'Clear the examples and start with your household? You can always reload them in Settings.',
     load: 'Load sample data',
     present: 'Sample data present.',
     absent: 'No sample data.',

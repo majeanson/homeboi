@@ -784,7 +784,7 @@ Footnotes (verdicts recorded so far):
     household_id, and the guard now requires an exemption to name a live table).
 
 93. **CRUD (F41)** — the entity a household manages here is the **credential**, not the
-    server: create (Réglages ▸ Système ▸ Appareils & accès → « Créer un jeton »,
+    server: create (Réglages ▸ Système ▸ Avancé → « Créer un jeton »,
     `pair/devices` `mintAgent`), read (it appears in the devices list, with its own
     `sparkle` glyph and last-seen), rename (the same inline edit every device has), and
     delete = revoke (the same trash button). No reorder — a device list has no order.

@@ -96,7 +96,8 @@ test('kiosk: the legacy ?tab=devices deep link lands on Système without the pai
   await expect(page.locator('#op-devices')).toHaveCount(0)
   await expect(page.locator('#op-guestLinks')).toHaveCount(0)
   await expect(page.locator('#op-takeout')).toHaveCount(0)
-  await expect(page.locator('#op-kbDebug')).toBeVisible()
+  // Its own mic test is still here (the keyboard diagnostic moved to « Avancé », #18).
+  await expect(page.locator('#op-micTest')).toBeVisible()
 })
 
 test('signed-in operator sees every pill and card, and no kiosk notice', async ({ page }) => {
