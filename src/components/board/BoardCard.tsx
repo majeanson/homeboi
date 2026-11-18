@@ -94,6 +94,7 @@ export function SecLabel({
           <button
             type="button"
             className="help-title"
+            data-help={helpKey}
             onClick={(e) => {
               e.stopPropagation()
               help!.pick(helpKey!, () => {})()

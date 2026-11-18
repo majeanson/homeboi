@@ -208,6 +208,21 @@ function BoardClock() {
   )
 }
 
+// While help is armed, a tap ANYWHERE in a card explains that card (review #20: a meal row
+// in « Aujourd'hui » opened its sheet, « Retirer du plan » and all, with « ? » on).
+// Module-level so the help listener sees one stable function.
+// The help keys a BoardCard renders the bubble for itself (its `helpKey`).
+const CARD_OWNED_HELP: ReadonlySet<string> = new Set(['today', 'todos', 'toFinish', 'upcoming', 'departure'])
+
+// A card's entry is `card-<id>`, or the bare id for the four that predate that scheme
+// (« Aujourd'hui » is `today`).
+const boardHelpTarget = (el: Element): keyof typeof BOARD_HELP | null => {
+  const id = el.closest('.wg-slot[data-card]')?.getAttribute('data-card')
+  if (!id) return null
+  for (const key of [`card-${id}`, id]) if (key in BOARD_HELP) return key as keyof typeof BOARD_HELP
+  return null
+}
+
 export function Board() {
   const t = useT()
   const write = useWrite()
@@ -265,7 +280,7 @@ export function Board() {
       search: t.search.title,
     }
     return titles[k] ?? k
-  })
+  }, undefined, { resolve: boardHelpTarget })
   // A card with its own entry explains itself when help is armed. Its bubble is a fixed
   // panel above the nav: the masonry's 8px rows cannot hold a row of its own (it sat behind
   // the next card), and at the top of the page a low card would explain itself off screen.
@@ -1615,7 +1630,13 @@ export function Board() {
         </p>
       )}
       {help.hint && <HelpHint card="board" />}
-      {help.key?.startsWith('card-') ? <div className="wg-help">{help.bubble}</div> : help.bubble}
+      {/* A card that carries its own `helpKey` renders its bubble itself (BoardCard's
+          bubbleFor): rendering `help.bubble` here too drew it twice (review #20). */}
+      {help.key?.startsWith('card-') ? (
+        <div className="wg-help">{help.bubble}</div>
+      ) : help.key && CARD_OWNED_HELP.has(help.key) ? null : (
+        help.bubble
+      )}
 
       {/* The board poll failed but we're still rendering the last good frame —
           say so AT THE TOP with "how old" (the newest successful fetch), not as

@@ -1,5 +1,5 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useT } from '../i18n'
 import { Icon } from './Icon'
 import { Cluster } from './Layout'
@@ -9,6 +9,21 @@ import { guideHref } from '../lib/settingsNav'
 // Lazy on purpose — see the header. The bubble renders on every surface; the composer
 // (the modal, the write hook, the attach panel) arrives only when someone reports.
 const RemarkComposer = lazy(() => import('./RemarkComposer').then((m) => ({ default: m.RemarkComposer })))
+const GuideSheet = lazy(() => import('./GuideSheet').then((m) => ({ default: m.GuideSheet })))
+
+// Where a FLOATING bubble sits: centred under the tap, clamped inside the viewport, and
+// flipped above the finger when there is no room below it. Pure, so it is tested alone.
+export function bubblePlace(
+  at: { x: number; y: number },
+  size: { w: number; h: number },
+  view: { w: number; h: number },
+  gap = 12,
+): { left: number; top: number } {
+  const left = Math.min(Math.max(8, at.x - size.w / 2), Math.max(8, view.w - size.w - 8))
+  const below = at.y + gap
+  const top = below + size.h <= view.h - 8 ? below : Math.max(8, at.y - gap - size.h)
+  return { left, top }
+}
 
 // A small in-place help box: a title, one calm line, and two ways out. « Voir le guide »
 // opens the full Guide card (/settings?card=<id>, the same deep link HelpDot
@@ -38,6 +53,7 @@ export function HelpBubble({
   card,
   point,
   reportKey,
+  at,
   onClose,
 }: {
   title: string
@@ -48,11 +64,23 @@ export function HelpBubble({
   // The help-registry key this bubble is explaining. Present → the « Signaler » door
   // shows and carries it, so a report names the SECTION rather than the URL.
   reportKey?: string
+  // The tap that asked (help mode, review #20): the bubble floats beside the finger
+  // instead of opening in place, at the foot of the screen over another card.
+  at?: { x: number; y: number } | null | undefined
   onClose: () => void
 }) {
   const t = useT()
   const ref = useRef<HTMLDivElement>(null)
   const [reporting, setReporting] = useState(false)
+  const [guiding, setGuiding] = useState(false)
+  const [place, setPlace] = useState<{ left: number; top: number } | null>(null)
+
+  useLayoutEffect(() => {
+    if (!at || !ref.current) return setPlace(null)
+    const r = ref.current.getBoundingClientRect()
+    const doc = document.documentElement
+    setPlace(bubblePlace(at, { w: r.width, h: r.height }, { w: doc.clientWidth, h: doc.clientHeight }))
+  }, [at, title])
 
   // BRING IT FULLY INTO VIEW, CENTRED.
   //
@@ -68,14 +96,23 @@ export function HelpBubble({
   // Pre-existing — one link was already under the nav — but the second link is what made
   // it visible, so it is fixed here rather than noted.
   useEffect(() => {
+    // A floating bubble is placed in the viewport already; scrolling would move the page
+    // out from under the finger that asked.
+    if (at) return
     ref.current?.scrollIntoView({ behavior: scrollBehavior(), block: 'center' })
-  }, [title])
+  }, [title, at])
 
   const to = card
     ? guideHref(card, point)
     : null
-  return (
-    <div className="help-bubble" role="status" ref={ref}>
+  const box = (
+    <div
+      className={'help-bubble' + (at ? ' help-bubble--float' : '')}
+      role="status"
+      ref={ref}
+      // Measured hidden on its first frame, then placed (bubblePlace).
+      style={at ? { left: place?.left ?? 0, top: place?.top ?? 0, visibility: place ? 'visible' : 'hidden' } : undefined}
+    >
       <div className="help-bubble__head">
         <strong className="help-bubble__title">{title}</strong>
         <button type="button" className="help-bubble__x" onClick={onClose} aria-label={t.common.close}>
@@ -90,10 +127,11 @@ export function HelpBubble({
           standing rule says a row of controls is a Cluster; this is why. */}
       {(to || reportKey) && (
         <Cluster className="help-bubble__doors">
-          {to && (
-            <Link to={to} className="help-bubble__guide" onClick={onClose}>
+          {/* Over the current screen (review #20): it used to walk you into Réglages. */}
+          {to && card && (
+            <button type="button" className="help-bubble__guide" onClick={() => setGuiding(true)}>
               {t.help.goToGuide} <Icon name="arrow-right-bold" size={13} />
-            </Link>
+            </button>
           )}
           {reportKey && (
             <button type="button" className="help-bubble__report" onClick={() => setReporting(true)}>
@@ -117,6 +155,21 @@ export function HelpBubble({
           />
         </Suspense>
       )}
+      {guiding && card && (
+        <Suspense fallback={null}>
+          <GuideSheet
+            card={card}
+            point={point}
+            onClose={() => {
+              setGuiding(false)
+              onClose()
+            }}
+          />
+        </Suspense>
+      )}
     </div>
   )
+  // A floating bubble leaves the page's flow (and any rotated card's containing block)
+  // for the body: `position: fixed` inside a transformed ancestor is fixed to IT.
+  return at ? createPortal(box, document.body) : box
 }

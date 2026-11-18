@@ -23,6 +23,12 @@ export interface HelpEntry {
   point?: number
 }
 
+// What an armed tap may reach untouched: the bubble itself, the « ? » toggle (to turn help
+// off), and the hint bar's doors. Everything interactive besides is explained, not run.
+const HELP_PASS = '.help-bubble, .help-toggle, .sheet__help, .help-hint, .guide-sheet'
+const INTERACTIVE =
+  'a, button, input, select, textarea, label, summary, [role="button"], [role="tab"], [role="link"], [role="checkbox"], [role="radio"], [role="menuitem"], [role="option"], [tabindex]:not([tabindex="-1"])'
+
 export function useHelpMode<K extends string>(
   content: Record<K, HelpEntry>,
   // `NoInfer` is load-bearing, not decoration. Surfaces write their labeller as
@@ -35,16 +41,51 @@ export function useHelpMode<K extends string>(
   // Optional: when this value changes, help mode resets (e.g. pass a sheet's `open`
   // so reopening starts fresh, or a scene's route id). Omit for always-mounted surfaces.
   resetKey?: unknown,
+  // EVERY TAP, while armed (review #20, 2026-11-17). Only controls wrapped in `pick`
+  // used to explain themselves; anything else ran for real (a meal row on the board
+  // opened its sheet, « Retirer du plan » and all). Now one capture-phase listener
+  // takes every tap on an interactive element inside `scope` before it reaches its
+  // handler, and explains: the nearest `[data-help]` key, else what `resolve` names
+  // (the board: the card you tapped inside), else nothing runs and the hint bar stays.
+  opts: { scope?: string; resolve?: (el: Element) => NoInfer<K> | null } = {},
 ): HelpMode<K> {
   const { tutorial } = useHelp()
   const { lang } = useLang()
   const [active, setActive] = useState(false)
   const [key, setKey] = useState<K | null>(null)
+  // Where the explained tap landed: the bubble opens beside the finger, not at the foot
+  // of the screen over another card (review #20).
+  const [at, setAt] = useState<{ x: number; y: number } | null>(null)
 
   useEffect(() => {
     setActive(false)
     setKey(null)
   }, [resetKey])
+
+  const scope = opts.scope ?? '.hub__body'
+  const resolve = opts.resolve
+  useEffect(() => {
+    if (!active) return
+    const onTap = (e: MouseEvent) => {
+      const target = e.target instanceof Element ? e.target : null
+      if (!target || !target.closest(scope) || target.closest(HELP_PASS)) return
+      const control = target.closest(INTERACTIVE)
+      const tagged = target.closest('[data-help]')?.getAttribute('data-help')
+      if (!control && !tagged) return
+      const k = ((tagged && tagged in content ? tagged : null) ?? resolve?.(target) ?? null) as K | null
+      // Nothing to say about it here: let the tap reach its handler, where a `pick`
+      // still explains (a menu item, a face chip) — never a dead, silent tap.
+      if (!k) return
+      e.preventDefault()
+      e.stopPropagation()
+      // A keyboard « click » has no pointer: place it at the control instead.
+      const r = (control ?? target).getBoundingClientRect()
+      setAt(e.detail > 0 ? { x: e.clientX, y: e.clientY } : { x: r.left + r.width / 2, y: r.bottom })
+      setKey(k)
+    }
+    document.addEventListener('click', onTap, true)
+    return () => document.removeEventListener('click', onTap, true)
+  }, [active, scope, resolve, content])
 
   const toggle = () => {
     setActive((v) => !v)
@@ -58,6 +99,9 @@ export function useHelpMode<K extends string>(
   // onClick to use directly — `onClick={pick('save', doSave)}`.
   const pick = (k: K, run: () => void) => () => {
     if (active) {
+      // Reached only by a tap the listener left alone (no tag, nothing resolved) or a
+      // non-tap trigger: no point to stand beside, so the bubble keeps its place.
+      setAt(null)
       setKey(k)
       return
     }
@@ -75,7 +119,11 @@ export function useHelpMode<K extends string>(
         // The « ? » door: every registry gets one for free, carrying the key it was
         // asking about (HelpBubble's header says why it lives there).
         reportKey={String(k)}
-        onClose={() => setKey(null)}
+        at={at}
+        onClose={() => {
+          setKey(null)
+          setAt(null)
+        }}
       />
     ) : null
   const bubble = key ? bubbleFor(key) : null
@@ -95,7 +143,9 @@ export function useHelpMode<K extends string>(
     // page explains right there, not scrolled off at the top). Only the tapped key
     // renders; everything else is null. Use this OR `bubble`, never both.
     bubbleFor,
-    hint: active && !key, // render a "tap a button" hint while armed and nothing picked yet
+    // The « tap a button » bar stays the whole time help is armed, a bubble open or not
+    // (review #20: it vanished after the first tap, and help read as switched off).
+    hint: active,
   }
 }
 
@@ -144,7 +194,7 @@ export function HelpTitle<K extends string>({
   if (!help || !help.active) return <Tag className={className}>{children}</Tag>
   return (
     <Tag className={className}>
-      <button type="button" className="help-title" onClick={help.pick(k, () => {})} title={t.help.learnMore}>
+      <button type="button" className="help-title" data-help={k} onClick={help.pick(k, () => {})} title={t.help.learnMore}>
         {children}
       </button>
     </Tag>

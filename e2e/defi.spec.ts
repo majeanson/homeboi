@@ -118,7 +118,9 @@ test.describe('Le défi du jour', () => {
     const bubble = page.locator('.help-bubble').first()
     await expect(bubble).toBeVisible()
     // « Voir le guide » deep-links to the habits guide card (défi is its first point).
+    // « Voir le guide » opens the card over the screen (review #20); its foot link deep-links as before.
     await bubble.locator('.help-bubble__guide').click()
+    await page.locator('.guide-sheet .guide-sheet__more').click()
     await expect(page).toHaveURL(/card=habits/)
   })
 })

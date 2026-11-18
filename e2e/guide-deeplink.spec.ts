@@ -95,7 +95,9 @@ test('the real flow: a "?" bubble on La liste carries the reader to the right li
   await page.locator('.mode-toggle').click()
   const bubble = page.locator('.help-bubble').first()
   await expect(bubble).toBeVisible()
+  // « Voir le guide » opens the card over the screen (review #20); its foot link deep-links as before.
   await bubble.locator('.help-bubble__guide').click()
+  await page.locator('.guide-sheet .guide-sheet__more').click()
 
   const l = await landing(page)
   expect(l!.kind).toBe('point')

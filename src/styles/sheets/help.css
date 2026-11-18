@@ -497,3 +497,40 @@
    input to nothing. A sheet's real CTA now opts in with `.btn--block` (core.css);
    compact rows — Cluster segments, chips, field affordances — keep their own size. */
 
+
+/* Help mode's bubble, beside the finger that asked (review #20): portalled to the body
+   and placed by HelpBubble's `bubblePlace` (inline left/top). A teaching layer, so the
+   tour's tier: over the board's cards AND over an open ＋ sheet whose « ? » is armed. */
+.help-bubble--float {
+  position: fixed;
+  z-index: var(--z-tour);
+  margin: 0;
+  width: max-content;
+  max-width: min(22rem, calc(100vw - 16px));
+  box-shadow:
+    inset 0 0 0 1.5px var(--line),
+    var(--shadow-md);
+}
+/* One guide card in a sheet, over the screen you asked from (GuideSheet). */
+.guide-sheet__what {
+  margin: 0 0 12px;
+}
+.guide-sheet__points {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.guide-sheet__points summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.guide-sheet__points p {
+  margin: 6px 0 0;
+}
+.guide-sheet__more {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
