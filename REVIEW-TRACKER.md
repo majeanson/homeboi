@@ -81,7 +81,7 @@ Progress on the 43 items kept from the 7-persona review (2026-11-17).
     - the open-picto is a pointer shortcut (`aria-hidden`, out of the tab order).
 
   Tests: e2e `a11y-names.spec.ts` (3 plants red); 38 specs touching combobox/rows green.
-- [x] 33. Structure: card headings, tabpanels, scene titles, empty regions, month grid rows and names. **Done** (`fix(a11y): des titres, des régions, une vraie grille…`), approved by Marc 2026-11-18 (all four recommended options). Claims verified.
+- [x] 33. Structure: card headings, tabpanels, scene titles, empty regions, month grid rows and names. **Done** `02fb6e2c`, approved by Marc 2026-11-18 (all four recommended options). Claims verified.
   - **Headings.** `SecLabel` → h2 (h3 nested), Notes' card title h2 (it was `aria-hidden`), `SectionHeader` → h2, all CSS-reset. `SceneHead` → h1, and it names the browser tab while open.
   - **Regions.** An empty `CardSlot` is unnamed (outside edit mode); the inner « Dessins » region is unnamed.
   - **Month grid.**
@@ -91,7 +91,13 @@ Progress on the 43 items kept from the 7-persona review (2026-11-17).
   - **Tabpanels.** `SubTabs` `panelId` + `useTabPanel()`: La cuisine, Maison, Notes and the recipe book's Aa · Collections control a named tabpanel.
 
   Tests: e2e `a11y-structure.spec.ts` (4 plants red). Full suite: 2 tests followed the new semantics (`config-panels-kitchen` by role; `habits` yesterday cell across rows); door-sweep was load (green alone).
-- [ ] 34. Focus & keyboard: global `:focus-visible`, « Bon matin » focus, keyboard toddler-exit, nested weather button, announced reorders.
+- [x] 34. Focus & keyboard: global `:focus-visible`, « Bon matin » focus, keyboard toddler-exit, nested weather button, announced reorders. **Done** (`fix(a11y): le clavier voit où il est…`), approved by Marc 2026-11-18 (all four recommended options). Claims verified.
+  - **Focus rings.** A zero-specificity `:where(…):focus-visible` base ring, plus one on `.greet__btn`. The field rings (`.input`, `.edit-field__box`, two Cercle fields) are ink, not marigold.
+  - **Toddler exit.** `ToddlerExitGate`: Enter / Space held 3 s = the same hold (repeat ignored, release or blur cancels).
+  - **Weather card.** One named role=button (« Voir la météo… — Nuageux, 3° »). The ⟳ is its sibling in `.now-card-wrap`, at the same spot. `nested-interactive.test.ts` now catches a spread `role: 'button'` (red on the old card).
+  - **Reorder.** `DragPill` announces « <label>, position N sur M » through one polite `lib/announce.ts` region.
+
+  Tests: e2e `a11y-keyboard.spec.ts` (4 plants red). Full suite: 2 load-only failures, green alone.
 - [ ] 35. Language & names: `lang="fr-CA"`, `lang="en"` on English text, item names in repeated buttons, aria-hidden emoji, list adder in text.
 
 ## P3: engineering
@@ -146,3 +152,4 @@ Grandparent/sitter mode · trust & business pack · Marco's kill list. See the D
 - 2026-11-18 · #31 pets in « Pour qui ? » (faces via useFaceRoster, poll untouched); « Jusqu'au » + « Pas cette fois » on recurring rendez-vous
 - 2026-11-18 · #32 Réglages toggles named by their row; EntityCombobox: Tab passes, Esc anywhere, named groups, picto out of AT
 - 2026-11-18 · #33 headings (cards h2, scenes h1 + tab title), empty cards unnamed, month grid rows/names/roving keys, sub-tab panels
+- 2026-11-18 · #34 base focus ring + ink field rings, keyboard toddler exit, weather card one control (guard extended), reorder announced

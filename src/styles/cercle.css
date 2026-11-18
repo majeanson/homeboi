@@ -437,7 +437,7 @@
   outline: none;
 }
 .cf__input:focus {
-  border-color: var(--accent);
+  border-color: var(--focus-ring); /* ink: the accent read ~1.9:1 as a focus cue (review #34) */
 }
 .cf__textarea {
   resize: vertical;
@@ -618,7 +618,7 @@
   outline: none;
 }
 .cf-photos__caption:focus {
-  border-color: var(--accent);
+  border-color: var(--focus-ring); /* ink, as above (review #34) */
 }
 /* The Maisonnée face tile: read-only (the household owns it) — a flat, centred
    label instead of an editable caption field, and a soft accent ring on the image. */

@@ -187,6 +187,10 @@ export function DayHeroes({
         // frosted chips so the temperature is legible over any image. Tapping the
         // card (anywhere but the ⟳) opens the « Dehors aujourd'hui » sheet — the
         // same tap-the-hero idiom as the supper rows beside it.
+        // ONE control, not a control inside a control (review #34, approved by Marc): the ⟳
+        // used to sit INSIDE the card's role=button. It is the card's sibling now, in this
+        // wrapper, painted at the same top-right spot — nothing moved on screen.
+        <div className="now-card-wrap">
         <div
           className={`now-card now-card--wx${wonder ? ' now-card--wx-photo' : ''}${onOpenSky ? ' now-card--tap' : ''}`}
           // THE SAME COLOUR RECIPE AS THE SUPPER CARD BESIDE IT (2026-09-15). This used
@@ -204,7 +208,9 @@ export function DayHeroes({
             ? {
                 role: 'button' as const,
                 tabIndex: 0,
-                // The weather on the card is its name, so voice control can say it. This says what a tap does.
+                // A short name (review #34): left to its content, the card read « PHOTO DU
+                // JOUR NUAGEUX 3° 12h 8° 15h… ». What a tap does, then the weather itself.
+                'aria-label': `${t.board.sky.open} — ${t.weather[weather.bucket]}, ${weather.tempC}°`,
                 title: t.board.sky.open,
                 onClick: onOpenSky,
                 onKeyDown: (e: KeyboardEvent) => {
@@ -219,18 +225,6 @@ export function DayHeroes({
           {wonder ? (
             <>
               <span className="now-card__scrim" aria-hidden="true" />
-              <button
-                type="button"
-                className="photo-frame__shuffle now-card__shuffle"
-                onClick={(e) => {
-                  e.stopPropagation() // the ⟳ shuffles; it must not ALSO open the sheet
-                  onShuffleWonder()
-                }}
-                aria-label={t.board.shuffleWonder}
-                title={t.board.shuffleWonder}
-              >
-                <Icon name="repeat-bold" size={16} />
-              </button>
               <span className="now-card__wonder-hear mono">{t.board.wonderKicker[wonder.source]}</span>
             </>
           ) : (
@@ -255,6 +249,18 @@ export function DayHeroes({
           <div className="icn" aria-hidden="true">
             <Icon name={weatherIcon(weather)} size={38} color={wonder ? '#fff' : weatherTint(weather)} />
           </div>
+        </div>
+        {wonder && (
+          <button
+            type="button"
+            className="photo-frame__shuffle now-card__shuffle"
+            onClick={onShuffleWonder}
+            aria-label={t.board.shuffleWonder}
+            title={t.board.shuffleWonder}
+          >
+            <Icon name="repeat-bold" size={16} />
+          </button>
+        )}
         </div>
       )}
     </div>

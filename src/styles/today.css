@@ -785,8 +785,21 @@
   gap: 1rem;
   margin: 6px 0 22px;
 }
-.board-heroes > .now-card {
+.board-heroes > .now-card,
+.board-heroes > .now-card-wrap {
   flex: 1 1 16rem;
+  margin: 0;
+}
+/* The weather card's wrapper (review #34): it takes the card's place in the row and the
+   card fills it, so the ⟳ — now the card's SIBLING, not a control inside a control —
+   anchors to the same box at the same top-right spot. */
+.now-card-wrap {
+  position: relative;
+  display: flex;
+}
+.now-card-wrap > .now-card {
+  flex: 1;
+  min-width: 0;
   margin: 0;
 }
 

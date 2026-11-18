@@ -144,6 +144,7 @@ export const FR_OPERATOR = {
   moveDown: 'Descendre',
   removeCard: 'Retirer la carte',
   dragHint: 'Glisser pour réordonner',
+  dragMoved: (label: string, pos: number, total: number) => `${label}, position ${pos} sur ${total}`,
   display: 'Affichage',
   // Customizable measuring-tool colours (Cook-mode pills + scoop circles).
   measureColorsTitle: 'Couleurs des mesures',

@@ -39,7 +39,7 @@
   background: var(--paper);
 }
 .edit-field__box:focus-within {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring); /* ink, not the accent: ≥ 3:1 (review #34) */
   outline-offset: 1px;
 }
 .edit-field__input.input {

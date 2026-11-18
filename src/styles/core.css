@@ -874,7 +874,7 @@ textarea.input {
   height: auto;
 }
 .input:focus {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus-ring); /* ink, not the accent: marigold on paper read ~1.9:1 (review #34) */
   outline-offset: 1px;
 }
 /* Native date/time inputs (and selects) paint their placeholder text + picker
@@ -1557,6 +1557,19 @@ html[data-embedded] .home {
 .chip:focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
+}
+/* The BASE ring (review #34, approved by Marc): every focusable thing gets one for the
+   keyboard, at zero specificity so any ring a component draws still wins. 14 rules
+   removed the outline and nothing put one back — « Bon matin » showed no focus at all.
+   :focus-visible only: a tap or a click never paints it. */
+:where(a, button, input, select, textarea, summary, [tabindex]:not([tabindex='-1'])):focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+.greet__btn:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }
 
 /* Screen-reader-only text: present to AT, invisible on screen. The standard clip

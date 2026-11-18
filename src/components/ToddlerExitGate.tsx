@@ -59,8 +59,14 @@ export function ToddlerExitGate({ requireMath = true }: { requireMath?: boolean 
     } catch {
       // setPointerCapture can throw if the pointer is already gone — ignore.
     }
+    beginHold()
+  }
+  // The hold itself, whichever way it started (review #34): a finger/mouse press, or Enter /
+  // Space held on the focused button — a parent on a keyboard or a switch could never leave.
+  function beginHold() {
     setHolding(true)
     timer.current = setTimeout(() => {
+      timer.current = null
       setHolding(false)
       // Toddler: the hold only ARMS the math gate (a pre-reader can't clear it).
       // Simple/grandma (requireMath=false): the hold IS the confirmation — a
@@ -110,6 +116,17 @@ export function ToddlerExitGate({ requireMath = true }: { requireMath?: boolean 
         onPointerDown={startHold}
         onPointerUp={cancelHold}
         onPointerCancel={cancelHold}
+        // The SAME 3-second hold from the keyboard. Auto-repeat is ignored (it would restart
+        // the hold), releasing early cancels, and so does leaving the button.
+        onKeyDown={(e) => {
+          if (e.key !== 'Enter' && e.key !== ' ') return
+          e.preventDefault()
+          if (!e.repeat && !timer.current) beginHold()
+        }}
+        onKeyUp={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') cancelHold()
+        }}
+        onBlur={cancelHold}
         onContextMenu={(e) => e.preventDefault()}
       >
         {/* A Phosphor door glyph, not a 🚪 emoji — control affordances use the shared

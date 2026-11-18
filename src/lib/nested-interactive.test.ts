@@ -96,13 +96,18 @@ function interactiveComponents(srcs: Src[]): Set<string> {
   return out
 }
 
+// The role, spelled as an attribute OR spread from an object (review #34): the weather
+// card wore `{...(onOpenSky ? { role: 'button', … } : {})}` and held the ⟳ button inside,
+// the exact offence this file forbids, invisible to an attribute-only match.
+const ROLE_BUTTON = /\brole="button"|\brole: 'button'/
+
 /** Every `role="button"` container, with the slice of source it encloses. */
 function roleButtonContainers(srcs: Src[]): { path: string; line: number; tag: string; body: string }[] {
   const found: { path: string; line: number; tag: string; body: string }[] = []
   for (const f of srcs) {
     const lines = f.text.split('\n')
     for (let i = 0; i < lines.length; i++) {
-      if (!/\brole="button"/.test(lines[i]!)) continue
+      if (!ROLE_BUTTON.test(lines[i]!)) continue
       let start = i
       while (start > 0 && !/^\s*<[A-Za-z]/.test(lines[start]!)) start--
       const tag = /^\s*<([A-Za-z][\w.]*)/.exec(lines[start]!)?.[1]
@@ -150,7 +155,7 @@ describe('nested interactives', () => {
     for (const f of files) {
       const lines = f.text.split('\n')
       for (let i = 0; i < lines.length; i++) {
-        if (!/\brole="button"/.test(lines[i]!)) continue
+        if (!ROLE_BUTTON.test(lines[i]!)) continue
         // Walk back to the element's opening tag (prettier puts one attribute per
         // line, so `role=` always sits inside a multi-line open tag).
         let start = i

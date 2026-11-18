@@ -1,6 +1,7 @@
 import { type CSSProperties, type ElementType, type ReactNode, type Ref } from 'react'
 import { useOperatorT } from '../i18n.operator'
 import { dropEdgeClass, type DropCue, type usePointerDnd } from '../lib/dnd'
+import { announce } from '../lib/announce'
 
 // The shared "draggable pill/row" shell over usePointerDnd (lib/dnd). The tag-pill
 // reorder strip and the recipe-pill list both hand-rolled the same three things on
@@ -115,7 +116,15 @@ export function DragPill({
               ? (e) => {
                   if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return
                   e.preventDefault() // move the row, not the page scroll
-                  onMove(e.key === 'ArrowUp' ? 'up' : 'down')
+                  const up = e.key === 'ArrowUp'
+                  onMove(up ? 'up' : 'down')
+                  // Say where it landed (review #34): the move was silent to a screen reader.
+                  // The total is the ROWS beside this one (zones with a grip — an « end » drop
+                  // target is a zone too, and no row).
+                  const host = (e.currentTarget as HTMLElement).closest('[data-dnd-zone]')
+                  const total = host?.parentElement?.querySelectorAll(':scope > [data-dnd-zone]:has(> [data-dnd-grip])').length ?? 0
+                  const pos = Math.min(Math.max(1, index + (up ? 0 : 2)), total || index + 2)
+                  if (total) announce(o18n.dragMoved(label, pos, total))
                 }
               : undefined
           }

@@ -113,6 +113,7 @@ export const EN_OPERATOR: typeof FR_OPERATOR = {
   moveDown: 'Move down',
   removeCard: 'Remove card',
   dragHint: 'Drag to reorder',
+  dragMoved: (label: string, pos: number, total: number) => `${label}, position ${pos} of ${total}`,
   display: 'Display',
   measureColorsTitle: 'Measure colours',
   measureColorsReset: 'Default colours',
