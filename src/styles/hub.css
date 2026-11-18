@@ -205,6 +205,10 @@
      tiles (no FAB) and shouldn't be shoved up. */
   .hub[data-audience='parent'] .hub__body {
     padding-bottom: 110px;
+    /* The same band for FOCUS: padding only lengthens the scroll, so a control tabbed
+       to (or scrolled into view) in the lower band still landed under the ＋. With
+       scroll-padding the browser stops it above (review #17, WCAG 2.4.11). */
+    scroll-padding-bottom: 110px;
   }
   /* No bottom bar in this branch — only the floating ＋. A sticky pane may sit at the
      very bottom edge; it keeps its own inline-end padding clear of the FAB instead. */
@@ -220,6 +224,8 @@
 .hub[data-surface='mobile'] .hub__body {
   order: 1;
   padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px));
+  /* Focus scrolling stops above the bar too, not only the scroll's end (review #17). */
+  scroll-padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px));
   /* The fixed bottom tab bar — same 74px + inset the padding above reserves. */
   --hub-stick-bottom: calc(74px + env(safe-area-inset-bottom, 0px));
 }
@@ -229,6 +235,7 @@
    FAB and centers a few big tiles, so it keeps the smaller pad above. */
 .hub[data-surface='mobile'][data-audience='parent'] .hub__body {
   padding-bottom: calc(150px + env(safe-area-inset-bottom, 0px));
+  scroll-padding-bottom: calc(150px + env(safe-area-inset-bottom, 0px));
 }
 /* Kiosk: the ＋ FAB floats bottom-right (20px up, 60px tall ≈ 80px band) over a
    body that has no bottom bar to pad past — so the last row of a full-page scroll
@@ -237,6 +244,7 @@
    Réglages and the toddler lens, which have no FAB, don't get dead space). */
 .hub[data-fab][data-surface='kiosk'] .hub__body {
   padding-bottom: 96px;
+  scroll-padding-bottom: 96px;
 }
 .hub[data-surface='mobile'] .hubnav {
   order: 2;
@@ -342,6 +350,8 @@
 .kb-open .hub[data-surface='mobile'] .hub__body,
 .kb-open .hub[data-surface='kiosk'] .hub__body {
   padding-bottom: var(--kb, 0px);
+  /* The bar and the ＋ are hidden while typing: the keyboard is the only furniture. */
+  scroll-padding-bottom: var(--kb, 0px);
 }
 
 /* ---- Settings: section nav + anchors + display controls ------------------ */
