@@ -47,7 +47,10 @@ test.describe('Le point du jour', () => {
     await expect(walk).toHaveClass(/habit-row--done/)
     await expect(walk).toBeVisible()
     // Re-tapping takes it back — the day is never locked.
-    await walk.getByRole('button', { name: 'Fait aujourd’hui' }).click()
+    // ONE name either way (review #35) — « C’est fait — Marcher dehors », pressed when done.
+    const done = walk.getByRole('button', { name: 'C’est fait — Marcher dehors', pressed: true })
+    await expect(done).toHaveText(/Fait aujourd’hui/)
+    await done.click()
     await expect(walk).not.toHaveClass(/habit-row--done/)
   })
 

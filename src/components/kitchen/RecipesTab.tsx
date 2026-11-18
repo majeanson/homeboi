@@ -1,13 +1,13 @@
 import { type ReactNode, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { useT } from '../../i18n'
+import { useLang, useT } from '../../i18n'
 import { api } from '../../lib/api'
 import { HeartButton } from '../HeartButton'
 import { useLoves } from '../../lib/loves'
 import { useKept } from '../../lib/useKept'
 import { useHScroll } from '../../lib/hscroll'
-import { type Recipe, type RecipeTagsData, RECIPE_TAGS_KEY, recipeImg, allTags, orderTags, tagOptions, recipeTotalMin, tagColor } from '../../lib/recipes'
+import { type Recipe, type RecipeTagsData, RECIPE_TAGS_KEY, recipeImg, allTags, orderTags, tagOptions, recipeTotalMin, recipeLangAttr, tagColor } from '../../lib/recipes'
 import { type Pill, type BuiltinKey, DEFAULT_PILLS, isBuiltinPill, isSortKey, pillKey, matchesCustom } from '../../lib/recipePills'
 import { wash, tintInk, edge } from '../../lib/colors'
 import { rankCookable, rankUseSoon, rankNeglected } from '../../lib/cookable'
@@ -63,6 +63,7 @@ export function RecipesTab({
   help?: HelpMode
 }) {
   const t = useT()
+  const { lang } = useLang()
   const nav = useNavigate()
   const [recipeQuery, setRecipeQuery] = useKept('recipes.query', '')
   // #11 "Collections": flat alphabetical list ("Aa") vs grouped-by-collection.
@@ -276,7 +277,7 @@ export function RecipesTab({
     const nIngs = withoutHeadings(r.ingredients).length
     const totalMin = recipeTotalMin(r)
     return (
-      <div key={r.id} className="recipe-card-wrap">
+      <div key={r.id} className="recipe-card-wrap" lang={recipeLangAttr(r.lang, lang)}>
         <button type="button" className="recipe-card surface" onClick={() => onView(r)}>
           <span className="recipe-card__thumb" aria-hidden="true">
             {img ? <Img src={img} alt="" loading="lazy" /> : <span className="recipe-card__noimg">{pictoFor(r.title, '🍳')}</span>}
@@ -317,7 +318,7 @@ export function RecipesTab({
             </span>
           )}
         </button>
-        <HeartButton recipeId={r.id} />
+        <HeartButton recipeId={r.id} name={r.title} />
       </div>
     )
   }

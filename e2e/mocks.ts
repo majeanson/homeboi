@@ -321,7 +321,7 @@ const ROUTINES = {
 
 // image null → the card shows the 🍳 placeholder (offline-safe; a remote URL
 // wouldn't load in the frontend-only harness).
-const RECIPES = {
+export const RECIPES = {
   recipes: [
     recipeRow({
       id: 'rc1',

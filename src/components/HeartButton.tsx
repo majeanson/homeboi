@@ -15,7 +15,10 @@ import { Icon } from './Icon'
 // shows nothing in Maisonnée, and an empty outline heart when a face is active.
 const TERRA = '#c2563a'
 
-export function HeartButton({ recipeId }: { recipeId: string }) {
+// `name` (review #35): every heart said « J'aime » — on a recipe book that is a column of
+// identical buttons. ONE fixed name, the recipe's title in it, and `aria-pressed` is the
+// state (« Je n'aime plus » + pressed=true read as a double negative).
+export function HeartButton({ recipeId, name }: { recipeId: string; name?: string | undefined }) {
   const t = useT()
   const { memberId } = useProfile()
   const { loversOf, toggle } = useLoves()
@@ -68,7 +71,7 @@ export function HeartButton({ recipeId }: { recipeId: string }) {
         className={'hearts__btn' + (mine ? ' is-mine' : '')}
         onClick={() => toggle(recipeId, mine)}
         aria-pressed={mine}
-        aria-label={mine ? t.loves.unlove : t.loves.love}
+        aria-label={name ? `${t.loves.love} — ${name}` : t.loves.love}
         title={mine ? t.loves.unlove : t.loves.love}
       >
         <Icon name={loved ? 'heart-fill' : 'heart-bold'} size={18} color={loved ? TERRA : 'currentColor'} />

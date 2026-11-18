@@ -17,7 +17,7 @@ import { useMeasureColors } from '../lib/measurePrefs'
 // carpet the screen.
 const CIRCLE_MAX = 12
 
-export function MeasureScoops({ measure, size = 'sm' }: { measure: Measure; size?: 'sm' | 'lg' }) {
+export function MeasureScoops({ measure, size = 'sm', what }: { measure: Measure; size?: 'sm' | 'lg'; what?: string | undefined }) {
   const t = useT()
   const { lang } = useLang()
   const speak = useSpeak()
@@ -62,7 +62,7 @@ export function MeasureScoops({ measure, size = 'sm' }: { measure: Measure; size
         e.stopPropagation()
         speak(spokenMeasure(measure, lang))
       }}
-      aria-label={t.recipes.hearMeasure(measure.text)}
+      aria-label={what ? `${t.recipes.hearMeasure(measure.text)} — ${what}` : t.recipes.hearMeasure(measure.text)}
       title={measure.text}
     >
       {circles}

@@ -148,6 +148,12 @@ function Root() {
     }
     return 'fr'
   })
+  // The page's language, a REGION and not just a language (review #35): « fr » let a
+  // screen reader pick a France voice. Applied on boot too — it was only set on a CHANGE,
+  // so a household that had picked English loaded every page marked French.
+  useEffect(() => {
+    document.documentElement.lang = lang === 'fr' ? 'fr-CA' : 'en-CA'
+  }, [lang])
   function setLang(l: Lang) {
     setLangState(l)
     try {
@@ -155,7 +161,6 @@ function Root() {
     } catch {
       /* noop */
     }
-    document.documentElement.lang = l
   }
 
   // `?kid=1` is the kiosk boot lock: it forces the toddler view AND latches

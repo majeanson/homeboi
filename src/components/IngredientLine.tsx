@@ -44,6 +44,10 @@ export function IngredientLine({
   const text = opt ? line.slice(0, opt.index).trimEnd() : line
   const tag = opt ? <span className="ing-opt mono">{opt[1]?.toLowerCase()}</span> : null
   const measures = useMemo(() => findMeasures(text), [text])
+  // WHAT is measured, for a pill's name (review #35): three pills read « Écouter : 1/2
+  // tasse » with nothing to tell them apart. The line minus its amounts, minus a leading
+  // « de » / « d’ » / « of » — « 1/2 tasse de farine » → « farine ».
+  const what = useMemo(() => ingredientOf(text, measures), [text, measures])
 
   if (measures.length === 0)
     return (
@@ -73,13 +77,13 @@ export function IngredientLine({
           e.stopPropagation()
           speak(spokenMeasure(m, lang))
         }}
-        aria-label={t.recipes.hearMeasure(m.text)}
+        aria-label={what ? `${t.recipes.hearMeasure(m.text)} — ${what}` : t.recipes.hearMeasure(m.text)}
       >
         {m.text}
       </button>,
     )
     // The colour-coded fill circles ("scoop this twice"), right after its pill.
-    if (scoops) parts.push(<MeasureScoops key={`s${i}`} measure={m} size={size} />)
+    if (scoops) parts.push(<MeasureScoops key={`s${i}`} measure={m} size={size} what={what} />)
     cursor = m.end
   })
   if (cursor < text.length) parts.push(<Fragment key="tend">{text.slice(cursor)}</Fragment>)
@@ -94,3 +98,15 @@ export function IngredientLine({
 
 // « 30 ml de graines de sésame (facultatif) » — the parenthesis at the END of the line.
 const OPTIONAL = /\s*\(\s*(facultati(?:f|ve)s?|optionnel(?:le)?s?|optional)\s*\)\s*$/i
+
+// The ingredient a line measures: its text with the amounts cut out (review #35).
+export function ingredientOf(text: string, measures: readonly { start: number; end: number }[]): string {
+  let out = ''
+  let cursor = 0
+  for (const m of measures) {
+    out += text.slice(cursor, m.start) + ' '
+    cursor = m.end
+  }
+  out += text.slice(cursor)
+  return out.replace(/\s+/g, ' ').trim().replace(/^(de|d[’']|of)\s*/i, '').trim()
+}

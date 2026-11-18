@@ -156,7 +156,7 @@ export function MealRows({
                 )}
                 <span className="kitchen__meal-ctl">
                   {/* A planned meal carries its linked recipe's ❤ (#21). */}
-                  {r && <HeartButton recipeId={r.id} />}
+                  {r && <HeartButton recipeId={r.id} name={r.title} />}
                   {/* ❤ and 📖 stay visible — they're what a planned meal row is READ
                       for. The management verbs (reorder · leftovers · remove) fold into
                       a per-row ⋯: six glyphs on one row left no room for the title on a

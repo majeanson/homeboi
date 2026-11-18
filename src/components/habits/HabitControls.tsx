@@ -41,6 +41,10 @@ export function HabitControls({ habit, status, onMark, className }: HabitControl
           type="button"
           className={'btn habit-row__do' + (status.done ? ' is-on' : '')}
           aria-pressed={status.done}
+          // Each button names its habit (review #35): a screen reader's button list read
+          // « C'est fait » twice and « Encore un » with nothing to tell them apart. A FIXED
+          // name — the pressed state says whether it is done.
+          aria-label={`${fn.markDone} — ${habit.title}`}
           onClick={() => onMark({ value: status.done ? 0 : 1 })}
         >
           <Icon name="check-bold" size={18} /> {status.done ? fn.doneToday : fn.markDone}
@@ -53,15 +57,15 @@ export function HabitControls({ habit, status, onMark, className }: HabitControl
               tallying is a repeated tap (eight glasses, five cigarettes), so the
               primary button must not shift under the finger between taps. − is
               always rendered, merely disabled at zero. */}
-          <button type="button" className="btn habit-row__plus" onClick={() => onMark({ value: status.value + 1 })}>
+          <button type="button" className="btn habit-row__plus" aria-label={`${fn.plusOne} — ${habit.title}`} onClick={() => onMark({ value: status.value + 1 })}>
             <Icon name="plus-bold" size={18} /> {fn.plusOne}
           </button>
-          <IconButton icon="minus-bold" label={fn.minusOne} iconSize={16} className="habit-row__minus" disabled={status.value === 0} onClick={() => onMark({ value: Math.max(0, status.value - 1) })} />
+          <IconButton icon="minus-bold" label={`${fn.minusOne} — ${habit.title}`} iconSize={16} className="habit-row__minus" disabled={status.value === 0} onClick={() => onMark({ value: Math.max(0, status.value - 1) })} />
           {/* A ceiling habit needs a way to say « aucune aujourd'hui » — else a
               zero day is indistinguishable from an untouched one. Last in the
               row, so it can drop away once marked without moving ＋ or −. */}
           {kind === 'limit' && !status.marked && (
-            <button type="button" className="btn btn--ghost" onClick={() => onMark({ value: 0 })}>
+            <button type="button" className="btn btn--ghost" aria-label={`${fn.noneToday} — ${habit.title}`} onClick={() => onMark({ value: 0 })}>
               {fn.noneToday}
             </button>
           )}
@@ -74,6 +78,7 @@ export function HabitControls({ habit, status, onMark, className }: HabitControl
             type="button"
             className={'btn habit-row__held' + (status.done ? ' is-on' : '')}
             aria-pressed={status.done}
+            aria-label={`${fn.held} — ${habit.title}`}
             onClick={() => onMark({ value: 1, slips: 0 })}
           >
             <Icon name="check-bold" size={18} /> {fn.held}
@@ -81,6 +86,7 @@ export function HabitControls({ habit, status, onMark, className }: HabitControl
           <button
             type="button"
             className="btn btn--ghost habit-row__slip"
+            aria-label={`${fn.slip} — ${habit.title}`}
             onClick={() => onMark({ value: 0, slips: status.slips + 1 })}
           >
             {fn.slip}

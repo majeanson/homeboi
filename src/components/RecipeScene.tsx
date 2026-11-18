@@ -1,11 +1,11 @@
 import { IconButton } from './IconButton'
 import { Fragment, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useT } from '../i18n'
+import { useLang, useT } from '../i18n'
 import { api } from '../lib/api'
 import { useWrite, writeFailed } from '../lib/write'
 import { BOARD_KEY, MONTH_KEY } from '../lib/queryKeys'
-import { type Recipe, type RecipeTagsData, RECIPES_KEY, RECIPE_TAGS_KEY, recipeImg, tagColor, useRecipeOriginal } from '../lib/recipes'
+import { type Recipe, type RecipeTagsData, RECIPES_KEY, RECIPE_TAGS_KEY, recipeImg, recipeLangAttr, tagColor, useRecipeOriginal } from '../lib/recipes'
 import { isGuest } from '../lib/device'
 import { useLens } from '../lib/audience'
 import { wash, tintInk, edge } from '../lib/colors'
@@ -56,6 +56,7 @@ export function RecipeScene({
   onClose: () => void
 }) {
   const t = useT()
+  const { lang } = useLang()
   const confirm = useConfirm()
   const write = useWrite()
   const { acts, teaches } = useLens()
@@ -274,7 +275,7 @@ export function RecipeScene({
   }
 
   return (
-    <div ref={modalRef} className="recipe-modal" role="dialog" aria-modal="true" aria-label={recipe.title}>
+    <div ref={modalRef} className="recipe-modal" role="dialog" aria-modal="true" aria-label={recipe.title} lang={recipeLangAttr(recipe.lang, lang)}>
       {/* Shared scene header (like every other full-screen scene) instead of a
           bespoke bar — a consistent title + Guide "?" + close ✕. The "Original"
           mode toggle + the ⋯ overflow ride SceneHead's `action` slot. */}

@@ -65,6 +65,13 @@ export interface Recipe {
 
 // The shown total: the stated total when present, else prep+cook when either
 // exists. Null = the recipe carries no time data at all.
+// The `lang` attribute a recipe's text carries (review #35): its OWN language, only when it
+// differs from the page's, so a screen reader switches voice for an English recipe in a
+// French app (and back). Same language, or not said: nothing — the page already says it.
+export function recipeLangAttr(recipeLang: Recipe['lang'], pageLang: 'fr' | 'en'): 'fr' | 'en' | undefined {
+  return recipeLang && recipeLang !== pageLang ? recipeLang : undefined
+}
+
 export function recipeTotalMin(r: Pick<Recipe, 'prepMin' | 'cookMin' | 'totalMin'>): number | null {
   if (r.totalMin) return r.totalMin
   const sum = (r.prepMin ?? 0) + (r.cookMin ?? 0)

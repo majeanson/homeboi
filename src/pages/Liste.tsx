@@ -328,6 +328,9 @@ function ListItemRow({
           >
             {text}
           </span>
+          {/* WHO, in words (review #35): the tint is a colour and the tooltip a mouse thing,
+              so neither reached a screen reader — « Lait, ajouté par Camille ». */}
+          {adder?.display_name && <span className="sr-only">{`, ${t.list.addedBy.toLowerCase()} ${adder.display_name}`}</span>}
           {/* The fade alone would leave the row's second class to be inferred from
               contrast (and invisible to a screen reader) — name it on the row. */}
           {noRush && (
