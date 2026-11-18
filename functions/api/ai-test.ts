@@ -9,8 +9,8 @@ import { householdAiEnabled } from '../_lib/aiPref'
 // a retired text model or the gated-vision license block (err 5016) shows up as
 // a concrete pass/fail with the error message, the same breakages that otherwise
 // only surface in the AI error log after a feature has already failed for a user.
-// Any actor: a parent-mode kiosk may run it too (it already burns inferences via
-// the capture spine) — only member admin + device pairing stay operator-only.
+// OPERATOR-ONLY (review #37): four real inferences a press, on the household's daily AI
+// budget and the shared account's quota — a kiosk or a demo guest had no reason to hold it.
 export const onRequestPost = authed(async (ctx, actor) => {
   if (!ctx.env.AI) return serviceUnavailable('AI binding not configured on this deployment.')
   // The household's own off switch (Réglages ▸ IA) wins over the binding: never burn
@@ -27,4 +27,4 @@ export const onRequestPost = authed(async (ctx, actor) => {
     pingVisionModel(ctx.env),
   ])
   return ok({ checks: [text, primary, second, vision] })
-})
+}, 'operator')

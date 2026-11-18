@@ -75,6 +75,8 @@ describe('jumeler une tablette', () => {
     const { code } = await start()
     expect((await anon('/api/pair/claim', { method: 'POST', body: { code }, headers: kiosk })).status).toBe(403)
     expect((await anon('/api/pair/devices', { headers: kiosk })).status).toBe(403)
+    // Four real inferences a press on the household's AI budget: the operator's (review #37).
+    expect((await anon('/api/ai-test', { method: 'POST', headers: kiosk })).status).toBe(403)
   })
 
   it('a stranger cannot rename or revoke my tablet', async () => {

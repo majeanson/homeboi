@@ -7,7 +7,7 @@ import { type HelpMode } from '../../lib/helpMode'
 import { OperatorSection } from './OperatorSection'
 import { EmptyState } from '../EmptyState'
 import { api, ApiError, isStatus } from '../../lib/api'
-import { isGuest } from '../../lib/device'
+import { isGuest, needsOperator } from '../../lib/device'
 import { useAi } from '../../lib/ai'
 import { useOnline } from '../../lib/online'
 import { AI_ERRORS_KEY } from '../../lib/queryKeys'
@@ -68,7 +68,9 @@ function AiStatusTest({ help }: { help?: HelpMode | undefined }) {
 
   return (
     <OperatorSection title={o18n.aiTestTitle} help={help} helpKey="aiTest">
-      {!isGuest() && (
+      {/* The operator's button (review #37): the endpoint runs four real inferences on the
+          household's AI budget, so a kiosk or a guest no longer may. */}
+      {!needsOperator() && (
         <button type="button" className="btn btn--primary" onClick={run} disabled={running} aria-busy={running}>
           {running ? o18n.aiTestRunning : o18n.aiTestBtn}
         </button>

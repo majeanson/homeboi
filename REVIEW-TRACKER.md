@@ -108,13 +108,14 @@ Progress on the 43 items kept from the 7-persona review (2026-11-17).
   Tests: unit `IngredientLine.test.ts`, e2e `a11y-language.spec.ts` (5 plants red), `habits.spec` follows the fixed toggle name; 37 related specs green.
 
 ## P3: engineering
-- [x] 36. Gate Dependabot auto-merge on e2e. **Done** (`ci(dependabot): attendre les navigateurs avant de fusionner…`). Verified: auto-merge listened for CI only and deployed, while E2E ran on main after the deploy.
+- [x] 36. Gate Dependabot auto-merge on e2e. **Done** `3899abc1`. Verified: auto-merge listened for CI only and deployed, while E2E ran on main after the deploy.
   - `e2e.yml` also runs after CI on `dependabot/**`, with `permissions: contents: read` (it runs the branch's code in a workflow_run context).
   - `dependabot-automerge.yml` listens for « E2E (Playwright) ». It requires every E2E job to have run and passed, since an all-skipped run (what E2E does when CI failed) concludes « success ».
   - CLAUDE.md's E2E line says so.
 
   Tests: `scripts/automerge-gate.test.mjs` (red on the old workflows).
 - [ ] 37. Quick wins: delete `functions/_middleware.ts` + its test; sunset the chores/todos/home-projects aliases; rename `home_projects` → `tasks`; `ON DELETE CASCADE` from households; ai-test operator-only.
+  - In progress. Done in `chore(nettoyage): une porte morte de moins…`: `functions/_middleware.ts` + its test deleted (the live list is `worker/index.ts` CSRF_EXEMPT, guarded by `csrfExempt.test`); `ai-test` is `authed(…, 'operator')` and its button hides behind `needsOperator()` (d1: a real paired kiosk gets 403). Left: aliases, the table rename, CASCADE.
 - [ ] 38. Write-path quirks: guest fake-success, double 404 handling, outbox dropping 429/408, hidden A_REGLER/tour side effects.
 - [ ] 39. Client UUIDs for creates → delete tmpIds, outbox id rewriting, healing deletes.
 - [ ] 40. `shared/` module for client↔server mirrored code; delete the MIRRORED copies and their mirror tests.

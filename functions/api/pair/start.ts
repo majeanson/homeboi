@@ -7,7 +7,7 @@ import { newId, newPairingCode, nowSec } from '../../_lib/ids'
 // yet). Mints a pending pairing row + a 6-digit code, returns the code for the
 // tablet to display. The operator then claims it from their phone.
 //
-// CSRF-exempt (in _middleware): there is no cookie to ride. Pairing rows are
+// CSRF-exempt (worker/index.ts CSRF_EXEMPT): there is no cookie to ride. Pairing rows are
 // short-lived (10 min) and useless until an authenticated operator claims one,
 // so an attacker generating codes achieves nothing.
 const PAIRING_TTL = 60 * 10

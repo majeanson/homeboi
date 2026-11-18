@@ -34,7 +34,8 @@ export { RealtimeHub } from './RealtimeHub'
 type WorkerEnv = Env & { ASSETS: Fetcher; REALTIME_HUB?: DurableObjectNamespace }
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
-// Mirror functions/_middleware.ts: these state-changing endpoints have no cookie
+// THE CSRF exemption list (the Pages-era functions/_middleware.ts copy is deleted, review
+// #37 — it looked like the place to add one and did nothing): these state-changing endpoints have no cookie
 // yet (pairing) or issue it (login), so they're exempt from the CSRF gate.
 // 'demo' mints the public read-only showcase token for « Essaie sans peur »
 // (bmad/08 A-8) — a first-time visitor has no cookie yet, exactly like signup.
@@ -442,7 +443,7 @@ const app = {
       functionPath: '/' + path,
     }
 
-    // 2. Error boundary (mirrors _middleware): a thrown handler becomes a clean
+    // 2. Error boundary (the old Pages _middleware's): a thrown handler becomes a clean
     //    JSON 500 with a server-side log, never a leaked stack. (authed()
     //    handlers also catch internally; this backstops the unauthed ones.)
     try {
