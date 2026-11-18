@@ -298,30 +298,9 @@ export const linkEndpoints = (l: ContactLink): { aKey: string; bKey: string } =>
 
 // ---- Relationship vocabulary -----------------------------------------------
 
-export type RelationshipType =
-  | 'parent'
-  | 'child'
-  | 'sibling'
-  | 'spouse'
-  | 'partner'
-  | 'grandparent'
-  | 'grandchild'
-  | 'aunt_uncle'
-  | 'niece_nephew'
-  | 'cousin'
-  | 'parent_in_law' // spouse's parent (belle-mère / beau-père); inverse: child_in_law
-  | 'child_in_law' // child's spouse (belle-fille / beau-fils); inverse: parent_in_law
-  | 'sibling_in_law' // spouse's sibling or sibling's spouse (belle-sœur / beau-frère); self-inverse
-  | 'in_law' // generic catch-all belle-famille (a spouse's cousin, etc.) when no precise in-law rung fits
-  | 'step_family'
-  | 'relative' // generic "same family" kin tie — no precise rung known (used by « Compléter les familles »)
-  | 'owner' // a human who OWNS a pet (inverse: 'pet') — binds the animal into the family group, but is NOT a closure rung (a pet never becomes a grandparent)
-  | 'pet' // an animal that belongs to a person (inverse: 'owner')
-  | 'best_friend'
-  | 'friend'
-  | 'colleague'
-  | 'neighbor'
-  | 'other'
+// The stored relationship types and their inverses: shared/relationships.ts, the Worker's too.
+import { RELATIONSHIP_INVERSES, type RelationshipType } from '../../shared/relationships'
+export { RELATIONSHIP_INVERSES, type RelationshipType }
 
 type RelationshipGroup = 'immediate' | 'extended' | 'social' | 'animal' | 'other'
 
@@ -366,36 +345,6 @@ const RELATIONSHIP_CONFIG: Record<RelationshipType, RelationshipConfig> = {
   colleague: { label: { fr: 'Collègue', en: 'Colleague' }, group: 'social', groupOrder: 2, color: '#D9842A' },
   neighbor: { label: { fr: 'Voisin·e', en: 'Neighbour' }, group: 'social', groupOrder: 3, color: '#C2563A' },
   other: { label: { fr: 'Autre', en: 'Other' }, group: 'other', groupOrder: 0, color: '#8A8780' },
-}
-
-// A → B implies B → A. Canonical for the client picker; the server keeps a twin
-// in functions/_lib/cercleRelations.ts (it can't import SPA code) and derives
-// reverse_type from it so a client can't desync the edge. cercle.test.ts pins the
-// two in lockstep.
-export const RELATIONSHIP_INVERSES: Record<RelationshipType, RelationshipType> = {
-  parent: 'child',
-  child: 'parent',
-  sibling: 'sibling',
-  spouse: 'spouse',
-  partner: 'partner',
-  grandparent: 'grandchild',
-  grandchild: 'grandparent',
-  aunt_uncle: 'niece_nephew',
-  niece_nephew: 'aunt_uncle',
-  cousin: 'cousin',
-  parent_in_law: 'child_in_law',
-  child_in_law: 'parent_in_law',
-  sibling_in_law: 'sibling_in_law',
-  in_law: 'in_law',
-  step_family: 'step_family',
-  relative: 'relative',
-  owner: 'pet',
-  pet: 'owner',
-  best_friend: 'best_friend',
-  friend: 'friend',
-  colleague: 'colleague',
-  neighbor: 'neighbor',
-  other: 'other',
 }
 
 export const ALL_RELATIONSHIP_TYPES = Object.keys(RELATIONSHIP_CONFIG) as RelationshipType[]
@@ -954,25 +903,10 @@ export function dedupeNewLinks(generated: GeneratedLink[], existing: ContactLink
 
 // ---- Birthday math ----------------------------------------------------------
 
-// Parse 'YYYY-MM-DD' → parts. Year 0 (or '0000') means "year unknown" → yearKnown
-// is false and age can't be computed. Returns null for empty/garbage.
-//
-// TWIN of `parseBirthday` in functions/_lib/birthdays.ts — the SPA and the Worker
-// don't share code, so the rule lives once per tree and the two MUST agree. They
-// didn't until 2026-08-28 (the server copy matched `\d{4}`, this one `\d{1,4}`, so a
-// short year showed on the cercle page and vanished from the board's agenda). Change
-// one, change both: `functions/_lib/birthdays.test.ts` runs an agreement table over
-// both copies and fails on any divergence.
-export function parseBirthday(birthday: string | null | undefined): { year: number; month: number; day: number; yearKnown: boolean } | null {
-  if (!birthday) return null
-  const m = /^(\d{1,4})-(\d{2})-(\d{2})$/.exec(birthday.trim())
-  if (!m) return null
-  const year = Number(m[1])
-  const month = Number(m[2])
-  const day = Number(m[3])
-  if (month < 1 || month > 12 || day < 1 || day > 31) return null
-  return { year, month, day, yearKnown: year > 0 }
-}
+// Parse 'YYYY-MM-DD' → parts (year 0 = « year unknown »): shared/birthday.ts, the one rule the
+// board agenda's server-side derivation reads too.
+import { parseBirthday } from '../../shared/birthday'
+export { parseBirthday }
 
 // Days until the next occurrence of this birthday, counting today as 0. Uses
 // LOCAL calendar dates (no tz math needed — birthdays are whole days). Returns

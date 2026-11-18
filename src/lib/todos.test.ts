@@ -22,6 +22,7 @@ import {
   TODO_TEMPLATE_TITLE_MAX,
 } from './todos'
 import { TODOS_KEY } from './queryKeys'
+import { TODO_ITEM_LABEL_MAX, TODO_SECTION_MAX } from '../../shared/todos'
 
 const todo = (over: Partial<Todo>): Todo => ({
   id: 'x',
@@ -207,32 +208,13 @@ describe('wouldCycle', () => {
   })
 })
 
-// ── Length caps stay in lockstep with the server ──────────────────────────────
-// The whole point of TODO_TITLE_MAX / TODO_TEMPLATE_TITLE_MAX is that the FIELD
-// warns before the write using the same number the HANDLER slices with. If the two
-// drift, the warning lies and a todo silently comes back truncated again — exactly
-// the bug this replaced. So read the caps straight out of the handlers.
-describe('todo length caps mirror functions/api', () => {
-  const read = (rel: string) =>
-    readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../functions/api', rel), 'utf8')
-  const capOf = (src: string, name: string) => {
-    const m = new RegExp(`const ${name} = ([0-9]+)`).exec(src)
-    expect(m, `${name} not found — did the handler rename it?`).toBeTruthy()
-    return Number(m![1])
-  }
-
-  it('a todo title uses the handler cap', () => {
-    expect(capOf(read('todos.ts'), 'TITLE_MAX')).toBe(TODO_TITLE_MAX)
-  })
-  it('a template item label shares the todo cap (it BECOMES a todo title)', () => {
-    expect(capOf(read('todo-templates.ts'), 'ITEM_LABEL_MAX')).toBe(TODO_TITLE_MAX)
-  })
-  it('a template title uses the template cap', () => {
-    expect(capOf(read('todo-templates.ts'), 'TEMPLATE_TITLE_MAX')).toBe(TODO_TEMPLATE_TITLE_MAX)
-  })
-  it("a checklist instance's section header can hold a whole template title", () => {
-    // The section IS the template's title — a shorter cap would cut the header.
-    expect(capOf(read('todos.ts'), 'SECTION_MAX')).toBeGreaterThanOrEqual(TODO_TEMPLATE_TITLE_MAX)
+// ── Length caps: one copy, shared/todos.ts (review #40) ──────────────────────
+// The field warns with the same number the handler slices with because both IMPORT it; what
+// is left to pin is the relation between the caps.
+describe('todo length caps', () => {
+  it('a template item shares the todo cap, and a section holds a whole template title', () => {
+    expect(TODO_ITEM_LABEL_MAX).toBe(TODO_TITLE_MAX)
+    expect(TODO_SECTION_MAX).toBeGreaterThanOrEqual(TODO_TEMPLATE_TITLE_MAX)
   })
   it('the caps are generous enough for a real sentence', () => {
     expect(TODO_TITLE_MAX).toBeGreaterThanOrEqual(1000)

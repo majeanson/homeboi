@@ -5,14 +5,12 @@
 // that iterates the lines (scaling, shopping, cook mode, step matching) treats
 // a heading as structure, not content.
 //
-// Mirrored in functions/_lib/recipeSections.ts (same src/functions duplication
-// convention as ingredient.ts) — keep the two in sync.
-
-export const SECTION_PREFIX = '## '
+// The marker primitives (the prefix, what a heading is, making one, dropping a dangling one)
+// are shared/recipeSections.ts, the Worker's copy too (review #40).
+import { dropDanglingHeadings, isSectionHeading, makeSectionHeading, SECTION_PREFIX } from '../../shared/recipeSections'
+export { dropDanglingHeadings, isSectionHeading, makeSectionHeading, SECTION_PREFIX }
 
 const HEADING_RE = /^##\s+\S/
-
-export const isSectionHeading = (line: string): boolean => HEADING_RE.test(line.trim())
 
 // "## Glaçage" → "Glaçage". Safe on a non-heading (returns the line untouched).
 export const sectionTitle = (line: string): string => {
@@ -20,24 +18,10 @@ export const sectionTitle = (line: string): string => {
   return HEADING_RE.test(s) ? s.replace(/^##\s+/, '').trim() : s
 }
 
-export const makeSectionHeading = (title: string): string => SECTION_PREFIX + title.trim()
-
 // The content lines only — what "how many ingredients" or "push to the list"
 // should count.
 export const withoutHeadings = (lines: string[]): string[] => lines.filter((l) => !isSectionHeading(l))
 
-// A heading directly followed by another heading (or by nothing) introduces an
-// empty part — drop it. Run before saving / after parsing.
-export function dropDanglingHeadings(lines: string[]): string[] {
-  const out: string[] = []
-  const endsOnHeading = () => isSectionHeading(out.at(-1) ?? '')
-  for (const l of lines) {
-    if (isSectionHeading(l) && endsOnHeading()) out.pop()
-    out.push(l)
-  }
-  if (endsOnHeading()) out.pop()
-  return out
-}
 
 // Group the flat lines for display. `idx` is each item's position in the
 // ORIGINAL array, so per-index UI state (the cook-mode gather checklist) stays

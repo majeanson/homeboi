@@ -15,7 +15,7 @@ import type { Env } from '../_lib/env'
 // inventory count (calm). `requiresAi` 503s when AI is off → the SPA hides the tile.
 // The right anti-waste signal is use-soon (things you HAVE that spoil), NOT pantry-low
 // (a restock signal) — so this never touches pantry_low.
-const MAX_PICKS = 3
+import { MAX_FRIDGE_PICKS as MAX_PICKS } from '../../shared/emptyFridge'
 
 // What the household has on hand to use up: the use-soon list first (the true
 // spoilage signal), then the réserve stash. Capped so the prompt stays short.

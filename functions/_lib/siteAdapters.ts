@@ -1,5 +1,5 @@
 import { htmlToText, normLoose } from './recipeImport'
-import { isSectionHeading, makeSectionHeading } from './recipeSections'
+import { isSectionHeading, makeSectionHeading } from '../../shared/recipeSections'
 
 // SITE ADAPTERS (C2, 2026-10-27) — the parts (« Pâte » / « Garniture ») a site KNOWS but
 // its schema.org JSON-LD flattens away. schema.org has no ingredient groups, so a Ricardo

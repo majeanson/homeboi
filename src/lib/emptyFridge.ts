@@ -2,9 +2,9 @@
 // React component. The flow: AI proposes ~10 dish names that use up what's about to
 // spoil, the cook ticks a few, each pick becomes a full recipe to keep or cook.
 
-// At most this many ideas become recipes at once — bounds step 2 to ≤3 AI calls
-// (mirrors MAX_PICKS in functions/api/empty-fridge.ts). Keep the two in sync.
-export const MAX_FRIDGE_PICKS = 3
+// At most this many ideas become recipes at once (shared/, the handler's cap too).
+import { MAX_FRIDGE_PICKS } from '../../shared/emptyFridge'
+export { MAX_FRIDGE_PICKS }
 
 // Toggle a dish name in the picked set, refusing a NEW pick once `max` is reached
 // (un-ticking an already-picked one always works). Returns a fresh Set so React

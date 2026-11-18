@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useT } from '../i18n'
 import { withoutHeadings } from '../lib/recipeSections'
-import { ingredientName } from '../lib/ingredient'
+import { ingredientName } from '../../shared/ingredient'
 import { InlineIcon } from './Icon'
 import { Chip } from './Chip'
 

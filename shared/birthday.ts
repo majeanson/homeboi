@@ -2,18 +2,11 @@
 // means, for BOTH the write validators (used by members/cercle/pets) and the
 // server-side derivation in `birthdays.ts`.
 //
-// It has a twin: `parseBirthday` in `src/lib/cercle.ts`. The Worker bundle and the
-// SPA bundle don't share code, so the client keeps its own copy for the cercle page,
-// the detail peek and the countdown card. The two MUST agree, and on 2026-08-28 they
-// did not: the server copy matched `\d{4}` where the client (and both write
-// validators) matched `\d{1,4}`, so a stored 1–3-digit year rendered fine on the
-// cercle page and was silently dropped from the board's agenda, which derives its
-// birthdays server-side. Pinned by the agreement table in `src/lib/cercle.test.ts`
-// — sibling of ingredient-mirror.test.ts and of that file's INVERSES check.
-//
-// This lives apart from `birthdays.ts` ON PURPOSE: that module's `fetchBirthdayPeople`
-// names `D1Database`, and the agreement test has to import this from the SPA tree,
-// whose tsconfig carries no Workers types. Keep this file free of them.
+// ONE copy (shared/, review #40): the cercle page, the detail peek and the countdown card read
+// it, and so does the board agenda's server-side derivation. Two copies disagreed on
+// 2026-08-28 — the server matched `\d{4}` where the client matched `\d{1,4}`, so a stored
+// 1–3-digit year rendered on the cercle page and was silently dropped from the agenda.
+// Keep this file free of Workers types: the SPA compiles it too.
 //
 // Permissive on READ (`\d{1,4}`) so any short year already in the table is seen by
 // both trees; canonical on WRITE (`birthdayOrNull` pads to 4) so new rows can't add

@@ -2,8 +2,8 @@ import { badRequest, ok, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { profileMemberId } from '../_lib/profile'
-import { ingredientName } from '../_lib/ingredient'
-import { isSectionHeading } from '../_lib/recipeSections'
+import { ingredientName } from '../../shared/ingredient'
+import { isSectionHeading } from '../../shared/recipeSections'
 
 // Push a recipe's ingredients onto the shared list in ONE call (source 'recipe',
 // so the ghost list / list UI can tell where they came from). Mirrors the meal

@@ -3,7 +3,7 @@ import { type AiAttempt, SELECTION_MODEL, type LineSelection, type Lang, selectR
 import { detectLang } from './langDetect'
 import { ING_HEADING, MAX_NOTES_LEN, MAX_STEPS, NOISE_END, NO_TIMES, NOTE_HEADING, PAGE_FOOTER, type RecipeTimes, STEP_HEADING, STEP_MARKED, VERSION_LABEL, isMetaLine, parseRecipeText, parseYield, refineSteps, textToMinutes } from './recipeImport'
 import { jsonFragmentsToText, repairRecipeRead, stripTranscriptPreamble } from './recipeRepair'
-import { dropDanglingHeadings, makeSectionHeading } from './recipeSections'
+import { dropDanglingHeadings, makeSectionHeading } from '../../shared/recipeSections'
 
 // THE ONE text → draft path (2026-09-24). It lived inline in api/recipe-import's paste
 // branch, and api/recipe-vision had its own: the vision model was asked to read AND

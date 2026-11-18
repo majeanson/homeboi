@@ -7,7 +7,7 @@ import { householdIncludedStores, storeKey } from '../_lib/stores'
 import { computeUnitPrice, stripProductCode, type UnitKind } from '../_lib/unitprice'
 import { extractSizes, resolveLang } from '../_lib/ai'
 import { aiUsable } from '../_lib/aiPref'
-import { ingredientName } from '../_lib/ingredient'
+import { ingredientName } from '../../shared/ingredient'
 
 // PROOF OF CONCEPT — flyer-deal lookup (the "Reebee replacement" half).
 //

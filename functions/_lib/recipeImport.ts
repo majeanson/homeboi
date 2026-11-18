@@ -17,7 +17,7 @@
 // Worker endpoint (api/recipe-import) does the fetch; this module does the
 // parsing, so it's unit-testable with fixture HTML.
 
-import { dropDanglingHeadings, isSectionHeading, makeSectionHeading } from './recipeSections'
+import { dropDanglingHeadings, isSectionHeading, makeSectionHeading } from '../../shared/recipeSections'
 
 export interface RecipeTimes {
   prep: number | null // minutes

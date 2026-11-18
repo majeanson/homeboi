@@ -9,6 +9,7 @@ import { taskDay, taskDayOf } from '../_lib/taskDay'
 import { insertTask } from '../_lib/taskWrite'
 import { clearTasks, clearTaskStatements, tickTask, untickTask } from '../_lib/taskGestures'
 import { emojiIcon, hexColorOrNull, taskEffort } from '../_lib/validate'
+import { DEPARTURE_ADHOC, flattenTemplate, TODO_SECTION_MAX as SECTION_MAX, TODO_TITLE_MAX as TITLE_MAX, type StoredItem } from '../../shared/todos'
 
 // À cocher — the departure checklists (« Avant de partir », mig 0116) and, as an alias, every
 // task. Migration 0046.
@@ -38,16 +39,8 @@ import { emojiIcon, hexColorOrNull, taskEffort } from '../_lib/validate'
 //                                   clear { clearChecked: true, ids? }
 //   DELETE /api/todos            -> remove one { id }
 
-// How long a todo's text may be, and how long the section header a checklist
-// instance carries may be. Deliberately GENEROUS: a todo is often a whole
-// sentence ("appeler la garderie pour le formulaire de Léa avant vendredi"), and
-// the old 200-char cap cut the tail SILENTLY, after the save — the row simply
-// came back shorter with nothing said. The client mirrors TITLE_MAX
-// (src/lib/todos.ts TODO_TITLE_MAX) and now WARNS before sending, so these slices
-// are a backstop against a legacy/hostile payload, not an everyday cut. SECTION_MAX
-// must stay >= todo-templates.ts TEMPLATE_TITLE_MAX (the section IS that title).
-const TITLE_MAX = 2000
-const SECTION_MAX = 200
+// The caps (TITLE_MAX, SECTION_MAX) and DEPARTURE_ADHOC are shared/todos.ts, the one copy the
+// client's fields warn with: the slices here are a backstop against a legacy/hostile payload.
 
 interface TodoRow {
   id: string
@@ -67,13 +60,6 @@ interface TodoRow {
 }
 
 const COLS = 'id, title, day, member_id, done_at, position, section, source_template_id, created_at, subject_kind, subject_id, icon, colour AS color, effort'
-
-// Reserved, non-template `source_template_id` for a FREE-TYPED « Avant de partir »
-// item (typed into the departure card, not instantiated from a saved checklist). The
-// sentinel makes it read as a checklist instance so it groups on the departure card,
-// counts on its mini, folds into the Aujourd'hui glance, and is swept once its day
-// passes. MIRRORED in src/lib/todos.ts — keep in lockstep.
-const DEPARTURE_ADHOC = 'departure-adhoc'
 
 // The opportunistic roll-off: departure checklist instances pinned to a past day
 // are finished business — delete them so no Tuesday list lingers into Thursday.
@@ -327,46 +313,8 @@ export const onRequestDelete = authed(async (ctx, actor) => {
   return ok({ ok: true })
 })
 
-// ── Template composition (server mirror of src/lib/todos.ts) ──────────────────
-// Kept in lockstep with the client expansion so the editor's count preview and
-// the instantiated rows agree. Operates on the compact STORED item form (a bare
-// string label, or { ref } / { label }), not the API's normalized union.
-type StoredItem = string | { ref?: string; label?: string }
+// ── Template composition (shared/todos.ts flattenTemplate, the editor's preview's too) ──
 type Tpls = Map<string, { title: string; items: StoredItem[] }>
-const MAX_EXPAND = 100
-const normLabel = (s: string) => s.trim().toLowerCase()
-
-// Flatten ONE list's tree into labels: refs inline, each list visited once
-// (cycle-safe), labels deduped case-insensitively within the result.
-function flattenList(tpls: Tpls, id: string, max: number): string[] {
-  const seen = new Set<string>()
-  const labels: string[] = []
-  const walk = (tid: string) => {
-    if (seen.has(tid) || labels.length >= max) return
-    seen.add(tid)
-    for (const it of tpls.get(tid)?.items ?? []) {
-      if (labels.length >= max) break
-      if (typeof it === 'string') {
-        const s = it.trim()
-        if (s) labels.push(s)
-      } else if (it && typeof it.ref === 'string' && it.ref.trim()) {
-        walk(it.ref.trim())
-      } else if (it && typeof it.label === 'string' && it.label.trim()) {
-        labels.push(it.label.trim())
-      }
-    }
-  }
-  walk(id)
-  const seenLabel = new Set<string>()
-  const out: string[] = []
-  for (const l of labels) {
-    const k = normLabel(l)
-    if (!k || seenLabel.has(k)) continue
-    seenLabel.add(k)
-    out.push(l)
-  }
-  return out.slice(0, max)
-}
 
 // The instantiated, SECTIONED result. We always want the TOP parent and all its
 // todos: EVERY instantiation (plain or composed) carries `section` = the top list's
@@ -375,9 +323,9 @@ function flattenList(tpls: Tpls, id: string, max: number): string[] {
 // sub-list ref, at any depth) still flattens to that SINGLE section — every label,
 // loose or from a nested sub-list, under one header (deduped across the whole
 // result). Intermediate sub-list titles are not shown.
-function expandSectioned(tpls: Tpls, id: string, max = MAX_EXPAND): { label: string; section: string | null }[] {
+function expandSectioned(tpls: Tpls, id: string): { label: string; section: string | null }[] {
   const root = tpls.get(id)
   if (!root) return []
   const section = root.title
-  return flattenList(tpls, id, max).map((label) => ({ label, section }))
+  return flattenTemplate((tid) => tpls.get(tid)?.items, id).map((label) => ({ label, section }))
 }

@@ -227,7 +227,7 @@ export async function seedSampleData(env: Env, householdId: string, ts = nowSec(
 
   // Cercle relationship edges (polymorphic: kind ∈ member|contact|pet; no DB FK).
   // A small 3-generation tree — grandparents → Maman → the kids — plus Léa owns the
-  // cat. reverse_type from lib/cercleRelations INVERSES.
+  // cat. reverse_type from shared/relationships.
   const link = (aId: string, aKind: string, bId: string, bKind: string, type: string, rev: string) =>
     P(
       `INSERT INTO contact_links (id, household_id, person_a_id, person_a_kind, person_b_id, person_b_kind, type, reverse_type, created_at, updated_at, is_sample)
@@ -659,7 +659,7 @@ export async function seedSampleData(env: Env, householdId: string, ts = nowSec(
 
     // cercle edges — a 3-generation tree (grandparents → their two children Maman +
     // Sophie → the grandkids), the kids' pets, and a neighbour friendship. Polymorphic,
-    // no DB FK; reverse_type from lib/cercleRelations INVERSES.
+    // no DB FK; reverse_type from shared/relationships.
     link(robert, 'contact', diane, 'contact', 'spouse', 'spouse'),
     link(diane, 'contact', maman, 'member', 'parent', 'child'),
     link(diane, 'contact', sophie, 'contact', 'parent', 'child'),

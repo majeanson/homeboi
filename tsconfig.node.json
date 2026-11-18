@@ -17,5 +17,5 @@
     "exactOptionalPropertyTypes": true,
     "types": ["@cloudflare/workers-types", "vite/client", "node", "@cloudflare/vitest-plugin/types"]
   },
-  "include": ["functions", "worker", "vite.config.ts", "vitest.d1.config.ts"]
+  "include": ["functions", "worker", "shared", "vite.config.ts", "vitest.d1.config.ts"]
 }

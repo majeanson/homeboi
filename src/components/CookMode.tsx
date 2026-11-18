@@ -32,7 +32,7 @@ import {
 } from '../lib/cookPrefs'
 import { IngredientLine } from './IngredientLine'
 import { SoundToggle } from './SoundToggle'
-import { ingredientName } from '../lib/ingredient'
+import { ingredientName } from '../../shared/ingredient'
 import { useWrite } from '../lib/write'
 import { api } from '../lib/api'
 import { isGuest } from '../lib/device'

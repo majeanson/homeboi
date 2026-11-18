@@ -1,5 +1,6 @@
 import type { Env } from './env'
 import { getPref, setPref } from './householdPrefs'
+import { DEFAULT_HERO, DEFAULT_SLOT_HOURS, DEFAULT_SLOT_ORDER, MEAL_SLOTS as SLOTS, WINDOW_DAYS_DEFAULT, WINDOW_DAYS_MAX, WINDOW_DAYS_MIN, type MealSlot } from '../../shared/mealSlots'
 
 // Per-slot meal settings, household-level. The colours and the hide-list (migration
 // 0034) set in Réglages ▸ Repas, read back by the board / kitchen so a meal reads the
@@ -18,28 +19,11 @@ import { getPref, setPref } from './householdPrefs'
 //               dragging the dessert to the top reorders the list, it doesn't make
 //               dessert the next meal at 7 AM. Drives « Prochain repas » (Cuisiner).
 
-const SLOTS = ['breakfast', 'lunch', 'supper', 'snack', 'dessert'] as const
-export type Slot = (typeof SLOTS)[number]
+// The slots and their defaults are shared/mealSlots.ts (review #40), the client's too.
+export type Slot = MealSlot
+export { DEFAULT_HERO, DEFAULT_SLOT_HOURS, DEFAULT_SLOT_ORDER, WINDOW_DAYS_DEFAULT, WINDOW_DAYS_MAX, WINDOW_DAYS_MIN }
 const isSlot = (v: unknown): v is Slot => typeof v === 'string' && (SLOTS as readonly string[]).includes(v)
 const isHex = (v: unknown): v is string => typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v)
-
-// The built-in display order — by time of day. Unchanged from the constant this
-// setting replaced (SLOT_TIME_ORDER in src/lib/mealSlots.ts).
-export const DEFAULT_SLOT_ORDER: Slot[] = ['breakfast', 'lunch', 'snack', 'supper', 'dessert']
-
-// The souper is the day's hero out of the box: the board headline, the kid
-// suggestion target, the shop-the-week driver.
-export const DEFAULT_HERO: Slot = 'supper'
-
-// When each meal is SERVED, as minutes from local midnight. An ordinary Québec day.
-// Mirrors DEFAULT_SLOT_HOURS in src/lib/mealSlots.ts.
-export const DEFAULT_SLOT_HOURS: Record<Slot, number> = {
-  breakfast: 7 * 60, // 07:00
-  lunch: 12 * 60, // 12:00 — le dîner
-  snack: 15 * 60, // 15:00
-  supper: 17 * 60 + 30, // 17:30 — le souper
-  dessert: 20 * 60, // 20:00
-}
 
 const MINUTES_IN_DAY = 24 * 60
 
@@ -75,10 +59,7 @@ interface MealLayout {
 //     KidCollections); below 7 the child's week would silently lose days.
 //   • ≤ 14 — functions/api/ask.ts snapshots `today+14d` for the AI, so past 14 the
 //     assistant would stop seeing the plan the household is looking at.
-// Widening either end means fixing that surface first.
-export const WINDOW_DAYS_MIN = 7
-export const WINDOW_DAYS_MAX = 14
-export const WINDOW_DAYS_DEFAULT = 10
+// Widening either end means fixing that surface first. (The bounds: shared/mealSlots.ts.)
 
 // Clamp to [MIN, MAX]; anything absent or malformed reads as the default, so a
 // household that never touched the setting gets the same 10 days it always had.

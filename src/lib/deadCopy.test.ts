@@ -46,7 +46,8 @@ function leaves(o: unknown, path: string[] = []): string[][] {
 }
 
 describe('no dead copy', () => {
-  const corpus = sources(srcDir)
+  // shared/ too: the code src/ imports (review #40) — the meal slots' names live there now.
+  const corpus = [...sources(srcDir), ...sources(join(srcDir, '..', 'shared'))]
     .map((f) => readFileSync(f, 'utf8'))
     .join('\n')
   const all = [...leaves(FR), ...leaves(FR_OPERATOR, ['operator'])]

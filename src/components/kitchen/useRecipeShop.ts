@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useWrite } from '../../lib/write'
 import { normKey } from '../../lib/cookable'
-import { ingredientName } from '../../lib/ingredient'
+import { ingredientName } from '../../../shared/ingredient'
 import { withoutHeadings } from '../../lib/recipeSections'
 import { type Recipe } from '../../lib/recipes'
 import { BOARD_KEY } from '../../lib/queryKeys'

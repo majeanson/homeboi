@@ -4,7 +4,7 @@ import { newId, nowSec } from '../_lib/ids'
 import { hexColor } from '../_lib/validate'
 import { deleteR2Blob } from '../_lib/r2'
 import { freeMemberMediaBlobs, memberRefStatements } from '../_lib/members'
-import { birthdayOrNull } from '../_lib/birthdayRule'
+import { birthdayOrNull } from '../../shared/birthday'
 
 // The routine companion is a closed set of creature tokens (lib/companions mirrors
 // this) — a soft preference, never free text, so it can't carry a score.

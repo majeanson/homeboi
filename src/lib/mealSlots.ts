@@ -17,38 +17,15 @@ import type { Dict } from '../components/board/types'
 // MEAL_SLOTS is the storage/type-level set — the five valid `slot` values. It is NOT
 // a display order (it keeps supper before snack for historical reasons); iterate a
 // household's `order` instead.
-export const MEAL_SLOTS = ['breakfast', 'lunch', 'supper', 'snack', 'dessert'] as const
-export type MealSlot = (typeof MEAL_SLOTS)[number]
-
-// The built-in display order, by time of day — used until the household reorders.
-// Mirrored by DEFAULT_SLOT_ORDER in functions/_lib/mealSlots.ts (the server builds
-// its ORDER BY from the household's saved order, defaulting to this).
-export const DEFAULT_SLOT_ORDER: MealSlot[] = ['breakfast', 'lunch', 'snack', 'supper', 'dessert']
-
-// The day's headline slot, out of the box.
-export const DEFAULT_HERO: MealSlot = 'supper'
-
-// « Jours affichés » — how far the meal grid reaches, counting today. A HOUSEHOLD
-// SETTING like order/hero/hours above: read it off `/api/household`
-// (`mealWindowDays`), never off this constant. These are only what the picker in
-// Réglages ▸ Cuisine ▸ Repas offers and what to assume before the read lands.
 //
-// functions/_lib/mealSlots.ts is the AUTHORITY — it clamps whatever arrives, so a
-// value outside this list can never reach the grid. The bounds are set by two
-// existing surfaces, not by taste: the toddler kitchen slices `week.slice(0, 7)`
-// (so never below 7) and functions/api/ask.ts snapshots `today+14d` for the AI (so
-// never above 14). Keep the two files in step.
-export const WINDOW_DAYS_DEFAULT = 10
-export const WINDOW_DAYS_OPTIONS = [7, 10, 14] as const
+// The slots and every out-of-the-box value (order, hero, hours, the window's bounds) are
+// shared/mealSlots.ts — the server's defaults too, one copy (review #40).
+import { DEFAULT_HERO, DEFAULT_SLOT_HOURS, DEFAULT_SLOT_ORDER, MEAL_SLOTS, WINDOW_DAYS_DEFAULT, WINDOW_DAYS_OPTIONS, type MealSlot } from '../../shared/mealSlots'
+export { DEFAULT_HERO, DEFAULT_SLOT_HOURS, DEFAULT_SLOT_ORDER, MEAL_SLOTS, WINDOW_DAYS_DEFAULT, WINDOW_DAYS_OPTIONS, type MealSlot }
 
-// When each meal is SERVED, in minutes from local midnight. An ordinary Québec day.
-export const DEFAULT_SLOT_HOURS: Record<MealSlot, number> = {
-  breakfast: 7 * 60, // 07:00
-  lunch: 12 * 60, // 12:00 — le dîner
-  snack: 15 * 60, // 15:00
-  supper: 17 * 60 + 30, // 17:30 — le souper
-  dessert: 20 * 60, // 20:00
-}
+// « Jours affichés » (WINDOW_DAYS_*) is a HOUSEHOLD SETTING like order/hero/hours: read it off
+// `/api/household` (`mealWindowDays`), never off the constant — that is only what the picker
+// offers and what to assume before the read lands. The server clamps whatever arrives.
 
 // How long a meal stays "the one you're cooking" after it's served. Past this, the day
 // has moved on to the next meal — so at 11 h the déjeuner is behind you and

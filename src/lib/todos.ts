@@ -3,6 +3,7 @@
 // todos.test.ts); the React surface lives in src/components/todos/TodoSection.tsx.
 // Query keys live in lib/queryKeys.ts (TODOS_KEY / TODO_TEMPLATES_KEY).
 import { TODOS_KEY } from './queryKeys'
+import { flattenTemplate, MAX_EXPAND, type StoredItem } from '../../shared/todos'
 
 // One todo. `day` null = global (a standing item); a number = local-midnight unix
 // second it's pinned to. `member_id` is the optional face (attribution only).
@@ -30,7 +31,7 @@ export interface Todo {
 // (compose lists from lists). The stored / wire form is compact — a bare string,
 // or { ref } — but the API serves the normalized union below.
 export type TemplateItem = { kind: 'item'; label: string } | { kind: 'ref'; refId: string }
-export type StoredItem = string | { ref?: string; label?: string }
+export type { StoredItem }
 
 export interface TodoTemplate {
   id: string
@@ -46,19 +47,9 @@ export interface TemplatesData {
   templates: TodoTemplate[]
 }
 
-// Length caps, MIRRORED from functions/api/todos.ts (TITLE_MAX / SECTION_MAX) and
-// functions/api/todo-templates.ts (ITEM_LABEL_MAX / TEMPLATE_TITLE_MAX) — keep in
-// lockstep; todos.test.ts fails the build if they drift. They are deliberately
-// generous: a todo is often a whole sentence, and the server slices what it gets.
-// Every field that writes one passes the matching cap as EditField/EntityCombobox's
-// `limit`, so a too-long text is WARNED about before the write instead of coming
-// back silently truncated after it.
-export const TODO_TITLE_MAX = 2000
-export const TODO_TEMPLATE_TITLE_MAX = 200
-
-// Cap on a single instantiation's flattened size — a backstop against a pathological
-// deep/wide composition. Mirrored server-side in functions/api/todos.ts.
-const MAX_EXPAND = 100
+// The caps, the « Avant de partir » sentinel and the template flattening are shared/todos.ts:
+// one copy, read by the fields that warn and by the handlers that slice (review #40).
+export { DEPARTURE_ADHOC, TODO_TEMPLATE_TITLE_MAX, TODO_TITLE_MAX } from '../../shared/todos'
 
 // The query key for a todo scope: the board glance (global + today) is the base
 // TODOS_KEY; a specific day is a child key, so invalidating TODOS_KEY (what the
@@ -70,15 +61,6 @@ export const todosPath = (day?: number | null) => (day == null ? 'todos' : `todo
 
 export const isOpen = (t: Todo): boolean => t.done_at == null
 export const isChecked = (t: Todo): boolean => t.done_at != null
-
-// A reserved, non-template `source_template_id` for a FREE-TYPED « Avant de partir »
-// item (one typed directly into the departure card, not picked from a saved
-// checklist). It carries no real template — the sentinel just makes the row read as a
-// checklist instance (isChecklistRow) so it groups on the departure card, counts on
-// its mini, folds into the Aujourd'hui glance, and is swept once its day passes,
-// exactly like an instantiated one. Won't collide with a real template id (those are
-// random newId()s). MIRRORED in functions/api/todos.ts — keep the two in lockstep.
-export const DEPARTURE_ADHOC = 'departure-adhoc'
 
 // The « Avant de partir » discriminator: a row instantiated from a checklist
 // template (source_template_id set) vs a loose « À compléter » todo. Legacy
@@ -127,43 +109,21 @@ export const checkedIds = (todos: Todo[]): string[] => todos.filter(isChecked).m
 // mig-0116 split: splitTodos above buckets across the WHOLE list and is the one
 // grouping helper every surface uses.)
 
-// ── Template composition (mirrors the server expansion in functions/api/todos.ts) ──
+// ── Template composition (the flattening is shared/todos.ts, the server's too) ──
 
 // Convert template items between the API union and the compact stored/wire form.
 export function toStored(items: TemplateItem[]): StoredItem[] {
   return items.map((it) => (it.kind === 'ref' ? { ref: it.refId } : it.label))
 }
 
-const norm = (s: string) => s.trim().toLowerCase()
-
-// Flatten ONE list's tree into concrete labels: refs expand inline, each list
-// visited at most once (cycle-safe), labels deduped case-insensitively within the
-// result. Used for a sub-list's section content + the editor's count preview.
+// Flatten ONE list's tree into concrete labels (shared/todos.ts flattenTemplate: refs inline,
+// cycle-safe, deduped). Used for a sub-list's section content + the editor's count preview.
 export function expandTemplate(templates: TodoTemplate[], id: string, max = MAX_EXPAND): string[] {
   const byId = new Map(templates.map((t) => [t.id, t]))
-  const seen = new Set<string>()
-  const labels: string[] = []
-  const walk = (tid: string) => {
-    if (seen.has(tid) || labels.length >= max) return
-    seen.add(tid)
-    const tpl = byId.get(tid)
-    if (!tpl) return
-    for (const it of tpl.items) {
-      if (labels.length >= max) break
-      if (it.kind === 'item') labels.push(it.label)
-      else walk(it.refId)
-    }
-  }
-  walk(id)
-  const seenLabel = new Set<string>()
-  const out: string[] = []
-  for (const l of labels) {
-    const k = norm(l)
-    if (!k || seenLabel.has(k)) continue
-    seenLabel.add(k)
-    out.push(l)
-  }
-  return out.slice(0, max)
+  return flattenTemplate((tid) => {
+    const t = byId.get(tid)
+    return t && toStored(t.items)
+  }, id, max)
 }
 
 // The instantiated, SECTIONED result of a (possibly composed) list. We always want
@@ -172,7 +132,7 @@ export function expandTemplate(templates: TodoTemplate[], id: string, max = MAX_
 // that header, so it must always exist (mig 0116; previously composed-only). A
 // COMPOSED list (one containing any sub-list ref, at any depth) still flattens to
 // that SINGLE section (deduped across the whole result); intermediate sub-list
-// titles are not shown. Kept in lockstep with functions/api/todos.ts.
+// titles are not shown. The server instantiates through the same flattening.
 export function expandSectioned(
   templates: TodoTemplate[],
   id: string,

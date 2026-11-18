@@ -2,7 +2,7 @@ import { badRequest, notFound, ok, readJson, serviceUnavailable } from '../_lib/
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { deleteR2Blob, uploadR2Media } from '../_lib/r2'
-import { birthdayOrNull } from '../_lib/birthdayRule'
+import { birthdayOrNull } from '../../shared/birthday'
 import { emojiIcon } from '../_lib/validate'
 
 // « Le cercle » → Pets: the household's animals, returned as PEOPLE in the circle (a

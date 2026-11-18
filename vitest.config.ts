@@ -11,7 +11,7 @@ export default defineConfig({
     //  so the CI-facing scripts are held too — the trailer parser
     // reads commit messages, which is untrusted text on a runner with deploy credentials.
     // .mjs keeps them out of  entirely, and knip's  entry covers them.
-    include: ['{src,functions,worker}/**/*.test.ts', 'scripts/**/*.test.mjs'],
+    include: ['{src,functions,worker,shared}/**/*.test.ts', 'scripts/**/*.test.mjs'],
     // The real-runtime suite (*.d1.test.ts) imports `cloudflare:test` and runs under
     // vitest.d1.config.ts only — see that file.
     exclude: ['**/node_modules/**', '**/*.d1.test.ts'],
@@ -28,7 +28,7 @@ export default defineConfig({
     // `npm run test:coverage`. Off in `npm test`: instrumenting every file costs real time.
     coverage: {
       provider: 'v8',
-      include: ['src/**/*.{ts,tsx}', 'functions/**/*.ts', 'worker/**/*.ts'],
+      include: ['src/**/*.{ts,tsx}', 'functions/**/*.ts', 'worker/**/*.ts', 'shared/**/*.ts'],
       exclude: ['**/*.test.{ts,tsx}', '**/*.d.ts', 'functions/test/**'],
       reporter: ['text-summary', 'json-summary'],
       reportsDirectory: 'coverage',

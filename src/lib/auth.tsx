@@ -10,13 +10,9 @@ import { useQueryClient } from '@tanstack/react-query'
 import { isPaired } from './device'
 import { connectRealtime, disconnectRealtime, REALTIME_ENABLED } from './realtime'
 
-// A demo SANDBOX visitor (functions/api/demo.ts) is an ordinary signed-in operator
-// whose email is the only tell — lib/demo.ts's `isSandboxEmail` can't be imported
-// here (it imports `useAuth` FROM this file), so this mirrors it directly, same as
-// it already mirrors functions/_lib/demoHousehold.ts's copy across the client/
-// server boundary. Keep the three in step.
-const isSandboxEmail = (email: string | null | undefined): boolean =>
-  !!email && email.startsWith('demo-') && email.endsWith('@babillard.invalid')
+// A demo SANDBOX visitor (functions/api/demo.ts) is an ordinary signed-in operator whose email
+// is the only tell: shared/sandbox.ts, the one copy (lib/demo.ts and the Worker read it too).
+import { isSandboxEmail } from '../../shared/sandbox'
 
 interface Household {
   id: string

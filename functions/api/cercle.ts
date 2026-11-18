@@ -2,7 +2,7 @@ import { badRequest, notFound, ok, readJson, serviceUnavailable, okWire } from '
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
 import { deleteR2Blob, uploadR2Media } from '../_lib/r2'
-import { birthdayOrNull } from '../_lib/birthdayRule'
+import { birthdayOrNull } from '../../shared/birthday'
 import { isValidR2Key } from '../_lib/validate'
 
 // « Le cercle » — the household people directory (contacts). GET returns the

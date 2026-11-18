@@ -1,13 +1,13 @@
 import { badRequest, conflict, notFound, ok, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
-import { INVERSES, isRelationshipType as isType } from '../_lib/cercleRelations'
+import { RELATIONSHIP_INVERSES as INVERSES, isRelationshipType as isType } from '../../shared/relationships'
 
 // Relationship EDGES for « Le cercle » — a typed link between two PEOPLE, stored
 // ONCE (person_a → person_b) with its derived inverse so either side can read the
 // relation. A "person" is polymorphic (migration 0050): a contact OR a household
 // member, identified by (kind, id). The server derives reverse_type from the shared
-// INVERSES map (functions/_lib/cercleRelations.ts) so a client can never desync the
+// INVERSES map (shared/relationships.ts) so a client can never desync the
 // edge, and validates each endpoint against ITS table for this household.
 
 type Kind = 'contact' | 'member' | 'pet'

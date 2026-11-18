@@ -1,7 +1,6 @@
 // Frontend wire shape for a family-info intake submission. Twin of the server's
-// validator in functions/_lib/intake.ts (the SPA can't import worker code under the
-// build's project refs — same split as src/lib/cercle.ts ↔ functions/_lib/
-// cercleRelations.ts). The relative's form assembles this; the operator-review merge
+// validator in functions/_lib/intake.ts (a candidate for shared/, like the cercle's
+// relationship map moved there in review #40). The relative's form assembles this; the operator-review merge
 // reads it. People are index-addressed: links reference [self, ...household] by
 // position (self = 0). Keep the two files in step.
 

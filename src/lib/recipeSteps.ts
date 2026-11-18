@@ -9,7 +9,7 @@
 // earlier substring test mis-fired inside longer words — "ail" (garlic) lit up on
 // "t**ail**ler", "lait" on "lait­ue", "sel" on "vais**sel**le" — so an ingredient
 // kept showing on steps that never used it (the "ingredient on a random step" bug).
-import { ingredientName } from './ingredient'
+import { ingredientName } from '../../shared/ingredient'
 import { groupSections, isSectionHeading } from './recipeSections'
 
 // Accent-insensitive, lowercase, with the French ligatures expanded (œ→oe, æ→ae)

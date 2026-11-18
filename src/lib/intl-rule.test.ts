@@ -26,16 +26,15 @@ import { sourceFiles, readScanned } from './buildGuardScan'
 const srcDir = join(dirname(fileURLToPath(import.meta.url)), '..')
 const rootDir = join(srcDir, '..')
 
-// Scanned roots: the SPA, the Worker entry, and the Pages-Function handlers. The
-// Worker matters MOST — its CPU budget is the one /api/year actually blew.
-const ROOTS = [srcDir, join(rootDir, 'functions'), join(rootDir, 'worker')]
+// Scanned roots: the SPA, the Worker entry, the Pages-Function handlers, and the code both
+// import (shared/). The Worker matters MOST — its CPU budget is the one /api/year actually blew.
+const ROOTS = [srcDir, join(rootDir, 'functions'), join(rootDir, 'worker'), join(rootDir, 'shared')]
 
 // file (repo-relative, /-separated) → where its cache lives. The reason IS the entry.
 const ALLOWED = new Map<string, string>([
   ['src/lib/format.ts', 'fmtCache — one formatter per (lang, shape)'],
   ['src/lib/money.ts', 'moneyFmtCache — one per lang'],
-  ['src/lib/localDay.ts', 'wallFmtCache/weekdayFmtCache — one per tz'],
-  ['functions/_lib/ids.ts', 'wallFmtCache/weekdayFmtCache — one per tz'],
+  ['shared/localDay.ts', 'wallFmtCache/weekdayFmtCache — one per tz (the client and the Worker both)'],
   ['functions/_lib/askContext.ts', 'askFmtCache — one per (lang, shape)'],
   // NOT a formatter home: isValidTz() constructs one to ask Intl « do you know this
   // zone? » and throws it away. It runs once per PATCH /api/household, never in a loop,

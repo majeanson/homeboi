@@ -26,7 +26,7 @@ import { describe, expect, it } from 'vitest'
 // silent as one in a component. Everything oxlint lints, this scans.
 
 const rootDir = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
-const TREES = ['src', 'functions', 'worker', 'e2e', 'scripts']
+const TREES = ['src', 'functions', 'worker', 'shared', 'e2e', 'scripts']
 
 function lintedFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {

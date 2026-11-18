@@ -1,6 +1,7 @@
 import { badRequest, ok, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { newId, nowSec } from '../_lib/ids'
+import { TODO_ITEM_LABEL_MAX as ITEM_LABEL_MAX, TODO_TEMPLATE_TITLE_MAX as TEMPLATE_TITLE_MAX } from '../../shared/todos'
 
 // Reusable check-off checklists ("Avant de partir", "Chez grand-papa"): a title +
 // an ordered list of item labels. Instantiating one (POST /api/todos
@@ -19,13 +20,8 @@ interface TplRow {
   position: number
 }
 
-// Caps. An item label becomes a real todo's title on instantiation, so it shares
-// the todos cap (functions/api/todos.ts TITLE_MAX) — a label that survived here
-// only to be cut there would be the same silent truncation one step later. A
-// template title becomes the instance's `section` header, so it must stay <=
-// todos.ts SECTION_MAX. Both are mirrored client-side (src/lib/todos.ts).
-const ITEM_LABEL_MAX = 2000
-const TEMPLATE_TITLE_MAX = 200
+// Caps: shared/todos.ts. An item label becomes a todo's title, so it shares the todo cap; a
+// template title becomes the instance's `section` header, which holds exactly that much.
 
 // The normalized item form the API serves (mirrors src/lib/todos.ts TemplateItem):
 // a plain label, or a reference to another template.

@@ -1,5 +1,5 @@
 import { draft, readText, type DraftOut } from './recipeDraft'
-import { isSectionHeading } from './recipeSections'
+import { isSectionHeading } from '../../shared/recipeSections'
 import { adaptPage, applyGroups } from './siteAdapters'
 import {
   NOISE_END,

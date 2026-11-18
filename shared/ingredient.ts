@@ -15,8 +15,9 @@
 // ingredient word is never mistaken for a unit (e.g. "1 boîte de soupe" keeps
 // "Soupe" — "soupe" is only eaten as part of the spoon phrase "c. à soupe").
 //
-// Client mirror lives at src/lib/ingredient.ts — the two trees don't share code;
-// keep them byte-identical.
+// ONE copy (shared/, review #40): the cook mode's « Il en manque » and the server's grocery
+// list derive the same name because they run the same code. It used to be two byte-identical
+// copies held together by ingredient-mirror.test.ts.
 
 // Single-token units / containers that follow a quantity.
 const UNITS = new Set([

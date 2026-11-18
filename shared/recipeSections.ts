@@ -2,11 +2,10 @@
 // ONE flat string[] for ingredients and one for steps; a part boundary is an
 // inline heading line "## Glaçage". Old recipes simply have no heading lines.
 //
-// Mirror of src/lib/recipeSections.ts (same src/functions duplication
-// convention as ingredient.ts) — keep the two in sync. The Worker side only
-// needs the marker primitives, not the display grouping.
+// The MARKER primitives, one copy for the Worker and the SPA (shared/, review #40); the
+// display grouping (sections, versions) stays client-side in src/lib/recipeSections.ts.
 
-const SECTION_PREFIX = '## '
+export const SECTION_PREFIX = '## '
 
 const HEADING_RE = /^##\s+\S/
 

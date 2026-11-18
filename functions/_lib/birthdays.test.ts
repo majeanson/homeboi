@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { birthdayOccurrences, type BirthdayPerson } from './birthdays'
-import { birthdayOrNull } from './birthdayRule'
+import { birthdayOrNull } from '../../shared/birthday'
 import { localDayStart } from './ids'
 
 // LOCAL-midnight (America/Toronto) of a calendar date — the day boundary the engine
@@ -60,13 +60,7 @@ describe('birthdayOccurrences', () => {
   })
 })
 
-// ---- The write side of the two-tree birthday rule ---------------------------
-//
-// The client↔server AGREEMENT table lives in `src/lib/cercle.test.ts`, not here:
-// a test in this tree may not import `src/`, because `src/lib/cercle.ts` pulls a
-// type from `guideContent`, which reaches a `.tsx`, which the Worker's tsconfig
-// has no `--jsx` for. `cercle.test.ts` already imports server code for the same
-// kind of pin (the relationship INVERSES map), so that is the proven direction.
+// ---- The write side of the birthday rule (shared/birthday.ts) ---------------
 describe('a short year reaches the derivation (the board/cercle split)', () => {
   // Found 2026-08-28: this file's parser matched `\d{4}` where the client copy and
   // BOTH write validators matched `\d{1,4}`, so a stored 1–3-digit year rendered on

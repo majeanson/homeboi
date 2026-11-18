@@ -84,7 +84,6 @@ const link = (
   label: null,
   notes: null,
 })
-import { INVERSES as SERVER_INVERSES } from '../../functions/_lib/cercleRelations'
 
 describe('relationship inverses', () => {
   it('every type has an inverse, and inverse-of-inverse is identity', () => {
@@ -95,11 +94,7 @@ describe('relationship inverses', () => {
     }
   })
 
-  // The Worker can't import the SPA map, so functions/api/cercle-links.ts keeps a
-  // duplicate. This pins the two together so a future edit can't desync the edge.
-  it('the server-side copy matches the client map exactly', () => {
-    expect(SERVER_INVERSES).toEqual(RELATIONSHIP_INVERSES)
-  })
+
 })
 
 describe('detectFamilyGroups (Union-Find over unified people)', () => {
@@ -1004,46 +999,34 @@ describe('layoutFamilyForest', () => {
   })
 })
 
-// The Worker can't import the SPA's copy, so functions/_lib/birthdays.ts keeps a
-// duplicate `parseBirthday`. Same pin as the INVERSES check above, and written for a
-// real drift found 2026-08-28: the server copy matched `\d{4}` where this one — and
-// BOTH write validators — matched `\d{1,4}`, so a stored 1–3-digit year rendered on
-// the cercle page and was silently dropped from the board's agenda, which derives its
-// birthdays server-side. A file-text mirror won't do (the two have always differed in
-// signature and wording), so this compares BEHAVIOUR, which is what matters.
-import { parseBirthday as parseServer } from '../../functions/_lib/birthdayRule'
-
-describe('parseBirthday — the client and server copies agree', () => {
-  const CASES: (string | null | undefined)[] = [
-    '2020-06-24', // the ordinary case
-    '0000-03-12', // year unknown
-    '1-03-12', // ← the divergence: a 1-digit year
-    '99-03-12', // 2-digit
-    '999-01-01', // 3-digit
-    '2024-02-29', // leap day
-    '  2020-06-24  ', // both trim
-    '2020-13-01', // month out of range → null on both
-    '2020-00-01', // month 0
-    '2020-06-32', // day out of range
-    '2020-06-00', // day 0
-    '20200624', // no separators
-    '2020-6-4', // unpadded month/day → null on both
-    '2020-06-24T00:00:00Z', // a datetime is not a birthday
-    'not-a-date',
-    '',
-    null,
-    undefined,
+// parseBirthday is ONE function now (shared/birthday.ts, review #40); these are the cases the
+// two old copies once disagreed on, kept as its behaviour.
+describe('parseBirthday — the cases the two old copies disagreed on', () => {
+  const P = (year: number, month: number, day: number) => ({ year, month, day, yearKnown: year > 0 })
+  const CASES: [string | null | undefined, ReturnType<typeof parseBirthday>][] = [
+    ['2020-06-24', P(2020, 6, 24)], // the ordinary case
+    ['0000-03-12', P(0, 3, 12)], // year unknown
+    ['1-03-12', P(1, 3, 12)], // ← the old divergence: a 1-digit year is READ, not dropped
+    ['99-03-12', P(99, 3, 12)],
+    ['999-01-01', P(999, 1, 1)],
+    ['2024-02-29', P(2024, 2, 29)], // leap day
+    ['  2020-06-24  ', P(2020, 6, 24)], // trimmed
+    ['2020-13-01', null], // month out of range
+    ['2020-00-01', null],
+    ['2020-06-32', null], // day out of range
+    ['2020-06-00', null],
+    ['20200624', null], // no separators
+    ['2020-6-4', null], // unpadded month/day
+    ['2020-06-24T00:00:00Z', null], // a datetime is not a birthday
+    ['not-a-date', null],
+    ['', null],
+    [null, null],
+    [undefined, null],
   ]
-
-  for (const input of CASES) {
-    it(`agrees on ${JSON.stringify(input)}`, () => {
-      expect(parseServer(input)).toEqual(parseBirthday(input))
+  for (const [input, want] of CASES) {
+    it(`reads ${JSON.stringify(input)}`, () => {
+      expect(parseBirthday(input)).toEqual(want)
     })
   }
 
-  it('both read a short year rather than dropping it', () => {
-    // Both write validators accept `\d{1,4}`, so this CAN already be in the table.
-    expect(parseBirthday('1-03-12')).toEqual({ year: 1, month: 3, day: 12, yearKnown: true })
-    expect(parseServer('1-03-12')).toEqual(parseBirthday('1-03-12'))
-  })
 })

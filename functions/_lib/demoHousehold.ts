@@ -25,21 +25,12 @@
 import type { Env } from './env'
 import { deleteR2Blob } from './r2'
 
-export const DEMO_SANDBOX_DOMAIN = '@babillard.invalid'
-export const DEMO_SANDBOX_PREFIX = 'demo-'
+import { DEMO_SANDBOX_DOMAIN, DEMO_SANDBOX_PREFIX, isSandboxEmail } from '../../shared/sandbox'
+// The sandbox email's shape (and isSandboxEmail) is shared/sandbox.ts, the SPA's too.
+export { DEMO_SANDBOX_DOMAIN, DEMO_SANDBOX_PREFIX, isSandboxEmail }
 
 export function sandboxEmail(householdId: string): string {
   return `${DEMO_SANDBOX_PREFIX}${householdId}${DEMO_SANDBOX_DOMAIN}`
-}
-
-// "Is this operator a sandbox's throwaway?" — for the claim door and the write stamp
-// (route.ts). The sweep + cap do NOT read it any more: they key on
-// `households.is_sandbox` (0157), set by the mint and cleared by « Garder ma
-// maisonnée » (demo/claim.ts), because an email is something a person can type
-// (review 2026-11-17, P0 #3). The legacy singleton `demo@babillard.invalid` (no dash)
-// deliberately does not match.
-export function isSandboxEmail(email: string): boolean {
-  return email.startsWith(DEMO_SANDBOX_PREFIX) && email.endsWith(DEMO_SANDBOX_DOMAIN)
 }
 
 // An address a PERSON may not take: anything under the RFC 2606 `.invalid` TLD, which
