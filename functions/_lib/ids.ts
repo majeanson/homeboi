@@ -13,6 +13,15 @@ export function newId(len = 12): string {
   return out
 }
 
+// A create's id when the CLIENT minted it (review #39): the list, todos and tasks paint their
+// optimistic row under the id the server will keep (src/lib/rowId.ts `newRowId`), so a tick or
+// a delete made before the create answers already names the real row. Only a UUID is taken;
+// anything else (an older bundle, a forged string) gets a server id, as before.
+const CLIENT_ROW_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+export function rowIdFrom(v: unknown): string {
+  return typeof v === 'string' && CLIENT_ROW_ID.test(v) ? v : newId()
+}
+
 // Short, TV-typeable code for a /tv/<code> living-room link. Lowercase + digits,
 // minus look-alikes (0/o/1/l/i), so it's unambiguous on a TV on-screen keyboard.
 // 4 chars over a 31-symbol alphabet ≈ 923k combinations — deliberately tiny for

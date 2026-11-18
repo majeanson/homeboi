@@ -17,10 +17,10 @@ import { join, relative } from 'node:path'
 //     as « the delete did not happen → show the row again » and a resolved one as « it
 //     landed → keep it hidden »; a `.catch` inside `.remove(...)` made every failed delete
 //     look like a success.
-//  3. Optimistic `tmp-…` rows exist in exactly two resources (the list and todos), and
-//     both DELETE handlers heal a stale id (functions/_lib/staleDelete.ts, covered by
-//     worker/listDoors.d1.test.ts). A NEW create site that mints a tmp id needs the same
-//     healing delete on its own endpoint before it joins the set.
+//  3. An optimistic row carries the id its create SENDS (lib/rowId, review #39), and only an
+//     endpoint whose POST keeps a client id (functions/_lib/ids `rowIdFrom`) may be given
+//     one: elsewhere the server would mint its own, and every tick or delete made on the
+//     painted row would name a row that does not exist.
 
 const SRC = join(__dirname, '..')
 
@@ -132,24 +132,26 @@ describe('a deferred-removal commit propagates its rejection', () => {
   })
 })
 
-describe('optimistic tmp ids live only where the server heals them', () => {
-  // Each entry is a create door for a resource whose DELETE goes through deleteHealing.
+describe('a client-minted row id goes only to an endpoint that keeps it', () => {
+  // Each entry is a create door that paints its row under newRowId(), and the endpoint it posts to.
   const DOORS: Record<string, string> = {
     'src/components/AddSheet.tsx': 'list',
     'src/pages/Liste.tsx': 'list',
     'src/pages/QuickAddPage.tsx': 'list',
     'src/components/todos/TodoSection.tsx': 'todos',
-    'src/components/tasks/useTaskActions.ts': 'todos',
+    'src/components/tasks/useTaskActions.ts': 'tasks',
   }
-  it('mintTmpId() is called only from the known doors', () => {
+  it('newRowId() is called only from the known doors', () => {
     const callers = sources()
-      .filter(({ rel, text }) => rel !== 'src/lib/tmpIds.ts' && /\bmintTmpId\(\)/.test(codeOnly(text)))
+      .filter(({ rel, text }) => rel !== 'src/lib/rowId.ts' && !rel.endsWith('.test.ts') && /\bnewRowId\(\)/.test(codeOnly(text)))
       .map((s) => s.rel)
       .sort()
-    expect(
-      callers,
-      'A new optimistic-row create site needs its resource’s DELETE to heal a stale id ' +
-        '(functions/_lib/staleDelete.ts + a case in worker/listDoors.d1.test.ts) before it is added here.',
-    ).toEqual(Object.keys(DOORS).sort())
+    expect(callers, 'A new optimistic create site joins DOORS once its endpoint keeps a client id (rowIdFrom).').toEqual(Object.keys(DOORS).sort())
+  })
+  it('every door’s endpoint keeps the id it is sent', () => {
+    for (const endpoint of new Set(Object.values(DOORS))) {
+      const handler = readFileSync(join(SRC, '..', 'functions', 'api', `${endpoint}.ts`), 'utf8')
+      expect(/\browIdFrom\(/.test(handler), `functions/api/${endpoint}.ts must create with rowIdFrom(body.id)`).toBe(true)
+    }
   })
 })

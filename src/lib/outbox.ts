@@ -1,7 +1,6 @@
 import type { QueryClient, QueryKey } from '@tanstack/react-query'
 import { api, ApiError } from './api'
 import { emitAuthLost } from './authEvents'
-import { recordTmpId, resolveTmpIdsIn, resolveTmpIdsInBody } from './tmpIds'
 
 // The offline write queue (NFR-OFFLINE-1). Writes made while offline are appended
 // here (IndexedDB, survives reboot) and REPLAYED in order on reconnect. Each entry
@@ -22,11 +21,8 @@ export interface OutboxEntry {
   body?: unknown
   affectedKeys: QueryKey[] // invalidated once the write lands (after replay)
   createdAt: number
-  // E-41 (temp-id chain): the optimistic `tmp-…` row id this CREATE stood in for.
-  // When the create replays and the server answers with the real id, every later
-  // queued op that still targets the tmp id is rewritten to the real one — so
-  // "add offline, then check/edit/delete it offline" no longer drops the follow-up.
-  tmpId?: string
+  // (A `tmpId` field rode here until review #39. A create now carries the row's real id,
+  // minted on the device (lib/rowId), so a follow-up queued behind it needs no rewriting.)
   // How many times the SERVER has answered this entry with a 5xx. Only server
   // failures count (a network failure is the connection's fault, not this
   // entry's), and past MAX_ATTEMPTS the entry is dead-lettered — see replayVerdict.
@@ -94,12 +90,6 @@ async function allEntries(): Promise<OutboxEntry[]> {
   return (r ?? []).sort((a, b) => a.createdAt - b.createdAt)
 }
 
-// The tmp ids whose CREATE is still queued — the only optimistic rows worth persisting
-// (lib/tmpIds stripOrphanTmpRows).
-export async function pendingTmpIds(): Promise<Set<string>> {
-  return new Set((await allEntries()).flatMap((e) => (e.tmpId ? [e.tmpId] : [])))
-}
-
 export async function outboxCount(): Promise<number> {
   return (await allEntries()).length
 }
@@ -112,37 +102,6 @@ async function remove(id: string): Promise<void> {
 export async function clearOutbox(): Promise<void> {
   await tx('readwrite', (s) => s.clear())
   notify()
-}
-
-// E-41 helpers — pure + exported for unit tests.
-// The created row's server id, from the create endpoint's response. Every create
-// here answers `{ id }` at the top level (list, todos); tolerate one level of
-// nesting (`{ item: { id } }`) for future endpoints. Null → no rewrite (status quo).
-export function extractCreatedId(res: unknown): string | null {
-  if (!res || typeof res !== 'object') return null
-  const o = res as Record<string, unknown>
-  if (typeof o.id === 'string') return o.id
-  for (const v of Object.values(o)) {
-    if (v && typeof v === 'object' && typeof (v as { id?: unknown }).id === 'string')
-      return (v as { id: string }).id
-  }
-  return null
-}
-
-// Substitute the tmp id for the real one wherever a queued op references it — the
-// path (`list/tmp-…`) or anywhere in the body (`{id: 'tmp-…'}`, ids arrays). Tmp
-// ids are `tmp-[a-z0-9-]+` (no JSON-special characters), so a string-level replace
-// on the serialized body is exact. Untouched entries are returned as-is.
-export function rewriteTmpId(e: OutboxEntry, tmpId: string, realId: string): OutboxEntry {
-  const inPath = e.path.includes(tmpId)
-  const bodyStr = e.body === undefined ? '' : JSON.stringify(e.body)
-  const inBody = bodyStr.includes(tmpId)
-  if (!inPath && !inBody) return e
-  return {
-    ...e,
-    path: inPath ? e.path.split(tmpId).join(realId) : e.path,
-    body: inBody ? (JSON.parse(bodyStr.split(tmpId).join(realId)) as unknown) : e.body,
-  }
 }
 
 // A replay run dropped entries the server rejected (4xx). The ToastProvider
@@ -212,37 +171,16 @@ async function replayOutbox(qc: QueryClient): Promise<void> {
   let rejected = 0
   try {
     const entries = await allEntries()
-    for (const [i, e] of entries.entries()) {
+    for (const e of entries) {
       try {
-        // A queued op can reference a tmp id whose create resolved OUTSIDE this
-        // queue (it landed online; only the follow-up got queued on the flaky
-        // moment). The in-queue rewrite below can't see that case — the session
-        // registry (lib/tmpIds) can, so resolve through it at send time.
-        const res = await api(resolveTmpIdsIn(e.path), {
+        await api(e.path, {
           method: e.method,
-          body: resolveTmpIdsInBody(e.body),
+          body: e.body,
           idempotencyKey: e.key,
           replay: true,
         })
         await remove(e.id)
         e.affectedKeys.forEach((k) => touched.add(JSON.stringify(k)))
-        // E-41: this create stood in for a tmp row — patch the real id into every
-        // later queued op still aimed at the tmp one (path or body), and persist
-        // the rewrite so a mid-replay interruption doesn't lose it.
-        const realId = e.tmpId ? extractCreatedId(res) : null
-        if (e.tmpId && realId) {
-          // …and teach the session registry too, so a write NOT yet queued (e.g.
-          // a deferred delete still held behind the undo toast) resolves as well.
-          recordTmpId(e.tmpId, realId)
-          for (const [j, later] of entries.entries()) {
-            if (j <= i) continue
-            const rewritten = rewriteTmpId(later, e.tmpId, realId)
-            if (rewritten !== later) {
-              entries[j] = rewritten
-              await tx('readwrite', (s) => s.put(rewritten))
-            }
-          }
-        }
       } catch (err) {
         const verdict = replayVerdict(err, e.attempts ?? 0)
         if (verdict === 'auth-lost') {

@@ -29,7 +29,7 @@ import { type TodoTemplate, type TemplatesData } from '../lib/todos'
 import { imgUrl } from '../lib/image'
 import { stageDeal, parseTerms, cashierPicksFrom, useTillHiddenStores, type ListItem } from '../lib/picks'
 import { useDeferredRemoval } from '../lib/useDeferredRemoval'
-import { mintTmpId } from '../lib/tmpIds'
+import { newRowId } from '../lib/rowId'
 import { spliceListLine } from '../lib/listAdd'
 import { type Deal } from '../lib/deals'
 import { MEALS_KEY, PANTRY_KEY, LEFTOVERS_KEY, RESERVE_KEY, type MealsData } from './kitchen/types'
@@ -619,13 +619,12 @@ export function AddSheet({
       // The optimistic temp row (the shared splice Liste's own bar uses) is what
       // makes the queued case HONEST: without it an offline add closed the sheet
       // and painted nothing — « doesn't add any item at all » — until replay.
-      const tmpId = mintTmpId()
+      const id = newRowId()
       await createWithUndo({
         endpoint: 'list',
-        body: { text: value },
+        body: { id, text: value },
         affectedKeys: [BOARD_KEY, GHOSTS_KEY, HISTORY_KEY],
-        optimistic: (qc) => spliceListLine(qc, tmpId, value),
-        tmpId,
+        optimistic: (qc) => spliceListLine(qc, id, value),
         message: t.undo.added(value),
         undoAffectedKeys: [BOARD_KEY, GHOSTS_KEY],
         rethrow: true,

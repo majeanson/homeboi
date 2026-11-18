@@ -13,11 +13,11 @@ interface BoardListFrame {
   list: Array<NoRushRow & { id: string; text: string; source?: string; checked_at: number | null }>
 }
 
-export function spliceListLine(qc: QueryClient, tmpId: string, text: string): void {
+export function spliceListLine(qc: QueryClient, id: string, text: string): void {
   qc.setQueryData<BoardListFrame>(BOARD_KEY, (b) => {
     if (!b) return b
     const list = [...b.list]
-    list.splice(noRushStart(list), 0, { id: tmpId, text, source: 'manual', checked_at: null })
+    list.splice(noRushStart(list), 0, { id, text, source: 'manual', checked_at: null })
     return { ...b, list }
   })
 }

@@ -1,10 +1,10 @@
 import { badRequest, notFound, ok, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
-import { newId, nowSec } from '../_lib/ids'
+import { newId, nowSec, rowIdFrom } from '../_lib/ids'
 import { normalizeItem } from '../_lib/normalize'
 import { lineMatches, normTerms } from '../_lib/listMatch'
 import { profileMemberId } from '../_lib/profile'
-import { deleteHealing, healClear } from '../_lib/staleDelete'
+import { deleteOwnRow } from '../_lib/staleDelete'
 
 // Shared list: ONE active list. Read, add, toggle a check (a mark — the item
 // stays put), clear the checked ones (logs the buy + deletes), delete a line.
@@ -132,10 +132,11 @@ export const onRequestPost = authed(async (ctx, actor) => {
   // `match_text`: the full flyer title a flyer door matches on when `text` is the calm
   // generic name it inserts instead (src/lib/flyerName.ts) — so this backstop decides
   // exactly what the client decided against its cache, on the same string.
-  const body = await readJson<{ text?: string; deal?: unknown; search_terms?: unknown; match?: unknown; match_text?: unknown }>(ctx.request)
+  const body = await readJson<{ id?: unknown; text?: string; deal?: unknown; search_terms?: unknown; match?: unknown; match_text?: unknown }>(ctx.request)
   const text = body?.text?.trim()
   if (!text) return badRequest('Texte requis.')
-  const id = newId()
+  // The client's own id when it sent one (the optimistic row's, review #39).
+  const id = rowIdFrom(body?.id)
   const dealJson = body?.deal ? JSON.stringify(body.deal) : null
   const searchTerms = termsJson(body?.search_terms)
   // Deal ↔ item backstop for a cold client cache: an add whose name already
@@ -193,7 +194,6 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     search_terms?: unknown
     clearChecked?: boolean
     ids?: unknown
-    items?: unknown // [{ id, text }] of the ticked lines — lets a stale id heal (healClear)
     asOf?: unknown // epoch seconds of the gesture
     reorder?: unknown // a full ordered array of list_item ids (drag-and-drop)
     historyKey?: string // a purchase_log item_key to rename (Réglages cleanup)
@@ -248,12 +248,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     )
       .bind(actor.householdId)
       .all<{ id: string; text: string; search_terms: string | null; created_at: number }>()
-    const byId = restrict ? all.filter((r) => restrict.has(r.id)) : all
-    // Ids the database never had heal onto the same-named ticked line that existed when the
-    // client ticked it (see _lib/staleDelete.healClear) — a stale snapshot used to clear
-    // NOTHING and answer « ok », and the ticked lines repainted.
-    const healed = restrict ? healClear(all, body.items, body.asOf, new Set(byId.map((r) => r.id))) : []
-    const results = [...byId, ...healed]
+    const results = restrict ? all.filter((r) => restrict.has(r.id)) : all
     if (results.length === 0) {
       // Asked to clear named lines and none of them exist (or are ticked) any more: say so
       // rather than a vacuous ok the client would trust. A bare « clear everything ticked »
@@ -361,17 +356,8 @@ export const onRequestDelete = authed(async (ctx, actor) => {
   }
 
   if (!body?.id) return badRequest('id requis.')
-  // A swiped line must really die even when the client aimed at an id this database
-  // does not have — see _lib/staleDelete (2026-10-06: a vacuous « ok » here made
-  // swiped items « always come back »).
-  const r = await deleteHealing(ctx.env.DB, {
-    table: 'list_items',
-    textColumn: 'text',
-    householdId: actor.householdId,
-    id: body.id,
-    text: body.text,
-    asOf: body.asOf,
-  })
-  if (r.outcome === 'missing') return notFound('Ligne introuvable.')
-  return ok(r.outcome === 'healed' ? { ok: true, healed: r.id } : { ok: true })
+  // A delete that matched nothing says so (_lib/staleDelete): a vacuous « ok » here once
+  // made swiped items « always come back » (2026-10-06).
+  if (!(await deleteOwnRow(ctx.env.DB, { table: 'list_items', householdId: actor.householdId, id: body.id }))) return notFound('Ligne introuvable.')
+  return ok({ ok: true })
 })

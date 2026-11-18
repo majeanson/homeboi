@@ -1,7 +1,6 @@
 import { addLocalDays, localDayStart, newId, nowSec } from './ids'
 import { nextTurnIdx, parseRotation, prevTurnIdx, turnOf } from './rotation'
 import { nextCycleDay } from './upkeep'
-import { healClear } from './staleDelete'
 import { withTaskDay } from './taskDay'
 
 // WHAT A ROW DOES, for every task (plans/2026-11-06-TACHE-UNIFIEE.md, « Still to do » (3), the
@@ -16,8 +15,8 @@ import { withTaskDay } from './taskDay'
 //     where they are). A tick clears a « Reporter »: done beats postponed.
 //   · UNTICK: puts back exactly what the tick moved (the stamp, the turn, the log line).
 //   · « VIDER LES COCHÉS »: stamps `cleared_at` and deletes nothing. The task stays as history
-//     (a subject's page, the calendar's struck cell). A stale id heals onto the same ticked
-//     task, or the clear answers « nothing » (404): never a vacuous « ok ».
+//     (a subject's page, the calendar's struck cell). A clear that names nothing that exists
+//     answers « nothing » (404): never a vacuous « ok ».
 //   · « REPORTER »: quiet until a day, then the task returns by itself.
 // The tick's moment is the real one (`tickedAt`, _lib/ids), so an offline tick replayed after
 // midnight keeps its own day.
@@ -64,21 +63,6 @@ export async function untickTask(db: D1Database, hh: string, id: string): Promis
   return true
 }
 
-/** The rows a « Vider » names: the ids it sent that exist, plus, for each id that does not (a
- *  persisted optimistic tmp- row, a frame older than a re-add), the TICKED row of the same name
- *  that already existed when it was ticked (_lib/staleDelete `healClear`). Pure. */
-export function clearedRows<R extends { id: string; text: string; created_at: number; done: boolean }>(rows: R[], ids: readonly string[], items: unknown, asOf: unknown): R[] {
-  const named = new Set(ids)
-  const matched = rows.filter((r) => named.has(r.id))
-  const healed = healClear(
-    rows.filter((r) => r.done),
-    items,
-    asOf,
-    new Set(matched.map((r) => r.id)),
-  )
-  return [...matched, ...healed]
-}
-
 /** Stamp these tasks out of the day: history, never a delete. D1 caps bound variables, so in slices. */
 export function clearTaskStatements(db: D1Database, hh: string, ids: readonly string[], ts: number): D1PreparedStatement[] {
   const out: D1PreparedStatement[] = []
@@ -91,16 +75,14 @@ export function clearTaskStatements(db: D1Database, hh: string, ids: readonly st
 
 /** « Vider les cochés » over the spine. `ids` null: every ticked task. Answers the ids it
  *  cleared; an empty answer to a named clear is « nothing to clear » (the caller says 404). */
-export async function clearTasks(db: D1Database, hh: string, ids: readonly string[] | null, items: unknown, asOf: unknown): Promise<string[]> {
+export async function clearTasks(db: D1Database, hh: string, ids: readonly string[] | null): Promise<string[]> {
   const ts = nowSec()
   if (ids == null) {
     await db.prepare('UPDATE tasks SET cleared_at = ? WHERE household_id = ? AND last_done_at IS NOT NULL').bind(ts, hh).run()
     return []
   }
-  const rows = (
-    await db.prepare('SELECT id, title AS text, created_at, last_done_at IS NOT NULL AS done FROM tasks WHERE household_id = ?').bind(hh).all<{ id: string; text: string; created_at: number; done: number }>()
-  ).results.map((r) => ({ ...r, done: r.done === 1 }))
-  const doomed = clearedRows(rows, ids, items, asOf).map((r) => r.id)
+  const named = new Set(ids)
+  const doomed = (await db.prepare('SELECT id FROM tasks WHERE household_id = ?').bind(hh).all<{ id: string }>()).results.map((r) => r.id).filter((id) => named.has(id))
   if (doomed.length > 0) await db.batch(clearTaskStatements(db, hh, doomed, ts))
   return doomed
 }

@@ -5,7 +5,6 @@ import { inputFromLocalDay, localDayFromInput, todayLocalDay } from './localDay'
 import { parseMoney } from './money'
 import { BOARD_KEY, CARNETS_KEY, HOME_PROJECTS_KEY, MONTH_KEY, TASKS_KEY, TODOS_KEY } from './queryKeys'
 import { recurOf } from './recurLabel'
-import { healingClearBody, healingDeleteBody } from './staleDelete'
 import { lookColour, subjectRefOf, type SubjectRef } from './subjects'
 import { faceAfter, taskTarget, unheldAxes, type TaskAxis, type TaskFace } from './taskTarget'
 import { rotationOf, type TaskItem } from './tasks'
@@ -218,8 +217,8 @@ export const taskKeys = (_item?: unknown): QueryKey[] => ALL_KEYS
 export const taskScene = (item: Pick<TaskItem, 'source' | 'id'>): string => faceOf(item.source).scene(item.id)
 /** A tick, or its untick, at the moment it was made (an offline one keeps its real day). */
 export const tickBody = (item: Pick<TaskItem, 'id'>, on: boolean, doneAt: number | null) => ({ id: item.id, done: on, ...(on ? { doneAt } : {}) })
-/** A delete says what it was and when, so the server heals a stale tmp- id or answers 404. */
-export const removeBody = (item: TaskRef) => healingDeleteBody(item.id, item.title)
+/** A delete names the row; one already gone answers 404 (useDeferredRemoval reads it as gone). */
+export const removeBody = (item: TaskRef) => ({ id: item.id })
 export const canPostpone = (item: Pick<TaskItem, 'source'>): boolean => faceOf(item.source).snoozes
 /** « Reporter » a row whose face has a snooze: a week, or to its next occurrence. */
 export function postponeWrite(item: TaskItem, mode: 'week' | 'cycle'): TaskWrite {
@@ -227,9 +226,9 @@ export function postponeWrite(item: TaskItem, mode: 'week' | 'cycle'): TaskWrite
   return { endpoint: 'tasks', method, body: { id: item.id, snooze: mode }, affectedKeys: ALL_KEYS }
 }
 
-/** « Vider les cochés »: ONE write for every ticked task, history kept, a stale id healed. */
+/** « Vider les cochés »: ONE write for every ticked task, history kept. */
 export function clearWrites(items: readonly TaskItem[]): TaskWrite[] {
   if (items.length === 0) return []
   const method: TaskMethod = 'PATCH'
-  return [{ endpoint: 'tasks', method, body: healingClearBody(items.map((x) => ({ id: x.id, text: x.title }))), affectedKeys: ALL_KEYS }]
+  return [{ endpoint: 'tasks', method, body: { clearChecked: true, ids: items.map((x) => x.id) }, affectedKeys: ALL_KEYS }]
 }

@@ -3,7 +3,6 @@ import { partialMatchKey, useQueryClient, type QueryClient, type QueryKey } from
 import { api, ApiError } from './api'
 import { enqueue, onOutboxChange, outboxCount } from './outbox'
 import { isGuest } from './device'
-import { resolveTmpIdsIn, resolveTmpIdsInBody } from './tmpIds'
 import { A_REGLER_KEY } from './queryKeys'
 import { GuestReadOnlyError } from './writeFailed'
 import { keysForPath } from '../../functions/_lib/realtime'
@@ -56,8 +55,8 @@ export interface WriteSpec {
   // Keys to refetch once the write lands (online: now; offline: after replay).
   // Usually the same keys the call site used to invalidate.
   affectedKeys?: QueryKey[]
-  // Optimistic cache mutation applied immediately. Offline creates should write a
-  // temp row (e.g. id `tmp-${something}`); invalidate reconciles it after replay.
+  // Optimistic cache mutation applied immediately. A create paints its row under the id it
+  // sends (lib/rowId, review #39); invalidate reconciles the rest after the write lands.
   optimistic?: ((qc: QueryClient) => void) | undefined
   // Re-apply `optimistic` to any fresh frame that lands for an affected key WHILE the
   // write is still travelling. Opt-in, and only for an IDEMPOTENT change (set a flag,
@@ -66,11 +65,6 @@ export interface WriteSpec {
   // with the old state and flips the change back on screen until the write's own
   // refetch — Marc's « checked, and it comes back seconds later » (2026-09-24).
   reapply?: boolean
-  // The optimistic temp row's id, when this CREATE wrote one (E-41). If the write
-  // ends up queued, the outbox uses it to rewrite later queued ops that target the
-  // tmp id once the create replays and the real id is known — so "add offline,
-  // then act on it offline" no longer drops the follow-up.
-  tmpId?: string | undefined
   // Override api()'s default timeout (20s) for a write whose handler legitimately
   // runs long (e.g. capture's inline AI classification before the DB write) — a
   // caller that lets this time out gets the SAME transport-failure/outbox-queue
@@ -94,14 +88,7 @@ export async function writeWith<T = unknown>(
 ): Promise<WriteResult<T>> {
   const method = spec.method ?? 'POST'
   const affectedKeys = withAReglerKeys(path, spec.affectedKeys ?? [])
-  // E-41's online half (lib/tmpIds): a write whose caller captured an optimistic
-  // `tmp-…` id and fires LATER (a deferred delete held behind the undo toast, a
-  // clear-checked batch) resolves it to the real server id here, at the one
-  // chokepoint — the tmp-id DELETE used to match zero rows, answer 200, and leave
-  // the real row alive forever ("I delete items and they come back"). An id still
-  // unresolved (create itself queued) passes through; the outbox rewrite owns it.
-  const target = resolveTmpIdsIn(path)
-  const body = resolveTmpIdsInBody(spec.body)
+  const body = spec.body
 
   // Read-only guest session: refuse every write at the single chokepoint. We do
   // NOT apply the optimistic change, hit the network, or queue to the outbox — so
@@ -148,7 +135,7 @@ export async function writeWith<T = unknown>(
   const key = uuid()
 
   const queue = async (): Promise<WriteResult<T>> => {
-    await enqueue({ id: uuid(), key, path: target, method, body, affectedKeys, createdAt: Date.now(), ...(spec.tmpId !== undefined && { tmpId: spec.tmpId }) })
+    await enqueue({ id: uuid(), key, path, method, body, affectedKeys, createdAt: Date.now() })
     return { data: null, queued: true }
   }
 
@@ -163,7 +150,7 @@ export async function writeWith<T = unknown>(
   }
 
   try {
-    const data = await api<T>(target, { method, body, idempotencyKey: key, timeoutMs: spec.timeoutMs })
+    const data = await api<T>(path, { method, body, idempotencyKey: key, timeoutMs: spec.timeoutMs })
     return { data, queued: false }
   } catch (err) {
     // A network/transport failure rejects with a non-ApiError (TypeError) — queue

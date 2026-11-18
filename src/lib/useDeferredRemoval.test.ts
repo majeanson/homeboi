@@ -2,14 +2,12 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { QueryClient, QueryObserver } from '@tanstack/react-query'
 import { _deferredRemovalStore as store, rejectionMeansGone } from './useDeferredRemoval'
 import { ApiError } from './api'
-import { recordTmpId, _resetTmpIds } from './tmpIds'
 
 // The pure module store behind useDeferredRemoval — the bit that makes a deferred
 // delete hide on every surface at once (cross-instance) without React in the loop.
 describe('deferred-removal store', () => {
   beforeEach(() => {
     // Clear any state a prior test left so each runs from empty.
-    _resetTmpIds()
     store.unhideIds('todos', [...store.snapshot('todos')])
     store.unhideIds('leftovers', [...store.snapshot('leftovers')])
   })
@@ -53,35 +51,12 @@ describe('deferred-removal store', () => {
     expect(store.snapshot('todos')).toBe(store.EMPTY) // emptied → back to the shared singleton
   })
 
-  // The tmp→real bridge (lib/tmpIds). The bug: delete a row while its optimistic
-  // create was still reconciling → only the tmp id was hidden, so the refetch's
-  // real-id twin visibly CAME BACK mid-undo — and the eventual unhide couldn't
-  // find what hide had added.
-  it('keeps hiding a row across its tmp→real id swap (resolution AFTER hide)', () => {
-    store.hideIds('todos', ['tmp-1-a'])
-    recordTmpId('tmp-1-a', 'real-1') // the create reconciles while the delete is held
-    expect(store.snapshot('todos').has('real-1')).toBe(true) // the refetched real row stays hidden
-    expect(store.snapshot('todos').has('tmp-1-a')).toBe(true) // …and stale frames still rendering the tmp row too
-  })
-
-  it('hides the real row even when resolution landed BEFORE the hide', () => {
-    recordTmpId('tmp-1-a', 'real-1')
-    store.hideIds('todos', ['tmp-1-a']) // gesture on a tmp row the cache still renders
-    expect(store.snapshot('todos').has('real-1')).toBe(true)
-  })
-
-  it('un-hides both spellings, whichever the caller passes', () => {
-    store.hideIds('todos', ['tmp-1-a'])
-    recordTmpId('tmp-1-a', 'real-1')
-    store.unhideIds('todos', ['tmp-1-a']) // undo/commit closures captured the tmp id
-    expect(store.snapshot('todos')).toBe(store.EMPTY)
-  })
 })
 
 // What a rejected commit means (2026-10-06, « I swipe and the items always come
 // back », round four). The server's list DELETE answers 404 now instead of a vacuous
 // « ok » when the client's id matched nothing — and a 404 means the row-as-aimed-at
-// is NOT on the server (deleted elsewhere mid-undo, or a stale/tmp id), so un-hiding
+// is NOT on the server (deleted elsewhere mid-undo, or a stale id), so un-hiding
 // it would resurrect exactly what the database doesn't have. Every other rejection
 // still un-hides: the delete genuinely didn't happen.
 describe('rejectionMeansGone', () => {
@@ -106,7 +81,6 @@ describe('rejectionMeansGone', () => {
 // predates it.
 describe('deferred-removal freshness fence', () => {
   beforeEach(() => {
-    _resetTmpIds()
     store.unhideIds('board', [...store.snapshot('board')])
     vi.useRealTimers()
   })

@@ -4,11 +4,8 @@ import { ApiError } from './api'
 
 // The promise (NFR-OFFLINE-1): a kiosk that reboots with no network still shows the last
 // board, not an empty shell. Going offline must never erase the one thing offline needs,
-// a phantom row must not survive a reboot, a stuck IndexedDB must never keep the app off
+// a stuck IndexedDB must never keep the app off
 // the screen, and a device that lost its auth keeps no household data on disk.
-
-const pendingTmpIds = vi.hoisted(() => vi.fn())
-vi.mock('./outbox', () => ({ pendingTmpIds }))
 
 const DAY = 24 * 60 * 60 * 1000
 const DEBOUNCE = 1500
@@ -70,8 +67,6 @@ beforeEach(async () => {
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] })
   idb = fakeIdb()
   vi.stubGlobal('indexedDB', { open: idb.open })
-  pendingTmpIds.mockReset()
-  pendingTmpIds.mockResolvedValue(new Set())
   vi.resetModules()
   persist = await import('./persist')
 })
@@ -176,25 +171,6 @@ describe('the snapshot', () => {
     expect(savedKeys()).toEqual(['["a"]', '["b"]', '["c"]'])
   })
 
-  it('an optimistic row with nothing queued behind it does not reach the next boot', async () => {
-    const qc = watched()
-    pendingTmpIds.mockResolvedValue(new Set(['tmp-queued']))
-    qc.setQueryData(['list'], [{ id: 'tmp-orphan' }, { id: 'tmp-queued' }, { id: 'real' }])
-    await elapse()
-    const after = new QueryClient()
-    await persist.restorePersistedCache(after)
-    expect(after.getQueryData(['list'])).toEqual([{ id: 'tmp-queued' }, { id: 'real' }])
-  })
-
-  it('an unreadable outbox keeps the snapshot rather than losing it', async () => {
-    const qc = watched()
-    pendingTmpIds.mockRejectedValue(new Error('idb gone'))
-    qc.setQueryData(['list'], [{ id: 'tmp-orphan' }])
-    await elapse()
-    const after = new QueryClient()
-    await persist.restorePersistedCache(after)
-    expect(after.getQueryData(['list'])).toEqual([{ id: 'tmp-orphan' }])
-  })
 })
 
 describe('auth loss', () => {

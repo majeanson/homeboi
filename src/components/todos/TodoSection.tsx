@@ -1,12 +1,11 @@
 import { SecLabel } from '../board/BoardCard'
 import { CheckDisc } from '../CheckDisc'
-import { healingClearBody, healingDeleteBody } from '../../lib/staleDelete'
 import { useState, type ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { EmptyState } from '../EmptyState'
 import { api } from '../../lib/api'
 import { useWrite, writeFailed } from '../../lib/write'
-import { mintTmpId } from '../../lib/tmpIds'
+import { newRowId } from '../../lib/rowId'
 import { useT } from '../../i18n'
 import { live } from '../../lib/query'
 import { isGuest } from '../../lib/device'
@@ -185,7 +184,8 @@ export function TodoSection({
     const value = text.trim()
     if (!value) return
     setAddText('')
-    const tmpId = mintTmpId()
+    // The row's real id, sent with the create and kept by the server (lib/rowId).
+    const id = newRowId()
     // On a departure surface (show="checklists") a free-typed item is an « Avant de
     // partir » item for the viewed day — FLOORED to today — NOT a loose todo: it
     // carries the ad-hoc sentinel + a shared section so it groups with the day's
@@ -194,8 +194,8 @@ export function TodoSection({
     // swept once its day passes. A loose add on any other surface is unchanged.
     const asDeparture = show === 'checklists'
     const pinnedDay = asDeparture ? Math.max(dayFor ?? todayLocalDay(), todayLocalDay()) : dayFor
-    const tmpRow: Todo = {
-      id: tmpId,
+    const row: Todo = {
+      id,
       title: value,
       day: pinnedDay,
       member_id: null,
@@ -204,12 +204,12 @@ export function TodoSection({
       section: asDeparture ? t.departure.adhocSection : null,
       source_template_id: asDeparture ? DEPARTURE_ADHOC : null,
     }
-    const insert = (d: TodosData | undefined): TodosData => (d ? { ...d, todos: [...d.todos, tmpRow] } : { todos: [tmpRow] })
+    const insert = (d: TodosData | undefined): TodosData => (d ? { ...d, todos: [...d.todos, row] } : { todos: [row] })
     await createWithUndo({
       endpoint: 'todos',
       body: asDeparture
-        ? { title: value, departure: true, section: t.departure.adhocSection, day: pinnedDay }
-        : { title: value, day: dayFor },
+        ? { id, title: value, departure: true, section: t.departure.adhocSection, day: pinnedDay }
+        : { id, title: value, day: dayFor },
       affectedKeys: [TODOS_KEY, MONTH_KEY],
       optimistic: (qc) => {
         qc.setQueryData<TodosData>(key, insert)
@@ -218,9 +218,6 @@ export function TodoSection({
         // the write above already covers it — don't double-insert.
         if (scope != null && pinnedDay === todayLocalDay()) qc.setQueryData<TodosData>(TODOS_KEY, insert)
       },
-      // E-41: a queued follow-up (toggle done) on the tmp row gets rewritten to the
-      // real id when this create replays.
-      tmpId,
       message: t.todos.added(value),
     })
     onAdded?.()
@@ -279,9 +276,7 @@ export function TodoSection({
 
   // — delete one (behind a deferred undo — a mis-tap costs nothing) —
   function remove(todo: Todo) {
-    // Todos mint optimistic tmp- ids too, so the delete carries what lets the server heal a
-    // stale one onto the same item (lib/staleDelete).
-    const body = healingDeleteBody(todo.id, todo.title)
+    const body = { id: todo.id }
     removal.remove([todo.id], t.todos.removed(todo.title), () =>
       write('todos', { method: 'DELETE', body, affectedKeys: [TODOS_KEY, MONTH_KEY] }),
     )
@@ -289,9 +284,7 @@ export function TodoSection({
 
   // — "Effacer cochées" — sweep the ticked rows (deferred; pass exact ids) —
   function clearChecked(ids: string[]) {
-    // Titles + the gesture's time let the server heal a stale id (lib/staleDelete).
-    const named = new Set(ids)
-    const body = healingClearBody(all.filter((x) => named.has(x.id)).map((x) => ({ id: x.id, text: x.title })))
+    const body = { clearChecked: true, ids }
     removal.remove(ids, t.todos.clearedN(ids.length), () =>
       write('todos', { method: 'PATCH', body, affectedKeys: [TODOS_KEY, MONTH_KEY] }),
     )

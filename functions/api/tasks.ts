@@ -1,13 +1,13 @@
 import { badRequest, notFound, ok, okWire, readJson } from '../_lib/json'
 import { authed } from '../_lib/route'
-import { localDayStart, nowSec, tickedAt } from '../_lib/ids'
+import { localDayStart, nowSec, rowIdFrom, tickedAt } from '../_lib/ids'
 import { profileMemberId } from '../_lib/profile'
 import { parseSubject, validSubject } from '../_lib/subject'
 import { faceOfKind } from '../_lib/taskItem'
 import { allTasks, subjectHistory } from '../_lib/taskViews'
 import { bodyAxes, faceColumns, insertTask, kindFor, type TaskBody } from '../_lib/taskWrite'
 import { clearTasks, snoozeTask, tickTask, untickTask } from '../_lib/taskGestures'
-import { deleteHealing } from '../_lib/staleDelete'
+import { deleteOwnRow } from '../_lib/staleDelete'
 import { faceAfter } from '../../src/lib/taskTarget'
 
 // /api/tasks — the household's tasks as ONE list, and the one form's door.
@@ -97,7 +97,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
   const body = (await readJson<TaskBody>(ctx.request)) ?? {}
   const title = typeof body.title === 'string' ? body.title.trim().slice(0, TITLE_MAX) : ''
   if (!title) return badRequest('Titre requis.')
-  const { id, face } = await insertTask(ctx.env.DB, actor.householdId, body, profileMemberId(ctx.request), { title })
+  const { id, face } = await insertTask(ctx.env.DB, actor.householdId, body, profileMemberId(ctx.request), { title, id: rowIdFrom((body as { id?: unknown }).id) })
   return ok({ id, title, face })
 })
 
@@ -108,8 +108,6 @@ type PatchBody = TaskBody & {
   memberId?: unknown
   clearChecked?: unknown
   ids?: unknown
-  items?: unknown
-  asOf?: unknown
   snooze?: unknown
 }
 
@@ -120,7 +118,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
   // « Vider les cochés »: history, never a delete. A named clear that names nothing is a 404.
   if (body.clearChecked) {
     const ids = Array.isArray(body.ids) ? body.ids.filter((x): x is string => typeof x === 'string') : null
-    const cleared = await clearTasks(db, hh, ids, body.items, body.asOf)
+    const cleared = await clearTasks(db, hh, ids)
     if (ids && cleared.length === 0) return notFound('Aucune tâche à effacer.')
     return ok({ ok: true })
   }
@@ -161,14 +159,11 @@ export const onRequestPatch = authed(async (ctx, actor) => {
 })
 
 // A delete, from a row, the form, or the form's « Annuler » on a create: any task, with its
-// « qui a aidé » lines. A row may carry an optimistic tmp- id, so the body says what it was and
-// when (`text`, `asOf`): a stale id heals onto the same task, or the answer is a 404, never a
-// vacuous « ok » (_lib/staleDelete).
+// « qui a aidé » lines. One that matched nothing is a 404, never a vacuous « ok » (_lib/staleDelete).
 export const onRequestDelete = authed(async (ctx, actor) => {
-  const body = await readJson<{ id?: unknown; text?: unknown; asOf?: unknown }>(ctx.request)
+  const body = await readJson<{ id?: unknown }>(ctx.request)
   const id = typeof body?.id === 'string' ? body.id.trim() : ''
   if (!id) return badRequest('id requis.')
-  const r = await deleteHealing(ctx.env.DB, { table: 'tasks', textColumn: 'title', householdId: actor.householdId, id, text: body?.text, asOf: body?.asOf })
-  if (r.outcome === 'missing') return notFound('Tâche introuvable.')
-  return ok(r.outcome === 'healed' ? { ok: true, healed: r.id } : { ok: true })
+  if (!(await deleteOwnRow(ctx.env.DB, { table: 'tasks', householdId: actor.householdId, id }))) return notFound('Tâche introuvable.')
+  return ok({ ok: true })
 })

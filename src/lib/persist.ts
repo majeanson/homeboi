@@ -8,8 +8,6 @@
 // at boot, before first paint. Cleared on auth-loss so a revoked device keeps no
 // household snapshot on disk.
 import { dehydrate, hydrate, type QueryClient } from '@tanstack/react-query'
-import { pendingTmpIds } from './outbox'
-import { stripOrphanTmpRows } from './tmpIds'
 
 const DB = 'babillard'
 const STORE = 'cache'
@@ -129,18 +127,12 @@ export function startPersistingCache(qc: QueryClient): void {
     timer = null
     try {
       const state = dehydrate(qc, { shouldDehydrateQuery: (q) => q.state.data !== undefined })
-      // Optimistic `tmp-…` rows with no queued create behind them are phantoms on the
-      // next boot — leave them out (tmpIds.stripOrphanTmpRows). If the outbox can't be
-      // read, keep the old behaviour rather than lose the snapshot.
+      // An optimistic row is saved like any other (review #39): it carries its real id
+      // (lib/rowId), so a create that never landed is a line the next fetch drops, and a
+      // swipe on it meanwhile is a 404 the deferred removal reads as « already gone ».
       void (async () => {
-        let keep: Set<string> | null = null
-        try {
-          keep = await pendingTmpIds()
-        } catch {
-          /* unreadable outbox — save unfiltered */
-        }
         if (wiped) return
-        await idbSet({ at: Date.now(), state: keep ? stripOrphanTmpRows(state, keep) : state })
+        await idbSet({ at: Date.now(), state })
       })()
     } catch {
       /* noop */

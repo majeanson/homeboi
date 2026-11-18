@@ -45,12 +45,12 @@ describe('spliceListLine', () => {
         { id: 'z', text: 'Un jour', checked_at: null, non_urgent: 1 },
       ],
     })
-    spliceListLine(qc, 'tmp-1', 'Pain')
+    spliceListLine(qc, 'new-1', 'Pain')
     const { list } = qc.getQueryData<{ list: { id: string }[] }>(BOARD_KEY)!
-    expect(list.map((l) => l.id)).toEqual(['a', 'tmp-1', 'z'])
+    expect(list.map((l) => l.id)).toEqual(['a', 'new-1', 'z'])
   })
   it('with no board in the cache it does nothing, and does not invent one', () => {
-    spliceListLine(qc, 'tmp-1', 'Pain')
+    spliceListLine(qc, 'new-1', 'Pain')
     expect(qc.getQueryData(BOARD_KEY)).toBeUndefined()
   })
 })

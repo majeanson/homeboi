@@ -1,13 +1,13 @@
 import { badRequest, notFound, ok, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
-import { newId, nowSec, localDayStart, tickedAt } from '../_lib/ids'
+import { newId, nowSec, localDayStart, rowIdFrom, tickedAt } from '../_lib/ids'
 import { profileMemberId } from '../_lib/profile'
-import { deleteHealing } from '../_lib/staleDelete'
+import { deleteOwnRow } from '../_lib/staleDelete'
 import { subjectBinds, validSubject } from '../_lib/subject'
 import { todoRowsSql } from '../_lib/taskItem'
 import { taskDay, taskDayOf } from '../_lib/taskDay'
 import { insertTask } from '../_lib/taskWrite'
-import { clearedRows, clearTasks, clearTaskStatements, tickTask, untickTask } from '../_lib/taskGestures'
+import { clearTasks, clearTaskStatements, tickTask, untickTask } from '../_lib/taskGestures'
 import { emojiIcon, hexColorOrNull, taskEffort } from '../_lib/validate'
 
 // À cocher — the departure checklists (« Avant de partir », mig 0116) and, as an alias, every
@@ -151,7 +151,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
 })
 
 export const onRequestPost = authed(async (ctx, actor) => {
-  const body = await readJson<{ title?: string; day?: number | null; templateId?: string; departure?: boolean; section?: string; subject?: unknown; icon?: unknown; color?: unknown; effort?: unknown }>(
+  const body = await readJson<{ id?: unknown; title?: string; day?: number | null; templateId?: string; departure?: boolean; section?: string; subject?: unknown; icon?: unknown; color?: unknown; effort?: unknown }>(
     ctx.request,
   )
   const day = typeof body?.day === 'number' && Number.isFinite(body.day) ? body.day : null
@@ -204,13 +204,14 @@ export const onRequestPost = authed(async (ctx, actor) => {
 
   const title = body?.title?.trim()
   if (!title) return badRequest('Titre requis.')
-  const id = newId()
+  // The client's own id when it sent one (the optimistic row's, review #39).
+  const id = rowIdFrom(body?.id)
 
   // A FREE-TYPED « Avant de partir » item (no template): a checklist-type row for the
   // viewed day, FLOORED to today (leaving is a today-or-later thing, same reasoning as
   // an instantiated one — an offline replay after midnight must not land on a gone
   // day). The DEPARTURE_ADHOC sentinel + a shared `section` header make it group,
-  // count and sweep exactly like an instantiated checklist row. Mirrors the tmpRow in
+  // count and sweep exactly like an instantiated checklist row. Mirrors the optimistic row in
   // src/components/todos/TodoSection.tsx.
   if (body?.departure) {
     const pinnedDay = Math.max(day ?? today, today)
@@ -232,7 +233,7 @@ export const onRequestPost = authed(async (ctx, actor) => {
 })
 
 export const onRequestPatch = authed(async (ctx, actor) => {
-  const body = await readJson<{ id?: string; done?: boolean; doneAt?: unknown; title?: string; day?: unknown; subject?: unknown; icon?: unknown; color?: unknown; effort?: unknown; clearChecked?: boolean; ids?: unknown; items?: unknown; asOf?: unknown }>(
+  const body = await readJson<{ id?: string; done?: boolean; doneAt?: unknown; title?: string; day?: unknown; subject?: unknown; icon?: unknown; color?: unknown; effort?: unknown; clearChecked?: boolean; ids?: unknown }>(
     ctx.request,
   )
 
@@ -246,21 +247,14 @@ export const onRequestPatch = authed(async (ctx, actor) => {
     const hh = actor.householdId
     const ids = Array.isArray(body.ids) ? body.ids.filter((x): x is string => typeof x === 'string') : null
     if (ids && ids.length > 0) {
-      // The named ids, plus a stand-in for each one the database never had (a persisted
-      // optimistic tmp- row, a frame older than a re-add): the DONE row of the same name that
-      // already existed when the client ticked it (_lib/staleDelete.healClear). A stale
-      // snapshot used to clear nothing and answer « ok »; if NOTHING is left to clear it is a
-      // 404, so the client never trusts a clear that did not happen.
+      // The named ids. If NOTHING is left to clear it is a 404, so the client never trusts a
+      // clear that did not happen.
       const { results } = await db
         .prepare(todoRowsSql('id, title AS text, done_at, created_at, source_template_id IS NOT NULL OR section IS NOT NULL AS departure', ''))
         .bind(hh)
         .all<{ id: string; text: string; done_at: number | null; created_at: number; departure: number }>()
-      const doomed = clearedRows(
-        results.map((r) => ({ ...r, done: r.done_at !== null })),
-        ids,
-        body.items,
-        body.asOf,
-      )
+      const named = new Set(ids)
+      const doomed = results.filter((r) => named.has(r.id))
       if (doomed.length === 0) return notFound('Aucune tâche à effacer.')
       const tasks = doomed.filter((r) => !r.departure).map((r) => r.id)
       const lists = doomed.filter((r) => r.departure).map((r) => r.id)
@@ -271,7 +265,7 @@ export const onRequestPatch = authed(async (ctx, actor) => {
       }
       await db.batch([...clearTaskStatements(db, hh, tasks, nowSec()), ...gone, sweepStale(db, hh, today)])
     } else if (!ids) {
-      await clearTasks(db, hh, null, null, null)
+      await clearTasks(db, hh, null)
       await db.batch([db.prepare('DELETE FROM todos WHERE household_id = ? AND done_at IS NOT NULL').bind(hh), sweepStale(db, hh, today)])
     }
     return ok({ ok: true })
@@ -322,23 +316,15 @@ export const onRequestPatch = authed(async (ctx, actor) => {
 })
 
 export const onRequestDelete = authed(async (ctx, actor) => {
-  const body = await readJson<{ id?: string; text?: string; asOf?: number }>(ctx.request)
+  const body = await readJson<{ id?: string }>(ctx.request)
   const id = body?.id?.trim()
   if (!id) return badRequest('id requis.')
-  // Optimistic rows exist here too (TodoSection mints tmp- ids), so a vacuous « ok » on
-  // an id the DB never had would let the row come back — see _lib/staleDelete, which reads
-  // and deletes across both tables a to-do may live in.
-  const r = await deleteHealing(ctx.env.DB, {
-    table: 'todos',
-    textColumn: 'title',
-    householdId: actor.householdId,
-    id,
-    text: body?.text,
-    asOf: body?.asOf,
-  })
+  // Across both tables a to-do may live in; a delete that matched nothing is a 404, never a
+  // vacuous « ok » (_lib/staleDelete).
+  const gone = await deleteOwnRow(ctx.env.DB, { table: 'todos', householdId: actor.householdId, id })
   await sweepStale(ctx.env.DB, actor.householdId, localDayStart(new Date())).run()
-  if (r.outcome === 'missing') return notFound('Tâche introuvable.')
-  return ok(r.outcome === 'healed' ? { ok: true, healed: r.id } : { ok: true })
+  if (!gone) return notFound('Tâche introuvable.')
+  return ok({ ok: true })
 })
 
 // ── Template composition (server mirror of src/lib/todos.ts) ──────────────────

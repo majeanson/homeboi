@@ -2,7 +2,6 @@ import { useCallback } from 'react'
 import type { QueryClient, QueryKey } from '@tanstack/react-query'
 import { useWrite, type WriteResult, writeFailed } from './write'
 import { useRecordUndo } from './toast'
-import { recordTmpId } from './tmpIds'
 
 // The create-side companion to useDeferredRemoval: POST a new
 // row, then offer a COMPENSATING undo that DELETEs exactly that row. The subtle bit
@@ -27,9 +26,6 @@ export interface CreateWithUndoOpts {
   affectedKeys: QueryKey[]
   /** Optimistic cache write applied immediately (offline creates write a temp row). */
   optimistic?: (qc: QueryClient) => void
-  /** The optimistic temp row's id (E-41) — lets the outbox rewrite later queued ops
-   *  from the tmp id to the real one once the create replays. */
-  tmpId?: string
   /** Undo toast copy (e.g. t.undo.added(title)). */
   message: string
   /** The compensating DELETE target — defaults to `endpoint` / `affectedKeys`. */
@@ -101,17 +97,11 @@ export function useCreateWithUndo() {
         body: opts.body,
         affectedKeys: opts.affectedKeys,
         optimistic: opts.optimistic,
-        tmpId: opts.tmpId,
       }).catch((err: unknown) => {
         if (opts.rethrow) throw err
         return null
       })
       const id = createdId(res)
-      // E-41's online half (lib/tmpIds): the optimistic tmp row now has a real id.
-      // Anything that captured the tmp id and acts later (a deferred swipe-delete's
-      // held write, a clear-checked batch) resolves through the registry at fire
-      // time instead of DELETEing an id the server never had.
-      if (id && opts.tmpId) recordTmpId(opts.tmpId, id)
       if (id || opts.toastWhenQueued)
         recordUndo({
           message: opts.message,

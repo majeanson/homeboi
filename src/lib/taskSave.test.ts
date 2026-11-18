@@ -71,9 +71,9 @@ describe('what a row writes: one door, one spelling, whatever the row is', () =>
     expect(tickBody(item({ source: 'home' }), false, null)).toEqual({ id: 'a', done: false })
     expect([taskEndpoint(item({})), taskEndpoint(item({ source: 'home' }))]).toEqual(['tasks', 'tasks'])
   })
-  it('a delete always says what it was and when, so a stale id heals or answers 404', () => {
-    expect(removeBody(item({}))).toMatchObject({ id: 'a', text: 'A' })
-    expect(removeBody(item({ source: 'home' }))).toMatchObject({ id: 'a', text: 'A' })
+  it('a delete names the row by its one id (review #39: no stand-in id to heal)', () => {
+    expect(removeBody(item({}))).toEqual({ id: 'a' })
+    expect(removeBody(item({ source: 'home' }))).toEqual({ id: 'a' })
   })
   it('scenes: a task, or a home row', () => {
     expect([taskScene(item({})), taskScene(item({ source: 'home' }))]).toEqual(['/todo/a', '/home-project/a'])
@@ -87,10 +87,10 @@ describe('what a row writes: one door, one spelling, whatever the row is', () =>
     expect([canPostpone(item({})), canPostpone(item({ source: 'home' }))]).toEqual([false, true])
     expect(postponeWrite(item({ source: 'home' }), 'week')).toMatchObject({ endpoint: 'tasks', method: 'PATCH', body: { id: 'a', snooze: 'week' } })
   })
-  it('« Vider les cochés » is ONE write, with what heals a stale id', () => {
+  it('« Vider les cochés » is ONE write, by id', () => {
     const w = clearWrites([item({ id: 't', title: 'T' }), item({ id: 'c', title: 'C' }), item({ source: 'home', id: 'h', title: 'H' })])
     expect(w).toHaveLength(1)
-    expect(w[0]).toMatchObject({ endpoint: 'tasks', method: 'PATCH', body: { clearChecked: true, ids: ['t', 'c', 'h'], items: [{ id: 't', text: 'T' }, { id: 'c', text: 'C' }, { id: 'h', text: 'H' }] } })
+    expect(w[0]).toMatchObject({ endpoint: 'tasks', method: 'PATCH', body: { clearChecked: true, ids: ['t', 'c', 'h'] } })
     expect(clearWrites([])).toEqual([])
   })
   it('the edit scene reads ONE task, with its schedule (/api/tasks/one)', () => {

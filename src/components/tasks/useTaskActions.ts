@@ -3,7 +3,7 @@ import { useT } from '../../i18n'
 import { useWrite, writeFailed } from '../../lib/write'
 import { useCreateWithUndo } from '../../lib/undoCreate'
 import { useDeferredRemoval } from '../../lib/useDeferredRemoval'
-import { mintTmpId } from '../../lib/tmpIds'
+import { newRowId } from '../../lib/rowId'
 import { BOARD_KEY, TASKS_KEY, TODOS_KEY } from '../../lib/queryKeys'
 import { canPostpone, clearWrites, postponeWrite, type TaskRef, emptyDraft, removeBody, taskEndpoint, taskKeys, taskScene, taskWrite, tickBody } from '../../lib/taskSave'
 import { inputFromLocalDay, todayLocalDay } from '../../lib/localDay'
@@ -93,8 +93,8 @@ export function useTaskActions(scope: QueryKey = BOARD_KEY) {
   // Rename, the look, the effort and « Sur quoi ? » are the one form's (lib/taskSave): a row's
   // peek opens it. This hook keeps only what a row does without opening anything.
 
-  // Delete: a task added from its title field mints an optimistic tmp- id, so every DELETE
-  // carries what lets the server heal a stale one, or answer 404 (lib/staleDelete).
+  // Delete: one id, the row's real one even for a task added a moment ago (lib/rowId); a
+  // 404 reads as « already gone » (useDeferredRemoval).
   function remove(item: TaskRef) {
     held.remove([item.id], t.todos.removed(item.title), () =>
       write(endpoint(item), {
@@ -116,7 +116,7 @@ export function useTaskActions(scope: QueryKey = BOARD_KEY) {
       ticked.map((x) => x.id),
       t.todos.clearedN(ticked.length),
       async () => {
-        // The adapter spells it (lib/taskSave): the ids, and what heals a stale one.
+        // The adapter spells it (lib/taskSave).
         await Promise.all(clearWrites(ticked).map((w) => write(w.endpoint, { method: w.method, body: w.body, affectedKeys: w.affectedKeys })))
       },
     )
@@ -124,17 +124,17 @@ export function useTaskActions(scope: QueryKey = BOARD_KEY) {
 
   // One title field: the whole of adding a task. `day` null = un jour. The row appears at once
   // on the board (its one `tasks` list, when it is due today) and in the Tâches view, and a
-  // follow-up tick on the tmp row is rewritten when the create replays (E-41).
+  // follow-up tick names the real row: the id is minted here and kept by the server (lib/rowId).
   async function add(text: string, day: number | null, subject?: SubjectRef | null) {
     const value = text.trim()
     if (!value) return
-    const tmpId = mintTmpId()
+    const id = newRowId()
     const today = todayLocalDay()
-    const tmpRow: Todo = { id: tmpId, title: value, day, member_id: null, done_at: null, position: 0, section: null, source_template_id: null }
+    const row: Todo = { id, title: value, day, member_id: null, done_at: null, position: 0, section: null, source_template_id: null }
     const item: TaskItem = {
-      key: `task:${tmpId}`,
+      key: `task:${id}`,
       source: 'task',
-      id: tmpId,
+      id,
       title: value,
       color: null,
       icon: null,
@@ -159,14 +159,13 @@ export function useTaskActions(scope: QueryKey = BOARD_KEY) {
     const w = taskWrite(emptyDraft({ title: value, date: inputFromLocalDay(day), subject: subject ?? null }))
     await createWithUndo({
       endpoint: w.endpoint,
-      body: w.body,
+      body: { ...w.body, id },
       affectedKeys: w.affectedKeys,
       optimistic: (client) => {
-        client.setQueryData<TodosData>(TODOS_KEY, (d) => ({ todos: [...(d?.todos ?? []), tmpRow] }))
+        client.setQueryData<TodosData>(TODOS_KEY, (d) => ({ todos: [...(d?.todos ?? []), row] }))
         if (item.onBoard) client.setQueriesData<BoardFrame>({ queryKey: BOARD_KEY }, (d) => (d?.tasks ? { ...d, tasks: [...d.tasks, item] } : d))
         client.setQueriesData<TasksFrame>({ queryKey: TASKS_KEY }, (d) => (d ? { ...d, tasks: [...d.tasks, item] } : d))
       },
-      tmpId,
       message: t.todos.added(value),
     })
   }

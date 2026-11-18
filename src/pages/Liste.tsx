@@ -18,7 +18,7 @@ import { ActionMenu, type ActionMenuItem } from '../components/ActionMenu'
 import { useAisleOrder, useAisleOverrides, useAisleTagsShown, setAisleTagsShown } from '../lib/aislePrefs'
 import { aisleFor, aisleRanks, AISLE_BY_ID } from '../lib/aisle'
 import { rushRank } from '../lib/listOrder'
-import { mintTmpId } from '../lib/tmpIds'
+import { newRowId } from '../lib/rowId'
 import { spliceListLine } from '../lib/listAdd'
 import { useLens } from '../lib/audience'
 import { useSurface } from '../lib/surface'
@@ -37,7 +37,6 @@ import { cashierPicksFrom, pickListFrom, useTillHiddenStores, parseDeal, parseTe
 import { useFlippImport } from '../lib/flippImport'
 import { pictoFor } from '../lib/picto'
 import { useSwipeToDelete } from '../lib/useSwipeToDelete'
-import { healingClearBody, healingDeleteBody } from '../lib/staleDelete'
 import { usePointerDnd, DragGhost, DND_HOLD_MS, dropCueOf, dropEdgeClass } from '../lib/dnd'
 import { BOARD_KEY, GHOSTS_KEY, HISTORY_KEY, HOUSEHOLD_KEY } from '../lib/queryKeys'
 import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
@@ -514,24 +513,21 @@ export function Liste() {
   // quick-add panel passes them so a re-added item keeps its deal search.
   async function postAdd(text: string, terms?: string[]) {
     if (!text) return
-    // Show the new line INSTANTLY via an optimistic temp row — offline, the
-    // invalidate can't refetch it; on reconnect the queued POST creates the real
-    // row and the invalidate swaps the temp one out.
-    const tmpId = mintTmpId()
+    // Show the new line INSTANTLY via an optimistic row — offline, the invalidate can't
+    // refetch it. Its id is the one the POST sends and the server keeps (lib/rowId), so a
+    // tick or a swipe made before the create lands already names the real line.
+    const id = newRowId()
     // Online add returns the real id → offer Annuler that deletes exactly that line
     // (the COMPENSATING undo), even after several quick voice adds stack up. Offline
     // adds skip the undo (no server id yet); deleting the row is the way back.
     await createWithUndo({
       endpoint: 'list',
-      body: terms && terms.length ? { text, search_terms: terms } : { text },
+      body: terms && terms.length ? { id, text, search_terms: terms } : { id, text },
       affectedKeys: [BOARD_KEY, GHOSTS_KEY, HISTORY_KEY],
       // A new line is an errand: it lands at the end of the errands, above any
       // « pas pressé » block — the same slot the server settles it into (the
       // shared splice, also used by the ＋ sheet and the ⚡ Quick add).
-      optimistic: (qc) => spliceListLine(qc, tmpId, text),
-      // E-41: if this add queues, later queued ops on the tmp row (check it, clear
-      // it) get rewritten to the real id when the create replays.
-      tmpId,
+      optimistic: (qc) => spliceListLine(qc, id, text),
       message: t.undo.added(text),
       undoAffectedKeys: [BOARD_KEY, GHOSTS_KEY],
     })
@@ -570,10 +566,7 @@ export function Liste() {
   // costs nothing. Pass the exact ids so a check made AFTER scheduling isn't swept
   // up. Committing logs the buys (→ predictions shift, refresh the ghosts).
   function clearChecked(ids: string[]) {
-    // Names + the gesture's time ride along so the server can heal a STALE id onto the
-    // same ticked line instead of clearing nothing and answering ok (lib/staleDelete).
-    const named = new Set(ids)
-    const body = healingClearBody((board?.list ?? []).filter((i) => named.has(i.id)))
+    const body = { clearChecked: true, ids }
     removal.remove(ids, t.undo.clearedN(ids.length), () =>
       write('list', {
         method: 'PATCH',
@@ -607,9 +600,7 @@ export function Liste() {
   // Swipe-left delete: a plain remove from the list — NOT logged as bought (that
   // path is the check + "Clear checked"). Same deferred shape via the shared hook.
   function deleteItem(item: ListRow) {
-    // healingDeleteBody: the server heals a STALE id onto the same item (lib/staleDelete).
-    // asOf is taken NOW — the gesture — not when the held write fires ~15 s later.
-    const body = healingDeleteBody(item.id, item.text)
+    const body = { id: item.id }
     // No .catch here on purpose: useDeferredRemoval needs to SEE a rejection to
     // tell "deleted, refetch failed" from "the delete failed" (it owns both cases).
     removal.remove([item.id], t.undo.cleared(item.text), () =>

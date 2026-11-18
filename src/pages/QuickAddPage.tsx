@@ -5,7 +5,7 @@ import { EmptyState } from '../components/EmptyState'
 import { useWrite, writeFailed } from '../lib/write'
 import { useCreateWithUndo } from '../lib/undoCreate'
 import { useUndoToast, useNotice } from '../lib/toast'
-import { mintTmpId } from '../lib/tmpIds'
+import { newRowId } from '../lib/rowId'
 import { spliceListLine } from '../lib/listAdd'
 import { isGuest } from '../lib/device'
 import { useT } from '../i18n'
@@ -80,13 +80,12 @@ export function QuickAddPage() {
   // a mis-tapped chip used to be permanent until you went to La liste to delete it.
   // Annuler also un-ticks the chip — the ✓ must not go on certifying a line that is gone.
   async function postAdd(text: string, terms: string[], key: string): Promise<boolean> {
-    const tmpId = mintTmpId()
+    const id = newRowId()
     const res = await createWithUndo({
       endpoint: 'list',
-      body: terms.length ? { text, search_terms: terms } : { text },
+      body: terms.length ? { id, text, search_terms: terms } : { id, text },
       affectedKeys: [BOARD_KEY, GHOSTS_KEY, HISTORY_KEY],
-      optimistic: (qc) => spliceListLine(qc, tmpId, text),
-      tmpId,
+      optimistic: (qc) => spliceListLine(qc, id, text),
       message: t.undo.added(text),
       undoAffectedKeys: [BOARD_KEY, GHOSTS_KEY],
       afterUndo: () =>
