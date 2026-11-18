@@ -73,3 +73,34 @@ test('the toddler lens never sees the welcome card', async ({ page, app }) => {
   await app.boot({ route: '/kitchen', state: { audience: 'toddler', surface: 'kiosk', intros: true }, wait: '.hub' })
   await expect(page.locator('.section-intro')).toHaveCount(0)
 })
+
+// Review #19 (2026-11-17): « five tabs means five tutorials to dismiss ». One « Compris »
+// now puts every section's card away, and a device that met the essentials tour (the
+// app's one welcome) gets none at all.
+test('one « Compris » puts away every tab’s card, not just this one', async ({ page, app }) => {
+  await app.boot({ route: '/kitchen', state: { intros: true }, wait: '.hub' })
+  await page.locator('.section-intro .section-intro__dismiss').click()
+  for (const route of ['/liste', '/notes', '/maison']) {
+    await page.goto(route)
+    await page.locator('.hub').first().waitFor({ state: 'visible' })
+    await expect(page.locator('.section-intro'), route).toHaveCount(0)
+  }
+})
+
+test('a device that met the essentials tour gets no section cards', async ({ page, app }) => {
+  await page.addInitScript(() => localStorage.setItem('babillard-tours-seen', JSON.stringify(['essentials'])))
+  await app.boot({ route: '/liste', state: { intros: true }, wait: '.hub' })
+  await expect(page.locator('.hub__body')).toBeVisible()
+  await expect(page.locator('.section-intro')).toHaveCount(0)
+})
+
+// « Revoir les cartes de première visite » (Découvrir) stores an explicit EMPTY set: asked
+// for, the cards come back even on a device that met the tour long ago.
+test('cards asked back (an explicit empty set) show despite the tour', async ({ page, app }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('babillard-tours-seen', JSON.stringify(['essentials']))
+    localStorage.setItem('babillard-sections-seen', '[]')
+  })
+  await app.boot({ route: '/kitchen', state: { intros: true }, wait: '.hub' })
+  await expect(page.locator('.section-intro')).toBeVisible()
+})

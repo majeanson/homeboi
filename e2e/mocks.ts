@@ -1670,7 +1670,11 @@ export async function seedState(page: Page, s: AppState) {
       // auto-started welcome card / spotlight never covers the elements a spec is
       // driving — the cause of the whole suite timing out once the tour shipped.
       // (Several specs already seeded this by hand; doing it here covers them all.)
-      if (!state.tour) {
+      // A spec that opts into the section cards (`intros`) is a device that has met NO
+      // tutorial yet: since review #19 a device that has seen the essentials tour gets no
+      // section cards at all (that tour WAS its tutorial). The tour only auto-starts on
+      // /board, so the intro specs (on other tabs) are not covered by it.
+      if (!state.tour && !state.intros) {
         localStorage.setItem('babillard-tours-seen', JSON.stringify(['essentials']))
       }
       // Same reasoning for « Le point du jour »: its morning open would navigate a

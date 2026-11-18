@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useT, useLang } from '../i18n'
 import { useLens } from '../lib/audience'
 import { useHelp } from '../lib/help'
-import { useTour } from '../lib/tour'
+import { useTour, hasTourSeen } from '../lib/tour'
 import { TOURS } from '../lib/tourContent'
 import { GUIDE } from '../lib/guideContent'
 import { renderRich } from '../lib/richText'
@@ -40,8 +40,27 @@ function readSeen(): string[] {
     return []
   }
 }
+// ONE TUTORIAL, NOT ONE PER TAB (review #19, 2026-11-17). Each themed tab used to open on
+// its own card until THAT card was dismissed: five tabs, five « Compris » to tap, each
+// pushing the list or the notes below the fold on a first visit. Now the first « Compris »
+// (or « Faire le tour ») puts them all away (`ALL`), and a device that already met the
+// essentials tour — the app's one guided welcome, completed or skipped — never gets them:
+// that tour was its tutorial. The guide keeps every section's card and tour one tap away.
+const ALL = '*'
 function hasIntroSeen(id: string): boolean {
-  return readSeen().includes(id)
+  const seen = readSeen()
+  if (seen.includes(ALL) || seen.includes(id)) return true
+  // The tour gate holds only for a device that never touched the cards: « Revoir les
+  // cartes d'accueil » (resetIntrosSeen) stores an explicit empty set, and asked-for
+  // cards come back even though the tour was seen long ago.
+  return storedSeen() === null && hasTourSeen('essentials')
+}
+function storedSeen(): string | null {
+  try {
+    return localStorage.getItem(SEEN_KEY)
+  } catch {
+    return null
+  }
 }
 // Bring every first-visit card back. The flag says "you have seen this", which is a
 // statement about a MOMENT, not about a person — so it has to be revocable. Exported
@@ -49,7 +68,9 @@ function hasIntroSeen(id: string): boolean {
 // re-orient after time away (UNIFY day 7).
 export function resetIntrosSeen(): void {
   try {
-    localStorage.removeItem(SEEN_KEY)
+    // An explicit EMPTY set, not a removal: « asked to see them again » must outrank the
+    // « this device met the tour » gate in hasIntroSeen (review #19).
+    localStorage.setItem(SEEN_KEY, '[]')
   } catch {
     /* noop */
   }
@@ -58,7 +79,7 @@ export function resetIntrosSeen(): void {
 function markIntroSeen(id: string): void {
   try {
     const seen = readSeen()
-    if (!seen.includes(id)) localStorage.setItem(SEEN_KEY, JSON.stringify([...seen, id]))
+    if (!seen.includes(ALL)) localStorage.setItem(SEEN_KEY, JSON.stringify([...seen.filter((s) => s !== id), id, ALL]))
   } catch {
     /* noop */
   }
