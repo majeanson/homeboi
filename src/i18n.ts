@@ -1283,7 +1283,7 @@ export const FR = {
     whichDay: 'Quel jour veux-tu planifier ?',
     plan:'Quoi pour souper ?',
     suggest: 'Qu’est-ce qu’on mange ?',
-    low: 'Ce qui s’achève',
+    low: 'À racheter',
     lowAdd: 'Ajouter un aliment',
     lowEmpty: 'Rien ne manque pour l’instant. Quand un produit achève, note-le ici — il ira sur la liste.',
     addToList: '→ ajouter à la liste',
@@ -1381,14 +1381,14 @@ export const FR = {
     // L'état « c'est fait » du menu ⋯ d'une recette — la bascule d'étiquette EST la
     // confirmation, la barre « Annuler » étant peinte sous la scène (z-index 40 vs 80).
     leftoversSaved: 'Dans les restants',
-    leftoversToPool: 'À finir bientôt',
+    leftoversToPool: 'Restants',
     removeLeftover: 'Retirer le restant',
     aiWaking: 'L’IA se réveille… la première fois est plus longue.',
     // « Un seul tiroir d'idées-repas » (C-14) — the ONE IdeasDrawer, its source
     // chips, and the empty-day-tile kid-suggestion chip.
     ideasDrawer: {
       title: 'Idées',
-      chipUseSoon: 'À écouler',
+      chipUseSoon: 'À utiliser bientôt',
       chipAi: 'IA',
       chipKid: 'Proposé par',
       chipPast: 'Déjà mangé',

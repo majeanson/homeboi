@@ -20,7 +20,7 @@ const openPantry = async (page: Page) => {
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile', calm: true })
   await page.goto('/kitchen?tab=pantry')
   await page.locator('.hub__body').waitFor({ state: 'visible', timeout: 15_000 })
-  await expect(page.getByRole('heading', { name: 'Ce qui s’achève' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'À racheter' })).toBeVisible()
 }
 
 test('the garde-manger leads with its lists — every add box waits behind a ＋', async ({ page }) => {
@@ -32,7 +32,7 @@ test('the garde-manger leads with its lists — every add box waits behind a ＋
 
   // Which means the three lists fit one screen: the last section's heading is
   // visible without scrolling (it was pushed under the fold by the composers).
-  const heading = page.getByRole('heading', { name: 'Ce qui s’achève' })
+  const heading = page.getByRole('heading', { name: 'À racheter' })
   const inView = await heading.evaluate((el) => {
     const b = el.getBoundingClientRect()
     return b.top >= 0 && b.bottom <= window.innerHeight
@@ -71,7 +71,7 @@ test('a read-only guest gets no ＋ at all', async ({ page }) => {
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
   await page.addInitScript(() => localStorage.setItem('babillard-guest-token', 'e2e-guest-token'))
   await page.goto('/kitchen?tab=pantry')
-  await expect(page.getByRole('heading', { name: 'Ce qui s’achève' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'À racheter' })).toBeVisible()
 
   await expect(page.locator('.sec-label__actbtn')).toHaveCount(0)
   await expect(page.locator('.edit-field__input')).toHaveCount(0)

@@ -66,7 +66,7 @@ test('« Note du jour » in the calendar ⋯ lands IN the note, not just on the 
 const emptyDoors: [string, string, string][] = [
   ['les notes', '/notes?add=1', '.note-editor'],
   ['les routines', '/maison?plus=routine', '.sheet.show, .scene'],
-  ['« À finir bientôt »', '/kitchen?plus=leftovers', '.sheet.show, .scene'],
+  ['« Restants »', '/kitchen?plus=leftovers', '.sheet.show, .scene'],
   ['les mots du frigo', '/board?plus=note', '.sheet.show'],
 ]
 for (const [what, url, sel] of emptyDoors) {

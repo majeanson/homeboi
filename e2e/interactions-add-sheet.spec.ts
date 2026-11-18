@@ -196,7 +196,7 @@ test.describe('add sheet', () => {
     const tabs = page.locator('.ideas-drawer .subtabs')
     await expect(tabs).toBeVisible()
     const ys: Record<string, number> = {}
-    for (const label of ['Idées', 'Favoris', 'À écouler', 'IA', 'Proposé par']) {
+    for (const label of ['Idées', 'Favoris', 'À utiliser bientôt', 'IA', 'Proposé par']) {
       await page.locator('.ideas-drawer .subtabs__opt', { hasText: label }).click()
       await expect(page.locator('.ideas-drawer .subtabs__opt.is-on', { hasText: label })).toBeVisible()
       ys[label] = (await boxOf(tabs)).y

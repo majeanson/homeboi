@@ -131,7 +131,7 @@ for (const width of [360, 390]) {
     await assertClean(page, 'ideas drawer, plan picker open', IDEAS_BOX, 'auto')
 
     // Sweep every other source tab.
-    for (const label of ['Favoris', 'À écouler', 'Proposé par']) {
+    for (const label of ['Favoris', 'À utiliser bientôt', 'Proposé par']) {
       const tab = page.locator('.ideas-drawer .subtabs__opt', { hasText: label })
       await tab.click()
       await expect(tab).toHaveAttribute('aria-selected', 'true')

@@ -262,8 +262,8 @@ const BASE_TOURS: Tour[] = [
       {
         icon: 'shopping-bag-bold',
         card: 'kitchen',
-        title: { fr: 'Ce qui s’achève', en: 'Running low' },
-        body: guidePoint('kitchen', 'Ce qui s’achève'),
+        title: { fr: 'À racheter', en: 'To buy again' },
+        body: guidePoint('kitchen', 'À racheter'),
       },
       ...addSheetSteps('kitchen', [
         {

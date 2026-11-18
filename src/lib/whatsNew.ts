@@ -95,7 +95,7 @@ export const WHATS_NEW: WhatsNewEntry[] = [
   {
     id: 'ideas-drawer',
     text: {
-      fr: 'Nouveau : un seul tiroir « Idées » — favoris, à écouler, IA, proposé par un enfant — à ouvrir depuis la grille ou le ＋.',
+      fr: 'Nouveau : un seul tiroir « Idées » — favoris, à utiliser bientôt, IA, proposé par un enfant — à ouvrir depuis la grille ou le ＋.',
       en: 'New: one “Idées” drawer — favorites, use-it-up, AI, suggested by a child — open it from the grid or the ＋.',
     },
     card: 'kitchen',

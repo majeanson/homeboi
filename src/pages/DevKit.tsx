@@ -305,7 +305,7 @@ function SectionAddDemo() {
   return (
     <div>
       <div className="kitchen__head">
-        <h2>Ce qui s’achève</h2>
+        <h2>À racheter</h2>
         <SectionAdd open={add.open} onToggle={add.toggle} label="Ajouter un aliment" readOnly={false} />
       </div>
       {add.open && (

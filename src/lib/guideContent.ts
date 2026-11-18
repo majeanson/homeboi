@@ -516,7 +516,7 @@ export const GUIDE: GuideEntry[] = [
         },
       },
       {
-        label: { fr: 'Ce qui s’achève', en: 'Running low' },
+        label: { fr: 'À racheter', en: 'To buy again' },
         detail: {
           fr: 'Dès qu’un aliment achève, mets-lui le drapeau « il en manque » : il saute direct sur la liste d’épicerie. C’est un simple drapeau, pas un inventaire à tenir à jour.',
           en: 'The moment a food is almost gone, flag it “running low”: it jumps straight onto the grocery list. It’s just a flag, not an inventory to keep current.',

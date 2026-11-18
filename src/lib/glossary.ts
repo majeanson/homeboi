@@ -256,6 +256,38 @@ const ENTITIES: GlossaryTerm[] = [
       en: 'A dish already cooked, waiting in the fridge. Planning it for an evening means: nothing to cook that night.',
     },
     card: 'kitchen',
+    rivals: { fr: ['À finir bientôt'] },
+    why: 'Review #26 (2026-11-17): the leftovers pool was « Restants » on one screen and « À finir bientôt » on another.',
+  },
+  // Review #26 (2026-11-17): five nouns for « food we have » (À utiliser bientôt / À écouler
+  // / Restants / La réserve / Ce qui s'achève), two of them twins and one that sounded like
+  // another. One name per concept: what to BUY (À racheter), what to EAT soon (À utiliser
+  // bientôt), what is already cooked (Restant), what is stashed (La réserve).
+  {
+    id: 'a-racheter',
+    scope: 'entity',
+    fr: 'À racheter',
+    en: 'To buy again',
+    def: {
+      fr: 'Ce qui manque ou achève dans l’armoire : noté ici, il va sur la liste. Jamais un inventaire.',
+      en: 'What is out or running low in the cupboard: noted here, it goes on the list. Never an inventory.',
+    },
+    card: 'kitchen',
+    rivals: { fr: ['Ce qui s’achève'] },
+    why: '« Ce qui s’achève » read like « À utiliser bientôt » (finishing vs running out); this one says what you DO: buy it.',
+  },
+  {
+    id: 'a-utiliser-bientot',
+    scope: 'entity',
+    fr: 'À utiliser bientôt',
+    en: 'Use soon',
+    def: {
+      fr: 'Un aliment à finir avant qu’il se perde — la crème, les épinards. La cuisine propose quoi en faire.',
+      en: 'Food to finish before it spoils — the cream, the spinach. The kitchen suggests what to make with it.',
+    },
+    card: 'kitchen',
+    rivals: { fr: ['À écouler'] },
+    why: 'The ideas drawer called the same shortlist « À écouler »; one word now.',
   },
   {
     id: 'routine',

@@ -114,6 +114,10 @@ const occurrences = (haystack: string[], form: string) => {
 // a floor rather than to zero. Day 2 of UNIFY.md spends these down.
 const RIVAL_CEILING: Record<string, number> = {
   'fr:Enlever': 0,
+  // Review #26 (2026-11-17): the kitchen's twin nouns, swept the day they were declared.
+  'fr:À finir bientôt': 0,
+  'fr:Ce qui s’achève': 0,
+  'fr:À écouler': 0,
   // THE RATCHET FLIPPED, 2026-11-06 (plans/2026-11-06-TACHE-UNIFIEE.md): « Tâche » won.
   // « Corvée » is at zero in the dictionaries and may not come back; the plain-language use
   // (a défi card, « faire sa corvée ») lives in lib/defiDeck.ts, outside the dictionaries.
