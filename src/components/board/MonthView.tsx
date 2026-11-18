@@ -777,6 +777,14 @@ export function MonthView({
                   {shown.length > 4 && <span className="monthv__more">+{shown.length - 4}</span>}
                 </span>
               )}
+              {/* THE NAMES (review #21, 2026-11-17): dots alone could not tell a vet
+                  appointment from a supper. The first two, one line each, cut short —
+                  one on a phone (month.css). The day panel still spells everything out. */}
+              {shown.slice(0, 2).map((m, i) => (
+                <span key={`n${i}`} className={'monthv__name ellipsis' + mk(m.kind)}>
+                  {m.label}
+                </span>
+              ))}
               {/* « Voyage » bands — thin strips pinned to the cell BOTTOM (absolute, so
                   they never push the number/dots), one per covering trip, rounded on the
                   trip's first/last day. */}

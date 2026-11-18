@@ -173,8 +173,8 @@
   gap: 3px;
 }
 .monthv__dot {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   flex: none;
 }
@@ -463,8 +463,8 @@
     font-size: 0.8rem;
   }
   .monthv__dot {
-    width: 5px;
-    height: 5px;
+    width: 7px;
+    height: 7px;
   }
 }
 /* Desktop / wall tablet: on a wide surface the 7 columns are broad, so a square
@@ -926,7 +926,7 @@
 .monthv__legend {
   gap: 0.15rem 0.45rem;
   margin-top: 0.25rem;
-  font-size: 0.62rem;
+  font-size: 0.78rem; /* 0.62 (~10px) did not read on a phone (review #21); a two-line wrap is cheaper */
 }
 .monthv__legend-item {
   gap: 0.25rem;
@@ -1210,4 +1210,24 @@
 .weekv__label.is-done {
   text-decoration: line-through;
   color: var(--ink-soft);
+}
+
+/* A day's first item names, under its markers (review #21): one ellipsized line each,
+   the size of the panel's own lines. Two on a tablet, one on a phone, where seven
+   columns leave ~50px a cell. Under a legend lens they dim and light with their marker. */
+.monthv__name {
+  /* The one line is the shared `.ellipsis` (kit.css), worn beside this class. */
+  display: block;
+  max-width: 100%;
+  font-size: 0.68rem;
+  line-height: 1.15;
+  color: var(--ink);
+}
+.monthv__name.is-dim {
+  opacity: 0.35;
+}
+@media (max-width: 560px) {
+  .monthv__name ~ .monthv__name {
+    display: none;
+  }
 }
