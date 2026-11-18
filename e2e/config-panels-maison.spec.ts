@@ -182,7 +182,7 @@ test('a season seed posts a dated upkeep with its cadence and lead time', async 
   await page.locator('.tasks-view__actions').getByRole('button', { name: 'Idées de saison' }).click()
   const card = page.locator('.season-seeds')
   const [req] = await Promise.all([
-    page.waitForRequest(isApi('POST', 'home-projects'), { timeout: 20_000 }),
+    page.waitForRequest(isApi('POST', 'tasks'), { timeout: 20_000 }),
     card.getByRole('button', { name: /Poser les pneus/ }).click(),
   ])
   const body = JSON.parse(req.postData() || '{}') as { kind?: string; title?: string; at?: number; recur?: unknown; leadSeconds?: number }

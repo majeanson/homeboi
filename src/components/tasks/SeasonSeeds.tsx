@@ -52,11 +52,13 @@ export function SeasonSeeds({ seeds, id }: { seeds: readonly SeasonSeed[]; id?: 
       at: nextAnchorSec(seed.anchor),
       recur: seed.recur,
       leadSeconds: seed.leadWeeks * 7 * 86_400, // A-6: annual rituals get week-scale « Bientôt »
-      carnetId: carnet?.id ?? null,
+      // The carnet as the task's subject — the one door's spelling (`carnetId` was the
+      // home-projects alias's, review #37); a home row stores it in carnet_id all the same.
+      subject: carnet ? { kind: 'carnet', id: carnet.id } : null,
     }
   }
   const add = (list: readonly SeasonSeed[], message: string) =>
-    void createMany({ endpoint: 'home-projects', bodies: list.map(bodyOf), affectedKeys: KEYS, message })
+    void createMany({ endpoint: 'tasks', bodies: list.map(bodyOf), affectedKeys: KEYS, message })
   const packName = (p: SeasonPack) => o18n.home.packName(p.carnetKind, p.season)
 
   return (

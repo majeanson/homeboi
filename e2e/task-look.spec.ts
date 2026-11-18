@@ -114,7 +114,7 @@ test('a starter pack adds a season of one subject in one tap, and one « Annuler
   let n = 0
   // After boot: a later route wins, and the boot installs the mock API.
   await app.boot({ route: '/board?view=taches', wait: '.tasks-view' })
-  await page.route('**/api/home-projects', async (route) => {
+  await page.route('**/api/tasks', async (route) => {
     const m = route.request().method()
     if (m === 'POST') {
       posts.push(route.request().postDataJSON())

@@ -52,9 +52,10 @@ export function SeasonUpkeepCard() {
       // The full home-projects key list: the stamped last_done_at re-derives nextAt,
       // which the month grid and a carnet's rows display too — BOARD alone left
       // them stale until their next poll (invalidation-drift class, 2026-09-03).
-      await write('home-projects', {
+      // The one task door (review #37): a tick is the same gesture for every task.
+      await write('tasks', {
         method: 'PATCH',
-        body: { id: p.id },
+        body: { id: p.id, done: true },
         affectedKeys: [BOARD_KEY, HOME_PROJECTS_KEY, MONTH_KEY, CARNETS_KEY],
       })
       void qc.refetchQueries({ queryKey: BOARD_KEY })

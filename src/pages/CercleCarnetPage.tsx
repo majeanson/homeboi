@@ -150,7 +150,7 @@ export function CercleCarnetPage() {
 
   function removeUpkeep(p: HomeProject) {
     upkeepRemoval.remove([p.id], c.careDeleted, () =>
-      write('home-projects', { method: 'DELETE', body: { id: p.id }, affectedKeys: [HOME_PROJECTS_KEY, BOARD_KEY, MONTH_KEY] }),
+      write('tasks', { method: 'DELETE', body: { id: p.id }, affectedKeys: [HOME_PROJECTS_KEY, BOARD_KEY, MONTH_KEY] }),
     )
   }
 

@@ -83,6 +83,21 @@ describe('une tâche à tour de rôle', () => {
     expect((await s.fetch('/api/tasks/one')).status).toBe(400)
   })
 
+  it('a season seed through the one door is an upkeep on its carnet; its tick and its delete too', async () => {
+    // What SeasonSeeds / SeasonUpkeepCard / a carnet's page send since review #37 (they wrote
+    // through the home-projects alias, `carnetId` and all).
+    const s = await household('turns-seed', undefined, { empty: true })
+    const c = (await okJson<{ id: string }>(s.fetch('/api/carnets', { method: 'POST', body: { name: 'Maison' } }))).id
+    const id = await add(s, { kind: 'upkeep', title: 'Nettoyer les gouttières', icon: '🍂', at: 1700000000, recur: { freq: 'yearly' }, leadSeconds: 3 * 7 * 86400, subject: { kind: 'carnet', id: c } })
+    const row = () => env.DB.prepare('SELECT kind, carnet_id, subject_kind, lead_seconds, last_done_at FROM home_projects WHERE id = ?').bind(id).first()
+    // Three weeks asked, seven days kept: the one cap every task path shares (_lib/taskWrite).
+    expect(await row()).toMatchObject({ kind: 'upkeep', carnet_id: c, subject_kind: null, lead_seconds: 7 * 86400, last_done_at: null })
+    await tick(s, id)
+    expect(((await row()) as { last_done_at: number | null }).last_done_at).toBeGreaterThan(0)
+    await okJson(s.fetch('/api/tasks', { method: 'DELETE', body: { id } }))
+    expect(await row()).toBeNull()
+  })
+
   it('refuses no title; a stranger’s task is a 404 for both an edit and a tick', async () => {
     const s = await household('turns-a', undefined, { empty: true })
     const other = await household('turns-b', undefined, { empty: true })
