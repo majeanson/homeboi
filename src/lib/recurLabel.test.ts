@@ -70,3 +70,14 @@ describe('recurLabel', () => {
     expect(recurLabel('{"freq":"yearly","interval":2,"weekdays":[]}', FR)).toBe('tous les 2 ans')
   })
 })
+
+// Review #31: an edit re-saves the rule the form parsed. A parser that rebuilt it from
+// freq/interval/weekdays alone would quietly erase the series' end and its skipped days.
+describe('recurOf keeps a series’ end and skipped days', () => {
+  it('carries until + except through, and drops garbage', () => {
+    const r = recurOf(JSON.stringify({ freq: 'weekly', interval: 1, weekdays: [3], until: 1774929600, except: [1768366800, 'x'] }))
+    expect(r?.until).toBe(1774929600)
+    expect(r?.except).toEqual([1768366800])
+    expect(recurOf(JSON.stringify({ freq: 'daily', until: 'soon' }))).toEqual({ freq: 'daily', interval: 1, weekdays: [] })
+  })
+})

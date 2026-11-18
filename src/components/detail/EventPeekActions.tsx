@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useT } from '../../i18n'
+import { useOperatorT } from '../../i18n.operator'
+import { localDayStart } from '../../lib/localDay'
 import { api } from '../../lib/api'
 import { useWrite } from '../../lib/write'
 import { useConfirm } from '../../lib/confirm'
@@ -31,12 +33,20 @@ const baseId = (id: string) => id.split('#')[0] ?? id
 
 type PeekEvent = { id: string; title: string; birthday?: boolean | null | undefined }
 
+export interface EventPeekOpts {
+  onEdit?: (() => void) | undefined
+  onDelete?: (() => void) | undefined
+  onShare?: (() => void) | undefined
+  onSkip?: (() => void) | undefined
+  skipLabel?: string | undefined
+}
 export interface EventPeekActions {
-  optsFor: (e: PeekEvent) => { onEdit?: (() => void) | undefined; onDelete?: (() => void) | undefined; onShare?: (() => void) | undefined } | undefined
+  optsFor: (e: PeekEvent) => EventPeekOpts | undefined
   node: React.ReactNode
 }
 
 export function useEventPeekActions(): EventPeekActions {
+  const o18n = useOperatorT()
   const t = useT()
   const confirm = useConfirm()
   const write = useWrite()
@@ -53,6 +63,19 @@ export function useEventPeekActions(): EventPeekActions {
     await write('events', { method: 'DELETE', body: { id: baseId(e.id) }, affectedKeys: [EVENTS_KEY, BOARD_KEY, MONTH_KEY] })
   }
 
+  // « Pas cette fois » (review #31): skip THIS occurrence of a series, keep the rest. An
+  // occurrence's id is `<series>#<its instant>`; the day it falls on joins the rule's
+  // `except` (PATCH events { skipDay }). A one-off has no `#`, so it never offers it.
+  async function skip(e: PeekEvent) {
+    const at = Number(e.id.split('#')[1])
+    if (!Number.isFinite(at)) return
+    if (!(await confirm({ message: o18n.eventSkipConfirm, confirmLabel: o18n.eventSkip }))) return
+    await write('events', {
+      method: 'PATCH',
+      body: { id: baseId(e.id), skipDay: localDayStart(new Date(at * 1000)) },
+      affectedKeys: [EVENTS_KEY, BOARD_KEY, MONTH_KEY],
+    })
+  }
   const optsFor = (e: PeekEvent) =>
     e.birthday
       ? undefined
@@ -60,6 +83,8 @@ export function useEventPeekActions(): EventPeekActions {
           onEdit: canEdit ? () => setEditId(baseId(e.id)) : undefined,
           onDelete: canEdit ? () => void del(e) : undefined,
           onShare: canShare ? () => setShare({ id: e.id, title: e.title }) : undefined,
+          onSkip: canEdit && e.id.includes('#') ? () => void skip(e) : undefined,
+          skipLabel: o18n.eventSkip,
         }
 
   const node = (

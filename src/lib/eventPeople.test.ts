@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parsePeopleIds, eventMembers, memberFaces } from './eventPeople'
+import { parsePeopleIds, eventMembers, memberFaces, faceRoster } from './eventPeople'
 import type { Member } from './members'
 
 describe('parsePeopleIds', () => {
@@ -42,5 +42,13 @@ describe('memberFaces', () => {
       { kind: undefined, photo: undefined, colour: '#3c3', name: 'Léa' },
       { kind: 'photo', photo: 'k1', colour: '#c33', name: 'Papa' },
     ])
+  })
+})
+
+describe('faceRoster (review #31: an animal can be FOR a rendez-vous)', () => {
+  it('draws the pet among the faces, after the members', () => {
+    const m = [{ id: 'm1' }]
+    expect(faceRoster(m, [{ id: 'p1' }]).map((x) => x.id)).toEqual(['m1', 'p1'])
+    expect(faceRoster(m, undefined)).toEqual(m)
   })
 })

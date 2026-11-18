@@ -393,6 +393,9 @@ export const FR_OPERATOR = {
   // la plupart du temps.
   // Not « rappel » (review #28): nothing rings — the board only shows it earlier.
   eventWhenMore: 'Répéter, afficher d’avance',
+  eventRecurUntil: 'Jusqu’au',
+  eventSkip: 'Pas cette fois',
+  eventSkipConfirm: 'Retirer cette date de la série ? Les autres fois restent au calendrier.',
   eventBring: 'À apporter',
   // Inline bring-list builder in the event form's « À apporter » section.
   bringAddItem: 'Ajoute un article…',

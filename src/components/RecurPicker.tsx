@@ -2,6 +2,7 @@ import { Field } from './Field'
 import { useEffect, useState } from 'react'
 import { useT } from '../i18n'
 import { Chip } from './Chip'
+import { inputFromLocalDay, localDayFromInput } from '../lib/localDay'
 
 // Recurrence control for the event form: pick a frequency (or "never"), an
 // interval, and — for weekly — which weekdays ("garbage every Wednesday"). Mirror
@@ -10,12 +11,15 @@ export interface RecurValue {
   freq: 'daily' | 'weekly' | 'monthly' | 'yearly'
   interval: number
   weekdays: number[] // 0=Sun … 6=Sat
+  until?: number // the series' last LOCAL day, inclusive (review #31); absent = forever
+  except?: number[] // local days it skips (set from an occurrence's peek, « Pas cette fois »)
 }
 
 export function RecurPicker({
   value,
   onChange,
   noneLabel,
+  endLabel,
 }: {
   value: RecurValue | null
   onChange: (v: RecurValue | null) => void
@@ -23,6 +27,8 @@ export function RecurPicker({
    *  the default); a habit with no rule comes back every day — there, « Jamais » under
    *  « Selon un horaire » contradicted the line above it. */
   noneLabel?: string
+  /** Offer « Jusqu'au », the series' last day, under this label. Omitted: no end field. */
+  endLabel?: string
 }) {
   const t = useT()
   const freq = value?.freq ?? 'none'
@@ -39,7 +45,7 @@ export function RecurPicker({
 
   function setFreq(f: string) {
     if (f === 'none') return onChange(null)
-    onChange({ freq: f as RecurValue['freq'], interval: value?.interval ?? 1, weekdays: value?.weekdays ?? [] })
+    onChange({ ...value, freq: f as RecurValue['freq'], interval: value?.interval ?? 1, weekdays: value?.weekdays ?? [] })
   }
   function toggleDay(d: number) {
     if (!value) return
@@ -96,6 +102,24 @@ export function RecurPicker({
             </Chip>
           ))}
         </div>
+      )}
+
+      {/* « Jusqu'au » (review #31): a series that ends — hockey in March, ten weeks of
+          swimming. Empty = forever. Offered only where the caller names it (`endLabel`). */}
+      {value && endLabel && (
+        <Field inline className="mono" label={endLabel}>
+          <input
+            className="input"
+            type="date"
+            value={inputFromLocalDay(value.until ?? null)}
+            aria-label={endLabel}
+            onChange={(e) => {
+              const until = localDayFromInput(e.target.value)
+              const { until: _drop, ...rest } = value
+              onChange(until ? { ...rest, until } : rest)
+            }}
+          />
+        </Field>
       )}
     </div>
   )

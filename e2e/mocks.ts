@@ -634,7 +634,7 @@ const CERCLE_GROUPS = [
   { id: 'g2', name: 'Le hockey', kind: 'friends', colour: '#5891AC', memberKeys: [{ personId: 'c12', personKind: 'contact' }, { personId: 'c13', personKind: 'contact' }, { personId: 'c14', personKind: 'contact' }] },
   { id: 'g3', name: 'Collègues', kind: 'work', colour: '#7BB0C9', memberKeys: [{ personId: 'c15', personKind: 'contact' }] },
 ]
-const CERCLE = {
+export const CERCLE = {
   members: CERCLE_MEMBERS,
   contacts: CERCLE_CONTACTS.map((c): CercleContact => ({ ...c, giftIdeas: null })),
   links: CERCLE_LINKS,

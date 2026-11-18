@@ -27,6 +27,7 @@ import { SecLabel } from '../components/board/BoardCard'
 import { SectionAdd, useSectionAdd } from '../components/SectionAdd'
 import { CATS } from '../lib/cats'
 import { eventMembers, memberFaces } from '../lib/eventPeople'
+import { useFaceRoster } from '../lib/petFaces'
 import { colorOf, type Member } from '../components/board/types'
 import { Fil } from '../components/board/Fil'
 import { EditField } from '../components/EditField'
@@ -221,6 +222,8 @@ function DayPlanScene() {
     ...live,
   })
   const dayEvents = dayItemsQ.data?.events ?? []
+  // The animals join the faces only when a rendez-vous is FOR one (review #31).
+  const faces = useFaceRoster(boardQ.data?.members ?? [], dayEvents)
   // The delete doors, shared with the board and the month panel (EntityRemovals): a task
   // whose removal is settling hides here too.
   const removals = useChoreRemovals()
@@ -303,11 +306,11 @@ function DayPlanScene() {
   // For the entretien peek (buildChore) — same shape the board and the month panel pass.
   const detailCtx: DetailCtx = { t, lang, members: formMembers, recipeFor: recipeForMeal }
   const memberName = (id: string | null | undefined) =>
-    (id && boardQ.data?.members?.find((m) => m.id === id)?.display_name) || ''
+    (id && faces.find((m) => m.id === id)?.display_name) || ''
   // « Qui » faces for an event row — only when SEVERAL people share it (solo keeps its
   // plain name; the edit sheet / peek lists everyone).
   const eventFaces = (e: DayItemsData['events'][number]) => {
-    const f = memberFaces(eventMembers(e), boardQ.data?.members ?? [])
+    const f = memberFaces(eventMembers(e), faces)
     return f.length > 1 ? f : undefined
   }
 
@@ -581,7 +584,7 @@ function DayPlanScene() {
               ? t.board.allDay
               : formatTime(e.at, lang)
       }
-      who={e.work ? memberName(e.member_id) || undefined : e.business_name ?? e.contact_name ?? memberName(e.member_id) ?? undefined}
+      who={e.work ? memberName(e.member_id) || undefined : e.business_name ?? e.contact_name ?? memberName(eventMembers(e)[0]) ?? undefined}
       whoFaces={e.work ? undefined : eventFaces(e)}
       color={e.work ? e.color ?? undefined : e.business_colour ?? undefined}
       // 🚗 when this rendez-vous takes the shared car. A work window already gets

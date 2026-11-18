@@ -11,6 +11,7 @@ import { useUndoToast } from '../../lib/toast'
 import { isGuest } from '../../lib/device'
 import { useAuth } from '../../lib/auth'
 import { TODOS_KEY, MONTH_KEY, CAR_KEY } from '../../lib/queryKeys'
+import { useFaceRoster } from '../../lib/petFaces'
 import { healOnError } from '../../lib/query'
 import { type CarModel } from '../../lib/car'
 import { formatTime, formatMonthYear, formatDay, formatDayLong, weekdayShort, dayNum, capitalize as cap } from '../../lib/format'
@@ -264,6 +265,8 @@ export function MonthView({
     staleTime: 30_000,
     ...healOnError,
   })
+  // The animals join the faces only when a month event is FOR one (review #31).
+  const faces = useFaceRoster(members, data?.events ?? [])
 
   // « L'auto » resolved across the visible range, so the day panel can show the
   // SELECTED date's car status (#28) — not a stuck "today" glance. A calm slow read
@@ -297,7 +300,7 @@ export function MonthView({
   // « Qui » faces for an event row — only when SEVERAL people share it (a solo one
   // keeps its plain name; the peek lists everyone).
   const eventFaces = (e: MEvent) => {
-    const f = memberFaces(eventMembers(e), members)
+    const f = memberFaces(eventMembers(e), faces)
     return f.length > 1 ? f : undefined
   }
 
@@ -469,9 +472,9 @@ export function MonthView({
               cat={e.birthday ? 'birthday' : 'event'}
               title={e.title}
               when={e.birthday ? (e.age != null ? t.cercle.turnsN(e.age) : t.board.birthday) : e.all_day ? t.board.allDay : formatTime(e.at, lang)}
-              who={e.business_name ?? e.contact_name ?? nameOf(members, e.member_id) ?? undefined}
+              who={e.business_name ?? e.contact_name ?? nameOf(faces, eventMembers(e)[0] ?? null) ?? undefined}
               whoFaces={eventFaces(e)}
-              color={e.business_colour ?? colorOf(members, e.member_id) ?? undefined}
+              color={e.business_colour ?? colorOf(faces, eventMembers(e)[0] ?? null) ?? undefined}
               // 🚗 when this rendez-vous takes the shared car — same cue as a
               // work window that holds it (the row just above), so the calendar
               // and the board say "the car is spoken for" the same way.
@@ -480,7 +483,7 @@ export function MonthView({
                 detail.open(
                   buildEvent(
                     { id: e.id, title: e.title, start_at: e.at, all_day: e.all_day, end_at: e.end_at, car_id: e.car_id, member_id: e.member_id, passengers: e.passengers, contact_name: e.contact_name, contact_address: e.contact_address, business_id: e.business_id, business_name: e.business_name, business_colour: e.business_colour, business_address: e.business_address, birthday: e.birthday, age: e.age },
-                    detailCtx,
+                    { ...detailCtx, members: faces },
                     eventActions.optsFor({ id: e.id, title: e.title, birthday: e.birthday }),
                   ),
                 )

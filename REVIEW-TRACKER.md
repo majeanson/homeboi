@@ -55,14 +55,20 @@ Progress on the 43 items kept from the 7-persona review (2026-11-17).
   `glossary.test.ts` now fails if a retired word returns; 4 specs moved with the words (47 green); plant (« Grille » back) seen red.
 - [x] 28. Rename « rappel » honestly (it only makes an item show earlier on the board). **Done** `f5af8570`: verified: the picker already read « Afficher dès », but the event form's fold was « Répétition et rappel » (EN « Repeat & reminder ») and the task form's « this row cannot keep … » line said « de rappel ». They are now « Répéter, afficher d'avance » / « Repeat, show ahead » and « d'affichage à l'avance ». Habit reminders keep the word (they really do open the scene on screen). `glossary.test.ts` holds both labels; 2 specs moved (49 green); plant red.
 - [x] 29. « Placer ce soir » button on meal ideas. **Done** `a860146f`: verified: an idea took « pick a slot, then a day », with no tonight shortcut. `MealPlanPicker` (all 12 planning doors: Idées and its sources, recipes, history, « Déplacer… ») now leads with a « Ce soir » chip whenever today is in the window: today, in the household's hero slot. The slot is the caller's state, so the chip asks for it through `onSlot` and picks once it comes back down; no call site changed. Tests: e2e `plan-tonight.spec.ts` (one tap → POST meals at today + souper; also after « Dîner » was picked); the 82 picker/ideas specs green; plant red.
-- [x] 30. Landing fixes: reachable on a device that once chose a surface; « J'ai déjà un compte » → login; localised titles; promote the privacy selling points. **Done** (`fix(accueil): la porte reste ouverte…`): all four verified.
+- [x] 30. Landing fixes: reachable on a device that once chose a surface; « J'ai déjà un compte » → login; localised titles; promote the privacy selling points. **Done** `1de10ea1`: all four verified.
   - `Entry` sent any device that ever chose a surface to `/board`, signed out or not; now only a paired or once-signed-in device skips the landing. The signed-out prompt (`PairPrompt`) also links back to `/` (« Découvrir Babillard »).
   - « J'ai déjà un compte » → `/login` (it went through `/setup`), and since that link was the landing's only road to pairing, the login page now offers « Jumeler une tablette ».
   - `TitleOnNav` titles every non-hub route « Babillard · <tagline> » in the reader's language; the hub's own titles and the two self-titled pages are left alone.
   - The privacy page's checkable points (no trackers, nightly copies kept 14 days, export or erase in one gesture, nothing in your pocket) join the landing's promise list. Their copy sits beside Home, since the eager FR chunk is at its cap.
 
   Tests: e2e `landing-door.spec.ts`, `interactions-navigation` rewritten (landing → login → pair); the 8 specs that open `/` green; plant red. Not done: the static boot loader « Chargement… » before JS.
-- [ ] 31. Pets as rendez-vous subjects; recurrence end dates / exceptions.
+- [x] 31. Pets as rendez-vous subjects; recurrence end dates / exceptions. **Done** (`feat(rendez-vous): pour Jules, jusqu'au, pas cette fois…`): all three verified (« Pour qui ? » listed members only; `RecurPicker` had freq/interval/weekdays only).
+  - The household's animals join « Pour qui ? », after its people. They ride in `passengers`; `member_id` stays the first MEMBER (it holds the car and the lens).
+  - The board, month, day page and « Avant de partir » draw the pet through `useFaceRoster`. It reads the cercle only when an event names a non-member: the board poll never reads pets (`board-poll.test.ts`).
+  - The rule grows `until` (« Jusqu'au », a date under the repeat) and `except`. The occurrence peek's ⋯ offers « Pas cette fois », which skips that day only (PATCH `{ skipDay }`).
+  - `recurOf` now carries both through, so an edit no longer erases them.
+
+  Tests: unit (recur, recurLabel, eventPeople, petFaces), d1 `events.d1.test.ts` (end, skip, 404 one-off, pet in Qui), e2e `event-series-pet.spec.ts`; plants red. ACTIONS.md gains the skip row.
 
 ## P2: accessibility. ⚠ Show Marc each change, one by one, BEFORE implementing
 - [ ] 32. Settings & combobox names (`SettingsRow` label/hint; `EntityCombobox` pattern).
@@ -119,3 +125,4 @@ Grandparent/sitter mode · trust & business pack · Marco's kill list. See the D
 - 2026-11-17 · #28 a lead is « afficher d'avance », not « rappel » (event fold, task-axis line)
 - 2026-11-17 · #29 every meal picker leads with « Ce soir » (today, hero slot), one tap
 - 2026-11-17 · #30 landing reachable without an account; « J'ai déjà un compte » → login (+ pair door there); localized titles; privacy points on the landing
+- 2026-11-18 · #31 pets in « Pour qui ? » (faces via useFaceRoster, poll untouched); « Jusqu'au » + « Pas cette fois » on recurring rendez-vous

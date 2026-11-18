@@ -1,7 +1,7 @@
 import { badRequest, notFound, ok, readJson, okWire } from '../_lib/json'
 import { authed } from '../_lib/route'
 import { localDayStart, newId, nowSec } from '../_lib/ids'
-import { normalizeRecur } from '../_lib/recur'
+import { normalizeRecur, parseRecur } from '../_lib/recur'
 import type { Wire } from '../_lib/wire'
 
 // Events (the agenda the board merges). Until now events could only be born from
@@ -175,7 +175,24 @@ export const onRequestPost = authed(async (ctx, actor) => {
 })
 
 export const onRequestPatch = authed(async (ctx, actor) => {
-  const body = await readJson<EventBody>(ctx.request)
+  const body = await readJson<EventBody & { skipDay?: unknown }>(ctx.request)
+  // « Pas cette fois » (review #31): skip ONE occurrence of a series — the week the kid is
+  // at the other house — without touching the rest. Only the rule changes: the day joins
+  // its `except` list (normalizeRecur keeps it a sorted, capped list of local midnights).
+  if (body?.id && body.skipDay !== undefined) {
+    const day = Number(body.skipDay)
+    if (!Number.isInteger(day) || day <= 0) return badRequest('Jour invalide.')
+    const row = await ctx.env.DB.prepare('SELECT recur_json FROM events WHERE id = ? AND household_id = ?')
+      .bind(body.id, actor.householdId)
+      .first<{ recur_json: string | null }>()
+    const r = parseRecur(row?.recur_json)
+    if (!row || !r) return notFound()
+    const next = normalizeRecur({ ...r, except: [...(r.except ?? []), day] })
+    await ctx.env.DB.prepare('UPDATE events SET recur_json = ? WHERE id = ? AND household_id = ?')
+      .bind(next ? JSON.stringify(next) : row.recur_json, body.id, actor.householdId)
+      .run()
+    return ok({ ok: true })
+  }
   const title = body?.title?.trim()
   if (!body?.id || !title || typeof body?.startAt !== 'number') return badRequest('id + titre + date requis.')
   const { businessId, contactId, memberId } = pickWho(body)

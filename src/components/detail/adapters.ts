@@ -49,7 +49,7 @@ function whoOf(members: Member[], id: string | null, role?: string): DetailWho |
 export function buildEvent(
   e: EventRow,
   ctx: DetailCtx,
-  opts?: { onShare?: (() => void) | undefined; onEdit?: (() => void) | undefined; onDelete?: (() => void) | undefined },
+  opts?: { onShare?: (() => void) | undefined; onEdit?: (() => void) | undefined; onDelete?: (() => void) | undefined; onSkip?: (() => void) | undefined; skipLabel?: string | undefined },
 ): DetailModel {
   const { t, lang, members } = ctx
   const day = localDayStart(new Date(e.start_at * 1000))
@@ -142,6 +142,8 @@ export function buildEvent(
         : []),
       // « Partager » — a public link with just the title + when + who-label (no member ids leak).
       ...(opts?.onShare ? [{ key: 'share', label: t.shareLink.action, icon: 'arrow-up-right-bold' as const, overflow: true, run: opts.onShare }] : []),
+      // « Pas cette fois » — skip this one occurrence of a series (review #31).
+      ...(opts?.onSkip && opts.skipLabel ? [{ key: 'skip', label: opts.skipLabel, icon: 'x-bold' as const, overflow: true, run: opts.onSkip }] : []),
       ...(opts?.onDelete
         ? [{ key: 'delete', label: t.common.delete, icon: 'trash-bold' as const, tone: 'danger' as const, run: opts.onDelete }]
         : []),

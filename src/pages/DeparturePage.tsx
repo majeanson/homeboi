@@ -9,6 +9,7 @@ import { colorOf, nameOf } from '../components/board/types'
 import type { TaskCell } from '../lib/tasks'
 import { AvatarStack } from '../components/AvatarStack'
 import { eventMembers, memberFaces } from '../lib/eventPeople'
+import { useFaceRoster } from '../lib/petFaces'
 import { todayLocalDay, addLocalDays } from '../lib/localDay'
 import { formatDayLong, capitalize } from '../lib/format'
 import { MONTH_KEY, WEATHER_KEY } from '../lib/queryKeys'
@@ -64,6 +65,7 @@ export function DeparturePage() {
   // calendar + the day page use (DST-safe, recurring expanded server-side).
   const data = useQuery({ queryKey: [...MONTH_KEY, day, addLocalDays(day, 1)], queryFn: () => api<DepMonth>(`month?from=${day}&to=${addLocalDays(day, 1)}`), ...live }).data
   const events = data?.events ?? []
+  const roster = useFaceRoster(members, events) // + the animals, when one is FOR a rendez-vous (review #31)
   // The day's recurring rotation chores (whose turn it is) + today's one-off « À
   // faire » (those are a today glance, so only on the today screen).
   // The day's tasks: the calendar's one rule (every dated task, every occurrence), open ones.
@@ -147,10 +149,10 @@ export function DeparturePage() {
           ) : (
             <ul className="departure__agenda">
               {events.map((e) => {
-                const who = e.business_name ?? e.contact_name ?? nameOf(members, e.member_id)
+                const who = e.business_name ?? e.contact_name ?? nameOf(roster, eventMembers(e)[0] ?? null)
                 // « Qui » — a face stack when several people share it (the peek + form
                 // list them all); a solo rendez-vous keeps its plain name.
-                const faces = memberFaces(eventMembers(e), members)
+                const faces = memberFaces(eventMembers(e), roster)
                 return (
                   <li key={e.id} className="departure__ev">
                     <span className="departure__ev-time mono">{timeLabel(e.at, e.all_day)}</span>

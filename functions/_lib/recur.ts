@@ -20,6 +20,12 @@ export interface Recur {
   freq: 'daily' | 'weekly' | 'monthly' | 'yearly'
   interval?: number // every N days/weeks/months/years (default 1)
   weekdays?: number[] // weekly only: 0=Sun … 6=Sat
+  // The series' LAST day, inclusive (a household-local midnight): hockey ends in March,
+  // swimming runs ten weeks (review #31, 2026-11-17). Absent = forever.
+  until?: number
+  // Local-midnight days the series skips — « pas cette fois » (the week the kid is at
+  // the other house). Capped; an unknown day is simply never hit.
+  except?: number[]
 }
 
 const DAY = 86400
@@ -52,6 +58,13 @@ export function normalizeRecur(input: unknown): Recur | null {
     // is decided by the caller; here we just keep an empty list out.
     if (wd.length) out.weekdays = wd
   }
+  // An end day and skipped days, as local midnights (whole seconds). Anything else drops.
+  const isDay = (n: unknown): n is number => typeof n === 'number' && Number.isInteger(n) && n > 0
+  if (isDay(v.until)) out.until = v.until
+  if (Array.isArray(v.except)) {
+    const ex = [...new Set(v.except.filter(isDay))].sort((a, b) => a - b).slice(-60)
+    if (ex.length) out.except = ex
+  }
   return out
 }
 
@@ -62,6 +75,9 @@ export function normalizeRecur(input: unknown): Recur | null {
 export function occurrenceOn(day: number, anchorAt: number, r: Recur): number | null {
   const anchorDay = localDayStart(new Date(anchorAt * 1000))
   if (day < anchorDay) return null
+  // Past the series' last day, or a day it skips (review #31): no occurrence.
+  if (r.until != null && day > r.until) return null
+  if (r.except?.includes(day)) return null
   const interval = Math.max(1, r.interval ?? 1)
   const timeOffset = anchorAt - anchorDay // the anchor's WALL seconds past LOCAL midnight
 

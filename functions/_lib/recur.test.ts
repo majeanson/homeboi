@@ -270,3 +270,24 @@ describe('lastOccurrenceOnOrBefore', () => {
     expect(lastOccurrenceOnOrBefore(d(2026, 2, 14), SUN, r, FAR)).toBe(occurrenceOn(d(2026, 2, 8), SUN, r))
   })
 })
+
+// Review #31 (2026-11-17): « hockey ends in March, swimming runs ten weeks, and I can't
+// skip the week the kid is at the other house ».
+describe('a series can end, and skip a day', () => {
+  const r = { freq: 'weekly' as const, weekdays: [3], until: d(2026, 0, 21) }
+  it('runs up to and including its last day, then stops', () => {
+    expect(occurrenceOn(d(2026, 0, 21), WED, r)).not.toBeNull()
+    expect(occurrenceOn(d(2026, 0, 28), WED, r)).toBeNull()
+  })
+  it('skips an excepted day and keeps the rest', () => {
+    const skip = { freq: 'weekly' as const, weekdays: [3], except: [d(2026, 0, 14)] }
+    expect(occurrenceOn(d(2026, 0, 14), WED, skip)).toBeNull()
+    expect(occurrenceOn(d(2026, 0, 21), WED, skip)).not.toBeNull()
+  })
+  it('normalizeRecur keeps a real end day and skipped days, drops garbage', () => {
+    const n = normalizeRecur({ freq: 'weekly', weekdays: [3], until: d(2026, 2, 31), except: [d(2026, 0, 14), 'x', -3, d(2026, 0, 14)] })
+    expect(n?.until).toBe(d(2026, 2, 31))
+    expect(n?.except).toEqual([d(2026, 0, 14)])
+    expect(normalizeRecur({ freq: 'daily', until: 'soon' })?.until).toBeUndefined()
+  })
+})

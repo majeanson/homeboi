@@ -102,6 +102,7 @@ at all (❌).
 | Event · open | ✅ tap | — | ✅ `buildEvent` | — | search lands on the day page (`lib/searchLanding`) | — | ✅ |
 | Event · edit / share | — | — | ✅ Modifier primaryᴳ / Partagerᴼ | — | board▸events (settings) | — | ✅ |
 | Event · delete | — | — | ✅ peek **visible danger button**ᴳ (out of the ⋯ since 2026-09-16¹²); also under the day page's inline edit form (« Supprimer le rendez-vous ») | — | — | confirm¹ | ✅ |
+| Event · skip one occurrence (« Pas cette fois », review #31) | — | — | ✅ peek ⋯ menuitem on a recurring occurrenceᴳ — the day joins the rule's `except` (PATCH `{ skipDay }`); the series' end is the form's « Jusqu'au » | — | — | confirm (says the rest stays) | ✅ |
 | Event · create | — | — | — | ✅ ＋ `event`; day-page `SectionAdd` | — | — | ✅ |
 | Fête / announce · open | ❌ static `Act`, no `onOpen` (Board.tsx:591) | — | ❌² | — | — | — | ✅ |
 | **Tâche** · create (phase 4: ONE form, 2026-11-08) | — | — | — | ✅ ＋ `todo` (« Tâches »: the one form in the sheet, a title then folded layers; it replaced the `todo` composer AND the `chores-pick` sub-choice, a type picker — `?plus=chores-pick` resolves to it, `LEGACY_MODES`) · the card's / the view's / a subject's `SectionAdd` field (a title is a to-do) · the Tâches view's « Tâche détaillée » button (its action row, under the quick add) → `/chore/new` · the day page's `SectionAdd` · a carnet's Entretien ＋ → `/home-project/new?kind=upkeep&carnet=` | — | create: « Annuler » (`useCreateWithUndo`) | ✅ |

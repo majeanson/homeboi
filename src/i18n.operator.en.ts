@@ -333,6 +333,9 @@ export const EN_OPERATOR: typeof FR_OPERATOR = {
   // The « Repeat » + « Show from » fold: two settings that sit at their default on
   // nearly every rendez-vous.
   eventWhenMore: 'Repeat, show ahead',
+  eventRecurUntil: 'Until',
+  eventSkip: 'Not this time',
+  eventSkipConfirm: 'Remove this date from the series? Every other time stays on the calendar.',
   eventBring: 'What to bring',
   // Inline bring-list builder in the event form's bring section.
   bringAddItem: 'Add an item…',

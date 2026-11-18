@@ -42,3 +42,11 @@ export function memberFaces(ids: string[], members: Member[]): Face[] {
     .filter((m): m is Member => !!m)
     .map((m) => ({ kind: m.avatar_kind, photo: m.avatar_ref, colour: m.colour, name: m.display_name }))
 }
+
+// The FACE roster: the members plus the household's animals in the same shape (review #31:
+// « Jules can't be the subject of a rendez-vous »). For drawing who a rendez-vous is FOR
+// and looking a face up by id — never for the lens, the switcher or a chore's turn, which
+// stay members-only. Absent pets (an old payload) read as none.
+export function faceRoster<M extends { id: string }>(members: readonly M[], pets?: readonly M[] | null): M[] {
+  return pets?.length ? [...members, ...pets] : [...members]
+}

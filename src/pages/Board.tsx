@@ -102,6 +102,7 @@ function warmCalendars() {
 }
 import { nameOf, colorOf, type EventRow, type MealRow, type WorkRow } from '../components/board/types'
 import { eventMembers, memberFaces } from '../lib/eventPeople'
+import { useFaceRoster } from '../lib/petFaces'
 import { SimpleBoard } from '../components/board/SimpleBoard'
 import { ToddlerBoard } from '../components/board/ToddlerBoard'
 import { CountdownCard } from '../components/board/CountdownCard'
@@ -443,13 +444,15 @@ export function Board() {
     if (profileId && data?.members && !data.members.some((m) => m.id === profileId)) setMemberId(null)
   }, [data?.members, profileId, setMemberId])
 
-  const memberName = (id: string | null) => nameOf(data?.members ?? [], id)
-  const memberColor = (id: string | null) => colorOf(data?.members ?? [], id)
+  // Faces include the animals (review #31) — ids never collide, so a lookup by id is safe.
+  const faces = useFaceRoster(data?.members ?? [], [...(data?.today ?? []), ...(data?.tomorrow ?? []), ...(data?.upcoming ?? [])])
+  const memberName = (id: string | null) => nameOf(faces, id)
+  const memberColor = (id: string | null) => colorOf(faces, id)
   // « Qui » — the faces of everyone an event concerns, for the row's face stack. Only
   // when SEVERAL share it (a solo rendez-vous keeps its plain `who` name — calm, the
   // board stays quiet); the peek always lists them all.
   const eventFaces = (e: EventRow) => {
-    const f = memberFaces(eventMembers(e), data?.members ?? [])
+    const f = memberFaces(eventMembers(e), faces)
     return f.length > 1 ? f : undefined
   }
   const slotLabel = (slot: string) => slotLabelFor(slot, t)
@@ -556,7 +559,7 @@ export function Board() {
   // BOTH must sit ABOVE the early returns below: `useOpenMeal` is a hook, and the
   // unauth / simple / toddler paths bail out before the rest of the render — calling
   // it after them changes Board's hook count between renders (Rules of Hooks).
-  const detailCtx: DetailCtx = { t, lang, members: data?.members ?? [], recipeFor }
+  const detailCtx: DetailCtx = { t, lang, members: faces, recipeFor }
   // A tapped meal → its recipe view when it has one, else the plan peek.
   const openMeal = useOpenMeal(detailCtx)
 
@@ -772,14 +775,14 @@ export function Board() {
       cat={e.birthday ? 'birthday' : 'event'}
       title={e.title}
       when={eventWhen(e)}
-      who={memberName(e.member_id) ?? undefined}
+      who={memberName(eventMembers(e)[0] ?? null) ?? undefined}
       whoFaces={eventFaces(e)}
       // 🚗 when this rendez-vous takes the shared car — the same cue a work window
       // that holds it gets (workAct below), so "the car is spoken for" reads the same
       // wherever it appears. Until now the agenda could not tell a plain rendez-vous
       // from one that ties up the vehicle; only « L'auto » knew.
       icon={e.car_id ? 'car-bold' : giftIcon(e)}
-      color={memberColor(e.member_id) ?? undefined}
+      color={memberColor(eventMembers(e)[0] ?? null) ?? undefined}
       mine={!!profileId && eventMembers(e).includes(profileId)}
       soon={e.soon}
       // A TIMED rendez-vous crosses out once its time has passed (the same line-crossed

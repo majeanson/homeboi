@@ -13,7 +13,16 @@ export function recurOf(json?: string | null): RecurValue | null {
       const weekdays = Array.isArray(v.weekdays)
         ? v.weekdays.filter((d) => Number.isInteger(d) && d >= 0 && d <= 6)
         : []
-      return { freq: v.freq, interval: v.interval ?? 1, weekdays }
+      // until / except ride along untouched (review #31): an edit that rebuilt the rule
+      // from three fields would silently erase a series' end and its skipped days.
+      const day = (n: unknown): n is number => typeof n === 'number' && Number.isInteger(n) && n > 0
+      return {
+        freq: v.freq,
+        interval: v.interval ?? 1,
+        weekdays,
+        ...(day(v.until) ? { until: v.until } : {}),
+        ...(Array.isArray(v.except) && v.except.some(day) ? { except: v.except.filter(day) } : {}),
+      }
     }
   } catch {
     /* malformed → no rule */

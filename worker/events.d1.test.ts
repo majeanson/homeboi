@@ -156,4 +156,35 @@ describe('les rendez-vous', () => {
     const raw = await (await s.fetch('/api/board')).text()
     expect(raw).toContain('Répétition')
   })
+
+  // Review #31 (2026-11-17): « hockey ends in March, swimming runs ten weeks, and I can't
+  // skip the week the kid is at the other house » — and « Jules can't be the subject ».
+  it('a series ends on its last day, and one occurrence can be skipped without the rest', async () => {
+    const s = await household('events-until-skip', undefined, { empty: true })
+    const from = addLocalDays(localDayStart(new Date()), 1)
+    const to = addLocalDays(from, 35)
+    const soccer = (await add(s, { title: 'Soccer', startAt: from + 18 * 3600, recur: { freq: 'weekly', until: addLocalDays(from, 21) } })).id
+    const swim = (await add(s, { title: 'Natation', startAt: from + 17 * 3600, recur: { freq: 'weekly' } })).id
+    const titles = async () => (await okJson<{ events: { title: string }[] }>(s.fetch(`/api/month?from=${from}&to=${to}`))).events.map((e) => e.title)
+    expect((await titles()).filter((t) => t === 'Soccer'), 'four Saturdays to the last day, none after').toHaveLength(4)
+
+    await okJson(edit(s, { id: swim, skipDay: addLocalDays(from, 7) }))
+    expect((await titles()).filter((t) => t === 'Natation'), 'five weeks, one skipped').toHaveLength(4)
+    expect(JSON.parse((await byId(s, swim))?.recur_json ?? '{}').except).toEqual([addLocalDays(from, 7)])
+    expect(JSON.parse((await byId(s, soccer))?.recur_json ?? '{}').until, 'the end day is stored').toBe(addLocalDays(from, 21))
+
+    expect((await edit(s, { id: (await add(s, { title: 'Une fois' })).id, skipDay: from })).status, 'a one-off has no series to skip').toBe(404)
+    expect((await edit(s, { id: swim, skipDay: 'mardi' })).status).toBe(400)
+  })
+
+  it('an animal can be FOR a rendez-vous: it rides in « Qui », never as the member primary', async () => {
+    const s = await household('events-pet', undefined, { empty: true })
+    const jules = (await okJson<{ id: string }>(s.fetch('/api/pets', { method: 'POST', body: { name: 'Jules' } }))).id
+    const { id } = await add(s, { title: 'Vétérinaire', startAt: inDays(0, 23), passengers: [jules], memberId: null })
+    expect(await byId(s, id)).toMatchObject({ passengers: JSON.stringify([jules]), member_id: null })
+    const month = await okJson<{ events: { title: string; passengers: string | null }[] }>(
+      s.fetch(`/api/month?from=${localDayStart(new Date())}&to=${addLocalDays(localDayStart(new Date()), 1)}`),
+    )
+    expect(month.events.find((e) => e.title === 'Vétérinaire')?.passengers, 'the calendar carries who it is for').toBe(JSON.stringify([jules]))
+  })
 })

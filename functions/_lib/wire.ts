@@ -815,7 +815,7 @@ export interface TransfersWire {
     id: string
     title: string
     amountCents: number | null
-    recur: { freq: string; interval?: number; weekdays?: number[] } | null
+    recur: { freq: string; interval?: number; weekdays?: number[]; until?: number; except?: number[] } | null
     anchorAt: number
     shares: Record<string, number>
     catchup: { behindMemberId: string; gapCents: number; asOf: number; termEnd: number } | null

@@ -10,7 +10,8 @@ import { api } from '../../lib/api'
 import { live } from '../../lib/query'
 import { CERCLE_KEY, BUSINESSES_KEY, MONTH_KEY, TODO_TEMPLATES_KEY, EVENTS_KEY, BOARD_KEY, CAR_KEY } from '../../lib/queryKeys'
 import { type TemplatesData } from '../../lib/todos'
-import { fullName, type Contact, type ContactLink } from '../../lib/cercle'
+import { fullName, type Contact, type ContactLink, type Pet } from '../../lib/cercle'
+import { petFace } from '../../lib/petFaces'
 import { type Business } from '../../lib/businesses'
 import { RecurPicker, type RecurValue } from '../RecurPicker'
 import { LeadPicker } from '../LeadPicker'
@@ -136,7 +137,7 @@ export function EventForm({
   )
   const { data: cercle } = useQuery({
     queryKey: CERCLE_KEY,
-    queryFn: () => api<{ contacts: Contact[]; links: ContactLink[] }>('cercle'),
+    queryFn: () => api<{ contacts: Contact[]; links: ContactLink[]; pets?: Pet[] }>('cercle'),
     ...live,
   })
   const { data: bizData } = useQuery({
@@ -145,6 +146,9 @@ export function EventForm({
     ...live,
   })
   const contacts = cercle?.contacts ?? []
+  // « Pour qui ? » offers the household's animals after its people (review #31: the vet,
+  // the groomer, the vaccines are FOR Jules), in the picker's face shape.
+  const petFaces: FormMember[] = (cercle?.pets ?? []).map(petFace)
   const businesses = bizData?.businesses ?? []
   // A new « Activité » defaults to a weekly recurrence (a soccer-every-Tuesday rhythm)
   // so the operator usually just confirms it.
@@ -236,7 +240,9 @@ export function EventForm({
       // denormalized primary (people[0]) for the car holder + legacy single-face
       // reads. « Avec » (contact/business) is independent; only business vs contact
       // are mutually exclusive (the server keeps that one external answer).
-      memberId: people[0] ?? null,
+      // The first MEMBER in « Qui »: an animal (review #31) is FOR the rendez-vous but never
+      // holds the car or a face's lens, so it rides in passengers only.
+      memberId: people.find((id) => members.some((m) => m.id === id)) ?? null,
       contactId: businessId ? null : contactId,
       businessId,
       recur,
@@ -309,7 +315,7 @@ export function EventForm({
         <>
           <p className="mono event-transport__label">{o18n.eventPeople}</p>
           <MemberPicker
-            faces={members.map(toFace)}
+            faces={[...members, ...petFaces].map(toFace)}
             values={people}
             onToggle={togglePerson}
             ariaLabel={o18n.eventPeople}
@@ -383,7 +389,7 @@ export function EventForm({
         defaultOpen={recur != null || lead != null}
         className="event-when"
       >
-        <RecurPicker value={recur} onChange={setRecur} />
+        <RecurPicker value={recur} onChange={setRecur} endLabel={o18n.eventRecurUntil} />
         <LeadPicker value={lead} onChange={setLead} />
       </Disclosure>
       {/* The event form is ONE form: a plain rendez-vous up top, then three OPTIONAL
