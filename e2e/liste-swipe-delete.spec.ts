@@ -13,10 +13,9 @@ import { settled } from './measure'
 // the row (like the server), and THIS spec holds the whole visible contract:
 //
 //   swipe → the row hides at once + the undo toast offers « Annuler »
-//         → the held DELETE fires after the undo window, carrying the row's id AND
-//           its text + the gesture's asOf (what lets the server heal a stale id —
-//           the production failure was a frame whose ids the database no longer had,
-//           and a delete by id alone then removed nothing while answering ok)
+//         → the held DELETE fires after the undo window, carrying the row's id alone
+//           (its real id, minted on the device since review #39; a delete that
+//           matches nothing is a 404, never the « ok » that once hid six lost deletes)
 //         → the next refetched frame does not resurrect the row.
 //
 // Raw TouchEvents, like pull-to-refresh.spec.ts: Playwright's touchscreen only
@@ -81,12 +80,10 @@ test.describe('swipe-delete on La liste', () => {
       expect(page.locator('.undo-toast')).toBeVisible(),
     ])
 
-    // The write carries the id AND the stale-frame lifeline: the line's text + the
-    // gesture's time, so the server can delete the same ITEM when the id is one the
-    // database no longer has (functions/api/list.ts onRequestDelete, 2026-10-06).
+    // The write names the row by its id and nothing else (review #39): the id is the row's real
+    // one even for a line added a moment ago (lib/rowId), so there is no text-matched « heal ».
     const body = JSON.parse(req.postData() || '{}')
-    expect(body).toMatchObject({ id: 'l2', text: 'Pain' })
-    expect(typeof body.asOf, 'asOf = the gesture’s epoch seconds').toBe('number')
+    expect(body).toEqual({ id: 'l2' })
 
     // The resurrection check: a frame fetched AFTER the delete landed must not
     // repaint the row (the deferred removal un-hides once the scope is fresh — if
@@ -115,10 +112,9 @@ test.describe('swipe-delete on La liste', () => {
     await expect(page.locator(ROW)).toBeVisible()
   })
 
-  // « Vider les cochés » is the batch twin: same stale-id hole, same guard. The request must
-  // carry the ticked lines' NAMES and the gesture's time (what lets the server stand a
-  // same-named line in for an id it never had), and the cleared line must stay gone past the
-  // refetch — the mock now removes it like the server does.
+  // « Vider les cochés » is the batch twin. The request names exactly the lines ticked at the
+  // gesture (a tick made after the undo toast is not swept up), and the cleared line must stay
+  // gone past the refetch — the mock removes it like the server does.
   test('« Vider les cochés » names what it clears and the line stays gone past the refetch', async ({ page }) => {
     await expect(page.locator(ROW)).toBeVisible()
     await page.locator(ROW + ' .list-row__toggle').click()
@@ -132,8 +128,7 @@ test.describe('swipe-delete on La liste', () => {
       expect(page.locator(ROW)).toBeHidden(),
     ])
     const body = JSON.parse(req.postData() || '{}')
-    expect(body).toMatchObject({ clearChecked: true, ids: ['l2'], items: [{ id: 'l2', text: 'Pain' }] })
-    expect(typeof body.asOf, 'asOf = the gesture’s epoch seconds').toBe('number')
+    expect(body).toEqual({ clearChecked: true, ids: ['l2'] })
 
     await page.waitForResponse((r) => r.url().includes('/api/board') && r.request().method() === 'GET', { timeout: 20_000 })
     await settled(page)
