@@ -8,6 +8,8 @@ import { EditField } from '../EditField'
 import { useMemoAttach } from '../MemoAttach'
 import { useVoiceInput } from '../../lib/useVoiceInput'
 
+/* oxlint-disable jsx-a11y/no-autofocus -- a primitive forwarding its caller’s choice, the caller is what matters (NOT passed by the hold-＋ sheet) (the keyboard opens on a tap, never on its own) */
+
 // The ONE quick « note rapide » composer for family_notes — one line to write, a mic,
 // and the 📎 to clip a voice memo / drawing / photo onto it, in ONE write. Two call
 // sites share it: the board's « Notes (cercle) » card (its header ＋, `lean`) and the

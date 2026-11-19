@@ -2,6 +2,8 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { useT } from '../i18n'
 import { Icon, InlineIcon } from './Icon'
 
+/* oxlint-disable jsx-a11y/no-autofocus -- a primitive forwarding its caller’s choice, the caller is what matters (the collapsed magnifier’s own tap) (the keyboard opens on a tap, never on its own) */
+
 // SearchField — THE in-page search box: a magnifier glyph, the field itself, and a
 // trailing ✕. One component so the hand-rolled "magnifier + input + clear" rows
 // (the cercle notes search, the recipe book) stop drifting apart.

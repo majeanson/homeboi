@@ -13,6 +13,8 @@ import { InlineIcon } from '../Icon'
 import { RowActions } from '../RowActions'
 import { MEAL_SLOTS, tripDays, useVoyageApi, type MealSlot, type SharedTripClaim } from './voyage'
 
+/* oxlint-disable jsx-a11y/no-autofocus -- revealed in place by the tap that asked to type: a gear row’s or a meal’s edit (the keyboard opens on a tap, never on its own) */
+
 // « Voyage partagé » → « Qui apporte quoi » (Bagages) + « Qui cuisine » (Repas), migration
 // 0154. Both are ONE gesture: a row of the WHOLE trip that one household takes on — the
 // camping weekend's tent-cuisine, stove and coolers; Saturday's supper. Unlike a bag

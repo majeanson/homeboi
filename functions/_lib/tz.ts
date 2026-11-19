@@ -70,6 +70,7 @@ export function currentHousehold(): { householdId: string } | null {
 export function isValidTz(tz: unknown): tz is string {
   if (typeof tz !== 'string' || !tz || tz.length > 64) return false
   try {
+    // oxlint-disable-next-line babillard/no-intl-construction -- isValidTz is a one-shot probe on write, deliberately uncached, never in a loop
     new Intl.DateTimeFormat('en-US', { timeZone: tz })
     return true
   } catch {

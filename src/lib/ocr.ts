@@ -79,6 +79,7 @@ function getWorker(onProgress?: (fraction: number) => void): Promise<Worker | nu
         const worker = await Promise.race([creating, expired]).finally(() => clearTimeout(timer))
         if (!worker) {
           // Stalled download: free the worker if it ever lands, retry next read.
+          // oxlint-disable-next-line babillard/no-anonymous-catch -- terminating a tesseract worker is best-effort cleanup
           creating.then((w) => void w?.terminate()).catch(() => {})
           if (workerPromise === p) workerPromise = null
           return null

@@ -9,6 +9,8 @@ import { CheckRow } from '../CheckRow'
 import { Avatar } from '../Avatar'
 import { useVoyageApi, type SharedPackingItem, type SharedTrip } from './voyage'
 
+/* oxlint-disable jsx-a11y/no-autofocus -- revealed in place by the tap that asked to type (the keyboard opens on a tap, never on its own) */
+
 // « Voyage partagé » → Bagages — the shared-trip sibling of PackingList. Bags are
 // scoped by HOUSEHOLD, not member (product decision): each household edits its OWN
 // bag(s); every other household's bags show READ-ONLY. Sections are grouped by

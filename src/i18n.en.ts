@@ -2634,7 +2634,7 @@ export const EN: typeof FR = {
     subjectKinds: { carnet: 'Notebook', person: 'Person', pet: 'Pet', project: 'Project', trip: 'Trip' },
     lensLabel: 'Look by',
     lens: { horizon: 'When', sujet: 'Subject', qui: 'Person' },
-    horizons: { late: 'Not done yet', today: 'Today', week: 'This week', month: 'This month', later: 'Later', someday: 'Someday' },
+    horizons: { late: 'Not done yet', today: 'Today', tomorrow: 'Tomorrow', week: 'This week', month: 'This month', later: 'Later', someday: 'Someday' },
     subjectLabel: 'About what?',
     noSubject: 'No subject',
     allSubjects: 'All subjects',

@@ -167,6 +167,8 @@ import { Cluster } from '../components/Layout'
 import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
 import { BOARD_HELP } from '../lib/boardHelp'
 
+/* oxlint-disable jsx-a11y/no-autofocus -- revealed in place by the tap that asked to type: the task card’s SectionAdd ＋ (the keyboard opens on a tap, never on its own) */
+
 // The shared past/now rule lives in lib/itemLife (mealSlotPast / isPastSec / useNow), so
 // every timed board item — meals, rendez-vous, work — crosses out by ONE rule on ONE
 // clock. A meal's threshold comes from the household's serve hours (Réglages ▸ Repas).
@@ -431,7 +433,7 @@ export function Board() {
     queryFn: () => api<TodosData>(todosPath(tomorrowTodoDay)),
     ...live,
   })
-  // Tomorrow's departure checklists only: a to-do dated tomorrow is a task, on « À venir ».
+  // Tomorrow's departure checklists only: a to-do dated tomorrow is a task, on the same card through `model.tomorrow.tasks`.
   const tomorrowChecklists = splitTodos(tomorrowTodosData?.todos ?? []).checklists.flatMap((g) => g.todos)
   const tomorrowTodoCount = tomorrowChecklists.length
 
@@ -527,6 +529,8 @@ export function Board() {
   const todayEvents = model.today.events
 
   const tomorrowEvents = model.tomorrow.events
+  // Tasks whose next date is tomorrow: on « Demain », not « À venir » (the events' split).
+  const tomorrowTasks = taskActions.visible(model.tomorrow.tasks)
   const upcomingEvents = model.upcoming.events
   // Rows whose removal is still settling drop out here (and on every other surface in
   // the scope) until a fresh frame proves the DELETE landed.
@@ -834,7 +838,8 @@ export function Board() {
   }
   // What's coming later this week, on « À venir »: a look ahead, so these rows carry their
   // day and no check. What is due now lives on the merged « Tâches » card.
-    const upcomingAct = (c: TaskItem) => {
+    // On « Demain » (`onTomorrow`) the card already says the day, so the row drops it.
+  const upcomingAct = (c: TaskItem, onTomorrow = false) => {
     const at = c.day ?? todayLocalDay()
     // A carnet-scoped task wears its thing's emoji so « Le chauffe-eau · filtre » reads at a glance.
     const carnet = c.subject?.kind === 'carnet' ? carnetById.get(c.subject.id) : undefined
@@ -844,7 +849,7 @@ export function Board() {
         key={c.key}
         cat="chore"
         title={carnet ? `${carnetEmoji(carnet)} ${c.title}` : c.title}
-        when={withRel(formatDayMaybeYear(at, lang), at)}
+        when={onTomorrow ? undefined : withRel(formatDayMaybeYear(at, lang), at)}
         who={who ?? undefined}
         color={c.color ?? undefined}
         mine={!!profileId && c.who_id === profileId}
@@ -1276,6 +1281,7 @@ export function Board() {
     ...(showTomorrowSupper && data.tomorrowMeal ? [{ label: data.tomorrowMeal.title }] : []),
     ...otherTomorrowMeals.map((m) => ({ label: m.title })),
     ...tomorrowEvents.map((e) => ({ lead: e.all_day ? undefined : formatTime(e.start_at, lang), label: e.title })),
+    ...tomorrowTasks.map((c) => ({ label: c.title })),
     ...tomorrowChecklists.map((td) => ({ label: td.title })),
     ...(model.tomorrowSchoolKind
       ? [{ label: model.tomorrowSchoolKind === 'school' ? t.board.tomorrowSchool : t.board.tomorrowConge }]
@@ -1307,8 +1313,8 @@ export function Board() {
       compactHint={
         showTomorrowSupper && data.tomorrowMeal
           ? data.tomorrowMeal.title
-          : otherTomorrowMeals.length + tomorrowEvents.length + tomorrowTodoCount > 0
-            ? String(otherTomorrowMeals.length + tomorrowEvents.length + tomorrowTodoCount)
+          : otherTomorrowMeals.length + tomorrowEvents.length + tomorrowTasks.length + tomorrowTodoCount > 0
+            ? String(otherTomorrowMeals.length + tomorrowEvents.length + tomorrowTasks.length + tomorrowTodoCount)
             : // Nothing to count and nothing to name — say so plainly rather than leave the
               // body blank (the hint only renders when there is no row at all).
               t.board.tomorrowClear
@@ -1397,6 +1403,7 @@ export function Board() {
         />
       ))}
       {tomorrowEvents.map(eventAct)}
+      {tomorrowTasks.map((c) => upcomingAct(c, true))}
       {/* Tomorrow's agglomerated to-dos — loose todos AND departure checklists
           pinned to tomorrow, each group under a collapsed Disclosure (foldAll +
           foldSections) so however long they get they never take the full view.
@@ -1408,7 +1415,7 @@ export function Board() {
         members={data.members}
         bento={false}
         hideWhenEmpty
-        // A to-do dated tomorrow is a task, listed once on « À venir »: here, the lists.
+        // A to-do dated tomorrow is a task, listed once just above: here, the lists.
         show="checklists"
         foldSections
         foldAll
@@ -1523,7 +1530,7 @@ export function Board() {
     ),
   )}
   {/* Every task coming up later this week, with its day. */}
-  {upcomingTasks.map(upcomingAct)}
+  {upcomingTasks.map((c) => upcomingAct(c))}
     </Section>
   ) : null
   // « Prochain voyage » — the next upcoming trip; hides itself when none.

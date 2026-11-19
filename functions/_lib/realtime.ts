@@ -264,7 +264,7 @@ const PATH_KEYS: Record<string, string[][]> = {
   // until 2026-09-23. It looks like one (it takes an image body) but it also INSERTS a
   // `photos` row, and the board's PhotoFrame card polls that list: a photo added on a
   // phone never reached the wall tablet until its next poll. Found by cross-checking
-  // every client `affectedKeys` against this map (usageRule's sibling, keysMirror).
+  // every client `affectedKeys` against this map (keysMirror.test.ts).
   photos: [['photos'], ['board']],
   // Le cercle → Business: the services directory has its own cache (BUSINESSES_KEY).
   businesses: [['businesses']],

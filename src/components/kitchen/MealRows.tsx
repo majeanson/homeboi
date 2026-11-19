@@ -8,6 +8,8 @@ import { EditField } from '../EditField'
 import { HeartButton } from '../HeartButton'
 import { type MealRow } from './types'
 
+/* oxlint-disable jsx-a11y/no-autofocus -- revealed in place by the tap that asked to type (the keyboard opens on a tap, never on its own) */
+
 // The planned meals in ONE slot (a slot is a list now — migration 0033). Each row
 // shows its title (tap the title body itself to rename it in place — no separate
 // ✏️), an optional recipe-link, ↑/↓ to reorder within the slot, and 🗑️ to remove

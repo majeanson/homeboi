@@ -3025,7 +3025,7 @@ export const FR = {
     subjectKinds: { carnet: 'Carnet', person: 'Personne', pet: 'Animal', project: 'Projet', trip: 'Voyage' },
     lensLabel: 'Regarder par',
     lens: { horizon: 'Quand', sujet: 'Sujet', qui: 'Personne' },
-    horizons: { late: 'Pas encore fait', today: 'Aujourd’hui', week: 'Cette semaine', month: 'Ce mois-ci', later: 'Plus tard', someday: 'Un jour' },
+    horizons: { late: 'Pas encore fait', today: 'Aujourd’hui', tomorrow: 'Demain', week: 'Cette semaine', month: 'Ce mois-ci', later: 'Plus tard', someday: 'Un jour' },
     subjectLabel: 'Sur quoi ?',
     noSubject: 'Sans sujet',
     allSubjects: 'Tous les sujets',

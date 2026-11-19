@@ -14,6 +14,7 @@ function fmt(key: string, lang: Lang, opts: Intl.DateTimeFormatOptions): Intl.Da
   const k = `${lang}:${key}`
   let f = fmtCache.get(k)
   if (!f) {
+    // oxlint-disable-next-line babillard/no-intl-construction -- a formatter home: fmtCache keeps one per (lang, shape)
     f = new Intl.DateTimeFormat(LOCALE[lang], opts)
     fmtCache.set(k, f)
   }
@@ -27,6 +28,7 @@ const fieldNames = new Map<Lang, Intl.DisplayNames | null>()
 export function clockFieldName(field: 'hour' | 'minute', lang: Lang): string {
   if (!fieldNames.has(lang)) {
     try {
+      // oxlint-disable-next-line babillard/no-intl-construction -- a formatter home: fmtCache keeps one per (lang, shape)
       fieldNames.set(lang, new Intl.DisplayNames(LOCALE[lang], { type: 'dateTimeField' }))
     } catch {
       fieldNames.set(lang, null) // an engine without dateTimeField names: the unit symbol below

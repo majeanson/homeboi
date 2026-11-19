@@ -28,6 +28,8 @@ import { Cluster } from '../Layout'
 import { EditField } from '../EditField'
 import { Icon } from '../Icon'
 
+/* oxlint-disable jsx-a11y/no-autofocus -- revealed in place by the tap that asked to type: « écrire le mien » (the keyboard opens on a tap, never on its own) */
+
 type DeckModule = typeof import('../../lib/defiDeck')
 
 // « Le défi du jour » — the ONE défi surface, mounted by both the board's

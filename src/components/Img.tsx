@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, type ImgHTMLAttributes, type Ref } from 'r
 // THE image element. Every picture the app shows — an R2 blob by its key
 // (`imgUrl`), a flyer clipping through `/api/flyer-img`, a store logo, a recipe
 // photo from the web, a data-URL — renders through here, and a build guard
-// (`src/lib/img-rule.test.ts`) fails a raw `<img>` anywhere else.
+// (`babillard/no-raw-img`, scripts/lint-rules.mjs) fails a raw `<img>` anywhere else.
 //
 // WHY (2026-10-30, the « clear » drawings): on the phone the board's « Dessins »
 // strip showed three tiles with nothing in them, and on another open the same
@@ -98,6 +98,7 @@ export function Img({ ref, src, onLoad, onError, ...rest }: Props) {
   }, [exhausted])
 
   return (
+    // oxlint-disable-next-line babillard/no-raw-img -- the primitive itself, the one img every other picture renders through
     <img
       key={attempt}
       {...rest}

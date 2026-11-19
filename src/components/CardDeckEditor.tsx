@@ -364,7 +364,6 @@ function ClipControl({
       stopStream()
       audioRef.current?.pause()
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   )
 

@@ -200,6 +200,7 @@ export async function putR2Blob(
   const key = `${prefix}_${newId()}${ext}`
   // Forced on store: a type off the allowlist (a server-fetched SVG, a copy of a blob
   // stored before the rule) goes in as an opaque download, never as a renderable page.
+  // oxlint-disable-next-line babillard/metered-door -- the low-level writer beside the metered uploadR2Media, the file this rule protects
   await bucket.put(key, buf, { httpMetadata: { contentType: safeMediaType(contentType) ?? 'application/octet-stream' } })
   await recordOwner(env, key, householdId)
   return key

@@ -10,7 +10,6 @@ import { importStage, useElapsed } from './importProgress'
 // (they are the copy's promise) and the clock behind them.
 
 declare global {
-  // eslint-disable-next-line no-var
   var IS_REACT_ACT_ENVIRONMENT: boolean
 }
 globalThis.IS_REACT_ACT_ENVIRONMENT = true

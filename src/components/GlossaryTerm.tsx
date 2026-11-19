@@ -86,7 +86,6 @@ export function GlossaryTermMark({ id, label }: { id: string; label: string }) {
   useLayoutEffect(() => {
     if (!open || !term) return
     place()
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- place reads refs only
   }, [open, term, lang])
 
   // A fixed layer anchored to a word must not outlive the word's position: once the page

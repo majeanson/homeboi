@@ -5,7 +5,7 @@ import { EmptyState } from '../EmptyState'
 import { LoadError } from '../LoadError'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
-import { useWrite } from '../../lib/write'
+import { useWrite, writeFailed } from '../../lib/write'
 import { useProfile } from '../../lib/profile'
 import { useUndoToast } from '../../lib/toast'
 import { isGuest } from '../../lib/device'
@@ -340,11 +340,10 @@ export function MonthView({
           return n
         }),
       onCommit: async () => {
-        await write('todos', { method: 'PATCH', body: { id: td.id, done: true }, affectedKeys: [TODOS_KEY, MONTH_KEY] }).catch(
-          () => {},
-        )
+        await write('todos', { method: 'PATCH', body: { id: td.id, done: true }, affectedKeys: [TODOS_KEY, MONTH_KEY] }).catch(writeFailed)
         // Wait for the month read to reflect the change before un-hiding, else the
         // stale cached frame (still holding the todo) flashes it back for a frame.
+        // oxlint-disable-next-line babillard/no-anonymous-catch -- a refetch read, and Query keeps its own error state
         await qc.refetchQueries({ queryKey: MONTH_KEY }).catch(() => {})
         setPendingTodo((s) => {
           const n = new Set(s)

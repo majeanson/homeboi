@@ -48,6 +48,8 @@ import { importStage, useElapsed, type ImportKind, type ImportStage } from '../l
 import { Img } from './Img'
 import { swapAt } from '../lib/reorder'
 
+/* oxlint-disable jsx-a11y/no-autofocus -- revealed in place by the tap that asked to type: a step tapped to edit (the form itself does not focus) (the keyboard opens on a tap, never on its own) */
+
 // In the EDITOR a row is a section row as soon as it carries the "## " marker —
 // even with the title still empty ("## "), so typing the name doesn't flip the
 // row back to a plain line. (The stricter isSectionHeading needs a non-empty
@@ -592,9 +594,8 @@ export function RecipeForm({
           // text fine, and this keeps the upload under the endpoint's 6 MB cap.
           const img = await resizeImage(file, OCR_MAX)
           setReadProgress(i / files.length)
-          const r = await api<{ text: string; model?: string }>('recipe-ocr', { method: 'POST', body: img }).catch(
-            () => null,
-          )
+          // oxlint-disable-next-line babillard/no-anonymous-catch -- an OCR read, not a write: null falls back to on-device Tesseract
+          const r = await api<{ text: string; model?: string }>('recipe-ocr', { method: 'POST', body: img }).catch(() => null)
           if (r?.text) {
             texts.push(r.text)
             report.reader = 'cloud'
@@ -669,9 +670,8 @@ export function RecipeForm({
       const structureText = async (stitched: string): Promise<ReadDraft | null> => {
         // Longer than api()'s 20s default: structuring runs through an AI model and
         // can legitimately outrun that on a slow connection.
-        const d = await api<ReadDraft>('recipe-import', { method: 'POST', body: { text: stitched }, timeoutMs: 45_000 }).catch(
-          () => null,
-        )
+        // oxlint-disable-next-line babillard/no-anonymous-catch -- an AI structuring read, not a write: null keeps the raw text path
+        const d = await api<ReadDraft>('recipe-import', { method: 'POST', body: { text: stitched }, timeoutMs: 45_000 }).catch(() => null)
         if (d && draftHasContent(d)) {
           report.structuring = d.structuring ?? null
           report.structuringModel = d.model ?? null

@@ -17,6 +17,8 @@ import { StatusMessage } from '../StatusMessage'
 import { OperatorSection } from './OperatorSection'
 import { type Device } from './types'
 
+/* oxlint-disable jsx-a11y/no-autofocus -- revealed in place by the tap that asked to type: rename a device (the keyboard opens on a tap, never on its own) */
+
 export function ClaimTablet({ onClaimed }: { onClaimed: () => void }) {
   const t = useT()
   const [code, setCode] = useState('')

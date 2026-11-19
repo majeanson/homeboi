@@ -156,7 +156,7 @@ export function AskDialog({ aiEnabled = true, onClose }: { aiEnabled?: boolean; 
       ) : (
         // The capture spine, moved here whole: its own field + dictation mic, the
         // offline queue, the degraded type-picker and the calm compensating undo.
-        // No autoFocus — house rule: a SCREEN, sheet or dialog opening never summons the keyboard (autofocus.test.ts).
+        // No autoFocus — house rule: a SCREEN, sheet or dialog opening never summons the keyboard (jsx-a11y/no-autofocus).
         <CaptureForm />
       )}
     </Modal>

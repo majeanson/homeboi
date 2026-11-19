@@ -9,7 +9,7 @@ import { useProfile } from '../../lib/profile'
 import { TASKS_KEY } from '../../lib/queryKeys'
 import { subjectOf, type SubjectLookup, type SubjectRef } from '../../lib/subjects'
 import { useTabParam } from '../../lib/tabParam'
-import { FIND_WHEN, findable, groupTasks, horizonOf, HORIZONS, mineTask, NO_SUBJECT, NOBODY, personKey, subjectKey, type TaskGroup, type TaskItem } from '../../lib/tasks'
+import { FIND_WHEN, findable, groupTasks, horizonOf, HORIZONS, mineTask, whenOrder, NO_SUBJECT, NOBODY, personKey, subjectKey, type TaskGroup, type TaskItem } from '../../lib/tasks'
 import { loadStateOf } from '../Fallback'
 import { EmptyState } from '../EmptyState'
 import { Cluster } from '../Layout'
@@ -105,7 +105,7 @@ export function TasksView({ members, todayDay }: { members: Member[]; todayDay: 
 
   const groups: (TaskGroup<string> & { label: string })[] =
     lens === 'horizon'
-      ? groupTasks(shown, (x) => horizonOf(x, todayDay), HORIZONS).map((g) => ({ ...g, label: t.tasks.horizons[g.key] }))
+      ? groupTasks(whenOrder(shown), (x) => horizonOf(x, todayDay), HORIZONS).map((g) => ({ ...g, label: t.tasks.horizons[g.key] }))
       : lens === 'sujet'
         ? groupTasks(shown, subjectKey).map((g) => ({ ...g, label: nameOfSubject(g.key, g.tasks[0]!) }))
         : groupTasks(shown, personKey).map((g) => ({ ...g, label: nameOfPerson(g.key) }))

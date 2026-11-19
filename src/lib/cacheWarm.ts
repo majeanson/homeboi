@@ -21,6 +21,7 @@ export async function warmImageCache(
     while (next < queue.length) {
       const u = queue[next++]
       if (u === undefined) break
+      // oxlint-disable-next-line babillard/no-bare-fetch, babillard/no-anonymous-catch -- warms the service worker cache with image URLs (api() would parse the bytes as JSON), best-effort
       await fetch(u).catch(() => {})
       done++
       onTick?.(done)

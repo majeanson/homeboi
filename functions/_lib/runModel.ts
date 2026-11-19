@@ -11,7 +11,7 @@ import { charge } from './usage'
  * bound except thirteen copies of it, which is the fork shape this codebase keeps paying
  * for (see `write-owners.test.ts` for the same lesson about writes).
  *
- * `usageRule.test.ts` keeps it that way: a raw `env.AI.run(` anywhere under `functions/`
+ * the lint rule `babillard/metered-door` keeps it that way: a raw `env.AI.run(` anywhere under `functions/`
  * fails the build.
  *
  * WHAT IT DOES, and deliberately all it does:
@@ -51,5 +51,6 @@ export async function runModel(env: Env, model: string, input: unknown): Promise
   if (!verdict.allowed) throw new AiBudgetError(verdict.used, verdict.limit)
   // Callers reach here only when `env.AI` is wired — each checks its own binding first
   // and takes its degraded path when it is not (`_lib/env.ts`'s optional-binding rule).
+  // oxlint-disable-next-line babillard/metered-door -- the metered door itself, it charges the AI budget first
   return (env.AI as unknown as AiRunner).run(model, input)
 }

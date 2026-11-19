@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { addLocalDays, localDayStart } from './localDay'
-import { boardOrder, findable, groupTasks, horizonOf, HORIZONS, mineTask, personKey, rotates, subjectKey, type TaskItem } from './tasks'
+import { boardOrder, findable, whenOrder, groupTasks, horizonOf, HORIZONS, mineTask, personKey, rotates, subjectKey, type TaskItem } from './tasks'
 
 const today = localDayStart(new Date('2026-11-06T17:00:00Z'))
 const task = (over: Partial<TaskItem>): TaskItem => ({
@@ -33,6 +33,7 @@ describe('horizonOf', () => {
     ['late', { overdueSince: addLocalDays(today, -3), day: addLocalDays(today, 30) }],
     ['today', { dueToday: true, day: today }],
     ['today', { done: 'ticked' as const }],
+    ['tomorrow', { day: addLocalDays(today, 1) }],
     ['week', { day: addLocalDays(today, 3) }],
     ['month', { day: addLocalDays(today, 12) }],
     ['later', { day: addLocalDays(today, 200) }],
@@ -43,6 +44,19 @@ describe('horizonOf', () => {
 
   it('every bucket is a real horizon', () => {
     expect(HORIZONS).toContain(horizonOf(task({}), today))
+  })
+})
+
+describe('whenOrder', () => {
+  it('owed first (oldest debt on top), then by day, the undated last, ties in arrival order', () => {
+    const rows = [
+      task({ key: 'someday' }),
+      task({ key: 'tue', day: addLocalDays(today, 6) }),
+      task({ key: 'thu', day: addLocalDays(today, 1) }),
+      task({ key: 'owed', overdueSince: addLocalDays(today, -2), day: addLocalDays(today, 5) }),
+      task({ key: 'thu-2', day: addLocalDays(today, 1) }),
+    ]
+    expect(whenOrder(rows).map((t) => t.key)).toEqual(['owed', 'thu', 'thu-2', 'tue', 'someday'])
   })
 })
 
@@ -104,13 +118,14 @@ describe('findable — « Trouver quoi faire » (0149)', () => {
 
   it('the horizon: the week, the month that holds it, and « un jour » for the long run', () => {
     const late = task({ id: 'late', overdueSince: addLocalDays(today, -2), day: addLocalDays(today, -2) })
+    const tomorrow = task({ id: 'tomorrow', day: addLocalDays(today, 1) })
     const week = task({ id: 'week', day: addLocalDays(today, 3) })
     const month = task({ id: 'month', day: addLocalDays(today, 20) })
     const later = task({ id: 'later', day: addLocalDays(today, 120) })
     const someday = task({ id: 'someday' })
-    const all = [late, week, month, later, someday]
-    expect(ids(all.filter((x) => findable(x, null, 'semaine', today)))).toEqual(['late', 'week'])
-    expect(ids(all.filter((x) => findable(x, null, 'mois', today)))).toEqual(['late', 'week', 'month'])
+    const all = [late, tomorrow, week, month, later, someday]
+    expect(ids(all.filter((x) => findable(x, null, 'semaine', today)))).toEqual(['late', 'tomorrow', 'week'])
+    expect(ids(all.filter((x) => findable(x, null, 'mois', today)))).toEqual(['late', 'tomorrow', 'week', 'month'])
     expect(ids(all.filter((x) => findable(x, null, 'unjour', today)))).toEqual(['later', 'someday'])
     expect(ids(all.filter((x) => findable(x, null, null, today)))).toEqual(ids(all))
   })

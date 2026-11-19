@@ -7,6 +7,8 @@ import { useMemoAttach } from '../MemoAttach'
 import { DocUploadButton } from '../DocUploadButton'
 import { useVoyageApi, type TripCategory } from './voyage'
 
+/* oxlint-disable jsx-a11y/no-autofocus -- a primitive forwarding its caller’s choice, the caller is what matters (the keyboard opens on a tap, never on its own) */
+
 // The « Voyage » capture composer — the SAME "write it, clip something to it" field the
 // fridge + family notes use, bound to a fixed slot: a category, an optional itinerary
 // date, and an optional member ("kids/parents stuff"). ONE write through useWrite

@@ -348,6 +348,16 @@ describe('boardModel', () => {
       const model = buildBoardModel(baseInput({ data, profileId: 'alice' }))
       expect(model.upcoming.tasks.map((c) => c.id)).toEqual(['mine'])
     })
+    it('a task dated tomorrow is on « Demain », not « À venir », and opens the card on its own', () => {
+      const tomorrow = addLocalDays(localDayStart(new Date(NOW)), 1)
+      const data = mkData({
+        tasksAhead: [task({ id: 'drop', day: tomorrow, onBoard: false }), task({ id: 'later', day: addLocalDays(tomorrow, 3), onBoard: false })],
+      })
+      const model = buildBoardModel(baseInput({ data }))
+      expect(model.tomorrow.tasks.map((c) => c.id)).toEqual(['drop'])
+      expect(model.upcoming.tasks.map((c) => c.id)).toEqual(['later'])
+      expect(model.hasTomorrow).toBe(true)
+    })
   })
 
   describe('fêtes merge + sort', () => {

@@ -175,6 +175,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
         })
         // A chunk that cannot load (offline, a stale deploy) is a tour that does not
         // start — never an error on the screen the person is using.
+        // oxlint-disable-next-line babillard/no-anonymous-catch -- a tour chunk that cannot load (offline, stale deploy) is a tour that does not start
         .catch(() => {})
     },
     [startTour],
@@ -199,6 +200,7 @@ export function TourProvider({ children }: { children: ReactNode }) {
           })
           startTour(tour)
         })
+        // oxlint-disable-next-line babillard/no-anonymous-catch -- a tour chunk that cannot load (offline, stale deploy) is a tour that does not start
         .catch(() => {})
     },
     [startTour],

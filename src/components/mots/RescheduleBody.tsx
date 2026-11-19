@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useT } from '../../i18n'
-import { useWrite } from '../../lib/write'
+import { useWrite, writeFailed } from '../../lib/write'
 import { MOTS_KEY, BOARD_KEY } from '../../lib/queryKeys'
 import { type Mot } from '../../lib/mots'
 import { ScheduleFields, dateStr, hhmm } from './ScheduleFields'
@@ -18,9 +18,7 @@ export function RescheduleBody({ mot, onDone }: { mot: Mot; onDone: () => void }
   const at = date ? Math.floor(new Date(`${date}T${time || '00:00'}`).getTime() / 1000) : null
 
   const save = (surface_at: number | null) => {
-    void write('notes', { method: 'PATCH', body: { id: mot.id, surface_at }, affectedKeys: [MOTS_KEY, BOARD_KEY] }).catch(
-      () => {},
-    )
+    void write('notes', { method: 'PATCH', body: { id: mot.id, surface_at }, affectedKeys: [MOTS_KEY, BOARD_KEY] }).catch(writeFailed)
     onDone()
   }
 

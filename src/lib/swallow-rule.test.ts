@@ -9,10 +9,10 @@ import { join, relative } from 'node:path'
 // refusal reverted the optimistic row on the next refetch with not a word said. The fix
 // is structural, and this file holds it:
 //
-//  1. No anonymous swallow. A write's rejection goes to `writeFailed` (one calm notice),
-//     `wrote()` / `writeOrNull()` when a follow-up depends on the outcome. A bare
-//     `.catch(() => {})` / `() => null` is allowed only where it is NOT a server write,
-//     and the list below says why — it may fall, never rise.
+//  1. No anonymous swallow — the oxlint rule `babillard/no-anonymous-catch` now (review
+//     #41, scripts/lint-rules.mjs): on the AST it found five swallows this file's regex had
+//     missed, three of them real silent write failures. An exemption is an inline disable
+//     whose reason says why the call is not a server write.
 //  2. A deferred-removal commit must PROPAGATE. useDeferredRemoval reads a rejected commit
 //     as « the delete did not happen → show the row again » and a resolved one as « it
 //     landed → keep it hidden »; a `.catch` inside `.remove(...)` made every failed delete
@@ -38,72 +38,11 @@ function sources(): { rel: string; text: string }[] {
   return out
 }
 
-// What a swallow looks like, in any of its spellings.
-const SWALLOW = /\.catch\(\(\w*\)\s*=>\s*(\{\s*\}|undefined|null|void 0)\)/g
 const codeOnly = (text: string) =>
   text
     .split('\n')
     .filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l))
     .join('\n')
-
-// A swallow whose BODY holds a comment — `.catch(() => { /* why it is safe */ })` — is a
-// documented one, and is exactly the « good reason » case: the reason sits on the line that
-// needs it. Only an EMPTY body is anonymous. Comment lines that merely MENTION `.catch(` are
-// dropped so prose about the rule never counts as a violation of it.
-const swallowScan = (text: string) =>
-  text
-    .split('\n')
-    .filter((l) => !(/^\s*(\/\/|\*|\/\*)/.test(l) && l.includes('.catch(')))
-    .join('\n')
-
-// file → how many anonymous swallows it may keep, and WHY none of them is a server write.
-const ALLOWED: Record<string, { max: number; why: string }> = {
-  'src/components/DrawPad.tsx': { max: 1, why: 'navigator.share() — the user dismissing the share sheet rejects; not a write' },
-  'src/components/FlyerViewer.tsx': { max: 1, why: 'a flyer PREFETCH read; best-effort by design (its comment says so)' },
-  'src/components/board/MonthView.tsx': { max: 1, why: 'refetchQueries — Query keeps its own error state, a rejection adds nothing' },
-  'src/components/board/PhotoFrame.tsx': { max: 1, why: 'keep-to-gallery is local IndexedDB, not the server' },
-  'src/components/cercle/NoteEditor.tsx': { max: 1, why: 'deletes an ORPHANED upload blob on cancel — nothing the user asked for can fail' },
-  'src/components/operator/shopping.tsx': { max: 1, why: 'a READ (the household postal prefill)' },
-  'src/lib/cacheWarm.ts': { max: 1, why: 'warming the HTTP cache with fetch(); best-effort' },
-  'src/lib/cookTimers.ts': { max: 1, why: 'Web Audio resume(); autoplay policy may refuse, harmlessly' },
-  'src/lib/drawingGallery.ts': { max: 3, why: 'the gallery is local IndexedDB, not the server' },
-  'src/lib/install.ts': { max: 1, why: 'the PWA install prompt; the user dismissing it rejects' },
-  'src/lib/ocr.ts': { max: 1, why: 'terminating a tesseract worker; best-effort cleanup' },
-  'src/lib/personSheet.ts': { max: 1, why: 'a READ with a cached fallback' },
-  'src/lib/photoGallery.ts': { max: 1, why: 'the gallery is local IndexedDB, not the server' },
-  'src/lib/tour.tsx': { max: 2, why: 'a tour chunk that cannot load (offline / stale deploy) is a tour that does not start' },
-  'src/lib/useDeferredRemoval.ts': { max: 2, why: 'a REFETCH after the write; freshness is fenced by unhideWhenFresh instead' },
-  'src/lib/useWakeLock.ts': { max: 2, why: 'the Wake Lock API may be refused or already released' },
-  'src/main.tsx': { max: 2, why: 'navigator.storage.persist() and the first-paint snapshot restore; both best-effort' },
-  'src/pages/DrawingGalleryPage.tsx': { max: 3, why: 'the gallery is local IndexedDB, not the server' },
-  'src/pages/HandoffPage.tsx': { max: 1, why: 'clipboard.writeText(); the browser may refuse' },
-}
-
-describe('no anonymous swallow on a write', () => {
-  const found = sources()
-    .map(({ rel, text }) => ({ rel, n: (swallowScan(text).match(SWALLOW) ?? []).length }))
-    .filter((f) => f.n > 0)
-
-  it('every remaining swallow is on the allowlist, with its reason', () => {
-    const stray = found.filter((f) => !ALLOWED[f.rel]).map((f) => `${f.rel} (${f.n})`)
-    expect(
-      stray,
-      'A bare .catch(() => {}) swallows a server refusal and the optimistic row snaps back unexplained. ' +
-        'Use .catch(writeFailed) — or wrote() / writeOrNull() from lib/write when a follow-up depends on it. ' +
-        'If it truly is not a write, add the file to ALLOWED with the reason.',
-    ).toEqual([])
-  })
-
-  it('no file keeps more swallows than it was allowed (a ratchet: lower it, never raise it)', () => {
-    const over = found.filter((f) => ALLOWED[f.rel] && f.n > ALLOWED[f.rel]!.max).map((f) => `${f.rel}: ${f.n} > ${ALLOWED[f.rel]!.max}`)
-    expect(over).toEqual([])
-  })
-
-  it('the allowlist has no dead entries', () => {
-    const live = new Set(found.map((f) => f.rel))
-    expect(Object.keys(ALLOWED).filter((f) => !live.has(f))).toEqual([])
-  })
-})
 
 describe('a deferred-removal commit propagates its rejection', () => {
   it('no `.catch` inside any `<x>Removal.remove(...)` call', () => {

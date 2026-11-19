@@ -100,10 +100,14 @@ export interface BoardModel {
   }
   tomorrow: {
     events: EventRow[]
+    // The open tasks whose next date is TOMORROW — « Demain » holds them, the way it holds
+    // tomorrow's events, so they are not repeated on « À venir ».
+    tasks: TaskItem[]
   }
   upcoming: {
     events: EventRow[]
-    // Every open task whose next date falls this week (server `tasksAhead`), face-lensed.
+    // Every open task whose next date falls later this week (server `tasksAhead`; tomorrow's
+    // are on « Demain »), face-lensed.
     tasks: TaskItem[]
   }
   leftovers: BoardData['leftovers']
@@ -207,6 +211,11 @@ export function buildBoardModel(input: BoardModelInput): BoardModel {
   const boardTasks = boardOrder((data?.tasks ?? []).filter((t) => mineTask(t, profileId)).filter((t) => !pendingDone.has(t.id)))
   // « À venir »: the same lens over the server's one rule (open, next date this week).
   const aheadTasks = (data?.tasksAhead ?? []).filter((t) => mineTask(t, profileId)).filter((t) => !pendingDone.has(t.id))
+  // Tomorrow's go to « Demain », the way the server already splits tomorrow's events from
+  // the upcoming ones: one card per row, never both.
+  const isTomorrow = (t: TaskItem) => t.day != null && localDayStart(new Date(t.day * 1000)) === tomorrowDay
+  const tomorrowTasks = aheadTasks.filter(isTomorrow)
+  const laterTasks = aheadTasks.filter((t) => !isTomorrow(t))
 
   // D-21: a flagged task's "evening before" announce — DERIVED off its next occurrence
   // in `tasksAhead`, never a stored row (the fête pattern above).
@@ -336,14 +345,15 @@ export function buildBoardModel(input: BoardModelInput): BoardModel {
     !!tomorrowSupper ||
     otherTomorrow.length > 0 ||
     tomorrowEvents.length > 0 ||
+    tomorrowTasks.length > 0 ||
     tomorrowTodoCount > 0 ||
     tomorrowSchoolKind !== null
 
   return {
     tasks: boardTasks,
     today: { events: todayEvents, work: filWork },
-    tomorrow: { events: tomorrowEvents },
-    upcoming: { events: upcomingEvents, tasks: aheadTasks },
+    tomorrow: { events: tomorrowEvents, tasks: tomorrowTasks },
+    upcoming: { events: upcomingEvents, tasks: laterTasks },
     leftovers,
     meals: { hero, tonight, tonightAll, tomorrowSupper, otherToday, otherTomorrow },
     nextUp,

@@ -82,7 +82,7 @@ interchangeable. Read this table before opening any of them.
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md` is now
-> a number you can trust. It reads **3** — all of them `REVIEW-TRACKER.md`'s (the 7-persona
+> a number you can trust. It reads **2** — all of them `REVIEW-TRACKER.md`'s (the 7-persona
 > review of 2026-11-17; 0 before it). **Asserted from the boxes themselves** by
 > `src/lib/docCounts.test.ts`, so this sentence cannot drift the way `REVIEW-PASS.md`'s
 > banner once did — it claimed 15 for twelve days against a single box.
@@ -244,7 +244,7 @@ audio per call) accepted without limit. R2 is rented and the sweep reclaims it; 
 are burned. **Every** household is capped now, not only sandboxes — a runaway loop in a
 real household had no ceiling either (1 000 calls / 2 GB a day against 60 / 50 MB). R2
 already had its seam (`uploadR2Media`); AI got one (`_lib/runModel.ts`, 13 raw call sites
-converted), and `usageRule.test.ts` keeps both unavoidable. The counter is a single
+converted), and the lint rule `babillard/metered-door` keeps both unavoidable. The counter is a single
 atomic UPSERT — the naive read-then-write it replaced was planted and counted **1 of 20**
 concurrent charges.
 

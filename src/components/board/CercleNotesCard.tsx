@@ -17,6 +17,8 @@ import { useReportEmpty } from '../../lib/useReportEmpty'
 import { NotesList } from '../cercle/NotesList'
 import { NoteQuickAdd } from '../cercle/NoteQuickAdd'
 
+/* oxlint-disable jsx-a11y/no-autofocus -- revealed in place by the tap that asked to type: the card’s SectionAdd ＋ (the keyboard opens on a tap, never on its own) */
+
 // « Notes (cercle) » — the durable Les notes tab, brought to the board's Grille and
 // LENSED BY THE PICKED FACE (the « Aujourd'hui » MemberSwitcher): a face sees THEIR
 // personal notes + the Maisonnée ones; « Maisonnée » sees only the family-wide list —

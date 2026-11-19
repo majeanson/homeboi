@@ -17,7 +17,19 @@
   //     "correctness" category is not ours. Not loaded.
   //   • rules-of-hooks is OFF in e2e/ and *.test.ts: Playwright's `test.use(…)` and a test
   //     calling a hook through a fake are not components, and the rule cannot tell.
-  "plugins": ["react", "typescript", "oxc"],
+  //
+  // Review #41 (2026-11-18): the syntactic grep guards became AST rules. `babillard/*` is a
+  // local JS plugin (scripts/lint-rules.mjs — each rule's WHY is written there); an exemption
+  // is an inline `oxlint-disable-next-line … -- <reason>`, which lint-disable-rule.test.ts
+  // requires and `--report-unused-disable-directives` (package.json) fails once stale. Each
+  // rule runs on the trees its guard used to scan (the overrides below).
+  //
+  // jsx-a11y is loaded for ONE rule, `no-autofocus` (the keyboard opens on a tap, never on its
+  // own — 2026-09-24). Its other correctness rules that fire on today's code are OFF, not
+  // fixed: an accessibility change is shown to Marc before it is made (review 2026-11-17,
+  // « I'm picky »), and they are that review's to turn on.
+  "plugins": ["react", "typescript", "oxc", "jsx-a11y"],
+  "jsPlugins": ["./scripts/lint-rules.mjs"],
   "categories": {
     "correctness": "error"
   },
@@ -30,9 +42,46 @@
     "react/immutability": "off",
     "react/preserve-manual-memoization": "off",
     "react/use-memo": "off",
-    "react/static-components": "off"
+    "react/static-components": "off",
+    "jsx-a11y/prefer-tag-over-role": "off",
+    "jsx-a11y/no-static-element-interactions": "off",
+    "jsx-a11y/click-events-have-key-events": "off",
+    "jsx-a11y/interactive-supports-focus": "off",
+    "jsx-a11y/no-noninteractive-element-interactions": "off",
+    "jsx-a11y/no-noninteractive-element-to-interactive-role": "off",
+    "jsx-a11y/no-noninteractive-tabindex": "off",
+    "jsx-a11y/media-has-caption": "off",
+    "jsx-a11y/label-has-associated-control": "off",
+    "jsx-a11y/alt-text": "off",
+    "jsx-a11y/no-autofocus": "error",
+    "babillard/no-intl-construction": "error",
+    "babillard/no-raw-img": "error",
+    "babillard/no-bare-fetch": "off",
+    "babillard/no-anonymous-catch": "off",
+    "babillard/metered-door": "off"
   },
   "overrides": [
+    {
+      "files": ["src/**"],
+      "rules": { "babillard/no-bare-fetch": "error", "babillard/no-anonymous-catch": "error" }
+    },
+    {
+      "files": ["functions/**"],
+      "rules": { "babillard/metered-door": "error" }
+    },
+    {
+      // A test, an e2e spec or a CI script may spell a forbidden pattern as a fixture or
+      // drive a real browser; the rules police the shipped code.
+      "files": ["e2e/**", "scripts/**", "**/*.test.ts", "**/*.test.tsx", "**/*.test.mjs"],
+      "rules": {
+        "jsx-a11y/no-autofocus": "off",
+        "babillard/no-intl-construction": "off",
+        "babillard/no-raw-img": "off",
+        "babillard/no-bare-fetch": "off",
+        "babillard/no-anonymous-catch": "off",
+        "babillard/metered-door": "off"
+      }
+    },
     {
       "files": ["e2e/**", "**/*.test.ts", "**/*.test.tsx", "**/*.test.mjs"],
       "rules": { "react-hooks/rules-of-hooks": "off" }

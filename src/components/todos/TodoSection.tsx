@@ -34,6 +34,8 @@ import { EditField } from '../EditField'
 import { EntityCombobox } from '../EntityCombobox'
 import { templateOptions } from './comboOptions'
 
+/* oxlint-disable jsx-a11y/no-autofocus -- revealed in place by the tap that asked to type: the row edit, and the SectionAdd ＋ forwarded as addAutoFocus (the keyboard opens on a tap, never on its own) */
+
 interface FaceMember {
   id: string
   display_name: string

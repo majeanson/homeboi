@@ -144,7 +144,6 @@ export { guestKindAllows } from '../functions/_lib/guestScope'
 // each a Pages Function. We index them by name at dispatch time. `any` for the
 // params/data type args so every handler (incl. the [key] dynamic route) fits
 // the one index signature; index.ts hands them a real EventContext.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type RouteMod = Record<string, PagesFunction<Env, any, any> | undefined>
 
 // Keyed by the path AFTER "api/" (no leading slash, no query).

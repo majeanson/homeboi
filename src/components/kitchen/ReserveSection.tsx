@@ -15,6 +15,8 @@ import { usePantryAdvanced } from '../../lib/surfaceMode'
 import { BOARD_KEY, GHOSTS_KEY, HISTORY_KEY } from '../../lib/queryKeys'
 import { type ReserveRow, type ReserveData, RESERVE_KEY } from './types'
 
+/* oxlint-disable jsx-a11y/no-autofocus -- revealed in place by the tap that asked to type: the SectionAdd ＋ and a row’s edit (the keyboard opens on a tap, never on its own) */
+
 // La réserve: a reminder of items stashed in the freezer / back of the pantry so
 // the "behind everything" stuff stops getting forgotten. Items are GROUPED by a
 // storage location (the spots are custom & editable in Réglages ▸ Réserve).

@@ -77,6 +77,7 @@ export function useKeepPhotoInGalleryToast() {
         message: t.memo.savedToPhotos,
         onUndo: () => {
           onUndo?.()
+          // oxlint-disable-next-line babillard/no-anonymous-catch -- the gallery is local IndexedDB, not the server
           void remove(id).catch(() => {})
         },
       })

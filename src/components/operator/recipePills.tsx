@@ -31,6 +31,8 @@ import { RowActions } from '../RowActions'
 import { Chip } from '../Chip'
 import { OperatorSection } from './OperatorSection'
 
+/* oxlint-disable jsx-a11y/no-autofocus -- revealed in place by the tap that asked to type (the keyboard opens on a tap, never on its own) */
+
 // Réglages ▸ Recettes → the recipe-tab PILLS (migration 0045). One ordered list:
 // built-in pills (shown/hidden + reorder) plus operator-defined CUSTOM pills (a
 // label + colour + attribute rules). Drag the ⠿ grip to reorder; the eye toggles a

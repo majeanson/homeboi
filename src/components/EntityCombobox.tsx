@@ -11,6 +11,8 @@ import { Icon, InlineIcon, type IconName } from './Icon'
 import { StatusMessage } from './StatusMessage'
 import { VoiceButton, VoiceStatus } from './VoiceButton'
 
+/* oxlint-disable jsx-a11y/no-autofocus -- a primitive forwarding its caller’s choice, the caller is what matters (the keyboard opens on a tap, never on its own) */
+
 // The ONE "choose an existing thing, OR just type a new one" control. Across the
 // kitchen we used to split that flow in two: a free-text box on one side, and a
 // separate toggle that unfolded a search-list on the other ("Choisir une
@@ -412,7 +414,6 @@ export function EntityCombobox<T>({
     return revealOnOpen(listOpen ? menuRef.current : autoFocus ? inputRef.current : null)
     // `listOpen` flips as options filter; re-running is the point (the menu changes
     // height as you type, and a taller menu can push itself off screen again).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listOpen, autoFocus, disabled])
 
   if (hidden) return null

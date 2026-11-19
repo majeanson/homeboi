@@ -8,6 +8,8 @@ import { Reorder } from './Reorder'
 import { StatusMessage } from './StatusMessage'
 import { VoiceButton, VoiceStatus } from './VoiceButton'
 
+/* oxlint-disable jsx-a11y/no-autofocus -- a primitive forwarding its caller’s choice, the caller is what matters (the keyboard opens on a tap, never on its own) */
+
 // The ONE add/edit text box. Every "type something, then act on it" spot in the
 // app used to hand-roll an input + a clear ✕ + a mic + a submit + a cancel, each
 // with its own wrapper class — and on a phone they stacked into a tall column of

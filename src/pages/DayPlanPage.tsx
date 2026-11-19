@@ -68,6 +68,8 @@ import {
 } from '../components/kitchen/types'
 import { MONTH_KEY, BOARD_KEY, EVENTS_KEY, WEATHER_KEY, CAR_KEY } from '../lib/queryKeys'
 
+/* oxlint-disable jsx-a11y/no-autofocus -- revealed in place by the tap that asked to type: the day note’s edit, and the todo SectionAdd (the keyboard opens on a tap, never on its own) */
+
 // Intl lowercases the French weekday ("lundi 14 juin"); the scene title wants it
 // capitalized.
 
@@ -437,9 +439,8 @@ function DayPlanScene() {
   // first so Annuler can put them back (compensating undo).
   async function clearSlotMeals(d: number, slot: string) {
     const removed = days.filter((m) => m.date === d && m.slot === slot)
-    await write('meals', { method: 'POST', body: { action: 'clear', date: d, slot }, affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY, MONTH_KEY] }).catch(
-      () => {},
-    )
+    // Like clearDay below: « Annuler » only for a clear that landed (a refusal says so once).
+    if (!(await wrote(write('meals', { method: 'POST', body: { action: 'clear', date: d, slot }, affectedKeys: [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY, MONTH_KEY] })))) return
     if (removed.length) recordUndo({ message: t.undo.slotCleared, onUndo: () => restoreMeals(qc, removed) })
   }
   // Clearing the whole day empties the editor — leave the scene back to the grid.

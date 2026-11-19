@@ -21,6 +21,8 @@ import { EmptyState } from '../EmptyState'
 import { Modal } from '../Modal'
 import { swapAt } from '../../lib/reorder'
 
+/* oxlint-disable jsx-a11y/no-autofocus -- revealed in place by the tap that asked to type (the keyboard opens on a tap, never on its own) */
+
 // The body of ONE « liste à compléter » — rename, its ordered items (plain labels
 // and references to other lists), the two adders, and the « Voir la liste finale »
 // preview. It used to be inlined once per template inside Réglages ▸ Maison, so a

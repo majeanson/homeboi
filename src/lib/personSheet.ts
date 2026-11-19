@@ -29,6 +29,7 @@ export function useOpenPersonSheet() {
     // Prefer the cache (instant if Le cercle was visited); fall back to a fetch so
     // it works cold too. Either way we need the contacts to spot an existing link.
     const data =
+      // oxlint-disable-next-line babillard/no-anonymous-catch -- a READ with a cached fallback, not a write
       qc.getQueryData<CercleData>(CERCLE_KEY) ?? (await api<CercleData>('cercle').catch(() => null))
     const existing = data?.contacts.find((c) => c.memberId === member.id)
     if (existing) {

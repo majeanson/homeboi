@@ -9,6 +9,8 @@ import { EditField } from '../EditField'
 import { InlineIcon } from '../Icon'
 import { tripCategoryIcon, type TripNote } from './voyage'
 
+/* oxlint-disable jsx-a11y/no-autofocus -- revealed in place by the tap that asked to type (the keyboard opens on a tap, never on its own) */
+
 // One « Voyage » info/itinerary entry: an optional category glyph + label, the text,
 // and any attached media (a voice memo plays inline; a drawing/photo zooms). Mirrors
 // how a fridge/family note renders its media — text-only when there's no blob. The

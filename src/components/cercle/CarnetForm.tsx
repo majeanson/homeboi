@@ -125,7 +125,7 @@ export function CarnetForm({
 
   return (
     <form className="operator__inline-form" onSubmit={submit}>
-      {/* No autoFocus — house rule: a SCREEN, sheet or dialog opening never summons the keyboard (autofocus.test.ts): this form also opens to EDIT, and on a phone the keyboard would cover it before it is read. */}
+      {/* No autoFocus — house rule: a SCREEN, sheet or dialog opening never summons the keyboard (jsx-a11y/no-autofocus): this form also opens to EDIT, and on a phone the keyboard would cover it before it is read. */}
       <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder={c.namePh} aria-label={c.name} />
 
       <Field inline className="mono" label={c.kindLabel}>

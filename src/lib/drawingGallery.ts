@@ -87,6 +87,7 @@ export function useDeleteFromGallery() {
         qc.setQueryData<{ drawings: GalleryDrawing[] }>(GALLERY_KEY, (d) =>
           d ? { drawings: d.drawings.filter((g) => g.id !== id) } : d,
         ),
+    // oxlint-disable-next-line babillard/no-anonymous-catch -- the gallery is local IndexedDB, not the server
     }).catch(() => {})
   }
 }
@@ -146,6 +147,7 @@ export function useKeepInGalleryToast() {
   return async (png: Blob, scene = '', onUndo?: () => void): Promise<string | null> => {
     try {
       const id = await save(png, scene)
+      // oxlint-disable-next-line babillard/no-anonymous-catch -- the gallery is local IndexedDB, not the server
       record({ message: t.memo.savedToGallery, onUndo: () => { onUndo?.(); void remove(id).catch(() => {}) } })
       return id
     } catch {
@@ -163,6 +165,7 @@ export function useKeepKeysInGalleryToast() {
   return async (media_key: string, scene_key?: string | null, onUndo?: () => void): Promise<string | null> => {
     try {
       const id = await keep(media_key, scene_key)
+      // oxlint-disable-next-line babillard/no-anonymous-catch -- the gallery is local IndexedDB, not the server
       record({ message: t.memo.savedToGallery, onUndo: () => { onUndo?.(); void remove(id).catch(() => {}) } })
       return id
     } catch {

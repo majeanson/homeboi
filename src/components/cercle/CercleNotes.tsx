@@ -155,7 +155,6 @@ export function CercleNotes({
     if (!composeNonce || ro) return
     // Opening a dialog IS the effect here — the URL door (?add=1) is an external
     // event, not derived state, so there's nothing to compute during render instead.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     openNew()
   }, [composeNonce, ro])
 

@@ -29,6 +29,8 @@ import { RowActions } from '../RowActions'
 import { OperatorSection } from './OperatorSection'
 import { type Member } from './types'
 
+/* oxlint-disable jsx-a11y/no-autofocus -- revealed in place by the tap that asked to type (the keyboard opens on a tap, never on its own) */
+
 export function MembersSection({ members, onChange, help }: { members: Member[]; onChange: () => void; help?: HelpMode }) {
   const o18n = useOperatorT()
   const t = useT()

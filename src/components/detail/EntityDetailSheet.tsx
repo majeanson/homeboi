@@ -217,7 +217,7 @@ function Block({ block, onAction }: { block: DetailBlock; onAction: (a: DetailAc
     case 'image':
       return <ZoomableImg src={block.src} alt={block.alt ?? ''} className="detail-sheet__img" />
     case 'audio':
-      // eslint-disable-next-line jsx-a11y/media-has-caption -- a personal memo, no caption track
+      // No caption track: a personal voice memo (jsx-a11y/media-has-caption, off until the a11y review).
       return <audio className="detail-sheet__audio" controls src={block.src} />
     case 'togglechips':
       return <ToggleChips block={block} />

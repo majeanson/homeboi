@@ -282,6 +282,7 @@ export function HandoffPage() {
 export function WifiBlock({ ssid, password }: { ssid: string; password: string | null }) {
   const t = useT()
   const copy = () => {
+    // oxlint-disable-next-line babillard/no-anonymous-catch -- clipboard.writeText() may be refused by the browser; not a write
     if (password) void navigator.clipboard?.writeText(password).catch(() => {})
   }
   return (

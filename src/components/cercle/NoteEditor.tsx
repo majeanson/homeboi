@@ -149,6 +149,7 @@ export function NoteEditor({
       if (sceneKey) keptKeys.add(sceneKey)
     }
     sessionKeysRef.current.forEach((k) => {
+      // oxlint-disable-next-line babillard/no-anonymous-catch -- deletes an ORPHANED upload blob on cancel; nothing the user asked for can fail
       if (!keptKeys.has(k)) void api('note-media', { method: 'DELETE', body: { key: k } }).catch(() => {})
     })
     // Opening a note to READ it must not act on it. Auto-save used to write

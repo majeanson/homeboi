@@ -13,6 +13,8 @@ import { SectionAdd, useSectionAdd } from '../SectionAdd'
 import { TaskList, TaskQuickAdd } from './TaskList'
 import { useTaskActions } from './useTaskActions'
 
+/* oxlint-disable jsx-a11y/no-autofocus -- revealed in place by the tap that asked to type: the section’s SectionAdd ＋ (the keyboard opens on a tap, never on its own) */
+
 // THE TASKS OF ONE SUBJECT — one component for a carnet, a person and a pet (plan de la tâche
 // unifiée, phase 2). What is on this thing now, a one-field add that files itself here, and
 // what has been done: a dated history, names and dates. Never a score, a total or a count

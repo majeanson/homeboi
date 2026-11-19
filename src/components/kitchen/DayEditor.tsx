@@ -16,6 +16,8 @@ import { mealPickOptions, type MealPick } from './comboOptions'
 import { type Leftover, type MealRow, type DayNoteRow } from './types'
 import { type useMealPlanning } from './useMealPlanning'
 
+/* oxlint-disable jsx-a11y/no-autofocus -- revealed in place by the tap that asked to type: a slot, the supper hero, the day note (the keyboard opens on a tap, never on its own) */
+
 // One day's full meal-planning controls — the body of the /kitchen/day/:date
 // scene. It used to be a bottom sheet (DayManageSheet), but a height-capped sheet
 // floats ABOVE the mobile keyboard, so its lower text inputs (add a meal, the day

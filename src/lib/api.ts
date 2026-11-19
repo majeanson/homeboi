@@ -186,6 +186,7 @@ export async function api<T = unknown>(path: string, opts: Options = {}): Promis
   let res: Response
   let text: string
   try {
+    // oxlint-disable-next-line babillard/no-bare-fetch -- the door itself, every other /api call goes through it
     res = await fetch(`/api/${path.replace(/^\/+/, '')}`, {
       method,
       headers,

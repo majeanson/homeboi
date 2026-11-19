@@ -37,6 +37,8 @@ import { Icon, InlineIcon } from '../Icon'
 import { Chip } from '../Chip'
 import { EntityCombobox, type ComboOption } from '../EntityCombobox'
 
+/* oxlint-disable jsx-a11y/no-autofocus -- revealed in place by the tap that asked to type: the « ＋ groupe » chip; the person form itself does NOT focus (the keyboard opens on a tap, never on its own) */
+
 // Add / edit one person in « Le cercle ». Plain labelled fields (a multi-field
 // form, not a one-line add row, so EditField doesn't fit) styled by cercle.css.
 // Relationship editing (the LinkComposer) only appears once the contact EXISTS

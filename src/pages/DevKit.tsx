@@ -184,6 +184,8 @@ import { MealPlanPicker } from '../components/kitchen/MealPlanPicker'
 import { type MealSlot } from '../lib/mealSlots'
 import { useWeekLabeled } from '../components/kitchen/week'
 
+/* oxlint-disable jsx-a11y/no-autofocus -- the gallery specimen of SectionAdd, it behaves as its callers do (the keyboard opens on a tap, never on its own) */
+
 // A tiny inline placeholder image for the image-bearing specimens (DealCard,
 // ZoomableImg) — no network asset needed in the gallery.
 const sampleImg =

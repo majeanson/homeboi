@@ -17,6 +17,7 @@ const wallFmtCache = new Map<string, Intl.DateTimeFormat>()
 function wallFmt(tz: string): Intl.DateTimeFormat {
   let f = wallFmtCache.get(tz)
   if (!f) {
+    // oxlint-disable-next-line babillard/no-intl-construction -- a formatter home: one cached formatter per time zone
     f = new Intl.DateTimeFormat('en-US', {
       timeZone: tz,
       hour12: false,
@@ -111,6 +112,7 @@ export function dayOfWeekIn(d: Date, tz: string): number {
   if (hit !== undefined) return hit
   let f = weekdayFmtCache.get(tz)
   if (!f) {
+    // oxlint-disable-next-line babillard/no-intl-construction -- a formatter home: one cached formatter per time zone
     f = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short' })
     weekdayFmtCache.set(tz, f)
   }

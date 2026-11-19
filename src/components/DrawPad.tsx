@@ -1398,6 +1398,7 @@ export function DrawPad({
     // Calquer: ignore the editable scene; the original rides as a faded tracing layer.
     if (filigrane) { loadBase(true); return () => { cancelled = true } }
     if (initialSceneUrl) {
+      // oxlint-disable-next-line babillard/no-bare-fetch -- reads a drawing scene by URL, always imgUrl(sceneKey) passed as a prop, an unauthenticated blob
       fetch(initialSceneUrl)
         .then((r) => r.text())
         .then((txt) => {
@@ -1666,6 +1667,7 @@ export function DrawPad({
       if (!blob) return
       const file = new File([blob], 'babillard-dessin.png', { type: 'image/png' })
       const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean }
+      // oxlint-disable-next-line babillard/no-anonymous-catch -- navigator.share() rejects when the user dismisses the share sheet; not a write
       if (nav.canShare?.({ files: [file] })) { void nav.share({ files: [file] }).catch(() => {}); return }
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a'); a.href = url; a.download = file.name; a.click()

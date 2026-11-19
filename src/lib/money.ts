@@ -14,6 +14,7 @@ export function formatMoney(cents: number | null | undefined, lang: Lang): strin
   if (cents == null || !Number.isFinite(cents)) return ''
   let f = moneyFmtCache.get(lang)
   if (!f) {
+    // oxlint-disable-next-line babillard/no-intl-construction -- a formatter home: moneyFmtCache keeps one per lang
     f = new Intl.NumberFormat(lang === 'en' ? 'en-CA' : 'fr-CA', {
       style: 'currency',
       currency: 'CAD',
@@ -36,6 +37,7 @@ const exactMoneyFmtCache = new Map<Lang, Intl.NumberFormat>()
 function exactFmt(lang: Lang): Intl.NumberFormat {
   let f = exactMoneyFmtCache.get(lang)
   if (!f) {
+    // oxlint-disable-next-line babillard/no-intl-construction -- a formatter home: moneyFmtCache keeps one per lang
     f = new Intl.NumberFormat(lang === 'en' ? 'en-CA' : 'fr-CA', {
       style: 'currency',
       currency: 'CAD',

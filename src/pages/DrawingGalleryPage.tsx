@@ -75,9 +75,11 @@ export function DrawingGalleryPage() {
 
   // Modify replaces a row in place; the ＋ flow and copy/trace keep a new one.
   async function onSaved(png: Blob, scene: string, id?: string) {
+    // oxlint-disable-next-line babillard/no-anonymous-catch -- the gallery is local IndexedDB, not the server
     await (id ? update(id, png, scene) : save(png, scene)).catch(() => {})
   }
   async function onDelete(id: string) {
+    // oxlint-disable-next-line babillard/no-anonymous-catch -- the gallery is local IndexedDB, not the server
     if (await confirm({ message: t.memo.galleryDeleteConfirm, tone: 'danger' })) await remove(id).catch(() => {})
   }
 
@@ -129,6 +131,7 @@ export function DrawingGalleryPage() {
                       <button
                         type="button"
                         className={'drawgallery__keep' + (d.saved_at ? ' is-done' : '')}
+                        // oxlint-disable-next-line babillard/no-anonymous-catch -- the gallery is local IndexedDB, not the server
                         onClick={() => void keep(d.id, !d.saved_at).catch(() => {})}
                         aria-pressed={!!d.saved_at}
                         aria-label={d.saved_at ? t.mots.kept : t.mots.keep}

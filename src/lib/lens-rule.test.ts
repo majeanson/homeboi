@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { sourceFiles, readScanned } from './buildGuardScan'
 
 // THE LENS RULE (2026-11-05, wave 0.3 of plans/2026-11-05-SOLIDIFY.md) — sibling of
-// chip-rule / img-rule: the same fail-closed shape over the shared scanner.
+// chip-rule: the same fail-closed shape over the shared scanner.
 //
 // `lib/audience.ts` `useLens()` is the ONE place that says what each audience may see
 // and do (teaches · interrupts · acts · spoken, plus the three view flags). Before it,

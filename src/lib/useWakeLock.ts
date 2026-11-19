@@ -22,6 +22,7 @@ export function useWakeLock(enabled: boolean = true): void {
         if (!nav.wakeLock) return
         const lock = await nav.wakeLock.request('screen')
         if (cancelled) {
+          // oxlint-disable-next-line babillard/no-anonymous-catch -- the Wake Lock API may be refused or already released
           lock.release().catch(() => {})
           return
         }
@@ -38,6 +39,7 @@ export function useWakeLock(enabled: boolean = true): void {
     return () => {
       cancelled = true
       document.removeEventListener('visibilitychange', onVis)
+      // oxlint-disable-next-line babillard/no-anonymous-catch -- the Wake Lock API may be refused or already released
       lockRef.current?.release().catch(() => {})
       lockRef.current = null
     }

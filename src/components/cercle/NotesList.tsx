@@ -18,6 +18,8 @@ import type { MemberFace } from '../MemberSwitcher'
 import { plainText, renderNoteBody, toggleCheckAt } from '../../lib/noteMarkdown'
 import { scrollBehavior } from '../../lib/motion'
 
+/* oxlint-disable jsx-a11y/no-autofocus -- a rename dialog whose ONLY content is the field (the keyboard opens on a tap, never on its own) */
+
 // The ONE cercle-notes ROW LIST (the iOS-grouped `.cnote-list` anatomy), extracted from
 // CercleNotes so the board's « Notes (cercle) » card renders the SAME rows in the same
 // way — expand-to-read in place OR tap-to-edit (see `openOnTap`), tap-to-play audio,

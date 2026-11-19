@@ -40,6 +40,7 @@ export function chime() {
     note(880, 0) // A5
     note(1174.66, 0.18) // D6 — a friendly rising "ding-ding"
     // Close the context once the second note has rung out, freeing the hardware.
+    // oxlint-disable-next-line babillard/no-anonymous-catch -- Web Audio resume() may be refused by autoplay policy, harmlessly
     window.setTimeout(() => ctx.close().catch(() => {}), 800)
   } catch {
     /* no Web Audio — the vibration + visual "done" state carry it */

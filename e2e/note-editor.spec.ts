@@ -338,7 +338,7 @@ test('pasting rich HTML never executes a script and drops foreign tags', async (
 
 test('a button works on a fresh note without first tapping the body', async ({ page }) => {
   // The body does NOT focus itself on a new note (a screen opening never summons the
-  // keyboard — src/lib/autofocus.test.ts), so a toolbar press is often the FIRST thing
+  // keyboard — jsx-a11y/no-autofocus), so a toolbar press is often the FIRST thing
   // to touch it: every button chains `.focus()` itself, and must land on its own.
   const body = await openEditor(page)
   await page.getByRole('button', { name: 'Liste à puces' }).click()

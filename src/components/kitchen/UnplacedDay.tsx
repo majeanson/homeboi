@@ -19,6 +19,8 @@ import { type MealPick } from './comboOptions'
 import { BOARD_KEY, MONTH_KEY } from '../../lib/queryKeys'
 import { MEALS_KEY, MEAL_HISTORY_KEY, type UnplacedMeal } from './types'
 
+/* oxlint-disable jsx-a11y/no-autofocus -- revealed in place by the tap that asked to type: the « À placer » card’s ＋ (the keyboard opens on a tap, never on its own) */
+
 // Every surface a meal shows on (the write-owners rule) — a bin write touches only the
 // meals read today, but the set is THE meal set, not a guess about which one moved.
 const MEAL_KEYS = [MEALS_KEY, BOARD_KEY, MEAL_HISTORY_KEY, MONTH_KEY]

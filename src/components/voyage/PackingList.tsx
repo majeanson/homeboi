@@ -8,6 +8,8 @@ import { CheckRow } from '../CheckRow'
 import { MemberSwitcher, type MemberFace } from '../MemberSwitcher'
 import { useVoyageApi, type PackingItem, type Trip } from './voyage'
 
+/* oxlint-disable jsx-a11y/no-autofocus -- revealed in place by the tap that asked to type (the keyboard opens on a tap, never on its own) */
+
 // « Voyage » → Bagages — per-member packing checklists. A face row picks whose list
 // you're adding to (Maisonnée = the shared "Partagé" list); below it every list with
 // items shows, grouped by member. Checking an item removes it (the calm finite-list

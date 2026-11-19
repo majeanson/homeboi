@@ -24,6 +24,8 @@ import { CATS } from '../../lib/cats'
 import { useSingleOpen } from '../Disclosure'
 import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 
+/* oxlint-disable jsx-a11y/no-autofocus -- revealed in place by the tap that asked to type: the SectionAdd ＋ and a row’s rename (the keyboard opens on a tap, never on its own) */
+
 export interface MealPoolLabels {
   heading: string
   addAria: string

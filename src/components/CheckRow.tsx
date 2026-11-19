@@ -6,6 +6,8 @@ import { type IconName } from './Icon'
 import { EditField } from './EditField'
 import { RowActions } from './RowActions'
 
+/* oxlint-disable jsx-a11y/no-autofocus -- revealed in place by the tap that asked to type (the keyboard opens on a tap, never on its own) */
+
 // The ONE calm check-list row. Layout: [check button] · [inert title (+note)] ·
 // [RowActions ✏️/🗑️]. Unlike a giant whole-row button, the check is its OWN tap
 // target — tapping the title does nothing, so a glance/scroll on a wall tablet

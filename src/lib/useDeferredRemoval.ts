@@ -174,6 +174,7 @@ function unhideWhenSynced(qc: QueryClient, scope: string, ids: string[], refetch
     off()
     const t0 = Date.now()
     void refetch()
+      // oxlint-disable-next-line babillard/no-anonymous-catch -- a REFETCH after the write; freshness is fenced by unhideWhenFresh instead
       .catch(() => {})
       .then(() => unhideWhenFresh(qc, scope, ids, t0))
   }
@@ -240,6 +241,7 @@ export function useDeferredRemoval(queryKey: QueryKey) {
         } else if ((await outboxCount()) > 0) {
           unhideWhenSynced(qc, scope, ids, refetch)
         } else {
+          // oxlint-disable-next-line babillard/no-anonymous-catch -- a REFETCH after the write; freshness is fenced by unhideWhenFresh instead
           await refetch().catch(() => {})
           unhideWhenFresh(qc, scope, ids, t0)
         }

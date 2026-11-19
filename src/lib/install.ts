@@ -90,6 +90,7 @@ export function useInstall(): { promptable: boolean; standalone: boolean; ios: b
       deferred = null
       notify()
       await ev.prompt()
+      // oxlint-disable-next-line babillard/no-anonymous-catch -- the PWA install prompt rejects when the user dismisses it
       const choice = await ev.userChoice?.catch(() => null)
       const accepted = choice?.outcome === 'accepted'
       if (accepted) dismissInstallNudge()

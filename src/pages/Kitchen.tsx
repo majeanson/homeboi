@@ -51,6 +51,8 @@ import { useHelpMode, HelpToggle, HelpHint } from '../lib/helpMode'
 import { KITCHEN_TAB_HELP } from '../lib/kitchenTabHelp'
 import { scrollBehavior } from '../lib/motion'
 
+/* oxlint-disable jsx-a11y/no-autofocus -- revealed in place by the tap that asked to type: a day’s ＋ (the keyboard opens on a tap, never on its own) */
+
 // La cuisine. Parent kitchen is three jobs — plan the week / track the pantry /
 // browse the book — one sub-tab at a time. The page owns the queries (one unauth
 // gate for all), the week grid, and the layout; the FLOWS live as hooks beside

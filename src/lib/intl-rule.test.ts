@@ -1,93 +1,18 @@
-import { dirname, join, relative, sep } from 'node:path'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { sourceFiles, readScanned } from './buildGuardScan'
 
-// THE FORMATTER RULE, made structural (sibling of write-rule.test.ts — same
-// fail-closed shape, same shared plumbing).
-//
-// Constructing an Intl.DateTimeFormat/NumberFormat costs ~100 µs — three orders of
-// magnitude more than the .format() call it enables — and this codebase keeps
-// paying it in loops: /api/year burned 1.8 SECONDS of Worker CPU (free-plan budget
-// ≈ 10 ms) building the same two formatters for every day of the year, and
-// lib/format.ts rebuilt one per list ROW on every render of every meal badge,
-// month cell and deal card, on a cheap wall tablet (both found + fixed
-// 2026-09-03). The fix is always the same: ONE cached formatter per (locale,
-// shape), because the shapes are finite.
-//
-// FAIL-CLOSED. A `new Intl.*` construction may only appear in a file listed below
-// — the designated formatter homes, where every construction sits behind a Map
-// cache. Anywhere else, reach for the cached helpers in lib/format.ts /
-// lib/money.ts / lib/localDay.ts (client) or functions/_lib/ids.ts /
-// askContext.ts (Worker); a genuinely new shape gets a new cached helper THERE,
-// not an inline construction. Adding a file to ALLOWED is a decision: say where
-// its cache is.
+// THE FORMATTER RULE. Constructing an Intl formatter costs ~100 µs, a thousand times the
+// .format() it enables (/api/year burned 1.8 s of Worker CPU on it, 2026-09-03). The BAN on an
+// inline `new Intl.*` outside a cached formatter home is the oxlint rule
+// `babillard/no-intl-construction` now (review #41, scripts/lint-rules.mjs). What stays here is
+// the one part a lint rule cannot hold: a RATCHET on the convenience methods that construct the
+// same formatter internally.
 
 const srcDir = join(dirname(fileURLToPath(import.meta.url)), '..')
-const rootDir = join(srcDir, '..')
 
-// Scanned roots: the SPA, the Worker entry, the Pages-Function handlers, and the code both
-// import (shared/). The Worker matters MOST — its CPU budget is the one /api/year actually blew.
-const ROOTS = [srcDir, join(rootDir, 'functions'), join(rootDir, 'worker'), join(rootDir, 'shared')]
-
-// file (repo-relative, /-separated) → where its cache lives. The reason IS the entry.
-const ALLOWED = new Map<string, string>([
-  ['src/lib/format.ts', 'fmtCache — one formatter per (lang, shape)'],
-  ['src/lib/money.ts', 'moneyFmtCache — one per lang'],
-  ['shared/localDay.ts', 'wallFmtCache/weekdayFmtCache — one per tz (the client and the Worker both)'],
-  ['functions/_lib/askContext.ts', 'askFmtCache — one per (lang, shape)'],
-  // NOT a formatter home: isValidTz() constructs one to ask Intl « do you know this
-  // zone? » and throws it away. It runs once per PATCH /api/household, never in a loop,
-  // and the answer is a boolean — there is nothing to cache. An unvalidated zone would
-  // make every date helper throw for that household, so the probe has to be a real
-  // construction rather than a regex over zone names.
-  ['functions/_lib/tz.ts', 'isValidTz — a one-shot probe on write, deliberately uncached'],
-])
-
-interface Site {
-  file: string
-  line: number
-}
-
-function intlConstructions(): Site[] {
-  const out: Site[] = []
-  for (const root of ROOTS) {
-    for (const f of sourceFiles(root)) {
-      const src = readScanned(f)
-      for (const m of src.matchAll(/new\s+Intl\./g)) {
-        out.push({
-          file: relative(rootDir, f).split(sep).join('/'),
-          line: src.slice(0, m.index).split('\n').length,
-        })
-      }
-    }
-  }
-  return out
-}
-
-describe('the formatter rule (Intl construction only in the cached-formatter homes)', () => {
-  const sites = intlConstructions()
-
-  it('found Intl constructions to classify (the scanner still works)', () => {
-    // The allowed homes construct on cache miss — if this reads zero the regex
-    // broke and the assertion below is trivially green (the write-rule canary).
-    expect(sites.length).toBeGreaterThan(3)
-  })
-
-  it('no Intl construction outside the documented formatter homes', () => {
-    const offenders = sites.filter((s) => !ALLOWED.has(s.file)).map((s) => `${s.file}:${s.line}`)
-    expect(
-      offenders,
-      'use the cached helpers in lib/format.ts / lib/money.ts / lib/localDay.ts (client) or functions/_lib/ids.ts / askContext.ts (Worker) — a new shape gets a new cached helper THERE. If a new file truly must construct its own, it needs its own cache AND an ALLOWED entry naming it',
-    ).toEqual([])
-  })
-
-  it('every formatter home still constructs (a stale entry exempts the next arrival)', () => {
-    const live = new Set(sites.map((s) => s.file))
-    const dead = [...ALLOWED.keys()].filter((f) => !live.has(f))
-    expect(dead, 'these files no longer construct Intl formatters — drop them from ALLOWED').toEqual([])
-  })
-
+describe('the formatter rule (the toLocale*String ratchet)', () => {
   // `.toLocaleDateString()` and friends construct the SAME formatter internally on
   // every call — they are just the trap wearing a convenience method. The existing
   // sites are bounded per-row surfaces someone judged acceptable (worst:

@@ -47,7 +47,7 @@ export default function NoteEditorTiptap({
   const editor = useEditor({
     // Never on open, even for a brand-new note: a full-screen editor opening is a
     // SCREEN opening, and on a phone the keyboard would take half of it before the
-    // first word (autofocus.test.ts). One tap in the body starts typing.
+    // first word (jsx-a11y/no-autofocus). One tap in the body starts typing.
     autofocus: false,
     extensions: [
       StarterKit.configure({

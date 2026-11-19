@@ -24,6 +24,8 @@ import { flippBookmarklet } from '../../lib/flippList'
 import { Disclosure } from '../Disclosure'
 import { Img } from '../Img'
 
+/* oxlint-disable jsx-a11y/no-autofocus -- revealed in place by the tap that asked to type (the keyboard opens on a tap, never on its own) */
+
 // Shopping: the household's postal code, used by the flyer/deal lookups so the
 // price-match proof on the list knows where to search. Set once, used every trip.
 export function ShopSection({ help }: { help?: HelpMode }) {
@@ -49,6 +51,7 @@ export function ShopSection({ help }: { help?: HelpMode }) {
         setPostal(r.postal ?? '')
         setFlippLang(r.flippLang ?? null)
       })
+      // oxlint-disable-next-line babillard/no-anonymous-catch -- a READ (the household postal prefill), not a write
       .catch(() => {})
   }, [])
 

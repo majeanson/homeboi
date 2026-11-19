@@ -93,7 +93,7 @@ export function boardOrder(items: readonly TaskItem[]): TaskItem[] {
 
 // « Par horizon ». Each task sits in exactly one bucket; a ticked one-off stays with what it
 // was until the day clears it, so a tick never moves a row between groups either.
-export const HORIZONS = ['late', 'today', 'week', 'month', 'later', 'someday'] as const
+export const HORIZONS = ['late', 'today', 'tomorrow', 'week', 'month', 'later', 'someday'] as const
 export type Horizon = (typeof HORIZONS)[number]
 
 export function horizonOf(t: TaskItem, today: number): Horizon {
@@ -101,9 +101,25 @@ export function horizonOf(t: TaskItem, today: number): Horizon {
   if (t.dueToday || t.done === 'ticked') return 'today'
   if (t.day == null) return 'someday'
   if (t.day <= today) return 'today'
+  // Tomorrow earns its own group: it is the day you prepare for tonight, and the board's
+  // « Demain » card holds the same rows.
+  if (t.day < addLocalDays(today, 2)) return 'tomorrow'
   if (t.day < addLocalDays(today, 7)) return 'week'
   if (t.day < addLocalDays(today, 31)) return 'month'
   return 'later'
+}
+
+// The « Quand » lens reads in date order inside each group: what is owed first (oldest debt
+// on top, like `boardOrder`), then by day, the undated last; ties keep their arrival order.
+// Without it « Cette semaine » listed two « Drop » rides in the order they were typed, with
+// nothing on the row to tell Thursday's from Tuesday's. A ticked one-off keeps its day, so a
+// tick still never moves a row; a ticked recurrence changes group anyway.
+export function whenOrder(items: readonly TaskItem[]): TaskItem[] {
+  const at = (t: TaskItem) => t.overdueSince ?? t.day ?? Number.POSITIVE_INFINITY
+  return items
+    .map((t, i) => ({ t, i }))
+    .sort((a, b) => at(a.t) - at(b.t) || a.i - b.i)
+    .map((x) => x.t)
 }
 
 // « TROUVER QUOI FAIRE » (0149): how much I have, and how far ahead I look. Both optional, both
@@ -116,8 +132,8 @@ export function horizonOf(t: TaskItem, today: number): Horizon {
 export const FIND_WHEN = ['semaine', 'mois', 'unjour'] as const
 export type FindWhen = (typeof FIND_WHEN)[number]
 const WHEN_HORIZONS: Record<FindWhen, readonly Horizon[]> = {
-  semaine: ['late', 'today', 'week'],
-  mois: ['late', 'today', 'week', 'month'],
+  semaine: ['late', 'today', 'tomorrow', 'week'],
+  mois: ['late', 'today', 'tomorrow', 'week', 'month'],
   unjour: ['later', 'someday'],
 }
 

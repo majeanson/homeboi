@@ -16,6 +16,8 @@ import { TripNoteCard } from './TripNoteCard'
 import { reorderPatches, tripDays, useVoyageApi, type Trip, type TripNote } from './voyage'
 import { scrollBehavior } from '../../lib/motion'
 
+/* oxlint-disable jsx-a11y/no-autofocus -- revealed in place by the tap that asked to type: a day’s ＋ (the keyboard opens on a tap, never on its own) */
+
 // « Voyage » → Itinéraire — the day-by-day plan. One section per day the trip spans
 // (start_at..end_at inclusive); each shows that day's entries and a composer that
 // writes a dated trip_note (category 'activity'). These dated notes are what the

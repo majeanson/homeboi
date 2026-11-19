@@ -100,6 +100,8 @@ import {
   relationTo,
 } from '../lib/cercle'
 
+/* oxlint-disable jsx-a11y/no-autofocus -- revealed in place by the tap that asked to type: a group header’s edit (the keyboard opens on a tap, never on its own) */
+
 // The cercle-WORLD entity colour (matches CATS.cercle.deep + the retired cercle
 // nav pill) — deliberately NOT the Maison tab's berry chrome (HubHead below uses
 // the berry `#95527A`/`--berry-wash`, same as CATS.routine). This turquoise still

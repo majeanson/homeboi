@@ -22,6 +22,8 @@ import { EmptyState } from '../EmptyState'
 import { OperatorSection } from './OperatorSection'
 import { BookmarkletHowTo } from '../BookmarkletHowTo'
 
+/* oxlint-disable jsx-a11y/no-autofocus -- revealed in place by the tap that asked to type (the keyboard opens on a tap, never on its own) */
+
 // A chip tinted by its tag colour (readable on cream AND dark via the theme-aware
 // helpers), so the colour you pick previews in place. No colour → undefined = the
 // default chip styling stays.

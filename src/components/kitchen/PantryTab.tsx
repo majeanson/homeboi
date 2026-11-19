@@ -15,6 +15,8 @@ import { BOARD_KEY, GHOSTS_KEY, HISTORY_KEY } from '../../lib/queryKeys'
 import { HelpTitle, type HelpMode } from '../../lib/helpMode'
 import { type LowRow, type PantryData, PANTRY_KEY, USE_SOON_KEY } from './types'
 
+/* oxlint-disable jsx-a11y/no-autofocus -- revealed in place by the tap that asked to type: two SectionAdd ＋ (the keyboard opens on a tap, never on its own) */
+
 // Garde-manger: the "running low" list (never a full inventory — brief tenet 3)
 // and the "use soon" list. Owns its own adds + undo-deferred clears; the parent
 // page only passes the rows (it keeps the queries for the unauth gate). `help` is

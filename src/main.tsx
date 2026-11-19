@@ -456,6 +456,7 @@ trackVisualViewport()
 // installed for weeks between visits. Best-effort: unsupported/denied just means
 // eviction stays possible (Query + the outbox still work). Silent for an installed
 // PWA; iOS Safari and Chromium both support it.
+// oxlint-disable-next-line babillard/no-anonymous-catch -- storage.persist() and the first-paint snapshot restore are both best-effort
 void navigator.storage?.persist?.().catch(() => {})
 
 // Ambient day-part drift (feature #1): theme-bootstrap.js set the first tint
@@ -504,6 +505,7 @@ void (async () => {
   // with the try/catch, guarantees we fall through to mount().
   try {
     await Promise.race([
+      // oxlint-disable-next-line babillard/no-anonymous-catch -- storage.persist() and the first-paint snapshot restore are both best-effort
       restorePersistedCache(queryClient).catch(() => {}),
       new Promise((resolve) => setTimeout(resolve, 1500)),
     ])

@@ -106,6 +106,7 @@ export async function prefetchFlyer(qc: QueryClient, flyerId: number): Promise<v
       queryFn: () => api<FlyerResponse>(`flyer?id=${flyerId}`),
       staleTime: FLYER_STALE,
     })
+    // oxlint-disable-next-line babillard/no-anonymous-catch -- a flyer PREFETCH read, best-effort by design
     .catch(() => null)
   if (!data) return
   // fetch() each clipping (not `new Image()`, which can satisfy from the browser memory

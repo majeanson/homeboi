@@ -4,6 +4,8 @@ import { ColorPicker } from '../ColorPicker'
 import { FormFooter } from '../FormFooter'
 import type { GroupKind } from '../../lib/cercle'
 
+/* oxlint-disable jsx-a11y/no-autofocus -- a primitive forwarding its caller’s choice, the caller is what matters (opt-in; NOT passed in the ＋ chooser’s dialog) (the keyboard opens on a tap, never on its own) */
+
 export interface GroupFormValue {
   name: string
   kind: GroupKind
@@ -27,7 +29,7 @@ export function GroupForm({
   onCancel: () => void
   /** Only where the form is revealed IN PLACE by a tap (the inline edit, the chip in the
    *  contact form). Never inside the ＋ chooser's dialog: a dialog opening does not summon
-   *  the keyboard (autofocus.test.ts). */
+   *  the keyboard (jsx-a11y/no-autofocus). */
   autoFocus?: boolean
 }) {
   const t = useT()

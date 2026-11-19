@@ -76,6 +76,7 @@ export function PhotoFrame() {
         <button
           type="button"
           className={'photo-frame__keep' + (p.saved_at ? ' is-done' : '')}
+          // oxlint-disable-next-line babillard/no-anonymous-catch -- keep-to-gallery is local IndexedDB, not the server
           onClick={() => void keep(p.id, !p.saved_at).catch(() => {})}
           aria-pressed={!!p.saved_at}
           aria-label={p.saved_at ? t.mots.kept : t.mots.keep}

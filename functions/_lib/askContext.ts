@@ -37,6 +37,7 @@ function askFmt(key: string, lang: Lang, opts: Intl.DateTimeFormatOptions): Intl
   const k = `${lang}:${key}`
   let f = askFmtCache.get(k)
   if (!f) {
+    // oxlint-disable-next-line babillard/no-intl-construction -- a formatter home: askFmtCache keeps one per (lang, shape)
     f = new Intl.DateTimeFormat(lang === 'fr' ? 'fr-CA' : 'en-CA', { timeZone: HOUSEHOLD_TZ, ...opts })
     askFmtCache.set(k, f)
   }

@@ -15,7 +15,7 @@ import { charge } from './usage'
  * Why ONE seam: the Workers Free plan gives 10 browser-minutes a DAY for the whole
  * account. Every render is charged to the household's `browser` meter (_lib/usage.ts,
  * migration 0145: 20/day for a household, 5 for a sandbox or an unconfirmed one, a
- * strangers' pool on top) BEFORE the browser starts. `usageRule.test.ts` fails the build
+ * strangers' pool on top) BEFORE the browser starts. the lint rule `babillard/metered-door` fails the build
  * on a `quickAction(` anywhere else.
  *
  * Returns the rendered HTML, or null — unbound, over budget, refused, `success:false`,
@@ -54,6 +54,7 @@ export async function renderPage(env: Env, url: string): Promise<string | null> 
   if (!verdict.allowed) return null
   try {
     const res = await asResult(
+      // oxlint-disable-next-line babillard/metered-door -- the metered door itself, it charges the browser budget first
       await browser.quickAction('content', { url, gotoOptions: { waitUntil: 'networkidle2', timeout: 30_000 } }),
     )
     if (!res || res.success === false || typeof res.result !== 'string' || !res.result.trim()) return null

@@ -92,6 +92,7 @@ export function realDeps(env: Env, now: number): NightlyDeps {
       // of six lost its night to it). It says « try again » and means it — so we do, twice.
       for (let attempt = 1; ; attempt++) {
         try {
+          // oxlint-disable-next-line babillard/metered-door -- the household BACKUP, on a schedule it cannot trigger; bounded by BACKUP_KEEP instead of a daily budget
           await bucket.put(`backup/${id}/${date}.json`, body)
           break
         } catch (e) {

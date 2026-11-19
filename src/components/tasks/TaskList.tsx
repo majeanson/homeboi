@@ -15,6 +15,8 @@ import { TODO_TITLE_MAX } from '../../lib/todos'
 import { type Member } from '../board/types'
 import { type useTaskActions } from './useTaskActions'
 
+/* oxlint-disable jsx-a11y/no-autofocus -- revealed in place by the tap that asked to type: a task’s rename, and the SectionAdd ＋ (the keyboard opens on a tap, never on its own) */
+
 type Actions = ReturnType<typeof useTaskActions>
 
 // ONE ROW FOR A TASK, on the board, in the Tâches view and on a subject's page: the shared Act,
