@@ -307,7 +307,8 @@ async function boardWithTasksAhead(page: Page, tasksAhead: unknown[]) {
 }
 
 test.describe('« Sortir le bac » evening-before announce (D-21)', () => {
-  // The SAME chore also legitimately renders as an ordinary « À venir » nav row
+  // The SAME chore also legitimately renders as an ordinary « Demain » nav row (a task dated
+  // tomorrow sits on « Demain » since 2026-11-18, the way tomorrow's events do)
   // (a `<button class="act act--nav">`, tappable to its detail) — announce_evening
   // doesn't remove it from there, it only ADDS the evening line. So scope every
   // assertion to `div.act` (a static, non-interactive card — the announce/fête
