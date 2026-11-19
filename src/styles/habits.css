@@ -108,31 +108,9 @@
   color: var(--sage-deep);
 }
 
-/* The control row wraps (it's a <Cluster>): a phone drops « Aucune aujourd'hui »
-   to a second line instead of bleeding off the right edge. */
-.habit-row__actions {
-  gap: 0.5rem;
-}
-
-.habit-row__do.is-on,
-.habit-row__held.is-on {
-  background: var(--sage-wash);
-  border-color: var(--sage-deep);
-  color: var(--sage-ink);
-}
-
-.habit-row__plus {
-  min-width: 6.5rem;
-}
-
-.habit-row__minus {
-  padding-inline: 0.7rem;
-}
-
-/* A slip is offered as plainly as « Tenu » — same size, no shame styling. */
-.habit-row__slip {
-  color: var(--ink-soft);
-}
+/* The controls' own rules (.habit-row__actions, __do/__held .is-on, __plus, __minus,
+   __slip) live in board/habitudes-card.css: HabitControls also renders on the board
+   card, which is eager while this file is lazy. */
 
 /* --- A habit's own history ------------------------------------------------ */
 /* Seven dots for this week + one gentle derived line. Never a chain, never a

@@ -1,5 +1,5 @@
 import { useItemPulse } from '../lib/useItemPulse'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { facesFromMembers } from '../lib/faces'
 import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
@@ -15,6 +15,7 @@ import { HABITS_KEY, BOARD_KEY, MONTH_KEY, MEMBERS_KEY } from '../lib/queryKeys'
 import {
   useHabits,
   useMarkHabit,
+  usePinnedAsking,
   habitStatusOn,
   visibleHabits,
   isDaySettled,
@@ -74,20 +75,10 @@ export function HabitudesPage() {
   )
   const isAsking = (h: Habit) => habitStatusOn(h, days, today).due && !isDaySettled(h, dayRow(days, h.id, today))
 
-  // A row must never be yanked out from under a finger. A `count` habit settles
-  // only at its target, but a `limit` one settles on the FIRST ＋1 — if the list
-  // re-partitioned on every tap, the second cigarette would have nowhere to land,
-  // and a logged slip would vanish before you read its confirmation. So every habit
-  // seen ASKING during this visit is pinned to the list: it settles in place (quietly
-  // dimmed) and only folds away the next time the scene opens. The set accumulates
-  // rather than snapshotting once, because picking a face reveals more habits — a
-  // one-shot snapshot would let those jump into the fold on their first tap.
-  const [pinned, setPinned] = useState<ReadonlySet<string>>(() => new Set())
-  const askingNow = mine.filter(isAsking)
-  useEffect(() => {
-    const fresh = askingNow.filter((h) => !pinned.has(h.id)).map((h) => h.id)
-    if (fresh.length) setPinned((p) => new Set([...p, ...fresh]))
-  }, [askingNow, pinned])
+  // A row must never be yanked out from under a finger (usePinnedAsking): a habit seen
+  // asking during this visit settles in place (quietly dimmed) and folds away the next
+  // time the scene opens.
+  const pinned = usePinnedAsking(mine.filter(isAsking), today)
 
   const inList = (h: Habit) => pinned.has(h.id) || isAsking(h)
   const asking = mine.filter(inList)

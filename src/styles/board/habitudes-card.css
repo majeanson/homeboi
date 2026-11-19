@@ -74,6 +74,53 @@
   text-overflow: ellipsis;
 }
 
+/* HabitControls — the ONE set of marking buttons (components/habits/HabitControls),
+   shared by the check-in scene, the history dots and this card. Its rules live here,
+   in the eager board stylesheet, because the card renders it without the lazy
+   habits.css. The control row wraps (it's a <Cluster>): a phone drops « Aucune
+   aujourd'hui » to a second line instead of bleeding off the right edge. */
+.habit-row__actions {
+  gap: 0.5rem;
+}
+
+.habit-row__do.is-on,
+.habit-row__held.is-on {
+  background: var(--sage-wash);
+  border-color: var(--sage-deep);
+  color: var(--sage-ink);
+}
+
+.habit-row__plus {
+  min-width: 6.5rem;
+}
+
+.habit-row__minus {
+  padding-inline: 0.7rem;
+}
+
+/* A slip is offered as plainly as « Tenu » — same size, no shame styling. */
+.habit-row__slip {
+  color: var(--ink-soft);
+}
+
+/* On the card: the controls sit under the habit's name, in line with it, and a habit
+   marked today stays (usePinnedAsking), its name quietly settled. */
+.habitudes-card__item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.habitudes-card__acts {
+  padding-left: 1.5rem;
+  gap: 0.4rem;
+}
+.habitudes-card__acts .habit-row__plus {
+  min-width: 0;
+}
+.habitudes-card__item.is-settled .habitudes-card__title {
+  color: var(--ink-soft);
+}
+
 /* « Le point du jour » — the card's explicit check-in door (the rows open their
    own peeks now, so this quiet trailing link keeps marking one tap away). */
 .habitudes-card__open {

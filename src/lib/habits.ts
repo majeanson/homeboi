@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { FR } from '../i18n'
 import { api } from './api'
@@ -127,6 +127,26 @@ export function useMarkHabit() {
     },
     [write, face],
   )
+}
+
+// --- A row never leaves under a finger --------------------------------------
+// A `count` habit settles only at its target, but a `limit` or a `do` one settles on
+// its FIRST tap: if a marking list re-partitioned on every tap, the second cigarette
+// would have nowhere to land and « C'est fait » could not be taken back. So every habit
+// seen ASKING is pinned: it settles in place and leaves the next day (or the next time
+// the scene opens). The set accumulates rather than snapshotting once, because picking
+// a face reveals more habits. Shared by « Le point du jour » and the board card, so both
+// marking surfaces keep a row the same way.
+const NO_PINS: ReadonlySet<string> = new Set()
+export function usePinnedAsking(askingNow: Habit[], day: number): ReadonlySet<string> {
+  const [pin, setPin] = useState<{ day: number; ids: ReadonlySet<string> }>(() => ({ day, ids: NO_PINS }))
+  const ids = pin.day === day ? pin.ids : NO_PINS
+  const fresh = askingNow.filter((h) => !ids.has(h.id)).map((h) => h.id).join(',')
+  useEffect(() => {
+    if (!fresh && pin.day === day) return
+    setPin((p) => ({ day, ids: new Set([...(p.day === day ? p.ids : []), ...(fresh ? fresh.split(',') : [])]) }))
+  }, [fresh, day, pin.day])
+  return ids
 }
 
 // --- Day lookup --------------------------------------------------------------

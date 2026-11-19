@@ -3,7 +3,8 @@ import { useT, useLang } from '../../i18n'
 import { useAuth } from '../../lib/auth'
 import { isGuest } from '../../lib/device'
 import { useProfile } from '../../lib/profile'
-import { useHabits, dueToday, habitReading, habitStatusOn, habitToday, todaysDefi } from '../../lib/habits'
+import { useHabits, dueToday, habitReading, habitStatusOn, habitToday, todaysDefi, useMarkHabit, usePinnedAsking, visibleHabits } from '../../lib/habits'
+import { HabitControls } from '../habits/HabitControls'
 import { useBoardData } from '../../lib/queryHooks'
 import { useReportEmpty } from '../../lib/useReportEmpty'
 import { type HelpMode } from '../../lib/helpMode'
@@ -42,7 +43,15 @@ export function HabitudesCard({ help }: { help?: HelpMode }) {
 
   const habits = data?.habits ?? []
   const days = data?.days ?? []
-  const due = dueToday(habits, days, face, today)
+  // Marking happens HERE now (Marc, 2026-11-19: « edit them directly from the card and
+  // not go to point du jour every time »): the same HabitControls and the same write as
+  // the check-in scene, smaller. A row marked here stays until tomorrow (usePinnedAsking),
+  // so « C'est fait » can be taken back and a tally's second tap has somewhere to land.
+  const markHabit = useMarkHabit()
+  const canMark = !isGuest()
+  const asking = dueToday(habits, days, face, today)
+  const pinned = usePinnedAsking(asking, today)
+  const due = visibleHabits(habits, face).filter((h) => pinned.has(h.id) || asking.includes(h))
 
   // The défi surface shows for anyone who can pige (operator/kiosk) or whenever a
   // défi is already committed today (a guest sees it read-only). Only when there is
@@ -63,24 +72,25 @@ export function HabitudesCard({ help }: { help?: HelpMode }) {
       ariaLabel={fn.checkin}
       // Compact: name the habits still asking, exactly as the rows below do. Never
       // per-person, never a streak or a rank (calm). The défi is a full-lens feature.
-      compactItems={due.map((h) => h.title)}
-      compactHint={due.length ? String(due.length) : fn.defi.title}
+      compactItems={asking.map((h) => h.title)}
+      compactHint={asking.length ? String(asking.length) : fn.defi.title}
     >
       {/* « Le défi du jour » — the shared défi surface (also mounted in « Le point
           du jour »). Its own buttons are why this card no longer wraps everything in
           a Link (a nested <button> inside <Link> is invalid). */}
       <DefiBlock payload={data} today={today} help={help} />
 
-      {/* The habits still asking today. Each row opens its own peek (buildHabit:
-          today's reading, the week, the owner — and the « Modifier » door), the
-          same tap-the-thing pattern as every other board row. « Le point du jour »
-          keeps its explicit door below, so marking stays one tap from the board. */}
+      {/* The habits still asking today, each marked right on its row. The name opens its
+          own peek (buildHabit: today's reading, the week, the owner — and the « Modifier »
+          door), the same tap-the-thing pattern as every other board row. « Le point du
+          jour » keeps its door below for history, other faces and paused habits. */}
       {due.length > 0 && (
         <ul className="habitudes-card__list">
           {due.map((h) => {
-            const reading = habitReading(h, habitStatusOn(h, days, today), fn)
+            const status = habitStatusOn(h, days, today)
+            const reading = habitReading(h, status, fn)
             return (
-              <li key={h.id}>
+              <li key={h.id} className={'habitudes-card__item' + (status.settled ? ' is-settled' : '')}>
                 <button
                   type="button"
                   className="habitudes-card__row"
@@ -92,6 +102,7 @@ export function HabitudesCard({ help }: { help?: HelpMode }) {
                   <span className="habitudes-card__title">{h.title}</span>
                   {reading && <span className="habitudes-card__sub mono">{reading}</span>}
                 </button>
+                {canMark && <HabitControls habit={h} status={status} size="sm" className="habitudes-card__acts" onMark={(next) => markHabit(h, today, next)} />}
               </li>
             )
           })}

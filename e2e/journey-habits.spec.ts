@@ -351,6 +351,28 @@ test.describe('habits', () => {
       await expect(card.locator('.habitudes-card__row', { hasText: 'Cigarettes' }).locator('.habitudes-card__sub')).toHaveText('0 de 5')
     })
 
+    test('a habit is marked right on the card, and stays to be taken back', async ({ page }) => {
+      // Marc, 2026-11-19: « edit them directly from the card and not go to point du jour
+      // every time ». The card carries the check-in scene's own controls (HabitControls).
+      await board(page)
+      const card = page.locator('.habitudes-card')
+      const walkItem = card.locator('.habitudes-card__item', { hasText: 'Marcher dehors' })
+      const patch = page.waitForRequest((r) => r.method() === 'PATCH' && new URL(r.url()).pathname === '/api/habits')
+      await walkItem.getByRole('button', { name: 'C’est fait — Marcher dehors' }).click()
+      expect((await patch).postDataJSON()).toMatchObject({ mark: { value: 1 } })
+      // Done, it STAYS on the card (pinned for the day), so the tap can be undone.
+      const done = walkItem.getByRole('button', { name: 'C’est fait — Marcher dehors', pressed: true })
+      await expect(done).toBeVisible()
+      await done.click()
+      await expect(walkItem.getByRole('button', { name: 'C’est fait — Marcher dehors', pressed: false })).toBeVisible()
+
+      // A tally counts up in place: the reading follows the tap.
+      await pickFace(page, 'Maman')
+      const waterItem = card.locator('.habitudes-card__item', { hasText: 'Boire de l’eau' })
+      await waterItem.getByRole('button', { name: 'Encore un — Boire de l’eau' }).click()
+      await expect(waterItem.locator('.habitudes-card__sub')).toHaveText('1 sur 8 verres')
+    })
+
     test('tapping a card row opens the habit peek — « Modifier » is the edit door', async ({ page }) => {
       // The accessible-edit ask (Marc, Aug 2026): a habit row on the board card opens
       // its own peek (today's reading + the week + the owner), whose « Modifier »

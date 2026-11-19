@@ -26,12 +26,15 @@ export interface HabitControlsProps {
   /** Write an ABSOLUTE per-day value (never a delta — the outbox may replay). */
   onMark: (next: { value: number; slips?: number }) => void
   className?: string
+  /** `sm` = the board card's glance rows (38px targets); `md` = the check-in scene. */
+  size?: 'md' | 'sm'
 }
 
-export function HabitControls({ habit, status, onMark, className }: HabitControlsProps) {
+export function HabitControls({ habit, status, onMark, className, size = 'md' }: HabitControlsProps) {
   const t = useT()
   const fn = t.habits
   const { kind } = habit
+  const sm = size === 'sm' ? ' btn--sm' : ''
   const tallied = kind === 'count' || kind === 'limit' || (kind === 'do' && status.goal > 1)
 
   return (
@@ -39,7 +42,7 @@ export function HabitControls({ habit, status, onMark, className }: HabitControl
       {kind === 'do' && status.goal === 1 && (
         <button
           type="button"
-          className={'btn habit-row__do' + (status.done ? ' is-on' : '')}
+          className={'btn' + sm + ' habit-row__do' + (status.done ? ' is-on' : '')}
           aria-pressed={status.done}
           // Each button names its habit (review #35): a screen reader's button list read
           // « C'est fait » twice and « Encore un » with nothing to tell them apart. A FIXED
@@ -57,15 +60,15 @@ export function HabitControls({ habit, status, onMark, className }: HabitControl
               tallying is a repeated tap (eight glasses, five cigarettes), so the
               primary button must not shift under the finger between taps. − is
               always rendered, merely disabled at zero. */}
-          <button type="button" className="btn habit-row__plus" aria-label={`${fn.plusOne} — ${habit.title}`} onClick={() => onMark({ value: status.value + 1 })}>
+          <button type="button" className={'btn' + sm + ' habit-row__plus'} aria-label={`${fn.plusOne} — ${habit.title}`} onClick={() => onMark({ value: status.value + 1 })}>
             <Icon name="plus-bold" size={18} /> {fn.plusOne}
           </button>
-          <IconButton icon="minus-bold" label={`${fn.minusOne} — ${habit.title}`} iconSize={16} className="habit-row__minus" disabled={status.value === 0} onClick={() => onMark({ value: Math.max(0, status.value - 1) })} />
+          <IconButton icon="minus-bold" label={`${fn.minusOne} — ${habit.title}`} iconSize={16} size={size} className="habit-row__minus" disabled={status.value === 0} onClick={() => onMark({ value: Math.max(0, status.value - 1) })} />
           {/* A ceiling habit needs a way to say « aucune aujourd'hui » — else a
               zero day is indistinguishable from an untouched one. Last in the
               row, so it can drop away once marked without moving ＋ or −. */}
           {kind === 'limit' && !status.marked && (
-            <button type="button" className="btn btn--ghost" aria-label={`${fn.noneToday} — ${habit.title}`} onClick={() => onMark({ value: 0 })}>
+            <button type="button" className={'btn btn--ghost' + sm} aria-label={`${fn.noneToday} — ${habit.title}`} onClick={() => onMark({ value: 0 })}>
               {fn.noneToday}
             </button>
           )}
@@ -76,7 +79,7 @@ export function HabitControls({ habit, status, onMark, className }: HabitControl
         <>
           <button
             type="button"
-            className={'btn habit-row__held' + (status.done ? ' is-on' : '')}
+            className={'btn' + sm + ' habit-row__held' + (status.done ? ' is-on' : '')}
             aria-pressed={status.done}
             aria-label={`${fn.held} — ${habit.title}`}
             onClick={() => onMark({ value: 1, slips: 0 })}
@@ -85,7 +88,7 @@ export function HabitControls({ habit, status, onMark, className }: HabitControl
           </button>
           <button
             type="button"
-            className="btn btn--ghost habit-row__slip"
+            className={'btn btn--ghost' + sm + ' habit-row__slip'}
             aria-label={`${fn.slip} — ${habit.title}`}
             onClick={() => onMark({ value: 0, slips: status.slips + 1 })}
           >
