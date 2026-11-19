@@ -27,7 +27,8 @@ import type { TaskItem, TasksWire } from './wire'
 //   whose turn on a cell     the rotation projected per occurrence; else the       `cellsOf`
 //                            task's owner (a to-do's author)
 //   the board card           due, owed or ticked today (TaskItem.onBoard)         `boardTasks`
-//   « À venir »              open, next date in the six days after today           `boardTasks`
+//   « À venir » / « Demain »  open, not owed, next date in the six days after      `boardTasks`
+//                            today (the client puts tomorrow's on « Demain »)
 //   carry-forward («owed»)   TaskItem.overdueSince, for every task                 _lib/taskItem
 //   « Cette semaine »        ahead: open, next date this week; behind: done in     `weekTasks`
 //                            the week (what the contribution log does not

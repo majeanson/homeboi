@@ -61,10 +61,14 @@ export type Face = keyof typeof FACE
 /** The face a stored `kind` wears: a home row, or a task. */
 export const faceOfKind = (kind: string | null | undefined): Face => (kindOf(kind) == null ? 'task' : 'home')
 
-/** « À venir »: open, and its next date falls in the six days after today. One rule for every
- *  task: the board's À venir and its « annoncer la veille » line both read it. */
-export const aheadThisWeek = (i: Pick<TaskItem, 'done' | 'day'>, today: number): boolean =>
-  i.done === 'open' && i.day != null && i.day >= addLocalDays(today, 1) && i.day < addLocalDays(today, 7)
+/** « À venir » (and « Demain », which the client splits off it): open, NOT owed, and its next
+ *  date falls in the six days after today. One rule for every task: the board's À venir, its
+ *  Demain and its « annoncer la veille » line all read it. An owed task is on the card already
+ *  (« Pas encore fait »); listing its next turn too read as the same task twice (the owner,
+ *  2026-11-18: « Composte », owed since Monday, was also « À venir » next Monday). Done, it
+ *  stops being owed and its next turn comes back here on the next read. */
+export const aheadThisWeek = (i: Pick<TaskItem, 'done' | 'day' | 'overdueSince'>, today: number): boolean =>
+  i.done === 'open' && i.overdueSince == null && i.day != null && i.day >= addLocalDays(today, 1) && i.day < addLocalDays(today, 7)
 
 /** A spine row as it is stored (0150): every column a task's answers are read from. Its `at`
  *  is the task's day, decoded (_lib/taskDay: the readers hand rows over through it). */

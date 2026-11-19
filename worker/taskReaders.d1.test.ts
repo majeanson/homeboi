@@ -256,6 +256,8 @@ for (const [tag, instant] of Object.entries(INSTANTS)) {
         expect(b.tasks.find((x) => x.id === tid('C3aaaaaaa'))?.overdueSince, 'an owed chore is carried forward').not.toBeNull()
         expect(b.tasksAhead.some((x) => x.id === tid('TAaaaaaaa')), 'a to-do in five days is « À venir »').toBe(true)
         expect(b.tasksAhead.every((x) => x.done === 'open' && !x.dueToday)).toBe(true)
+        // One place per task: an owed one is on the card, never also « À venir » (2026-11-18).
+        expect(b.tasksAhead.every((x) => x.overdueSince == null), 'an owed task is not « À venir » too').toBe(true)
       })
       it('the recap hears every task done this week: a to-do and a project, not only chores', async () => {
         const titles = await recapTaskTitles(env.DB, f().s.householdId, addLocalDays(t(), -7))
