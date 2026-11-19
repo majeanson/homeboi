@@ -148,7 +148,7 @@ the pill map is `SETTINGS_TREE` in `lib/settingsNav.ts`; link a section with `?f
 | Mots · fridge memos | board notes (`notes`), optionally with an audio/drawing/photo attachment |
 | Cook mode · cashier mode | full-screen recipe (« Il en manque » flags pantry-low) · in-store list/price-match |
 | Recipe sections | inline `## Title` lines inside the flat ingredient/step arrays; every iterator skips them |
-| Discovery | guide cards (at a **~32 merge-first ceiling**), help hints, tours, `?card=&point=&focus=&plus=` links: read `DISCOVERY.md` first |
+| Discovery | guide cards, **frozen** with the tours and help registries (`discoveryFreeze.test.ts`: merge, never add), help hints, tours, `?card=&point=&focus=&plus=` links: read `DISCOVERY.md` first |
 | Calm mode | softens kid-routine redo friction only; the structural calm guarantees are not toggleable |
 
 Before adding an entity or action, walk **`PARITY.md`**: the dimensions D1–D17, the doors an
