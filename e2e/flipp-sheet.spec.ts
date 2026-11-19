@@ -10,7 +10,7 @@ import { boardWithDeals } from './dealFixture'
 // different moments — the till is for standing at a register with a cashier waiting;
 // sending your list to Flipp is something you do at home before leaving — and the till,
 // the one surface with someone waiting on you, was carrying both. These tests moved
-// here with the doors; the till keeps only the per-item proof (cashier.spec.ts).
+// here with the doors; the till keeps only the per-item proof (journey-till.spec.ts).
 //
 // The doors open the real flipp.com in a popup: it is stubbed, the door is what's tested.
 const stubFlipp = (page: Page) =>

@@ -1,8 +1,11 @@
 import { test as base, expect, type Page } from '@playwright/test'
-import { mockApi, seedState, type Theme, type Surface } from './mocks'
+import { test as withApp } from './fixtures'
+import { BOARD, mockApi, seedState, type Theme, type Surface } from './mocks'
 import { boxOf } from './measure'
-import { boardWithDeals } from './dealFixture'
+import { boardWithDeals, DEALS, stagedDeal } from './dealFixture'
 
+// JOURNEY 22 — AT THE TILL (review #43; was cashier.spec.ts + cashier-priceless.spec.ts).
+//
 // Dedicated capture + guards for « Montrer à la caisse » — a CORE, high-stress moment
 // (standing at the till with the cashier waiting). The mode is random-access: a GRID
 // of picked deals; tap the one being scanned → its price proof blown up full-screen,
@@ -323,4 +326,31 @@ test('a guest sees no refresh button (it writes)', async ({ page }) => {
   await openGrid(page, { guest: true })
   await expect(page.locator('.cashier__tile.is-ended')).toHaveCount(1)
   await expect(page.locator('button.cashier__refresh')).toHaveCount(0)
+})
+
+// Review #14 (2026-11-17), Mélanie at the Maxi till: « Montrer à la caisse » ▸
+// « framboises » said « Prix pour framboises », the dates, « Circulaire Super C · via
+// Flipp »… and no price, on the card or its tile. An item staged from the FULL flyer
+// can state no single number (a multi-buy, « 30 % »): the price slot printed nothing.
+// Now: the ad's own words when it has them, else « Voir la circulaire », never a blank.
+
+withApp('a priceless staged deal shows the ad’s words, or points at the flyer', async ({ app, page }) => {
+  const worded = { ...stagedDeal(DEALS[0]!, false), name: 'Framboises', price: null, priceText: '2 / 5 $' }
+  const bare = { ...stagedDeal(DEALS[1]!, false), name: 'Bleuets', price: null }
+  const board = {
+    ...BOARD,
+    list: [
+      { ...BOARD.list[0]!, text: 'Framboises', deal_json: JSON.stringify(worded) },
+      { ...BOARD.list[1]!, text: 'Bleuets', deal_json: JSON.stringify(bare) },
+    ],
+  }
+  await app.boot({ route: '/liste', wait: '.hub', viewport: { width: 390, height: 844 }, api: { overrides: { board } } })
+  await page.getByRole('button', { name: /Montrer à la caisse/ }).click()
+
+  const tile = (name: string) => page.locator('.cashier__tile').filter({ hasText: name })
+  await expect(tile('Framboises').locator('.cashier__tile-price')).toHaveText('2 / 5 $')
+  await expect(tile('Bleuets').locator('.cashier__tile-price')).toHaveText('Voir la circulaire')
+
+  await tile('Framboises').click()
+  await expect(page.locator('.bigcard__price')).toHaveText('2 / 5 $')
 })
