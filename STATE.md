@@ -9,7 +9,7 @@
 > only open work started at line 3 490 — so the question it exists to answer was behind
 > 81 % of the file. What shipped, and every closed finding, went to git — where the
 > `bmad/` planning folder followed it on the same day. A line budget is enforced by
-> `src/lib/docCounts.test.ts`, and it is a ratchet: it may fall, never rise.
+> `src/lib/docBudget.test.ts` (lines and bytes), and it is a ratchet: it may fall, never rise.
 >
 > **Written 2026-08-27**, after a four-wave sweep (commits `8e526e3`, `e76bfe1`,
 > `375856c`, `31598dd`). Everything below was verified against code or a command run
@@ -32,10 +32,10 @@
 | **Schema** | 153 forward-only migrations (0150 = une seule table de tâches, 0152 = le début de chaque série écrit, 0153 = `kind` ramené à `plan · upkeep · NULL`) |
 | **Tests** | 3 038 unit tests in 264 files (2026-11-05, night) · 156 real-runtime cases in 24 files (`npm run test:d1`, the Worker in workerd against a real D1) · 195 Playwright spec files |
 | **Deploy** | Push to `main` → CI (typecheck · test · build · bundle budget · **test:d1** · knip) gates `db:migrate:prod` + `wrangler deploy`. E2E is decoupled (`workflow_run`), runs after a green CI, never blocks the ship. |
-| **Second interface** | `/api/mcp` — read-only over the household — of the 12 tools, most proxy a GET handler that already exists, so the caps, the recurrence expansion and the time zone are decided once and inherited. (This row lives HERE, not in §3: docCounts derives that number from the registry, and the claim died the first time §3 rotated.) |
+| **Second interface** | `/api/mcp` — read-only over the household — of its dozen tools, most proxy a GET handler that already exists, so the caps, the recurrence expansion and the time zone are decided once and inherited. |
 | **Households in production** | **Six** real, re-counted in D1 on 2026-09-29 — Marc's (4 members), four other real accounts from the invite gate, and the legacy read-only demo singleton — plus two live 24 h sandboxes. **Zero signups in the five days since the gate opened (09-24)**: the door works (the weekly stranger walk is green), nobody has come through it yet — and whether nobody CAME is now answerable: the nightly mail counts trials opened, kept and refused at the cap, and direct signups (0141, `_lib/strangers.ts`) |
 
-*(Numbers rot: re-run the commands before quoting them — `docCounts.test.ts` holds the derivable ones.)*
+*(Numbers rot: re-run the commands before quoting them.)*
 
 ### Health signals
 
@@ -78,17 +78,16 @@ interchangeable. Read this table before opening any of them.
 > | `❓` | an open **question**, not a task |
 > | ⚪ | an **idea pool** entry — uncommitted, never a queue |
 >
-> Templates (`PARITY.md` Parts 5–6, `ACTIONS.md` Part 5) and idea pools carry **no
+> Templates (`PARITY.md`'s checklist and Definition of Done) and idea pools carry **no
 > checkboxes at all**. Before this, `- [ ]` meant three different things and any count
 > of "open items" read **75** when the true number was 17 — a mis-count that opened at
 > least one session on the wrong work. `grep -rc -- "- [ ] " *.md` is now
-> a number you can trust. It reads **3** — all of them `REVIEW-TRACKER.md`'s (the 7-persona
-> review of 2026-11-17; 0 before it). **Asserted from the boxes themselves** by
-> `src/lib/docCounts.test.ts`, so this sentence cannot drift the way `REVIEW-PASS.md`'s
-> banner once did — it claimed 15 for twelve days against a single box.
+> a number you can trust, so it is run, not written down here (review #42 dropped the written
+> counts and the test that chased them: `REVIEW-PASS.md`'s banner once claimed 15 for twelve
+> days against a single box). Today the open boxes are `REVIEW-TRACKER.md`'s.
 >
 > **A written box is the RARE case, not the backlog.** Most of what is worth doing lives
-> in judgement: the idea pools, the parity matrix's own cells, a device pass, the next
+> in judgement: the idea pools, a parity scoring pass, a device pass, the next
 > sweep of screenshots. Read §4 before picking work.
 >
 > **What `[~]` may NOT be used for:** a bullet that still says "Still open: …" is open
@@ -99,14 +98,13 @@ interchangeable. Read this table before opening any of them.
 | --- | --- | --- |
 | **STATE.md** | ← you are here | The front door. Start here. §4 is what is open. |
 | `CLAUDE.md` | **Law** | Build-by-reuse rules, conventions, the primitive table. Read before writing code. |
-| `PARITY.md` | **Playbook** | The feature × dimension matrix + the canonical new-entity checklist. 0 open — Wave D is a `[~]` standing policy. Parts 5–6 are a template: copy, don't tick. |
-| `ACTIONS.md` | **Playbook** | The action × door matrix (action × entry point × undo tier × non-touch). No open items — Part 5 is a template. |
+| `PARITY.md` | **Playbook** | The dimensions D1–D17, the door taxonomy, the undo tiers and the new-entity/new-action checklist (merged with `ACTIONS.md` in review #42; the old matrices are in git). A template: copy, don't tick. |
 | `LEAN.md` · `DISCOVERY.md` · `COMPONENTS.md` · `OFFLINE.md` · `DEPLOY.md` | Reference | Consult when touching their concern. |
 | `PLAN-mots-and-lifecycle-followups.md` | ⚪ Idea pool | 12 designed features, walked with Marc 2026-09-25: 7 accepted and shipped, 4 dismissed. Closed. |
 | ~~`bmad/`~~ | **Deleted 2026-09-17** | The planning folder and the archive: brief, PRD, architecture, the idea pools, every finished ledger, and this file's own past. ~10 000 lines of documents about an app that is built. **In git, not in the tree** — `git log --diff-filter=D -- bmad/` finds the deleting commit; `git show <sha>^:bmad/<file>` reads any of it. Code comments still cite its tags (`NFR-CALM-1`, `PRD C5`, `bmad/08 E-36`); they are labels now, not pointers (see CLAUDE.md ▸ Requirement tags). |
 
 **The trap this table used to exist to stop is now fixed at the source.** `PARITY.md` +
-`ACTIONS.md` contributed 40 unticked boxes that were templates; they are plain bullets
+the old `ACTIONS.md` contributed 40 unticked boxes that were templates; they are plain bullets
 now, so the repo-wide count is honest for the first time.
 
 ---

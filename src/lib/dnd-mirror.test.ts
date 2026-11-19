@@ -4,12 +4,12 @@ import { describe, expect, it } from 'vitest'
 import { sourceFiles, blankComments } from './buildGuardScan'
 
 // A DRAG IS NEVER THE ONLY DOOR (CLAUDE.md « Every UI change must be desktop-friendly »,
-// ACTIONS.md Part 1 #7). `usePointerDnd` binds pointer events a mouse can drive, but a
+// PARITY.md Part 1 #7). `usePointerDnd` binds pointer events a mouse can drive, but a
 // press-and-hold is invisible to a keyboard and to a screen reader, and on a wall
 // tablet it is a gesture nobody is told about. Every surface that drags must name the
 // control that does the same thing without dragging — and until 2026-11-05 two did not:
 // the week grid's day→day meal drag and the family builder's band placement had no
-// mirror at all, while ACTIONS.md's matrix called both ✅ (a verdict, not a fact).
+// mirror at all, while PARITY.md's matrix called both ✅ (a verdict, not a fact).
 //
 // INVENTORY guard: every file that calls usePointerDnd( is a key below, with the
 // mirror written out; a key whose file stopped dragging is stale. Planted red with a

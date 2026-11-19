@@ -14,7 +14,7 @@ import { announce } from '../lib/announce'
 // `as` picks the element (a 'span' chip vs an 'li' row); `showGrip` lets a
 // read-only guest render the same pill without the drag handle.
 //
-// `onMove` is the keyboard/mouse-only door onto the same reorder (ACTIONS.md's
+// `onMove` is the keyboard/mouse-only door onto the same reorder (PARITY.md's
 // desktop-reachability rule): Tab to the grip, ↑/↓ moves the row one slot, exactly
 // the pattern La liste's own hand-rolled grip already used (pages/Liste.tsx) —
 // moved in here 2026-09-03 so every DragPill caller gets it by passing one prop

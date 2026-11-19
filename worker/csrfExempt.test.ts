@@ -15,7 +15,7 @@ import { ROUTES } from './routes'
 // It reads the SOURCE rather than importing the constant. worker/index.ts is the Worker
 // entry; exporting a private set just so a test can see it would widen its surface and
 // hand knip a question, and this repo already reads source for guards that cannot be
-// expressed any other way (docCounts, deployHook's constant-time check).
+// expressed any other way (docBudget, deployHook's constant-time check).
 
 const SRC = readFileSync(join(import.meta.dirname, 'index.ts'), 'utf8')
 

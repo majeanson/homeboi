@@ -513,7 +513,7 @@ export const FR = {
     // ordinaire n’a rien à régler. Pas une priorité, pas un rang.
     rushNone: 'Pas pressé',
     // The ⠿ grip's accessible name: it drags AND (focused) répond aux flèches —
-    // the keyboard mirror of the drag (ACTIONS.md ¹³), so the label names both.
+    // the keyboard mirror of the drag (PARITY.md ¹³), so the label names both.
     reorderHint: 'Réordonner — glisse, ou ↑/↓ au clavier',
     rushHint:
       'Se lit en gris et descend au bas de la liste : on le prend si une aubaine passe, sinon on l’oublie.',
@@ -784,7 +784,7 @@ export const FR = {
     // dismissible, per-device, never auto-shown to a guest or the toddler lens.
     editDiscover: 'Maintiens une carte pour réorganiser le babillard.',
     // La porte permanente au pied du babillard une fois l'indice retiré — le miroir
-    // clavier/souris du maintien (ACTIONS.md Wave C).
+    // clavier/souris du maintien (PARITY.md Wave C).
     editEnter: 'Organiser le babillard',
     // The trial phone's short board and its door to the rest (lib/curatedBoard).
     seeAll: 'Tout voir',

@@ -148,11 +148,11 @@ the pill map is `SETTINGS_TREE` in `lib/settingsNav.ts`; link a section with `?f
 | Mots · fridge memos | board notes (`notes`), optionally with an audio/drawing/photo attachment |
 | Cook mode · cashier mode | full-screen recipe (« Il en manque » flags pantry-low) · in-store list/price-match |
 | Recipe sections | inline `## Title` lines inside the flat ingredient/step arrays; every iterator skips them |
-| Discovery | guide cards (**32** guide cards today against a **~32 merge-first ceiling**), help hints, tours, `?card=&point=&focus=&plus=` links: read `DISCOVERY.md` first |
+| Discovery | guide cards (at a **~32 merge-first ceiling**), help hints, tours, `?card=&point=&focus=&plus=` links: read `DISCOVERY.md` first |
 | Calm mode | softens kid-routine redo friction only; the structural calm guarantees are not toggleable |
 
-Before adding an entity or action, walk **`PARITY.md`** (feature × cross-cutting dimension, Part 5
-checklist, Part 6 gate) and **`ACTIONS.md`** (every action × entry point). A surface stays lean and a
+Before adding an entity or action, walk **`PARITY.md`**: the dimensions D1–D17, the doors an
+action may use, the undo tiers, and the checklist to copy into the commit. A surface stays lean and a
 composer stays generous: **`LEAN.md`**.
 
 ## Standing rules
@@ -166,6 +166,6 @@ composer stays generous: **`LEAN.md`**.
   violation, watch it fail, restore, and check that the plant actually landed. A green guard alone
   proves nothing (STATE.md §5 has the story).
 - **Measure with `boxOf()` in e2e**, never `(await x.boundingBox())!`.
-  **The sweep is done (2026-09-09): 0 bare call sites are left**; `docCounts.test.ts` keeps it so.
+  **The sweep is done (2026-09-09): 0 bare call sites are left**; `docBudget.test.ts` keeps it so.
 - `wrangler.toml`'s `database_id` is the original author's DB. Don't commit to the parent
   `FULL_LIFE_AS_CODE` folder (not a git repo).

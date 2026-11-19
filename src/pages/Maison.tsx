@@ -223,7 +223,7 @@ function MaisonParent() {
   const [focusItem, setFocusItem] = useState<string | null>(null)
 
   // The cercle's OWN person search (guide `cercle` point 8 — the CERCLE_HELP.search
-  // entry existed but no control did; ACTIONS.md Wave C wired it). One collapsible
+  // entry existed but no control did; PARITY.md Wave C wired it). One collapsible
   // loupe over the WHOLE directory — a live query flattens the grouped cards into
   // plain matching rows, so "where did I file Ginette" is one type-ahead, not a
   // scroll through every family card. Cleared → the grouped view returns untouched.
@@ -567,7 +567,7 @@ function MaisonParent() {
 
   // HEAVY delete (the person + their relationship edges + group memberships, all
   // cascaded server-side) — the same confirm-then-DELETE the person form scene
-  // carries, now one peek ⋯ away like a pet's (ACTIONS.md Wave D: the contact was
+  // carries, now one peek ⋯ away like a pet's (PARITY.md Wave D: the contact was
   // the one cercle entity whose delete hid in its form scene alone).
   async function deleteContact(id: string, name: string) {
     if (!(await confirm({ message: t.cercle.deleteConfirm(name), confirmLabel: t.cercle.deletePerson, tone: 'danger' }))) return

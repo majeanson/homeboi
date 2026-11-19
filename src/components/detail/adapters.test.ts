@@ -30,7 +30,7 @@ describe('buildMeal — what you can do with a planned meal', () => {
   })
 
   it('…and that door lands on THAT meal’s own composer, not the day in general', () => {
-    // The door-lands-on-its-target rule (ACTIONS.md): « Choisir une recette » on a
+    // The door-lands-on-its-target rule (PARITY.md): « Choisir une recette » on a
     // collation must open the COLLATION, not the headline supper.
     const m = buildMeal(meal(), ctx, { daySec: 1_749_355_200 })
     expect(hrefOf(m, 'pick-recipe')).toBe('/kitchen/day/1749355200?vue=repas&focus=meal:snack')

@@ -241,7 +241,7 @@ test.describe('list', () => {
   })
 
   test('the drag grip is a keyboard door too — ↑ on a focused grip PATCHes the new order', async ({ page }) => {
-    // « Mon ordre » reorder was drag-only (ACTIONS.md ¹³): a mouse can drag, a
+    // « Mon ordre » reorder was drag-only (PARITY.md ¹³): a mouse can drag, a
     // keyboard could not. The ⠿ grip is now focusable and ↑/↓ run the same
     // splice — Tab to the grip, arrow, and the order persists.
     const grips = page.locator('.list-row__grip')

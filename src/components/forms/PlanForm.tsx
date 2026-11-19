@@ -128,7 +128,7 @@ export function PlanForm({
     if (!value) return
     // useConfirm, not the undo toast: this form is a full-screen scene, and the
     // toast sits BELOW a scene in the layer scale — an « Annuler » offered from here
-    // would be literally unreachable (ACTIONS.md's undo-tier rule).
+    // would be literally unreachable (PARITY.md's undo-tier rule).
     if (!(await confirm({ message: v.deletePlanConfirm, tone: 'danger' }))) return
     setBusy(true)
     try {

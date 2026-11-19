@@ -13,10 +13,10 @@ import path from 'node:path'
 // deliberate exemption — so both accumulated silently. Eight primitives the law in
 // CLAUDE.md tells you to reach for (`FormScene` among them) simply weren't there.
 //
-// The fix is a convention this file enforces: a row either has a live specimen, or
-// ends with `*(no specimen: <reason>)*`. Both halves fail closed.
-//
-// It also pins the two shapes that made the audit itself lie before it was believed:
+// Since review #42 (2026-11-18) COMPONENTS.md is GENERATED from the gallery
+// (scripts/gen-components.mjs, held by componentsDoc.test.ts), so the row ↔ specimen half of
+// this file is structural now: there is no second table to disagree. What stays here keeps
+// the GALLERY honest. It pins the two shapes that made the audit itself lie before it was believed:
 //  - a component NAME that lives in two files (`LoadError` did, and the two had
 //    drifted apart in behaviour — see COMPONENTS.md's Fallback row);
 //  - a gallery entry whose `name` promises a component its `file` doesn't export
@@ -30,11 +30,8 @@ import path from 'node:path'
 const ROOT = path.resolve(__dirname, '../..')
 const SRC = path.join(ROOT, 'src')
 const DEVKIT = path.join(SRC, 'pages/DevKit.tsx')
-const MD = path.join(ROOT, 'COMPONENTS.md')
 
 const devkit = fs.readFileSync(DEVKIT, 'utf8')
-const md = fs.readFileSync(MD, 'utf8')
-const mdLines = md.split(/\r?\n/)
 
 // ── the gallery ──────────────────────────────────────────────────────────────
 type Entry = { cat: string; name: string; files: string[] }
@@ -51,48 +48,12 @@ function pathsIn(s: string): string[] {
   return [...s.matchAll(/[A-Za-z0-9_/.-]+\.(?:tsx?|css)/g)].map((m) => m[0])
 }
 
-// ── COMPONENTS.md's primitive table ──────────────────────────────────────────
-type Row = { line: number; name: string; files: string[]; excused: boolean }
-
-const secStart = mdLines.findIndex((l) => l.startsWith('## Shared primitives'))
-const secEnd = mdLines.findIndex((l) => l.startsWith('### Page orchestrators'))
-const ROWS: Row[] = []
-for (let i = secStart; i < secEnd; i++) {
-  const l = mdLines[i]!
-  if (!l.startsWith('|')) continue
-  const cells = l.split('|').map((c) => c.trim())
-  if (cells.length < 4) continue
-  const name = cells[1]!.replace(/\*\*/g, '').trim()
-  if (!name || /^-+$/.test(name) || name === 'Component') continue
-  const files = pathsIn(cells[2]!)
-  if (!files.length) continue
-  ROWS.push({ line: i + 1, name, files, excused: /\*\(no specimen: .+?\)\*/.test(l) })
-}
-
-describe('/dev/kit ↔ COMPONENTS.md parity', () => {
+describe('/dev/kit stays honest', () => {
   it('parses both sides (canary — a parser that finds nothing proves nothing)', () => {
     // Both numbers only ever move deliberately. They exist so that a regex that
     // silently stops matching fails HERE, loudly, instead of turning every rule
     // below into a green no-op — the failure mode this repo has recorded five times.
     expect(ENTRIES.length).toBeGreaterThan(100)
-    expect(ROWS.length).toBeGreaterThan(130)
-  })
-
-  it('every primitive row has a specimen, or says why not', () => {
-    const kitFiles = new Set(ENTRIES.flatMap((e) => e.files))
-    const offenders = ROWS.filter((r) => {
-      if (r.excused) return false
-      // Only a real component can be a specimen; a route or a lib seam must be excused
-      // in the doc rather than silently tolerated here.
-      if (!r.files.some((f) => f.startsWith('components/') && f.endsWith('.tsx'))) return true
-      return !r.files.some((f) => kitFiles.has(f))
-    }).map((r) => `COMPONENTS.md:${r.line} ${r.name} (${r.files.join(', ')})`)
-
-    expect(
-      offenders,
-      'Each of these is listed as a shared primitive but has no live specimen in /dev/kit.\n' +
-        'Add an Entry to src/pages/DevKit.tsx, or end the row with *(no specimen: <reason>)*.',
-    ).toEqual([])
   })
 
   it('every gallery entry points at files that exist', () => {
@@ -132,29 +93,6 @@ describe('/dev/kit ↔ COMPONENTS.md parity', () => {
     expect(dupes, 'Two components share a name. One of them is a fork waiting to drift.').toEqual([])
   })
 
-  it('every gallery category is declared in COMPONENTS.md', () => {
-    // COMPONENTS.md groups by role, the gallery adds domain buckets, and the file used
-    // to claim they were the same taxonomy. They are not — so the mapping is written
-    // down, and a category that appears in the gallery without joining it fails here.
-    // That is the exact route « Champs & saisie » took in beside « Saisie ».
-    // The table's OWN rows, not "everything down to the next heading": the prose under
-    // it is full of backticked component names, and slicing to `### Inputs` swallowed
-    // them — the guard's first run reported the eight new specimens as stray categories.
-    const head = mdLines.findIndex((l) => l.startsWith("| This file's section |"))
-    expect(head, 'the category mapping table is gone from COMPONENTS.md').toBeGreaterThan(-1)
-    // Start past the header + separator: the header cell itself says `/dev/kit`, which
-    // the scan then read as a retired category. (Second self-inflicted false positive
-    // in one assertion — a backtick scan does not know what it is looking at.)
-    const rows: string[] = []
-    for (let i = head + 2; i < mdLines.length && mdLines[i]!.startsWith('|'); i++) rows.push(mdLines[i]!)
-    const declared = new Set(rows.flatMap((l) => [...l.matchAll(/`([^`]+)`/g)].map((m) => m[1])))
-    const undeclared = [...new Set(ENTRIES.map((e) => e.cat))].filter((c) => !declared.has(c))
-    expect(undeclared, 'A gallery category is not in the mapping table in COMPONENTS.md.').toEqual([])
-    // …and the mapping must not name categories the gallery has retired.
-    const live = new Set(ENTRIES.map((e) => e.cat))
-    expect([...declared].filter((c) => !live.has(c!)), 'The mapping table names a category the gallery no longer uses.').toEqual([])
-  })
-
   it('the gallery has one name per category', () => {
     // « Champs & saisie » had grown beside « Saisie », stranding two entries in a
     // section of their own. One word per idea (UNIFY.md), inside the gallery too.
@@ -164,27 +102,6 @@ describe('/dev/kit ↔ COMPONENTS.md parity', () => {
       for (const b of cats)
         if (a !== b && norm(b).includes(norm(a))) collisions.push(`"${a}" is contained in "${b}"`)
     expect(collisions, 'Two gallery categories name the same idea.').toEqual([])
-  })
-})
-
-// Every top-level component is named somewhere in COMPONENTS.md, as a primitive or an
-// orchestrator (solidify 6.5). The inventory is how the next session finds a thing before
-// rebuilding it, so a missing row is a future duplicate. Planted red by deleting a row.
-describe('COMPONENTS.md names every top-level component', () => {
-  it('no exported component is missing', () => {
-    const dir = path.join(ROOT, 'src/components')
-    const scanned: string[] = []
-    const missing = fs
-      .readdirSync(dir)
-      .filter((f) => f.endsWith('.tsx') && !f.includes('.test.'))
-      .flatMap((f) =>
-        [...fs.readFileSync(path.join(dir, f), 'utf8').matchAll(/^export function ([A-Z][A-Za-z0-9_]+)/gm)]
-          .map((m) => (scanned.push(m[1]!), m[1]))
-          .filter((name) => !md.includes(name!))
-          .map((name) => `${f}: ${name}`),
-      )
-    expect(scanned.length, 'the export scan found nothing: it broke').toBeGreaterThan(50)
-    expect(missing, 'add a row to COMPONENTS.md').toEqual([])
   })
 })
 

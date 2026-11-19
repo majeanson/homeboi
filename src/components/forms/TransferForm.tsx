@@ -205,7 +205,7 @@ export function TransferForm({
   async function remove() {
     if (!value) return
     // A scene sits above the undo toast in the layer scale, so an « Annuler » raised
-    // from here could not be reached — this tier is a confirm (ACTIONS.md).
+    // from here could not be reached — this tier is a confirm (PARITY.md).
     if (!(await confirm({ message: v.deleteConfirm, tone: 'danger' }))) return
     setBusy(true)
     try {

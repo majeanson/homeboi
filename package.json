@@ -16,6 +16,7 @@
     "check:bundle": "node scripts/check-bundle.mjs",
     "perf:door": "node scripts/coldstart.mjs",
     "knip": "knip",
+    "components": "node scripts/gen-components.mjs",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",

@@ -159,7 +159,7 @@
 /* The "..." is the shared ActionMenu (`.action-menu`, components/ActionMenu.tsx);
    this class only pins its trigger in the flex row. Replaced the hand-rolled 32px
    `.cnote__act` twins, then the shared `RowActions` pencil/trash pair after that
-   (ACTIONS.md Wave B, then 2026-09-04). */
+   (PARITY.md Wave B, then 2026-09-04). */
 /* The "..." menu — pinned to the row's TOP-RIGHT corner rather than riding in the
    flex row, where (flex:none, full row height) it took its width out of the note's own
    text: a two-line preview clipped at « Hypothèque 81… » while a quarter of the row was

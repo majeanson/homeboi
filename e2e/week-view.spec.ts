@@ -78,7 +78,7 @@ test('the week spells its days out, and each row is a link into that day', async
   await expect(page.locator('.weekv__line', { hasText: 'Boire assez d’eau' })).toHaveCount(0)
 
   // Every row is a real LINK to the ONE day door — not a div with an onClick. It has
-  // to survive a middle-click and a keyboard, and be announced as a link (ACTIONS.md).
+  // to survive a middle-click and a keyboard, and be announced as a link (PARITY.md).
   const href = await rows.first().locator('a').getAttribute('href')
   expect(href).toBe(`/kitchen/day/${days[0]}`)
   await expect(rows.nth(3).locator('a')).toHaveAttribute('href', `/kitchen/day/${days[3]}`)

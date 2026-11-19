@@ -38,7 +38,7 @@ export function MealRows({
   onRemove: (id: string) => void
   onMove: (id: string, dir: 'up' | 'down') => void
   // « Déplacer… » — to another day and/or slot. The mouse/keyboard MIRROR of the two
-  // drags (ACTIONS.md: a gesture is never the only door); the host opens its picker.
+  // drags (PARITY.md: a gesture is never the only door); the host opens its picker.
   onMoveTo?: ((meal: MealRow) => void) | undefined
   onRename: (id: string, title: string) => void
   onClearAll?: () => void // "clear this slot" — shown only when the slot holds several

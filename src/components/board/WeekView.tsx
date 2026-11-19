@@ -130,7 +130,7 @@ export function WeekView({
             <li key={d} className={'weekv__day surface' + (isToday ? ' is-today' : '')}>
               {/* The whole row is the day door. A Link, not a div+onClick: it is a
                   NAVIGATION, so it must be a real link — middle-clickable, focusable,
-                  and announced as one (ACTIONS.md's non-touch rule). */}
+                  and announced as one (PARITY.md's non-touch rule). */}
               <Link
                 to={`/kitchen/day/${d}`}
                 className="weekv__day-link"

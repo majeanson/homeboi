@@ -13,7 +13,7 @@ import { UNKNOWN_GET } from './mocks'
 // travel to this reporter from every worker, so there is no shared file to race on, and
 // a shard only sees its own tests. That is why the check is one-way: a path outside
 // e2e/unknown-gets.json fails the run, and a listed path not seen proves nothing here.
-// The list only shrinks: `docCounts.test.ts` pins its length. A path comes off it by
+// The list only shrinks: `docBudget.test.ts` pins its length. A path comes off it by
 // getting a fixture in e2e/mocks.ts (typed in functions/_lib/wire.ts).
 //
 // It is a reporter rather than a globalTeardown because teardown runs in the main

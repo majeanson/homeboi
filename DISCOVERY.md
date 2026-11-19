@@ -198,8 +198,8 @@ spells the retired pill.
 ## Adding a feature's comprehension wiring (checklist)
 
 1. **Guide**: a point on an existing card (default) or — rarely — a new card in
-   `guideContent.ts` (merge-first: ~32 cards is the ceiling, not a floor — and there
-   are **32** today — at capacity — so the bar for a new one is higher, not lower). Give
+   `guideContent.ts` (merge-first: ~32 cards is the ceiling, not a floor, and the guide sits
+   at it, so the bar for a new one is higher, not lower). Give
    the card/point its `route`/`settings`; add a new concept id to its
    `CONCEPT_THEMES` bucket.
 2. **Help**: an entry in the section's help registry (`{ body, card, point }`)

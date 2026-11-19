@@ -1575,7 +1575,7 @@ export function Board() {
               type="button"
               className="greet__btn"
               // The visible text is the greeting; the NAME says what the tap opens —
-              // the door looked like plain prose to a mouse/SR user (ACTIONS.md Wave C).
+              // the door looked like plain prose to a mouse/SR user (PARITY.md Wave C).
               onClick={help.pick('greeting', () => setSinceMorningOpen(true))}
               // The name STARTS with the words on screen: voice control says what it sees.
               aria-label={`${me ? `${t.today[tod]}, ${greetName(me.display_name)}` : t.today[tod]} : ${t.sinceMorning.title}`}
@@ -1870,7 +1870,7 @@ export function Board() {
             </div>
           )}
           {/* Once the hint retires, its slot keeps a PERMANENT quiet door: the
-              keyboard/discoverable mirror of the hold (ACTIONS.md Wave C — a hold
+              keyboard/discoverable mirror of the hold (PARITY.md Wave C — a hold
               works with a mouse too, but nothing said so once the hint was gone,
               and a keyboard had only the Réglages deep-link). Shown to a guest as
               well: the layout is this device's localStorage, not a household write. */}

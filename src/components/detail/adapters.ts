@@ -785,7 +785,7 @@ export function buildContact(
   // "Exporter (vCard)" — download a .vcf to drop this person into any phone/Mac.
   if (opts?.onExport) actions.push({ key: 'export', label: t.cercle.exportVcard, icon: 'arrow-up-right-bold', overflow: true, run: opts.onExport })
   // « Supprimer » — the same confirm-then-DELETE the person form scene carries; a
-  // pet's peek already had this door, a contact's didn't (ACTIONS.md Wave D).
+  // pet's peek already had this door, a contact's didn't (PARITY.md Wave D).
   // Heavy tier (edges + memberships cascade), so the confirm lives in the caller.
   if (opts?.onDelete) actions.push({ key: 'delete', label: t.cercle.deletePerson, icon: 'trash-bold', tone: 'danger', overflow: true, run: opts.onDelete })
   if (opts?.onEdit) actions.push({ key: 'edit', label: t.cercle.editPerson, icon: 'pencil-simple-bold', primary: true, run: opts.onEdit })

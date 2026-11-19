@@ -110,7 +110,7 @@ export function CheckRow({
       {(canEdit || onDelete || (onExtra && extraIcon)) && (
         // ONE RowActions carries the whole trailing cluster — the extra slot (La
         // réserve's 🛍) rides its `onExtra`, so `.row-actions*` has a single owner
-        // instead of this row hand-rolling a lookalike span (ACTIONS.md Wave B).
+        // instead of this row hand-rolling a lookalike span (PARITY.md Wave B).
         <RowActions
           onExtra={onExtra}
           extraIcon={extraIcon}

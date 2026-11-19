@@ -44,6 +44,8 @@ export interface RoutineRow {
 type MomentBucket = RoutineTod | 'any'
 const MOMENT_ORDER: MomentBucket[] = ['morning', 'afternoon', 'evening', 'any']
 
+// The routines overview (Maison ▸ Routines): every routine as a card, grouped by the moment of
+// the day with the current moment first, each card showing its progress and opening its player.
 export function RoutinesTab({ help }: { help: HelpMode }) {
   const t = useT()
   const { calm } = useCalm()

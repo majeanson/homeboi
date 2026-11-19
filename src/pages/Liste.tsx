@@ -257,7 +257,7 @@ function ListItemRow({
             role="button"
             // Focusable on purpose: the drag is invisible to a keyboard, so the
             // SAME handle is the arrow door — Tab to the grip, ↑/↓ move the row
-            // (ACTIONS.md ¹³, the desktop-reachability rule). preventDefault so
+            // (PARITY.md ¹³, the desktop-reachability rule). preventDefault so
             // an arrow moves the ROW, not the page scroll.
             tabIndex={0}
             aria-label={`${t.list.reorderHint} — ${text}`}
@@ -424,7 +424,7 @@ export function Liste() {
   // position 0..n and the poll resorts everyone to match.
   // Move the row at `from` to slot `to` in the live cache order and persist.
   // Shared by the pointer DROP and the grip's keyboard ARROWS — the drag was the
-  // only reorder path in « Mon ordre » (ACTIONS.md ¹³): a mouse can drag, a
+  // only reorder path in « Mon ordre » (PARITY.md ¹³): a mouse can drag, a
   // keyboard could not, so the grip is focusable and ↑/↓ do the same splice.
   function moveRow(from: number, to: number) {
     if (from === to) return

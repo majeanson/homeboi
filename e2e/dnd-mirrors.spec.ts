@@ -2,7 +2,7 @@ import { test, expect } from './fixtures'
 import { MMID } from './mocks'
 
 // A DRAG IS NEVER THE ONLY DOOR (solidify 1.8, 2026-11-05). Two surfaces had a
-// press-and-hold as their one way to move a thing, while ACTIONS.md's matrix called
+// press-and-hold as their one way to move a thing, while PARITY.md's matrix called
 // them ✅ non-touch: a meal could only change DAYS by dragging it on the week grid, and
 // a face could only reach a generation band in the family builder by being dragged
 // there. Both now have a menu door a mouse, a keyboard and a screen reader can drive —

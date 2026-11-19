@@ -80,18 +80,12 @@ const SERVER_INFO = { name: 'babillard', title: 'Babillard — la maisonnée', v
 const DAY = 86400
 
 // ── Tool registry ────────────────────────────────────────────────────────────────
-// 12 tools, hand-picked. The temptation was a generic "name a path, get JSON"
-// bridge over all 96 endpoints; it was rejected because a tool list is PROMPT — a
-// model reads every description on every call, and ninety-six of them would crowd out
-// the conversation while making each one less legible. 12 tools that say what they
-// are beat ninety-six that do not.
-//
-// THE NUMBER IS DERIVED, NOT TYPED. It appears here, in STATE.md and in
-// worker/mcp.d1.test.ts, and it used to be spelled « eight » in all three — which
-// docCounts.test.ts could not see, because its whole job is checking numerals. A
-// count written in letters is a count nobody re-derives; CLAUDE.md already tells the
-// story of « 74 » surviving long after the real answer was 40. It is a numeral now
-// and docCounts owns it.
+// A dozen tools, hand-picked. The temptation was a generic "name a path, get JSON"
+// bridge over every endpoint; it was rejected because a tool list is PROMPT — a model
+// reads every description on every call, and a hundred of them would crowd out the
+// conversation while making each one less legible. A few tools that say what they are
+// beat a hundred that do not. (No count is written here: worker/mcp.d1.test.ts reads
+// the registry itself.)
 //
 // MOST proxy the handler that already owns the data, through callRead() below, and
 // inherit its caps, the household time zone, the recurrence expansion and the meal-slot

@@ -97,11 +97,9 @@ runs is a comment with a number in it.
 **Windows and the Linux runner agree — checked, not assumed.** The worry was that
 budgets baselined locally would be quietly loose or quietly red on CI, since font
 metrics differ. The first full CI sweep (2026-08-26, 64 states, 44 budgeted — a dated
-record of that run, deliberately not updated; **today the sweep is 129 entries → 144
-states, 73 of them budgeted, plus 45 lens twins (every text-heavy state re-shot in EN
-at 390px and in FR at 360px — 2026-09-10; twins are generated rather than listed, so
-they are counted on their own)**, and those three live numbers are asserted from the spec by
-`src/lib/docCounts.test.ts`) came
+record of that run, deliberately not updated; the sweep has more than doubled since, plus the
+lens twins: every text-heavy state re-shot in EN at 390px and in FR at 360px — count them in
+`e2e/state-matrix.spec.ts` rather than here) came
 back with every entry at exactly its tolerance — the same numbers to the pixel.
 That is not luck: `contentTopPx` is a sum of BOX heights (padding, margins, fixed
 control heights), and only a value that wraps differently between platforms would

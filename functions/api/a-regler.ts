@@ -129,7 +129,7 @@ export const onRequestGet = authed(async (ctx, actor) => {
     //   Operator-only, and that is reachability rather than privacy: both review cards
     //   carry `access: 'operator'` in SETTINGS_TREE, so a kiosk following this href
     //   would land on a page that does not render the card it was sent to. A signal
-    //   whose fix is invisible is worse than no signal (ACTIONS.md).
+    //   whose fix is invisible is worse than no signal (PARITY.md).
     //
     //   `.catch(() => null)` each: these tables are old, but a scan that 500s because
     //   one select tripped would cost the household every OTHER friction on the board.

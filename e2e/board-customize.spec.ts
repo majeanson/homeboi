@@ -111,7 +111,7 @@ test.describe('board layout customization', () => {
     await expect(page.locator('.wg-slot[data-card="notes"]')).toHaveCount(0)
   })
 
-  // The grip's ↑/↓ keyboard mirror (ACTIONS.md's desktop-reachability rule) —
+  // The grip's ↑/↓ keyboard mirror (PARITY.md's desktop-reachability rule) —
   // added 2026-09-03 after a code-review pass found DragPill drag-only across all
   // 8 of its call sites, boardLayout.tsx among them despite CLAUDE.md documenting
   // this exact panel as "the ACCESSIBLE MIRROR" of the board's press-and-drag

@@ -8,7 +8,7 @@ import { MMID } from './mocks'
 // THE WHOLE WCAG A + AA SET, HELD (solidify 7.4, 2026-11-05). contrast.spec holds one rule
 // at zero. The matrix runs all of them and only prints. So a violation here fails unless
 // e2e/axe-allow.json names its rule, its surface and a reason, and that file only shrinks
-// (docCounts pins its size). Contrast stays in contrast.spec, which walks both themes and
+// (docBudget pins its size). Contrast stays in contrast.spec, which walks both themes and
 // both roles. Plant: remove an entry.
 const SURFACES = [
   { name: 'board', route: '/board' },

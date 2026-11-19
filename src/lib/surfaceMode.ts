@@ -1,6 +1,6 @@
 import { createDeviceStore } from './createDeviceStore'
 
-// THE factory behind every ⚙ SIMPLE ↔ AVANCÉ face flag (ACTIONS.md, door #13).
+// THE factory behind every ⚙ SIMPLE ↔ AVANCÉ face flag (PARITY.md, door #13).
 //
 // A two-faces surface leans one way: the DEFAULT face is for reading/doing (a row
 // is its content plus one action), and AVANCÉ puts the explicit ✏️/🗑/⠿ furniture
@@ -16,7 +16,7 @@ import { createDeviceStore } from './createDeviceStore'
 //
 // listeMode.ts is the founding example (it keeps its own file for its surface-
 // specific documentation); new surfaces mint their flag HERE and record the face
-// split in ACTIONS.md Part 2. NOT every row list qualifies: a surface whose
+// split in PARITY.md Part 2. NOT every row list qualifies: a surface whose
 // furniture already lives behind a door (Habitudes' peek, the board todos'
 // tap-to-edit) or that is inherently managing (Réglages) stays single-faced — and
 // « Les notes », the OTHER founding twin, DROPPED this door entirely (2026-09-04):

@@ -128,7 +128,7 @@ export function MealPool<T extends { id: string; title: string }, O>({
   // an idée de repas the example) — the compensating tier: the row appears at once and
   // Annuler DELETEs exactly it. On the kitchen page the pill is right there; inside the
   // IdeasDrawer (a sheet, z-index 156 over the pill's 40) it waits behind the drawer —
-  // the layer rule in ACTIONS.md, recorded rather than fought.
+  // the layer rule in PARITY.md, recorded rather than fought.
   const createWithUndo = useCreateWithUndo()
 
   function add(rawTitle: string, picked: ComboOption<O> | null) {

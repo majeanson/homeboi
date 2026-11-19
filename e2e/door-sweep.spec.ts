@@ -7,7 +7,7 @@ import { boxOf } from './measure'
 // The state matrix photographs 140-odd states and could not see either of the two
 // bugs a phone found on 2026-09-10: a meal tap on the day scene that renamed instead
 // of opening the recipe, and a snack that would not drag. Both were gestures. A
-// screenshot shows neither. This spec walks the doors ACTIONS.md lists as « ✅ tap »
+// screenshot shows neither. This spec walks the doors PARITY.md lists as « ✅ tap »
 // / « ✅ hold » on the surfaces a household uses most, performs the gesture, and
 // asserts that SOMETHING observable happened — the URL moved, a sheet or scene
 // opened, a field took focus, a state flipped. Not the door's content (the feature

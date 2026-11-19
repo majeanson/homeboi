@@ -110,7 +110,7 @@ export const BOARD_HELP = {
   },
   // The greeting doubles as « Depuis ce matin » (A-3) — a real button, but it looks
   // like plain text, so armed help is where a mouse user learns the door exists
-  // (ACTIONS.md Wave C: it was the board's one undiscoverable action).
+  // (PARITY.md Wave C: it was the board's one undiscoverable action).
   greeting: {
     card: 'board',
     body: {

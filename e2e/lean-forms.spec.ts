@@ -279,7 +279,7 @@ test('the board’s edit hint sits under the cards, not over them', async ({ pag
   expect((await boxOf(hint)).y).toBeGreaterThan((await boxOf(grid)).y)
 
   // Still one-time + per-device: dismissing retires the INSTRUCTION — but its slot
-  // keeps a permanent quiet « Organiser » door (ACTIONS.md Wave C: the keyboard/
+  // keeps a permanent quiet « Organiser » door (PARITY.md Wave C: the keyboard/
   // discoverable mirror of the hold), which survives a reload and arms edit mode.
   await hint.getByRole('button').click()
   await expect(page.locator('.board-edit-hint[role="note"]')).toHaveCount(0)

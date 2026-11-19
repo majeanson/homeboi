@@ -481,7 +481,7 @@ function DayPlanScene() {
   // « Déplacer… » — the row ⋯'s picker (day + slot), the mouse/keyboard MIRROR of
   // both drags (the week grid's day→day, this scene's slot→slot). Until 2026-11-05 a
   // meal could only change days by a press-and-hold on the grid — no door for a mouse
-  // or a keyboard, though ACTIONS.md called the row ✅. Same owner (reschedule,
+  // or a keyboard, though PARITY.md called the row ✅. Same owner (reschedule,
   // mealMutations.ts); the undo is the inverse move, so nothing is recreated.
   const [moving, setMoving] = useState<MealRow | null>(null)
   const [moveSlot, setMoveSlot] = useState<MealSlot>(heroSlot)
@@ -802,7 +802,7 @@ function DayPlanScene() {
               <EmptyState tone="calm">{t.monthView.empty}</EmptyState>
             ) : (
               // « Partager » lives in the event PEEK (`EventPeekActions`), which every
-              // row here opens — ACTIONS.md:102 records it as a peek action and nothing
+              // row here opens — PARITY.md:102 records it as a peek action and nothing
               // else. This list used to hang a second, inline ↗ beside each row, and the
               // cost only became visible once the sweep shot below the fold: the ribbon
               // (`Fil`) takes the TIMED rows on any day with two or more of them, so the

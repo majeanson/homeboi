@@ -90,7 +90,7 @@ export function VirementsSection({ members }: { members: Member[] }) {
   // had no ✏️, no 🗑 — and the peek had none either, because `buildTransfer`'s options
   // were never wired. There was no way to edit a transfer at all (Marc, 2026-09-12:
   // « i cant redit the transfer »). One tap opens the peek; the peek carries the doors,
-  // which is the app's own convention for a compact row (ACTIONS.md, door #8).
+  // which is the app's own convention for a compact row (PARITY.md, door #8).
   const openPeek = (tr: Transfer) =>
     detail.open(
       buildTransfer(

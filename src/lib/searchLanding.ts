@@ -6,7 +6,7 @@ import { TASKS_VIEW_HREF } from './settingsNav'
 //   · an entity that lives in a CONTAINER opens the container with `?item=<id>`, and the
 //     container pulses that row (`useItemPulse`, or Maison/Notes' own focusItem).
 // Before this, a hit on a drawing, a habit, an idea, a mot or a todo opened the page and
-// left you to find the thing yourself, while ACTIONS.md said otherwise.
+// left you to find the thing yourself, while PARITY.md said otherwise.
 export type SearchHit =
   | { kind: 'recipe' | 'person' | 'pet' | 'carnet' | 'routine' | 'trip' | 'listItem' | 'business' | 'note' | 'drawing' | 'habit' | 'mot' | 'idea'; id: string }
   // A task: on the board's « Tâches » card when it is there today, else in the Tâches view.

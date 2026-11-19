@@ -337,7 +337,7 @@ export function FamilyBuilder({
       <span className="cercle-fam__chip-name">{p.firstName}</span>
       {/* « Placer » — the chip's ⋯ lists the bands (and the tray): the mouse/keyboard
           MIRROR of dragging the face onto a band. Until 2026-11-05 the drag was the
-          only door (ACTIONS.md: a gesture is never the only path). pointerdown is
+          only door (PARITY.md: a gesture is never the only path). pointerdown is
           stopped so opening the menu does not also start the drag. */}
       <span className="cercle-fam__chip-menu" onPointerDown={(e) => e.stopPropagation()}>
         <ActionMenu

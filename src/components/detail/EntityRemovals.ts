@@ -19,7 +19,7 @@ import { restoreMeals } from '../kitchen/mealMutations'
 // same rows on the board had all three. One hook, three surfaces (board · Mois · the
 // day page), so a row can never behave differently depending on which face named it.
 //
-// Tiers, unchanged from the board (ACTIONS.md): a task → DEFERRED behind the undo toast
+// Tiers, unchanged from the board (PARITY.md): a task → DEFERRED behind the undo toast
 // through useDeferredRemoval, scoped to the calendar's key so every occurrence of it hides
 // at once and a poll cannot resurrect it mid-undo; a planned meal →
 // compensating undo (the DELETE lands, « Annuler » re-plans it). A rendez-vous keeps

@@ -228,7 +228,7 @@ export function Notes({
       }).catch(writeFailed)
       return
     }
-    // A TEXT note rides the same held, undoable clear as « Tout effacer » (ACTIONS.md
+    // A TEXT note rides the same held, undoable clear as « Tout effacer » (PARITY.md
     // Wave B: the single dismiss was the only board delete with NO undo tier — a
     // toddler tap-to-clear or a parent mis-tap silently ate the note). Deferred, so
     // no poll can flash it back mid-undo, and undo simply cancels the held DELETE.
