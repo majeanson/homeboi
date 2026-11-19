@@ -1,7 +1,7 @@
 name: Recipe live contract
 
 # The weekly check that the recipe corpus still reads the same on the LIVE sites
-# (e2e/recipe-live.spec.ts under e2e/recipe.config.ts). Two facts per page: the reach a
+# (e2e/journey-recipes.spec.ts under e2e/recipe.config.ts). Two facts per page: the reach a
 # Worker gets (a site that started — or stopped — refusing it), and the exact read of the
 # production seam (a redesign that loses the steps). No browser, no account, no stubs.
 #

@@ -1224,7 +1224,7 @@ export async function mockApi(
       }
       // A swipe-delete removes its row — the next board read must NOT contain it,
       // or the deferred removal's freshness fence un-hides the row straight back
-      // out of the refetched frame (the resurrection liste-swipe-delete.spec.ts
+      // out of the refetched frame (the resurrection journey-list.spec.ts
       // guards). Before 2026-10-06 the mock answered a bare ok and KEPT the row,
       // so no spec could ever assert « swiped means gone » — the exact blind spot
       // the production bug lived in.

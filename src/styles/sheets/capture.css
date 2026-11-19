@@ -67,7 +67,7 @@ body.is-recording .add-fab {
      The undo toast deliberately stays DOWN at 40: it is a bottom pill that
      LINGERS (`.undo-toast--log`), so lifting it over a scene would park an
      interactive pill on the DrawPad canvas / cook stepper and eat taps there —
-     e2e/journey-cooking.spec.ts and e2e/recipe-leftovers.spec.ts both encode that
+     e2e/journey-cooking.spec.ts and e2e/journey-recipes.spec.ts both encode that
      it is out of reach from a scene. The cost is that a toast raised while a
      sheet is open waits for the sheet to close; every sheet action that offers
      an undo closes the sheet first today.

@@ -87,6 +87,10 @@ others.forEach((o, i) => {
 })
 writeFileSync(`e2e/${target}`, `${render(mods)}\n\n${body.trimEnd()}\n`)
 
+// The main spec's body goes into its own describe as well, so its file-level hooks (a frozen
+// clock, a viewport) never reach a folded block (journey-voyage found that one the hard way).
+if (others.length) execFileSync('node', [join(root, 'scripts/e2e-journey-wrap.mjs'), `e2e/${target}`], { stdio: 'inherit' })
+
 const skip = new Set(['node_modules', '.git', 'dist', 'plans', 'test-results', 'screenshots', 'coverage'])
 const walk = (d) =>
   readdirSync(d).flatMap((f) => {

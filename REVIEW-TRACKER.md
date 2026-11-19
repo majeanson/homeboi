@@ -68,7 +68,7 @@ Progress on the 43 items kept from the 7-persona review (2026-11-17).
   - The rule grows `until` (« Jusqu'au », a date under the repeat) and `except`. The occurrence peek's ⋯ offers « Pas cette fois », which skips that day only (PATCH `{ skipDay }`).
   - `recurOf` now carries both through, so an edit no longer erases them.
 
-  Tests: unit (recur, recurLabel, eventPeople, petFaces), d1 `events.d1.test.ts` (end, skip, 404 one-off, pet in Qui), e2e `event-series-pet.spec.ts`; plants red. ACTIONS.md gains the skip row.
+  Tests: unit (recur, recurLabel, eventPeople, petFaces), d1 `events.d1.test.ts` (end, skip, 404 one-off, pet in Qui), e2e `journey-events.spec.ts`; plants red. ACTIONS.md gains the skip row.
 
 ## P2: accessibility. ⚠ Show Marc each change, one by one, BEFORE implementing
 - [x] 32. Settings & combobox names (`SettingsRow` label/hint; `EntityCombobox` pattern). **Done** `dc032dc3`, approved by Marc 2026-11-18 (all three recommended options). Claims verified. Correction: arrows + `aria-activedescendant` already worked.

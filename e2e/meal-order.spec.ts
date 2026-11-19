@@ -5,7 +5,7 @@ import { mockApi, seedState } from './mocks'
 // Réglages ▸ Repas — the household's meal ORDER, HERO and serve HOURS. Three separate
 // settings that every meal surface reads through useMealPrefs, so the one thing worth
 // guarding e2e is that a saved order actually reaches those surfaces (rather than a
-// module constant quietly winning). Frontend-only harness, same as aisle-sort.spec.ts:
+// module constant quietly winning). Frontend-only harness, same as journey-list.spec.ts:
 // Vite + stubbed /api/**. The last test overrides the household payload with a custom
 // order + a moved hero + one edited hour, and asserts the settings rows AND the day
 // editor both follow it.

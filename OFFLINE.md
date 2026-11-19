@@ -135,7 +135,7 @@ it per recipe when the toggle is tapped. Two things to know before touching this
   so the form sending `null` preserves what is stored.
 
 Guards: `functions/_lib/recipeWire.test.ts` (the payload has no `original`, and the
-heal still fires) and `e2e/recipe-original-lazy.spec.ts` (opening a recipe fetches
+heal still fires) and `e2e/journey-recipes.spec.ts` (opening a recipe fetches
 nothing; the toggle fetches, and renders the snapshot rather than the live card).
 
 ## The write path (outbox)

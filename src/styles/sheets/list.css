@@ -332,7 +332,7 @@
      Present since the deal chip shipped and reachable at the SHIPPED 115% step
      (360px: 7px of clearance became 18px of overlap) — found by measuring the
      boxes, 2026-09-15, after a screenshot showed the symptom and could not say
-     which box was wrong. Guarded by e2e/list-row-fit.spec.ts. */
+     which box was wrong. Guarded by e2e/journey-list.spec.ts. */
   max-width: 100%;
 }
 .list-row__meta:empty {

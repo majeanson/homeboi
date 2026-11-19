@@ -19,9 +19,9 @@ export default defineConfig({
   // e2e:flipp`, weekly) — network-bound, no Vite, never per-push.
   // stranger-live.spec.ts walks the DEPLOYED app as a first-time visitor
   // (e2e/stranger.config.ts, `npm run e2e:stranger`, weekly) — same reason.
-  // recipe-live.spec.ts fetches the recipe corpus from the LIVE sites
+  // journey-recipes.spec.ts fetches the recipe corpus from the LIVE sites
   // (e2e/recipe.config.ts, `npm run e2e:recipes`, weekly) — same reason.
-  testIgnore: ['**/sw.spec.ts', '**/state-matrix.spec.ts', '**/flipp-live.spec.ts', '**/stranger-live.spec.ts', '**/recipe-live.spec.ts'],
+  testIgnore: ['**/sw.spec.ts', '**/state-matrix.spec.ts', '**/flipp-live.spec.ts', '**/stranger-live.spec.ts', '**/journey-recipes.spec.ts'],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   // CI runs serially (workers:1 below) and is the authoritative, strict run.
