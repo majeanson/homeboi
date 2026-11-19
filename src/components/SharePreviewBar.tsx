@@ -3,6 +3,8 @@ import { useT } from '../i18n'
 import { settingsHref } from '../lib/settingsNav'
 import { InlineIcon } from './Icon'
 
+/* oxlint-disable babillard/status-role -- the operator’s preview strip over a guest scene, a region */
+
 // Reads the operator's `?preview=<kind>` on a share scene (HandoffPage / WelcomePage
 // / FamilyWindowPage). A real guest never has this — the scenes fetch guest/window
 // from the token — so it's only ever set when the operator opened the scene from

@@ -8,6 +8,8 @@ import { aiSpentKind } from './aiQuota'
 import { formatNextUtcMidnight, formatTime } from './format'
 import { addLocalDays, todayLocalDay } from './localDay'
 
+/* oxlint-disable babillard/status-role -- the AI toast, its own aria-live assertive region */
+
 // On-screen surfacing of AI failures. lib/api emits when a handler tagged a
 // response with X-AI-Error (a Workers AI call quietly degraded); we show a notice
 // that does NOT auto-dismiss — someone has to tap "Accepter", which writes the

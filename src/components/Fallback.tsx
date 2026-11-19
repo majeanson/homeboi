@@ -10,7 +10,7 @@ import { Skeleton } from './Skeleton'
 
 // Shown while the first fetch is in flight. `children` replaces the word when the
 // wait has a better one (« Recherche… » over a flyer search) — the markup stays THE one
-// (`.loading` belongs to this file: kit-class-rule.test.ts).
+// (`.loading` belongs to this file: `babillard/class-owner` (lint)).
 export function Loading({ children }: { children?: ReactNode } = {}) {
   const t = useT()
   return <p className="loading mono">{children ?? t.common.loading}</p>

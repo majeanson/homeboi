@@ -4,7 +4,7 @@ import { createContext, useContext, useId, type ReactNode } from 'react'
 // on the right, an optional hint line under the row. `.operator__seg` was spelled by
 // hand 42 times across 13 files (and its label 42 more, its hint 39), with no component
 // behind it — this is it. The classes stay the same (no visual change); what changes is
-// that they are now spelled in ONE file (`kit-class-rule.test.ts` owns `operator__seg`
+// that they are now spelled in ONE file (`babillard/class-owner` (lint) owns `operator__seg`
 // and `operator__seg-label`).
 //
 //   <SettingsRow label={o18n.themeLabel} hint={o18n.themeHint}>

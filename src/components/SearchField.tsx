@@ -45,7 +45,7 @@ export function SearchField({
   /** Enter SUBMITS (a search that asks the server, a quick-add that adds the typed
    *  line) — the keyboard shows « rechercher ». Not needed inside a <form>: the form's
    *  own submit already takes Enter. Added 2026-11-05 (solidify 2.4) with `size`, when
-   *  the five raw search inputs folded onto this; `search-rule.test.ts` refuses a new one. */
+   *  the five raw search inputs folded onto this; `babillard/search-input` (lint) refuses a new one. */
   onSubmit?: () => void
 }) {
   const t = useT()

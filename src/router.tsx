@@ -6,6 +6,8 @@ import { useAuth, wasSignedIn } from './lib/auth'
 import { isPaired } from './lib/device'
 import { remeasureViewport } from './lib/viewportVars'
 
+/* oxlint-disable babillard/class-owner -- the door’s route fallback: importing components/Fallback statically dragged 208 KB into boot (check-bundle, CI 42100196401) */
+
 // Home is the only EAGER page: it is the door a stranger lands on, and `/` decides
 // between it and the board before either can be fetched.
 //
@@ -134,7 +136,7 @@ const DevKit = lazy(() => import('./pages/DevKit').then((m) => ({ default: m.Dev
 // (this file's static closure) must not import components/Fallback — that module lives
 // in the lazy-shared chunk with the hub's primitives, and one static import of it dragged
 // 208 KB (+ Icon, guideContent, DrawPad) into boot (check-bundle went 9 → 34 chunks,
-// CI 42100196401, 2026-11-05). kit-class-rule.test.ts lists this file for that reason.
+// CI 42100196401, 2026-11-05). `babillard/class-owner` (lint) lists this file for that reason.
 function Loading() {
   const t = useT()
   return <p className="loading mono">{t.common.loading}</p>

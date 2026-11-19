@@ -6,6 +6,8 @@ import { Cluster } from './Layout'
 import { scrollBehavior } from '../lib/motion'
 import { guideHref } from '../lib/settingsNav'
 
+/* oxlint-disable babillard/status-role -- the help popover, not a status line */
+
 // Lazy on purpose — see the header. The bubble renders on every surface; the composer
 // (the modal, the write hook, the attach panel) arrives only when someone reports.
 const RemarkComposer = lazy(() => import('./RemarkComposer').then((m) => ({ default: m.RemarkComposer })))

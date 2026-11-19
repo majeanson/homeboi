@@ -41,6 +41,8 @@ import {
   type KitchenHandlers,
 } from '../lib/kitchenActions'
 
+/* oxlint-disable babillard/status-role -- the idle-shell line « le babillard dort », a shell state before any page */
+
 // The hub shell, surface-aware. KIOSK (wall display): a vertical column of big
 // section buttons down the left, calm and readable across the room. MOBILE
 // (phone): the same sections become a thumb-reach bottom tab bar, with the ＋

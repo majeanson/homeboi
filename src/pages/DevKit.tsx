@@ -1405,7 +1405,7 @@ export function DevKit() {
           <Demo label="always open (the notes board — search IS the page's other job)">
             <SearchField value={search1} onChange={setSearch1} placeholder="Chercher une note…" ariaLabel="Chercher une note" />
           </Demo>
-          <Demo label="size='sm' (inside a picker) · onSubmit (Enter asks — the keyboard says « rechercher »). 2026-11-05: the five raw search inputs (emoji picker, guide, circulaires, ajout rapide, recherche) folded onto these; search-rule.test.ts refuses a new raw type='search'.">
+          <Demo label="size='sm' (inside a picker) · onSubmit (Enter asks — the keyboard says « rechercher »). 2026-11-05: the five raw search inputs (emoji picker, guide, circulaires, ajout rapide, recherche) folded onto these; `babillard/search-input` (lint) refuses a new raw type='search'.">
             <SearchField size="sm" value={search1} onChange={setSearch1} onSubmit={() => {}} placeholder="Chercher un emoji…" ariaLabel="Chercher un emoji" />
           </Demo>
           <Demo label="collapsible — a loupe until tapped, then the field takes the row (the recipe book)">
@@ -3488,7 +3488,7 @@ export function DevKit() {
               <StatusMessage tone="info">Ajouté à la liste.</StatusMessage>
             </div>
           </Demo>
-          <Demo label="icon={null} · live={false} (read, not announced — a count beside a list) · as='span' (2026-11-05: nine hand-rolled role=status lines folded onto it; status-rule.test.ts refuses a new raw role=status|alert)">
+          <Demo label="icon={null} · live={false} (read, not announced — a count beside a list) · as='span' (2026-11-05: nine hand-rolled role=status lines folded onto it; `babillard/status-role` (lint) refuses a new raw role=status|alert)">
             <div>
               <StatusMessage icon={null} live={false}>12 résultats</StatusMessage>
               <p className="mono">En ligne : <StatusMessage as="span" tone="success" live={false}>synchronisé</StatusMessage></p>
@@ -3917,7 +3917,7 @@ export function DevKit() {
       kw: 'réglages setting row rangée réglage label hint toggle operator__seg',
       render: () => (
         <>
-          <Demo label="THE Réglages setting row (2026-11-05, solidify 3.2): label left, control right, an optional hint line under. 42 hand-spelled .operator__seg rows in 13 files folded onto it by a transformer; the classes are unchanged (no visual change) and OWNED here (kit-class-rule).">
+          <Demo label="THE Réglages setting row (2026-11-05, solidify 3.2): label left, control right, an optional hint line under. 42 hand-spelled .operator__seg rows in 13 files folded onto it by a transformer; the classes are unchanged (no visual change) and OWNED here (`babillard/class-owner` (lint)).">
             <div className="surface operator__section">
               <SettingsRow label="Écran de veille" hint="Après 10 min sans toucher la tablette.">
                 <Toggle on icon="image-square-bold" label="Activé" onClick={() => {}} />

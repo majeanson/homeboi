@@ -17,7 +17,7 @@ import { Img } from './Img'
 // position/size class, `decorative` when the name is written right beside the face
 // (alt="" + aria-hidden, so a screen reader does not say it twice), `shape` for the
 // rare square. `avatar-rule.test.ts` refuses a new hand-rolled initial; `.avatar*` is owned
-// (kit-class-rule.test.ts).
+// (`babillard/class-owner` (lint)).
 export function Avatar({
   kind,
   photo,

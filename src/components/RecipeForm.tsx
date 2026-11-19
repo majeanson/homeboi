@@ -48,6 +48,8 @@ import { importStage, useElapsed, type ImportKind, type ImportStage } from '../l
 import { Img } from './Img'
 import { swapAt } from '../lib/reorder'
 
+/* oxlint-disable babillard/status-role -- the import PROGRESS panel (steps + bar), a region */
+
 /* oxlint-disable babillard/dialog-shell -- a routed full-screen scene (recipe edit): useModal for Esc and the focus trap, while the router owns its history entry */
 
 /* oxlint-disable jsx-a11y/no-autofocus -- revealed in place by the tap that asked to type: a step tapped to edit (the form itself does not focus) (the keyboard opens on a tap, never on its own) */

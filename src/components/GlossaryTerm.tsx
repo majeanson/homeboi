@@ -6,6 +6,8 @@ import type { GlossaryTerm } from '../lib/glossary'
 import { Icon } from './Icon'
 import { guideHref } from '../lib/settingsNav'
 
+/* oxlint-disable babillard/status-role -- a popover announcing a definition, not a status line */
+
 /* oxlint-disable babillard/no-viewport-size -- positioning: clamps the definition bubble inside the window */
 
 // A WORD YOU CAN TAP, in Réglages and Comprendre only.

@@ -64,7 +64,10 @@
     "babillard/lens-flag": "off",
     "babillard/no-viewport-size": "off",
     "babillard/no-inline-query-key": "off",
-    "babillard/dialog-shell": "off"
+    "babillard/dialog-shell": "off",
+    "babillard/class-owner": "off",
+    "babillard/status-role": "off",
+    "babillard/search-input": "off"
   },
   "overrides": [
     {
@@ -77,7 +80,10 @@
         "babillard/lens-flag": "error",
         "babillard/no-viewport-size": "error",
         "babillard/no-inline-query-key": "error",
-        "babillard/dialog-shell": "error"
+        "babillard/dialog-shell": "error",
+        "babillard/class-owner": "error",
+        "babillard/status-role": "error",
+        "babillard/search-input": "error"
       }
     },
     {
@@ -100,7 +106,10 @@
         "babillard/lens-flag": "off",
         "babillard/no-viewport-size": "off",
         "babillard/no-inline-query-key": "off",
-        "babillard/dialog-shell": "off"
+        "babillard/dialog-shell": "off",
+        "babillard/class-owner": "off",
+        "babillard/status-role": "off",
+        "babillard/search-input": "off"
       }
     },
     {

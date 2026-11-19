@@ -25,6 +25,8 @@ import { computeDayPart } from '../lib/timeofday'
 import { tipFor } from '../lib/routineTips'
 import { Img } from './Img'
 
+/* oxlint-disable babillard/status-role -- the buddy’s speech bubble (hear-first), not a status line */
+
 // The RUN of one routine — the calm "right now / then" picture story extracted
 // from ToddlerView so it can play on EVERY surface, not just the locked toddler
 // kiosk: a parent on their phone, the wall tablet, a guest, all run the same UI

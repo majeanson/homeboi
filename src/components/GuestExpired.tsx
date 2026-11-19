@@ -1,6 +1,8 @@
 import { useT } from '../i18n'
 import { Icon } from './Icon'
 
+/* oxlint-disable babillard/status-role -- a terminal face (lead + door), not a status line */
+
 // The terminal state for a guest scene whose share link 401/403'd — expired or
 // revoked. Deliberately DISTINCT from EmptyState: a relative landing on a dead
 // « Gardienne » / « Accueil » / « Fenêtre » link must see "ce lien ne fonctionne

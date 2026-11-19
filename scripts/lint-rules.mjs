@@ -42,6 +42,38 @@ const LENS_VALUES = new Set(['parent', 'toddler', 'simple'])
 const BAD_LENS_NAMES = new Set(['kid', 'isToddler'])
 const SIZE_PROPS = new Set(['innerWidth', 'innerHeight', 'outerWidth', 'outerHeight'])
 const SCREEN_PROPS = new Set(['width', 'height', 'availWidth', 'availHeight'])
+// The linted file's path relative to src/, `/`-separated (`components/Avatar.tsx`).
+const srcPath = (context) => {
+  const f = String(context.filename).replace(/\\/g, '/')
+  const i = f.lastIndexOf('/src/')
+  return i < 0 ? f : f.slice(i + 5)
+}
+// token → [owner file under src/, what to reach for].
+const KIT_CLASSES = {
+  loading: ['components/Fallback.tsx', '<Loading> (or loadStateOf(q) when the wait is a query’s)'],
+  avatar: ['components/Avatar.tsx', '<Avatar photoUrl|kind+photo colour name size className decorative />'],
+  'avatar--disc': ['components/Avatar.tsx', '<Avatar>'],
+  'avatar--photo': ['components/Avatar.tsx', '<Avatar>'],
+  avatar__initial: ['components/Avatar.tsx', '<Avatar>'],
+  searchfield: ['components/SearchField.tsx', '<SearchField value onChange ariaLabel size? onSubmit? />'],
+  searchfield__input: ['components/SearchField.tsx', '<SearchField>'],
+  searchfield__open: ['components/SearchField.tsx', '<SearchField collapsible>'],
+  searchfield__clear: ['components/SearchField.tsx', '<SearchField>'],
+  'btn--icon': ['components/IconButton.tsx', '<IconButton icon label variant? size? />'],
+  scene__head: ['components/SceneHead.tsx', '<SceneHead title subtitle? icon? card? onClose? backTo? action? />'],
+  segmented: ['components/Segmented.tsx', '<Segmented options value onChange ariaLabel />'],
+  segmented__opt: ['components/Segmented.tsx', '<Segmented>'],
+  check: ['components/CheckDisc.tsx', '<CheckDisc done? onClick? label? className? />'],
+  act__sharedmark: ['components/board/Act.tsx', '<SharedMark label />'],
+  operator__seg: ['components/operator/SettingsRow.tsx', '<SettingsRow label hint? as? />'],
+  'operator__seg-label': ['components/operator/SettingsRow.tsx', '<SettingsRow label>'],
+  'effort-dots': ['components/EffortDots.tsx', '<EffortDots value onChange ariaLabel? /> (or <EffortField> in a form)'],
+  'effort-dots__dot': ['components/EffortDots.tsx', '<EffortDots> / <EffortMark value />'],
+  'effort-mark': ['components/EffortDots.tsx', '<EffortMark value />'],
+}
+// The files that OWN a live region: StatusMessage and the primitives built on it or beside it.
+const STATUS_OWNERS = new Set(['components/StatusMessage.tsx', 'components/LoadError.tsx', 'components/EmptyState.tsx', 'components/Skeleton.tsx', 'lib/toast.tsx', 'components/OfflineBanner.tsx'])
+const SEARCH_OWNERS = new Set(['components/SearchField.tsx', 'components/EditField.tsx'])
 // QueryClient methods that take a key (or filters holding one) as their first argument.
 const QUERY_CLIENT_METHODS = new Set([
   'setQueryData', 'getQueryData', 'getQueryState', 'setQueriesData', 'getQueriesData', 'removeQueries', 'cancelQueries',
@@ -229,6 +261,54 @@ export default {
           context.report({ node, message: 'useModal is the shells’ hook (Modal, Sheet, confirm). A routed scene or lightbox that needs it takes a disable with the reason.' })
       },
     })),
+
+    // A KIT CLASS BELONGS TO ITS PRIMITIVE (solidify 2.0, 2026-11-05). The drift the audits keep
+    // finding is the same markup spelled by hand beside the component that owns it: 23 copies of
+    // `<p className="loading mono">` next to <Loading>, eight avatar discs beside <Avatar>. A
+    // class TOKEN with an owner may be spelled in a className only by the file that owns it; a
+    // token joins KIT_CLASSES the commit its last copy is gone.
+    'class-owner': rule('A primitive’s class is spelled by the primitive', (context) => {
+      const here = srcPath(context)
+      return {
+        JSXAttribute(node) {
+          if (attrName(node) !== 'className' || !node.value) return
+          for (const s of stringsIn(node.value))
+            for (const tok of s.trim().split(/\s+/)) {
+              const own = KIT_CLASSES[tok]
+              if (own && here !== own[0]) context.report({ node, message: `.${tok} belongs to ${own[0]}: use ${own[1]}` })
+            }
+        },
+      }
+    }),
+
+    // A STATUS LINE IS A StatusMessage (solidify 2.3). Nine surfaces spelled `role="status"` by
+    // hand, each with its own icon, colour and margin, beside the primitive that carries the
+    // tone, the glyph and the live region. A REGION that is not a line (a popover, a progress
+    // panel, a speech bubble, a terminal face) takes a disable saying what it is.
+    'status-role': rule('A status line is a <StatusMessage>', (context) => {
+      const here = srcPath(context)
+      return {
+        JSXAttribute(node) {
+          if (STATUS_OWNERS.has(here) || attrName(node) !== 'role' || !node.value) return
+          if (stringsIn(node.value).some((s) => s === 'status' || s === 'alert'))
+            context.report({ node, message: 'Render <StatusMessage tone icon live as>: it carries the role. A region (popover, panel, bubble) takes a disable saying what it is.' })
+        },
+      }
+    }),
+
+    // A SEARCH BOX IS A SearchField (solidify 2.4). Five surfaces drew their own, each a different
+    // width, border and keyboard. SearchField carries the magnifier, the ✕, Escape, the
+    // collapsible face, `size="sm"` and `onSubmit` (the keyboard says « rechercher »).
+    'search-input': rule('A search box is a <SearchField>', (context) => {
+      const here = srcPath(context)
+      return {
+        JSXOpeningElement(node) {
+          if (SEARCH_OWNERS.has(here) || node.name.type !== 'JSXIdentifier' || node.name.name !== 'input') return
+          const isSearch = node.attributes.some((a) => a.type === 'JSXAttribute' && (attrName(a) === 'type' || attrName(a) === 'enterKeyHint') && a.value && stringsIn(a.value).includes('search'))
+          if (isSearch) context.report({ node, message: 'Render <SearchField value onChange ariaLabel …/>: the magnifier, the ✕, Escape and the keyboard hint.' })
+        },
+      }
+    }),
 
     // THE METER HAS TO BE UNAVOIDABLE. Workers AI calls, R2 upload bytes and Browser Run minutes
     // cost money per use; each has ONE metered door that charges the household's daily budget

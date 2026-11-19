@@ -1,5 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 
+/* oxlint-disable babillard/status-role -- the crash face, role=alert on the whole panel */
+
 // App-level safety net. React unmounts the ENTIRE tree when a render throws and
 // nothing catches it — that's how a single bad field access (e.g. a member with no
 // display_name) once blanked the whole app to the cream <body>, with no way back.

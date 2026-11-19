@@ -17,7 +17,7 @@ const TONE_ICON: Record<Tone, IconName> = {
 // rest a status; a line that is READ, not announced (a count beside a list, a hint that
 // was there before the reader arrived) passes `live={false}`. `as="span"` for an
 // inline host. The nine hand-rolled `<p role="status">` lines folded onto this on
-// 2026-11-05 (solidify 2.3); `status-rule.test.ts` refuses a new raw role=status|alert.
+// 2026-11-05 (solidify 2.3); `babillard/status-role` (lint) refuses a new raw role=status|alert.
 export function StatusMessage({
   children,
   tone = 'info',

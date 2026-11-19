@@ -5,6 +5,8 @@ import { useHelp } from '../lib/help'
 import { useLens } from '../lib/audience'
 import { guideHref } from '../lib/settingsNav'
 
+/* oxlint-disable babillard/class-owner -- a SECTION’s icon disc (not a person) borrowing the avatar box for its size, on purpose */
+
 // The section's identity glyph in the top-right of every themed tab's header.
 // When tutorial help is on (and we're in the parent lens) the WHOLE disc is a
 // quiet deep-link into the Guide at this section's card — folding the old "?"

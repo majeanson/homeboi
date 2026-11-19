@@ -14,7 +14,7 @@ import { sourceFiles, blankComments } from './buildGuardScan'
 //     « Gros effort ») live in it: a screen that reads `t.effort.levels` or `t.effort.dot` is
 //     spelling its own dots, the way the colour row nearly grew five shapes before LookPicker.
 //     Other screens ask EffortDots.tsx for a name (`useEffortName`). The dot CLASSES are held
-//     by kit-class-rule (`effort-dots`, `effort-dots__dot`, `effort-mark`).
+//     by `babillard/class-owner` (lint) (`effort-dots`, `effort-dots__dot`, `effort-mark`).
 //
 // Planted red twice (2026-11-08): `binds.push(body.effort)` in chores.ts's PATCH, and a
 // `t.effort.levels[2]` read in TaskList.tsx (the first try at that plant missed its line and

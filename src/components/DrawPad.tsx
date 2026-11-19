@@ -22,6 +22,8 @@ import {
 import { Icon } from './Icon'
 import { Chip } from './Chip'
 
+/* oxlint-disable babillard/status-role -- the « brouillon » draft panel is a region, not a status line */
+
 /* oxlint-disable babillard/dialog-shell -- a full-screen editor with its OWN history sentinel that blocks a back swipe mid-stroke, so a stroke is never lost */
 
 // The family draw pad for a fridge note (#14) — useful + educational, ~80% for the

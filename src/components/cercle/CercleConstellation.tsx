@@ -7,6 +7,8 @@ import { EmptyState } from '../EmptyState'
 import { PanZoom } from '../PanZoom'
 import { layoutIslands, type PlacedBridge, type Person, type World, type WorldIsland } from '../../lib/cercle'
 
+/* oxlint-disable babillard/status-role -- the live CAPTION of the map (what the picked island is), a region, not a status line */
+
 // « Notre monde » — the BIG-PICTURE map of the whole circle. Where Liens shows one
 // person's ties and Arbre one family's generations, this zooms OUT: each cluster (the
 // Maisonnée, your families, your groups) is a soft coloured ISLAND, member faces sit
