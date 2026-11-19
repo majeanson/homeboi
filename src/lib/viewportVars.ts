@@ -1,4 +1,6 @@
 import { scrollBehavior } from './motion'
+
+/* oxlint-disable babillard/no-viewport-size -- THE visual-viewport reader (keyboard fit, --vvh), the one place that measures it */
 // Track the visual viewport into CSS custom properties, so fixed overlays
 // (centered modals, bottom sheets) can stay inside the VISIBLE area when the
 // on-screen keyboard is up. iOS Safari overlays the keyboard without resizing

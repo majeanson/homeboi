@@ -7,12 +7,12 @@ import { sourceFiles, blankComments, classNameValues } from './buildGuardScan'
 // this repo's audits keep finding is the same markup spelled by hand beside the
 // component that owns it: 23 copies of `<p className="loading mono">` next to
 // `Loading`, eight copies of the avatar disc beside `Avatar`, `.chip` outside Chip (the
-// rule chip-rule.test.ts already enforces, one token at a time). This guard is the
+// rule babillard/no-chip-class (lint) already enforces, one token at a time). This guard is the
 // general form: a class TOKEN with an owner may be spelled in a `className=` only by
 // the file that owns it — anywhere else, reach for the component. Entries land wave by
 // wave as each sweep closes (the token joins OWNED the commit its copies are gone).
 //
-// The reader is `classNameValues` (lib/buildGuardScan), lifted from chip-rule's — it
+// The reader is `classNameValues` (lib/buildGuardScan), lifted from the old chip-rule's — it
 // walks `className=` VALUES only (the quoted literal, or the literals inside the
 // braces), never prose or data: ARegler's `variant: 'chip' | 'card'`, DevKit's search
 // keywords and a demo label all carry these words and are not classes.

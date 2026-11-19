@@ -8,6 +8,8 @@ import { DetailProvider } from '../components/detail/DetailProvider'
 import { useProfile } from '../lib/profile'
 import { isGuest, isDisplay } from '../lib/device'
 
+/* oxlint-disable babillard/no-viewport-size -- positioning: scales the fixed-size board frame to the TV it is cast on */
+
 const noop = () => {}
 
 // « Diffuser au salon » — the living-room TV surface. It reuses the REAL <Board/>

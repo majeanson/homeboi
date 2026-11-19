@@ -10,6 +10,8 @@ import { useTour } from '../../lib/tour'
 import { Icon } from '../Icon'
 import { guideHref } from '../../lib/settingsNav'
 
+/* oxlint-disable babillard/no-viewport-size -- positioning: places the coachmark beside its anchor */
+
 // The one renderer for any active guided tour (engine: lib/tour.tsx). It dims the
 // screen, cuts a spotlight around the step's target element (via an SVG mask, so
 // any size/shape works), and floats a caption card with Skip/Back/Next. A step

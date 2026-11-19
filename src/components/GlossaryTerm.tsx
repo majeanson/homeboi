@@ -6,6 +6,8 @@ import type { GlossaryTerm } from '../lib/glossary'
 import { Icon } from './Icon'
 import { guideHref } from '../lib/settingsNav'
 
+/* oxlint-disable babillard/no-viewport-size -- positioning: clamps the definition bubble inside the window */
+
 // A WORD YOU CAN TAP, in Réglages and Comprendre only.
 //
 // The glossary (src/lib/glossary.ts) settles which word the app uses for an idea.
@@ -18,7 +20,7 @@ import { guideHref } from '../lib/settingsNav'
 // stopped needing months ago — the standing rule for this week was "teaching is
 // allowed only where it costs a daily user nothing". Réglages is exactly that place.
 //
-// It is a <button>, never a chip (chip-rule.test.ts owns that class), and it is never
+// It is a <button>, never a chip (babillard/no-chip-class owns that class), and it is never
 // rendered inside another control: `renderRich` refuses to mark a word inside a
 // [[card:…]] label, because a control inside a control is what nested-interactive
 // exists to stop.

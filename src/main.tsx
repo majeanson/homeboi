@@ -31,6 +31,8 @@ import { setGuestToken, clearGuestToken, clearGuestKind, isGuestPreview, setGues
 import { connectRealtime, REALTIME_ENABLED } from './lib/realtime'
 import './styles.css'
 
+/* oxlint-disable babillard/lens-flag -- boot stamps data-lens on <html> before React renders, from the raw value */
+
 // Realtime push (#20): the switch is `REALTIME_ENABLED` in lib/realtime. Who opens the
 // socket depends on which credential exists — a PAIRED tablet carries a device token
 // from boot, so it connects here; an OPERATOR session is only known once /auth/me

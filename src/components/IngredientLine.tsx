@@ -14,7 +14,7 @@ import { MeasureScoops } from './MeasureScoops'
 // right-coloured tool, and a parent gets the same as a small inline pill.
 //
 // `size` scales the pill: 'lg' for the kid-facing Cook mode, 'sm' for the parent
-// recipe sheet. `kid` drops the 🔊 glyph (Cook mode narrates the whole step, so a
+// recipe sheet. `narrated` drops the 🔊 glyph (Cook mode narrates the whole step, so a
 // speaker on every pill is noise there) while keeping the colour + tap-to-hear.
 // `scoops` additionally draws the amount as colour-coded fill circles after the
 // pill (one per whole scoop) — used in Cook mode (toddler + the split/focus views)
@@ -24,12 +24,12 @@ import { MeasureScoops } from './MeasureScoops'
 export function IngredientLine({
   line,
   size = 'sm',
-  kid = false,
+  narrated = false,
   scoops = false,
 }: {
   line: string
   size?: 'sm' | 'lg'
-  kid?: boolean
+  narrated?: boolean
   scoops?: boolean
 }) {
   const t = useT()
@@ -69,7 +69,7 @@ export function IngredientLine({
       <button
         key={`p${i}`}
         type="button"
-        className={`meas-pill meas-pill--${size}${color ? '' : ' meas-pill--plain'}${kid ? ' meas-pill--noicon' : ''}`}
+        className={`meas-pill meas-pill--${size}${color ? '' : ' meas-pill--plain'}${narrated ? ' meas-pill--noicon' : ''}`}
         style={color ? { background: color, color: readableInk(color), borderColor: color } : undefined}
         onClick={(e) => {
           // Don't let a pill tap also fire a tappable parent row (the Cook-mode

@@ -58,12 +58,23 @@
     "babillard/no-raw-img": "error",
     "babillard/no-bare-fetch": "off",
     "babillard/no-anonymous-catch": "off",
-    "babillard/metered-door": "off"
+    "babillard/metered-door": "off",
+    "babillard/no-chip-class": "off",
+    "babillard/no-native-time-input": "off",
+    "babillard/lens-flag": "off",
+    "babillard/no-viewport-size": "off"
   },
   "overrides": [
     {
       "files": ["src/**"],
-      "rules": { "babillard/no-bare-fetch": "error", "babillard/no-anonymous-catch": "error" }
+      "rules": {
+        "babillard/no-bare-fetch": "error",
+        "babillard/no-anonymous-catch": "error",
+        "babillard/no-chip-class": "error",
+        "babillard/no-native-time-input": "error",
+        "babillard/lens-flag": "error",
+        "babillard/no-viewport-size": "error"
+      }
     },
     {
       "files": ["functions/**"],
@@ -79,7 +90,11 @@
         "babillard/no-raw-img": "off",
         "babillard/no-bare-fetch": "off",
         "babillard/no-anonymous-catch": "off",
-        "babillard/metered-door": "off"
+        "babillard/metered-door": "off",
+        "babillard/no-chip-class": "off",
+        "babillard/no-native-time-input": "off",
+        "babillard/lens-flag": "off",
+        "babillard/no-viewport-size": "off"
       }
     },
     {

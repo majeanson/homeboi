@@ -2329,7 +2329,7 @@ export function DevKit() {
               toggle used to hand-roll a bare .chip button around the
               primitive — and the action chips that DID go through it announced
               "not pressed" for ever (2026-09-08 audit; guarded by
-              `lib/chip-rule.test.ts`). */}
+              the lint rule `babillard/no-chip-class`). */}
           <Demo label="action · link · static · expander — no aria-pressed on any of them">
             <ChipGroup>
               <Chip onClick={() => setChipExpanded((v) => !v)} icon="plus-bold">
@@ -3288,11 +3288,11 @@ export function DevKit() {
           <Demo label="measure pills (sm — parent recipe sheet; tap a pill to hear it)">
             <IngredientLine line="2 cuillères à soupe de beurre fondu" />
           </Demo>
-          <Demo label="lg + kid (Cook mode — bigger pills, no 🔊 glyph)">
-            <IngredientLine line="3/4 tasse de farine" size="lg" kid />
+          <Demo label="lg + narrated (Cook mode — bigger pills, no 🔊 glyph)">
+            <IngredientLine line="3/4 tasse de farine" size="lg" narrated />
           </Demo>
           <Demo label="scoops (Cook mode — fill circles after the pill: count = whole scoops)">
-            <IngredientLine line="2 cuillères à soupe de beurre fondu" size="lg" kid scoops />
+            <IngredientLine line="2 cuillères à soupe de beurre fondu" size="lg" narrated scoops />
           </Demo>
           <Demo label="no measurement → plain text (additive, never a rewrite)">
             <IngredientLine line="une pincée de sel" />

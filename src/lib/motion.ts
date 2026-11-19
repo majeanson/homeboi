@@ -1,3 +1,5 @@
+
+/* oxlint-disable babillard/no-viewport-size -- positioning: is the landed row on screen yet after a scroll glide */
 // E-40 (bmad/08): honour prefers-reduced-motion in JS-DRIVEN scrolling. CSS
 // animations gate themselves via @media; the imperative
 // scrollIntoView/scrollTo calls need this equivalent — a long smooth glide

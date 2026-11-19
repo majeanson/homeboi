@@ -13,6 +13,8 @@ import { useOnline } from '../lib/online'
 import { recentErrors } from '../lib/errorTrail'
 import { REMARKS_KEY } from '../lib/queryKeys'
 
+/* oxlint-disable babillard/no-viewport-size -- positioning: clamps the composer beside the tapped element */
+
 // « Les remarques » — ONE composer, mounted by all three doors.
 //
 // Today: Réglages (nothing in particular is wrong) and the crash screen (something very

@@ -447,7 +447,7 @@ export function CookMode({
                   `role="button"` + tabIndex made a control inside a control, which is
                   the case CLAUDE.md's table sends to a plain onClick container. */}
               <span className="cook__ing-text" onClick={() => say(spokenIngredient(ing, recipe.lang ?? lang))}>
-                <IngredientLine line={ing} size={size} kid scoops />
+                <IngredientLine line={ing} size={size} narrated scoops />
               </span>
             </li>
           )
@@ -779,7 +779,7 @@ export function CookMode({
                   <ul className="cook__step-ings mono" aria-label={t.recipes.ingredients}>
                     {used.map((ing, i) => (
                       <li key={i}>
-                        <IngredientLine line={ing} size="sm" kid scoops />
+                        <IngredientLine line={ing} size="sm" narrated scoops />
                       </li>
                     ))}
                   </ul>

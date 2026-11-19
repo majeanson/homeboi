@@ -58,6 +58,8 @@ import {
 } from '../../lib/speak'
 import { Chip } from '../Chip'
 
+/* oxlint-disable babillard/lens-flag -- the Réglages switch that SETS the audience and shows which is active */
+
 // Display: theme, language, and the Parent/Toddler view — the chrome that used
 // to live in the top header. Moved here so the hub pages stay calm and headerless.
 export function DisplaySection({ help }: { help?: HelpMode }) {

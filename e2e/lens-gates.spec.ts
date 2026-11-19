@@ -10,7 +10,7 @@ import type { Audience } from '../src/lib/audience'
 //
 // Before useLens() the `simple` column was per-file luck — three sites showed it the
 // help layer, six hid the edit doors from it. This spec holds the table so the next
-// inline `audience === …` (which lens-rule.test.ts already refuses) cannot bring that
+// inline `audience === …` (which the lint rule babillard/lens-flag already refuses) cannot bring that
 // back. One observable door per column:
 //   teaches    → the kitchen's SectionIntro card (seeded fresh with `intros: true`)
 //   acts       → the hub head's loupe (`data-tour="search"`; HubHead gates it on `acts`)

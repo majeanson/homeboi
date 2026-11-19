@@ -23,6 +23,26 @@ const isIdent = (n, name) => n && n.type === 'Identifier' && n.name === name
 
 const rule = (description, create) => ({ meta: { type: 'problem', docs: { description } }, create })
 
+// Every string a JSX attribute value can hold: a literal, the static parts of a template, and
+// the literals anywhere inside an expression (`'chip' + (on ? ' is-on' : '')`).
+function stringsIn(node, out = []) {
+  if (!node || typeof node !== 'object') return out
+  if (node.type === 'Literal' && typeof node.value === 'string') out.push(node.value)
+  else if (node.type === 'TemplateElement') out.push(node.value.cooked ?? node.value.raw)
+  for (const k of Object.keys(node)) {
+    if (k === 'parent' || k === 'loc' || k === 'range') continue
+    const v = node[k]
+    if (Array.isArray(v)) v.forEach((c) => stringsIn(c, out))
+    else if (v && typeof v === 'object' && typeof v.type === 'string') stringsIn(v, out)
+  }
+  return out
+}
+const attrName = (a) => (a.name.type === 'JSXIdentifier' ? a.name.name : null)
+const LENS_VALUES = new Set(['parent', 'toddler', 'simple'])
+const BAD_LENS_NAMES = new Set(['kid', 'isToddler'])
+const SIZE_PROPS = new Set(['innerWidth', 'innerHeight', 'outerWidth', 'outerHeight'])
+const SCREEN_PROPS = new Set(['width', 'height', 'availWidth', 'availHeight'])
+
 export default {
   meta: { name: 'babillard' },
   rules: {
@@ -87,6 +107,83 @@ export default {
         if (empty) context.report({ node: c.property, message: 'Use .catch(writeFailed), or wrote()/writeOrNull(). If it truly is not a server write, say why in the body or in a disable reason.' })
       },
     })),
+
+    // THE CHIP RULE. components/Chip.tsx is THE chip, and `.chip` is its markup: spelling the
+    // class by hand makes a second chip, which drifts on the part you cannot see (the 2026-09-08
+    // audit found 18; ten action chips announced themselves as unpressed toggles). Chip carries
+    // all five shapes (selected · onClick · to · neither · expanded); a call site that does not
+    // fit EXTENDS it. Only the bare token: `chip--toggle`, `cnote__chip` are other classes.
+    'no-chip-class': rule('The .chip class belongs to Chip.tsx', (context) => ({
+      JSXAttribute(node) {
+        if (attrName(node) !== 'className' || !node.value) return
+        if (stringsIn(node.value).some((s) => s.trim().split(/\s+/).includes('chip')))
+          context.report({ node, message: 'Use <Chip> (selected = toggle · onClick = action · to = link · neither = label · expanded = unfolds). If it does not fit, EXTEND Chip.' })
+      },
+    })),
+
+    // THE TIME RULE (review #11, 2026-11-17). A native <input type="time"> draws the BROWSER
+    // locale's clock: a Québec household on an English Chrome read « 08:00 AM » in a French app.
+    // No attribute fixes it; a time of day is components/TimeField.tsx (24-hour).
+    'no-native-time-input': rule('A time of day is <TimeField>, never <input type="time">', (context) => ({
+      JSXAttribute(node) {
+        if (attrName(node) === 'type' && node.value && stringsIn(node.value).includes('time'))
+          context.report({ node, message: 'Use <TimeField> (components/TimeField.tsx): same « HH:MM » value, always 24-hour.' })
+      },
+    })),
+
+    // THE LENS RULE (2026-11-05). lib/audience.ts useLens() is the ONE place that says what each
+    // audience may see and do (toddler/simple/parent to pick a view; teaches, interrupts, acts,
+    // spoken). Before it, 46 sites compared `audience === '…'` themselves and the `simple` lens
+    // was gated by accident. A surface reads a flag and thereby NAMES what it gates. The flag is
+    // spelled `toddler`, never `kid` or `isToddler`.
+    'lens-flag': rule('Read a useLens() flag, never compare the audience string', (context) => ({
+      BinaryExpression(node) {
+        if (node.operator !== '===' && node.operator !== '!==') return
+        const isAudience = (n) => {
+          const u = unwrap(n)
+          return isIdent(u, 'audience') || propName(u) === 'audience'
+        }
+        const isLensValue = (n) => n.type === 'Literal' && LENS_VALUES.has(n.value)
+        if ((isAudience(node.left) && isLensValue(node.right)) || (isLensValue(node.left) && isAudience(node.right)))
+          context.report({ node, message: 'Pick the flag: toddler/simple/parent for a VIEW; teaches (help), interrupts (an uninvited prompt), acts (an edit/share door), spoken (tap-to-hear).' })
+      },
+      JSXAttribute(node) {
+        if (BAD_LENS_NAMES.has(attrName(node))) context.report({ node, message: 'The lens flag is spelled `toddler`.' })
+      },
+      TSPropertySignature(node) {
+        if (node.key.type === 'Identifier' && BAD_LENS_NAMES.has(node.key.name)) context.report({ node, message: 'The lens flag is spelled `toddler`.' })
+      },
+      VariableDeclarator(node) {
+        if (node.id.type === 'Identifier' && BAD_LENS_NAMES.has(node.id.name) && node.init && /\baudience\b/.test(context.sourceCode.getText(node.init)))
+          context.report({ node, message: 'The lens flag is spelled `toddler`.' })
+      },
+    })),
+
+    // THE SURFACE RULE. What a screen SHOWS follows the device's role (lib/surface) and the lens
+    // (lib/audience), plus CSS for layout. A wall tablet in portrait is as narrow as a big phone;
+    // a component that reads the window width to decide what to render gets it wrong on exactly
+    // the cheap kiosk this app is for. A preference query (`matchMedia('(prefers-…)')`,
+    // `'(display-mode: …)'`) asks a setting, not a size, and passes. Positioning math (keep a
+    // bubble on screen) is the usual reason for a disable.
+    'no-viewport-size': rule('What renders follows surface/lens, never the window width', (context) => {
+      const report = (node) =>
+        context.report({ node, message: 'Pick what renders from useSurface()/useLens() and lay it out with CSS. Positioning math or a deliberate content-amount choice takes a disable with its reason.' })
+      return {
+        MemberExpression(node) {
+          const p = propName(node)
+          if (p && SIZE_PROPS.has(p)) report(node)
+          else if (p && SCREEN_PROPS.has(p) && isIdent(unwrap(node.object), 'screen')) report(node)
+        },
+        CallExpression(node) {
+          const c = unwrap(node.callee)
+          if (!(isIdent(c, 'matchMedia') || propName(c) === 'matchMedia')) return
+          const a = node.arguments[0] && unwrap(node.arguments[0])
+          const q = a && a.type === 'Literal' && typeof a.value === 'string' ? a.value : a && a.type === 'TemplateLiteral' && a.expressions.length === 0 ? a.quasis[0].value.cooked : null
+          if (q !== null && /^\(\s*(prefers-|display-mode)/.test(q.trim())) return
+          report(node)
+        },
+      }
+    }),
 
     // THE METER HAS TO BE UNAVOIDABLE. Workers AI calls, R2 upload bytes and Browser Run minutes
     // cost money per use; each has ONE metered door that charges the household's daily budget

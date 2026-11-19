@@ -205,7 +205,7 @@ describe('nested interactives', () => {
     ).toEqual([])
   })
 
-  // …and the detector pinned against its own near-misses, the way chip-rule.test.ts
+  // …and the detector pinned against its own near-misses, the way the old chip-rule.test.ts did
   // pins its own. A guard this broad is only worth having if it stays quiet on the
   // ordinary case: a tappable container wrapping an ICON is the commonest markup in
   // this app, and it must never fire.

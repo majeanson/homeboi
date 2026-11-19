@@ -166,8 +166,8 @@ export function arrayStrings(src: string, name: string): string[] {
  * Every `className=` VALUE in `src` whose class list holds the bare `token` — the quoted
  * literal, or every string literal inside the braces (`'chip' + (on ? ' is-on' : '')`),
  * read brace-balanced so a template's `${…}` or a ternary over an object does not end
- * the value early. Lifted from chip-rule.test.ts (2026-11-05) for the general
- * class-ownership guard (kit-class-rule.test.ts); chip-rule keeps its own copy, by its
+ * the value early. Lifted from the old chip-rule.test.ts (2026-11-05, an AST lint rule since
+ * review #41) for the class-ownership guard (kit-class-rule.test.ts); chip-rule kept its own copy, by its
  * header's own rule about retrofitting a trusted guard.
  *
  * The trap it refuses: scanning EVERY string literal reads the word out of prose and

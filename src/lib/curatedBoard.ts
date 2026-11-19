@@ -1,6 +1,8 @@
 import { useSyncExternalStore } from 'react'
 import { DEFAULT_CARD_PREFS, type BoardCardId, type BoardCardPrefs } from './boardCards'
 
+/* oxlint-disable babillard/no-viewport-size -- content AMOUNT, not role: a trial visitor on a phone-width window sees five cards (stranger review 2026-10-23), and a rotated tablet should flip it too */
+
 // The trial board on a PHONE: a short, curated glance instead of the whole masonry.
 //
 // A seeded trial household fills every card, and on a 390px screen that is a very long

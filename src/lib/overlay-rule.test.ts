@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { sourceFiles, readScanned } from './buildGuardScan'
 
 // THE OVERLAY RULE (2026-11-05, wave 0.5 of plans/2026-11-05-SOLIDIFY.md) — sibling of
-// chip-rule / lens-rule: fail-closed over the shared scanner.
+// the old chip-rule / lens-rule: fail-closed over the shared scanner.
 //
 // Three shells own the dialog behaviour — Modal (centred), Sheet (bottom), confirm (the
 // yes/no) — and `useModal` is what gives any of them Escape, the scroll lock, the focus

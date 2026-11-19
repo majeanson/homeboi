@@ -28,6 +28,8 @@
 // property holds for the child while an adult can still get out without a URL bar.
 import { createContext, useContext } from 'react'
 
+/* oxlint-disable babillard/lens-flag -- the hook that DEFINES the lens flags from the raw audience */
+
 export type Audience = 'parent' | 'toddler' | 'simple'
 
 export const AudienceContext = createContext<{
@@ -58,7 +60,7 @@ export const useAudience = () => useContext(AudienceContext)
 // Before 2026-11-05 every surface compared `audience === '…'` for itself (46 sites), and
 // the `simple` lens was gated by accident: three sites let it see the help layer
 // (`!== 'toddler'`), six hid the edit doors from it (`=== 'parent'`) — per-file
-// coincidences, not a rule. `lens-rule.test.ts` fails a new inline comparison; a surface
+// coincidences, not a rule. the lint rule `babillard/lens-flag` fails a new inline comparison; a surface
 // reads a FLAG here and names what it is gating:
 //
 //   • toddler / simple / parent — WHICH VIEW renders (ToddlerBoard vs SimpleBoard vs the

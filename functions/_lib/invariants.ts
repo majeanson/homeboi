@@ -6,7 +6,7 @@ import { dealEnded } from '../../src/lib/deals'
 //
 // ─────────────────────────────────────────────────────────────────────────────────
 // WHY THIS FILE EXISTS. This codebase's best feature is its build-gating guards —
-// calm-tenets, write-rule, intl-rule, field-fit, layer-order, chip-rule, devkitParity,
+// calm-tenets, write-rule, intl-rule, field-fit, layer-order, devkitParity,
 // docCounts, nested-interactive, glossary, undoTier, tour-rule, link-button-rule.
 // Thirteen of them, and CLAUDE.md is right that they are the best thing here.
 //
