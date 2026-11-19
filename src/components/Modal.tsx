@@ -6,6 +6,8 @@ import { useT } from '../i18n'
 
 import { Cluster } from './Layout'
 
+/* oxlint-disable babillard/dialog-shell -- a dialog shell: Modal IS the centred dialog and its useModal */
+
 // A centred dialog wrapper: one place that wires the shared modal behaviour
 // (Escape, scroll-lock, focus-trap, the phone's back button — via useModal), the
 // backdrop, and the ✕ close, so the dozen hand-rolled overlays stop drifting. Mount it

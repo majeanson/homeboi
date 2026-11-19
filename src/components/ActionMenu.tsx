@@ -4,6 +4,8 @@ import { useT } from '../i18n'
 import { Icon, InlineIcon, type IconName } from './Icon'
 import { useModal } from '../lib/useModal'
 
+/* oxlint-disable babillard/dialog-shell -- the menu panel (role=menu) takes Esc, outside-tap and the back button through useModal, no dialog role */
+
 // The shared overflow menu — a "⋯" button that folds a surface's SECONDARY
 // actions into one compact dropdown, so the surface itself keeps at most its one
 // or two primary buttons (the recipe view's footer went from seven buttons to

@@ -4,6 +4,8 @@ import { useModal } from '../lib/useModal'
 import { Icon } from './Icon'
 import { Img } from './Img'
 
+/* oxlint-disable babillard/dialog-shell -- the image zoom lightbox, useModal with history true */
+
 // Tap an image to open it full-screen (zoom-in); tap the backdrop, the ✕, or
 // press Esc to close. Used for flyer/deal images, recipe photos, and the cercle
 // photo gallery so a price, a product photo, or an ID card is readable from the

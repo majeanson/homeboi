@@ -17,6 +17,8 @@ import { Icon } from '../Icon'
 import { DrawPad } from '../DrawPad'
 import { Img } from '../Img'
 
+/* oxlint-disable babillard/dialog-shell -- a routed full-screen scene (the note editor): useModal for Esc and the focus trap, while the router owns its history entry */
+
 // Full-screen iOS-Notes-style editor for « Le cercle » → Notes, reused for BOTH a new
 // note and modifying an existing one (#richnotes). Mirrors DrawPad's shell: a portal to
 // <body> + `useModal` (Esc/scroll-lock/focus-trap), flex column sized to the viewport.

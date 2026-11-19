@@ -59,7 +59,7 @@ Most of these are enforced: a `src/lib/*-rule.test.ts` grep guard or an AST rule
 | --- | --- | --- |
 | Any `/api/*` write | **`useWrite()`** (`lib/write.ts`): offline outbox, idempotency key, optimistic change. Its rejection: `.catch(writeFailed)`, `wrote(p)` when a follow-up assumes it landed, `writeOrNull(p)` | a raw `api()` write (`write-rule`) or a bare `.catch(() => {})` (`babillard/no-anonymous-catch`) |
 | Any `/api/*` read | **`api()`** (`lib/api.ts`: CSRF, device token, X-Lang, X-Profile); a blob read is `fetch(imgUrl(key))` | a bare `fetch` (`babillard/no-bare-fetch`) |
-| Server state | **TanStack Query**; shared keys in `lib/queryKeys.ts`, a page-local key as a file `const X_KEY` | a parallel store, or a key literal at a call site (`querykey-rule`) |
+| Server state | **TanStack Query**; shared keys in `lib/queryKeys.ts`, a page-local key as a file `const X_KEY` | a parallel store, or a key literal at a call site (`babillard/no-inline-query-key`) |
 | Device role · presentation lens | **`useSurface()`** / **`useLens()`** named flags (`toddler`, `simple`, `teaches`, `acts`…) | branching on width or on the audience string (`babillard/no-viewport-size`, `babillard/lens-flag`) |
 | Calm | no streak/points/badge/push/inventory, ever (`calm-tenets.test.ts` scans every migration) | a count, rank or quantity column |
 | Backend endpoint | a handler under `functions/api/` wrapped in **`authed()`** **+** a row in `worker/routes.ts` `TABLE` (file path is not routing) | a hand-rolled auth guard |

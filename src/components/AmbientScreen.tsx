@@ -11,6 +11,8 @@ import { PhotoMosaic } from './PhotoMosaic'
 import { InlineIcon } from './Icon'
 import { useEffect, useRef, type CSSProperties } from 'react'
 
+/* oxlint-disable babillard/dialog-shell -- the screensaver is announced as a dialog so a reader knows the board is covered; any key or tap wakes it, no trap, no back entry */
+
 // The ambient screensaver (backlog #3): after N idle minutes the kiosk fades to a
 // big clock + date over the slow photo frame, with an optional "next up" stack —
 // tonight's meal, the next event, and the routine of the moment (#4).

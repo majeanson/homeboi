@@ -19,6 +19,8 @@ import { warmImageCache } from '../lib/cacheWarm'
 import { scrollBehavior } from '../lib/motion'
 import { Img } from './Img'
 
+/* oxlint-disable babillard/dialog-shell -- the flyer lightbox, an overlay inside the deals browser, useModal with history true */
+
 // Full-flyer viewer. A Flipp flyer page is a canvas of item clippings positioned
 // by coordinates (no scanned page image), so we fetch /api/flyer and reconstruct
 // each page: a white sheet with every clipping absolutely placed by its box.

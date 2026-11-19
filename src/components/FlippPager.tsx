@@ -7,6 +7,8 @@ import { InlineIcon } from './Icon'
 import { Cluster } from './Layout'
 import { Loading } from './Fallback'
 
+/* oxlint-disable babillard/dialog-shell -- the flipp.com pager, an overlay inside the till, useModal with history true */
+
 // « MONTRER FLIPP », ONE AFTER THE OTHER (2026-09-11). Marc, from the till: « a flow
 // where it's easy to Montrer Flipp one after the other without too many clicks ».
 // Until now the door was a link: a new tab per pick, then back to Babillard, back to

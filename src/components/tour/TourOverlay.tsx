@@ -10,6 +10,8 @@ import { useTour } from '../../lib/tour'
 import { Icon } from '../Icon'
 import { guideHref } from '../../lib/settingsNav'
 
+/* oxlint-disable babillard/dialog-shell -- the guided tour is a teaching layer over the page; useModal for Esc and the trap, no back entry */
+
 /* oxlint-disable babillard/no-viewport-size -- positioning: places the coachmark beside its anchor */
 
 // The one renderer for any active guided tour (engine: lib/tour.tsx). It dims the

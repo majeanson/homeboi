@@ -62,7 +62,9 @@
     "babillard/no-chip-class": "off",
     "babillard/no-native-time-input": "off",
     "babillard/lens-flag": "off",
-    "babillard/no-viewport-size": "off"
+    "babillard/no-viewport-size": "off",
+    "babillard/no-inline-query-key": "off",
+    "babillard/dialog-shell": "off"
   },
   "overrides": [
     {
@@ -73,7 +75,9 @@
         "babillard/no-chip-class": "error",
         "babillard/no-native-time-input": "error",
         "babillard/lens-flag": "error",
-        "babillard/no-viewport-size": "error"
+        "babillard/no-viewport-size": "error",
+        "babillard/no-inline-query-key": "error",
+        "babillard/dialog-shell": "error"
       }
     },
     {
@@ -94,7 +98,9 @@
         "babillard/no-chip-class": "off",
         "babillard/no-native-time-input": "off",
         "babillard/lens-flag": "off",
-        "babillard/no-viewport-size": "off"
+        "babillard/no-viewport-size": "off",
+        "babillard/no-inline-query-key": "off",
+        "babillard/dialog-shell": "off"
       }
     },
     {

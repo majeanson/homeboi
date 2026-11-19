@@ -3,6 +3,8 @@ import { useT } from '../i18n'
 import { useModal } from './useModal'
 import { Icon } from '../components/Icon'
 
+/* oxlint-disable babillard/dialog-shell -- a dialog shell: the yes/no confirm and its useModal */
+
 // A real in-app confirm dialog — replaces the platform `window.confirm()` (ugly,
 // unstyled, blocks the JS thread, invisible to e2e) for the few HEAVY deletes
 // that warrant a deliberate yes/no rather than the forgiving undo toast: losing

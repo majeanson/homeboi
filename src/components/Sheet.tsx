@@ -5,6 +5,8 @@ import { useModal } from '../lib/useModal'
 import { useSwipeToDismiss } from '../lib/useSwipeToDismiss'
 import { useT } from '../i18n'
 
+/* oxlint-disable babillard/dialog-shell -- a dialog shell: Sheet IS the bottom sheet and its useModal */
+
 
 // The ONE bottom-sheet shell. AddSheet, ProfilePicker and the detail peek each
 // hand-rolled the identical chrome — a `.scrim` backdrop, an always-mounted

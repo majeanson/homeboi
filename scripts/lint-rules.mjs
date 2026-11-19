@@ -42,6 +42,11 @@ const LENS_VALUES = new Set(['parent', 'toddler', 'simple'])
 const BAD_LENS_NAMES = new Set(['kid', 'isToddler'])
 const SIZE_PROPS = new Set(['innerWidth', 'innerHeight', 'outerWidth', 'outerHeight'])
 const SCREEN_PROPS = new Set(['width', 'height', 'availWidth', 'availHeight'])
+// QueryClient methods that take a key (or filters holding one) as their first argument.
+const QUERY_CLIENT_METHODS = new Set([
+  'setQueryData', 'getQueryData', 'getQueryState', 'setQueriesData', 'getQueriesData', 'removeQueries', 'cancelQueries',
+  'invalidateQueries', 'refetchQueries', 'resetQueries', 'ensureQueryData', 'prefetchQuery', 'fetchQuery',
+])
 
 export default {
   meta: { name: 'babillard' },
@@ -184,6 +189,46 @@ export default {
         },
       }
     }),
+
+    // THE QUERY-KEY RULE. A key is a NAME declared once (lib/queryKeys.ts, or a file-level
+    // `const X_KEY = ['…']` beside its reader) and derived from (`[...X_KEY, id]`). A literal at
+    // the call site is the second spelling waiting to happen; on 2026-11-16 three of eight
+    // already were (LegalPage's ['health'], DealsBrowser's ['flyers', day], HouseDiary's
+    // ['chores-ledger']). keyShape.test.ts is the sibling that groups keys by value.
+    'no-inline-query-key': rule('A query key is a declared name, never a literal at the call site', (context) => {
+      const literalKey = (n) => {
+        const a = n && unwrap(n)
+        const first = a && a.type === 'ArrayExpression' ? a.elements[0] : null
+        return !!first && ((first.type === 'Literal' && typeof first.value === 'string') || first.type === 'TemplateLiteral')
+      }
+      const message = "Declare the key (lib/queryKeys.ts, or a file-level const X_KEY = ['…']) and use the name, or derive from it: [...X_KEY, id]. Grep the value first."
+      return {
+        Property(node) {
+          if (!node.computed && ((node.key.type === 'Identifier' && node.key.name === 'queryKey') || (node.key.type === 'Literal' && node.key.value === 'queryKey')) && literalKey(node.value))
+            context.report({ node, message })
+        },
+        CallExpression(node) {
+          if (QUERY_CLIENT_METHODS.has(propName(unwrap(node.callee))) && literalKey(node.arguments[0])) context.report({ node, message })
+        },
+      }
+    }),
+
+    // THE OVERLAY RULE (2026-11-05). Three shells own dialog behaviour (Modal, Sheet, confirm),
+    // and useModal gives them Escape, the scroll lock, the focus trap and the phone's back
+    // button. A role="dialog" spelled elsewhere promises behaviour the element may not keep
+    // (AmbientScreen had the role and none of it; the AI-error toast called itself an
+    // alertdialog and trapped nothing), and a useModal( call outside the shells is a fourth
+    // shell growing. A routed full-screen scene is a legitimate exception, with its reason.
+    'dialog-shell': rule('A dialog is <Modal>/<Sheet>/confirm; anything else says why', (context) => ({
+      JSXAttribute(node) {
+        if (attrName(node) === 'role' && node.value && stringsIn(node.value).some((s) => s === 'dialog' || s === 'alertdialog'))
+          context.report({ node, message: 'Use <Modal> or <Sheet>. A routed scene or a lightbox that must be its own dialog takes a disable with the reason.' })
+      },
+      CallExpression(node) {
+        if (isIdent(unwrap(node.callee), 'useModal'))
+          context.report({ node, message: 'useModal is the shells’ hook (Modal, Sheet, confirm). A routed scene or lightbox that needs it takes a disable with the reason.' })
+      },
+    })),
 
     // THE METER HAS TO BE UNAVOIDABLE. Workers AI calls, R2 upload bytes and Browser Run minutes
     // cost money per use; each has ONE metered door that charges the household's daily budget

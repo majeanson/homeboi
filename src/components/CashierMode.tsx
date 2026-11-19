@@ -17,6 +17,8 @@ import { OfflineBanner } from './OfflineBanner'
 import { useModal } from '../lib/useModal'
 import { Img } from './Img'
 
+/* oxlint-disable babillard/dialog-shell -- a routed full-screen scene (the till): useModal for Esc and the focus trap, while the router owns its history entry */
+
 // « Montrer à la caisse » / "Show at the till" mode. The user holds the phone (the
 // cashier never does) and
 // items hit the belt in an unpredictable order — so this is RANDOM-ACCESS, not a

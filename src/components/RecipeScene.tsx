@@ -33,6 +33,8 @@ import { RecipeShareModal } from './RecipeShareModal'
 import { SceneHead } from './SceneHead'
 import { ActionMenu, type ActionMenuItem } from './ActionMenu'
 
+/* oxlint-disable babillard/dialog-shell -- a routed full-screen scene (the recipe): useModal for Esc and the focus trap, while the router owns its history entry */
+
 // Read a recipe + act on it. Calm, low-chrome: the picture, ingredients, method.
 // The footer holds ONLY the two primaries — Cuisiner + Planifier (reveals the
 // week; tapping a day sets that supper's title — groceries stay a separate,

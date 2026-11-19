@@ -45,6 +45,8 @@ import { useWakeLock } from '../lib/useWakeLock'
 import { TimerRail } from './cook/TimerRail'
 import { Img } from './Img'
 
+/* oxlint-disable babillard/dialog-shell -- a routed full-screen scene (cook): useModal for Esc and the focus trap, while the router owns its history entry */
+
 // The three cooking layouts. The TODDLER lens is always locked to 'step' (the calm
 // one-thing-at-a-time stepper — its whole point). The PARENT lens picks among all
 // three from the bar, remembered per recipe:

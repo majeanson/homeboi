@@ -71,7 +71,7 @@ export function AiErrorProvider({ children }: { children: ReactNode }) {
     <>
       {children}
       {/* A toast, not a dialog: it takes no focus and traps nothing, so `alertdialog`
-          promised a11y behaviour it never had (overlay-rule.test.ts). `status` +
+          promised a11y behaviour it never had (babillard/dialog-shell). `status` +
           assertive says what it is — an announcement with a dismiss.
           Portalled to <body> like Modal/Sheet: its z-index (--z-toast-ai, over every
           dialog — layer-order.test.ts) only competes with theirs in the SAME stacking
