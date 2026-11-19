@@ -54,6 +54,34 @@ export function iconOnlyButtons(src: string): { line: number; labeled: boolean; 
   return out
 }
 
+// AN EMOJI IS NOT AN ICON (solidify 6.6, 2026-11-19). A button whose whole content is a
+// literal pictograph (◀, ▶, 🔍, 🗑️) renders in each platform's emoji font, at the font's
+// size, beside Phosphor glyphs everywhere else. Hear-first toddler tiles use emoji on
+// purpose, but as a tile's picture beside its words, never as a button's only content.
+// Fail-closed at 0 (the last two, /voiture's week arrows, moved onto IconButton).
+const GLYPH_ONLY = /^(?:[\s\p{Extended_Pictographic}]|\u{FE0F}|\u{200D}|\p{Emoji_Modifier})+$/u
+export function glyphOnlyButtons(src: string): number[] {
+  const out: number[] = []
+  const re = /<button\b/g
+  let m: RegExpExecArray | null
+  while ((m = re.exec(src))) {
+    let i = m.index
+    let depth = 0
+    for (; i < src.length; i++) {
+      const c = src[i]
+      if (c === '{') depth++
+      else if (c === '}') depth--
+      else if (c === '>' && depth === 0) break
+    }
+    if (src.slice(m.index, i + 1).endsWith('/>')) continue
+    const close = src.indexOf('</button>', i)
+    if (close < 0) continue
+    const inner = src.slice(i + 1, close).trim().replace(/^\{\s*(['"`])(.*)\1\s*\}$/s, '$2')
+    if (inner && GLYPH_ONLY.test(inner) && /\p{Extended_Pictographic}/u.test(inner)) out.push(src.slice(0, m.index).split('\n').length)
+  }
+  return out
+}
+
 describe('icon-button rule — a glyph button has a name, and it is an IconButton', () => {
   it('the detector sees an icon-only button and its label (canary)', () => {
     const src = [
@@ -73,5 +101,20 @@ describe('icon-button rule — a glyph button has a name, and it is an IconButto
     const n = files.filter((f) => f.path !== 'components/IconButton.tsx').reduce((acc, f) => acc + iconOnlyButtons(f.raw).length, 0)
     expect(n, `hand-spelled icon-only buttons: ${n} (max ${HAND_SPELLED_MAX}) — a new one goes on <IconButton>; a sweep lowers the max in its own commit`).toBeLessThanOrEqual(HAND_SPELLED_MAX)
     expect(n, 'the ratchet is loose — lower HAND_SPELLED_MAX to the current count').toBeGreaterThan(HAND_SPELLED_MAX - 12)
+  })
+
+  it('the emoji detector sees a pictograph-only button (canary)', () => {
+    const src = [
+      `<button type="button" aria-label="Avant">◀</button>`,
+      `<button type="button">{'🗑️'}</button>`,
+      `<button type="button">🍝 Souper</button>`,
+      `<button type="button"><Icon name="a" /></button>`,
+    ].join('\n')
+    expect(glyphOnlyButtons(src)).toEqual([1, 2])
+  })
+
+  it('no button is only an emoji — the glyph is an <IconButton icon>', () => {
+    const hits = files.flatMap((f) => glyphOnlyButtons(f.raw).map((l) => `${f.path}:${l}`))
+    expect(hits, 'a pictograph alone renders in the platform emoji font; use <IconButton icon label …/>').toEqual([])
   })
 })

@@ -22,6 +22,7 @@ import { Avatar } from '../components/Avatar'
 import { Field } from '../components/Field'
 import { TimeField } from '../components/TimeField'
 import { Icon } from '../components/Icon'
+import { IconButton } from '../components/IconButton'
 import { useSceneClose, useEscapeKey } from '../lib/sceneNav'
 import { useNavigate } from 'react-router-dom'
 import { colourFor } from '../lib/things'
@@ -184,13 +185,9 @@ export function VoiturePage() {
         <p className="voiture__hint mono">{t.auto.weekHint}</p>
 
         <div className="voiture__weeknav">
-          <button type="button" className="btn btn--ghost" onClick={() => setWeekStart((w) => addLocalDays(w, -7))} aria-label={t.auto.prevWeek}>
-            ◀
-          </button>
+          <IconButton icon="caret-left-bold" label={t.auto.prevWeek} onClick={() => setWeekStart((w) => addLocalDays(w, -7))} />
           <span className="voiture__weeklabel mono">{weekLabel}</span>
-          <button type="button" className="btn btn--ghost" onClick={() => setWeekStart((w) => addLocalDays(w, 7))} aria-label={t.auto.nextWeek}>
-            ▶
-          </button>
+          <IconButton icon="caret-right-bold" label={t.auto.nextWeek} onClick={() => setWeekStart((w) => addLocalDays(w, 7))} />
           <button type="button" className="btn btn--ghost mono" onClick={() => setWeekStart(startOfWeek(today))}>
             {t.auto.thisWeek}
           </button>
