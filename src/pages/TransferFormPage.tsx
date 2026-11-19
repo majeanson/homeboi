@@ -39,7 +39,7 @@ export function TransferFormPage() {
         // WAIT for the read model. The composer seeds its ticked dates ONCE, from the
         // plans — rendering it against an empty list seeds nothing, and the form does
         // not remount when the data lands, so every date arrived unticked and the memo
-        // came out with no mortgage line at all. Caught by e2e/virements.spec.ts, which
+        // came out with no mortgage line at all. Caught by e2e/journey-virements.spec.ts, which
         // is the whole reason that spec asserts the ticks rather than just the fields.
         // `Loading`, not `Skeleton`: a form scene is one record, not a known shape.
         (loadStateOf(transfersQ) ?? (

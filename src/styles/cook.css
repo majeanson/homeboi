@@ -50,7 +50,7 @@
 .cook__autoread,
 /* The mute rides the same bar and must read as the same KIND of control as its
    neighbours — its own class, though, because .cook__autoread is a named target in
-   e2e/cook-stepper.spec.ts and sharing it made `.first()` mean something new. */
+   e2e/journey-cooking.spec.ts and sharing it made `.first()` mean something new. */
 .cook__sound {
   flex: none;
   display: inline-flex;

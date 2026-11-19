@@ -1,6 +1,8 @@
 import { test, expect, type Request } from '@playwright/test'
 import { mockApi, seedState, ROUTES } from './mocks'
 
+// JOURNEY — REMARQUES (review #43; was journey-remarks.spec.ts).
+//
 // « Les remarques » (0136) — the household's side of the loop, through the real UI.
 //
 // What this file is for is the SEAM, not the rendering: a report that renders beautifully

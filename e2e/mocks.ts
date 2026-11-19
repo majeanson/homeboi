@@ -701,7 +701,7 @@ const TRANSFERS: TransfersWire = {
       // — the composer writes the covered dates into the string — but a memo is stored
       // TEXT: the state matrix can rebase `sentAt` onto today and cannot rebase the
       // sentence beside it, so a dated memo would print a month its own row contradicts
-      // and read as an app bug on sight. virements.spec.ts supplies its own fixture and
+      // and read as an app bug on sight. journey-virements.spec.ts supplies its own fixture and
       // still pins the dated form, which is where that assertion belongs.
       memo: 'Hypotheque',
       reference: 'CArR4A3Q',
@@ -869,7 +869,7 @@ export const ROUTES: Partial<Wire> = {
   year: YEAR,
   health: HEALTH,
   // The nightly copies the restore door lists (STATE §4-L L8). Empty by default: the
-  // shared fixture is a household, not a backup history; takeout-restore.spec.ts
+  // shared fixture is a household, not a backup history; journey-takeout.spec.ts
   // registers its own route when it wants rows.
   'takeout/backups': { backups: [] },
   // Every key the handler answers, at the value a household that changed nothing reads.
@@ -952,7 +952,7 @@ export const ROUTES: Partial<Wire> = {
   // and catch-up projection) and what has actually been sent. Anchored on MMID like
   // every other dated fixture, so a spec that freezes the clock there reads a plan
   // with one payment behind and one coming — the shape the composer exists for.
-  // e2e/virements.spec.ts still routes `**/api/transfer**` itself (a later route
+  // e2e/journey-virements.spec.ts still routes `**/api/transfer**` itself (a later route
   // wins) to drive its own cases; this default is what every OTHER surface sees.
   transfers: TRANSFERS,
   recap: { recap: 'Belle semaine : 3 soupers planifiés, 2 sorties, liste à jour.' },

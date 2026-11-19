@@ -1,6 +1,8 @@
 import { test, expect, type Page, type Request } from '@playwright/test'
 import { mockApi, seedState } from './mocks'
 
+// JOURNEY — PLAY & THE CAR (review #43; was journey-play-car.spec.ts).
+//
 // PARITY Wave E, entry 10 — two surfaces that were layout-smoke-rendered only, now
 // with a happy-path interaction each: F30 « Jouer » (a game the child actually plays)
 // and F32 « L'auto » (a car-day write). Frontend-only harness (mocked /api/**).

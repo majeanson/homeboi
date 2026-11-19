@@ -1,6 +1,8 @@
 import { test, expect, type Page } from '@playwright/test'
 import { mockApi, seedState } from './mocks'
 
+// JOURNEY — COOKING (review #43; was journey-cooking.spec.ts).
+//
 // Cook mode's STEPPER — one step on screen at a time, with ← / → and a "3 / 5"
 // counter. It had a screenshot and a timer-chip test but no navigation coverage,
 // which is the half that can silently break: `idx` is clamped at both ends and the

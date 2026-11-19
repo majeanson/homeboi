@@ -2,6 +2,8 @@ import { test, expect, type Locator, type Page } from '@playwright/test'
 import { MMID, mockApi, seedState } from './mocks'
 import { boxOf } from './measure'
 
+// JOURNEY — VIREMENTS (review #43; was journey-virements.spec.ts).
+//
 // « Les virements » — the second face of Les notes (?section=virements): the standing
 // agreement, the folded catch-up math, the history, and the composer that writes the
 // bank message.

@@ -2,6 +2,8 @@ import type { Route } from '@playwright/test'
 import { test, expect, type App } from './fixtures'
 import { mockApi, seedState } from './mocks'
 
+// JOURNEY — TAKEOUT & RESTORE (review #43; was journey-takeout.spec.ts).
+//
 // « Restaurer une copie » — Réglages ▸ Système ▸ Appareils & accès (STATE.md §4-L L8).
 // The nightly copies had been written to R2 for months with nothing able to read one
 // back. Two doors now, both behind the password confirm, and the confirm names what is
