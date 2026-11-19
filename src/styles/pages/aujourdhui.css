@@ -34,14 +34,20 @@
   color: var(--ink-soft);
 }
 .today-simple__tiles {
-  /* Three doors: side-by-side on a tablet, a single calm column on a phone. */
-  grid-template-columns: repeat(auto-fit, minmax(min(14rem, 100%), 1fr));
+  /* The doors: two side by side on a tablet, a single calm column on a phone. 11rem,
+     not 14: under the lens's 1.4× type a 14rem track left one column even at 820px,
+     so five doors stacked into a long scroll (2026-11-19, the routine + mot tiles). */
+  grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr));
 }
 .today-simple .bigtile {
-  /* .bigtile is a <button> style; these doors are <Link>s — undo anchor dress. */
+  /* .bigtile is a <button> style; most doors are <Link>s — undo anchor dress. */
   text-decoration: none;
   color: inherit;
   min-height: 11rem;
+}
+/* A two-column tile wraps its one-line answer: keep it under its centred title. */
+.today-simple .bigtile__sub {
+  text-align: center;
 }
 .today-kid__greet {
   font-size: 1.6rem;

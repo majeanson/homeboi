@@ -128,6 +128,7 @@ Progress on the 43 items kept from the 7-persona review (2026-11-17).
 
 ## Parked (not this week)
 Grandparent/sitter mode · trust & business pack · Marco's kill list. See the Decisions section of the review file.
+Marc's pass, 2026-11-19: from the grandparent pack, only the richer Simple board (routine tile, « Laisse un mot » tile, supper → recipe or day page, a plain La liste; STATE.md §3). The sitter mode, the Urgence card, « De qui ? », the kill list, the trust & business pack and CASCADE (#37) stay parked.
 
 ## Log
 <!-- one line per session: date · items touched · commits -->

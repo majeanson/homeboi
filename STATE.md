@@ -111,11 +111,14 @@ now, so the repo-wide count is honest for the first time.
 
 ## 3. What just shipped
 
+### La vue simple : la routine, un mot, et le souper sans la grosse cuisine — 2026-11-19
+Thérèse's parked pack, the one part Marc took (2026-11-19): the simple board gains the routine of the moment (`useMomentRoutine`, now THE pick for all three lenses: the parent card, the toddler door and this tile) and « Laisse un mot » (the `MotComposer` in a `Sheet`, not for a guest). « Ce soir » opens tonight's recipe, else today's day page, never the week planner. La liste in the simple lens keeps the list: no shortcut row, no mode toggle, no caisse or Flipp. The tiles go two to a row from a tablet up. `journey-lenses.spec` « simple board » (3 cases, red on the old board and list). The rest of the pack (sitter mode on the wall, an Urgence card, « De qui ? ») stays parked, like the kill list, the trust & business pack and CASCADE.
+
 ### La revue à sept personas : 43 points, tous fermés — 2026-11-17 → 11-18
 Seven personas (parent, shift nurse, grandmother, a11y, engineering, security, product) reviewed the app; Marc kept 43 items, and `REVIEW-TRACKER.md` carries each with its commit (the raw review stays untracked: it holds attack recipes). **P0 security**: an upload allowlist on store and serve (SVG/HTML XSS), restore confined to its household, the sandbox sweep keyed on `is_sandbox` (0157), an R2 ownership ledger (0158), same-origin + JSON on the exempt doors, per-address caps (0159), single-use invites, per-session logout (0160), `/api/img` scoped to its household. **P1/P2**: ＋ runs capture, night shifts, `TimeField`, the day first on a fresh board, one tutorial, help mode under the finger, a readable month, day-part contrast, the toddler first screen, the kitchen nouns, pets in « Pour qui ? », and four a11y passes approved by Marc one by one. **P3**: client UUIDs (`newRowId`), `shared/`, grep guards → oxlint AST rules, the docs diet (`docBudget`), and the e2e suite folded from 221 specs to 50 files with no test dropped. **Parked by Marc**: `ON DELETE CASCADE` (#37), the grandparent/sitter mode, the trust & business pack, the kill list.
 
 ### Le plan de solidification — vagues 0 à 8
-Waves 0–5 closed 2026-11-05 (their story is in git: `git log --grep=vague`). Waves 6–8 landed mostly with the review week: the shared e2e fixture, mocks typed on `Wire`, `routeSweep`, `routesTable`, `d1Coverage` at 0, the coverage floor, the strict tsconfig flags, axe with `e2e/axe-allow.json`, PARITY's dimensions held by guards. What the plan still names is in §4.
+Waves 0–5 closed 2026-11-05 (their story is in git: `git log --grep=vague`). Waves 6–8 landed mostly with the review week: the shared e2e fixture, mocks typed on `Wire`, `routeSweep`, `routesTable`, `d1Coverage` at 0, the coverage floor, the strict tsconfig flags, axe with `e2e/axe-allow.json`, PARITY's dimensions held by guards. **The plan is closed (2026-11-19)** with its last two items: 6.6's emoji-button rule (fail-closed at 0, in `icon-button-rule.test.ts`; /voiture's ◀ ▶ moved onto `IconButton`) and 7.3, which became a ratchet by Marc's call (`non-null-rule.test.ts`: 309 `!` in product code, counted by oxlint, may only fall).
 
 ## 4. What still needs improvement — consolidated and ranked
 
@@ -129,10 +132,9 @@ Waves 0–5 closed 2026-11-05 (their story is in git: `git log --grep=vague`). W
 > **No open box.** The review week's 43 (`REVIEW-TRACKER.md`) closed 2026-11-18. La dernière d'ici s'est fermée le 2026-11-06. Avant elles, 2026-09-29 : §K's six waves and §L are all closed; what is left is §M
 > (needs a device) and F37's review (~12-29). New work starts from what real households do.
 >
-> **The standing work since 2026-11-05 is `plans/2026-11-05-SOLIDIFY.md`** — nine waves of
-> UI/UX unification, generalization and test hardening (§3 has the latest wave). It is a
-> plan with no boxes on purpose: each wave's items are verified in code when picked up, and
-> a wave is done when its guards are green AND were red once. Read it before any UI work.
+> **`plans/2026-11-05-SOLIDIFY.md` is closed (2026-11-19)** — nine waves of UI/UX
+> unification, generalization and test hardening, each done when its guards were green AND
+> red once. Its « Deliberately left out » list still holds; read it before reopening one.
 
 > **Everything except §K is closed.** The argument, the measurements and the several
 > findings that turned out to be wrong are in git (`git log --diff-filter=D -- bmad/` finds the deleting commit; `git show <sha>^:bmad/<file>` reads any of it.). One line each here,

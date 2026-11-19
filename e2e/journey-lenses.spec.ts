@@ -615,3 +615,36 @@ test7.describe('lens-gates', () => {
     })
   }
 })
+
+
+// ── the simple board, richer (review 2026-11-17, Thérèse) ───────────────────────
+test6.describe('simple board', () => {
+  // The grandma lens had three doors and the fridge notes: no routine, no way to leave
+  // a mot, and « Souper » opened the parent's week planner. Now the routine of the moment
+  // and « Laisse un mot » are tiles, the supper door lands on the meal's recipe (else the
+  // day page), and La liste drops the parent's shortcut row and shopping tools.
+  test6('a routine tile, a mot tile that opens the composer, and supper never opens /kitchen', async ({ page, app }) => {
+    await app.boot({ route: '/board', clock: 'BASE', state: { audience: 'simple' }, wait: '.today-simple__tiles' })
+    const tiles = page.locator('.today-simple__tiles')
+    await expect(tiles.locator('[data-tile="routine"]')).toHaveAttribute('href', /\/routine\/[^/]+\/run$/)
+    // No recipe on tonight's meal in the fixture: the supper door is today's day page
+    // (a local day is its midnight in unix seconds).
+    await expect(tiles.locator('[data-tile="supper"]')).toHaveAttribute('href', /\/kitchen\/day\/\d+$/)
+    const mot = tiles.locator('[data-tile="mot"]')
+    await expect(mot).toBeVisible()
+    await mot.click()
+    await expect(page.getByRole('dialog').locator('.mot-composer')).toBeVisible()
+  })
+
+  test6('a supper linked to a recipe opens that recipe', async ({ page, app }) => {
+    const board = { ...BOARD, tonight: { ...(BOARD.tonight as object), recipe_id: 'rc1' } }
+    await app.boot({ route: '/board', clock: 'BASE', state: { audience: 'simple' }, wait: '.today-simple__tiles', api: { overrides: { board } } })
+    await expect(page.locator('[data-tile="supper"]')).toHaveAttribute('href', '/kitchen/recipe/rc1')
+  })
+
+  test6('La liste in the simple lens keeps the list: no shortcuts, no shopping tools', async ({ page, app }) => {
+    await app.boot({ route: '/liste', clock: 'BASE', state: { audience: 'simple' }, wait: '.list-rows' })
+    await expect(page.locator('.list-actions')).toHaveCount(0)
+    await expect(page.locator('.list-row').first()).toBeVisible()
+  })
+})

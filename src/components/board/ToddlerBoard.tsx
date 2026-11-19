@@ -1,9 +1,6 @@
 import { Loading } from '../Fallback'
 import { Link } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { api } from '../../lib/api'
-import { ROUTINES_KEY } from '../../lib/queryKeys'
-import { pickMomentRoutine } from '../../lib/routineTod'
+import { useMomentRoutine } from '../../lib/momentRoutine'
 import { Disclosure } from '../Disclosure'
 import { useLang, useT } from '../../i18n'
 import { BigTiles, Sayable, type Tile } from '../BigTiles'
@@ -86,12 +83,7 @@ export function ToddlerBoard({
   const nowSec = Math.floor(Date.now() / 1000)
   const nowNext = todayEvents.filter((e) => (e.all_day ? true : (e.end_at ?? e.start_at + 3600) > nowSec)).slice(0, 2)
   // The routine of the moment (the parent board's « Prochaine routine », same pick).
-  const routines = useQuery({
-    queryKey: ROUTINES_KEY,
-    queryFn: () => api<{ routines: { id: string; name: string; timeOfDay: string | null; cards: { icon?: string }[] }[] }>('routines'),
-    staleTime: 5 * 60_000,
-  }).data?.routines
-  const routine = pickMomentRoutine(routines ?? [], Date.now())
+  const routine = useMomentRoutine<{ id: string; name: string; timeOfDay: string | null; cards: { icon?: string }[] }>()
   // The SAME list as the parent card (lib/boardModel): due, owed or ticked today, lensed.
   const todayTasks = model.tasks
   const tomorrowEvents = model.tomorrow.events

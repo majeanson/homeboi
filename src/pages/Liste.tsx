@@ -375,7 +375,7 @@ function ListItemRow({
 export function Liste() {
   const t = useT()
   const { lang } = useLang()
-  const { toddler } = useLens()
+  const { toddler, simple } = useLens()
   const { surface } = useSurface()
   const nav = useNavigate()
   const createWithUndo = useCreateWithUndo()
@@ -389,7 +389,9 @@ export function Liste() {
   // change, asks, then stages / adds / checks through the picks seam.
   useFlippImport()
   // SIMPLE ↔ AVANCÉ (lib/listeMode) — the same device-local flag « Les notes » uses.
-  const advanced = useListeAdvanced()
+  // The simple (grandma) lens always reads the plain face: the toggle is not offered.
+  const advancedPref = useListeAdvanced()
+  const advanced = advancedPref && !simple
   const detail = useEntityDetail()
   // Press and hold a row to edit it. The picture's tap now zooms the flyer clipping,
   // so the hold carries what that tap used to do. Grips and form fields are excluded
@@ -798,6 +800,10 @@ export function Liste() {
           each item's own name into second place. Folded behind one button they're
           still one tap away, and the list is back to being the list. Only worth a
           button once there's more than one row to order. */}
+      {/* The simple lens keeps the list itself: add, tick, read. The shortcuts lead to
+          other surfaces (flyers, restock, aisle order) and the mode toggle is a parent's
+          preference (review 2026-11-17, Thérèse: one tap must not land in the dense UI). */}
+      {!simple && (
       <Cluster className="list-actions list-actions--quiet">
         {/* The circulaires are the one shortcut that STARTS a shopping decision —
             the other two reorder or restock a list you already have. It carries the
@@ -848,6 +854,7 @@ export function Liste() {
           className="help-pick"
         />
       </Cluster>
+      )}
       {help.bubbleFor('flyer')}
       {help.bubbleFor('quick')}
       {help.bubbleFor('aisles')}
@@ -980,8 +987,9 @@ export function Liste() {
           they are two buttons and not one screen (2026-09-12):
             « Montrer à la caisse » — at the register, with a cashier waiting.
             « Ma liste Flipp »      — at home, before leaving.
-          Browsing flyers and restocking live in the ＋ sheet, so the page stays the list. */}
-      {(pickList.length > 0 || list.length > 0) && (
+          Browsing flyers and restocking live in the ＋ sheet, so the page stays the list.
+          Not in the simple lens: both are a parent's shopping tools, not the list. */}
+      {!simple && (pickList.length > 0 || list.length > 0) && (
         <Cluster className="list-actions list-actions--shop">
           {pickList.length > 0 && (
             <button

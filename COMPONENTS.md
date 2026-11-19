@@ -221,7 +221,7 @@ Exemple »**: every `/api/*` GET answers from `e2e/mocks.ts` (`src/lib/devFixtur
 | **PanZoom** | `components/PanZoom.tsx` | A calm inline pan + zoom surface. |
 | **PhotoMosaic** | `components/PhotoMosaic.tsx` | Full-screen family-memory mosaic for the idle screensaver: tiles the whole surface with family PHOTOS and saved kids' DRAWINGS (#49), and every few seconds cross-fades ONE random tile to a different image. |
 | **HeartButton** | `components/HeartButton.tsx` | `name` (review #35): every heart said « J'aime » — on a recipe book that is a column of identical buttons. |
-| **SimpleBoard** | `components/board/SimpleBoard.tsx` | « Simple » board (bmad/08 A-1) — the post-reader/grandma glance: FOUR calm zones instead of the parent's bento. |
+| **SimpleBoard** | `components/board/SimpleBoard.tsx` | « Simple » board (bmad/08 A-1) — the post-reader/grandma glance: calm zones instead of the parent's bento. |
 | **MonthView** | `components/board/MonthView.tsx` | "Mois" — the fourth board take (after bento · next · lanes): a calm six-week calendar of EVERYTHING dated, so a glance answers "what's the month look like?" Cells carry colour dots; tapping a day opens its full list… |
 | **YearView** | `components/board/YearView.tsx` | Page-local query key: the year read lives only here (queryKeys.ts is for cross-page keys). |
 | **RoutinesTab** | `components/maison/RoutinesTab.tsx` | The routines overview (Maison ▸ Routines): every routine as a card, grouped by the moment of the day with the current moment first, each card showing its progress and opening its player. |

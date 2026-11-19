@@ -1,11 +1,9 @@
 import { doneCount as countDone } from '../../lib/routineProgress'
 import { type CSSProperties } from 'react'
 import { Link } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
 import { useT } from '../../i18n'
-import { api } from '../../lib/api'
-import { ROUTINES_KEY } from '../../lib/queryKeys'
-import { pickMomentRoutine, TOD_ICON, TOD_TINT, isRoutineTod, tintInk } from '../../lib/routineTod'
+import { useMomentRoutine } from '../../lib/momentRoutine'
+import { TOD_ICON, TOD_TINT, isRoutineTod, tintInk } from '../../lib/routineTod'
 import { Avatar } from '../Avatar'
 import { RoutineRing } from '../RoutineRing'
 import { InlineIcon } from '../Icon'
@@ -35,12 +33,7 @@ interface RoutineRow {
 // tick. A cue, never a nag: it just surfaces, it doesn't blink or count.
 export function RoutineNextCard() {
   const t = useT()
-  const { data } = useQuery({
-    queryKey: ROUTINES_KEY,
-    queryFn: () => api<{ routines: RoutineRow[] }>('routines'),
-    staleTime: 5 * 60_000,
-  })
-  const routine = pickMomentRoutine(data?.routines ?? [], Date.now())
+  const routine = useMomentRoutine<RoutineRow>()
   useReportEmpty(!routine)
   if (!routine) return null
 
