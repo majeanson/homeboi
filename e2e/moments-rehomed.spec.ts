@@ -11,7 +11,7 @@ import { localDayStart } from '../src/lib/localDay'
 //     day page (/kitchen/day/:date), where it stays operator-only.
 //
 // (The third leg — an old /moment link redirecting to the board — lives in
-// board-customize.spec.ts beside the rest of the board-layout coverage.)
+// journey-board-arrange.spec.ts beside the rest of the board-layout coverage.)
 
 // Local midnight in the household zone, not Node's (UTC on CI — a day off there).
 const today = () => localDayStart(new Date())

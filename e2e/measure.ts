@@ -42,7 +42,7 @@ export async function settled(page: Page) {
 // throws « Cannot read properties of null (reading 'y') » when the node is detached
 // between the two selector resolves. `src/lib/docBudget.test.ts` fails a new one.
 //
-// The last holdout was `hold()` in board-edit.spec.ts, held back deliberately while a CI
+// The last holdout was `hold()` in journey-board-arrange.spec.ts, held back deliberately while a CI
 // run judged a flake in the test it feeds — changing the helper mid-verdict would have
 // made that verdict unreadable. The verdict came in (one failure at 6.6s, i.e. the press
 // hit nothing and the 5s assertion timed out; then a pass at 1.7s), and it is exactly the

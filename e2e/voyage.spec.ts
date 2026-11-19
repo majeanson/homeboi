@@ -66,7 +66,7 @@ async function stubVoyage(page: Page, opts: { newTripId?: string; trips?: unknow
 
 test.beforeEach(async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
-  // Freeze the clock to the mock epoch (board-customize.spec.ts pattern). TRIP.end_at
+  // Freeze the clock to the mock epoch (journey-board-arrange.spec.ts pattern). TRIP.end_at
   // is BASE + 5 days — VoyagePage derives `finished` from the REAL wall clock
   // (todayLocalDay() → Date.now()), so as real time drifts further past the fixed
   // BASE anchor, TRIP silently crosses into "finished" and the scene renders the

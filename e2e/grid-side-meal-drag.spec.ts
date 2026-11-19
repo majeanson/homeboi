@@ -20,7 +20,7 @@ import { addLocalDays } from '../src/lib/localDay'
 // « Spaghetti maison », meal5 « Salade César »); the next day holds « Tacos ».
 
 // > DND_HOLD_MS (400, src/lib/dnd.tsx). Hardcoded because the e2e tsconfig cannot
-// import a .tsx module (no --jsx) — the same shape board-edit.spec.ts uses for its
+// import a .tsx module (no --jsx) — the same shape journey-board-arrange.spec.ts uses for its
 // LONG_PRESS hold. If the arm time ever rises past this, the drag below never starts
 // and both cases go red together, which is the right way to learn it.
 const HOLD = 700

@@ -5,7 +5,7 @@ import { MMID } from './mocks'
 //   · « À régler +2 » was a mystery number, and its tap went into Réglages;
 //   · « Compléter les familles 6 » wore a count badge;
 //   · « Compter les dodos jusqu'à Noël ? » was asked every morning, from July;
-//   · drawings wore « il y a 65 j » (drawing-age.spec.ts holds that one).
+//   · drawings wore « il y a 65 j » (journey-drawings.spec.ts holds that one).
 
 test.use({ timezoneId: 'America/Toronto' })
 

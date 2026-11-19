@@ -1430,13 +1430,13 @@ export async function mockApi(
 
     // meals?date=<epoch> is a SEPARATE, narrow read (functions/api/meals.ts) for one
     // day OUTSIDE the rolling window — DayPlanPage's own past-date query, `pastMealsQ`
-    // (day-plan-lean.spec.ts). Default it to EMPTY: without this branch it would fall
+    // (journey-day-page.spec.ts). Default it to EMPTY: without this branch it would fall
     // through to the plain `meals` fixture below, so a spec whose frozen fixture dates
     // (BASE/MMID) happen to read as "past" against the real wall clock would get the
     // WINDOW rows echoed back a second time here and render duplicate meal rows (same
     // ids, "two children with the same key"). A spec that DOES want a past day's
     // content registers its own page.route('**/api/meals**', ...) AFTER mockApi so it
-    // wins (Playwright tries routes newest-first) — see past-day-meal-doors.spec.ts.
+    // wins (Playwright tries routes newest-first) — see journey-day-page.spec.ts.
     if (path === 'meals' && url.searchParams.get('date')) {
       await route.fulfill({
         status: 200,

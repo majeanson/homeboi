@@ -559,7 +559,7 @@ test('attaching a photo and saving frees nothing', async ({ page }) => {
   expect(deleted).toEqual([])
 })
 
-// ── folded from journey-family-notes.spec.ts ──────────────────────────────────────────────
+// ── folded from journey-family-journey-mots.spec.ts ──────────────────────────────────────────────
 test.describe('cercle-notes-card', () => {
   // The board's « Notes (cercle) » card renders the shared NotesList in its COMPACT
   // face (compact-rows pass): a reading surface — no drag grip, no tint dot, no scope

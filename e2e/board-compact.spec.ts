@@ -5,14 +5,14 @@ import { boxOf } from './measure'
 // The board's compact lens (lib/widgetGrid.isCompact + components/board/CardLens): a
 // card halved on a phone renders a genuinely small tile — icon + title + at most one
 // quiet hint — instead of a squeezed full card, and grows to the zone's full width in
-// place when tapped. Modeled on board-edit.spec.ts's helpers.
+// place when tapped. Modeled on journey-board-arrange.spec.ts's helpers.
 //
 // « today » (mode 'always', so it's never empty) is the halved card throughout: its
 // default META size is already 1, but an UN-SIZED card falls back to 'full' on a narrow
 // grid (CardSlot's `grid?.narrow ? 'full' : undefined` fallback), so the compact form
 // only shows up once a device has actually CHOSEN a half — exactly what seeding
 // `cardPrefs.size` here reproduces.
-const HOLD = 700 // > LONG_PRESS_MS (500), mirrors board-edit.spec.ts
+const HOLD = 700 // > LONG_PRESS_MS (500), mirrors journey-board-arrange.spec.ts
 
 const open = async (page: Page, size: Record<string, number> = { today: 1 }) => {
   await page.setViewportSize({ width: 360, height: 740 })
@@ -23,7 +23,7 @@ const open = async (page: Page, size: Record<string, number> = { today: 1 }) => 
 }
 
 // `page.mouse` works in viewport coordinates and never scrolls — bring the element into
-// view first, same rule board-edit.spec.ts follows.
+// view first, same rule journey-board-arrange.spec.ts follows.
 // Named for what it ADDS — the scroll — now that the measuring half is the shared
 // retrying `boxOf` (e2e/measure.ts) instead of a second local copy wearing the same name.
 const scrolledBox = async (page: Page, sel: string) => {
@@ -79,7 +79,7 @@ test.describe('board compact lens', () => {
 
   // #root/.hub__body clip overflow-x, so a too-wide child is HIDDEN, not caught by a
   // scrollWidth check — measure every visible descendant's own right edge instead
-  // (same technique as board-edit.spec.ts's "does not bleed off the right edge" test).
+  // (same technique as journey-board-arrange.spec.ts's "does not bleed off the right edge" test).
   test('every visible child of the mini tile stays inside its own right edge', async ({ page }) => {
     await open(page)
     await page.locator('.wg-slot[data-card="today"] .cardmini').scrollIntoViewIfNeeded()
