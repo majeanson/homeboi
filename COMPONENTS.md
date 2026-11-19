@@ -85,7 +85,7 @@ nothing to wire per field. On-device diagnosis: Réglages ▸ Système ▸ Versi
 le diagnostic clavier » (or `?kbdebug=1`). Guards: `src/styles/keyboard-fit.test.ts`
 (build — bans the shrink, enforces the one definition), `e2e/keyboard.spec.ts`
 (strip-ownership probes, stranded-field follow, viewport-push pan), and
-`e2e/note-editor.spec.ts` (shell coverage + slack ≥ 100px). Demoed in `/dev/kit`
+`e2e/journey-family-notes.spec.ts` (shell coverage + slack ≥ 100px). Demoed in `/dev/kit`
 ▸ Fondations ▸ *Clavier (keyboard fit)*.
 
 ---

@@ -16,7 +16,7 @@ import { describe, expect, it } from 'vitest'
 //    copy that will drift.
 //
 // (The matching runtime guards live in e2e/keyboard.spec.ts — strip-ownership
-// elementFromPoint probes — and e2e/note-editor.spec.ts — slack ≥ 100px.)
+// elementFromPoint probes — and e2e/journey-family-notes.spec.ts — slack ≥ 100px.)
 
 const stylesDir = join(dirname(fileURLToPath(import.meta.url)))
 

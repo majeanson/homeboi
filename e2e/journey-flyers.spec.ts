@@ -1,8 +1,11 @@
-import { test, expect, type Page } from '@playwright/test'
+import { test, expect, type Page, type Request } from '@playwright/test'
 import { mockApi, seedState } from './mocks'
 import { boxOf, settled } from './measure'
 import { boardWithDeals } from './dealFixture'
+import { encodeFlippExport, type FlippExport } from '../src/lib/flippList'
 
+// JOURNEY — FLYERS & DEALS (review #43; was flipp-sheet.spec.ts + flipp-import.spec.ts).
+//
 // « Ma liste Flipp » — the LIST-level Flipp doors, on La liste.
 //
 // They used to live on « Montrer à la caisse ». Marc, 2026-09-12: « we should discern
@@ -251,4 +254,134 @@ test('with no live deal there is no deals-only door — an empty cargo is not an
   await openSheet(page, { allEnded: true })
   await expect(page.locator('a.flippsheet__deals')).toHaveCount(0)
   await expect(page.locator('a.flippsheet__send')).toBeVisible()
+})
+
+// ── folded from journey-flyers.spec.ts ──────────────────────────────────────────────
+test.describe('flipp-import', () => {
+  // THE WAY BACK — Flipp → Babillard (lib/flippImport). The bookmark's second answer
+  // opens `/liste#flipp=<base64url>`; the list page shows what would change, asks,
+  // then writes through the picks seam. Read from the WRITES, not the screen: what
+  // matters is which line got which PATCH/POST, and that NOTHING is written before
+  // « Rapporter » is confirmed.
+  //
+  // Mock list: Lait (l1, staged deal 101), Pain (l2), Pommes (l3), Couches (l4).
+  // The export brings: a clipping for « Lait » with a NEW flyer item (555) → the deal
+  // swaps onto l1; a checked clipping for « Pain » with no id → only the check; a
+  // typed « Crème à café » (not on the list) → a new line; a typed « Pommes »
+  // checked → l3 checked; a typed « Couches » unchecked, already there → nothing.
+  const EXPORT: FlippExport = {
+    v: 1,
+    from: 'flipp',
+    clippings: [
+      { flyerItemId: 555, name: 'Lait 1% 2L', flyerId: 5002, price: '2.99', merchantId: 7, merchantName: 'IGA', merchantLogoUrl: null, thumbnailUrl: null, validTo: '2099-01-01', checked: false },
+    ],
+    items: [
+      { term: 'Crème à café', checked: false },
+      { term: 'Pommes', checked: true },
+      { term: 'Couches', checked: false },
+    ],
+  }
+
+  const listWrite = (r: Request) => (r.method() === 'POST' || r.method() === 'PATCH') && new URL(r.url()).pathname === '/api/list'
+
+  async function openWithExport(page: Parameters<typeof mockApi>[0]) {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await mockApi(page)
+    await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+    await page.goto('/liste#flipp=' + encodeFlippExport(EXPORT))
+    await page.locator('.list-row').first().waitFor({ state: 'visible', timeout: 15_000 })
+  }
+
+  test('shows what would change, and writes NOTHING until « Rapporter » is confirmed', async ({ page }) => {
+    const writes: string[] = []
+    page.on('request', (r) => {
+      if (listWrite(r)) writes.push(`${r.method()} ${r.postData()}`)
+    })
+    await openWithExport(page)
+    const dialog = page.locator('.confirm')
+    await expect(dialog).toBeVisible()
+    // 1 deal attached (Lait → 555), 1 line added (Crème), 1 checked (Pommes) — and the consequence.
+    await expect(dialog).toContainText(/1 rabais accroché, 1 article ajouté, 1 coché — rien n’est retiré/)
+    expect(writes, 'nothing written before the answer').toEqual([])
+    // The hash is consumed even before the answer: a refresh must not ask twice.
+    expect(new URL(page.url()).hash).toBe('')
+    await dialog.getByRole('button', { name: /Annuler/ }).click()
+    // Proving nothing was written: nothing marks an absence, so give it the time it would have taken.
+    await page.waitForTimeout(500)
+    expect(writes, 'nothing written after « Annuler »').toEqual([])
+  })
+
+  test('confirmed: the deal swaps onto its line, the new line is added, the checked one is checked', async ({ page }) => {
+    const writes: { method: string; body: Record<string, unknown> }[] = []
+    page.on('request', (r) => {
+      if (listWrite(r)) writes.push({ method: r.method(), body: JSON.parse(r.postData() ?? '{}') as Record<string, unknown> })
+    })
+    await openWithExport(page)
+    const dialog = page.locator('.confirm')
+    await expect(dialog).toBeVisible()
+    await dialog.getByRole('button', { name: /^Rapporter$/ }).click()
+    await expect.poll(() => writes.length, { timeout: 10_000 }).toBeGreaterThanOrEqual(3)
+    const patchDeal = writes.find((w) => w.method === 'PATCH' && w.body.id === 'l1' && w.body.deal)!
+    expect(patchDeal, 'the Flipp clipping became the deal on « Lait »').toBeTruthy()
+    expect((patchDeal.body.deal as { id: number; merchant: string; price: number }).id).toBe(555)
+    expect((patchDeal.body.deal as { id: number; merchant: string; price: number }).merchant).toBe('IGA')
+    expect((patchDeal.body.deal as { id: number; merchant: string; price: number }).price).toBe(2.99)
+    const post = writes.find((w) => w.method === 'POST' && w.body.text === 'Crème à café')
+    expect(post, 'the typed item became a new line').toBeTruthy()
+    const check = writes.find((w) => w.method === 'PATCH' && w.body.id === 'l3' && w.body.checked === true)
+    expect(check, '« Pommes », checked in Flipp, is checked here').toBeTruthy()
+    // « Couches » was already there and unchecked in both — untouched.
+    expect(writes.some((w) => w.body.id === 'l4' || w.body.text === 'Couches')).toBe(false)
+    await expect(page.getByText(/Rapporté de Flipp/)).toBeVisible()
+  })
+
+  test('a guest is read-only: the hash is dropped, nothing is asked, nothing is written', async ({ page }) => {
+    const writes: string[] = []
+    page.on('request', (r) => {
+      if (listWrite(r)) writes.push(r.method())
+    })
+    await page.setViewportSize({ width: 390, height: 844 })
+    await mockApi(page)
+    await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+    await page.addInitScript(() => localStorage.setItem('babillard-guest-preview', '1'))
+    await page.goto('/liste#flipp=' + encodeFlippExport(EXPORT))
+    await page.locator('.list-row').first().waitFor({ state: 'visible', timeout: 15_000 })
+    // Proving nothing was written: nothing marks an absence, so give it the time it would have taken.
+    await page.waitForTimeout(800)
+    await expect(page.locator('.confirm')).toHaveCount(0)
+    expect(writes).toEqual([])
+    expect(new URL(page.url()).hash).toBe('')
+  })
+
+  // A FLYER CLIPPING WITH NO LINE TO RIDE ON (2026-09-30). It used to land on the list as
+  // Flipp's own shout — « CUISSES DE POULET AVEC DEUX FORMATS CLUB ». The line now takes the
+  // calm generic name (lib/flyerName), and nothing Flipp needs is lost: the server backstop
+  // still matches on the full title (`match_text`), and the DEAL keeps that title and its
+  // flyer item id — the next trip to Flipp sends the clipping from the deal, never the line.
+  test('a clipping with no line lands as a calm name, and the deal keeps the whole flyer title', async ({ page }) => {
+    const TITLE = 'CUISSES DE POULET AVEC DEUX FORMATS CLUB'
+    const posts: Record<string, unknown>[] = []
+    page.on('request', (r) => {
+      if (listWrite(r) && r.method() === 'POST') posts.push(JSON.parse(r.postData() ?? '{}') as Record<string, unknown>)
+    })
+    await page.setViewportSize({ width: 390, height: 844 })
+    await mockApi(page)
+    await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
+    const only: FlippExport = {
+      v: 1,
+      from: 'flipp',
+      clippings: [{ flyerItemId: 777, name: TITLE, flyerId: 5003, price: '9.99', merchantId: 7, merchantName: 'IGA', merchantLogoUrl: null, thumbnailUrl: null, validTo: '2099-01-01', checked: false }],
+      items: [],
+    }
+    await page.goto('/liste#flipp=' + encodeFlippExport(only))
+    const dialog = page.locator('.confirm')
+    await expect(dialog).toBeVisible({ timeout: 15_000 })
+    await dialog.getByRole('button', { name: /^Rapporter$/ }).click()
+    await expect.poll(() => posts.length, { timeout: 10_000 }).toBe(1)
+    expect(posts[0]!.text, 'the line reads like a grocery item').toBe('Cuisses de poulet')
+    expect(posts[0]!.match_text, 'the server still matches on the whole title').toBe(TITLE)
+    const deal = posts[0]!.deal as { id: number; name: string }
+    expect(deal.id, 'the deal keeps its flyer item').toBe(777)
+    expect(deal.name, 'the deal keeps the whole flyer title').toBe(TITLE)
+  })
 })
