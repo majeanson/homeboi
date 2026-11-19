@@ -99,10 +99,14 @@ export function HabitudesCard({ help }: { help?: HelpMode }) {
                   <span className="habitudes-card__ico" aria-hidden="true">
                     {h.icon || '•'}
                   </span>
-                  <span className="habitudes-card__title">{h.title}</span>
-                  {reading && <span className="habitudes-card__sub mono">{reading}</span>}
+                  {/* The name over its reading: beside the controls, side by side, a
+                      phone cut the name to « Boir… ». */}
+                  <span className="habitudes-card__text">
+                    <span className="habitudes-card__title">{h.title}</span>
+                    {reading && <span className="habitudes-card__sub mono">{reading}</span>}
+                  </span>
                 </button>
-                {canMark && <HabitControls habit={h} status={status} size="sm" className="habitudes-card__acts" onMark={(next) => markHabit(h, today, next)} />}
+                {canMark && <HabitControls habit={h} status={status} compact className="habitudes-card__acts" onMark={(next) => markHabit(h, today, next)} />}
               </li>
             )
           })}

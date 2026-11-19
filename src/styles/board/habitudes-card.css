@@ -103,19 +103,41 @@
   color: var(--ink-soft);
 }
 
-/* On the card: the controls sit under the habit's name, in line with it, and a habit
-   marked today stays (usePinnedAsking), its name quietly settled. */
+/* On the card: icon-only controls (HabitControls `compact`) on the habit's own line,
+   after its reading; a habit marked today stays (usePinnedAsking), its name settled. */
 .habitudes-card__item {
   display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+.habitudes-card__item > .habitudes-card__row {
+  flex: 1 1 auto;
+  min-width: 0;
+  align-items: center;
+}
+/* The name over its reading, each on one ellipsized line. */
+.habitudes-card__text {
+  display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.habitudes-card__text .habitudes-card__sub {
+  max-width: none;
+  margin-left: 0;
+  padding-left: 0;
+  font-size: 0.74rem;
 }
 .habitudes-card__acts {
-  padding-left: 1.5rem;
-  gap: 0.4rem;
+  flex: none;
+  flex-wrap: nowrap;
+  gap: 0.3rem;
 }
-.habitudes-card__acts .habit-row__plus {
-  min-width: 0;
+.habit-row__actions--compact .btn.is-on {
+  background: var(--sage-wash);
+  border-color: var(--sage-deep);
+  color: var(--sage-ink);
 }
 .habitudes-card__item.is-settled .habitudes-card__title {
   color: var(--ink-soft);
