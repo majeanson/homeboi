@@ -261,7 +261,7 @@ for (const lang of ['fr', 'en'] as const) {
 test('the signed-out door opens no household socket and asks for no credential', async ({ page }) => {
   // The second walk's finding: the marketing page connected /api/live with nothing to
   // authenticate, so a visitor's console filled with 401 handshakes every few seconds,
-  // forever. A stubbed spec pins the count (e2e/stranger-quiet.spec.ts); this one
+  // forever. A stubbed spec pins the count (e2e/journey-first-visit.spec.ts); this one
   // watches the REAL deployment do it.
   const sockets: string[] = []
   page.on('websocket', (ws) => sockets.push(ws.url()))

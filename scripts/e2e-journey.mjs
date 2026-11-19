@@ -64,7 +64,8 @@ others.forEach((o, i) => {
     const spec = p.mods.get(src).names.get('test')
     p.mods.get(src).names.delete('test')
     p.mods.get(src).names.set(t, spec.includes(' as ') ? spec.replace(/\s+as\s+\w+$/, ` as ${t}`) : `test as ${t}`)
-    b = b.replace(/\btest(?=\s*[.(])/g, t)
+    // Not a method named test: `/re/.test(x)` must stay a RegExp call.
+    b = b.replace(/(?<![.\w$])test(?=\s*[.(])/g, t)
   }
   // One binding per local name across ALL modules: `expect` from './fixtures' and from
   // '@playwright/test' are the same function, and a second import of it is a duplicate.
@@ -83,7 +84,7 @@ others.forEach((o, i) => {
     .split('\n')
     .map((l) => (l ? `  ${l}` : l))
     .join('\n')}\n})\n`
-  git('rm', '-q', `e2e/${o}.spec.ts`)
+  git('rm', '-qf', `e2e/${o}.spec.ts`)
 })
 writeFileSync(`e2e/${target}`, `${render(mods)}\n\n${body.trimEnd()}\n`)
 

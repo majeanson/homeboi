@@ -377,7 +377,7 @@ describe('« À placer » — the week without its days', () => {
 
   // Mig 0156 (Marc, 2026-11-16: « link two recipes together … they move together until
   // explicitly unlinked »). The server only stores the grouping; moving a group as one is
-  // the client's (Kitchen's dayDnd, UnplacedDay's picker) — e2e/unplaced-meals.spec.ts.
+  // the client's (Kitchen's dayDnd, UnplacedDay's picker) — e2e/unplaced-journey-meals.spec.ts.
   it('« À placer » rows link into a group, split back, and a headline unplaces as a pair', async () => {
     const s = await household('meals-unplaced-link', undefined, { empty: true })
     const park = async (title: string) => (await okJson<{ id: string }>(s.fetch('/api/meals', { method: 'POST', body: { action: 'park', title } }))).id

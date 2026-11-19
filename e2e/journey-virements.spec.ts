@@ -370,7 +370,7 @@ test('a read-only guest is never offered the money face', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await mockApi(page, { signedIn: false })
   // A link guest, exactly as the public demo is (a `showcase` token — see
-  // guest-settings.spec.ts). The server denies both transfer paths to this kind, so
+  // journey-sharing.spec.ts). The server denies both transfer paths to this kind, so
   // offering the tab could only ever lead to a failed read.
   await page.route('**/api/guest/whoami**', (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ kind: 'showcase' }) }),

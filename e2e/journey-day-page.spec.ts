@@ -262,7 +262,7 @@ test.describe('day-meal-tap', () => {
   //
   // Marc, from the phone, 2026-09-10: « we lost the ability to see the recipe directly
   // in La cuisine when tapping a meal ». On the week grid the tap already went straight
-  // to the recipe (kitchen-meal-plan.spec.ts pins it). The surface that did NOT was the
+  // to the recipe (journey-journey-meals.spec.ts pins it). The surface that did NOT was the
   // day scene — /kitchen/day/:date — where a tap on a meal row opened an in-place
   // RENAME, and the recipe hid behind a small 📖 glyph. Once the day scene became THE
   // day door (« Moments » retired, 2026-09-02) that is where a household taps a meal,
