@@ -175,7 +175,7 @@ describe('settingsHref names the section and derives the pill', () => {
 // The part that survives the NEXT reshuffle: nothing in the tree of code or specs
 // may still spell a retired pill. LEGACY_SUB keeps such a URL LANDING at runtime —
 // this is what keeps it from being WRITTEN again. (Retired TAB ids are allowed in
-// e2e/settings-aliases.spec.ts alone, whose job is to prove they still land.)
+// e2e/journey-settings.spec.ts alone, whose job is to prove they still land.)
 describe('nothing spells a retired pill', () => {
   const RETIRED = [...RETIRED_SUB_IDS]
   const pattern = new RegExp(`[?&]sub=(${RETIRED.join('|')})\\b`, 'g')
@@ -202,7 +202,7 @@ describe('nothing spells a retired pill', () => {
 
   it('e2e/ specs navigate to live pills', () => {
     expect(
-      offenders(join(rootDir, 'e2e'), (f) => f === 'e2e/settings-aliases.spec.ts'),
+      offenders(join(rootDir, 'e2e'), (f) => f === 'e2e/journey-settings.spec.ts'),
       'a spec written against a retired pill still LANDS (LEGACY_SUB) but rots — name the live pill, or better the section via ?focus=',
     ).toEqual([])
   })

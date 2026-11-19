@@ -68,7 +68,7 @@ Inventing a channel is how the app once had five spellings of delete.
 **Two standing rules.** Nothing is reachable only by a touch gesture: a swipe, long-press or drag
 names its mouse + keyboard path (a ⚙ Avancé control, a peek action, a ⋯ item or Réglages) in a
 code comment. And **a door that names a thing lands ON it** (`?focus=`, `?plus=`, `?add=1`, a form
-route), not on the page that merely contains it (`e2e/door-landing.spec.ts`).
+route), not on the page that merely contains it (`e2e/journey-navigation.spec.ts`).
 
 ## The undo tiers (every destructive door declares one)
 

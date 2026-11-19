@@ -1,7 +1,7 @@
 // The Réglages navigation taxonomy as PLAIN DATA — THE one source for what lives
 // where. pages/Operator.tsx builds its pill rows and section stacks from this;
 // OperatorSection derives its DOM anchor from it; lib/guideLinks.test.ts validates
-// every guide « Régler » URL against it; e2e/settings-aliases.spec.ts walks its
+// every guide « Régler » URL against it; e2e/journey-settings.spec.ts walks its
 // retired ids. No React in here on purpose: vitest and Playwright import it directly.
 //
 // THE MODEL (2026-09-08, the 28 → 14 agglomeration): a SECTION is the stable

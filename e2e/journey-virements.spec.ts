@@ -448,7 +448,7 @@ test('capture the extras, offered and taken, at 390px', async ({ page }) => {
 //
 // This pair exists because shipping the tile broke the note door: adding `virement` to
 // `SECTION_MODES.notes` turned « a blank note, instantly » into a two-tile sheet, and
-// `nav-restructure.spec.ts` caught it on CI. `modesFor` resolves path + `?section=`.
+// `journey-navigation.spec.ts` caught it on CI. `modesFor` resolves path + `?section=`.
 test('the ＋ opens the transfer composer on the money face — one tap, no chooser', async ({ page }) => {
   await openVirements(page)
   await page.locator('.add-fab').click()

@@ -1,7 +1,7 @@
 import { expect, type Page } from '@playwright/test'
 
 // Shared per-element right-edge overflow guard (extracted from
-// add-sheet-overflow.spec.ts so the state-matrix suite can assert it on every
+// journey-capture.spec.ts so the state-matrix suite can assert it on every
 // captured state). The measurement is a per-descendant bounding-rect check: for
 // every visible descendant, its right edge must not exceed the box's right edge.
 // That sees through `overflow-x:hidden` clips, which `scrollWidth - clientWidth`

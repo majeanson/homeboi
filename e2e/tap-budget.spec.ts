@@ -50,7 +50,7 @@ function assertBudget(flow: string, taps: number, budget: number) {
 const isApi = (method: string, path: string) => (r: Request) =>
   r.method() === method && new URL(r.url()).pathname === `/api/${path}`
 
-// Fresh boot on /board — same harness as nav-tabs.spec.ts. reducedMotion keeps
+// Fresh boot on /board — same harness as journey-navigation.spec.ts. reducedMotion keeps
 // infinitely-animated elements (toddler float, entrance fades) stable for clicks.
 
 // ------------------------------------------------------------------ glance: 0

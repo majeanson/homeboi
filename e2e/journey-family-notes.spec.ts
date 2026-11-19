@@ -29,7 +29,7 @@ test.describe('note-editor', () => {
     await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
   })
 
-  // Opens a brand-new note directly (the ＋ FAB's own door — nav-restructure.spec.ts
+  // Opens a brand-new note directly (the ＋ FAB's own door — journey-navigation.spec.ts
   // covers that it's really the FAB tap that lands here) and returns the editable
   // ProseMirror surface (`.note-tiptap`) — every per-line assertion below reads its
   // children, not `.note-editor__body`'s (that's the outer SCROLL container now, one

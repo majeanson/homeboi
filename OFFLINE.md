@@ -273,7 +273,7 @@ The SW lives in `vite.config.ts` (`babillard-sw`, emitted as `dist/sw.js`).
   `src/lib/rowId.test.ts` — the client id is one the server keeps.
 - **e2e** (`npm run e2e`): `offline-outbox.spec.ts` — a `/liste` write made offline
   queues (offline-bar pending count, nothing on the wire) then replays on the `online`
-  event; `capture-offline.spec.ts` — an offline capture shows the queued confirmation,
+  event; `journey-capture.spec.ts` — an offline capture shows the queued confirmation,
   clears the box, bumps the pending count, sends nothing on the wire, then replays
   with an `Idempotency-Key` header on reconnect.
 - **e2e** (`npm run e2e:sw`, own build+preview harness): `sw.spec.ts` — the service

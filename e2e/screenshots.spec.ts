@@ -296,7 +296,7 @@ const OVERFLOW_CASES: { path: string; audience: Audience; ready: string }[] = [
   // « Famille » (?section=family, ex-« Le cercle ») is intentionally exempt from the
   // no-horizontal-overflow guard (its pan/zoom trees + graphics legitimately scroll
   // sideways — a product decision, inherited from the old cercle tab). Its
-  // screenshots live in cercle-visual.spec.ts.
+  // screenshots live in journey-cercle.spec.ts.
   { path: '/liste', audience: 'parent', ready: '.hub' },
   { path: '/liste', audience: 'toddler', ready: '.hub' },
   { path: '/settings', audience: 'parent', ready: '.hub' },

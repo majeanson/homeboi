@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 import { test, expect } from './fixtures'
-// The same per-child right-edge check add-sheet-overflow.spec.ts uses: a composer
+// The same per-child right-edge check journey-capture.spec.ts uses: a composer
 // that gained a full-width line is also the shape most likely to bleed past it.
 import { assertClean } from './overflow'
 
@@ -60,7 +60,7 @@ const COMPOSERS: Composer[] = [
   // to a blank note (FORM_ROUTES.cnote) rather than opening an in-sheet composer —
   // same shape as `event`/`chore`/`routine`/`voyage`/`habit`, which this list
   // already excludes. The quick voice/text/📎 composer still exists, but only
-  // behind a HOLD on the ＋ (see fab-hold-voice.spec.ts), not a plain tap.
+  // behind a HOLD on the ＋ (see journey-capture.spec.ts), not a plain tap.
 ]
 
 // The field's usable typing width, and whether its own placeholder fits in it —

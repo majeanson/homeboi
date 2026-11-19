@@ -53,7 +53,7 @@ behaviour as `.subtabs`). A bespoke `display:flex` row with a fixed `flex-basis`
 item's content keeps everything on one line and bleeds off the right (the `.sheet`/
 `#root`/`.hub__body` `overflow-x:hidden` then *hides* it rather than fixing it). Use
 `<Cluster fill>` for "grow to share the row but wrap when narrow." The e2e guard
-`add-sheet-overflow.spec.ts` measures per-child bleed past the container's right edge,
+`journey-capture.spec.ts` measures per-child bleed past the container's right edge,
 which sees through the clip.
 
 **A side-scrolling row must stay reachable with a MOUSE → `useHScroll` (`lib/hscroll.ts`).**

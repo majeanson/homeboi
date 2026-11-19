@@ -35,7 +35,7 @@ settings) are one tap back.** No dead-end prose.
 > day scene and stop: the composer was right there, closed, so asking for the note cost
 > a second tap to go find it. A door that names a PAGE (« Planifier aujourd'hui » → the
 > day's plan) is exempt; the page IS the target there.
-> Guards: `e2e/door-landing.spec.ts` (each target really opens) and
+> Guards: `e2e/journey-navigation.spec.ts` (each target really opens) and
 > `boardCards.test.ts` « emptyTo » (each door really points at an add).
 
 | Param | On | Means |

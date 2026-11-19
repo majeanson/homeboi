@@ -1106,7 +1106,7 @@ export async function mockApi(
   // getVoices()/hasVoiceFor() intact so the 🔊 affordances render identically in
   // screenshots; we suppress the audio, not the feature.
   // It also COUNTS, on `window.__spoke`. A test that wants to prove the app went
-  // quiet (e2e/sound-toggle.spec.ts, « Le son ») cannot install its own counter:
+  // quiet (e2e/journey-settings.spec.ts, « Le son ») cannot install its own counter:
   // this script runs after any the test added and would silently overwrite it,
   // leaving a counter that never moves — which reads exactly like "muting works".
   // One place owns the stub, so there is nothing to overwrite.

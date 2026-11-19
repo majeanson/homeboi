@@ -163,7 +163,7 @@ export const SECTION_MODES: Record<string, AddSheetMode[]> & { board: AddSheetMo
   // `?plus=cnote` deep-link validation.
   // Les notes: ONE mode, so the ＋ stays a straight navigation to a blank NoteEditor
   // (iOS-Notes style, FORM_ROUTES.cnote) — adding a second tile here turned that one
-  // tap into a chooser and broke the behaviour nav-restructure.spec.ts pins.
+  // tap into a chooser and broke the behaviour journey-navigation.spec.ts pins.
   notes: ['cnote'],
   // …and the money face of the same tab answers on its own key, resolved by
   // `modesFor` below. Also ONE mode, so it is also one tap: /virement/new.

@@ -78,7 +78,7 @@ export function AiErrorProvider({ children }: { children: ReactNode }) {
           Portalled to <body> like Modal/Sheet: its z-index (--z-toast-ai, over every
           dialog — layer-order.test.ts) only competes with theirs in the SAME stacking
           context. Rendered in place, « Demander »'s backdrop covered it whatever the
-          number said (e2e/ask-sheet.spec.ts). */}
+          number said (e2e/journey-capture.spec.ts). */}
       {current &&
         createPortal(
         <div className="ai-error-toast" role="status" aria-live="assertive">

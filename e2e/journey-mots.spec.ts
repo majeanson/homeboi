@@ -86,7 +86,7 @@ test2.describe('notes', () => {
   // on each, and a tap opens the note straight in the full-screen editor — there's
   // no expand-in-place here any more, the editor IS the detail view. Creating a note
   // is always the ＋ FAB (a blank editor on tap; the quick voice/text/📎 composer on
-  // a hold — see nav-restructure.spec.ts and fab-hold-voice.spec.ts). The board's own
+  // a hold — see journey-navigation.spec.ts and journey-capture.spec.ts). The board's own
   // « Notes (cercle) » glance card is untouched — replaces notes-lean.spec.ts, which
   // guarded the split this file no longer has.
 
@@ -167,7 +167,7 @@ test2.describe('notes', () => {
     await expect(row).toHaveCount(0) // held behind the undo toast, not in the live rows
     await expect(page.locator('.undo-toast')).toBeVisible()
     // Nothing sent yet — that's the whole point of a deferred delete
-    // (useDeferredRemoval, see settings-delete-undo.spec.ts).
+    // (useDeferredRemoval, see journey-settings.spec.ts).
     expect(deletes).toEqual([])
   })
 

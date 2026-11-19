@@ -145,7 +145,7 @@ const ALLOWED = new Set<string>([
   // an operator's device and useWrite refuses a guest write outright), but they
   // DO carry an Idempotency-Key of their own now — one per composed submission,
   // reused by every retry — so a double-tap or a resend after a lost response
-  // can't land a second quarantine row. Guard: e2e/postbox.spec.ts.
+  // can't land a second quarantine row. Guard: e2e/journey-cercle.spec.ts.
   'pages/IntakeForm.tsx → guest/intake-submit',
   'pages/Postbox.tsx → guest/postbox-submit',
 

@@ -418,7 +418,7 @@ describe('moveCard', () => {
   })
 })
 
-// A DOOR LANDS ON ITS TARGET (see e2e/door-landing.spec.ts, and DISCOVERY.md's URL
+// A DOOR LANDS ON ITS TARGET (see e2e/journey-navigation.spec.ts, and DISCOVERY.md's URL
 // grammar). An empty card says « rien pour l'instant », which is an invitation — so
 // tapping it must open the ADD, not drop you on a page to go hunting for it. Three of
 // these pointed at a bare page: « Les notes » at the list, the routines card at
