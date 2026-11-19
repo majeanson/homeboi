@@ -1,699 +1,171 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
-> Note: a separate `CLAUDE.md` one level up documents the broader LAC ecosystem.
-> This file governs **Babillard** (the `PlannerOrSomething/` project) specifically.
-
-> **Asked "what should we work on?" — read [`STATE.md`](./STATE.md) first, not the
-> ledgers.** It is the one front door: current health numbers, which of the root
-> markdown files still hold work and which are reference, and the whole remaining backlog
-> consolidated and ranked by user harm rather than by which document it lives in. It also
-> records the counting trap that burned a session: a ledger entry is a verdict from a
-> moment — **grep the claim in code before building on it** (a third of the items picked
-> up on 2026-08-27 were already done, and four of the five tier-3 items re-checked on
-> 2026-08-28 were stale).
->
-> The *other* counting trap is **fixed at the source** (2026-08-28): `PARITY.md` and
-> `ACTIONS.md`'s per-feature checklist templates no longer carry checkboxes — copy them
-> into your commit, don't tick them there — and the idea pools carry a ⚪ banner instead.
-> **`- [ ]` now means exactly one thing repo-wide: open work.** The convention (`[ ]` ·
-> `[x]` · `[~]` · `❓` · ⚪) is stated canonically in `STATE.md` §2. Keep it that way:
-> if you add a checklist someone is meant to copy, give it bullets, not boxes.
->
-> This file (`CLAUDE.md`) stays the **law**: how to write code here. `STATE.md` is *what
-> to write next*. Update `STATE.md` in the same commit as the work it describes.
-
----
+Guidance for Claude Code in **Babillard** (`PlannerOrSomething/`, its own git repo; the `CLAUDE.md`
+one level up covers the wider LAC ecosystem). This file is the **law**: how to write code here.
+**[`STATE.md`](./STATE.md) is what to write next**: health numbers, the ranked backlog, and which
+root docs still hold work. Update it in the same commit as the work it describes. A ledger entry is
+a verdict from a moment, so **grep the claim in code before building on it**. `- [ ]` means exactly
+one thing repo-wide: open work (the convention lives in STATE.md §2).
 
 ## What this is
 
-**Babillard** — a calm household command-center for a cheap always-on wall tablet:
-today's agenda, shared lists, chore rotation, "supper tonight," kid routines, a kitchen/recipe
-planner. Built **useful-at-home first, calm by design**: no streaks, no points, no push
-notifications, finite lists that empty and stay empty.
+A calm household command center for a cheap always-on wall tablet: today's agenda, shared lists,
+chore rotation, « ce soir » (supper), kid routines, a kitchen/recipe planner. **Useful at home first,
+calm by design**: no streaks, no points, no push, finite lists that empty. One React SPA + one
+Cloudflare Worker (static assets + `/api/*`) + D1 + Workers AI + R2. UI copy is **FR-CA (Québécois)
+first**, EN second. The planning docs (`bmad/`) were deleted 2026-09-17. Code comments still cite
+their tags (`NFR-*`, `PRD C5`, `OD-*`, `bmad/08 E-36`) as **labels**, with the rationale written
+beside them. The originals: `git log --diff-filter=D -- bmad/`, then `git show <sha>^:bmad/<file>`.
 
-Single-page React app + one Cloudflare Worker (static assets + `/api/*`) + D1 + Workers AI + R2. UI copy is **bilingual, FR-CA (Québécois) first**.
+## Build by reuse (START HERE)
 
-The product thinking — brief, PRD, architecture — lived in `bmad/`, **deleted
-2026-09-17**. It was ~10 000 lines of planning documents for an app that is built, and
-the root had become more prose than anyone reads. Git keeps every word:
-`git log --diff-filter=D -- bmad/` finds the commit, `git show <sha>^:bmad/03-architecture.md`
-reads a file out of it.
+This codebase is mature: almost nothing is greenfield. Before writing, **read how the section
+already works** (hub tabs `src/pages/{Board,Kitchen,Liste,Notes,Maison,Operator}.tsx`, settings
+bodies `src/components/operator/*`), **find the primitive** (`COMPONENTS.md`, live at `/dev/kit` =
+`src/pages/DevKit.tsx`), and **extend it rather than fork a copy**. Reuse the CSS class families in
+`styles/*.css` (`@import` order IS the cascade: append, never reorder). A new shared component goes
+into DevKit + COMPONENTS.md (+ the Guide if user-facing); `devkitParity.test.ts` enforces that.
 
----
-
-## Build by reuse — read before you write (START HERE)
-
-**This codebase is mature. Almost nothing you'll be asked for is greenfield.** There
-is already a shared component, a lib helper, a CSS class family, or a section pattern
-for it. The recurring failure mode here is building something new beside an existing
-thing and then having to refactor it back onto what we already have. **Default to
-reuse and refactor; treat "create a new component / class / endpoint" as the
-exception you justify, not the starting point.**
-
-Before implementing ANY change, do this first — it's faster than the rework it saves:
-
-1. **Read how the section already works.** Open the page/section you're touching and
-   the components it renders. Match its existing structure, naming, and idioms rather
-   than inventing a parallel one. The hub tabs are `src/pages/{Board,Kitchen,Liste,
-   Notes,Maison,Operator}.tsx` (Operator = Réglages); settings bodies live in
-   `src/components/operator/*`; kitchen sub-tabs in `src/components/kitchen/*`; the
-   Maison sections in `src/components/{maison,cercle}/*`. Grep the feature name first.
-2. **Look for the primitive that already exists.** Check **`COMPONENTS.md`** (the
-   living inventory + uniformization backlog) and open **`/dev/kit`**
-   (`src/pages/DevKit.tsx`, reachable from Réglages ▸ Système ▸ Affichage & veille) — it renders
-   every shared component live across theme/surface/audience/locale. If a primitive fits,
-   use it; if it _almost_ fits, **extend the primitive**, don't fork a copy.
-3. **Check the lib helper / convention** that governs the behaviour (table below).
-   Cross-cutting behaviour (writes, query keys, surface/audience, detail peek, calm,
-   realtime, undo, voice) is centralized on purpose — wiring it by hand silently
-   bypasses offline, CSRF, attribution, or a calm guarantee.
-4. **Reuse the CSS class family**, don't add a one-off. `styles/*.css` already has
-   `.btn`, `.input`, `.chip`/`.tag`, `.card`/`.surface`, `.sheet__*`/`.scene__*`,
-   `.listrow`, `.row-actions__*`, `.edit-field__*`, etc. (`@import` order **is** the
-   cascade — append only, never reorder).
-
-### Reach for these BEFORE hand-rolling
-
-| Need | Use (not a new one) | Where |
+| Need | Use | Where |
 | --- | --- | --- |
-| Type/edit text + clear/mic/actions · a LABELLED control (label above or beside, hint, error) | **`EditField`** · **`Field`** (`inline` for label-beside; `as="div"` around a composed control; raw date/select/number stay raw `.input` inside it; a time of day is **`TimeField`**, 24 h, `time-field-rule.test.ts`) | `components/EditField.tsx`, `components/Field.tsx`, `components/TimeField.tsx` |
-| "Search + pick an existing thing + free-text" | **`EntityCombobox`** | `components/EntityCombobox.tsx` (options in `kitchen/comboOptions.tsx`) |
-| An activity / list row (check / nav / info) | **`Act`** + `Section` | `components/board/Act.tsx` |
-| Generic checklist row | **`CheckRow`** / **`ListRow`** | `components/CheckRow.tsx`, `components/ListRow.tsx` |
-| Edit/delete icon pair on a row · ONE icon-only button (a ✕, a ＋, a ←) | **`RowActions`** · **`IconButton`** (`label` required = the accessible name; `icon-button-rule.test.ts` fails a nameless glyph button) | `components/RowActions.tsx`, `components/IconButton.tsx` |
-| "Tap an item → detail peek" | **`useEntityDetail()`** + adapters | `components/detail/*`, `lib/detail.ts` (`detail-rule.test.ts`: every `DetailKind` is built, every builder is called) |
-| Empty / status / chip / section header | **`EmptyState`/`StatusMessage`/`Chip`+`ChipGroup`/`SectionHeader`** | same-named files in `components/` |
-| A surface that is still loading | **`loadStateOf(q, { shape? })`** / **`<LoadState q>`** — THE one decision: no data + error → `LoadError` with a retry; no data → **`Skeleton`** if the caller knows the SHAPE (rows, a grid of tiles — it reserves the space so nothing jumps under a thumb already reaching), else **`Loading`** (a single record, a form scene, a whole route: a skeleton is a promise about shape, and on a recipe you have never opened that promise is a lie). Never `if (!data) return <Loading />` by hand — sixteen scenes did and sat on « Chargement… » forever once the fetch had failed (`load-error-rule.test.ts` fails it) | `components/Fallback.tsx`, `components/Skeleton.tsx` |
-| A read that FAILED with nothing cached | **`LoadError`** — one line + « Réessayer », and it drops the error TONE when the device is merely offline (that is weather, not a surprise; the board already says it once at the top). Never a bare `<p role="alert">`, never a silent empty state: an empty list where a fetch failed quietly hides real data | `components/LoadError.tsx` |
-| A small pill / tag / badge (toggle · action · link · label · expander) | **`Chip`** — pick the shape with the prop (`selected` / `onClick` / `to` / neither / `expanded`); a **test** enforces it (`src/lib/chip-rule.test.ts`): a hand-rolled `className="chip"` fails the build. If a call site does not fit, EXTEND Chip — that is how the five shapes got there | `components/Chip.tsx` |
-| Collapse a secondary group (calm) | **`Disclosure`** / `useSingleOpen` | `components/Disclosure.tsx` |
-| In-page sub-tabs that switch PANELS · a VALUE picker (one of a few) | **`SubTabs`** · **`Segmented`** (`role=radiogroup`; `segmented-rule.test.ts`) | `components/SubTabs.tsx` (help-mode aware; used by La cuisine + Maison) |
-| A horizontal row of buttons / chips / controls | **`Cluster`** (wraps) / **`Rail`** (scrolls one line) — never a hand-rolled flex row | `components/Layout.tsx` (`.cluster`/`.rail` in `core.css`; see [Horizontal overflow](#horizontal-overflow)) |
-| A row that scrolls sideways with a hidden scrollbar | **`useHScroll()`** — maps the mouse wheel onto it, reports `overflowing`/`atStart`/`atEnd` | `lib/hscroll.ts` (`Rail`/`SubTabs` wire it already; see [Horizontal overflow](#horizontal-overflow)) |
-| A dialog / bottom sheet | **`Modal`** (`title`→its a11y name, `footer` = THE button row, `size`) / **`Sheet`** (`title`) — both own the phone's back button through `useModal({ history: true })`; a ROUTED scene never passes it (the router owns its entry). `overlay-rule.test.ts` fails a `role="dialog"` or a `useModal(` outside the shells without a reason | `components/Modal.tsx`, `components/Sheet.tsx`, `lib/useModal.ts` |
-| A Réglages section wrapper · one setting ROW in it (label · control · hint) | **`OperatorSection`** · **`SettingsRow`** (owns `.operator__seg`; never spell the row by hand) | `components/operator/OperatorSection.tsx`, `components/operator/SettingsRow.tsx` |
-| Hub-tab / scene header | **`HubHead`** / **`SceneHead`** | `components/HubHead.tsx`, `components/SceneHead.tsx` |
-| "Everything the app does" themed map / feature discovery | **`FeatureMap`** (the ONE taxonomy: `CONCEPT_THEMES`/`FEATURE_MAP_TILES` in `lib/guideContent`) | `components/FeatureMap.tsx` (reused by the Guide jump-grid, the Board `WelcomeCard`, DevKit — extend the taxonomy, don't fork a list) |
-| Person photo/initial, mic, icon — and ANY picture (an R2 blob via `imgUrl(key)`, a flyer clipping, a logo, a web photo) | **`Avatar`/`VoiceButton`/`Icon`/`ZoomableImg`**, all on **`Img`** — a bare `<img>` has ONE shot at its bytes and then sits blank for the session (the board « Dessins » tiles came back « clear » on the phone, 2026-10-30); Img retries with backoff, re-asks once per reconnection / foregrounding, and sets `data-loaded` so a surface that knows the shape can reserve it. The linter enforces it (`babillard/no-raw-img`, `scripts/lint-rules.mjs`): a raw `<img>` fails the build | `components/*`, `components/Img.tsx` (pass a family/group `colour` to Avatar so a photo-less member's initials disc takes the group colour) |
-| ANY task: add or edit, from a bare title up to a recurring rotating chore · which table it goes to | **`TaskForm`** (one title, every layer folded one tap away, no type picker) · **`taskTarget`** decides a new task's table, the save adapter **`lib/taskSave`** is the ONLY code that knows an endpoint (`task-form-rule.test.ts`) | `components/forms/TaskForm.tsx`, `lib/taskTarget.ts`, `lib/taskSave.ts` |
-| The LOOK of a task or a subject (an icon + a colour) · the EFFORT of a task (five dots, null = not said) | **`LookPicker`** — folded, one tap away; a task passes `inherit` (null = « comme le sujet »), a carnet/pet `fallbackIcon`. The inheritance itself is **`lookOf`** (`lib/subjects`), never per component; `look-rule.test.ts` fails a task or subject form that renders its own ColorPicker/EmojiField · **`EffortDots`** (on `Segmented`) / `EffortField` (form fold) / `EffortMark` (row); server writes go through `taskEffort` (`_lib/validate`), `effort-rule.test.ts` | `components/LookPicker.tsx`, `components/EffortDots.tsx` |
-| Pick a household face (Maisonnée + members) | **`MemberSwitcher`** (the `.mswitch` "Aujourd'hui" row) | `components/MemberSwitcher.tsx` (controlled; every "who am I today" **lens** — board « Aujourd'hui », Maison's focus lens + the Notes face — wires it to the ONE device profile `useProfile`, so the pick is remembered app-wide. Only a **value** picker (a mot's recipient, a habit's owner) holds local state) |
-| Confirm a destructive delete / undo a light one | **`useConfirm`** / the undo toast — and its message says WHAT IS LOST, never a bare « Supprimer ? » (a **test** enforces it: `src/lib/confirmCopy.test.ts`, every `…Confirm` string ≥ 6 words with a consequence). Model: « Supprimer ce groupe ? Les personnes restent dans le cercle. » | `lib/confirm.tsx`, `lib/toast.tsx` (`lib/undoStack.ts`) |
-| Land ON a row from a link (`?item=<id>`) · where a search hit goes | **`useItemPulse()`** + `data-item={id}` on the row · **`landingFor`** | `lib/useItemPulse.ts`, `lib/searchLanding.ts` (`searchLanding.test.ts` fails a hand-spelled search row) |
-| Touch drag-and-drop / reorder | **`usePointerDnd`** | `lib/dnd.tsx` (never HTML5 `draggable`) |
-| A press-and-hold gesture | **`useLongPress`** | `lib/useLongPress.ts` (aborts on travel, kills the context menu, swallows the trailing click) |
-| "Something is happening — don't screensaver/drift over it" | **`pokeIdle()`** | `lib/idleHold.ts` — HubLayout's idle cycle only sees `pointerdown`/`keydown` at `window`; anything else that counts as activity (a hands-free voice capture, a gesture that `stopPropagation()`s on purpose) pokes this instead |
-| A board card's placement / width / drop target | **`WidgetGrid`** + **`CardSlot`** | `components/board/*` — one grid per zone (`band`, `grid`); sizes/zones/modes live in `lib/boardCards`. Never re-add `columns:` or `column-span` to the board |
-| "This card has nothing to show" | **`useReportEmpty`** | `lib/useReportEmpty.ts` — never a bare `return null`: the slot can't tell empty from loading, and mode `always` needs to know |
-| Upload a photo / audio / drawing blob to R2 | **`uploadMedia()`** / **`useMediaUpload()`** | `lib/uploadMedia.ts` (resize→POST→`{key}`, 503→`MediaUnavailableError`) |
+| Text entry · a labelled control · a time of day | **`EditField`** · **`Field`** · **`TimeField`** (24 h) | `components/` |
+| Search + pick an existing thing + free text | **`EntityCombobox`** | `components/EntityCombobox.tsx` |
+| A list row · checklist row · row edit/delete · one icon button | **`Act`**+`Section` · **`CheckRow`**/`ListRow` · **`RowActions`** · **`IconButton`** (`label` required) | `components/` |
+| Tap an item → detail peek | **`useEntityDetail()`** | `components/detail/*`, `lib/detail.ts` |
+| Empty / status / chip / section header | **`EmptyState`** / **`StatusMessage`** / **`Chip`**+`ChipGroup` / **`SectionHeader`** | `components/` |
+| A surface still loading · a read that failed | **`loadStateOf(q)`** / `<LoadState>` (Skeleton when the shape is known, else Loading) · **`LoadError`** (« Réessayer ») | `components/Fallback.tsx`, `LoadError.tsx` |
+| Collapse a secondary group · sub-tabs · a value picker | **`Disclosure`** · **`SubTabs`** · **`Segmented`** | `components/` |
+| A row of buttons/chips | **`Cluster`** (wraps) / **`Rail`** (scrolls; wires `useHScroll`) | `components/Layout.tsx` |
+| Dialog · bottom sheet | **`Modal`** · **`Sheet`** (both own the back button via `useModal({history:true})`) | `components/`, `lib/useModal.ts` |
+| A Réglages section · one setting row | **`OperatorSection`** · **`SettingsRow`** | `components/operator/` |
+| Hub/scene header · feature map | **`HubHead`** / **`SceneHead`** · **`FeatureMap`** (the ONE taxonomy, `lib/guideContent`) | `components/` |
+| ANY picture, avatar, mic, icon | **`Img`** (retry + `data-loaded`), `Avatar`, `VoiceButton`, `Icon`, `ZoomableImg` | `components/` |
+| ANY task, add or edit | **`TaskForm`**; `taskTarget` picks the table, `lib/taskSave` is the only code that knows an endpoint | `components/forms/`, `lib/` |
+| A task/subject's look · effort | **`LookPicker`** (inheritance = `lookOf`) · **`EffortDots`** | `components/` |
+| Who am I today | **`MemberSwitcher`** wired to `useProfile` | `components/MemberSwitcher.tsx` |
+| Confirm a destructive delete · undo a light one | **`useConfirm`** (the message says WHAT IS LOST) · the undo toast | `lib/confirm.tsx`, `lib/toast.tsx` |
+| Land on a row from a link · where a search hit goes | **`useItemPulse()`** + `data-item` · **`landingFor`** | `lib/` |
+| Drag/reorder · press-and-hold · « activity, don't drift » | **`usePointerDnd`** (never HTML5 drag) · **`useLongPress`** · **`pokeIdle()`** | `lib/` |
+| A board card's place · « nothing to show » | **`WidgetGrid`** + `CardSlot` (`lib/boardCards`) · **`useReportEmpty`** | `components/board/`, `lib/` |
+| Upload a blob to R2 | **`uploadMedia()`** / `useMediaUpload()` | `lib/uploadMedia.ts` |
 
-### Cross-cutting conventions a new feature MUST respect
+## Conventions a feature MUST respect
 
-| Concern | Use | Don't |
+Most of these are enforced: a `src/lib/*-rule.test.ts` grep guard or an AST rule in
+`scripts/lint-rules.mjs` (oxlint). An exemption is an ALLOWED entry or an inline
+`oxlint-disable-next-line … -- <reason>`, and the reason is the point.
+
+| Concern | Do | Don't |
 | --- | --- | --- |
-| Any `/api/*` write | **`useWrite()`** (`lib/write.ts`) — a **test** enforces this now (`src/lib/write-rule.test.ts`): a raw `api()` write fails the build unless its site is in that file’s ALLOWED list **with the reason**. The prose rule had drifted, and one of the strays lost data (`/share` had no outbox) | …call `api()` directly for writes (skips the offline outbox), or add an ALLOWED entry without saying why the outbox would be actively WRONG there | **Its rejection:** `.catch(writeFailed)` (one calm « Pas enregistré — réessaie. » on the notice bar), `wrote(p)` when a follow-up (an « Annuler », a scene that closes) assumes it landed, `writeOrNull(p)` when the caller branches on null — the lint rule `babillard/no-anonymous-catch` fails the build on a bare `.catch(() => {})` unless an inline disable says **why it is not a server write** (~100 sites swallowed refusals, so a refused write reverted its optimistic row with not a word said) |
-| Any `/api/*` read/fetch | **`api()`** (`lib/api.ts`); a blob read is `fetch(imgUrl(key))` | …`fetch` directly (loses CSRF, device token, locale, profile — `babillard/no-bare-fetch` fails it unless an inline disable gives the reason) |
-| Server state / caching | **TanStack Query**; shared keys in `lib/queryKeys.ts`, a page-local one as a file-level `const X_KEY`, derived as `[...X_KEY, id]` | …a parallel store, or a key spelled twice — a key LITERAL at a call site fails `querykey-rule.test.ts` (three of eight were already second spellings, 2026-11-16) |
-| Device role / presentation lens | **`useSurface()`** / **`useLens()`** — read a NAMED flag (`toddler`/`simple`/`parent` to pick a view; `teaches` for the help layer; `interrupts` for an uninvited prompt; `acts` for an edit/share door; `spoken` for tap-to-hear). `lens-rule.test.ts` fails an inline `audience === '…'` | …branch on width (`surface-rule.test.ts`: `innerWidth`/a width `matchMedia` needs an ALLOWED reason — positioning math, `curatedBoard`), compare the audience string, or invent a flag |
-| Calm guarantees | structural ones are non-negotiable (a **test** enforces no streak/points/badge/push/inventory) | …add counts, ranks, streaks, points, push, or a quantity column |
-| Backend endpoint | handler under `functions/api/` **+** `authed()` wrapper **+** a `TABLE` row in `worker/routes.ts` | …hand-roll the auth guard, or forget the route table |
-| A call to Workers AI | **`runModel(env, model, input)`** (`_lib/runModel.ts`) — it charges the household's daily AI budget (`_lib/usage.ts`, migration 0137) and throws when it is spent, which every caller already handles as « the model did not answer ». The linter enforces it (`babillard/metered-door`): a raw `env.AI.run(` fails the build | …call `env.AI.run(...)` directly. Two resources here cost money per use, and a demo sandbox is a real operator session — there were thirteen unmetered call sites before this seam |
-| Storing an uploaded blob in R2 | **`uploadR2Media()`** (`_lib/r2.ts`) — the per-request `maxBytes` every call site already passes, PLUS the daily aggregate no call site can see. Same guard | …`PHOTOS.put(...)` from a handler (the nightly backup is the one ALLOWED exception, with its reason) |
-| Delete / clear a row from a **live-polled** list | **`useDeferredRemoval(queryKey)`** (`lib/useDeferredRemoval.ts`) — `visible()` filters the rows, `remove()` holds the write behind the undo toast; the row un-hides only once a FRESH frame proves the write landed. An optimistic create (the list, todos, tasks) paints its row under **`newRowId()`** (`lib/rowId.ts`) and SENDS it; the endpoint keeps it (`rowIdFrom`, `_lib/ids`), so there is no stand-in id. Its DELETE goes through **`deleteOwnRow`** (`functions/_lib/staleDelete.ts`): a miss is a **404** — never a vacuous « ok » (production 2026-10-06: six « ok » deletes, zero rows gone; `swallow-rule.test.ts` pins the `newRowId()` doors, `worker/listDoors.d1.test.ts` the server). **The commit must RETURN the write and let it reject** — a rejection means « the delete did not happen », a 404 means « already gone » (`rejectionMeansGone`) | …optimistically `setQueryData` then defer the write (the next poll resurrects the row mid-undo), hand-roll hide → commit → refetch → un-hide (Board did, five times: the un-hide fired even when the refetch had errored), or `.catch` inside the commit (every failed delete then read as a success) |
-| A full-screen surface where the user **types** | be a **`.scene`** (`FormScene`/`SceneHead`) — or add **`.vv-fit`** on the fixed shell + **`.vv-slack`** on its scroller. Fit + trailing slack live in ONE place (`core.css` « Keyboard fit »); the caret pin/follow is global (`lib/viewportVars.ts`), nothing to wire per field. On-device debug: Réglages ▸ Système ▸ Avancé → « diagnostic clavier » | …shrink the shell under `.kb-open` (`height: var(--vvh)` — the page behind shows through the keyboard strip) or skip the slack (a last-line caret has no room to rise). `src/styles/keyboard-fit.test.ts` fails the build on both |
-| A text field taking focus by itself | **only when the tap that revealed it asked to type** — a SectionAdd ＋, a ✏️, a day's ＋, a rename dialog whose only content is the field | …`autoFocus` a field because its screen, sheet or dialog OPENED: on a phone the keyboard takes half of what just opened (opening a person to read their address put the keyboard over it). « The form opens ready to type » is not a reason. `jsx-a11y/no-autofocus` (oxlint) fails the build on a file without a disable that says which |
-| A new full-screen overlay, sheet or dialog | **a tier from the ONE layer scale** — the `--z-*` tokens in `core.css` (the WHY of each tier is written out in `styles/sheets/capture.css`; `tokens.test.ts` fails a literal `z-index` ≥ 10) — every scene sits below `.scrim`/`.sheet`, every dialog that must interrupt an open sheet sits above it | …pick a z-index by looking at the neighbour you happen to overlap: a Sheet opened from inside a scene rendered BEHIND it, and lifting the sheet then put `.confirm` behind the peek that awaits it. `src/styles/layer-order.test.ts` fails the build on either direction |
-| A container that already holds buttons | **plain `<div onClick>`** (mouse convenience only) | …give it `role="button"`+`tabIndex`: a control inside a control announces as "a button whose contents are buttons", and `stopPropagation` on the inner handlers fixes the MOUSE while hiding the semantics. Same for `role="img"` on an SVG with interactive children — an `img` role makes its whole subtree presentational, so those children vanish from the a11y tree (use `role="group"`). `src/lib/nested-interactive.test.ts` fails the build on both |
-| Format a date/time/amount for the UI | the **cached** helpers: `lib/format.ts` / `lib/money.ts` (client), `functions/_lib/ids.ts` / `askContext.ts` (Worker) — a new shape gets a new cached helper THERE | …construct `new Intl.*` inline (~100 µs each, paid per row/day — `/api/year` burned 1.8 s of a ~10 ms Worker CPU budget this way; `babillard/no-intl-construction` fails the build) or casually add `toLocaleDateString` calls (same construction hidden in a convenience method — ratcheted by the same test) |
-| Day arithmetic on a local midnight | **`addLocalDays`** (`lib/localDay.ts` / `_lib/ids.ts`, both thin wrappers of `shared/localDay.ts`). Code BOTH the SPA and the Worker need lives once in **`shared/`** (both tsconfigs, vitest, knip, the guards) — never a « MIRRORED » twin with a test comparing the two (review #40) | …`± 86400`: DST days are 23/25 h long, so a fixed day off a local midnight lands at 23:00/01:00 — the documented fixed-86400 trap, which also made two e2e specs red twice a year, and which bit the timezone test written to prove the trap (two midnights three zones apart are 21 h apart, not 24) |
-| WHICH zone a day belongs to | nothing — **`authed()` already put the household's zone in scope** (`_lib/tz.ts`, migration 0135), and every helper in `ids.ts` reads it as its default | …pass `'America/Toronto'`, or read `HOUSEHOLD_TZ` expecting a constant: it is the CURRENT request's zone now. Outside a request (the cron, a unit test) it answers America/Toronto |
-| "Does this query hold data?" | **`state.data !== undefined`** (or `dataUpdatedAt > 0` for its age) | …gate on `status === 'success'`: a failed poll flips status to `'error'` while the last good frame STAYS cached — that gate erased the open tab from the offline snapshot and aged the freshness stamp the moment the network dropped (persist.ts + online.ts, 2026-09-03) |
-| A second write site for a flow with a shared hook | **the owner's hook** (`usePlanLeftover`/`useAnnounceLeftover` precedent); owned endpoints are mapped in `write-owners.test.ts` | …hand-roll a copy beside it: the leftover flow re-grew FOUR independent drifts by 2026-09-03 (a missing invalidation key ×3, an undo that dropped the recipe link) — the guard now fails a non-owner write site |
-| Hide a control from a read-only guest | **`isGuest()` — but only if it writes `/api/*`** | …gate a **device-local** pref with it (theme, language, audience lens, voice, calm, `lib/boardCards` layout): they're localStorage, they change nothing for the household, and gating them is what hid board reordering + the whole in-app guide from the public demo. See [The demo is a guest link](#the-demo-is-a-guest-link) |
-
-**When you DO add a new shared component:** register it in `src/pages/DevKit.tsx`,
-add it to `COMPONENTS.md`, and (if user-facing) document it in the in-app Guide
-(`lib/guideContent.ts`). A new primitive that isn't in the gallery is invisible to
-the next session and will get re-invented. **A test enforces this now**
-(`src/lib/devkitParity.test.ts`, 2026-09-09): a `COMPONENTS.md` primitive row either
-has a live specimen or ends with `*(no specimen: <reason>)*`, every gallery entry's
-`file` exists, every name it advertises is actually exported by that file, and no
-component name is declared in two files. The rule had been prose-only for months and
-had stopped being true — eight primitives this very page tells you to reach for
-(`FormScene` among them) had no specimen, and `LoadError` existed **twice**, the two
-copies drifted apart, with the import path as the only tell.
-
-**When a feature needs explaining (guide card/point, "?" help hint, tour step,
-Réglages deep-link):** read **`DISCOVERY.md`** first — it maps the whole
-comprehension ↔ action system (guide taxonomy, help registries, the
-`?tab/sub/lens/card/point/focus/plus` URL grammar, the alias drill) and carries
-the add-a-feature checklist. Merge into an existing card before creating one.
-
-**Feature-parity audit:** **`PARITY.md`** is the standing playbook that scores
-every feature against every cross-cutting dimension (peek, undo, offline, search,
-help, toddler lens, e2e…) and carries the canonical **new-entity checklist** —
-consult it when adding an entity or asked about feature gaps/uniformity. **Any new
-feature walks the Part 5 checklist and passes the Part 6 gold-standard gate before
-it ships** (score its Part-1 row gap-free — every cell ✅ or a footnoted ➖, no bare
-🔶/❌ — reuse the primitive per dimension, and cite the migration/commit for
-non-obvious cells; paste Part 6's "Definition of Done" into the commit). A matrix
-cell is a **verdict, not a fact** — re-verify it against code before relying on it,
-and flip a cell in the same commit that resolves it.
-
-**Action reachability:** **`ACTIONS.md`** is the door matrix — every user action ×
-every entry point (row furniture, ⋯ menus, gestures, peek actions, ＋ sheet tiles,
-Réglages mirrors, the ⚙ Simple↔Avancé faces), with the undo tier and the non-touch
-verdict per row. **When adding or moving ANY user action, pick its doors from that
-file's Part 1 taxonomy and walk its Part 5 checklist** — never invent a new entry
-channel or a fifth spelling of delete. PARITY's D17 points at it.
-
----
+| Any `/api/*` write | **`useWrite()`** (`lib/write.ts`): offline outbox, idempotency key, optimistic change. Its rejection: `.catch(writeFailed)`, `wrote(p)` when a follow-up assumes it landed, `writeOrNull(p)` | a raw `api()` write (`write-rule`) or a bare `.catch(() => {})` (`babillard/no-anonymous-catch`) |
+| Any `/api/*` read | **`api()`** (`lib/api.ts`: CSRF, device token, X-Lang, X-Profile); a blob read is `fetch(imgUrl(key))` | a bare `fetch` (`babillard/no-bare-fetch`) |
+| Server state | **TanStack Query**; shared keys in `lib/queryKeys.ts`, a page-local key as a file `const X_KEY` | a parallel store, or a key literal at a call site (`querykey-rule`) |
+| Device role · presentation lens | **`useSurface()`** / **`useLens()`** named flags (`toddler`, `simple`, `teaches`, `acts`…) | branching on width or on the audience string (`surface-rule`, `lens-rule`) |
+| Calm | no streak/points/badge/push/inventory, ever (`calm-tenets.test.ts` scans every migration) | a count, rank or quantity column |
+| Backend endpoint | a handler under `functions/api/` wrapped in **`authed()`** **+** a row in `worker/routes.ts` `TABLE` (file path is not routing) | a hand-rolled auth guard |
+| Workers AI · R2 upload · Browser Run | **`runModel()`** · **`uploadR2Media()`** · **`renderPage()`**: each charges the household's daily budget (`_lib/usage.ts`) | a raw `env.AI.run(`/`.put(`/`quickAction(` (`babillard/metered-door`) |
+| Remove a row from a live-polled list | **`useDeferredRemoval(key)`**: hide now, hold the write behind the undo toast, un-hide only after a fresh frame. The commit RETURNS the write and lets it reject (a 404 = already gone) | `setQueryData` then defer, or `.catch` inside the commit |
+| An optimistic create (list, todos, tasks) | paint the row under **`newRowId()`** and send it; the endpoint keeps it (`rowIdFrom`). A delete that misses is a 404 (`deleteOwnRow`) | a stand-in id, or a vacuous « ok » |
+| A screen where the user types | be a **`.scene`** (`FormScene`/`SceneHead`), or `.vv-fit` + `.vv-slack` (`core.css` « Keyboard fit ») | shrinking the shell under `.kb-open` (`keyboard-fit.test.ts`) |
+| A field taking focus by itself | only when the tap that revealed it asked to type (a ＋, a ✏️, a rename dialog) | focusing because a screen/sheet OPENED (`jsx-a11y/no-autofocus`) |
+| Overlays | a tier from the `--z-*` scale in `core.css` | a literal `z-index` ≥ 10 (`tokens.test.ts`, `layer-order.test.ts`) |
+| A container holding buttons | a plain `<div onClick>` | `role="button"` around buttons (`nested-interactive.test.ts`) |
+| Format a date/time/amount | the cached helpers (`lib/format.ts`, `lib/money.ts`; Worker `_lib/askContext.ts`) | `new Intl.*` inline (`babillard/no-intl-construction`; ~100 µs each) |
+| Day arithmetic · which zone | **`addLocalDays`** (`lib/localDay.ts` / `_lib/ids.ts`, both wrapping `shared/localDay.ts`); `authed()` already put the household's zone in scope | `± 86400` (DST days are 23/25 h), or a hard-coded zone |
+| Code both SPA and Worker need | ONE copy in **`shared/`** (both tsconfigs, vitest, knip, lint) | a « MIRRORED » twin kept in lockstep by a test |
+| « Does this query hold data? » | `state.data !== undefined` | `status === 'success'` (a failed poll keeps the last frame) |
+| A guest | `isGuest()` hides **writes** only | gating a device-local pref (theme, lens, layout) with it |
 
 ## Commands
 
 ```bash
-npm run dev            # Vite frontend-only, HMR on :5173, /api proxied to :8787
-npm run cf:dev         # full stack: wrangler dev on :8787 (SPA + Worker + local D1)
-npm run build          # tsc -b (typechecks SPA + Worker + Functions) then vite build → dist/
-npm run typecheck      # tsc -b --noEmit · npm run lint = oxlint, CORRECTNESS rules only (.oxlintrc.json says why each `off`)
-npm test               # vitest run (pure-logic unit tests; *.d1.test.ts excluded)
-npm run test:d1        # the REAL-RUNTIME suite: the Worker in workerd against a real D1 +
-                       #   R2 + the DO (vitest.d1.config.ts; helpers functions/test/d1.ts + fakes.ts).
-                       #   Needs dist/ → run after a build. CI runs it after check:bundle.
-npm run test:watch     # vitest watch · npm run test:coverage = the same run + v8 floors per directory (vitest.config.ts; not a CI step)
-npm run e2e            # Playwright (boots its own Vite, stubs every /api/* — no D1/secrets)
-npm run e2e:ci         # …in CI's shape (workers 1, retries 0) — before pushing shared machinery (note below)
-npm run e2e:local      # the WHOLE suite in that shape on this machine: 8 shards in turn, one Vite each (~55 min)
-npm run e2e:sw         # SW offline-shell e2e only (own harness on the PROD bundle)
-npm run e2e:matrix     # ON-DEMAND visual state sweep → screenshots/matrix/manifest.json for
-                       #   a review pass. Several frames per state; prunes; AXE per state. Weekly in CI.
-npm run e2e:stranger   # ON-DEMAND walk of the DEPLOYED app as a stranger (laptop + iPhone):
-                       #   the demo door, every tab, one write, the ＋ sheet, /garder, and
-                       #   /signup in FR + EN (creates + deletes a household). Weekly in CI.
-npm run e2e:flipp      # ON-DEMAND live contract with flipp.com (list-storage shape, routes,
-                       #   the bookmarklet on their real page). Weekly in CI.
-npm run perf:door      # ON-DEMAND cold start of the DEPLOYED door: wire bytes + stopwatch under CDP presets
-npm run deploy         # build + wrangler deploy → https://babillard.<account>.workers.dev
+npm run dev          # Vite on :5173, /api proxied to :8787   · npm run cf:dev = full stack (wrangler on :8787)
+npm run build        # tsc -b then vite build → dist/          · npm run typecheck · npm run lint (oxlint) · npm run knip
+npm test             # vitest (unit; one file: npx vitest run <path>, one test: -t "name")
+npm run test:d1      # the Worker in workerd against a real D1 + R2 + DO; needs dist/
+npm run e2e          # Playwright, every /api/* stubbed · npm run e2e:ci = CI's shape (workers 1, retries 0)
+npm run db:migrate:local / db:migrate:prod · npm run deploy
 ```
 
-Every on-demand harness (`matrix`, `stranger`, `flipp`, `sw`, `perf:door`) documents itself in its spec's header comment — that is the source; this table only says which door to open.
-
-Run one test file or one test by name:
-
-```bash
-npx vitest run functions/_lib/whenparse.test.ts
-npx vitest run -t "calm tenets"
-```
-
-Database (local needs the schema applied before `cf:dev`):
-
-```bash
-npm run db:migrate:local   # apply migrations to local D1, then sync the sqlite file
-npm run db:migrate:prod    # apply to remote D1 (CI does this before deploy)
-```
-
-CI (`.github/workflows/ci.yml`) runs typecheck → lint → test → build on every push, which
-**gates** `db:migrate:prod` + deploy on `main`. E2E (`.github/workflows/e2e.yml`) is
-**decoupled**: it **chains off** the CI & Deploy workflow (`workflow_run`) and only runs
-once CI concluded successfully on `main` (or a Dependabot branch, whose auto-merge waits for it) — so it gives signal *after* a green merge but
-never blocks the deploy (main ships as soon as typecheck/test/build are green). The E2E
-job runs `npm run e2e` in four shards beside `npm run e2e:sw` (the SW harness). **Trust CI as the baseline;
-don't run e2e locally by default — check the E2E job on the run page for visual/flow
-regressions.** Node 26.
-
-> **A local e2e run is WEAKER than CI, and knowing how is the point.** CI runs
-> `workers: 1, retries: 0`; locally it is `4` workers with `retries: 1`. A test that
-> failed once and passed on the retry used to print « flaky » and **still exit 0** — so
-> a genuinely broken change read as green here and CI failed it deterministically
-> (2026-08-28: the `.kb-open` invariant vs `keyboard.spec.ts`). Two things now:
->
-> - **`failOnFlakyTests: true`** — a flake FAILS the local run. The retry still absorbs
->   Vite cold-compile starvation, but needing it is no longer free. **Never dismiss a
->   flake without reading WHICH test it was** — that name is the whole signal, and it
->   was printed the first time and skipped over.
-> - **`npm run e2e:ci`** — `--workers=1 --retries=0 --forbid-only`, the authoritative
->   shape. Run this, not `npm run e2e`, before pushing anything that touches shared
->   machinery (the viewport/keyboard vars, `lib/query`, a board-wide component).
-
-> **Workflow: push straight to `main`.** No PR branches — commit and `git push origin
-main` directly. CI (typecheck/test/build) is the only gate; a red build is caught
-> on `main` and fixed forward. (This supersedes the old branch-per-change + PR flow.)
-
-> The full-stack command is `npm run cf:dev`. **DEPLOY.md is the current source of truth.**
-
----
+On-demand harnesses (`e2e:sw`, `e2e:matrix`, `e2e:stranger`, `e2e:flipp`, `perf:door`) document
+themselves in their spec headers. **CI** (`ci.yml`: typecheck → lint → test → build → d1 → bundle)
+gates the migrate + deploy on `main`; **E2E** chains off it and never blocks a deploy. **Trust CI;
+don't run the whole e2e suite locally.** A local run is weaker (4 workers, a retry): when it says
+« failed », read WHICH test before calling it flaky, and run `e2e:ci` before pushing shared
+machinery. **Push straight to `main`**: no PR branches; fix a red build forward. Concurrent sessions
+share this tree: stage explicit paths and verify `HEAD` after committing. `DEPLOY.md` is the source
+of truth for deployment. Node 26.
 
 ## Architecture
 
-### One Worker, two request kinds
+- **One Worker** (`worker/index.ts`): non-`/api/*` → `env.ASSETS` (the SPA, unknown paths →
+  `index.html`); `/api/*` → `worker/routes.ts` → a handler in `functions/api/` (they are still
+  Pages-Function shaped; the Worker adapts the context and runs the CSRF gate + error boundary).
+  `GET /api/live` upgrades to the `RealtimeHub` Durable Object.
+- **Auth**: `authed(handler, scope?)` (`_lib/route.ts`) resolves the **Actor**: an operator
+  session cookie, a kiosk device token, or a read-only time-boxed **guest** token (any non-GET from
+  a guest is a 403, centrally). `'operator'` scope rejects kiosks. `SESSION_SECRET` ≥ 32 chars.
+- **Migrations** (`functions/db/migrations/NNNN_*.sql`) are forward-only and filename-locked. New
+  tables: `created_at`/`updated_at`/`deleted_at`; `status` = workflow state, `status_code` = HTTP;
+  `colour` (never `color`); `position` for order; media = `media_kind`+`media_key` (set together,
+  the old blob freed on replace); a soft member ref is nullable with no FK and a comment naming it;
+  `kind` for a sub-type; JSON columns `NOT NULL DEFAULT '[]'`/`'{}'`; a 5th+ household pref goes to
+  `household_preferences`. A new table joins the demo sweep inventory (`demoHousehold.test.ts`).
+- **Optional bindings** (`AI`, `PHOTOS`, `REALTIME_HUB`, mail, `INVITE_CODE`) degrade: AI unset →
+  manual capture; R2 unset → media controls hide; DO unset → clients poll. Never assume one.
+- **Frontend**: `lib/api.ts` is the only path to `/api`; TanStack Query owns server state (realtime
+  only *nudges* invalidation; polling owns correctness); routing in `src/router.tsx` (six hub tabs
+  in `HubLayout`; `/cercle/*` and `/routine/*` scene paths are frozen, shared links use them).
+  **Surface** (`kiosk`/`mobile`) and **audience** (`parent`/`toddler`; `?kid=1` locks a kiosk) are
+  presentation, never permissions. i18n: `typeof FR` is the parity contract; Réglages copy lives in
+  `i18n.operator.ts`; `scripts/check-bundle.mjs` caps the eager FR chunk (it only comes down).
+- **Demo**: `POST /api/demo` mints a per-visitor throwaway **sandbox** household (`households.is_sandbox`,
+  TTL-swept; past the cap it falls back to a read-only showcase guest link). « Garder ma
+  maisonnée » (`/api/demo/claim`, `/garder`) keeps it. Privacy hides (mots, pins, care log) stay
+  hidden from every guest, because an operator can share a showcase link to their own household.
+- **Offline**: the SW precaches the shell; the Query cache persists to IndexedDB; writes queue in
+  the outbox and replay with their idempotency key. See [`OFFLINE.md`](./OFFLINE.md).
 
-`worker/index.ts` is the only deploy target. Every request is one of:
+## Jargon
 
-- **non-`/api/*`** → served from `env.ASSETS` (the built SPA in `dist/`; unknown
-  paths fall back to `index.html` for client-side routes).
-- **`/api/*`** → dispatched through `worker/routes.ts` to a handler under
-  `functions/api/`. **Exception:** `GET /api/live` is intercepted before the table
-  for a WebSocket upgrade into the `RealtimeHub` Durable Object (see _Realtime_).
+Words on screen are governed by `src/lib/glossary.ts` (both languages; `glossary.test.ts` ratchets
+the losing spellings). Hub tabs in canonical order, each with one colour (`SECTION_TINT`):
+**Board** `/board` (Le babillard: a widget space of cards in zones, hold a card to edit) ·
+**Kitchen** `/kitchen` (La cuisine: the supper plan, recipes, « running low », flyers) · **Liste**
+`/liste` (ONE active shared list; « Vider les cochés » logs the buys) · **Notes** `/notes` (family
+notes, voice memos, drawings) · **Maison** `/maison` (routines + the cercle: people, pets, groups,
+businesses, carnets) · **Réglages** `/settings` (Découvrir + six themed tabs, Comprendre/Régler;
+the pill map is `SETTINGS_TREE` in `lib/settingsNav.ts`; link a section with `?focus=<key>`).
 
-**The handlers under `functions/api/` are unchanged Cloudflare _Pages_ Functions.**
-The app began on Pages; the Worker keeps that code intact by adapting each Worker
-request into the `EventContext` a Pages Function expects, and reproducing the old
-`_middleware.ts` (CSRF gate + error boundary) inline in `index.ts`. So:
+| Term | Means |
+| --- | --- |
+| Operator · kiosk · guest | the signed-in owner (full access) · a paired tablet (device token) · a read-only time-boxed link |
+| Capture spine | type-or-speak → Workers AI routes it to event/task/list/pantry/meal/note (`AddSheet`, the ＋ FAB) |
+| Garde-manger · running low | meal planning that fills the list; a low/out FLAG, never an inventory count |
+| Ghost | opt-in purchase tracking: buying never auto-enrolls an item, and auto-learning stays closed |
+| Deal ↔ item | a flyer deal rides a generic list line (`itemNameFromFlyer`); never rename it into a specific one |
+| One task table | every task is a row of `tasks` (0150/0162); gestures in `_lib/taskGestures.ts` behind `/api/tasks`; `todos` holds departure checklists |
+| Mots · fridge memos | board notes (`notes`), optionally with an audio/drawing/photo attachment |
+| Cook mode · cashier mode | full-screen recipe (« Il en manque » flags pantry-low) · in-store list/price-match |
+| Recipe sections | inline `## Title` lines inside the flat ingredient/step arrays; every iterator skips them |
+| Discovery | guide cards (**32** guide cards today against a **~32 merge-first ceiling**), help hints, tours, `?card=&point=&focus=&plus=` links: read `DISCOVERY.md` first |
+| Calm mode | softens kid-routine redo friction only; the structural calm guarantees are not toggleable |
 
-> **Adding a `/api/...` endpoint needs BOTH** a handler file under `functions/api/`
-> **AND** an entry in the `TABLE` in `worker/routes.ts`. File path is no longer routing.
+Before adding an entity or action, walk **`PARITY.md`** (feature × cross-cutting dimension, Part 5
+checklist, Part 6 gate) and **`ACTIONS.md`** (every action × entry point). A surface stays lean and a
+composer stays generous: **`LEAN.md`**.
 
-### Backend handler convention (`functions/_lib/`)
+## Standing rules
 
-- **`authed(handler, scope?)`** (`route.ts`) wraps every household endpoint. It
-  resolves the actor, returns 401/403 if missing/under-privileged, adds an error
-  boundary, and hands the handler a guaranteed `Actor`. You can't get an actor
-  without passing auth — the guard is structural. Pass `'operator'` to reject kiosk
-  devices (member admin, destructive ops). A **guest** actor is blocked centrally:
-  `authed()` 403s any non-GET/HEAD from a guest before the handler runs, so a guest
-  is read-only across every endpoint without per-handler changes. **New handlers use
-  `authed()`** rather than hand-rolling the guard.
-- **`requireActor` / `resolveActor`** (`household.ts`) is the single place that
-  answers "which household, and may it write?". Three credentials converge to one
-  `Actor` shape: an **operator** session cookie (full read/write), a **kiosk**
-  device token (board-scoped), or a **guest** token (read-only, time-boxed — the
-  babysitter). One household per operator email (prototype-simple).
-- **`auth.ts`** — HMAC-SHA-256 tokens sharing one key: operator session cookie
-  `bb_session` + double-submit CSRF `bb_csrf`; device **and** guest tokens sent as
-  the `X-Device-Token` header (or `?t=<token>` for the WS handshake, which can't set
-  headers) and verified by the shared `verifyDeviceToken`/`verifyGuestToken` helpers.
-  `SESSION_SECRET` is validated ≥32 chars at use — do not weaken (encoding `undefined`
-  yields a known, forgeable key).
-- **`json.ts`** — `ok`/`unauthorized`/`forbidden`/`notFound`/`serverError` helpers.
-- **Migrations** (`functions/db/migrations/NNNN_*.sql`) are **forward-only and
-  filename-locked**. Never rename or edit an applied one; add the next number.
-
-### Schema conventions (every new migration follows these)
-
-> Canonical naming rules for new tables/columns, so the schema stops accumulating
-> drift. These are **forward rules**: adopt them for all new migrations. (Existing
-> outliers were tracked in `UNIFORMIZING.md` (in git, see above) Part I §5 / Part II §D, converged only
-> during the one-household migration window — don't retro-churn a working table just
-> to match a name.) The calm-tenet test (`calm-tenets.test.ts`) still overrides
-> everything: no `streak`/`points`/`badge`/`push_subscription` table, no inventory
-> `quantity`/`stock_count` column, ever.
-
-- **Timestamps** — `created_at` (all rows), `updated_at` (anything mutable),
-  `deleted_at` (soft delete). Don't coin a bespoke name (`archived_at`,
-  `dismissed_at`) unless the semantic is genuinely different from "deleted" — and if
-  so, comment why. _Sanctioned exception:_ `carnets.archived_at` is a **reversible
-  archive** (a carnet + its descendants hide but can be restored), deliberately not
-  `deleted_at` — keep it.
-- **Status vs status code** — `status` is a workflow-state discriminator
-  (staged/resolved/draft/active/frozen…). If a column stores an **HTTP status
-  integer**, name it `status_code` (as `idempotency_keys.status_code` does) so it
-  never reads as workflow state.
-- **Colour** — one spelling: **`colour`** (matches members/businesses/pets/groups).
-  Never add a new `color` column. (Existing `color` outliers: `schedule_blocks`, `carnets`, + JSON keys.)
-- **Ordering** — **`position`** (integer). Not `sort_order`, not `sort`.
-- **Media attachment** — the **`media_kind` + `media_key` (+ `scene_key` for editable
-  drawings)** trio (as on notes/family_notes/postbox/drawings), a single column per
-  blob — never parallel arrays, never a new `r2_key`/`photo_key`/`image` name.
-  **Lifecycle (P2-8 — the one memo-media pattern):** the composer uploads the blob via
-  **`uploadMedia()`** → gets back an opaque `{key}` → writes that into `media_key` with
-  the matching `media_kind` (and `scene_key` for a re-editable drawing). The pair is an
-  **invariant: `media_key` is set iff `media_kind` is set** — never one without the
-  other. Replacing or clearing the attachment **frees the old R2 blob** (`deleteR2Blob`,
-  which no-ops on an unset bucket); R2 unset → the media controls **hide** and the
-  text-only path still works. The board fridge-note composer (`MemoControls`) already
-  shares this across endpoints via its `endpoint`/`affectedKey`/`extraBody` props — a
-  new memo surface reuses it rather than re-wiring the upload→key→clear flow.
-- **Attribution ("who")** — a **soft `TEXT` member ref, nullable, no FK** so deleting
-  a member never cascades old content. When you need role / timestamp / multiple
-  authors, use a **junction table** (like `task_participants`). Comment whether the
-  ref means *subject/scope* or *author* (they've been conflated before — e.g.
-  `member_id` is *scope* on notes but *author* elsewhere). **Three distinct "who"
-  patterns coexist on purpose (DB-5) — pick by who's writing, don't unify them:**
-  (1) **soft member ref** (`member_id`/`added_by`/`suggested_by`) — an *existing*
-  household member is the subject or author; (2) **`author_member_id`** — a second,
-  explicitly-the-author member ref where a row also carries a separate subject/scope
-  member ref; (3) **external `author_label` / `sender_name`** — a free-text name from
-  someone who is *not* (yet) a member (a relative via a guest link). Pattern (3)'s model
-  is **postbox**: the sender's typed name tints the resulting note to a member **only on
-  an exact name match**, never to whoever is reviewing — the template for any future
-  guest→household attribution.
-- **Discriminators** — **`kind`** for an entity sub-type, **`status`** for workflow
-  state, **`type`** only for a relationship-edge label. Don't reuse `status` for an
-  HTTP status integer (name it `status_code`).
-- **JSON columns** — default arrays to `'[]'`, objects to `'{}'`, always `NOT NULL` —
-  never a bare `NULL` a reader has to guard.
-- **Soft refs** — every `*_by` / `*_id`-without-FK gets a one-line comment naming the
-  soft-ref intent (so the missing FK reads as deliberate, not forgotten).
-- **Household config** — if you'd add a 5th-plus new preference column to
-  `households`, create a `household_preferences` table instead of widening the tenant
-  row.
-
-### Optional bindings degrade gracefully (`functions/_lib/env.ts`)
-
-`DB` and `SESSION_SECRET` are required; **`AI`, `PHOTOS` (R2), `REALTIME_HUB` (the
-Durable Object), `INVITE_CODE`, the mail pair (`RESEND_API_KEY` + `MAIL_FROM`) and
-`ALERT_EMAIL` (the nightly cron's alert address, `_lib/nightly.ts`) are optional** and guarded at entry. AI-unset
-→ capture falls back to a manual type-picker, recap/suggestions hide. R2-unset →
-photo / routine-voice-clip / recipe-step-photo features hide. DO-unset → `/api/live`
-503s and clients poll. Never assume an optional binding is present. Locally without
-`wrangler login`, `AI` is unavailable — that's the expected degraded path, not a bug.
-
-### Frontend (`src/`)
-
-- **`src/lib/api.ts` is the ONLY path to `/api/*`.** It attaches CSRF echo, the
-  device token, locale (`X-Lang`), the acting profile (`X-Profile`), and credentials.
-  Calling `fetch` directly loses one of these and gets a silent 403/wrong attribution.
-- **TanStack Query owns all server state** and freshness/offline grace. The board
-  polls and keeps the last good frame on a failed poll. Cross-page query keys live in
-  `src/lib/queryKeys.ts` (a key spelled twice drifts into two caches); page-local keys
-  sit beside their code. **Realtime** (`src/lib/realtime.ts`, gated by
-  `REALTIME_ENABLED` in `main.tsx`) only _nudges_ this: a WS `invalidate` message
-  calls `invalidateQueries` so an open board refreshes the moment another device
-  writes. It never replaces Query or polling — if the socket drops, polling still owns
-  correctness. Server side, the write path's broadcast hook in `route.ts` maps the
-  request path → affected keys via `keysForPath` (`_lib/realtime.ts`) and fans them
-  out through the `RealtimeHub` DO; it's fire-and-forget (`waitUntil`, errors
-  swallowed) and never touches the response.
-- **Routing** (`src/router.tsx`): `/` is a smart entry (marketing for a brand-new
-  visitor; otherwise → `/board`). The six themed tabs (`/board`, `/kitchen`,
-  `/liste`, `/notes`, `/maison`, `/settings`) render inside `HubLayout`. `/pair`,
-  `/login`, `/signup` are standalone. `/share` is the PWA **share-target** landing
-  (#13: manifest `share_target` → pre-fills the capture spine). Three **legacy hub
-  routes** live on as query-preserving redirects (`LegacyHubRedirect`, which the
-  plain `<Navigate>` isn't — it drops search params): `/routines` → `/maison`,
-  `/cercle` → `/maison` (but `?section=notes` → `/notes`, keeping `?item`), and
-  `/kid` → `/maison`. Every `/cercle/<segment>` **scene** path is frozen and
-  unchanged (`/cercle/person|family|pet/*`, `/cercle/carnet/:id`, `/cercle/monde`,
-  `/cercle/import` — that last one is in already-texted family-share links), as are
-  the `/routine/*` builder scenes.
-- **Two orthogonal presentation axes**, both React contexts persisted to
-  localStorage, both overridable by URL param — **neither is a permission boundary;
-  auth still gates writes server-side**:
-  - **Surface** (`lib/surface.ts`): `kiosk` (wall tablet) vs `mobile` (phone) — the
-    device _role_, chosen at setup. `?surface=`.
-  - **Audience** (`lib/audience.ts`): `parent` vs `toddler` — the presentation _lens_.
-    Every themed tab except Réglages renders both ways off the same data. `?kid=1`
-    boots a kiosk **locked** into toddler view (settings hidden, `/settings` redirects).
-- **i18n** (`src/i18n.ts`): `typeof FR` is the compile-time parity contract — EN must
-  have every key FR has or `tsc` fails. Register is **Québécois** (souper, céduler,
-  courriel), not France French.
-  - **The `operator` namespace lives in its own module** (`src/i18n.operator.ts`,
-    `useOperatorT()`), with the same FR-first-then-EN contract one level down: it always
-    returns a dictionary, never a loading state. It left `i18n.ts` on 2026-09-21 because
-    it was 21 % of the French dictionary being parsed before first paint, and the eager
-    chunk had hit its cap. **Réglages copy goes there, everything else stays in `i18n.ts`**
-    — and both are walked by `glossary.test.ts` / `confirmCopy.test.ts`, which is the part
-    a future split must not forget: a ratchet that quietly loses a fifth of its corpus
-    passes, looser, in silence.
-  - **Adding copy is not free.** `scripts/check-bundle.mjs` caps the eager FR chunk, and
-    that cap comes DOWN after a win, never back up. If it goes red, take something out —
-    the last one to hit it moved a whole namespace rather than nudge the number.
-- **Calm** (`lib/calm.ts`): a toggle that softens only _interaction_ friction (kid
-  routine redo). The **structural** calm guarantees (no points, no push, finite lists)
-  are **not** toggleable.
-
-### The calm tenet is enforced by a test, not a convention
-
-`functions/db/migrations/calm-tenets.test.ts` scans **every** migration and fails the
-build if the schema ever grows a `streak`/`points`/`badge`/`push_subscription` table
-or a pantry `quantity`/`stock_count` column. The anti-addiction, no-inventory stance
-can't drift in by accident. Keep it green.
-
-### The demo is a sandbox household (guest link as fallback)
-
-There is no demo mode, route, or flag. `POST /api/demo` (`functions/api/demo.ts`,
-CSRF-exempt) mints a **per-visitor throwaway SANDBOX**: a real seeded household with
-a real operator session (`demo-<id>@babillard.invalid`, RFC 2606), so the visitor can
-genuinely write — no new auth mode. Bounds: `DEMO_SANDBOX_TTL` (24 h; every mint runs
-a bounded sweep, `functions/_lib/demoHousehold.ts`, whose table inventory is
-build-guarded by `demoHousehold.test.ts` — a new migration table MUST be added to its
-sets) and `DEMO_SANDBOX_CAP` (past it the endpoint falls back to the legacy behaviour:
-find-or-create the read-only singleton demo household, reseed if stale, mint a
-**4-hour read-only `showcase` guest token** → `/board?guest=<token>`). The sweep
-deleting the sandbox's `operators` row is the session kill switch. **Shipped:** the
-« Garder ma maisonnée » claim flow — `POST /api/demo/claim` (sandbox-operator-only,
-signup-grade validation + invite gate) rewrites the operators row's email + password
-**in place** and clears `households.is_sandbox` (0157, all the sweep/cap read; `.invalid` is
-refused at signup/join/claim), so household, data and session survive; the board claim banner (`SampleBanner`'s sandbox face,
-`lib/demo.ts` `useSandbox()`) links to the `/garder` form.
-
-The fallback (and any operator-minted showcase link) is an ordinary guest, so
-**whatever a guest can't do, that fallback can't show** — `isGuest()` stays
-load-bearing for marketing, and it is easy to over-apply:
-
-- **`isGuest()` means "can't write to the household."** Guard `/api/*` mutations with
-  it (`writeWith` already refuses one structurally) and hide the controls that fire
-  them. Three independent layers back this up — client, `authed()`, and the
-  `guestScope.ts` allowlist — so relaxing the client guard alone can't leak a write.
-- **Device-local preferences are NOT writes.** Theme, language, contrast/text size, the
-  audience lens, read-aloud voice, calm mode, the screensaver and the board's card
-  layout (`lib/boardCards`) all live in this browser's localStorage. A guest may use
-  them; the household never sees it. `display.tsx`, `boardLayout.tsx` and `Board.tsx`'s
-  `canEdit` are the reference call sites.
-- **Réglages stays reachable for a link guest**, narrowed by the `GUEST_SUBS` allowlist
-  in `pages/Operator.tsx`: Découvrir + « Comprendre » on every tab, plus the five
-  device-local subs. It's an allowlist on purpose — a sub added later must not open
-  itself to the demo. (`kitchen ▸ apparence` looks device-local but `MeasureColorsSection`
-  PATCHes `/api/household`, so it stays out.)
-- **Privacy hides are separate and stay.** `MotsCard`, `home-pins` and `care-log` hide
-  from a guest because an operator can mint a `showcase` link to their **own** household
-  (Réglages ▸ Partage), not just to the fake demo one. Don't relax those on `guestKind`.
-- The **auto-launching tour** is deliberately off for guests: its script narrates the ＋
-  FAB, which a read-only session doesn't have. Replaying it by hand from a guide card
-  works (`TourOverlay` centres a step whose anchor is missing).
-
-Guards: `e2e/guest-settings.spec.ts` and the guest cases in `e2e/board-edit.spec.ts`.
-
-**Shipped 2026-07-13:** the interactive demo — per-visitor ephemeral household (seed
-on mint, bounded TTL-sweep on the next mint, cap → read-only fallback). Accepted,
-deliberately ungated costs: a sandbox can call AI endpoints and upload R2 media (both
-bounded by TTL + cap; the sweep frees the blobs its `MEDIA_*` inventory knows).
-
-### PWA / offline
-
-`vite.config.ts` generates `dist/sw.js` at build time with the real hashed asset list
-baked in, so a kiosk reboots offline. Policy: navigations network-first→cached shell;
-`/api/img/*` + `/api/flyer-img` cache-first (immutable); other `/api/*` untouched
-(Query owns freshness).
-
-Beyond the shell, the **query cache is persisted** to IndexedDB (`src/lib/persist.ts`)
-and restored before first paint, and **offline writes are queued + replayed** through
-an outbox (`src/lib/outbox.ts` + `useWrite` in `src/lib/write.ts`), deduped server-side
-by an idempotency key (`functions/_lib/idempotency.ts`). New writes should use
-`useWrite()`, not `api()` directly; online-only controls disable via `useOnline()`.
-**See [`OFFLINE.md`](./OFFLINE.md) for the full architecture, migration status, and
-known limitations.**
-
----
-
-## Shared jargon
-
-> **Words on screen are governed by `src/lib/glossary.ts`, not by this table.** The two
-> jobs are different: this table explains CONCEPTS to whoever is writing code ("capture
-> spine", "surface", "audience"); the glossary decides which WORD a household reads, in
-> both languages, and `src/lib/glossary.test.ts` holds the losing spellings to a ratchet
-> that only goes down. Naming something a user will read? Start there. See
-> `UNIFY.md` — closed, and in git (see « What this is »); its data, `src/lib/glossary.ts`, is live.
-
-Use these names in conversation and code so we mean the same thing. Many already
-appear as code identifiers, route names, or requirement tags.
-
-### Surfaces & audiences
-
-| Term             | Means                                                                                                          |
-| ---------------- | -------------------------------------------------------------------------------------------------------------- |
-| **Surface**      | Device _role_: **kiosk** (wall tablet, glanceable, shared) vs **mobile** (phone, on-the-go). `lib/surface.ts`. |
-| **Audience**     | Presentation _lens_: **parent** vs **toddler** (pre-reader). `lib/audience.ts`.                                |
-| **Locked kiosk** | A tablet booted `?kid=1` — toddler audience, can't flip back or reach settings.                                |
-| **Operator**     | The signed-in human who owns the household (full read/write).                                                  |
-| **Guest**        | A time-boxed **babysitter** session booted `?guest=<token>` — read-only, no settings/writes; operator issues it from Réglages. |
-| **Actor**        | Resolved request identity — operator, kiosk, **or guest** — that handlers act on.                              |
-
-### Sections / themed tabs (the hub routes, canonical importance order)
-
-The nav order below is THE canonical order — the hub nav (`HubLayout` TABS), the
-themed Réglages tabs (`Operator` SECTIONS) and the guide taxonomy (`CONCEPT_THEMES`)
-all follow it, and each section owns one colour (`SECTION_TINT`).
-
-| Tab          | Route       | French name  | What it is                                                                                   |
-| ------------ | ----------- | ------------ | -------------------------------------------------------------------------------------------- |
-| **Board**    | `/board`    | Le babillard | Kiosk glance surface: clock, agenda, "ce soir" (supper), the list, tasks, upcoming; `?view=` adds week, month, year and « Tâches ». A **widget space**: every card lives in a zone (`band` on top, `grid` = the masonry), with a width and an empty-card mode. Hold a card → edit mode (`?edit=1`); Réglages ▸ Disposition is its accessible mirror. |
-| **Kitchen**  | `/kitchen`  | La cuisine   | Garde-manger: 7-day supper plan, recipes, "running low," meal suggestions, deals/flyers.     |
-| **Liste**    | `/liste`    | La liste     | The single active shared list (see below).                                                   |
-| **Notes**    | `/notes`    | Les notes    | The durable family-notes board (`family_notes`), for one member or the whole Maisonnée — rich notes, voice memos, drawings. Teal, inherited from Le cercle, where it used to be a sub-tab. Comprendre-only in Réglages (no settings subs). Distinct from the board's fridge **mots**. |
-| **Maison**   | `/maison`   | Maison       | Routines **and** the rest of Le cercle, behind five pills (`?section=`): **routines** (default) · family · social · business · carnets. Kid picture-card routines read aloud on-device (absorbed the old `/kid` view) + the family & contacts directory: people, pets, groups, businesses, links/tree. Berry, inherited from Routines. |
-| **Réglages** | `/settings` | Réglages     | Operator hub, rebuilt as **Découvrir + six colour-themed tabs** (one per hub section, same order/colours as the nav). Each themed tab has a **« Comprendre / Régler »** lens toggle: Comprendre = that theme's slice of the in-app guide (`ComprendrePanel`), Régler = its settings sub-sections (`?tab=<SectionKey>&lens=&sub=`; old ids fold via `LEGACY_TAB`). The sage « Système » tab holds device/household-wide machinery in four pills (Appareils in three pills (Appareils & accès · Affichage & veille · Voix & IA) accès · Affichage in three pills (Appareils & accès · Affichage & veille · Voix & IA) veille · Voix in three pills (Appareils & accès · Affichage & veille · Voix & IA) IA · Avancé, the dev tools). **The pill map is `SETTINGS_TREE` in `lib/settingsNav.ts` — 15 pills, each a stack of section cards, each card with an `access` (`device`/`household`/`operator`) the viewer's pill row DERIVES from** (a link guest gets device cards, a kiosk everything but operator cards; no allowlist). Link to a SECTION with `?focus=<key>` alone (tab and sub are derived) so the link survives the next reshuffle; `DISCOVERY.md` carries the map. |
-
-### Domain concepts (carry specific meaning here — see project memory)
-
-| Term                         | Means                                                                                                                                                          |
-| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Capture / capture spine**  | Type-or-speak a note; Workers AI routes it to event/task/list-item/pantry-low/meal/note. `AddSheet` (the contextual ＋ FAB sheet).                                    |
-| **The list (single-list)**   | `/liste` is ONE active list — check marks in place, "Clear checked" logs + removes; no done-shelf/modes (those were removed). `search_terms` survive a re-add. |
-| **Garde-manger**             | The kitchen module: meal planning that fills the grocery list itself. No full inventory — only "running low."                                                  |
-| **Pantry-low / running low** | A low/out flag, deliberately NOT an inventory count (enforced by the calm test).                                                                               |
-| **Deal ↔ item**              | Flyer deals are transient and ride on a generic recurring list item — never rename/duplicate it into a specific-named one. When no line matches, the flyer doors insert **`itemNameFromFlyer`** (`lib/flyerName.ts`: a whole-word PREFIX of the title, calmed — so the same title re-finds it) and send the full title as `match_text`; the deal keeps the title in its own `name`. |
-| **Ghost**                    | Opt-in purchase tracking. Buying never auto-enrolls — don't reopen auto-learning.                                                                              |
-| **Cook mode**                | Full-screen recipe view; follows the audience profile; exit via small ✕. `CookMode`. Each ingredient carries **« Il en manque »** — the same pantry-low write the Garde-manger uses, so noticing you are out mid-recipe costs no trip off the scene (parent + non-guest; a TOGGLE — the undo bar sits at z-index 40 under the scene’s 90, so an « Annuler » from here would be unreachable, and the button’s own state is the confirmation). |
-| **Cashier mode**             | In-store list/price-match surface. `CashierMode`.                                                                                                              |
-| **Recipe sections**          | Inline `## Title` lines inside flat ingredients/steps arrays (no separate table) — every iterator must skip headings.                                          |
-| **Measure pills**            | Colour-coded tap-to-hear spoon/cup amounts in recipes (`measureColors.ts`).                                                                                    |
-| **Calm mode**                | Opt-out of kid-routine redo friction only; structural calm guarantees are non-toggleable.                                                                      |
-| **Pairing**                  | Tablet shows a 6-digit code; operator approves from `/settings`; tablet stores a revocable device token.                                                       |
-| **Day-part theming**         | The board palette gently drifts dawn→day→dusk→night (`data-daypart` over `data-theme`); opt-out toggle, never overrides manual Night. `lib/timeofday.ts` + `lib/daypartDrift.ts`. |
-| **Recipe collections**       | Browse recipes grouped by an existing **tag** (no new table); parent = an **"Aa vs Collections" view toggle** in the recipe book (`RecipesTab`): Aa = flat alphabetical, Collections = grouped-by-tag sections (no sub-tabs) + toddler hear-first picker (`ToddlerCollections`).                    |
-| **Chore ledger**             | Read-only "who did what this week" glance (the board's Tâches view) over `task_participants` — names + faces, **never counts/ranks** (calm).                         |
-| **One task table (0150)**    | Every task is a row of `tasks` (« the spine »; named `home_projects` until 0162, and a takeout says `spine: 'tasks'` since a pre-0150 one uses `tasks` for the old chores), `todos` holds only departure checklists. `kind` is `plan` · `upkeep` · NULL (0153, a CHECK): a task, or a home row; nothing tells a former chore from a former to-do (`task-faces-rule.test.ts`). A task's day is a household-local midnight: write it through `taskDayOf`, read it through `taskDay` (`_lib/taskDay.ts`). Every gesture (tick, untick, « Vider », « Reporter », delete) is one function in `_lib/taskGestures.ts` behind `/api/tasks` (the form reads one row from `/api/tasks/one`); `todos` still translates old request shapes, `home-projects` only reads, `chores` is gone (review #37). Read the home rows with `FACE.home` (`_lib/taskItem.ts`), never a bare scan (`task-merge-rule.test.ts`). |
-| **Voice clip / step photo**  | Optional R2 media: a parent's recorded narration per routine card, and a photo per recipe step (parallel arrays; degrade to TTS/text when R2 unset).            |
-| **Fridge memos**             | A fridge note (`notes`, board `Notes.tsx`) can carry an R2 attachment — `media_kind`: an **audio memo** (#38), a **drawn note** (#14 — `DrawPad` over `signature_pad`), or a **shared photo** (#13 — `'image'`, from the share-target). Audio/drawing are created in the ＋ "Note rapide" sheet (`MemoControls`); a photo arrives via `/share`. General-audience, tinted by the active face; clearing frees the R2 blob. Migration 0043 (`media_kind`/`media_key`); upload via `note-media`. R2 unset → the controls hide, text notes still work. |
-| **Favorites (hearts)**       | Per-member ❤ on a recipe (#21, `recipe_loves`, migration 0044; `HeartButton`/`useLoves`); a planned meal carries its linked recipe's hearts. **Calm: shows WHICH faces loved it, never a count/rank** (chore-ledger rule). The add/remove toggle only shows when a face is picked — as **Maisonnée** hearts are read-only. Biases `suggest-meal` (loved recipes lead "favs"). |
-| **Realtime**                 | Per-household `RealtimeHub` Durable Object nudges open boards via `/api/live` WS to refresh on another device's write; **polling stays the fallback**.          |
-| **Idle / ambient**           | What a **kiosk** does at rest, both opt-out-able + tunable in **Réglages ▸ Affichage ▸ Mode veille** (`lib/ambient.ts`, `useSyncExternalStore`): (1) the **screensaver** (`AmbientScreen`) fades to a full-screen clock/date/photo-frame/next-up after `idleMin`; tap to wake. (2) the **return-home drift** clears the picked face back to "Maisonnée" after `returnHomeMin` (heads-up chip 30 s before). Both live shell-level in `HubLayout` (one idle effect, resets on any pointer/key; arms on **every** surface — mobile included, since a wall tablet is often signed in as the operator and thus `surface=mobile` — and is governed purely by the per-behaviour opt-out toggles). Test without waiting with **« Aperçu »** in that same sub, which calls `forceIdle('screensaver')` (`lib/idleDebug.ts`). *(Corrected 2026-08-27: this row used to promise a « Réglages ▸ Debug » panel in `operator/idleDebug.tsx` that shrinks the idle window to seconds. That file does not exist and never did — the speed half of `idleDebug` had no UI, and its setters were removed as dead exports when knip became a real gate. `SPEED_KEY` is still read by HubLayout, so setting it by hand in devtools does still work.)* |
-| **Discovery (comprendre ↔ agir)** | The one guide/help/tour ↔ feature/settings mapping: **32** guide cards today against a **~32 merge-first ceiling** (at capacity — merge before you add a 33rd), each a launcher (« Ouvrir »/« Régler »/« Essayer ») as well as an explanation; "?" hints + tours deep-link back via `?card=&point=`; `?focus=` lands on a stacked settings card, `?plus=` opens the ＋ sheet; `SUB_GOTO` links a Réglages sub to its live surface. **See `DISCOVERY.md`** — taxonomy, URL grammar, invariants, checklists. |
-
-### Requirement tags
-
-About 160 code comments cite tags from the deleted `bmad/` planning docs: **`NFR-*`**
-(non-functional, e.g. `NFR-CALM-1`, `NFR-OFFLINE-1`), **`PRD <id>`** (product
-requirement, e.g. `PRD C5`), **`OD-*`** (open decision), and bare folder references like
-`(bmad/08 E-36)`.
-
-**They are LABELS now, not pointers.** Do not go looking for the folder — it was deleted
-2026-09-17 and grepping for a tag will find only the citations, not the rationale. Each
-one still does its real job in place: it says *this line exists because of a rule*, and
-the surrounding comment says which rule. Where the rationale genuinely matters it has
-been written into the code beside the tag, which is why the comments in this repo are
-long. If you need the original: `git log --diff-filter=D -- bmad/`, then
-`git show <sha>^:bmad/<file>`.
-
-They were deliberately NOT stripped from the comments. Rewriting ~160 source files to
-delete a word is a far larger and riskier edit than deleting a folder, and it would
-throw away the one thing the tag still carries — that a deliberate decision, findable in
-git, sits behind that line.
-
----
-
-## Horizontal overflow
-
-New UI that bleeds off the right edge on a narrow phone is a **recurring** bug here.
-The cause is almost always a hand-rolled `display:flex` row of buttons/chips, and the
-reason it ships unnoticed is that `#root`, `.hub__body`, and `.sheet` all set
-`overflow-x:hidden` — so a too-wide row is **clipped (hidden), not fixed**, and a
-`scrollWidth`-based check reads it as 0. Prevent it structurally:
-
-- **Use a row primitive, never a bespoke flex row.** `<Cluster>` (wraps to a second
-  line) for order-independent rows; `<Rail>` (scrolls one line) for sequences that must
-  stay inline. `components/Layout.tsx`; classes `.cluster`/`.rail` in `core.css`; live
-  in `/dev/kit` ▸ Fondations ▸ *Cluster · Rail*. `<Cluster fill>` = "grow to share the
-  row but still wrap when narrow."
-- **A fixed `flex-basis` is the trap.** `flex: 1 1 6rem` on three buttons keeps them on
-  one line and overflows instead of wrapping, because a basis *smaller than the item's
-  content* under-reports the width so wrap never triggers. Basis `auto` (what
-  `.cluster--fill` uses) tracks the content and wraps honestly. If you catch yourself
-  writing `flex: 1 1 <rem>`, reach for `Cluster`/`Rail` instead.
-- **A labeled submit beside a field is the same trap wearing a suit.** `flex: 1 1
-  10rem` on `.edit-field__box` kept the CTA on one line forever; the field was
-  never allowed to wrap under it. It is now one container query in
-  `styles/pages/fields.css` (`.edit-field--cta` → box full line, button beneath),
-  inherited by every EditField/EntityCombobox — extend that, never re-pin a basis
-  on a host (`field-fit.test.ts` fails the build if you do).
-- **Never add `overflow-x:hidden` to *mask* a wide row** — that hides the bug from the
-  eye and the guard both. The container clips are there to stop page-panning, not to
-  paper over content that's too wide.
-- **The guard is a per-child bounds check, not `scrollWidth`.**
-  `e2e/add-sheet-overflow.spec.ts` measures each visible descendant's right edge vs the
-  sheet's right edge (which sees through the clip) and exercises the sheet in several
-  states. When you add a new sheet/overlay row, extend that spec (or the phone-width
-  sweep in `e2e/screenshots.spec.ts` / `e2e/layout-overflow.spec.ts`) to open it.
-
-### A scrolling row must be reachable with a mouse, not just a thumb
-
-The mirror-image bug. Every side-scrolling row here hides its scrollbar for calm
-(`scrollbar-width:none` + `::-webkit-scrollbar{display:none}`). On a touch screen you
-swipe it. **On a desktop that hides content outright**: there's no bar to drag, no swipe,
-and a mouse wheel only ever emits `deltaY` — which no browser maps onto a *horizontal*
-scroller. Réglages ▸ Régler ▸ Système's (then) nine subs were simply unclickable with a mouse.
-
-- **Any hidden-scrollbar horizontal row gets `useHScroll()`** (`lib/hscroll.ts`). It maps
-  the wheel, hands it back to the page at either end (never a wheel trap), and exposes
-  `overflowing`/`atStart`/`atEnd` + `page()`/`toView()`. No DOM, no layout change.
-  `Rail` and `SubTabs` already wire it; a hand-rolled row must attach the ref itself.
-- **Don't leave a touch gesture as the ONLY path to an action.** A swipe
-  (`useSwipeToDelete` binds `touchstart/move/end` — invisible to a mouse *and* a
-  keyboard) or a long-press needs a real mirror: `RowActions`, an edit sheet's Delete,
-  or a Réglages screen. Same for any decorative overlay — an `aria-hidden`, `opacity:0`
-  pane that still takes hits (`.list-row__del` before `pointer-events:none`) silently
-  swallows clicks on the controls beneath it.
-- Guards: `e2e/hscroll.spec.ts` (wheel, chevrons, no wheel trap, deep-link scroll-in)
-  and `e2e/quickadd-remove.spec.ts` (mouse+keyboard delete, pane doesn't eat clicks).
-
-## Conventions & gotchas
-
-- **Reuse before you create** (standing rule). Read the existing section + check
-  `COMPONENTS.md` / `/dev/kit` for a shared primitive and `src/lib/*` for the
-  governing helper BEFORE writing new code. Extend what exists; don't fork a parallel
-  copy that we then have to refactor back. See [Build by reuse](#build-by-reuse--read-before-you-write-start-here).
-- **Keep the surface lean** (standing rule): a new heading, hint line, always-open
-  composer or search box needs to justify the screen it takes before the content.
-  Read **`LEAN.md`** — the nine recurring smells with the primitive that fixes each
-  (**SectionAdd** / **SearchField** / **Disclosure**), the three invariants (a fold
-  never hides a filled field; never delete an explanation nothing else carries;
-  don't cargo-cult a fix), and the method that actually finds them: **screenshot the
-  first screen at 390px and look — do not reason about it.** The state matrix
-  measures it (`npm run e2e:matrix` → `contentTopPx` per surface, ratchet-budgeted),
-  so a surface can't quietly regrow its chrome.
-- **…and generous once you're inside** (standing rule, the same file's other half):
-  lean governs a surface you SCAN; a composer you deliberately opened — the ＋
-  sheet's field, an expanded `SectionAdd`, a scene form — is the opposite case, and
-  it regressed the opposite way (« Restants » at 390px: a full-width « ＋ À finir
-  bientôt » left ~60px of typing width). A labeled CTA takes its own line **under**
-  a full-width field; the side margin of a sheet/scene is `var(--gutter)`, never a
-  hard-coded px. Guards: `e2e/composer-fit.spec.ts` (a typing-width FLOOR, which
-  only moves up, + « the placeholder must fit ») and `src/styles/field-fit.test.ts`
-  (the CSS invariants). See [Generous inside](./LEAN.md#generous-inside-the-other-ratchet).
-- **Every UI change must be mobile-friendly**, every time (standing rule).
-- **Every UI change must be tablet-friendly, especially for Toddler mode**, every time (standing rule).
-- **No horizontal overflow** — any row of controls uses `Cluster`/`Rail`, not a
-  hand-rolled flex row (standing rule). See [Horizontal overflow](#horizontal-overflow).
-- **Every UI change must be desktop-friendly too** (standing rule): nothing may be
-  reachable *only* by a touch gesture. A hidden-scrollbar side-scrolling row gets
-  `useHScroll()`; a swipe or long-press gets a mouse/keyboard mirror. See
-  [A scrolling row must be reachable with a mouse](#a-scrolling-row-must-be-reachable-with-a-mouse-not-just-a-thumb);
-  the full action × door matrix (with each gesture's mirror) is **`ACTIONS.md`**.
-- **A new Réglages setting merges into an existing sub, never a new pill**
-  (standing rule, C-15). Réglages counts 15 pills (down from 28 on 2026-09-08; « Avancé » the one deliberate add — each
-  is a STACK of section cards, `SETTINGS_TREE` in `lib/settingsNav.ts`); find the themed
-  tab + sub that already owns the concept (e.g. any kitchen colour/appearance
-  setting → `kitchen ▸ apparence`, stacked `OperatorSection` bodies under one
-  pill, the board▸thisweek / settings▸system precedent) and stack your section's
-  body there instead of widening the pill row.
-- **A new guard must be run against the bug it was written for, before it is
-  trusted** (standing rule). The build-gating grep tests — `calm-tenets`, `field-fit`,
-  `keyboard-fit`, `write-rule`, `write-owners`, `swallow-rule`, `intl-rule` (ratchet), `nested-interactive`,
-  `discovery`, `demoHousehold`, `realtime`, `layer-order`, `chip-rule`, `glossary`,
-  `undoTier`, `tour-rule`, `docCounts`, `devkitParity`, `link-button-rule`, `autofocus`,
-  `csrfExempt`, `schemaRefs`, `deadCopy`, `keyShape`, `load-error-rule`, `dnd-mirror`, `hscroll-rule`, `kit-class-rule`, `avatar-rule`, `empty-rule`, `status-rule`, `search-rule`, `icon-button-rule`, `btn-order`, `field-rule`, `segmented-rule`, `overlay-naming`, `prop-naming`, `tabparam-rule`, `dead-class`, `dup-rule`, `structure-rule`, `routeSweep`, `routesTable`, `d1Coverage`, `e2e-rule`, `conventions`, `taskSchedule-rule`, `time-field-rule`, `look-rule`, `effort-rule`, `task-merge-rule`, `task-faces-rule`, `querykey-rule`, `surface-rule`, `detail-rule` — plus the AST rules in `scripts/lint-rules.mjs` (review #41) — are the best thing in this codebase, and a green one
-  proves nothing on its own: `nested-interactive` once reported green over the very
-  defect it was written for (STATE.md §5 has the story). Plant the violation (or stash
-  the fix), watch the guard fail, restore. **And check that the plant actually landed**
-  — a `sed` whose pattern did not match "proves" a rule just as convincingly as a real
-  run (2026-09-24: two of three plants were no-ops until the mutation was re-applied
-  through an exact-match edit).
-- **Measure with `boxOf()` in e2e, never `(await x.boundingBox())!`** (standing rule).
-  `e2e/measure.ts` retries; the bare call throws when the selector re-resolves onto a
-  node React detached between the assert and the measure, and waiting for visibility
-  does not prevent it (two CI reds in two days from this one pattern).
-  **The sweep is done (2026-09-09): 0 bare call sites are left**; the count is derived
-  from the suite by `docCounts.test.ts` and is a ratchet — it may fall, never rise.
-- **Push straight to `main`** — no PR branches; CI (typecheck/test/build) is the
-  only gate, fix forward if it goes red (standing rule). If a branch ever is used,
-  delete it (local + remote) after it merges.
-- **Shared working tree** — concurrent Claude sessions share this checkout. Re-check
-  git state before committing; stage explicit paths; verify `HEAD` after commit.
-- **`src/styles/styles.css`** `@import` order IS the cascade — never reorder.
-- Don't commit to the parent `FULL_LIFE_AS_CODE` folder (not a git repo). This project
-  (`PlannerOrSomething/`) is its own git repo — commit here.
-- The `database_id` in `wrangler.toml` is the original author's DB; a fresh account
-  must replace it.
+- **Every UI change works on a phone, a tablet (toddler mode too) and a desktop.** A row of controls
+  is a `Cluster`/`Rail`, never a hand-rolled flex row or a fixed `flex-basis` (`field-fit.test.ts`);
+  never add `overflow-x:hidden` to mask a wide row (the e2e overflow specs check per-child bounds).
+  A hidden-scrollbar row gets `useHScroll()`; a swipe or long-press gets a mouse/keyboard mirror.
+- **A new Réglages setting stacks into an existing pill** (15 pills, `SETTINGS_TREE`), never a new one.
+- **A new guard is run against the bug it was written for before it is trusted**: plant the
+  violation, watch it fail, restore, and check that the plant actually landed. A green guard alone
+  proves nothing (STATE.md §5 has the story).
+- **Measure with `boxOf()` in e2e**, never `(await x.boundingBox())!`.
+  **The sweep is done (2026-09-09): 0 bare call sites are left**; `docCounts.test.ts` keeps it so.
+- `wrangler.toml`'s `database_id` is the original author's DB. Don't commit to the parent
+  `FULL_LIFE_AS_CODE` folder (not a git repo).

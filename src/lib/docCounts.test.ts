@@ -290,12 +290,18 @@ describe('the docs quote the real counts', () => {
 // budget that quietly forgives one line is how the next one gets forgiven too.
 const STATE_MAX_LINES = 331 // today 330 by wc -l, 331 here (2026-11-16: the AI-quota entry and the linked-« À placer » entry landed in §3; the 2026-11-08 task entries left for git, as the file asks)
 const STATE_FIRST_OPEN_BOX_BY = 300 // today none — §4 says « No open box. »
+// A line count can be met by writing longer lines (review #42), so the BYTES are held too.
+const STATE_MAX_BYTES = 57_600 // today 57 406 (2026-11-18)
 
 // CLAUDE.md is the LAW, read by every session before it writes code — and it grows the
 // same way STATE.md did, one honest paragraph at a time (734 lines on 2026-09-24, with a
 // 95-line Commands block whose essays each spec's header already carried). Same ratchet,
 // same escape hatch: a story belongs in git or in the doc it points at, not here.
-const CLAUDE_MAX_LINES = 700 // today 699 by wc -l, 700 here
+// Review #42 (2026-11-18) cut it from 699 lines / 71 KB to 171 / 16 KB: the law, the two tables,
+// the commands and an architecture summary; the essays went to git. Bytes are held as well as
+// lines, because a line budget can be met by writing longer lines.
+const CLAUDE_MAX_LINES = 172 // today 171 by wc -l
+const CLAUDE_MAX_BYTES = 16_000 // today 15 885
 
 describe('CLAUDE.md stays a law, not a chronicle', () => {
   it(`is at most ${CLAUDE_MAX_LINES} lines — a ratchet: lower it when you prune`, () => {
@@ -303,6 +309,9 @@ describe('CLAUDE.md stays a law, not a chronicle', () => {
       read('CLAUDE.md').split(/\r?\n/).length,
       'CLAUDE.md grew. Move the story to the doc or spec it points at (git keeps it) and LOWER this number, do not raise it',
     ).toBeLessThanOrEqual(CLAUDE_MAX_LINES)
+  })
+  it(`is at most ${CLAUDE_MAX_BYTES} bytes — longer lines are not a way around the line budget`, () => {
+    expect(Buffer.byteLength(read('CLAUDE.md'), 'utf8'), 'CLAUDE.md grew. Cut, do not raise the budget').toBeLessThanOrEqual(CLAUDE_MAX_BYTES)
   })
 })
 
@@ -314,6 +323,10 @@ describe('STATE.md stays a front door', () => {
       state.length,
       'STATE.md grew. Cut the finished part (git keeps it — that is what git is for) and LOWER this number, do not raise it',
     ).toBeLessThanOrEqual(STATE_MAX_LINES)
+  })
+
+  it(`is at most ${STATE_MAX_BYTES} bytes — longer lines are not a way around the line budget`, () => {
+    expect(Buffer.byteLength(read('STATE.md'), 'utf8'), 'STATE.md grew. Cut the finished part (git keeps it), do not raise the budget').toBeLessThanOrEqual(STATE_MAX_BYTES)
   })
 
   // The length is a proxy; THIS is the property it stands for. A file whose open work
