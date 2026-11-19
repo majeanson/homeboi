@@ -569,7 +569,7 @@ export function trackVisualViewport(): void {
     // keyboard open) — and that half matters as much as the guard itself. A keyboard
     // genuinely still up across an in-app NAVIGATION has no focused field: the old one
     // unmounted with the route. Gating both edges dropped the fit there and broke
-    // `keyboard.spec.ts` « a keyboard that is genuinely still up keeps its fit across a
+    // `journey-keyboard.spec.ts` « a keyboard that is genuinely still up keeps its fit across a
     // navigation » — a case that exists precisely because the re-read must agree with
     // the device rather than blanket-clear on every route change.
     //

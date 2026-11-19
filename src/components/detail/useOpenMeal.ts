@@ -16,7 +16,7 @@ import { buildMeal, type DetailCtx, type MealLike, type MealOpts } from './adapt
 // merely list ways to reach another page — it carries the PLAN (which day, which slot,
 // who cooks, restants, retirer du plan), which neither the recipe view nor the day page
 // shows. Accepted cost, chosen with eyes open: cooking tonight from the board's « Ce
-// soir » hero is 2 taps instead of 1 (tap-budget.spec.ts re-pinned to 2).
+// soir » hero is 2 taps instead of 1 (journey-fit.spec.ts re-pinned to 2).
 //
 // Recipe resolution order matters:
 //   1. the RESOLVED recipe (useRecipeForMeal → by recipe_id, else by exact title), so a

@@ -130,7 +130,7 @@ fields.css). ~55 call sites inherited it. The two guards:
 | | measures | direction |
 | --- | --- | --- |
 | `e2e/state-matrix.spec.ts` `budgetPx` | `contentTopPx` — chrome before content | ceiling, moves **down** |
-| `e2e/composer-fit.spec.ts` `floor` | the field's usable typing width, per composer | floor, moves **up** |
+| `e2e/journey-keyboard.spec.ts` `floor` | the field's usable typing width, per composer | floor, moves **up** |
 | `src/styles/field-fit.test.ts` | the CSS invariants themselves (the row is the container; no host re-pins a fixed basis; `--gutter` owns every committed surface's side margin) | build gate |
 
 The floor's companion assertion is the one that actually reads like the bug: the

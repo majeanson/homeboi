@@ -378,7 +378,7 @@ export function ToddlerBoard({
               lunch » read the same as « ranger ta chambre ». Split out, a pre-reader
               can see what to TAKE before the door.
               Hear-first and READ-ONLY like every tile here: no onTap, so a wandering
-              finger can never tick the household's morning (toddler-board.spec.ts
+              finger can never tick the household's morning (journey-lenses.spec.ts
               asserts this board writes nothing at all). */}
           {kidSection(
             t.departure.title,

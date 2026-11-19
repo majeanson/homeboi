@@ -11,7 +11,7 @@ import { GuestReadOnlyError, wrote, writeOrNull } from './writeFailed'
 // the eventual replay double-applies. The fix hoists ONE key above the online
 // attempt and reuses it for the queued/replayed leg — these tests pin that
 // contract at the writeWith() level (network + outbox are mocked; the outbox's
-// own IndexedDB plumbing is exercised in outbox.test.ts / offline-outbox.spec.ts).
+// own IndexedDB plumbing is exercised in outbox.test.ts / journey-offline.spec.ts).
 
 // vi.mock factories are hoisted above every import/const in this file, so the
 // mocks they reference must be created via vi.hoisted (a plain top-level const

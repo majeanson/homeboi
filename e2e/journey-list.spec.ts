@@ -327,7 +327,7 @@ test.describe('interactions-list', () => {
   })
 })
 
-// ── folded from journey-list.spec.ts ──────────────────────────────────────────────
+// ── folded from liste-advanced.spec.ts ──────────────────────────────────────────────
 test.describe('liste-advanced', () => {
   // « La liste » wears two faces, one device flag (src/lib/listeMode) — the same shape
   // as « Les notes », through the same shared ModeToggle:
@@ -506,7 +506,7 @@ test.describe('liste-advanced', () => {
 })
 
 
-// ── folded from journey-list.spec.ts ──────────────────────────────────────────────
+// ── folded from liste-swipe-delete.spec.ts ──────────────────────────────────────────────
 test.describe('liste-swipe-delete', () => {
   // Swipe-left delete on La liste, END TO END — the guard for « I swipe and the items
   // always come back » (2026-10-06, round four of this bug, and the first round whose
@@ -524,7 +524,7 @@ test.describe('liste-swipe-delete', () => {
   //           matches nothing is a 404, never the « ok » that once hid six lost deletes)
   //         → the next refetched frame does not resurrect the row.
   //
-  // Raw TouchEvents, like pull-to-refresh.spec.ts: Playwright's touchscreen only
+  // Raw TouchEvents, like journey-offline.spec.ts: Playwright's touchscreen only
   // taps, and useSwipeToDelete listens for exactly these.
   const PHONE = { width: 390, height: 780 }
 
@@ -644,7 +644,7 @@ test.describe('liste-swipe-delete', () => {
 })
 
 
-// ── folded from journey-list.spec.ts ──────────────────────────────────────────────
+// ── folded from quickadd-remove.spec.ts ──────────────────────────────────────────────
 test4.describe('quickadd-remove', () => {
   // Removing a quick-add suggestion used to be swipe-left ONLY (useSwipeToDelete binds
   // touch events), so on a desktop — mouse or keyboard — there was no way to remove one
@@ -729,7 +729,7 @@ test4.describe('quickadd-remove', () => {
 })
 
 
-// ── folded from journey-list.spec.ts ──────────────────────────────────────────────
+// ── folded from aisle-sort.spec.ts ──────────────────────────────────────────────
 test.describe('aisle-sort', () => {
   // Aisle sort (« Par allée ») — closes the §1 P1 gap: a core, logic-heavy list feature
   // (the emoji→aisle classifier + the household's saved aisle order + per-item overrides)
@@ -822,7 +822,7 @@ test.describe('aisle-sort', () => {
 })
 
 
-// ── folded from journey-list.spec.ts ──────────────────────────────────────────────
+// ── folded from list-row-fit.spec.ts ──────────────────────────────────────────────
 test.describe('list-row-fit', () => {
   // A LIST ROW'S CHIPS STAY INSIDE THE NAME COLUMN — at every text scale.
   //
@@ -879,7 +879,7 @@ test.describe('list-row-fit', () => {
 })
 
 
-// ── folded from journey-list.spec.ts ──────────────────────────────────────────────
+// ── folded from delete-confirm.spec.ts ──────────────────────────────────────────────
 test.describe('delete-confirm', () => {
   // Destructive deletes that had NO confirm and NO undo now go through the shared
   // useConfirm dialog (REVIEW-PASS quick-win: guard accidental data loss). This drives

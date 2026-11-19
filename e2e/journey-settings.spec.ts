@@ -178,7 +178,7 @@ test.describe('interactions-settings', () => {
   })
 })
 
-// ── folded from journey-settings.spec.ts ──────────────────────────────────────────────
+// ── folded from config-panels-board.spec.ts ──────────────────────────────────────────────
 test.describe('config-panels-board', () => {
   // Réglages config panels, Le babillard (« La rentrée »). Each test asserts the write fires AND carries the right
   // field: why a settings panel needs that is written out above `panelsReady` in interact.ts.
@@ -238,7 +238,7 @@ test.describe('config-panels-board', () => {
 })
 
 
-// ── folded from journey-settings.spec.ts ──────────────────────────────────────────────
+// ── folded from config-panels-kitchen.spec.ts ──────────────────────────────────────────────
 test.describe('config-panels-kitchen', () => {
   // Réglages config panels, La cuisine (meal slots, réserve, Jours affichés). Each test asserts the write fires AND carries the right
   // field: why a settings panel needs that is written out above `panelsReady` in interact.ts.
@@ -320,7 +320,7 @@ test.describe('config-panels-kitchen', () => {
 })
 
 
-// ── folded from journey-settings.spec.ts ──────────────────────────────────────────────
+// ── folded from config-panels-liste.spec.ts ──────────────────────────────────────────────
 test.describe('config-panels-liste', () => {
   // Réglages config panels, La liste (stores, aisle order). Each test asserts the write fires AND carries the right
   // field: why a settings panel needs that is written out above `panelsReady` in interact.ts.
@@ -400,7 +400,7 @@ test.describe('config-panels-liste', () => {
 })
 
 
-// ── folded from journey-settings.spec.ts ──────────────────────────────────────────────
+// ── folded from config-panels-maison.spec.ts ──────────────────────────────────────────────
 test.describe('config-panels-maison', () => {
   // Réglages config panels, Maison (templates, routines, members, chores, schedule, groups). Each test asserts the write fires AND carries the right
   // field: why a settings panel needs that is written out above `panelsReady` in interact.ts.
@@ -692,7 +692,7 @@ test.describe('config-panels-maison', () => {
 })
 
 
-// ── folded from journey-settings.spec.ts ──────────────────────────────────────────────
+// ── folded from config-panels-system.spec.ts ──────────────────────────────────────────────
 test.describe('config-panels-system', () => {
   // Réglages config panels, Système (tablets, guest links, AI, photos). Each test asserts the write fires AND carries the right
   // field: why a settings panel needs that is written out above `panelsReady` in interact.ts.
@@ -890,7 +890,7 @@ test.describe('config-panels-system', () => {
 })
 
 
-// ── folded from journey-settings.spec.ts ──────────────────────────────────────────────
+// ── folded from settings-advanced.spec.ts ──────────────────────────────────────────────
 test7.describe('settings-advanced', () => {
   // Review #18 (2026-11-17; Marco, Geneviève, Thérèse): the page a parent opens to pair a
   // tablet read like a developer console (« Agent IA (MCP) », « jeton », « Diagnostic
@@ -923,7 +923,7 @@ test7.describe('settings-advanced', () => {
 })
 
 
-// ── folded from journey-settings.spec.ts ──────────────────────────────────────────────
+// ── folded from settings-aliases.spec.ts ──────────────────────────────────────────────
 test8.describe('settings-aliases', () => {
   // Regression net for the themed-Réglages restructure: EVERY pre-restructure
   // deep-link — the 9 old task tabs, the 12 previously-retired ids, the ?sub=
@@ -1113,7 +1113,7 @@ test8.describe('settings-aliases', () => {
 })
 
 
-// ── folded from journey-settings.spec.ts ──────────────────────────────────────────────
+// ── folded from settings-delete-undo.spec.ts ──────────────────────────────────────────────
 test9.describe('settings-delete-undo', () => {
   // REVIEW-PASS: deleting an event or a chore in Réglages hid the row by mutating the
   // query cache (`useUndoableRemove` → `setQueryData`; that hook was FOLDED into
@@ -1175,7 +1175,7 @@ test9.describe('settings-delete-undo', () => {
 })
 
 
-// ── folded from journey-settings.spec.ts ──────────────────────────────────────────────
+// ── folded from settings-sections.spec.ts ──────────────────────────────────────────────
 test10.describe('settings-sections', () => {
   // Capture each Settings section (the CRUD strips behind the section nav) — they
   // only render one at a time, so the static sweep only ever shoots the first.
@@ -1228,7 +1228,7 @@ test10.describe('settings-sections', () => {
 })
 
 
-// ── folded from journey-settings.spec.ts ──────────────────────────────────────────────
+// ── folded from settings-tree.spec.ts ──────────────────────────────────────────────
 test11.describe('settings-tree', () => {
   // THE RÉGLAGES TREE, walked in the browser. lib/settingsNav.ts is the one map of
   // what Réglages holds where (settingsNav.test.ts holds its shape); this proves the
@@ -1294,7 +1294,7 @@ test11.describe('settings-tree', () => {
 })
 
 
-// ── folded from journey-settings.spec.ts ──────────────────────────────────────────────
+// ── folded from ai-toggle.spec.ts ──────────────────────────────────────────────
 test.describe('ai-toggle', () => {
   // Verifies the household AI on/off switch end-to-end in the running app (#IA):
   // the Réglages header tag is a real toggle, flipping it PATCHes /api/household,
@@ -1396,7 +1396,7 @@ test.describe('ai-toggle', () => {
 })
 
 
-// ── folded from journey-settings.spec.ts ──────────────────────────────────────────────
+// ── folded from sound-toggle.spec.ts ──────────────────────────────────────────────
 test13.describe('sound-toggle', () => {
   // « Le son » — the app's own silent switch (src/lib/sound.ts).
   //

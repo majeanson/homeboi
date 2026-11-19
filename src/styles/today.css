@@ -614,7 +614,7 @@
    the 4.5 minimum, on the surface this whole product exists to be read from across a
    room. Mixing toward --ink instead keeps the hue and the hierarchy (still quieter
    than `.what`) while moving AWAY from the ground; it also works in both themes,
-   since --ink flips with them. Held by e2e/board-contrast.spec.ts. */
+   since --ink flips with them. Held by e2e/board-journey-a11y.spec.ts. */
 .now-card .label {
   font-family: var(--sans);
   font-weight: 700;
@@ -927,7 +927,7 @@
      just happens when it has to. « Aujourd'hui » grew a third door and the header
      stopped fitting a 320px phone: three 44px touch targets are 132px whatever
      diameter you draw inside them, which left 53px for a 94px title, so the row bled
-     off the screen (e2e/layout-overflow.spec.ts « lo-board-w320 »).
+     off the screen (e2e/journey-fit.spec.ts « lo-board-w320 »).
      Wrapping is the only lossless answer — the alternatives clip the title or shrink
      the targets. It costs one row of header, and only on the phones that need it.
      (A @container query was the wrong tool here and silently did nothing: a container
@@ -959,7 +959,7 @@
 /* WHAT YIELDS WHEN THE HEADER RUNS OUT OF ROOM, in order: spacing, then words.
    Three 44px touch targets are 132px whatever we do, and « Aujourd'hui » grew a third
    door — on a 320px phone that no longer fits beside the title, and the row bled off
-   the screen (e2e/layout-overflow.spec.ts « lo-board-w320 »).
+   the screen (e2e/journey-fit.spec.ts « lo-board-w320 »).
    The rule is NOT in this list even though it is the only decoration here: it is
    `flex: 1 1 0`, so it already collapses to nothing on its own — and it is also what
    PUSHES the doors to the right edge. Hiding it reclaimed 20px of gaps and paid for

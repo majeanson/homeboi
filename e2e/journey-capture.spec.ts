@@ -338,7 +338,7 @@ test.describe('interactions-add-sheet', () => {
   })
 })
 
-// ── folded from journey-capture.spec.ts ──────────────────────────────────────────────
+// ── folded from plus-capture.spec.ts ──────────────────────────────────────────────
 test2.describe('plus-capture', () => {
   // Review #10 (2026-11-17): the landing promises that « dentiste pour Léa mardi 15h » « se
   // range au bon jour, au bon nom ». A stranger typed it into the obvious place, the board's
@@ -396,7 +396,7 @@ test2.describe('plus-capture', () => {
 })
 
 
-// ── folded from journey-capture.spec.ts ──────────────────────────────────────────────
+// ── folded from fab-hold-voice.spec.ts ──────────────────────────────────────────────
 test.describe('fab-hold-voice', () => {
   // Hold the ＋ and speak (bmad/12 #18).
   //
@@ -480,7 +480,7 @@ test.describe('fab-hold-voice', () => {
 })
 
 
-// ── folded from journey-capture.spec.ts ──────────────────────────────────────────────
+// ── folded from capture-degraded.spec.ts ──────────────────────────────────────────────
 test.describe('capture-degraded', () => {
   // Behavioural coverage for the capture AI-off DEGRADE + RE-ROUTE flow — the last
   // blind capture path. When AI is off/unavailable the server files the text as a
@@ -628,7 +628,7 @@ test.describe('capture-degraded', () => {
 })
 
 
-// ── folded from journey-capture.spec.ts ──────────────────────────────────────────────
+// ── folded from capture-offline.spec.ts ──────────────────────────────────────────────
 test.describe('capture-offline', () => {
   // A-2 (bmad/10) — « La capture tient parole ». Capture used to be the ONE add-path
   // with no outbox: offline (or any transport failure) flipped an error line and left
@@ -770,7 +770,7 @@ test.describe('capture-offline', () => {
 })
 
 
-// ── folded from journey-capture.spec.ts ──────────────────────────────────────────────
+// ── folded from add-sheet-overflow.spec.ts ──────────────────────────────────────────────
 test6.describe('add-sheet-overflow', () => {
   // A bottom sheet is a vertical surface — it must never scroll left/right, and nothing
   // inside it may bleed off the right edge. Guards two regressions:
@@ -913,7 +913,7 @@ test6.describe('add-sheet-overflow', () => {
 })
 
 
-// ── folded from journey-capture.spec.ts ──────────────────────────────────────────────
+// ── folded from ask-sheet.spec.ts ──────────────────────────────────────────────
 test.describe('ask-sheet', () => {
   // E-22 « Demande à la maison » — Playwright has no mic, so this exercises the
   // TYPED path (the EditField fallback), which shares its whole answer/degrade
@@ -1152,7 +1152,7 @@ test.describe('ask-sheet', () => {
 })
 
 
-// ── folded from journey-capture.spec.ts ──────────────────────────────────────────────
+// ── folded from sheets.spec.ts ──────────────────────────────────────────────
 test8.describe('sheets', () => {
   // Visual capture of the overlay surfaces (sheets / modals) that screenshots.spec
   // can't reach — they only exist after an interaction. Phone format (these are

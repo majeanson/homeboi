@@ -83,7 +83,7 @@ test.describe('drawings', () => {
   })
 })
 
-// ── folded from journey-drawings.spec.ts ──────────────────────────────────────────────
+// ── folded from drawing-zoom.spec.ts ──────────────────────────────────────────────
 test.describe('drawing-zoom', () => {
   // Verifies the DrawPad zoom/pan + pen-takeover (#14) in the running app. Multi-touch
   // pinch can't be driven headlessly, but the wheel zoom exercises the same viewport,
@@ -169,7 +169,7 @@ test.describe('drawing-zoom', () => {
 })
 
 
-// ── folded from journey-drawings.spec.ts ──────────────────────────────────────────────
+// ── folded from drawing-age.spec.ts ──────────────────────────────────────────────
 test3.describe('drawing-age', () => {
   // Review #13 (2026-11-17), seen by two personas on a phone: beside a drawing on the
   // board, its age stood one word per line, « il / y / a / 65 / j ». The card is a flex

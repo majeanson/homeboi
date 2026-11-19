@@ -1,7 +1,7 @@
 import { MMID } from './mocks'
 
 // Every route a whole-app sweep walks: the hub tabs and their sections, the scenes, and
-// the form scenes. Shared by console-clean.spec.ts (a silent console) and spacing.spec.ts
+// the form scenes. Shared by console-clean.spec.ts (a silent console) and journey-fit.spec.ts
 // (the gap owns the spacing), so a route added for one is walked by both.
 export const ROUTES = [
   // Hub tabs and their sections.

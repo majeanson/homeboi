@@ -78,7 +78,7 @@ test.describe('mots-fridge', () => {
   })
 })
 
-// ── folded from journey-mots.spec.ts ──────────────────────────────────────────────
+// ── folded from notes.spec.ts ──────────────────────────────────────────────
 test2.describe('notes', () => {
   // « Les notes » (2026-09-04): ONE face, iOS-Notes style — the old Simple/Avancé
   // split (src/lib/notesMode, retired) is gone. No section title (the hub header
@@ -321,7 +321,7 @@ test2.describe('notes', () => {
 })
 
 
-// ── folded from journey-mots.spec.ts ──────────────────────────────────────────────
+// ── folded from souvenirs.spec.ts ──────────────────────────────────────────────
 test.describe('souvenirs', () => {
   // « Souvenirs » (PLAN-mots C1, accepted 2026-09-25 — « put the widget back »): a band card
   // that shelves what the household chose to KEEP — kept mots (saved_at, since 0094), kept
@@ -399,7 +399,7 @@ test.describe('souvenirs', () => {
 })
 
 
-// ── folded from journey-mots.spec.ts ──────────────────────────────────────────────
+// ── folded from photo-keep.spec.ts ──────────────────────────────────────────────
 test4.describe('photo-keep', () => {
   // « Je prends une pic vite, je la mets sur le babillard — et je la garde. »
   //

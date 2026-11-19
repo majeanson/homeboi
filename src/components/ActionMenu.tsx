@@ -122,7 +122,7 @@ export function ActionMenu({
   // pull silently no-ops and the ⋯ keeps focus. Since the panel is portaled to the
   // END of <body>, Tab from the trigger then walks the whole PAGE instead of the
   // menu, and ↑/↓ never reach the panel's handler: the long-tail actions that only
-  // live behind a ⋯ become mouse-and-touch-only (e2e/action-menu-keys.spec.ts).
+  // live behind a ⋯ become mouse-and-touch-only (e2e/journey-a11y.spec.ts).
   // Re-placement on scroll also lands here, so only pull when focus is elsewhere —
   // otherwise following the anchor would yank focus back to the first row.
   useEffect(() => {

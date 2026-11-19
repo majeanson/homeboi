@@ -9,7 +9,7 @@ import { expect, type Locator, type Page } from '@playwright/test'
 //
 // That broke for real on 2026-09-09: a new `Loading · PairPrompt` specimen whose label
 // says « … c'est LoadError (juste au-dessus) » made `hasText: 'LoadError'` match two
-// cards, and `kb-latch.spec.ts` died on a strict-mode violation in CI. The prose is
+// cards, and `journey-keyboard.spec.ts` died on a strict-mode violation in CI. The prose is
 // worth keeping — it is the reason the gallery is useful — so the SELECTOR is what has
 // to be precise. `.kit-entry__name` holds exactly the entry's `name`, nothing else.
 export function kitEntry(page: Page, name: string): Locator {

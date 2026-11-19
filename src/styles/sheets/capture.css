@@ -56,7 +56,7 @@ body.is-recording .add-fab {
                  note editor 140, DrawPad 150
        155 / 156 .scrim / .sheet — a Sheet can be opened from a scene (this rule)
        158       .tour — a TEACHING layer, above whatever it points at, and a
-                 section tour walks inside the ＋ sheet (tour-nav.spec.ts)
+                 section tour walks inside the ＋ sheet (journey-discovery.spec.ts)
        160 / 161 .kit-modal__backdrop, .confirm-backdrop / .confirm — a confirm
                  can be raised from an OPEN sheet (the peek's ⋯ ▸ Supprimer awaits
                  it with the sheet still mounted), so it has to clear 156 too; it

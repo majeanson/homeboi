@@ -309,7 +309,7 @@ test.describe('interactions-navigation', () => {
   })
 })
 
-// ── folded from journey-navigation.spec.ts ──────────────────────────────────────────────
+// ── folded from nav-tabs.spec.ts ──────────────────────────────────────────────
 test2.describe('nav-tabs', () => {
   // Tab navigation must actually swap the routed screen — and must never trip an
   // infinite render loop. This is a regression guard for the bug where leaving
@@ -395,7 +395,7 @@ test2.describe('nav-tabs', () => {
 })
 
 
-// ── folded from journey-navigation.spec.ts ──────────────────────────────────────────────
+// ── folded from nav-restructure.spec.ts ──────────────────────────────────────────────
 test3.describe('nav-restructure', () => {
   // The nav restructure (2026-08): the six hub tabs went from
   // board/kitchen/liste/cercle/routines/settings to board/kitchen/liste/notes/
@@ -570,7 +570,7 @@ test3.describe('nav-restructure', () => {
 })
 
 
-// ── folded from journey-navigation.spec.ts ──────────────────────────────────────────────
+// ── folded from guide-deeplink.spec.ts ──────────────────────────────────────────────
 test4.describe('guide-deeplink', () => {
   // Landing a guide deep-link ON the thing it named.
   //
@@ -678,7 +678,7 @@ test4.describe('guide-deeplink', () => {
 })
 
 
-// ── folded from journey-navigation.spec.ts ──────────────────────────────────────────────
+// ── folded from door-landing.spec.ts ──────────────────────────────────────────────
 test5.describe('door-landing', () => {
   // A DOOR LANDS ON ITS TARGET.
   //
@@ -804,7 +804,7 @@ test5.describe('door-landing', () => {
 })
 
 
-// ── folded from journey-navigation.spec.ts ──────────────────────────────────────────────
+// ── folded from door-sweep.spec.ts ──────────────────────────────────────────────
 test.describe('door-sweep', () => {
   // THE DOOR SWEEP — what a TAP (or a HOLD) does, per surface.
   //
@@ -958,7 +958,7 @@ test.describe('door-sweep', () => {
 })
 
 
-// ── folded from journey-navigation.spec.ts ──────────────────────────────────────────────
+// ── folded from embedded-door.spec.ts ──────────────────────────────────────────────
 test.describe('embedded-door', () => {
   // The public door as a portfolio shows it: framed (marcportal.com/projects embeds it
   // scaled down, ~1280×800) and read cold by a stranger. Three promises, each one a defect
@@ -1045,7 +1045,7 @@ test.describe('embedded-door', () => {
 })
 
 
-// ── folded from journey-navigation.spec.ts ──────────────────────────────────────────────
+// ── folded from stale-link.spec.ts ──────────────────────────────────────────────
 test.describe('stale-link', () => {
   // A deep link that no longer points at anything (bmad/12 #26).
   //
@@ -1082,7 +1082,7 @@ test.describe('stale-link', () => {
 })
 
 
-// ── folded from journey-navigation.spec.ts ──────────────────────────────────────────────
+// ── folded from search.spec.ts ──────────────────────────────────────────────
 test.describe('search', () => {
   // #30 — global search (/search). The pure fold() matcher is unit-tested elsewhere; this
   // proves the SCENE end-to-end: a typed query surfaces rows across sections, the newly
@@ -1222,7 +1222,7 @@ test.describe('search', () => {
 })
 
 
-// ── folded from journey-navigation.spec.ts ──────────────────────────────────────────────
+// ── folded from search-landing.spec.ts ──────────────────────────────────────────────
 test10.describe('search-landing', () => {
   // ?item=<id> lands ON the row (solidify 4.2): the container scrolls it into view, marks
   // it for a moment, and strips the param so a reload does not replay it. Before this,
@@ -1268,7 +1268,7 @@ test10.describe('search-landing', () => {
 })
 
 
-// ── folded from journey-navigation.spec.ts ──────────────────────────────────────────────
+// ── folded from back-closes-overlay.spec.ts ──────────────────────────────────────────────
 test11.describe('back-closes-overlay', () => {
   // THE BACK BUTTON CLOSES THE OVERLAY — not the page under it.
   //

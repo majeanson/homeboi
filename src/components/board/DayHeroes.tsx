@@ -202,7 +202,7 @@ export function DayHeroes({
           // against a 4.5 minimum, on the card a wall tablet shows all day. The supper
           // card, same `opacity: 0.8` label, read 11.8:1. `tintInk` also ramps with the
           // colour's luminance, so this stays honest if the tint is ever re-picked.
-          // Guarded by e2e/board-contrast.spec.ts.
+          // Guarded by e2e/board-journey-a11y.spec.ts.
           style={wonder ? { backgroundImage: `url("${wonder.imgUrl}")` } : { background: wash(CATS.event.color), color: tintInk(CATS.event.color) }}
           {...(onOpenSky
             ? {

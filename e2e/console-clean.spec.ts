@@ -30,7 +30,7 @@ import { settled } from './measure'
 //     so the listener sees it);
 //   • a route that BOUNCES sweeps some other page — the contrast spec measured /kitchen
 //     as « day-plan » for weeks, because /kitchen/day/ takes a unix day, not an ISO date.
-// The route list lives in e2e/routes.ts, shared with spacing.spec.ts.
+// The route list lives in e2e/routes.ts, shared with journey-fit.spec.ts.
 
 // The lenses render different components off the same routes (MemberSwitcher on the
 // wall, the picture-card views under toddler, the EN dictionary), so each paints its

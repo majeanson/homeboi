@@ -153,7 +153,7 @@ test.describe('event-peek-actions', () => {
   })
 })
 
-// ── folded from journey-events.spec.ts ──────────────────────────────────────────────
+// ── folded from event-form-bring.spec.ts ──────────────────────────────────────────────
 test.describe('event-form-bring', () => {
   // « À apporter » on a rendez-vous — the half of the unified event form that the
   // existing coverage stops just short of. screenshots.spec asserts the sections
@@ -306,7 +306,7 @@ test.describe('event-form-bring', () => {
 })
 
 
-// ── folded from journey-events.spec.ts ──────────────────────────────────────────────
+// ── folded from event-series-pet.spec.ts ──────────────────────────────────────────────
 test3.describe('event-series-pet', () => {
   // Review #31 (2026-11-17), from a parent of two:
   //   « The dog can't be the subject of a rendez-vous. » — the vet, the groomer, the vaccines.
@@ -364,7 +364,7 @@ test3.describe('event-series-pet', () => {
 })
 
 
-// ── folded from journey-events.spec.ts ──────────────────────────────────────────────
+// ── folded from birthday-gift.spec.ts ──────────────────────────────────────────────
 test.describe('birthday-gift', () => {
   // A BIRTHDAY WITH A GIFT IDEA WEARS THE GIFT (2026-09-30). « À régler » already nags about
   // a fête two weeks out with NO idea; the other half — « there is one » — only showed after
@@ -396,7 +396,7 @@ test.describe('birthday-gift', () => {
 })
 
 
-// ── folded from journey-events.spec.ts ──────────────────────────────────────────────
+// ── folded from sa-fete.spec.ts ──────────────────────────────────────────────
 test.describe('sa-fete', () => {
   // « Sa fête » (PLAN-mots A8, accepted 2026-09-25): in the mot composer's « Plus tard », a
   // fourth preset that appears only once the picked recipient has a birthday in the cercle,

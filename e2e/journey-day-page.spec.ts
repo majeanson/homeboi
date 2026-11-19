@@ -256,7 +256,7 @@ test.describe('day-plan-lean', () => {
   })
 })
 
-// ── folded from journey-day-page.spec.ts ──────────────────────────────────────────────
+// ── folded from day-meal-tap.spec.ts ──────────────────────────────────────────────
 test.describe('day-meal-tap', () => {
   // THE DAY SCENE'S MEAL ROW OPENS ITS RECIPE — the same contract the week grid pins.
   //
@@ -327,7 +327,7 @@ test.describe('day-meal-tap', () => {
 })
 
 
-// ── folded from journey-day-page.spec.ts ──────────────────────────────────────────────
+// ── folded from past-day-meal-doors.spec.ts ──────────────────────────────────────────────
 test.describe('past-day-meal-doors', () => {
   // Two DOORS into the same editable day scene for a PAST date — La cuisine ▸
   // Historique's pencil, and Le babillard ▸ Mois's ⋯ « Planifier un repas ». Neither

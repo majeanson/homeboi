@@ -561,7 +561,7 @@ test.describe('note-editor', () => {
   })
 })
 
-// ── folded from journey-family-journey-mots.spec.ts ──────────────────────────────────────────────
+// ── folded from cercle-notes-card.spec.ts ──────────────────────────────────────────────
 test.describe('cercle-notes-card', () => {
   // The board's « Notes (cercle) » card renders the shared NotesList in its COMPACT
   // face (compact-rows pass): a reading surface — no drag grip, no tint dot, no scope

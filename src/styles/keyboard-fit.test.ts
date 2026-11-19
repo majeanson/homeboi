@@ -15,7 +15,7 @@ import { describe, expect, it } from 'vitest'
 //    grouped selector there (or carries .vv-fit/.vv-slack), it doesn't fork a
 //    copy that will drift.
 //
-// (The matching runtime guards live in e2e/keyboard.spec.ts — strip-ownership
+// (The matching runtime guards live in e2e/journey-keyboard.spec.ts — strip-ownership
 // elementFromPoint probes — and e2e/journey-family-journey-mots.spec.ts — slack ≥ 100px.)
 
 const stylesDir = join(dirname(fileURLToPath(import.meta.url)))

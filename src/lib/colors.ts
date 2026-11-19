@@ -152,7 +152,7 @@ export function readableInk(hex: string): string {
  * `--paper` is the answer that needs no new token and no branching: it is cream by day
  * and near-black at night, which is exactly the flip this needs, because the `-ink`
  * tier itself flips the other way (dark on a pale day ground, light on a dark night
- * one). Held by e2e/contrast.spec.ts in both themes.
+ * one). Held by e2e/journey-a11y.spec.ts in both themes.
  *
  * Returns undefined for an absent tint so a call site can spread it straight into
  * `style` and keep the untinted default.

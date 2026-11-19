@@ -139,7 +139,7 @@ test.describe('kitchen-meal-plan', () => {
   })
 })
 
-// ── folded from journey-journey-meals.spec.ts ──────────────────────────────────────────────
+// ── folded from kitchen-inline-plan.spec.ts ──────────────────────────────────────────────
 test2.describe('kitchen-inline-plan', () => {
   // Plan seam #8: filling a week cost seven full-screen day scenes. An EMPTY day cell
   // in the week grid is now the field itself — tap it, type, done. The day scene still
@@ -303,7 +303,7 @@ test2.describe('kitchen-inline-plan', () => {
 })
 
 
-// ── folded from journey-meals.spec.ts ──────────────────────────────────────────────
+// ── folded from meals.spec.ts ──────────────────────────────────────────────
 test.describe('meals', () => {
   // N meals per slot + time ordering + the food slot icons. Frontend-only against
   // mocked /api/* (the mock returns {ok:true} for writes, so we assert the request
@@ -431,7 +431,7 @@ test.describe('meals', () => {
 })
 
 
-// ── folded from journey-meals.spec.ts ──────────────────────────────────────────────
+// ── folded from meal-order.spec.ts ──────────────────────────────────────────────
 test.describe('meal-order', () => {
   // Réglages ▸ Repas — the household's meal ORDER, HERO and serve HOURS. Three separate
   // settings that every meal surface reads through useMealPrefs, so the one thing worth
@@ -549,7 +549,7 @@ test.describe('meal-order', () => {
 })
 
 
-// ── folded from journey-meals.spec.ts ──────────────────────────────────────────────
+// ── folded from plan-tonight.spec.ts ──────────────────────────────────────────────
 test.describe('plan-tonight', () => {
   // Review #29 (2026-11-17), Geneviève: « Choisir un souper » led to a list of ideas with no
   // way to put one on tonight except « pick a slot, then a day ». The picker now leads with
@@ -579,7 +579,7 @@ test.describe('plan-tonight', () => {
 })
 
 
-// ── folded from unplaced-journey-meals.spec.ts ──────────────────────────────────────────────
+// ── folded from unplaced-meals.spec.ts ──────────────────────────────────────────────
 test6.describe('unplaced-meals', () => {
   // « À PLACER » — THE WEEK GRID'S FIRST CARD: this week's meals with no day yet
   // (mig 0155; Marc, 2026-11-14: « plan the week without assigning a day yet, say have 5
@@ -901,7 +901,7 @@ test6.describe('unplaced-meals', () => {
 })
 
 
-// ── folded from journey-meals.spec.ts ──────────────────────────────────────────────
+// ── folded from grid-side-meal-drag.spec.ts ──────────────────────────────────────────────
 test7.describe('grid-side-meal-drag', () => {
   // A SIDE MEAL DRAGS TO ANOTHER DAY ON THE WEEK GRID — as itself.
   //
@@ -996,7 +996,7 @@ test7.describe('grid-side-meal-drag', () => {
 })
 
 
-// ── folded from journey-meals.spec.ts ──────────────────────────────────────────────
+// ── folded from interactions-kitchen.spec.ts ──────────────────────────────────────────────
 test8.describe('interactions-kitchen', () => {
   // Interaction coverage, La cuisine: the plan, recipes, the meal peek, a kid pick. The harness and its discipline are at the top of interact.ts:
   // a form asserts the request it fires, an optimistic flow asserts what the user sees.
@@ -1264,7 +1264,7 @@ test8.describe('interactions-kitchen', () => {
   // ──────────────────────── tapping a planned meal ───────────────────────
 
   // The two halves of useOpenMeal (components/detail/useOpenMeal). A meal that resolves a
-  // recipe navigates to it — pinned as a 1-tap budget in tap-budget.spec.ts. A free-text
+  // recipe navigates to it — pinned as a 1-tap budget in journey-fit.spec.ts. A free-text
   // meal has no page to jump to, so it still peeks, and the peek is where the plan actions
   // live. « Salade César » is the fixture's recipe-less supper; « Spaghetti maison » matches
   // recipe rc1 by title.

@@ -178,7 +178,7 @@ async function boardWith(page: import('@playwright/test').Page, rows: unknown[])
   await mockApi(page, { overrides: { remarks: { remarks: rows } } })
   await seedState(page, { theme: 'day', audience: 'parent', lang: 'fr', surface: 'mobile' })
   // The first-login tour navigates on its own and would yank the board out from under
-  // the card (the help.spec.ts precedent).
+  // the card (the journey-discovery.spec.ts precedent).
   await page.addInitScript(() => {
     try {
       localStorage.setItem('babillard-tours-seen', JSON.stringify(['essentials']))

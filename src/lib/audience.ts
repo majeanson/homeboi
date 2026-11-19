@@ -78,7 +78,7 @@ export const useAudience = () => useContext(AudienceContext)
 // Marc's decision (2026-11-05): teaches + acts ON for simple, interrupts OFF. `acts`
 // landed in TWO commits so each was reviewable on its own: the first reproduced the
 // old per-site behaviour exactly (parent only, 8686b535); this one flips it to
-// `!toddler`, and e2e/lens-gates.spec.ts holds the table — it was red on the first
+// `!toddler`, and e2e/journey-lenses.spec.ts holds the table — it was red on the first
 // commit's tree (the simple lens had no loupe) before this line changed.
 //
 // What `simple` gains by the flip, concretely: the hub-head loupe and « Demander »,

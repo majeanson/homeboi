@@ -22,7 +22,7 @@ let cached: FixtureRoutes | null = null
 
 // Two fixtures are EMPTY upstream on purpose, and the reason is good: a mot and an
 // « À régler » signal both make a board card appear, so a populated default would put
-// them into every board screenshot the suite takes. `e2e/help.spec.ts` handles that by
+// them into every board screenshot the suite takes. `e2e/journey-discovery.spec.ts` handles that by
 // registering a per-test override after `mockApi` — the same move, made here for the
 // gallery, whose need is the exact opposite of a calm screenshot: a card that renders
 // nothing is indistinguishable from a card that is broken.

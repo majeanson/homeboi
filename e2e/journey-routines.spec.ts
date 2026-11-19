@@ -116,7 +116,7 @@ test.describe('interactions-routines', () => {
   })
 })
 
-// ── folded from journey-routines.spec.ts ──────────────────────────────────────────────
+// ── folded from routine-builder.spec.ts ──────────────────────────────────────────────
 test.describe('routine-builder', () => {
   // Behavioural coverage for the routine card-deck editor (CardDeckEditor inside
   // RoutineForm, /routine/new). The step editor was screenshot-only; this drives the
@@ -232,7 +232,7 @@ test.describe('routine-builder', () => {
 })
 
 
-// ── folded from journey-routines.spec.ts ──────────────────────────────────────────────
+// ── folded from routine-run-solid.spec.ts ──────────────────────────────────────────────
 test.describe('routine-run-solid', () => {
   // The toddler routine run, hardened. Two things were reported from the wall tablet:
   //
@@ -650,7 +650,7 @@ test.describe('routine-run-solid', () => {
 })
 
 
-// ── folded from journey-routines.spec.ts ──────────────────────────────────────────────
+// ── folded from routine-timer.spec.ts ──────────────────────────────────────────────
 test.describe('routine-timer', () => {
   // The per-step countdown inside a routine (« brosse tes dents 2 minutes »): the most
   // intricate logic in the routine player and, until now, the least covered — the
@@ -847,7 +847,7 @@ test.describe('routine-timer', () => {
 })
 
 
-// ── folded from journey-routines.spec.ts ──────────────────────────────────────────────
+// ── folded from routine-tips.spec.ts ──────────────────────────────────────────────
 test.describe('routine-tips', () => {
   // « Le truc du compagnon » — the trick the child's creature says for the step they're
   // ON when they tap it. Two halves, both driven here:
@@ -1050,7 +1050,7 @@ test.describe('routine-tips', () => {
 })
 
 
-// ── folded from journey-routines.spec.ts ──────────────────────────────────────────────
+// ── folded from routine-aids-fold.spec.ts ──────────────────────────────────────────────
 test.describe('routine-aids-fold', () => {
   // THE PER-CARD AIDS FOLD — and the one invariant that makes a fold safe.
   //
@@ -1155,7 +1155,7 @@ test.describe('routine-aids-fold', () => {
 })
 
 
-// ── folded from journey-routines.spec.ts ──────────────────────────────────────────────
+// ── folded from stickers.spec.ts ──────────────────────────────────────────────
 test.describe('stickers', () => {
   // F29 « Mur d'autocollants » — the first-ever e2e for the opt-in sticker wall
   // (PARITY Wave E, entry 4). Two happy paths: PLACING a sticker on finishing a
@@ -1289,7 +1289,7 @@ test.describe('stickers', () => {
 })
 
 
-// ── folded from journey-routines.spec.ts ──────────────────────────────────────────────
+// ── folded from moments-rehomed.spec.ts ──────────────────────────────────────────────
 test8.describe('moments-rehomed', () => {
   // « Moments » is retired (2026-08-25). Two things it owned had to survive the deletion,
   // and neither had a guard anywhere else — this file is that guard:

@@ -577,7 +577,7 @@ export interface MealOpts {
 // about the plan. The peek is the one place that holds both halves, so it carries the
 // day door AND the recipe doors rather than making you choose by guessing what a tap
 // will do. Accepted cost, chosen deliberately: cooking tonight from the board is 2 taps
-// instead of 1 (tap-budget.spec.ts re-pinned).
+// instead of 1 (journey-fit.spec.ts re-pinned).
 // `color` is the slot colour (useMealPrefs); `daySec` enables "Voir la journée";
 // `recipeId` (resolved by useOpenMeal) adds « Ouvrir la recette » + the primary
 // « Cuisiner »; `onLeftover` adds "Créer des restants"; `onRemove` the danger

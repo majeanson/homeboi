@@ -1623,7 +1623,7 @@ html[data-embedded] .home {
    off the line (the Réglages « ? » sat 10px low — operator.css, the same fix).
 
    So inside these gapped containers the gap alone spaces them. Found by measuring
-   every route at 390 and 1440px; e2e/spacing.spec.ts keeps it that way. What is
+   every route at 390 and 1440px; e2e/journey-fit.spec.ts keeps it that way. What is
    NOT here is deliberate rhythm, kept and listed in that spec's allow-list: a
    heading or label sitting closer to what follows than to what precedes it, and a
    form's submit row standing apart from its fields. */

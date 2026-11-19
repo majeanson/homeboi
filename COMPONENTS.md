@@ -65,7 +65,7 @@ wheel trap) and reports `overflowing`/`atStart`/`atEnd` + `page()`/`toView()` so
 can draw an affordance. It adds no DOM and no layout, so it's safe on any existing row.
 `Rail` and `SubTabs` wire it themselves (SubTabs also draws ‹ › chevrons while the row
 overflows, on a fine pointer only, and keeps the selected tab in view). Attach it by hand
-to any other hidden-scrollbar row. Guard: `e2e/hscroll.spec.ts`.
+to any other hidden-scrollbar row. Guard: `e2e/journey-fit.spec.ts`.
 
 **A full-screen surface where the user types → the "Keyboard fit" block (`core.css`) +
 `lib/viewportVars.ts`.** iOS overlays the keyboard without shrinking the layout viewport
@@ -83,7 +83,7 @@ scroller — never a new name forked into a new rule. The caret-follow itself (p
 keyboard-rise + follow on input/selectionchange) is global in `lib/viewportVars.ts`,
 nothing to wire per field. On-device diagnosis: Réglages ▸ Système ▸ Version — « Activer
 le diagnostic clavier » (or `?kbdebug=1`). Guards: `src/styles/keyboard-fit.test.ts`
-(build — bans the shrink, enforces the one definition), `e2e/keyboard.spec.ts`
+(build — bans the shrink, enforces the one definition), `e2e/journey-keyboard.spec.ts`
 (strip-ownership probes, stranded-field follow, viewport-push pan), and
 `e2e/journey-family-journey-mots.spec.ts` (shell coverage + slack ≥ 100px). Demoed in `/dev/kit`
 ▸ Fondations ▸ *Clavier (keyboard fit)*.

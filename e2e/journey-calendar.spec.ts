@@ -191,7 +191,7 @@ test.describe('month-day-panel', () => {
     //
     // Both guards are retired because the thing they guarded is gone (Marc, 2026-08-26).
     // What replaced them is stricter and simpler: the cell never changes shape, so it can
-    // neither bleed nor cover anything. e2e/lean-forms.spec.ts holds that contract («a
+    // neither bleed nor cover anything. e2e/journey-fit.spec.ts holds that contract («a
     // picked day keeps the grid's shape — no pop-out tile»); this one keeps the part that
     // is still this file's job — the grid stays inside the board, and every day in a row
     // is tappable in turn.
@@ -438,7 +438,7 @@ test.describe('month-day-panel', () => {
   })
 })
 
-// ── folded from journey-calendar.spec.ts ──────────────────────────────────────────────
+// ── folded from month-readable.spec.ts ──────────────────────────────────────────────
 test2.describe('month-readable', () => {
   test2.use({ timezoneId: 'America/Toronto' })
 
@@ -470,7 +470,7 @@ test2.describe('month-readable', () => {
 })
 
 
-// ── folded from journey-calendar.spec.ts ──────────────────────────────────────────────
+// ── folded from week-view.spec.ts ──────────────────────────────────────────────
 test.describe('week-view', () => {
   // « La semaine » — the third calendar face (src/components/board/WeekView.tsx).
   //
@@ -590,7 +590,7 @@ test.describe('week-view', () => {
 })
 
 
-// ── folded from journey-calendar.spec.ts ──────────────────────────────────────────────
+// ── folded from year-to-month.spec.ts ──────────────────────────────────────────────
 test.describe('year-to-month', () => {
   // « Je clique du calendrier annuel vers un mois, et rien ne charge » (Marc, 2026-08-28).
   //
@@ -692,7 +692,7 @@ test.describe('year-to-month', () => {
 })
 
 
-// ── folded from journey-calendar.spec.ts ──────────────────────────────────────────────
+// ── folded from cold-week-anchor.spec.ts ──────────────────────────────────────────────
 test.describe('cold-week-anchor', () => {
   // bmad/11 tier-3, "cold kitchen grid flashes a Jan-1970 week (`weekStart ?? 0`)".
   //
@@ -752,7 +752,7 @@ test.describe('cold-week-anchor', () => {
 })
 
 
-// ── folded from journey-calendar.spec.ts ──────────────────────────────────────────────
+// ── folded from calendar-delete.spec.ts ──────────────────────────────────────────────
 test.describe('calendar-delete', () => {
   // « Make sure we can remove/delete easily from detail popups and such for rendez-vous
   // and others on calendar » (Marc, 2026-09-16). Before this, the month panel's corvée and
@@ -950,7 +950,7 @@ test.describe('calendar-delete', () => {
 })
 
 
-// ── folded from journey-calendar.spec.ts ──────────────────────────────────────────────
+// ── folded from when-labels.spec.ts ──────────────────────────────────────────────
 test7.describe('when-labels', () => {
   // Review #12 (2026-11-17), Mélanie: three small lies about WHEN.
   //   · « Quel jour ? » listed « mardi … lundi mardi mercredi jeudi », no dates;
@@ -998,7 +998,7 @@ test7.describe('when-labels', () => {
 })
 
 
-// ── folded from journey-calendar.spec.ts ──────────────────────────────────────────────
+// ── folded from schedule-night.spec.ts ──────────────────────────────────────────────
 test8.describe('schedule-night', () => {
   // Review #11 (2026-11-17), Mélanie, a rotating-shift nurse, in Réglages ▸ L'auto & horaires:
   //   · a 23 h – 7 h 30 night shift was refused (« end must be after start »);

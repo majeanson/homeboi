@@ -370,7 +370,7 @@ const openAddSheet = async (page: Page) => {
 // Drill the ＋ sheet into ONE composer — the « generous inside » states. The sweep
 // used to photograph the sheet's CHOOSER only, so the surfaces where a labeled CTA
 // squeezed the field down to ~60px of text were never in a picture. (The numeric
-// half of that guard is e2e/composer-fit.spec.ts's typing-width floor; these are
+// half of that guard is e2e/journey-keyboard.spec.ts's typing-width floor; these are
 // the states a review pass actually LOOKS at.)
 const openComposer = (mode: string) => async (page: Page) => {
   await openAddSheet(page)
@@ -928,7 +928,7 @@ async function axeOf(page: Page): Promise<{ rule: string; impact: string; nodes:
   try {
     const res = await new AxeBuilder({ page })
       // THE ONE EXCLUSION, and it is NOT this file's decision — it belongs to
-      // `e2e/contrast.spec.ts`, which measured the whole palette and wrote up why
+      // `e2e/journey-a11y.spec.ts`, which measured the whole palette and wrote up why
       // `.avatar__initial` (one letter on a member's own colour) cannot reach 4.5:1
       // with either of our inks. Read that comment before touching this line.
       //

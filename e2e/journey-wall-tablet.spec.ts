@@ -78,7 +78,7 @@ test.describe('kiosk-doors', () => {
   })
 })
 
-// ── folded from journey-wall-tablet.spec.ts ──────────────────────────────────────────────
+// ── folded from kiosk-settings.spec.ts ──────────────────────────────────────────────
 test2.describe('kiosk-settings', () => {
   // A parent-mode kiosk (paired wall tablet, NOT locked into toddler) may open
   // Réglages to read the guide and edit most settings — but member/group admin,
@@ -191,7 +191,7 @@ test2.describe('kiosk-settings', () => {
 })
 
 
-// ── folded from journey-wall-tablet.spec.ts ──────────────────────────────────────────────
+// ── folded from idle-ambient.spec.ts ──────────────────────────────────────────────
 test.describe('idle-ambient', () => {
   // The kiosk idle screensaver (AmbientScreen), part of the §931 offline/ambient layer.
   // The real trigger is a 3-minute idle timer, but Réglages ▸ Debug can force it now via

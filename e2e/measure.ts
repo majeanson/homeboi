@@ -49,7 +49,7 @@ export async function settled(page: Page) {
 // shape of a stale measurement. Converted with the evidence, not on the hunch.
 //
 // The trap is NOT "the element isn't visible yet": Playwright's visibility already
-// means a non-empty box, and lean-forms.spec.ts:112 threw on a locator whose
+// means a non-empty box, and journey-fit.spec.ts:112 threw on a locator whose
 // `toBeVisible()` had just passed on the line above. It is that the two calls resolve
 // the selector TWICE. Between them React can re-render the list — data lands, a query
 // settles — and the second resolve hits a node that has just been detached, which

@@ -26,7 +26,7 @@ import { describe, expect, it } from 'vitest'
 // 4. A committed surface's side margin comes from --gutter, so the sheet and the
 //    scenes can't drift apart — or quietly re-widen on a small phone.
 //
-// (The runtime half lives in e2e/composer-fit.spec.ts — the per-composer
+// (The runtime half lives in e2e/journey-keyboard.spec.ts — the per-composer
 // input-width FLOOR, which only ever moves up. See LEAN.md « Generous inside ».)
 
 const stylesDir = join(dirname(fileURLToPath(import.meta.url)))

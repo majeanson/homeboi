@@ -368,7 +368,7 @@ test.describe('carnet-scene', () => {
   })
 })
 
-// ── folded from journey-carnets.spec.ts ──────────────────────────────────────────────
+// ── folded from carnet-restore.spec.ts ──────────────────────────────────────────────
 test.describe('carnet-restore', () => {
   // Behavioural coverage for « Les carnets » — the reversible archive (§8/theme-4, the
   // last real e2e gap). A carnet's « supprimer » ARCHIVES (archived_at) rather than

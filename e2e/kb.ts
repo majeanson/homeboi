@@ -2,7 +2,7 @@ import { expect, type Page, type Locator } from '@playwright/test'
 import { settled } from './measure'
 import { mockApi, seedState } from './mocks'
 
-// Shared fake-keyboard rig (extracted from keyboard.spec.ts so the state-matrix
+// Shared fake-keyboard rig (extracted from journey-keyboard.spec.ts so the state-matrix
 // suite can open keyboard states too). Playwright can't summon a real OSK, so we
 // install a CONTROLLABLE visualViewport stub before the app boots and shrink it
 // mid-test the way iOS does when the keyboard slides in; src/lib/viewportVars.ts

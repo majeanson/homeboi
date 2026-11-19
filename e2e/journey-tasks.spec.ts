@@ -103,7 +103,7 @@ test.describe('tasks-view', () => {
   })
 })
 
-// ── folded from journey-tasks.spec.ts ──────────────────────────────────────────────
+// ── folded from task-card.spec.ts ──────────────────────────────────────────────
 test.describe('task-card', () => {
   // THE MERGED BOARD SECTION (plans/2026-11-06-TACHE-UNIFIEE.md). One card, one Act row, whichever
   // table a task lives in. What a stranger must be able to count on: a one-off ticks in place and
@@ -191,7 +191,7 @@ test.describe('task-card', () => {
 })
 
 
-// ── folded from journey-tasks.spec.ts ──────────────────────────────────────────────
+// ── folded from task-effort.spec.ts ──────────────────────────────────────────────
 test.describe('task-effort', () => {
   // L'EFFORT D'UNE TÂCHE et « TROUVER QUOI FAIRE » (plans/2026-11-06-TACHE-UNIFIEE.md, phase 3b):
   // five optional dots, folded in every task form; the same dots, small, on a row; and in the
@@ -463,7 +463,7 @@ test.describe('task-effort', () => {
 })
 
 
-// ── folded from journey-tasks.spec.ts ──────────────────────────────────────────────
+// ── folded from task-look.spec.ts ──────────────────────────────────────────────
 test.describe('task-look', () => {
   // L'ALLURE D'UNE TÂCHE (plans/2026-11-06-TACHE-UNIFIEE.md, phase 3): a task wears its own icon,
   // else its subject's, and the look is one tap away in every form, never an open control.
@@ -603,7 +603,7 @@ test.describe('task-look', () => {
 })
 
 
-// ── folded from journey-tasks.spec.ts ──────────────────────────────────────────────
+// ── folded from subject-tasks.spec.ts ──────────────────────────────────────────────
 test.describe('subject-tasks', () => {
   // A SUBJECT'S TASKS: one component on a carnet, a person and a pet. What is on this thing now, a
   // one-field add that files itself here, and a history of names and dates. Never a number.
@@ -642,7 +642,7 @@ test.describe('subject-tasks', () => {
 })
 
 
-// ── folded from journey-tasks.spec.ts ──────────────────────────────────────────────
+// ── folded from todo-overdue.spec.ts ──────────────────────────────────────────────
 test6.describe('todo-overdue', () => {
   // « En attente depuis… » — a loose to-do left on a day that has passed.
   //
@@ -722,7 +722,7 @@ test6.describe('todo-overdue', () => {
 })
 
 
-// ── folded from journey-tasks.spec.ts ──────────────────────────────────────────────
+// ── folded from upkeep-overdue.spec.ts ──────────────────────────────────────────────
 test.describe('upkeep-overdue', () => {
   // « Entretiens saisonniers » — the overdue carry-forward. A missed upkeep due date
   // (TaskItem.overdueSince, functions/_lib/upkeep) rides the « À faire » card as a

@@ -621,7 +621,7 @@ test.describe('habits', () => {
   }
 })
 
-// ── folded from journey-habits.spec.ts ──────────────────────────────────────────────
+// ── folded from defi.spec.ts ──────────────────────────────────────────────
 test2.describe('defi', () => {
   // « Le défi du jour » — the day-long family défi on the Habitudes card (migration
   // 0115). Locks the whole flow: draw a défi, re-roll up to three times (« la

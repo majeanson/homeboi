@@ -2299,7 +2299,7 @@ export function DevKit() {
             <p className="mono" style={{ margin: 0, fontSize: 12, maxWidth: '38rem' }}>
               Reading the manual is a ONE-OFF, so the mark costs a daily user nothing. The same dotted
               underline on the board would tax every glance forever for a definition someone stopped
-              needing months ago. `e2e/lexicon.spec.ts` fails if a mark reaches a hub tab.
+              needing months ago. `e2e/journey-discovery.spec.ts` fails if a mark reaches a hub tab.
               <br />
               Write it as a token — <code>[[mot:id|label]]</code> — never as markup: the id must name a
               live term in <code>lib/glossary.ts</code>, and <code>glossary.test.ts</code> fails the

@@ -30,7 +30,7 @@ import { describe, expect, it } from 'vitest'
 // the guard's original shape assumed anything already below the sheet was a scene and
 // therefore fine. `.tour` sat at 60, so it passed — while being broken, because a tour
 // is a TEACHING layer that walks inside the ＋ sheet and the lift had just buried it
-// (tour-nav.spec.ts, caught by CI). A green guard proved nothing; only forcing a
+// (journey-discovery.spec.ts, caught by CI). A green guard proved nothing; only forcing a
 // decision per overlay does.
 
 const stylesDir = dirname(fileURLToPath(import.meta.url))
@@ -83,7 +83,7 @@ function z(selector: string): number {
 }
 
 // Overlays that MUST paint over an open sheet rather than hide behind it: the guided
-// tour (a section tour walks INSIDE the ＋ sheet — tour-nav.spec.ts), the two dialogs
+// tour (a section tour walks INSIDE the ＋ sheet — journey-discovery.spec.ts), the two dialogs
 // (a heavy delete's yes/no, the generic Modal), the screensaver — which owns the
 // screen outright — and the zoom overlay, opened from a peek's own thumbnail.
 const ABOVE_SHEET = ['.tour', '.confirm-backdrop', '.kit-modal__backdrop', '.ambient', '.zoom-overlay']

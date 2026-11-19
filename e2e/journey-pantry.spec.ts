@@ -82,7 +82,7 @@ test.describe('pantry-advanced', () => {
   })
 })
 
-// ── folded from journey-pantry.spec.ts ──────────────────────────────────────────────
+// ── folded from a-regler-snooze.spec.ts ──────────────────────────────────────────────
 test.describe('a-regler-snooze', () => {
   // « Plus tard » on an « À régler » signal (bmad/11 tier-2 #7, migration 0122).
   //

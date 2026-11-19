@@ -1,7 +1,7 @@
 /* Guided tour overlay (components/tour/TourOverlay.tsx). A full-screen scrim with
    a spotlight cutout (SVG mask) + a floating caption card. It is a TEACHING layer:
    it has to sit above whatever it is currently pointing at, and one of the things
-   it points at is the ＋ sheet — a section tour walks INSIDE it (tour-nav.spec.ts).
+   it points at is the ＋ sheet — a section tour walks INSIDE it (journey-discovery.spec.ts).
    That is why it is above `.sheet`, and why it ended up above the scenes too: the
    sheet moved over them, and "tour above sheet" is the constraint that carries.
    Only the dialogs (160/161) still cover it — a confirm is an answer the tour must

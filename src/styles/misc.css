@@ -252,7 +252,7 @@
    words in front of them. Basis `auto` + the control's own floor lets the field report
    its real width and take its own line instead of shrinking under it — the birthday
    year's fix one layer down (cercle.css `cf-bday`), same defect, same answer.
-   Measured 2026-09-14; guarded by e2e/composer-fit.spec.ts « a date field is never
+   Measured 2026-09-14; guarded by e2e/journey-keyboard.spec.ts « a date field is never
    narrower than the control needs », which clones the control to ask the BROWSER how
    wide it wants to be rather than pinning a number that rots. */
 .field--inline .input[type='date'] {

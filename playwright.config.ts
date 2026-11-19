@@ -19,9 +19,9 @@ export default defineConfig({
   // e2e:flipp`, weekly) — network-bound, no Vite, never per-push.
   // stranger-live.spec.ts walks the DEPLOYED app as a first-time visitor
   // (e2e/stranger.config.ts, `npm run e2e:stranger`, weekly) — same reason.
-  // journey-recipes.spec.ts fetches the recipe corpus from the LIVE sites
+  // recipe-live.spec.ts fetches the recipe corpus from the LIVE sites
   // (e2e/recipe.config.ts, `npm run e2e:recipes`, weekly) — same reason.
-  testIgnore: ['**/sw.spec.ts', '**/state-matrix.spec.ts', '**/flipp-live.spec.ts', '**/stranger-live.spec.ts', '**/journey-recipes.spec.ts'],
+  testIgnore: ['**/sw.spec.ts', '**/state-matrix.spec.ts', '**/flipp-live.spec.ts', '**/stranger-live.spec.ts', '**/recipe-live.spec.ts'],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   // CI runs serially (workers:1 below) and is the authoritative, strict run.
@@ -34,7 +34,7 @@ export default defineConfig({
   // that failed once and passed on the retry printed as « flaky » and the run still
   // exited 0 — so a genuinely broken change read as green locally and was pushed,
   // and CI (retries: 0) failed it deterministically (2026-08-28, the `.kb-open`
-  // invariant vs keyboard.spec.ts). The retry is still worth having, because the
+  // invariant vs journey-keyboard.spec.ts). The retry is still worth having, because the
   // cold-compile starvation is real; what was wrong is that needing it was free.
   // Now a flake FAILS the local run: the retry tells you which test is unstable
   // instead of hiding that it was.

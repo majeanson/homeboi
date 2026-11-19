@@ -18,7 +18,8 @@ const code = (s: string) => s.replace(/^\s*\/\/.*$/gm, '')
 
 describe('e2e debt only falls', () => {
   it('found the suite (canary)', () => {
-    expect(specs.length).toBeGreaterThan(100)
+    // 40 journeys + the harnesses and helpers since review #43: a floor that proves the scan, not a size.
+    expect(specs.length).toBeGreaterThan(40)
   })
   it(`specs with their own boot: at most ${BOOT_MAX}`, () => {
     const own = specs.filter(({ f, text }) => /\.spec\.ts$/.test(f) && /\b(async function|function|const) boot\b/.test(code(text)))

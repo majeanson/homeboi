@@ -86,6 +86,13 @@ others.forEach((o, i) => {
     .join('\n')}\n})\n`
   git('rm', '-qf', `e2e/${o}.spec.ts`)
 })
+// Every block is wrapped in `test.describe`, so the file needs a `test` binding of its own even
+// when the main spec only had `const test = base.extend(…)` inside its body (journey-fit).
+if (![...mods.values()].some((e) => e.names.has('test'))) {
+  const pw = mods.get('@playwright/test') ?? { def: null, names: new Map() }
+  pw.names = new Map([['test', 'test'], ...pw.names])
+  mods.set('@playwright/test', pw)
+}
 writeFileSync(`e2e/${target}`, `${render(mods)}\n\n${body.trimEnd()}\n`)
 
 // The main spec's body goes into its own describe as well, so its file-level hooks (a frozen
@@ -102,11 +109,13 @@ const walk = (d) =>
 for (const f of walk(root)) {
   let t = readFileSync(f, 'utf8')
   const before = t
-  // The journey's own header line names what it was made of: leave it alone.
-  const HEADER = /^\/\/ JOURNEY — .*$/m
-  const keep = f.endsWith(target) ? (t.match(HEADER) ?? [''])[0] : ''
-  for (const x of [main, ...others]) t = t.split(`${x}.spec.ts`).join(target)
-  if (keep) t = t.replace(HEADER, keep)
+  // The journey's header and its « folded from » markers name what it was made of: they are
+  // history, not references, so the rewrite skips those lines.
+  const ORIGIN = /^\/\/ (JOURNEY — |── folded from )/
+  t = t
+    .split('\n')
+    .map((l) => (ORIGIN.test(l) ? l : [main, ...others].reduce((acc, x) => acc.split(`${x}.spec.ts`).join(target), l)))
+    .join('\n')
   if (t !== before) {
     writeFileSync(f, t)
     console.log('repointed', f.slice(root.length + 1))

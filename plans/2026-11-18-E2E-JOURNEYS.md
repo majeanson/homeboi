@@ -37,7 +37,7 @@ freeze the discovery machinery. Approved 2026-11-18: the grouping as below; jour
 14. **Drawings**: drawings, drawing-zoom, drawing-age
 15. **Habits & the défi**: habits, defi
 16. **Planning meals**: kitchen-meal-plan, kitchen-inline-plan, meals, meal-order, plan-tonight, unplaced-meals, grid-side-meal-drag, interactions-kitchen
-17. **Recipes**: recipe-ingredient-pick, recipe-leftovers, recipe-live, recipe-original-lazy, recipe-photo-import, recipe-read-review, recipe-tag-slots, recipe-url-import, recipe-versions, recipes-lean-header
+17. **Recipes**: recipe-ingredient-pick, recipe-leftovers, recipe-original-lazy, recipe-photo-import, recipe-read-review, recipe-tag-slots, recipe-url-import, recipe-versions, recipes-lean-header
 18. **Cooking**: cook-stepper
 19. **The pantry & « À régler »**: pantry-advanced, a-regler-snooze
 20. **Flyers & deals**: flipp-sheet, flipp-import
@@ -62,7 +62,9 @@ freeze the discovery machinery. Approved 2026-11-18: the grouping as below; jour
 39. **Whole-app sweeps**: coverage, realdata, console-clean, devkit
 40. **Visual record (on demand)**: screenshots, state-matrix, states, scenes
 
-**Kept apart (own harness):** sw, stranger-live, flipp-live
+**Kept apart (own harness):** sw, stranger-live, flipp-live, recipe-live (the weekly live recipe contract, `e2e/recipe.config.ts`; first folded into journey 17 by mistake, then restored)
+
+**Done 2026-11-18:** 221 spec files → 50: the 38 `journey-*.spec.ts`, the 8 files of journeys 39–40 as they were, and the 4 harnesses. No test was dropped in the fold; each former spec lives in its own `describe` under a « folded from » marker.
 
 ## Freezing the discovery machinery
 

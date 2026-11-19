@@ -93,7 +93,7 @@ the page was already on), and the shell-dropped case, which asserts both halves:
 online navigation puts `'/'` back, and offline with it gone you get a readable page
 rather than a blank one.
 
-Covered by `e2e/offline-boot.spec.ts` (hung open + unavailable open → app still mounts)
+Covered by `e2e/journey-offline.spec.ts` (hung open + unavailable open → app still mounts)
 and `e2e/sw.spec.ts` (shell reboots offline).
 
 ## What the snapshot keeps (two rules, both learned the hard way)
@@ -271,7 +271,7 @@ The SW lives in `vite.config.ts` (`babillard-sw`, emitted as `dist/sw.js`).
   per-household scoping.
 - `src/lib/outbox.test.ts` — the replay verdicts (drop, retry, dead-letter, wait);
   `src/lib/rowId.test.ts` — the client id is one the server keeps.
-- **e2e** (`npm run e2e`): `offline-outbox.spec.ts` — a `/liste` write made offline
+- **e2e** (`npm run e2e`): `journey-offline.spec.ts` — a `/liste` write made offline
   queues (offline-bar pending count, nothing on the wire) then replays on the `online`
   event; `journey-capture.spec.ts` — an offline capture shows the queued confirmation,
   clears the box, bumps the pending count, sends nothing on the wire, then replays

@@ -11,7 +11,7 @@ import type { DraftOut } from '../_lib/recipeDraft'
 //
 // Used three ways, always through the production seam (_lib/recipeImportPage):
 // recipeCorpus.test.ts (every push), scripts/recipe-corpus.mjs (capture + score) and
-// e2e/journey-recipes.spec.ts (weekly, against the live sites).
+// e2e/recipe-live.spec.ts (weekly, against the live sites).
 //
 // `meta.pending` names a KNOWN gap with the workstream that closes it (« C2: Ricardo's
 // ingredient groups »). The test then demands the entry still MISMATCH — so the day the

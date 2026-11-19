@@ -33,7 +33,7 @@ test.describe('landing-door', () => {
   })
 })
 
-// ── folded from journey-first-visit.spec.ts ──────────────────────────────────────────────
+// ── folded from home-welcome.spec.ts ──────────────────────────────────────────────
 test.describe('home-welcome', () => {
   // One-off capture of the welcome/marketing front door (the brand-new-visitor
   // Home). NOT seeding a surface keeps `chosen` false so Entry renders <Home>
@@ -95,7 +95,7 @@ test.describe('home-welcome', () => {
 })
 
 
-// ── folded from journey-first-visit.spec.ts ──────────────────────────────────────────────
+// ── folded from demo-sandbox.spec.ts ──────────────────────────────────────────────
 test3.describe('demo-sandbox', () => {
   // The demo SANDBOX board (functions/api/demo.ts — an ordinary operator session whose
   // email marks it throwaway). Its board used to open on TWO stacked banners about the
@@ -137,7 +137,7 @@ test3.describe('demo-sandbox', () => {
 })
 
 
-// ── folded from journey-first-visit.spec.ts ──────────────────────────────────────────────
+// ── folded from demo-claim.spec.ts ──────────────────────────────────────────────
 test4.describe('demo-claim', () => {
   // « Garder ma maisonnée » — the sandbox claim flow. A demo-sandbox session is an
   // ORDINARY operator whose /api/auth/me email is `demo-<id>@babillard.invalid`
@@ -275,7 +275,7 @@ test4.describe('demo-claim', () => {
 })
 
 
-// ── folded from journey-first-visit.spec.ts ──────────────────────────────────────────────
+// ── folded from first-run-quiet.spec.ts ──────────────────────────────────────────────
 test5.describe('first-run-quiet', () => {
   // THE FIRST DAY BELONGS TO THE WELCOME (lib/habitCheckin + lib/tour).
   //
@@ -446,7 +446,7 @@ test5.describe('first-run-quiet', () => {
 })
 
 
-// ── folded from journey-first-visit.spec.ts ──────────────────────────────────────────────
+// ── folded from onboarding.spec.ts ──────────────────────────────────────────────
 test.describe('onboarding', () => {
   // The first-run onboarding SEQUENCE (not a pile-up). A real signup lands EMPTY on the
   // setup checklist (WelcomeCard) since 2026-09-23; its « Charger des exemples » loads
@@ -566,7 +566,7 @@ test.describe('onboarding', () => {
 })
 
 
-// ── folded from journey-first-visit.spec.ts ──────────────────────────────────────────────
+// ── folded from stranger-quiet.spec.ts ──────────────────────────────────────────────
 test7.describe('stranger-quiet', () => {
   // WHAT A STRANGER MUST NOT SEE (STATE.md §4-K wave 1 — the demo walk, 2026-09-16).
   //
@@ -660,7 +660,7 @@ test7.describe('stranger-quiet', () => {
 })
 
 
-// ── folded from journey-first-visit.spec.ts ──────────────────────────────────────────────
+// ── folded from install-hint.spec.ts ──────────────────────────────────────────────
 test8.describe('install-hint', () => {
   // « Sur l'écran d'accueil » (lib/install + InstallHint, STATE.md §4-K wave 2).
   //

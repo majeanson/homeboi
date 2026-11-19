@@ -118,7 +118,7 @@ test.describe('password-reset', () => {
   }
 })
 
-// ── folded from journey-account.spec.ts ──────────────────────────────────────────────
+// ── folded from verify-email.spec.ts ──────────────────────────────────────────────
 test.describe('verify-email', () => {
   // « Confirme ton courriel » (0138) — the page the emailed link lands on, and the nudge.
   //
@@ -220,7 +220,7 @@ test.describe('verify-email', () => {
 })
 
 
-// ── folded from journey-account.spec.ts ──────────────────────────────────────────────
+// ── folded from operator-join.spec.ts ──────────────────────────────────────────────
 test.describe('operator-join', () => {
   // « Rejoindre une maisonnée » — the second adult's front door (migration 0128,
   // functions/api/operator-join.ts, src/pages/JoinHouseholdPage.tsx).
@@ -408,7 +408,7 @@ test.describe('operator-join', () => {
 })
 
 
-// ── folded from journey-account.spec.ts ──────────────────────────────────────────────
+// ── folded from sessions.spec.ts ──────────────────────────────────────────────
 test4.describe('sessions', () => {
   // « Mes connexions » — Réglages ▸ Système ▸ Appareils & accès (STATE.md §4-L L12).
   // Two doors an account never had: change the password while signed in, and end every
@@ -500,7 +500,7 @@ test4.describe('sessions', () => {
 })
 
 
-// ── folded from journey-account.spec.ts ──────────────────────────────────────────────
+// ── folded from leave-and-legal.spec.ts ──────────────────────────────────────────────
 test.describe('leave-and-legal', () => {
   // Wave 4 — a household can leave, and knows the terms.
   //

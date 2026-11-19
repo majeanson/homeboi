@@ -585,7 +585,7 @@ test.describe('board-edit', () => {
   })
 })
 
-// ── folded from journey-board-arrange.spec.ts ──────────────────────────────────────────────
+// ── folded from board-customize.spec.ts ──────────────────────────────────────────────
 test.describe('board-customize', () => {
   // Board customization + lens coverage — the §6 e2e gaps from AUJOURDHUI.md that the
   // static screenshot frames never exercise: the « Disposition du babillard » toggle UI
@@ -940,7 +940,7 @@ test.describe('board-customize', () => {
 })
 
 
-// ── folded from journey-board-arrange.spec.ts ──────────────────────────────────────────────
+// ── folded from dnd-mirrors.spec.ts ──────────────────────────────────────────────
 test3.describe('dnd-mirrors', () => {
   // A DRAG IS NEVER THE ONLY DOOR (solidify 1.8, 2026-11-05). Two surfaces had a
   // press-and-hold as their one way to move a thing, while PARITY.md's matrix called

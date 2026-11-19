@@ -2,9 +2,8 @@ import { test, expect, type Page, type Route } from '@playwright/test'
 import { mockApi, seedState, BASE, MMID } from './mocks'
 import { boxOf, settled } from './measure'
 import { openKitEntry } from './kit'
-import { join } from 'node:path'
 
-// JOURNEY — RECIPES (review #43; was recipe-url-import.spec.ts + recipe-ingredient-pick.spec.ts + recipe-leftovers.spec.ts + recipe-live.spec.ts + recipe-original-lazy.spec.ts + recipe-photo-import.spec.ts + recipe-read-review.spec.ts + recipe-tag-slots.spec.ts + recipe-versions.spec.ts + recipes-lean-header.spec.ts).
+// JOURNEY — RECIPES (review #43; was recipe-url-import.spec.ts + recipe-ingredient-pick.spec.ts + recipe-leftovers.spec.ts + recipe-original-lazy.spec.ts + recipe-photo-import.spec.ts + recipe-read-review.spec.ts + recipe-tag-slots.spec.ts + recipe-versions.spec.ts + recipes-lean-header.spec.ts).
 //
 // Real-flow coverage for « Importer un lien » (RecipeForm.runImport) — the path Marc
 // reported on 2026-10-27: « les étapes arrêtent avant la fin et parfois ça rajoute des
@@ -455,7 +454,7 @@ test.describe('recipe-url-import', () => {
   })
 })
 
-// ── folded from journey-recipes.spec.ts ──────────────────────────────────────────────
+// ── folded from recipe-ingredient-pick.spec.ts ──────────────────────────────────────────────
 test.describe('recipe-ingredient-pick', () => {
   // The shared « quels ingrédients ? » checklist body (`RecipeIngredientPick`), driven
   // off its /dev/kit specimen — the same drill journey-recipes.spec.ts uses to reach
@@ -516,7 +515,7 @@ test.describe('recipe-ingredient-pick', () => {
 })
 
 
-// ── folded from journey-recipes.spec.ts ──────────────────────────────────────────────
+// ── folded from recipe-leftovers.spec.ts ──────────────────────────────────────────────
 test.describe('recipe-leftovers', () => {
   // bmad/11 tier-2 #10: leftovers were unpostable from a recipe-backed meal. Tapping a
   // planned dish ROUTES to /kitchen/recipe/:id, and that scene was the one surface with
@@ -696,97 +695,7 @@ test.describe('recipe-leftovers', () => {
 })
 
 
-// ── folded from journey-recipes.spec.ts ──────────────────────────────────────────────
-test.describe('recipe-live', () => {
-  // THE RECIPE LIVE CONTRACT (`npm run e2e:recipes`, weekly) — the corpus, against the
-  // LIVE sites. functions/_lib/recipeCorpus.test.ts scores the pages as they were captured;
-  // this goes and fetches them again, the way the WORKER does (a plain fetch, our
-  // user-agent), and checks two facts per page:
-  //
-  //   1. REACH — a page captured as `direct` must still answer a Worker; one captured as
-  //      `blocked` (Akamai: recettes.qc.ca, Zeste, IGA…) must still refuse it. A flip
-  //      either way is news: a site that started refusing needs the bookmark, a site
-  //      that stopped refusing can drop it from the « blocked » list.
-  //   2. THE READ — for a reachable page, the production seam (`importFromHtml`) must
-  //      still read it EXACTLY as `expected.json` says. A site redesign shows up here
-  //      before a household finds a recipe with no steps.
-  //
-  // A red run is the fact that moved. Re-capture (`node scripts/recipe-corpus.mjs capture
-  // <url>`), read the page, then update expected.json — out loud, in a commit that says
-  // what changed.
-
-  const WORKER_UA = 'Babillard/0.1 (+household planner)'
-  const ROOT = join(import.meta.dirname, '..')
-
-  // The seam and the corpus helpers are Worker-side TypeScript: loaded through Vite's
-  // module runner (as scripts/recipe-corpus.mjs does) so this spec runs the exact
-  // production code without pulling the Worker's types into the e2e typecheck.
-  async function load<T>(rel: string): Promise<T> {
-    const { runnerImport } = await import('vite')
-    const { module } = await runnerImport<T>(join(ROOT, rel), { configFile: false, logLevel: 'silent' })
-    return module
-  }
-
-  interface Expected {
-    title: string | null
-    ingredients: string[]
-    steps: string[]
-  }
-  interface Entry {
-    id: string
-    meta: { url: string; reach: 'direct' | 'blocked'; pending?: string }
-    expected: Expected | null
-  }
-  interface Corpus {
-    loadCorpus(): Entry[]
-    expectedOf(d: unknown): Expected
-    diffExpected(a: Expected, b: Expected): string[]
-  }
-  interface Seam {
-    importFromHtml(html: string, url: string): unknown
-  }
-  interface Refusal {
-    isRefusalPage(html: string): boolean
-  }
-
-  test('every corpus page: the same reach, the same read', async () => {
-    const corpus = await load<Corpus>('functions/test/recipeCorpus.ts')
-    const seam = await load<Seam>('functions/_lib/recipeImportPage.ts')
-    const refusal = await load<Refusal>('functions/_lib/renderPage.ts')
-    const entries = corpus.loadCorpus()
-    expect(entries.length).toBeGreaterThanOrEqual(12)
-    const problems: string[] = []
-    for (const e of entries) {
-      let html: string | null = null
-      try {
-        const res = await fetch(e.meta.url, {
-          headers: { accept: 'text/html,application/xhtml+xml', 'user-agent': WORKER_UA, 'accept-language': 'fr-CA' },
-          redirect: 'follow',
-          signal: AbortSignal.timeout(20_000),
-        })
-        if (res.ok) {
-          const body = await res.text()
-          if (!refusal.isRefusalPage(body)) html = body
-        }
-      } catch {
-        /* refused at the connection — reach is « blocked » */
-      }
-      const reach = html === null ? 'blocked' : 'direct'
-      if (reach !== e.meta.reach) {
-        problems.push(`${e.id}: reach was « ${e.meta.reach} », now « ${reach} »`)
-        continue
-      }
-      if (html === null || !e.expected || e.meta.pending) continue
-      const diff = corpus.diffExpected(e.expected, corpus.expectedOf(seam.importFromHtml(html, e.meta.url)))
-      if (diff.length) problems.push(`${e.id}: the live page reads differently\n  ${diff.join('\n  ')}`)
-    }
-    console.log(`${entries.length} pages checked, ${problems.length} moved`)
-    expect(problems, problems.join('\n')).toEqual([])
-  })
-})
-
-
-// ── folded from journey-recipes.spec.ts ──────────────────────────────────────────────
+// ── folded from recipe-original-lazy.spec.ts ──────────────────────────────────────────────
 test.describe('recipe-original-lazy', () => {
   // THE LIST PAYLOAD DOES NOT CARRY THE AS-IMPORTED SNAPSHOT (2026-09-15).
   //
@@ -842,7 +751,7 @@ test.describe('recipe-original-lazy', () => {
 })
 
 
-// ── folded from journey-recipes.spec.ts ──────────────────────────────────────────────
+// ── folded from recipe-photo-import.spec.ts ──────────────────────────────────────────────
 test.describe('recipe-photo-import', () => {
   // Real-flow coverage for the recipe photo-import path (RecipeForm). The companion
   // recipe-read-review spec drives the dialog in isolation via /dev/kit; THIS one
@@ -1000,7 +909,7 @@ test.describe('recipe-photo-import', () => {
 })
 
 
-// ── folded from journey-recipes.spec.ts ──────────────────────────────────────────────
+// ── folded from recipe-read-review.spec.ts ──────────────────────────────────────────────
 test.describe('recipe-read-review', () => {
   // Durable coverage for RecipeReadReview — the verify-against-the-photo OCR gate.
   // In the real app it only mounts after a photo upload + an AI read, so the visual
@@ -1153,7 +1062,7 @@ test.describe('recipe-read-review', () => {
 })
 
 
-// ── folded from journey-recipes.spec.ts ──────────────────────────────────────────────
+// ── folded from recipe-tag-slots.spec.ts ──────────────────────────────────────────────
 test.describe('recipe-tag-slots', () => {
   // « Pour ces repas » on a recipe LABEL (Réglages ▸ Recettes ▸ Étiquettes).
   //
@@ -1260,7 +1169,7 @@ test.describe('recipe-tag-slots', () => {
 })
 
 
-// ── folded from journey-recipes.spec.ts ──────────────────────────────────────────────
+// ── folded from recipe-versions.spec.ts ──────────────────────────────────────────────
 test.describe('recipe-versions', () => {
   // A recipe with an ALTERNATIVE — « pour une version bol » (2026-10-30, Marc's pick: one
   // recipe, a version switch). The stored lists are flat; a version is a matched pair of
@@ -1342,7 +1251,7 @@ test.describe('recipe-versions', () => {
 })
 
 
-// ── folded from journey-recipes.spec.ts ──────────────────────────────────────────────
+// ── folded from recipes-lean-header.spec.ts ──────────────────────────────────────────────
 test.describe('recipes-lean-header', () => {
   // The recipe book's header, leaned to ONE line: no « Recettes » heading (the sub-tab
   // above already says the word), a COLLAPSED magnifier that becomes the search field

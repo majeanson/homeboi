@@ -142,7 +142,7 @@ test.describe('interactions-board', () => {
   })
 })
 
-// ── folded from journey-board.spec.ts ──────────────────────────────────────────────
+// ── folded from board-compact.spec.ts ──────────────────────────────────────────────
 test.describe('board-compact', () => {
   // The board's compact lens (lib/widgetGrid.isCompact + components/board/CardLens): a
   // card halved on a phone renders a genuinely small tile — icon + title + at most one
@@ -620,7 +620,7 @@ test.describe('board-compact', () => {
 })
 
 
-// ── folded from journey-board.spec.ts ──────────────────────────────────────────────
+// ── folded from board-empty-cards.spec.ts ──────────────────────────────────────────────
 test.describe('board-empty-cards', () => {
   // « Une carte qui n'a rien à dire s'en va » — the board's empty-card contract, and
   // the one AUJOURDHUI §6 gap no spec covered: every frame we shoot has a full
@@ -744,7 +744,7 @@ test.describe('board-empty-cards', () => {
 })
 
 
-// ── folded from journey-board.spec.ts ──────────────────────────────────────────────
+// ── folded from board-day-first.spec.ts ──────────────────────────────────────────────
 test4.describe('board-day-first', () => {
   // Review #15 (2026-11-17): a fresh device opened its board on the fridge notes, the
   // weather photo and « À régler »; « Aujourd'hui » was the fifth card and « Tâches » the
@@ -782,7 +782,7 @@ test4.describe('board-day-first', () => {
 })
 
 
-// ── folded from journey-board.spec.ts ──────────────────────────────────────────────
+// ── folded from en-cours.spec.ts ──────────────────────────────────────────────
 test.describe('en-cours', () => {
   // The board lifecycle's two softenings (PLAN-mots B2 + B3, accepted 2026-09-25):
   //
@@ -924,7 +924,7 @@ test.describe('en-cours', () => {
 })
 
 
-// ── folded from journey-board.spec.ts ──────────────────────────────────────────────
+// ── folded from pour-toi.spec.ts ──────────────────────────────────────────────
 test6.describe('pour-toi', () => {
   // « Pour toi » (PLAN-mots C2, accepted 2026-09-25): with a face picked, ONE calm line
   // under the board's controls says what is theirs right now — a mot waiting (presence,
@@ -995,7 +995,7 @@ test6.describe('pour-toi', () => {
 })
 
 
-// ── folded from journey-board.spec.ts ──────────────────────────────────────────────
+// ── folded from greet-fit.spec.ts ──────────────────────────────────────────────
 test.describe('greet-fit', () => {
   // THE GREETING IS NEVER CUT — in either language, on the phone widths this app is
   // actually used at.
@@ -1059,7 +1059,7 @@ test.describe('greet-fit', () => {
 })
 
 
-// ── folded from journey-board.spec.ts ──────────────────────────────────────────────
+// ── folded from card-lens-shots.spec.ts ──────────────────────────────────────────────
 test.describe('card-lens-shots', () => {
   // A VISUAL harness (not a pixel-regression suite) for the board's compact lens: it
   // shoots every board card, one at a time, at its three widths —
@@ -1128,7 +1128,7 @@ test.describe('card-lens-shots', () => {
 })
 
 
-// ── folded from journey-board.spec.ts ──────────────────────────────────────────────
+// ── folded from house-diary.spec.ts ──────────────────────────────────────────────
 test9.describe('house-diary', () => {
   // « La maison cette année » (PARITY, late rows). A deep link lands on the section, and a
   // household with nothing yet reads one calm line, not a blank card.
@@ -1146,7 +1146,7 @@ test9.describe('house-diary', () => {
 })
 
 
-// ── folded from journey-board.spec.ts ──────────────────────────────────────────────
+// ── folded from this-week-calm.spec.ts ──────────────────────────────────────────────
 test.describe('this-week-calm', () => {
   // « Cette semaine ensemble » widens the chore-ledger pattern to the whole household, and
   // inherits its one hard rule: it says WHO, never HOW MANY. No tally, no ranking, no
@@ -1211,7 +1211,7 @@ test.describe('this-week-calm', () => {
 })
 
 
-// ── folded from journey-board.spec.ts ──────────────────────────────────────────────
+// ── folded from calm-nags.spec.ts ──────────────────────────────────────────────
 test11.describe('calm-nags', () => {
   // Review #24 (2026-11-17), the calm pass on counts and nags:
   //   · « À régler +2 » was a mystery number, and its tap went into Réglages;

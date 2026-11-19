@@ -311,7 +311,7 @@ test.describe('share-links', () => {
   })
 })
 
-// ── folded from journey-sharing.spec.ts ──────────────────────────────────────────────
+// ── folded from guest-scenes.spec.ts ──────────────────────────────────────────────
 test.describe('guest-scenes', () => {
   // The typed share-link landings (#34/#35/#36 — /handoff, /welcome, /family) must show a
   // DISTINCT "this link is no longer valid" state when the guest token is expired/revoked
@@ -404,7 +404,7 @@ test.describe('guest-scenes', () => {
 })
 
 
-// ── folded from journey-sharing.spec.ts ──────────────────────────────────────────────
+// ── folded from guest-settings.spec.ts ──────────────────────────────────────────────
 test.describe('guest-settings', () => {
   // A read-only LINK guest — which is exactly what the public demo is (functions/api/demo.ts
   // mints a `showcase` guest token) — reaches Réglages, and Réglages narrows itself for them.
@@ -566,7 +566,7 @@ test.describe('guest-settings', () => {
 })
 
 
-// ── folded from journey-sharing.spec.ts ──────────────────────────────────────────────
+// ── folded from share-doors.spec.ts ──────────────────────────────────────────────
 test4.describe('share-doors', () => {
   // BUTTONS ON THE THINGS (C, 2026-09-29). The guest links that never landed — the box,
   // the details form, the sitter's link — could only be made from one form buried in
@@ -646,7 +646,7 @@ test4.describe('share-doors', () => {
 })
 
 
-// ── folded from journey-sharing.spec.ts ──────────────────────────────────────────────
+// ── folded from share-routed.spec.ts ──────────────────────────────────────────────
 test.describe('share-routed', () => {
   // bmad/11 tier-1 seam #2, remaining half. /share re-implemented the capture spine
   // beside CaptureForm — the build-beside failure mode CLAUDE.md warns about — and the
@@ -717,7 +717,7 @@ test.describe('share-routed', () => {
 })
 
 
-// ── folded from journey-sharing.spec.ts ──────────────────────────────────────────────
+// ── folded from share-business.spec.ts ──────────────────────────────────────────────
 test.describe('share-business', () => {
   // Share a Google Maps place link → a pre-filled business card (Marc, Aug 2026:
   // "j'ai partagé un lien pour ajouter un business, ça ne marche pas"). Two halves:
@@ -797,7 +797,7 @@ test.describe('share-business', () => {
 })
 
 
-// ── folded from journey-sharing.spec.ts ──────────────────────────────────────────────
+// ── folded from partage-public.spec.ts ──────────────────────────────────────────────
 test.describe('partage-public', () => {
   // « Partager » (wave 2) — the PUBLIC /partage/<id> page. A signed-OUT visitor sees the
   // shared recipe + a « Rejoindre Babillard » CTA (the acquisition funnel); a signed-IN
@@ -968,7 +968,7 @@ test.describe('partage-public', () => {
 })
 
 
-// ── folded from journey-sharing.spec.ts ──────────────────────────────────────────────
+// ── folded from readonly-states.spec.ts ──────────────────────────────────────────────
 test.describe('readonly-states', () => {
   // Two surfaces that told the truth badly, both fixed 2026-08-28 (REVIEW-PASS).
   //

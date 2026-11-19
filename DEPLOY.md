@@ -195,4 +195,4 @@ checks every id was remapped, and restores from an actual nightly copy the cron 
   relax on connect (`perf(realtime): back off polling when the realtime socket is
   open`). No runtime env var — the rebuild-flag kill-switch above (re-comment the
   wrangler binding + flip `REALTIME_ENABLED`) is intentionally the only lever.
-  Coverage: `e2e/realtime.spec.ts` (WS invalidate + SW offline precache).
+  Coverage: `e2e/journey-offline.spec.ts` (WS invalidate + SW offline precache).

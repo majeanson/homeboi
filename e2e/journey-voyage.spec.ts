@@ -223,7 +223,7 @@ test.describe('voyage', () => {
   })
 })
 
-// ── folded from journey-voyage.spec.ts ──────────────────────────────────────────────
+// ── folded from voyage-share.spec.ts ──────────────────────────────────────────────
 test.describe('voyage-share', () => {
   // Behavioural coverage for « Voyage partagé » — the cross-household shared trip (the
   // live twin of the private Voyage notebook). None of its surface had e2e: the shared
@@ -571,7 +571,7 @@ test.describe('voyage-share', () => {
 })
 
 
-// ── folded from journey-voyage.spec.ts ──────────────────────────────────────────────
+// ── folded from voyage-undated.spec.ts ──────────────────────────────────────────────
 test.describe('voyage-undated', () => {
   // REVIEW-PASS « voy »: a trip with no dates yet was filtered out of the board's
   // « Prochain voyage » card, and that card plus /search are the only two places trips
@@ -701,7 +701,7 @@ test.describe('voyage-undated', () => {
 })
 
 
-// ── folded from journey-voyage.spec.ts ──────────────────────────────────────────────
+// ── folded from trips-index.spec.ts ──────────────────────────────────────────────
 test4.describe('trips-index', () => {
   // « Tous les voyages » (solidify 4.4): the board card shows three rows, so a trip that is
   // over or a fourth idea had no list at all. Coming trips lead, what is over folds away.

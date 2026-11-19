@@ -109,7 +109,7 @@ test.describe('cercle-crud', () => {
   })
 })
 
-// ── folded from journey-cercle.spec.ts ──────────────────────────────────────────────
+// ── folded from cercle-drag-group.spec.ts ──────────────────────────────────────────────
 test.describe('cercle-drag-group', () => {
   // Dragging a person onto a named group in Maison ▸ Social/Famille — the last
   // uncovered write in the cercle, and one whose failure modes are all silent:
@@ -233,7 +233,7 @@ test.describe('cercle-drag-group', () => {
 })
 
 
-// ── folded from journey-cercle.spec.ts ──────────────────────────────────────────────
+// ── folded from cercle-visual.spec.ts ──────────────────────────────────────────────
 test3.describe('cercle-visual', () => {
   // Visual sweep for « Le cercle » — now Maison's Famille/Social sections (the nav
   // restructure merged the old standalone Le cercle tab into /maison) — NOT covered
@@ -274,7 +274,7 @@ test3.describe('cercle-visual', () => {
   // (Liens/Arbre/Web) and wide member/group rows are allowed to scroll sideways here
   // (a product decision). So these specs only capture screenshots for review; the
   // overflow guard stays enforced on every OTHER surface (screenshots.spec.ts
-  // OVERFLOW_CASES, longtext.spec.ts).
+  // OVERFLOW_CASES, journey-fit.spec.ts).
 
   for (const state of STATES) {
     for (const theme of THEMES) {
@@ -491,7 +491,7 @@ test3.describe('cercle-visual', () => {
 })
 
 
-// ── folded from journey-cercle.spec.ts ──────────────────────────────────────────────
+// ── folded from contact-photos.spec.ts ──────────────────────────────────────────────
 test.describe('contact-photos', () => {
   // A contact's photo gallery (`ContactPhotos`, inside the person scene) — the last
   // entry on the coverage backlog, and until now only ever smoke-rendered.
@@ -590,7 +590,7 @@ test.describe('contact-photos', () => {
 })
 
 
-// ── folded from journey-cercle.spec.ts ──────────────────────────────────────────────
+// ── folded from family-import.spec.ts ──────────────────────────────────────────────
 test.describe('family-import', () => {
   // « Ajouter une famille » — /cercle/import?s=<id>, the RECIPIENT side of « Partager une
   // famille ». It had no e2e at all, and it is the worst place in the app for that: the
@@ -808,7 +808,7 @@ test.describe('family-import', () => {
 })
 
 
-// ── folded from journey-cercle.spec.ts ──────────────────────────────────────────────
+// ── folded from intake.spec.ts ──────────────────────────────────────────────
 test6.describe('intake', () => {
   // The « intake » (family-info) flow end-to-end (REVIEW-PASS §559), both sides:
   //   1. GUEST SUBMIT — a relative opens the /intake form and sends their card
@@ -925,7 +925,7 @@ test6.describe('intake', () => {
 })
 
 
-// ── folded from journey-cercle.spec.ts ──────────────────────────────────────────────
+// ── folded from postbox.spec.ts ──────────────────────────────────────────────
 test7.describe('postbox', () => {
   // « La boîte aux lettres » (/courrier) — a relative's postbox share link: say who you
   // are, leave a message (text and/or ONE memo: voice / drawing / photo), staged to R2

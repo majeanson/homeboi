@@ -604,7 +604,7 @@
 /* The drawer's field + ⚙ row (MealPool, 2026-10-01): the field takes the line, the ⚙
    keeps its size, and the breathing room moves from the field to the row — a margin
    left on the field would sit inside the row and push the ⚙ off its centre line
-   (e2e/spacing.spec.ts). */
+   (e2e/journey-fit.spec.ts). */
 .kitchen__ideas-composer {
   margin-bottom: 0.7rem;
   flex-wrap: nowrap;

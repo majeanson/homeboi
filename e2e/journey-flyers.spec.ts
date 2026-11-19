@@ -258,7 +258,7 @@ test.describe('flipp-sheet', () => {
   })
 })
 
-// ── folded from journey-flyers.spec.ts ──────────────────────────────────────────────
+// ── folded from flipp-import.spec.ts ──────────────────────────────────────────────
 test.describe('flipp-import', () => {
   // THE WAY BACK — Flipp → Babillard (lib/flippImport). The bookmark's second answer
   // opens `/liste#flipp=<base64url>`; the list page shows what would change, asks,
