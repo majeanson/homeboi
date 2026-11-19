@@ -441,10 +441,14 @@ describe('glossary — the ratchets (they only go down)', () => {
     const enCopy = new Set(enValues)
     const asserting: string[] = []
     for (const f of sourceFiles(E2E).filter((f) => f.endsWith('.spec.ts'))) {
-      const src = readFileSync(f, 'utf8')
-      if (!/lang: 'en'|'en'\s*as Lang|\['fr', 'en'\]/.test(src)) continue
-      const re = /(?:getByText\(|toHaveText\(|hasText:\s*|name:\s*)'([^'\n]+)'/g
-      for (const m of src.matchAll(re)) if (enCopy.has(m[1]!)) asserting.push(`${f.split(/[\\/]/).pop()}: « ${m[1]} »`)
+      // A journey file (review #43) holds several former specs, each in its own describe after a
+      // « folded from » marker. The unit is the spec it was: one block seeding English must not
+      // make a neighbouring French block's « English » language button count as English copy.
+      for (const src of readFileSync(f, 'utf8').split(/\n\/\/ ── folded from /)) {
+        if (!/lang: 'en'|'en'\s*as Lang|\['fr', 'en'\]/.test(src)) continue
+        const re = /(?:getByText\(|toHaveText\(|hasText:\s*|name:\s*)'([^'\n]+)'/g
+        for (const m of src.matchAll(re)) if (enCopy.has(m[1]!)) asserting.push(`${f.split(/[\\/]/).pop()}: « ${m[1]} »`)
+      }
     }
     expect(
       asserting,
