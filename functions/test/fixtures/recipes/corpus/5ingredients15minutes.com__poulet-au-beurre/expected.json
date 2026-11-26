@@ -1,11 +1,11 @@
 {
   "title": "Poulet au beurre",
-  "servings": null,
+  "servings": 4,
   "servingsUnit": null,
   "times": {
-    "prep": null,
-    "cook": null,
-    "total": null
+    "prep": 15,
+    "cook": 18,
+    "total": 33
   },
   "ingredients": [
     "Hauts de cuisses de poulet 12, désossé",

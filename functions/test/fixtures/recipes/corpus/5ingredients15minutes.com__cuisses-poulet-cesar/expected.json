@@ -1,11 +1,11 @@
 {
   "title": "Cuisses de poulet marinées à la César",
-  "servings": null,
+  "servings": 4,
   "servingsUnit": null,
   "times": {
-    "prep": null,
-    "cook": null,
-    "total": null
+    "prep": 15,
+    "cook": 35,
+    "total": 175
   },
   "ingredients": [
     "4 cuisses de poulet avec la peau Super C",

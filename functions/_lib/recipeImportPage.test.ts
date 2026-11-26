@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { diffExpected, expectedOf, loadCorpus } from '../test/recipeCorpus'
 import { htmlToText, parsePastedRecipe, parseRecipeMicrodata, pageMeta, tidyIngredientLine } from './recipeImport'
-import { fullerSteps, halfRead, importFromHtml, notesWithoutSteps, pageListFillsIngredients, readPage, regroupSteps, sourceFromCapture, sourceFromHtml, stepHeadedMethod } from './recipeImportPage'
+import { fullerSteps, halfRead, importFromHtml, notesWithoutSteps, pageListAddsGroups, pageListFillsIngredients, readPage, regroupSteps, sourceFromCapture, sourceFromHtml, stepHeadedMethod } from './recipeImportPage'
 
 const real = (l: string[]) => l.filter((x) => !x.startsWith('## '))
 
@@ -242,6 +242,35 @@ describe('the structured list is bare or missing — the printed one fills it', 
   })
   it('a name the page does not print → not the same list', () => {
     expect(pageListFillsIngredients(['bœuf', 'chapelure'], printed)).toBe(false)
+  })
+})
+
+describe('pageListAddsGroups — the structured list is one group of the printed one', () => {
+  const site = ['Hauts de cuisses de poulet 12', 'Tomates en dés 250 ml']
+  const page = [...site, '## Prévoir aussi', '60 ml de beurre', '1 oignon haché']
+  it('every structured line printed in order, the rest under a part → the printed list (5 ingrédients 15 minutes)', () => {
+    expect(pageListAddsGroups(site, page)).toBe(true)
+  })
+  it('the same list → nothing to add', () => expect(pageListAddsGroups(site, ['## Poulet', ...site])).toBe(false))
+  it('an extra line OUTSIDE any part → the site’s list stands', () => {
+    expect(pageListAddsGroups(site, ['Sel', ...site, '## Prévoir aussi', '60 ml de beurre'])).toBe(false)
+  })
+  it('a part that mixes site lines with new ones (a « Cook Mode » toggle, recipetineats) → the site’s list stands', () => {
+    expect(pageListAddsGroups(site, ['## Poulet', ...site, 'Cook Mode Prevent screen from sleeping'])).toBe(false)
+  })
+  it('a structured line the page prints differently → the site’s list stands', () => {
+    expect(pageListAddsGroups(site, ['Hauts de cuisses 12', 'Tomates en dés 250 ml', '## Prévoir aussi', '60 ml de beurre'])).toBe(false)
+  })
+  it('no part on the page → the site’s list stands', () => {
+    expect(pageListAddsGroups(site, [...site, '60 ml de beurre'])).toBe(false)
+  })
+  it('end to end: microdata tags the main group, the page prints « Prévoir aussi » below it', () => {
+    const tagged = site.map((l) => `<li><label itemprop="recipeIngredient">${l}</label></li>`).join('')
+    const html =
+      `<html><head><title>Poulet</title></head><body><div itemscope itemtype="https://schema.org/Recipe"><h1 itemprop="name">Poulet</h1>` +
+      `<h2>Ingrédients</h2><ul>${tagged}</ul><h3>Prévoir aussi:</h3><ul><li>60 ml de beurre</li><li>1 oignon haché</li></ul>` +
+      `<h2>Préparation</h2><ol itemprop="recipeInstructions"><li>Cuire le poulet dans le beurre.</li><li>Ajouter les tomates.</li></ol></div></body></html>`
+    expect(importFromHtml(html, 'https://www.example.test/r').ingredients).toEqual(page)
   })
 })
 

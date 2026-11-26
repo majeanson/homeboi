@@ -143,7 +143,9 @@ export function readPage(src: PageSource, pick = 0): PageRead {
         ...(stepImageUrls && { stepImageUrls }),
         image,
         ingredients:
-          printedOk && pageListFillsIngredients(parsed.ingredients, printed.ingredients)
+          printedOk &&
+          (pageListFillsIngredients(parsed.ingredients, printed.ingredients) ||
+            pageListAddsGroups(parsed.ingredients, printed.ingredients))
             ? printed.ingredients
             : (applyGroups(parsed.ingredients, site?.ingredientGroups, site?.exact ?? false) ??
               regroupIngredientsInText(src.text, parsed.ingredients)),
@@ -329,6 +331,38 @@ export function pageListFillsIngredients(structured: string[], printed: string[]
     j++
   }
   return true
+}
+
+// The structured list is one GROUP of the printed one. 5 ingrédients 15 minutes tags its
+// five « main » ingredients as microdata (2026-11-23) and prints the « Prévoir aussi »
+// group (beurre, oignon) below, untagged: the structured read lost the two lines the
+// method cooks with. The printed list wins only when it ADDS WHOLE GROUPS: every
+// structured line is, word for word, a printed line in the same order, and each printed
+// part is either all structured lines or all new ones under its own heading. A part that
+// mixes them (a page's « Cook Mode » toggle read into the last group, recipetineats) is
+// not the same list. Anything else and the site's stands.
+export function pageListAddsGroups(structured: string[], printed: string[]): boolean {
+  const s = real(structured).map(normLoose)
+  if (!s.length) return false
+  const groups: { headed: boolean; lines: string[] }[] = [{ headed: false, lines: [] }]
+  for (const line of printed) {
+    if (isSectionHeading(line)) groups.push({ headed: true, lines: [] })
+    else groups[groups.length - 1]?.lines.push(normLoose(line))
+  }
+  let i = 0
+  let added = 0
+  for (const g of groups) {
+    let kept = 0
+    for (const l of g.lines) {
+      if (l !== s[i]) continue
+      i++
+      kept++
+    }
+    if (kept === g.lines.length) continue
+    if (kept > 0 || !g.headed) return false
+    added += g.lines.length
+  }
+  return i === s.length && added > 0
 }
 
 // The site's steps, with the parts the PAGE prints between them (« Au service », «
